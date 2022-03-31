@@ -139,3 +139,5 @@ blueprint! {
         }
     }
 }
+
+package_init!(blueprint::Account::describe());

@@ -39,7 +39,9 @@ impl Publish {
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         if let Some(package_id) = self.package_id.clone() {
             // Overwrite package
-            executor.overwrite_package(package_id, &code);
+            executor
+                .overwrite_package(package_id, code)
+                .map_err(|e| Error::PackageValidationError(e))?;
             println!("Package updated!");
             Ok(())
         } else {

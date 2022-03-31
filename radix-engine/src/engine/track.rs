@@ -1,11 +1,9 @@
-use lru::LruCache;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use wasmi::*;
 
 use crate::engine::*;
 use crate::ledger::*;
@@ -60,8 +58,6 @@ pub struct Track<'s, S: SubstateStore> {
     non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<NonFungible>>,
 
     lazy_map_entries: HashMap<(ComponentId, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
-
-    code_cache: LruCache<PackageId, Module>, // TODO: move to ledger level
 }
 
 impl<'s, S: SubstateStore> Track<'s, S> {
@@ -82,7 +78,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             lazy_map_entries: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
-            code_cache: LruCache::new(1024),
         }
     }
 
@@ -168,23 +163,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.logs.push((level, message));
-    }
-
-    /// Loads a module.
-    pub fn load_module(&mut self, package_id: PackageId) -> Option<(ModuleRef, MemoryRef)> {
-        match self.get_package(package_id).map(Clone::clone) {
-            Some(p) => {
-                if let Some(m) = self.code_cache.get(&package_id) {
-                    Some(instantiate_module(m).unwrap())
-                } else {
-                    let module = parse_module(p.code()).unwrap();
-                    let inst = instantiate_module(&module).unwrap();
-                    self.code_cache.put(package_id, module);
-                    Some(inst)
-                }
-            }
-            None => None,
-        }
     }
 
     /// Returns an immutable reference to a package, if exists.

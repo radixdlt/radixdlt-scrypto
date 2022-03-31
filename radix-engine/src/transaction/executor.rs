@@ -38,7 +38,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .ok_or(RuntimeError::PackageNotFound(package_id))?;
 
         BasicAbiProvider::new(self.trace)
-            .with_package(package_id, package.code().to_vec())
+            .with_package(&package_id, package)
             .export_abi(package_id, blueprint_name)
     }
 
@@ -57,7 +57,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .map(|(package, _)| package)
             .unwrap();
         BasicAbiProvider::new(self.trace)
-            .with_package(component.package_id(), package.code().to_vec())
+            .with_package(&component.package_id(), package)
             .export_abi(component.package_id(), component.blueprint_name())
     }
 }
@@ -90,17 +90,20 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Creates an account with 1,000,000 XRD in balance.
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
-        self.validate_and_execute(
-            &TransactionBuilder::new(self)
-                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
-                .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                    builder.new_account_with_resource(withdraw_auth, bucket_id)
-                })
-                .build_and_sign(vec![], vec![])
-                .unwrap(),
-        )
-        .unwrap()
-        .new_component_ids[0]
+        let receipt = self
+            .validate_and_execute(
+                &TransactionBuilder::new(self)
+                    .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+                    .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                        builder.new_account_with_resource(withdraw_auth, bucket_id)
+                    })
+                    .build_and_sign(vec![], vec![])
+                    .unwrap(),
+            )
+            .unwrap();
+
+        receipt.result.expect("Should be okay");
+        receipt.new_component_ids[0]
     }
 
     /// Creates a new key and an account which can be accessed using the key.
@@ -132,13 +135,18 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Overwrites a package.
-    pub fn overwrite_package(&mut self, package_id: PackageId, code: &[u8]) {
+    pub fn overwrite_package(
+        &mut self,
+        package_id: PackageId,
+        code: Vec<u8>,
+    ) -> Result<(), WasmValidationError> {
         let tx_hash = sha256(self.substate_store.get_and_increase_nonce().to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
-        let package = Package::new(code.to_vec());
+        let package = Package::new(code)?;
         self.substate_store
             .put_encoded_substate(&package_id, &package, id_gen.next());
+        Ok(())
     }
 
     pub fn validate_and_execute(
@@ -259,7 +267,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     component_id,
                     method,
                 } => proc.call_method_with_all_resources(*component_id, &method),
-                ValidatedInstruction::PublishPackage { code } => proc.publish_package(code.clone()),
+                ValidatedInstruction::PublishPackage { code } => proc
+                    .publish_package(code.clone())
+                    .map(|package_id| ValidatedData::from_value(&package_id)),
             };
             match result {
                 Ok(data) => {

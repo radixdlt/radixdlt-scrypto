@@ -155,7 +155,7 @@ fn create_mutable_vault_into_map() {
     let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
@@ -200,7 +200,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
@@ -246,7 +246,7 @@ fn create_mutable_vault_into_vector() {
     let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
@@ -298,7 +298,7 @@ fn can_push_vault_into_vector() {
     let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
@@ -316,7 +316,7 @@ fn create_mutable_vault_with_take() {
     let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
@@ -339,7 +339,7 @@ fn create_mutable_vault_with_take_non_fungible() {
     let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
@@ -362,7 +362,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
     let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
@@ -380,7 +380,7 @@ fn create_mutable_vault_with_get_amount() {
     let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
@@ -403,5 +403,5 @@ fn create_mutable_vault_with_get_resource_def() {
     let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }

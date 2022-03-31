@@ -3,8 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
-use radix_engine::ledger::{InMemorySubstateStore, SubstateStore};
-use radix_engine::model::{Component, HardProofRule, MethodAuthorization};
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
 #[test]
@@ -32,7 +31,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .build_and_sign(vec![], vec![])
         .unwrap();
     let receipt = test_runner.validate_and_execute(&transaction);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_ids[0];
 
     let transaction = test_runner
@@ -59,14 +58,6 @@ fn cannot_make_cross_component_call_without_authorization() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be error");
     assert_eq!(runtime_error, RuntimeError::NotAuthorized);
-    let component_state: Component = substate_store
-        .get_decoded_substate(&secured_component)
-        .map(|(c, _)| c)
-        .unwrap();
-    assert_eq!(
-        component_state.initialize_method("get_component_state").1,
-        MethodAuthorization::Protected(HardProofRule::This(auth_address.into()))
-    );
 }
 
 #[test]
@@ -94,7 +85,7 @@ fn can_make_cross_component_call_with_authorization() {
         .build_and_sign(vec![], vec![])
         .unwrap();
     let receipt = test_runner.validate_and_execute(&transaction);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_ids[0];
 
     let transaction = test_runner
@@ -129,12 +120,4 @@ fn can_make_cross_component_call_with_authorization() {
 
     // Assert
     assert!(receipt.result.is_ok());
-    let component_state: Component = substate_store
-        .get_decoded_substate(&secured_component)
-        .map(|(c, _)| c)
-        .unwrap();
-    assert_eq!(
-        component_state.initialize_method("get_component_state").1,
-        MethodAuthorization::Protected(HardProofRule::This(auth_address.into()))
-    );
 }

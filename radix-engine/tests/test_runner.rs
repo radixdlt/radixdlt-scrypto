@@ -21,10 +21,14 @@ impl<'l> TestRunner<'l> {
         TransactionBuilder::new(&self.executor)
     }
 
+    pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
+        self.executor.new_key_pair()
+    }
+
     pub fn new_key_pair_with_pk_address(
         &mut self,
     ) -> (EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress) {
-        let (pk, sk) = self.executor.new_key_pair();
+        let (pk, sk) = self.new_key_pair();
         (
             pk,
             sk,
