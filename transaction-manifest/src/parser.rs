@@ -1,4 +1,4 @@
-use crate::ast::{Fields, Instruction, Transaction, Type, Value};
+use crate::ast::{Instruction, Transaction, Type, Value};
 use crate::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -8,6 +8,7 @@ pub enum ParserError {
     InvalidNumberOfValues { actual: usize, expected: usize },
     InvalidNumberOfTypes { actual: usize, expected: usize },
     InvalidBase64(String),
+    MissingEnumIndex,
 }
 
 pub struct Parser {
@@ -215,61 +216,23 @@ impl Parser {
     }
     pub fn parse_struct(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Struct);
-        advance_match!(self, TokenKind::OpenParenthesis);
-
-        let fields = {
-            let t = self.peek()?;
-            match t.kind {
-                TokenKind::OpenCurlyBrace => Fields::Named(
-                    self.parse_values_any(TokenKind::OpenCurlyBrace, TokenKind::CloseCurlyBrace)?,
-                ),
-                TokenKind::OpenParenthesis => Fields::Unnamed(
-                    self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-                ),
-                TokenKind::CloseParenthesis => Fields::Unit,
-                _ => {
-                    return Err(ParserError::UnexpectedToken(t));
-                }
-            }
-        };
-
-        advance_match!(self, TokenKind::CloseParenthesis);
+        let fields =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
         Ok(Value::Struct(fields))
     }
 
     pub fn parse_enum(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Enum);
-        advance_match!(self, TokenKind::OpenParenthesis);
-
-        // parse the index
-        let token = self.advance()?;
-        let index = if let TokenKind::U8Literal(value) = token.kind {
-            value
-        } else {
-            return Err(ParserError::UnexpectedToken(token));
-        };
-
-        // parse named/unnamed fields
-        let fields = if let TokenKind::Comma = self.peek()?.kind {
-            self.advance()?;
-            let t = self.peek()?;
-            match t.kind {
-                TokenKind::OpenCurlyBrace => Fields::Named(
-                    self.parse_values_any(TokenKind::OpenCurlyBrace, TokenKind::CloseCurlyBrace)?,
-                ),
-                TokenKind::OpenParenthesis => Fields::Unnamed(
-                    self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?,
-                ),
-                _ => {
-                    return Err(ParserError::UnexpectedToken(t));
-                }
+        let mut index_and_fields =
+            self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
+        let index = match index_and_fields.get(0) {
+            Some(Value::U8(index)) => *index,
+            _ => {
+                return Err(ParserError::MissingEnumIndex);
             }
-        } else {
-            Fields::Unit
         };
-
-        advance_match!(self, TokenKind::CloseParenthesis);
-        Ok(Value::Enum(index, fields))
+        index_and_fields.remove(0);
+        Ok(Value::Enum(index, index_and_fields))
     }
 
     pub fn parse_option(&mut self) -> Result<Value, ParserError> {
@@ -536,39 +499,19 @@ mod tests {
     #[test]
     fn test_struct() {
         parse_value_ok!(
-            r#"Struct({"Hello", 123u8})"#,
-            Value::Struct(Fields::Named(vec![
-                Value::String("Hello".into()),
-                Value::U8(123),
-            ]))
+            r#"Struct("Hello", 123u8)"#,
+            Value::Struct(vec![Value::String("Hello".into()), Value::U8(123),])
         );
-        parse_value_ok!(
-            r#"Struct(("Hello", 123u8))"#,
-            Value::Struct(Fields::Unnamed(vec![
-                Value::String("Hello".into()),
-                Value::U8(123),
-            ]))
-        );
-        parse_value_ok!(r#"Struct()"#, Value::Struct(Fields::Unit));
+        parse_value_ok!(r#"Struct()"#, Value::Struct(vec![]));
     }
 
     #[test]
     fn test_enum() {
         parse_value_ok!(
-            r#"Enum(0u8, {"Hello", 123u8})"#,
-            Value::Enum(
-                0,
-                Fields::Named(vec![Value::String("Hello".into()), Value::U8(123)]),
-            )
+            r#"Enum(0u8, "Hello", 123u8)"#,
+            Value::Enum(0, vec![Value::String("Hello".into()), Value::U8(123)],)
         );
-        parse_value_ok!(
-            r#"Enum(0u8, ("Hello", 123u8))"#,
-            Value::Enum(
-                0,
-                Fields::Unnamed(vec![Value::String("Hello".into()), Value::U8(123)]),
-            )
-        );
-        parse_value_ok!(r#"Enum(0u8)"#, Value::Enum(0, Fields::Unit,));
+        parse_value_ok!(r#"Enum(0u8)"#, Value::Enum(0, vec![]));
     }
 
     #[test]
@@ -663,9 +606,9 @@ mod tests {
     fn test_failures() {
         parse_value_error!(r#"Enum(0u8"#, ParserError::UnexpectedEof);
         parse_value_error!(
-            r#"Enum(0u8}"#,
+            r#"Enum(0u8>"#,
             ParserError::UnexpectedToken(Token {
-                kind: TokenKind::CloseCurlyBrace,
+                kind: TokenKind::GreaterThan,
                 span: Span {
                     start: (1, 10),
                     end: (1, 10)

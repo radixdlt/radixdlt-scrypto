@@ -255,12 +255,26 @@ impl<T: Decode, const N: usize> Decode for [T; N] {
         decoder.check_type(T::type_id())?;
         decoder.check_len(N)?;
 
-        let mut x = MaybeUninit::<[T; N]>::uninit();
-        let arr = unsafe { &mut *x.as_mut_ptr() };
-        for itr in arr.iter_mut() {
-            *itr = T::decode_value(decoder)?;
+        // Please read:
+        // * https://doc.rust-lang.org/stable/std/mem/union.MaybeUninit.html#initializing-an-array-element-by-element
+        // * https://github.com/rust-lang/rust/issues/61956
+        //
+        // TODO: replace with `uninit_array` and `assume_array_init` once they're stable
+
+        // Create an uninitialized array
+        let mut data: [MaybeUninit<T>; N] = unsafe { MaybeUninit::uninit().assume_init() };
+
+        // Decode element by element
+        for elem in &mut data[..] {
+            elem.write(T::decode_value(decoder)?);
         }
-        Ok(unsafe { x.assume_init() })
+
+        // Use &mut as an assertion of unique "ownership"
+        let ptr = &mut data as *mut _ as *mut [T; N];
+        let res = unsafe { ptr.read() };
+        core::mem::forget(data);
+
+        Ok(res)
     }
 }
 
@@ -393,6 +407,8 @@ impl<K: Decode + Hash + Eq, V: Decode> Decode for HashMap<K, V> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::encode::Encode;
+    use crate::encode::Encoder;
     use crate::rust::borrow::ToOwned;
     use crate::rust::vec;
 
@@ -511,5 +527,34 @@ mod tests {
         let mut dec = Decoder::with_type(&bytes);
         let x = <RefCell<u8>>::decode(&mut dec).unwrap();
         assert_eq!(RefCell::new(5u8), x);
+    }
+
+    #[derive(sbor::TypeId, sbor::Encode, sbor::Decode, PartialEq, Eq, Debug)]
+    struct NFA {
+        a: [u8; 32],
+        b: Vec<u8>,
+    }
+
+    #[test]
+    pub fn test_generic_array() {
+        let value1 = [
+            NFA {
+                a: [1u8; 32],
+                b: vec![1],
+            },
+            NFA {
+                a: [2u8; 32],
+                b: vec![2],
+            },
+        ];
+
+        // Encode
+        let mut enc = Encoder::with_type(Vec::with_capacity(512));
+        value1.encode(&mut enc);
+        let bytes: Vec<u8> = enc.into();
+
+        let mut dec = Decoder::with_type(&bytes);
+        let value2 = <[NFA; 2]>::decode(&mut dec).unwrap();
+        assert_eq!(value1, value2);
     }
 }

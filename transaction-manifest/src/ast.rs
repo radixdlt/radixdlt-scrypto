@@ -163,8 +163,8 @@ pub enum Value {
     U64(u64),
     U128(u128),
     String(String),
-    Struct(Fields),
-    Enum(u8, Fields),
+    Struct(Vec<Value>),
+    Enum(u8, Vec<Value>),
     Option(Box<Option<Value>>),
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
@@ -186,15 +186,6 @@ pub enum Value {
     NonFungibleId(Box<Value>),
 
     Blob(Vec<u8>),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Fields {
-    Named(Vec<Value>),
-
-    Unnamed(Vec<Value>),
-
-    Unit,
 }
 
 impl Value {

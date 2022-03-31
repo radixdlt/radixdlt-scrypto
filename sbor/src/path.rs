@@ -1,4 +1,3 @@
-use crate::any::Fields;
 use crate::any::Value;
 use crate::rust::vec::Vec;
 use sbor::*;
@@ -38,21 +37,16 @@ impl<'a> SborValueRetriever<'a> {
             .and_then(|value| next_path.get_from(value))
     }
 
-    fn get_from_fields(&self, fields: &'a Fields) -> Option<&'a Value> {
-        match fields {
-            Fields::Named(values) | Fields::Unnamed(values) => self.get_from_vector(values),
-            Fields::Unit => Option::None,
-        }
-    }
-
     fn get_from(self, value: &'a Value) -> Option<&'a Value> {
         if self.is_empty() {
             return Option::Some(value);
         }
 
         match value {
-            Value::Struct(fields) | Value::Enum(_, fields) => self.get_from_fields(fields),
-            Value::Array(_, values) | Value::Vec(_, values) => self.get_from_vector(values),
+            Value::Struct(values)
+            | Value::Enum(_, values)
+            | Value::Array(_, values)
+            | Value::Vec(_, values) => self.get_from_vector(values),
             _ => Option::None,
         }
     }
