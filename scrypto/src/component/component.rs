@@ -47,6 +47,8 @@ impl LocalComponent {
 /// Represents the state of a component.
 pub trait ComponentState: Encode + Decode {
     /// Instantiates a component from this data structure.
+    fn instantiate(self) -> LocalComponent;
+
     fn globalize_noauth(self) -> ComponentId;
 
     /// Instantiates a component from this data structure along with authorization rules
