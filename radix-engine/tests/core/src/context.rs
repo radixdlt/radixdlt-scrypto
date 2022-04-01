@@ -6,10 +6,10 @@ blueprint! {
     impl CoreTest {
         pub fn query() -> (PackageAddress, Hash, u64, u128) {
             (
-                Process::package_address(),
-                Transaction::transaction_hash(),
-                Transaction::current_epoch(),
-                Process::generate_uuid(),
+                Runtime::package_address(),
+                Runtime::transaction_hash(),
+                Runtime::current_epoch(),
+                Runtime::generate_uuid(),
             )
         }
     }
