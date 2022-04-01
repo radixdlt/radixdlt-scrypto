@@ -159,27 +159,34 @@ macro_rules! auth {
     }};
 }
 
+pub fn require<T>(resource: T) -> ProofRule where T: Into<SoftResourceOrNonFungible> {
+    ProofRule::Require(resource.into())
+}
+
+pub fn require_any_of<T>(resources: T) -> ProofRule where T: Into<SoftResourceOrNonFungibleList> {
+    ProofRule::AnyOf(resources.into())
+}
+
+pub fn require_all_of<T>(resources: T) -> ProofRule where T: Into<SoftResourceOrNonFungibleList> {
+    ProofRule::AllOf(resources.into())
+}
+
+pub fn require_n_of<T>(count: u8, resources: T) -> ProofRule where T: Into<SoftResourceOrNonFungibleList> {
+    ProofRule::CountOf(count, resources.into())
+}
+
+pub fn require_amount<T>(amount: Decimal, resource: T) -> ProofRule where T: Into<SoftResource> {
+    ProofRule::AmountOf(amount, resource.into())
+}
+
 #[macro_export]
 macro_rules! auth2 {
-    (require($rule:expr)) => {{
-        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::Require($rule.into()))
-    }};
-    (require_any_of($list:expr)) => {{
-        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AnyOf($list.into()))
-    }};
-    (require_all_of($list:expr)) => {{
-        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AllOf($list.into()))
-    }};
-    (require_n_of($count:expr, $list:expr)) => {{
-        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::CountOf($count, $list.into()))
-    }};
-    (require_amount($amount:expr, $resource:expr)) => {{
-        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AmountOf($amount, $resource.into()))
+    ($rule:ident $args:tt) => {{
+        ::scrypto::resource::AuthRule::ProofRule($rule $args)
     }};
     (($($tt:tt)+)) => {{
         auth2!($($tt)+)
     }};
-
     ($left:tt || $($right:tt)+) => {{ auth2!($left).or(auth2!($($right)+)) }};
     ($left_rule:ident $left:tt || $($right:tt)+) => {{ auth2!($left_rule $left).or(auth2!($($right)+)) }};
 
