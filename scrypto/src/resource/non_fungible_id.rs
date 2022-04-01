@@ -103,6 +103,7 @@ impl fmt::Debug for NonFungibleId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rust::vec;
 
     #[test]
     fn test_non_fungible_id_string_rep() {
