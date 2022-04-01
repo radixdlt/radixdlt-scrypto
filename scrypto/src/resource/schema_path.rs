@@ -1,15 +1,29 @@
 use crate::rust::string::String;
 use crate::rust::string::ToString;
+use crate::rust::str::FromStr;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::describe::Fields;
 use sbor::path::SborPath;
 use sbor::*;
+use crate::resource::schema_path::SchemaSubPath::{Field, Index};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 enum SchemaSubPath {
     Index(usize),
     Field(String),
+}
+
+impl FromStr for SchemaSubPath {
+    type Err = ();
+    
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO: check that field is a valid field name string
+        let sub_path = s.parse::<usize>()
+            .map(|i| Index(i))
+            .unwrap_or(Field(s.to_string()));
+        Ok(sub_path)
+    }
 }
 
 /// Describes a value located in some sbor given a schema for that sbor
@@ -21,12 +35,17 @@ impl SchemaPath {
         SchemaPath(vec![])
     }
 
-    pub fn field(mut self, field: &str) -> Self {
+    fn sub_path(&mut self, sub_path: SchemaSubPath) -> &Self {
+        self.0.push(sub_path);
+        self
+    }
+
+    pub fn field(&mut self, field: &str) -> &Self {
         self.0.push(SchemaSubPath::Field(field.to_string()));
         self
     }
 
-    pub fn index(mut self, index: usize) -> Self {
+    pub fn index(&mut self, index: usize) -> &Self {
         self.0.push(SchemaSubPath::Index(index));
         self
     }
@@ -73,5 +92,25 @@ impl SchemaPath {
         }
 
         Option::Some(SborPath::new(sbor_path))
+    }
+}
+
+#[derive(Debug)]
+pub enum SchemaPathParseError {
+    InvalidPath
+}
+
+impl FromStr for SchemaPath {
+    type Err = SchemaPathParseError;
+
+    fn from_str(s: &str) -> Result<Self, SchemaPathParseError> {
+        let sub_paths = s.split("/");
+        let mut schema_path = SchemaPath::new();
+        for sub_path_str in sub_paths {
+            let sub_path = sub_path_str.parse()
+                .map_err(|_| SchemaPathParseError::InvalidPath)?;
+            schema_path.sub_path(sub_path);
+        }
+        Ok(schema_path)
     }
 }

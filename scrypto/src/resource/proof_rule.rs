@@ -23,6 +23,13 @@ impl From<SchemaPath> for SoftResource {
     }
 }
 
+impl From<&str> for SoftResource {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftResource::Dynamic(schema_path)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
@@ -48,6 +55,13 @@ impl From<SchemaPath> for SoftResourceOrNonFungible {
     }
 }
 
+impl From<&str> for SoftResourceOrNonFungible {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftResourceOrNonFungible::Dynamic(schema_path)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
@@ -57,6 +71,13 @@ pub enum SoftResourceOrNonFungibleList {
 impl From<SchemaPath> for SoftResourceOrNonFungibleList {
     fn from(path: SchemaPath) -> Self {
         SoftResourceOrNonFungibleList::Dynamic(path)
+    }
+}
+
+impl From<&str> for SoftResourceOrNonFungibleList {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftResourceOrNonFungibleList::Dynamic(schema_path)
     }
 }
 
