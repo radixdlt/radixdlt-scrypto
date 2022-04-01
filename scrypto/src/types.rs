@@ -128,6 +128,7 @@ impl CustomType {
     }
 }
 
+/// A validator the check a Scrypto-specific value.
 pub struct CustomValueValidator {
     pub buckets: Vec<Bucket>,
     pub proofs: Vec<Proof>,
@@ -135,6 +136,7 @@ pub struct CustomValueValidator {
     pub lazy_maps: Vec<LazyMap<(), ()>>,
 }
 
+/// Represents an error when validating a Scrypto-specific value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CustomValueValidatorError {
     DecodeError(DecodeError),
@@ -227,6 +229,7 @@ impl CustomValueVisitor for CustomValueValidator {
     }
 }
 
+/// A formatter that formats a Scrypto type.
 pub struct CustomValueFormatter {}
 
 impl CustomValueFormatter {

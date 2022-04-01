@@ -62,6 +62,7 @@ impl EcdsaSignature {
 // error
 //======
 
+/// Represents an error when parsing ECDSA public key from hex.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseEcdsaPublicKeyError {
     InvalidHex(String),
@@ -84,6 +85,7 @@ pub enum ParseEcdsaSignatureError {
     InvalidLength(usize),
 }
 
+/// Represents an error when parsing ECDSA signature from hex.
 #[cfg(not(feature = "alloc"))]
 impl std::error::Error for ParseEcdsaSignatureError {}
 
@@ -94,6 +96,7 @@ impl fmt::Display for ParseEcdsaSignatureError {
     }
 }
 
+/// Represents an error when parsing ECDSA private key from hex.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseEcdsaPrivateKeyError {
     InvalidHex(String),

@@ -172,6 +172,7 @@ impl Bucket {
 // error
 //========
 
+/// Represents an error when decoding bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseBucketError {
     InvalidLength(usize),

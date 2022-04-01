@@ -103,6 +103,7 @@ impl Proof {
 // error
 //========
 
+/// Represents an error when decoding proof.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseProofError {
     InvalidLength(usize),

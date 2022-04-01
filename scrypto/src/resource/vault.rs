@@ -198,6 +198,7 @@ impl Vault {
 // error
 //========
 
+/// Represents an error when decoding vault.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseVaultError {
     InvalidHex(String),

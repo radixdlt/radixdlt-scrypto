@@ -43,6 +43,7 @@ pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
 // error
 //========
 
+/// Represents an error when parsing hash.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseHashError {
     InvalidHex(String),

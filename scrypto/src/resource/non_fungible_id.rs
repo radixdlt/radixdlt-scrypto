@@ -28,6 +28,7 @@ impl From<u128> for NonFungibleId {
 // error
 //========
 
+/// Represents an error when decoding non-fungible id.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleIdError {
     InvalidHex(String),

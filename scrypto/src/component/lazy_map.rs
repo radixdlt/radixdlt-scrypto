@@ -60,6 +60,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
 // error
 //========
 
+/// Represents an error when decoding lazy map.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseLazyMapError {
     InvalidHex(String),

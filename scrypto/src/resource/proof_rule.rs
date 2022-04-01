@@ -4,6 +4,8 @@ use crate::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
 
+/// TODO: add documentation for public types once they're stable.
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
     Static(ResourceAddress),
