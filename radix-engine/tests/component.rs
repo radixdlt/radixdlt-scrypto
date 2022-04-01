@@ -15,8 +15,9 @@ fn test_package() {
     let transaction1 = test_runner
         .new_transaction_builder()
         .call_function(package, "PackageTest", "publish", vec![])
-        .build_and_sign(vec![], vec![])
-        .unwrap();
+        .build(vec![])
+        .unwrap()
+        .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     assert!(receipt1.result.is_ok());
 }
@@ -32,8 +33,9 @@ fn test_component() {
     let transaction1 = test_runner
         .new_transaction_builder()
         .call_function(package, "ComponentTest", "create_component", vec![])
-        .build_and_sign(vec![], vec![])
-        .unwrap();
+        .build(vec![])
+        .unwrap()
+        .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     assert!(receipt1.result.is_ok());
 
@@ -52,8 +54,9 @@ fn test_component() {
         .call_method(component, "get_component_state", vec![])
         .call_method(component, "put_component_state", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![pk], vec![sk])
-        .unwrap();
+        .build(vec![pk])
+        .unwrap()
+        .sign(&[sk]);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
     assert!(receipt2.result.is_ok());
 }

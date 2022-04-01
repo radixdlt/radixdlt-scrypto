@@ -25,8 +25,9 @@ fn test_resource_def() {
         .call_function(package, "ResourceTest", "update_feature_flags", vec![])
         .call_function(package, "ResourceTest", "update_resource_metadata", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![pk], vec![sk])
-        .unwrap();
+        .build(vec![pk])
+        .unwrap()
+        .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -51,8 +52,9 @@ fn mint_with_bad_granularity_should_fail() {
             args![0u8, dec!("0.1")],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![pk], vec![sk])
-        .unwrap();
+        .build(vec![pk])
+        .unwrap()
+        .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -80,8 +82,9 @@ fn mint_too_much_should_fail() {
             args![0u8, dec!(100_000_000_001i128)],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![pk], vec![sk])
-        .unwrap();
+        .build(vec![pk])
+        .unwrap()
+        .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -109,8 +112,9 @@ fn update_feature_flags_should_fail() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![pk], vec![sk])
-        .unwrap();
+        .build(vec![pk])
+        .unwrap()
+        .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -135,8 +139,9 @@ fn create_fungible_with_bad_resource_flags_should_fail() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![pk], vec![sk])
-        .unwrap();
+        .build(vec![pk])
+        .unwrap()
+        .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -164,8 +169,9 @@ fn create_fungible_with_bad_mutable_flags_should_fail() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![pk], vec![sk])
-        .unwrap();
+        .build(vec![pk])
+        .unwrap()
+        .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -193,8 +199,9 @@ fn create_fungible_with_bad_resource_permissions_should_fail() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![pk], vec![sk])
-        .unwrap();
+        .build(vec![pk])
+        .unwrap()
+        .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert

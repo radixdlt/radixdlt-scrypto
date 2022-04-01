@@ -34,8 +34,9 @@ impl Transfer {
         let transaction = TransactionBuilder::new(&executor)
             .withdraw_from_account_by_amount(self.amount, self.resource_def_id, default_account)
             .call_method_with_all_resources(self.recipient, "deposit_batch")
-            .build_and_sign(default_pks, default_sks)
-            .map_err(Error::TransactionConstructionError)?;
+            .build(default_pks)
+            .map_err(Error::TransactionConstructionError)?
+            .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)
     }
 }

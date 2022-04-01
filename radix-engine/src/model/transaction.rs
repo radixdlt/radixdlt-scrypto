@@ -223,7 +223,7 @@ impl Transaction {
         sha256(bytes)
     }
 
-    pub fn sign(&mut self, private_keys: &[EcdsaPrivateKey]) {
+    pub fn sign(mut self, private_keys: &[EcdsaPrivateKey]) -> Self {
         if self.is_signed() {
             panic!("Transaction already signed!");
         }
@@ -232,5 +232,6 @@ impl Transaction {
         let signatures = private_keys.iter().map(|sk| sk.sign(&hash)).collect();
 
         self.instructions.push(Instruction::End { signatures });
+        self
     }
 }

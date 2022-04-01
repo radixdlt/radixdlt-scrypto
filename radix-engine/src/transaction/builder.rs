@@ -440,17 +440,6 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         Ok(Transaction { instructions })
     }
 
-    /// Builds a transaction and signs it.
-    pub fn build_and_sign<PK: AsRef<[EcdsaPublicKey]>, SK: AsRef<[EcdsaPrivateKey]>>(
-        &self,
-        intended_signers: PK,
-        private_keys: SK,
-    ) -> Result<Transaction, BuildTransactionError> {
-        let mut transaction = self.build(intended_signers)?;
-        transaction.sign(private_keys.as_ref());
-        Ok(transaction)
-    }
-
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,

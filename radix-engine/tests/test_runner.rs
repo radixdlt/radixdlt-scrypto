@@ -71,8 +71,9 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build_and_sign(vec![], vec![])
-            .unwrap();
+            .build(vec![])
+            .unwrap()
+            .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_def_id, receipt.new_resource_def_ids[0])
     }
@@ -91,8 +92,9 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build_and_sign(vec![], vec![])
-            .unwrap();
+            .build(vec![])
+            .unwrap()
+            .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_def_id, receipt.new_resource_def_ids[0])
     }
@@ -112,8 +114,9 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build_and_sign(vec![], vec![])
-            .unwrap();
+            .build(vec![])
+            .unwrap()
+            .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_def_id, receipt.new_resource_def_ids[0])
     }
@@ -128,8 +131,9 @@ impl<'l> TestRunner<'l> {
                 vec![],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build_and_sign(vec![], vec![])
-            .unwrap();
+            .build(vec![])
+            .unwrap()
+            .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         receipt.new_resource_def_ids[0]
     }
@@ -149,8 +153,9 @@ impl<'l> TestRunner<'l> {
                 args![amount, divisibility],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build_and_sign(vec![], vec![])
-            .unwrap();
+            .build(vec![])
+            .unwrap()
+            .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         receipt.new_resource_def_ids[0]
     }
@@ -175,8 +180,9 @@ impl<'l> TestRunner<'l> {
                 Some(account),
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build_and_sign(vec![pk], vec![sk])
-            .unwrap();
+            .build(vec![pk])
+            .unwrap()
+            .sign(&[sk]);
         let receipt = self.validate_and_execute(&transaction);
         receipt.new_component_ids[0]
     }

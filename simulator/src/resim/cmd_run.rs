@@ -28,7 +28,7 @@ impl Run {
             signers: default_pks,
             nonce: executor.substate_store().get_nonce(),
         });
-        transaction.sign(&default_sks);
+        transaction = transaction.sign(&default_sks);
         process_transaction(transaction, &mut executor, &None)
     }
 }
