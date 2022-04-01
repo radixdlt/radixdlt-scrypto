@@ -54,12 +54,14 @@ impl Package {
             _ => return Err(WasmValidationError::NoValidMemoryExport),
         };
 
-
         // TODO: Currently a hack so that we don't require a package_init function.
         // TODO: Fix this by implement package metadata along with the code during compilation.
         let exports = module.exports();
-        let blueprint_abi_methods: Vec<String> = exports.iter()
-            .filter(|(name, val)| name.ends_with("_abi") && name.len() > 4 && matches!(val, ExternVal::Func(_)))
+        let blueprint_abi_methods: Vec<String> = exports
+            .iter()
+            .filter(|(name, val)| {
+                name.ends_with("_abi") && name.len() > 4 && matches!(val, ExternVal::Func(_))
+            })
             .map(|(name, _)| name.to_string())
             .collect();
 
@@ -83,13 +85,14 @@ impl Package {
                         .get_into((ptr + 4) as u32, &mut data)
                         .map_err(|_| WasmValidationError::InvalidPackageInit)?;
 
-                    let result: (Type, Vec<Function>, Vec<Method>) = scrypto_decode(&data).map_err(|_| WasmValidationError::InvalidPackageInit)?;
+                    let result: (Type, Vec<Function>, Vec<Method>) = scrypto_decode(&data)
+                        .map_err(|_| WasmValidationError::InvalidPackageInit)?;
                     Ok(result.0)
                 }
                 _ => Err(WasmValidationError::InvalidPackageInit),
             }?;
 
-            if let Type::Struct {name, fields: _} = &blueprint_type {
+            if let Type::Struct { name, fields: _ } = &blueprint_type {
                 blueprints.insert(name.clone(), blueprint_type);
             } else {
                 return Err(WasmValidationError::InvalidPackageInit);
