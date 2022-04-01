@@ -28,8 +28,9 @@ fn create_non_fungible_mutable() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![], vec![])
-        .unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -72,8 +73,9 @@ fn test_non_fungible() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build_and_sign(vec![pk], vec![sk])
-        .unwrap();
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     println!("{:?}", receipt);
     assert!(receipt.result.is_ok());

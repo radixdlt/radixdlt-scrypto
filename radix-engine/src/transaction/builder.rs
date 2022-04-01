@@ -107,7 +107,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
                 self.id_validator.move_all_resources().unwrap();
             }
             Instruction::PublishPackage { .. }
-            | Instruction::IntendedSigners { .. }
+            | Instruction::Nonce { .. }
             | Instruction::End { .. } => {}
         }
 
@@ -432,23 +432,11 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         }
 
         let mut instructions = self.instructions.clone();
-        instructions.push(Instruction::IntendedSigners {
-            signers: intended_signers.as_ref().to_vec(),
+        instructions.push(Instruction::Nonce {
             nonce: self.abi_nonce_provider.get_nonce(intended_signers.as_ref()),
         });
 
         Ok(Transaction { instructions })
-    }
-
-    /// Builds a transaction and signs it.
-    pub fn build_and_sign<PK: AsRef<[EcdsaPublicKey]>, SK: AsRef<[EcdsaPrivateKey]>>(
-        &self,
-        intended_signers: PK,
-        private_keys: SK,
-    ) -> Result<Transaction, BuildTransactionError> {
-        let mut transaction = self.build(intended_signers)?;
-        transaction.sign(private_keys.as_ref());
-        Ok(transaction)
     }
 
     /// Creates a token resource with mutable supply.

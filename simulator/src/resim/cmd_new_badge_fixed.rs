@@ -66,8 +66,9 @@ impl NewBadgeFixed {
         let transaction = TransactionBuilder::new(&executor)
             .new_badge_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build_and_sign(default_pks, default_sks)
-            .map_err(Error::TransactionConstructionError)?;
+            .build(default_pks)
+            .map_err(Error::TransactionConstructionError)?
+            .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)
     }
 }
