@@ -79,7 +79,7 @@ pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource address
 pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
 /// Take a non-fungible from this vault, by id
-pub const TAKE_NON_FUNGIBLE_FROM_VAULT: u32 = 0x45;
+pub const TAKE_NON_FUNGIBLES_FROM_VAULT: u32 = 0x45;
 /// Get the IDs of all non-fungibles in this vault
 pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
@@ -94,7 +94,7 @@ pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource address
 pub const GET_BUCKET_RESOURCE_ADDRESS: u32 = 0x54;
 /// Take a non-fungible from this bucket, by id
-pub const TAKE_NON_FUNGIBLE_FROM_BUCKET: u32 = 0x55;
+pub const TAKE_NON_FUNGIBLES_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all non-fungibles in this bucket
 pub const GET_NON_FUNGIBLE_IDS_IN_BUCKET: u32 = 0x56;
 
@@ -465,13 +465,13 @@ pub struct GetVaultResourceAddressOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungibleFromVaultInput {
+pub struct TakeNonFungiblesFromVaultInput {
     pub vault_id: VaultId,
-    pub non_fungible_id: NonFungibleId,
+    pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungibleFromVaultOutput {
+pub struct TakeNonFungiblesFromVaultOutput {
     pub bucket_id: BucketId,
 }
 
@@ -540,13 +540,13 @@ pub struct GetBucketResourceAddressOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungibleFromBucketInput {
+pub struct TakeNonFungiblesFromBucketInput {
     pub bucket_id: BucketId,
-    pub non_fungible_id: NonFungibleId,
+    pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungibleFromBucketOutput {
+pub struct TakeNonFungiblesFromBucketOutput {
     pub bucket_id: BucketId,
 }
 

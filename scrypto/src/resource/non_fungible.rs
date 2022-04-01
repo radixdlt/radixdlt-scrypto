@@ -25,17 +25,17 @@ impl<T: NonFungibleData> NonFungible<T> {
     }
 
     /// Returns the non-fungible ID.
-    pub fn key(&self) -> NonFungibleId {
+    pub fn id(&self) -> NonFungibleId {
         self.address.non_fungible_id()
     }
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        resource_manager!(self.resource_address()).get_non_fungible_data(&self.key())
+        resource_manager!(self.resource_address()).get_non_fungible_data(&self.id())
     }
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: T) {
-        resource_manager!(self.resource_address()).update_non_fungible_data(&self.key(), new_data);
+        resource_manager!(self.resource_address()).update_non_fungible_data(&self.id(), new_data);
     }
 }

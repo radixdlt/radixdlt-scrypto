@@ -1980,22 +1980,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(TakeFromVaultOutput { bucket_id })
     }
 
-    fn handle_take_non_fungible_from_vault(
+    fn handle_take_non_fungibles_from_vault(
         &mut self,
-        input: TakeNonFungibleFromVaultInput,
-    ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
+        input: TakeNonFungiblesFromVaultInput,
+    ) -> Result<TakeNonFungiblesFromVaultOutput, RuntimeError> {
         let resource_address = self.get_local_vault(&input.vault_id)?.resource_address();
         self.check_resource_auth(&resource_address, "take_from_vault")?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
-            .take_non_fungible(&input.non_fungible_id)
+            .take_non_fungibles(&input.non_fungible_ids)
             .map_err(RuntimeError::VaultError)?;
 
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
-        Ok(TakeNonFungibleFromVaultOutput { bucket_id })
+        Ok(TakeNonFungiblesFromVaultOutput { bucket_id })
     }
 
     fn handle_get_non_fungible_ids_in_vault(
@@ -2115,20 +2115,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetBucketResourceAddressOutput { resource_address })
     }
 
-    fn handle_take_non_fungible_from_bucket(
+    fn handle_take_non_fungibles_from_bucket(
         &mut self,
-        input: TakeNonFungibleFromBucketInput,
-    ) -> Result<TakeNonFungibleFromBucketOutput, RuntimeError> {
+        input: TakeNonFungiblesFromBucketInput,
+    ) -> Result<TakeNonFungiblesFromBucketOutput, RuntimeError> {
         let new_bucket = self
             .buckets
             .get_mut(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .take_non_fungible(&input.non_fungible_id)
+            .take_non_fungibles(&input.non_fungible_ids)
             .map_err(RuntimeError::BucketError)?;
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
-        Ok(TakeNonFungibleFromBucketOutput { bucket_id })
+        Ok(TakeNonFungiblesFromBucketOutput { bucket_id })
     }
 
     fn handle_get_non_fungible_ids_in_bucket(
@@ -2417,8 +2417,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
-                    TAKE_NON_FUNGIBLE_FROM_VAULT => {
-                        self.handle(args, Self::handle_take_non_fungible_from_vault)
+                    TAKE_NON_FUNGIBLES_FROM_VAULT => {
+                        self.handle(args, Self::handle_take_non_fungibles_from_vault)
                     }
                     GET_NON_FUNGIBLE_IDS_IN_VAULT => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
@@ -2431,8 +2431,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_BUCKET_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_bucket_resource_address)
                     }
-                    TAKE_NON_FUNGIBLE_FROM_BUCKET => {
-                        self.handle(args, Self::handle_take_non_fungible_from_bucket)
+                    TAKE_NON_FUNGIBLES_FROM_BUCKET => {
+                        self.handle(args, Self::handle_take_non_fungibles_from_bucket)
                     }
                     GET_NON_FUNGIBLE_IDS_IN_BUCKET => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_bucket)
