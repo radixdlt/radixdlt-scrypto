@@ -6,7 +6,7 @@ use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::prelude::AuthRule;
-use crate::resource::{ComponentAuthorization};
+use crate::resource::ComponentAuthorization;
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;

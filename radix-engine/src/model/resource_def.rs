@@ -164,18 +164,22 @@ impl ResourceDef {
                         let cur_rule =
                             mem::replace(&mut method_state.auth, MethodAuthorization::Public);
                         method_state.auth = match cur_rule {
-                            MethodAuthorization::Public => {
-                                MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::AnyOf(
+                            MethodAuthorization::Public => MethodAuthorization::Protected(
+                                HardAuthRule::ProofRule(HardProofRule::AnyOf(
                                     HardProofRuleResourceList::List(vec![resource_def_id.into()]),
-                                )))
-                            }
-                            MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::AnyOf(
-                                HardProofRuleResourceList::List(mut resources),
-                            ))) => {
+                                )),
+                            ),
+                            MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                                HardProofRule::AnyOf(HardProofRuleResourceList::List(
+                                    mut resources,
+                                )),
+                            )) => {
                                 resources.push(resource_def_id.into());
-                                MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::AnyOf(
-                                    HardProofRuleResourceList::List(resources),
-                                )))
+                                MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                                    HardProofRule::AnyOf(HardProofRuleResourceList::List(
+                                        resources,
+                                    )),
+                                ))
                             }
                             _ => panic!("Should never get here."),
                         };

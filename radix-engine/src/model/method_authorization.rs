@@ -160,7 +160,7 @@ impl HardAuthRule {
                     return Err(NotAuthorized);
                 }
                 Ok(())
-            },
+            }
             HardAuthRule::AllOf(rules) => {
                 if rules.iter().any(|r| r.check(proofs_vector).is_err()) {
                     return Err(NotAuthorized);

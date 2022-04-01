@@ -1,4 +1,6 @@
-use crate::model::method_authorization::{HardAuthRule, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible};
+use crate::model::method_authorization::{
+    HardAuthRule, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
+};
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
 use sbor::*;
@@ -161,7 +163,11 @@ impl Component {
         }
     }
 
-    fn soft_to_hard_proof_rule(schema: &Type, proof_rule: &ProofRule, dom: &Value) -> HardProofRule {
+    fn soft_to_hard_proof_rule(
+        schema: &Type,
+        proof_rule: &ProofRule,
+        dom: &Value,
+    ) -> HardProofRule {
         match proof_rule {
             ProofRule::Require(soft_resource_or_non_fungible) => {
                 let resource = Self::soft_to_hard_resource_or_non_fungible(
@@ -196,16 +202,21 @@ impl Component {
                 HardAuthRule::ProofRule(Self::soft_to_hard_proof_rule(schema, proof_rule, dom))
             }
             AuthRule::AnyOf(rules) => {
-                let hard_rules = rules.iter().map(|r| Self::soft_to_hard_auth_rule(schema, r, dom)).collect();
+                let hard_rules = rules
+                    .iter()
+                    .map(|r| Self::soft_to_hard_auth_rule(schema, r, dom))
+                    .collect();
                 HardAuthRule::AnyOf(hard_rules)
             }
             AuthRule::AllOf(rules) => {
-                let hard_rules = rules.iter().map(|r| Self::soft_to_hard_auth_rule(schema, r, dom)).collect();
+                let hard_rules = rules
+                    .iter()
+                    .map(|r| Self::soft_to_hard_auth_rule(schema, r, dom))
+                    .collect();
                 HardAuthRule::AllOf(hard_rules)
             }
         }
     }
-
 
     pub fn initialize_method(
         &self,
