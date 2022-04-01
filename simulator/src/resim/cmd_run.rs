@@ -19,13 +19,12 @@ impl Run {
     pub fn run(&self) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        let (default_pks, default_sks) = get_default_signers()?;
+        let (_, default_sks) = get_default_signers()?;
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let mut transaction =
             transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
 
         transaction.instructions.push(Instruction::Nonce {
-            signers: default_pks,
             nonce: executor.substate_store().get_nonce(),
         });
         transaction = transaction.sign(&default_sks);
