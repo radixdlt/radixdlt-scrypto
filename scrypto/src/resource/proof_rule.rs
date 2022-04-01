@@ -68,7 +68,7 @@ where
     }
 }
 
-/// Authorization Rule
+/// Resource Proof Rules
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
@@ -134,4 +134,18 @@ macro_rules! require_amount {
     ($amount:expr, $resource:expr) => {
         ProofRule::AmountOf($amount, $resource.into())
     };
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum AuthRule {
+    ProofRule(ProofRule),
+    AnyOf(Vec<AuthRule>),
+    AllOf(Vec<AuthRule>),
+}
+
+#[macro_export]
+macro_rules! auth {
+    ($rule:expr) => {{
+        ::scrypto::resource::AuthRule::ProofRule($rule)
+    }};
 }

@@ -144,10 +144,37 @@ impl HardProofRule {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+pub enum HardAuthRule {
+    ProofRule(HardProofRule),
+    AnyOf(Vec<HardAuthRule>),
+    AllOf(Vec<HardAuthRule>),
+}
+
+impl HardAuthRule {
+    pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), RuntimeError> {
+        match self {
+            HardAuthRule::ProofRule(rule) => rule.check(proofs_vector),
+            HardAuthRule::AnyOf(rules) => {
+                if !rules.iter().any(|r| r.check(proofs_vector).is_ok()) {
+                    return Err(NotAuthorized);
+                }
+                Ok(())
+            },
+            HardAuthRule::AllOf(rules) => {
+                if rules.iter().any(|r| r.check(proofs_vector).is_err()) {
+                    return Err(NotAuthorized);
+                }
+                Ok(())
+            }
+        }
+    }
+}
+
 /// Snode which verifies authorization of a method call
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum MethodAuthorization {
-    Protected(HardProofRule),
+    Protected(HardAuthRule),
     Public,
     Private,
     Unsupported,

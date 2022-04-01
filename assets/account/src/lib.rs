@@ -11,7 +11,7 @@ blueprint! {
                 vaults: LazyMap::new(),
             }
             .instantiate()
-            .auth("withdraw", withdraw_rule)
+            .auth("withdraw", auth!(withdraw_rule))
             .globalize()
         }
 
@@ -21,7 +21,7 @@ blueprint! {
 
             Self { vaults }
                 .instantiate()
-                .auth("withdraw", withdraw_rule)
+                .auth("withdraw", auth!(withdraw_rule))
                 .globalize()
         }
 
