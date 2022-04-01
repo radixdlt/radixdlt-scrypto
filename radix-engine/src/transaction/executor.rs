@@ -1,6 +1,6 @@
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRule, NonFungibleAddress, require};
+use scrypto::prelude::{require, AuthRule, NonFungibleAddress};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;

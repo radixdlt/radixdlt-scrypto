@@ -131,23 +131,38 @@ impl AuthRule {
     }
 }
 
-pub fn require<T>(resource: T) -> ProofRule where T: Into<SoftResourceOrNonFungible> {
+pub fn require<T>(resource: T) -> ProofRule
+where
+    T: Into<SoftResourceOrNonFungible>,
+{
     ProofRule::Require(resource.into())
 }
 
-pub fn require_any_of<T>(resources: T) -> ProofRule where T: Into<SoftResourceOrNonFungibleList> {
+pub fn require_any_of<T>(resources: T) -> ProofRule
+where
+    T: Into<SoftResourceOrNonFungibleList>,
+{
     ProofRule::AnyOf(resources.into())
 }
 
-pub fn require_all_of<T>(resources: T) -> ProofRule where T: Into<SoftResourceOrNonFungibleList> {
+pub fn require_all_of<T>(resources: T) -> ProofRule
+where
+    T: Into<SoftResourceOrNonFungibleList>,
+{
     ProofRule::AllOf(resources.into())
 }
 
-pub fn require_n_of<T>(count: u8, resources: T) -> ProofRule where T: Into<SoftResourceOrNonFungibleList> {
+pub fn require_n_of<T>(count: u8, resources: T) -> ProofRule
+where
+    T: Into<SoftResourceOrNonFungibleList>,
+{
     ProofRule::CountOf(count, resources.into())
 }
 
-pub fn require_amount<T>(amount: Decimal, resource: T) -> ProofRule where T: Into<SoftResource> {
+pub fn require_amount<T>(amount: Decimal, resource: T) -> ProofRule
+where
+    T: Into<SoftResource>,
+{
     ProofRule::AmountOf(amount, resource.into())
 }
 

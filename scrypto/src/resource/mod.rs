@@ -30,8 +30,8 @@ pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::{ParseProofError, Proof};
 pub use proof_rule::{
-    AuthRule, ProofRule, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
-    require, require_amount, require_all_of, require_any_of, require_n_of
+    require, require_all_of, require_amount, require_any_of, require_n_of, AuthRule, ProofRule,
+    SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
