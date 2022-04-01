@@ -161,7 +161,7 @@ fn cannot_withdraw_from_my_complex_account() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key0, auth0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, auth1) = test_runner.new_public_key_and_non_fungible_address();
-    let (key2, auth2) = test_runner.new_public_key_and_non_fungible_address();
+    let (_, auth2) = test_runner.new_public_key_and_non_fungible_address();
     let auths = [
         auth2!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
         auth2!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),

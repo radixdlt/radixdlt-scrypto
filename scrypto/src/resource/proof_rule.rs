@@ -123,20 +123,6 @@ macro_rules! require_all_of {
     }};
 }
 
-#[macro_export]
-macro_rules! require_n_of {
-    ($count:expr, $list:expr) => {{
-        ::scrypto::resource::ProofRule::CountOf($count, $list.into())
-    }};
-}
-
-#[macro_export]
-macro_rules! require_amount {
-    ($amount:expr, $resource:expr) => {
-        ProofRule::AmountOf($amount, $resource.into())
-    };
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum AuthRule {
     ProofRule(ProofRule),
