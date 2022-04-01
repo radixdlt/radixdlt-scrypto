@@ -256,9 +256,9 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let (other_pk, other_sk, _) = test_runner.new_account();
     let package = test_runner.publish_package("component");
     let non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(pk.to_vec()));
+        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()));
     let other_non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(other_pk.to_vec()));
+        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(other_pk.to_vec()));
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
@@ -296,9 +296,9 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let (other_pk, other_sk, _) = test_runner.new_account();
     let package = test_runner.publish_package("component");
     let non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(pk.to_vec()));
+        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()));
     let other_non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(other_pk.to_vec()));
+        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(other_pk.to_vec()));
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()

@@ -109,7 +109,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Creates a new key and an account which can be accessed using the key.
     pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentAddress) {
         let (public_key, private_key) = self.new_key_pair();
-        let id = NonFungibleId::new(public_key.to_vec());
+        let id = NonFungibleId::from_bytes(public_key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
         let withdraw_auth = this!(auth_address);
         let account = self.new_account_with_auth_rule(&withdraw_auth);

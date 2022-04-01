@@ -43,12 +43,12 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account_by_ids(
-            &BTreeSet::from([NonFungibleId::from(1)]),
+            &BTreeSet::from([NonFungibleId::from_u32(1)]),
             auth_resource_address,
             account,
         )
         .take_from_worktop_by_ids(
-            &BTreeSet::from([NonFungibleId::from(1)]),
+            &BTreeSet::from([NonFungibleId::from_u32(1)]),
             auth_resource_address,
             |builder, bucket_id| {
                 builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {

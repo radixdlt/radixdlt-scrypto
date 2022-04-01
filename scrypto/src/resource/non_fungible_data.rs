@@ -21,3 +21,11 @@ pub trait NonFungibleData {
     /// Returns the schema of the mutable data.
     fn mutable_data_schema() -> Type;
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {
+        assert_eq!(2 + 2, 4);
+    }
+}

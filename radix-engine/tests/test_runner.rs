@@ -32,7 +32,7 @@ impl<'l> TestRunner<'l> {
         (
             pk,
             sk,
-            NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(pk.to_vec())),
+            NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec())),
         )
     }
 
