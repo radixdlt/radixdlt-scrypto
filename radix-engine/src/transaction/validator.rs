@@ -178,8 +178,8 @@ pub fn validate_transaction(
             Instruction::PublishPackage { code } => {
                 instructions.push(ValidatedInstruction::PublishPackage { code });
             }
-            Instruction::IntendedSigners { .. } => {
-                // TODO: all signatures should be from intended signers
+            Instruction::Nonce { .. } => {
+                // TODO: validate nonce
             }
             Instruction::End { signatures } => {
                 if i != transaction.instructions.len() - 1 {

@@ -64,8 +64,9 @@ impl NewTokenMutable {
 
         let transaction = TransactionBuilder::new(&executor)
             .new_token_mutable(metadata, self.minter_resource_address)
-            .build_and_sign(default_pks, default_sks)
-            .map_err(Error::TransactionConstructionError)?;
+            .build(default_pks)
+            .map_err(Error::TransactionConstructionError)?
+            .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)
     }
 }
