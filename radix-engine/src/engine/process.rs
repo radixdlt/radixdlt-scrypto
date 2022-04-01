@@ -658,7 +658,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let invocation = self.prepare_call_method(
             component_address,
             method,
-            vec![ScryptoValue::from_slice(&scrypto_encode(&to_deposit)).unwrap()],
+            vec![ScryptoValue::from_value(&to_deposit)],
         )?;
         let result = self.call(invocation);
 
@@ -835,8 +835,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_component(component_address)
             .ok_or(RuntimeError::ComponentNotFound(component_address))?
             .clone();
-        let mut args_with_self =
-            vec![ScryptoValue::from_slice(&scrypto_encode(&component_address)).unwrap()];
+        let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
         args_with_self.extend(args);
 
         Ok(Invocation {
