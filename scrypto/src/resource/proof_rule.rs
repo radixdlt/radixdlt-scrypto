@@ -190,30 +190,23 @@ macro_rules! auth2 {
     (require_amount($amount:expr, $resource:expr)) => {{
         ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AmountOf($amount, $resource.into()))
     }};
-    ($($tt1:tt$tt2:tt)||+) => {{
-        let mut rule = ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AnyOf(SoftResourceOrNonFungibleList::Static(vec![])));
-        $(
-            rule = rule.or(auth2!($tt1$tt2));
-        )*
-        rule
+    (($($tt:tt)+)) => {{
+        auth2!($($tt)+)
     }};
-    (($($tt1:tt$tt2:tt)||+)) => {{
-        let mut rule = ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AnyOf(SoftResourceOrNonFungibleList::Static(vec![])));
-        $(
-            rule = rule.or(auth2!($tt1$tt2));
-        )*
-        rule
+    ($left:tt || $($right:tt)+) => {{
+        let mut rule = auth2!($left);
+        rule.or(auth2!($($right)+))
     }};
-    ($tt1:tt || $tt2:tt$rule2:tt) => {{
-        let rule = auth2!($tt1);
-        rule.or(auth2!($tt2$rule2))
+    ($left1:tt$left2:tt || $($right:tt)+) => {{
+        let mut rule = auth2!($left1$left2);
+        rule.or(auth2!($($right)+))
     }};
-    (($tt1:tt$rule1:tt || $tt2:tt$rule2:tt)) => {{
-        let rule = auth2!($tt1$rule1);
-        rule.or(auth2!($tt2$rule2))
+    ($left:tt && $($right:tt)+) => {{
+        let mut rule = auth2!($left);
+        rule.and(auth2!($($right)+))
     }};
-    ($tt1:tt$rule1:tt || $tt2:tt$rule2:tt) => {{
-        let rule = auth2!($tt1$rule1);
-        rule.or(auth2!($tt2$rule2))
+    ($left1:tt$left2:tt && $($right:tt)+) => {{
+        let mut rule = auth2!($left1$left2);
+        rule.and(auth2!($($right)+))
     }};
 }

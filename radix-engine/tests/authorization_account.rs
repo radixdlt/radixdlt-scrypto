@@ -30,56 +30,60 @@ fn test_auth_rule(test_runner: &mut TestRunner, auth_rule: &AuthRule, signers: V
 }
 
 #[test]
-fn can_withdraw_from_my_1_of_2_resource_auth_account_with_either_key_sign() {
+fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key0, auth0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, auth1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_addresses = vec![auth0, auth1];
-    let auth_1_of_2 = auth2!(require_any_of(auth_addresses));
+    let auth_addresses = vec![auth0.clone(), auth1.clone()];
+    let auths = [
+        auth2!(require_any_of(auth_addresses)),
+        auth2!(require(auth0) || require(auth1)),
+    ];
 
-    for key in [key0, key1] {
-        test_auth_rule(&mut test_runner, &auth_1_of_2, vec![key], true);
+    for auth in auths {
+        for key in [key0, key1] {
+            test_auth_rule(&mut test_runner, &auth, vec![key], true);
+        }
     }
 }
 
 #[test]
-fn can_withdraw_from_my_1_of_2_rule_auth_account_with_either_key_sign() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key0, auth0) = test_runner.new_public_key_and_non_fungible_address();
-    let (key1, auth1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_1_of_2 = auth2!(require(auth0) || require(auth1));
-
-    for key in [key0, key1] {
-        test_auth_rule(&mut test_runner, &auth_1_of_2, vec![key], true);
-    }
-}
-
-#[test]
-fn can_withdraw_from_my_1_of_3_rule_auth_account_with_either_key_sign() {
+fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key0, auth0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, auth1) = test_runner.new_public_key_and_non_fungible_address();
     let (key2, auth2) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_1_of_3 = auth2!(require(auth0) || require(auth1) || require(auth2));
+    let auths = [
+        auth2!(require_any_of(vec![auth0.clone(), auth1.clone(), auth2.clone()])),
+        auth2!(require(auth0.clone()) || require(auth1.clone()) || require(auth2.clone())),
+        auth2!((require(auth0.clone()) || require(auth1.clone())) || require(auth2.clone())),
+        auth2!(require(auth0.clone()) || (require(auth1.clone()) || require(auth2.clone()))),
+    ];
 
-    for key in [key0, key1, key2] {
-        test_auth_rule(&mut test_runner, &auth_1_of_3, vec![key], true);
+    for auth in auths {
+        for key in [key0, key1, key2] {
+            test_auth_rule(&mut test_runner, &auth, vec![key], true);
+        }
     }
 }
 
 #[test]
-fn can_withdraw_from_my_2_of_2_account_with_both_signatures() {
+fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key0, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_addresses = vec![non_fungible_address0, non_fungible_address1];
-    let auth_2_of_2 = auth2!(require_all_of(auth_addresses));
+    let auth_addresses = vec![non_fungible_address0.clone(), non_fungible_address1.clone()];
+    let auths = [
+        auth2!(require_all_of(auth_addresses)),
+        auth2!(require(non_fungible_address0) && require(non_fungible_address1)),
+    ];
 
-    test_auth_rule(&mut test_runner, &auth_2_of_2, vec![key0, key1], true);
+    for auth in auths {
+        test_auth_rule(&mut test_runner, &auth, vec![key0, key1], true);
+    }
 }
 
 #[test]
@@ -89,11 +93,16 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (key0, non_fungible_address0) = test_runner.new_public_key_and_non_fungible_address();
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
-    let auth_addresses = vec![non_fungible_address0, non_fungible_address1];
-    let auth_2_of_2 = auth2!(require_all_of(auth_addresses));
+    let auth_addresses = vec![non_fungible_address0.clone(), non_fungible_address1.clone()];
+    let auths = [
+        auth2!(require_all_of(auth_addresses)),
+        auth2!(require(non_fungible_address0) && require(non_fungible_address1)),
+    ];
 
-    for key in [key0, key1] {
-        test_auth_rule(&mut test_runner, &auth_2_of_2, vec![key], false);
+    for auth in auths {
+        for key in [key0, key1] {
+            test_auth_rule(&mut test_runner, &auth, vec![key], false);
+        }
     }
 }
 
