@@ -102,27 +102,6 @@ macro_rules! resource_list {
   });
 }
 
-#[macro_export]
-macro_rules! require {
-    ($resource:expr) => {{
-        ::scrypto::resource::ProofRule::Require($resource.into())
-    }};
-}
-
-#[macro_export]
-macro_rules! require_any_of {
-    ($list:expr) => {{
-        ::scrypto::resource::ProofRule::AnyOf($list.into())
-    }};
-}
-
-#[macro_export]
-macro_rules! require_all_of {
-    ($list:expr) => {{
-        ::scrypto::resource::ProofRule::AllOf($list.into())
-    }};
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum AuthRule {
     ProofRule(ProofRule),

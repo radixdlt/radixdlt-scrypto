@@ -11,7 +11,7 @@ blueprint! {
                 .instantiate()
                 .auth(
                     "get_secret",
-                    auth!(require!(SchemaPath::new().field("some_non_fungible"))),
+                    auth2!(require(SchemaPath::new().field("some_non_fungible"))),
                 )
                 .globalize()
         }

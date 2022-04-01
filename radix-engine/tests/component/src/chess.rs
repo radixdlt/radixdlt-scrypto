@@ -11,7 +11,7 @@ blueprint! {
                 .instantiate()
                 .auth(
                     "make_move",
-                    auth!(require!(SchemaPath::new().field("players").index(0))),
+                    auth2!(require(SchemaPath::new().field("players").index(0))),
                 )
                 .globalize()
         }
