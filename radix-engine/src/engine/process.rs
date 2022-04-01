@@ -287,13 +287,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         {
             Some(bucket) => bucket,
             None => {
-                let resource_def = self
+                let resource_manager = self
                     .track
-                    .get_resource_def(&resource_address)
-                    .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
+                    .get_resource_manager(&resource_address)
+                    .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
                 Bucket::new(ResourceContainer::new_empty(
                     resource_address,
-                    resource_def.resource_type(),
+                    resource_manager.resource_type(),
                 ))
             }
         };
@@ -507,11 +507,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Creating auth zone proof: ALL, {}", resource_address);
 
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def(&resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
-        let resource_type = resource_def.resource_type();
+            .get_resource_manager(&resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
+        let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
         let new_proof = Proof::compose(&self.auth_zone, resource_address, resource_type)
@@ -528,11 +528,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Creating proof: {}, {}", amount, resource_address);
 
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def(&resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
-        let resource_type = resource_def.resource_type();
+            .get_resource_manager(&resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
+        let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
         let new_proof =
@@ -550,11 +550,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Creating proof: {:?}, {}", ids, resource_address);
 
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def(&resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
-        let resource_type = resource_def.resource_type();
+            .get_resource_manager(&resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
+        let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
         let new_proof =
@@ -993,22 +993,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         resource_address: ResourceAddress,
         mint_params: MintParams,
     ) -> Result<ResourceContainer, RuntimeError> {
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def_mut(&resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
+            .get_resource_manager_mut(&resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
 
         // Notify resource manager
-        resource_def
+        resource_manager
             .mint(&mint_params)
-            .map_err(RuntimeError::ResourceDefError)?;
+            .map_err(RuntimeError::ResourceManagerError)?;
 
         match mint_params {
             MintParams::Fungible { amount } => {
                 // Allocate fungible
                 Ok(ResourceContainer::new_fungible(
                     resource_address,
-                    resource_def.resource_type().divisibility(),
+                    resource_manager.resource_type().divisibility(),
                     amount,
                 ))
             }
@@ -1039,13 +1039,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn burn_resource(&mut self, resource: ResourceContainer) -> Result<(), RuntimeError> {
         let resource_address = resource.resource_address();
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def_mut(&resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address))?;
+            .get_resource_manager_mut(&resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
 
         // Notify resource manager
-        resource_def.burn(resource.total_amount());
+        resource_manager.burn(resource.total_amount());
 
         if matches!(resource.resource_type(), ResourceType::NonFungible) {
             // FIXME: remove the non-fungibles from the state
@@ -1607,17 +1607,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceInput,
     ) -> Result<CreateResourceOutput, RuntimeError> {
-        let resource_def = ResourceDef::new(
+        let resource_manager = ResourceManager::new(
             input.resource_type,
             input.metadata,
             input.flags,
             input.mutable_flags,
             input.authorities,
         )
-        .map_err(RuntimeError::ResourceDefError)?;
+        .map_err(RuntimeError::ResourceManagerError)?;
 
-        let resource_address = self.track.create_resource_def(resource_def);
-        re_debug!(self, "New resource definition: {}", resource_address);
+        let resource_address = self.track.create_resource_manager(resource_manager);
+        re_debug!(self, "New resource manager: {}", resource_address);
 
         let bucket_id = if let Some(mint_params) = input.mint_params {
             let bucket = Bucket::new(self.mint_resource(resource_address, mint_params)?);
@@ -1638,13 +1638,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceMetadataInput,
     ) -> Result<GetResourceMetadataOutput, RuntimeError> {
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_manager(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
 
         Ok(GetResourceMetadataOutput {
-            metadata: resource_def.metadata().clone(),
+            metadata: resource_manager.metadata().clone(),
         })
     }
 
@@ -1652,13 +1654,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceTotalSupplyInput,
     ) -> Result<GetResourceTotalSupplyOutput, RuntimeError> {
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_manager(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
 
         Ok(GetResourceTotalSupplyOutput {
-            total_supply: resource_def.total_supply(),
+            total_supply: resource_manager.total_supply(),
         })
     }
 
@@ -1666,13 +1670,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceFlagsInput,
     ) -> Result<GetResourceFlagsOutput, RuntimeError> {
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_manager(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
 
         Ok(GetResourceFlagsOutput {
-            flags: resource_def.flags(),
+            flags: resource_manager.flags(),
         })
     }
 
@@ -1680,13 +1686,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceMutableFlagsInput,
     ) -> Result<GetResourceMutableFlagsOutput, RuntimeError> {
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_manager(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
 
         Ok(GetResourceMutableFlagsOutput {
-            mutable_flags: resource_def.mutable_flags(),
+            mutable_flags: resource_manager.mutable_flags(),
         })
     }
 
@@ -1694,13 +1702,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetResourceTypeInput,
     ) -> Result<GetResourceTypeOutput, RuntimeError> {
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_manager(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
 
         Ok(GetResourceTypeOutput {
-            resource_type: resource_def.resource_type(),
+            resource_type: resource_manager.resource_type(),
         })
     }
 
@@ -1742,8 +1752,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::IllegalSystemCall)?;
         let definition = self
             .track
-            .get_resource_def(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_manager(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
 
         let new_vault = Vault::new(ResourceContainer::new_empty(
             input.resource_address,
@@ -1808,11 +1820,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         resource_address: &ResourceAddress,
         transition: &str,
     ) -> Result<(), RuntimeError> {
-        let resource_def = self
-            .track
-            .get_resource_def(&resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(resource_address.clone()))?;
-        let auth_rule = resource_def.get_auth(transition);
+        let resource_manager = self.track.get_resource_manager(&resource_address).ok_or(
+            RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+        )?;
+        let auth_rule = resource_manager.get_auth(transition);
         auth_rule.check(&[self.caller_auth_zone, &self.auth_zone])
     }
 
@@ -1824,13 +1835,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_resource_auth(&input.resource_address, "enable_flags")?;
 
         // State Update
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def_mut(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
-        resource_def
+            .get_resource_manager_mut(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
+        resource_manager
             .enable_flags(input.flags)
-            .map_err(RuntimeError::ResourceDefError)?;
+            .map_err(RuntimeError::ResourceManagerError)?;
 
         Ok(EnableFlagsOutput {})
     }
@@ -1843,13 +1856,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_resource_auth(&input.resource_address, "disable_flags")?;
 
         // State Update
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def_mut(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
-        resource_def
+            .get_resource_manager_mut(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
+        resource_manager
             .disable_flags(input.flags)
-            .map_err(RuntimeError::ResourceDefError)?;
+            .map_err(RuntimeError::ResourceManagerError)?;
 
         Ok(DisableFlagsOutput {})
     }
@@ -1862,13 +1877,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_resource_auth(&input.resource_address, "lock_flags")?;
 
         // State Update
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def_mut(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
-        resource_def
+            .get_resource_manager_mut(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
+        resource_manager
             .lock_flags(input.flags)
-            .map_err(RuntimeError::ResourceDefError)?;
+            .map_err(RuntimeError::ResourceManagerError)?;
 
         Ok(LockFlagsOutput {})
     }
@@ -1881,13 +1898,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.check_resource_auth(&input.resource_address, "update_metadata")?;
 
         // State update
-        let resource_def = self
+        let resource_manager = self
             .track
-            .get_resource_def_mut(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
-        resource_def
+            .get_resource_manager_mut(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
+        resource_manager
             .update_metadata(input.new_metadata)
-            .map_err(RuntimeError::ResourceDefError)?;
+            .map_err(RuntimeError::ResourceManagerError)?;
 
         Ok(UpdateResourceMetadataOutput {})
     }
@@ -2021,8 +2040,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
         let definition = self
             .track
-            .get_resource_def(&input.resource_address)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_address))?;
+            .get_resource_manager(&input.resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(
+                input.resource_address,
+            ))?;
 
         let new_bucket = Bucket::new(ResourceContainer::new_empty(
             input.resource_address,

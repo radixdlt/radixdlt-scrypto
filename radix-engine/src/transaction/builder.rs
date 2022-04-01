@@ -917,7 +917,7 @@ fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResou
         return Err(ParseResourceSpecifierError::IncompleteResourceSpecifier);
     }
 
-    // parse resource definition id
+    // parse resource address
     let token = tokens[tokens.len() - 1];
     let resource_address = token
         .parse::<ResourceAddress>()

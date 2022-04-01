@@ -21,7 +21,7 @@ blueprint! {
             authorities: HashMap<ResourceAddress, u64>,
             initial_supply: Option<MintParams>,
         ) -> (ResourceAddress, Option<Bucket>) {
-            resource_system().instantiate_resource_definition(
+            resource_system().new_resource(
                 resource_type,
                 metadata,
                 flags,
@@ -33,7 +33,7 @@ blueprint! {
 
         /// Mints fungible resource. TODO: Remove
         pub fn mint(amount: Decimal, resource_address: ResourceAddress) -> Bucket {
-            resource_def!(resource_address).mint(amount)
+            resource_manager!(resource_address).mint(amount)
         }
 
         /// Burns bucket. TODO: Remove

@@ -16,12 +16,12 @@ pub const ACCOUNT_PACKAGE: PackageAddress = PackageAddress([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3,
 ]);
 
-/// The XRD resource definition.
+/// The XRD resource address.
 pub const RADIX_TOKEN: ResourceAddress = ResourceAddress([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4,
 ]);
 
-/// The ECDSA virtual resource definition.
+/// The ECDSA virtual resource address.
 pub const ECDSA_TOKEN: ResourceAddress = ResourceAddress([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
 ]);

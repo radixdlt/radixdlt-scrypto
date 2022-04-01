@@ -166,9 +166,9 @@ blueprint! {
             .instantiate()
         }
 
-        pub fn new_vault_with_get_resource_def() -> ComponentAddress {
+        pub fn new_vault_with_get_resource_manager() -> ComponentAddress {
             let vault = Self::create_non_fungible_vault();
-            let _resource_def = vault.resource_address();
+            let _resource_manager = vault.resource_address();
             let vaults = LazyMap::new();
             let vault_vector = Vec::new();
             VaultTest {

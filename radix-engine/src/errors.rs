@@ -142,8 +142,8 @@ pub enum RuntimeError {
     /// Component is already loaded
     ComponentAlreadyLoaded(ComponentAddress),
 
-    /// Resource definition does not exist.
-    ResourceDefNotFound(ResourceAddress),
+    /// Resource manager does not exist.
+    ResourceManagerNotFound(ResourceAddress),
 
     /// Non-fungible does not exist.
     NonFungibleNotFound(NonFungibleAddress),
@@ -181,8 +181,8 @@ pub enum RuntimeError {
     /// The bucket contains no resource.
     EmptyProof,
 
-    /// Resource definition access error.
-    ResourceDefError(ResourceDefError),
+    /// Resource manager access error.
+    ResourceManagerError(ResourceManagerError),
 
     /// Bucket access error.
     BucketError(ResourceContainerError),

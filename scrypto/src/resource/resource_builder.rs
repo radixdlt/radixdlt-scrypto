@@ -104,7 +104,7 @@ impl FungibleResourceBuilder {
     }
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
-        resource_system().instantiate_resource_definition(
+        resource_system().new_resource(
             ResourceType::Fungible {
                 divisibility: self.divisibility,
             },
@@ -181,7 +181,7 @@ impl NonFungibleResourceBuilder {
     }
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
-        resource_system().instantiate_resource_definition(
+        resource_system().new_resource(
             ResourceType::NonFungible,
             self.metadata.clone(),
             self.flags,

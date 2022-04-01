@@ -52,7 +52,7 @@ pub struct Track<'s, S: SubstateStore> {
 
     packages: HashMap<PackageAddress, SubstateUpdate<Package>>,
     components: HashMap<ComponentAddress, SubstateUpdate<Component>>,
-    resource_defs: HashMap<ResourceAddress, SubstateUpdate<ResourceDef>>,
+    resource_managers: HashMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
 
     vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
     non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<NonFungible>>,
@@ -74,7 +74,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
-            resource_defs: HashMap::new(),
+            resource_managers: HashMap::new(),
             lazy_map_entries: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
@@ -152,7 +152,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Returns new resource defs created so far.
     pub fn new_resource_addresses(&self) -> Vec<ResourceAddress> {
         let mut resource_addresses = Vec::new();
-        for (resource_address, update) in self.resource_defs.iter() {
+        for (resource_address, update) in self.resource_managers.iter() {
             if let None = update.prev_id {
                 resource_addresses.push(resource_address.clone());
             }
@@ -417,52 +417,60 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
-    /// Returns an immutable reference to a resource definition, if exists.
-    pub fn get_resource_def(&mut self, resource_address: &ResourceAddress) -> Option<&ResourceDef> {
-        if self.resource_defs.contains_key(resource_address) {
-            return self.resource_defs.get(resource_address).map(|r| &r.value);
+    /// Returns an immutable reference to a resource manager, if exists.
+    pub fn get_resource_manager(
+        &mut self,
+        resource_address: &ResourceAddress,
+    ) -> Option<&ResourceManager> {
+        if self.resource_managers.contains_key(resource_address) {
+            return self
+                .resource_managers
+                .get(resource_address)
+                .map(|r| &r.value);
         }
 
-        if let Some((resource_def, phys_id)) =
+        if let Some((resource_manager, phys_id)) =
             self.substate_store.get_decoded_substate(resource_address)
         {
-            self.resource_defs.insert(
+            self.resource_managers.insert(
                 resource_address.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
-                    value: resource_def,
+                    value: resource_manager,
                 },
             );
-            self.resource_defs.get(resource_address).map(|r| &r.value)
+            self.resource_managers
+                .get(resource_address)
+                .map(|r| &r.value)
         } else {
             None
         }
     }
 
-    /// Returns a mutable reference to a resource definition, if exists.
+    /// Returns a mutable reference to a resource manager, if exists.
     #[allow(dead_code)]
-    pub fn get_resource_def_mut(
+    pub fn get_resource_manager_mut(
         &mut self,
         resource_address: &ResourceAddress,
-    ) -> Option<&mut ResourceDef> {
-        if self.resource_defs.contains_key(resource_address) {
+    ) -> Option<&mut ResourceManager> {
+        if self.resource_managers.contains_key(resource_address) {
             return self
-                .resource_defs
+                .resource_managers
                 .get_mut(resource_address)
                 .map(|r| &mut r.value);
         }
 
-        if let Some((resource_def, phys_id)) =
+        if let Some((resource_manager, phys_id)) =
             self.substate_store.get_decoded_substate(resource_address)
         {
-            self.resource_defs.insert(
+            self.resource_managers.insert(
                 resource_address.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
-                    value: resource_def,
+                    value: resource_manager,
                 },
             );
-            self.resource_defs
+            self.resource_managers
                 .get_mut(resource_address)
                 .map(|r| &mut r.value)
         } else {
@@ -470,14 +478,17 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
-    /// Inserts a new resource definition.
-    pub fn create_resource_def(&mut self, resource_def: ResourceDef) -> ResourceAddress {
+    /// Inserts a new resource manager.
+    pub fn create_resource_manager(
+        &mut self,
+        resource_manager: ResourceManager,
+    ) -> ResourceAddress {
         let resource_address = self.new_resource_address();
-        self.resource_defs.insert(
+        self.resource_managers.insert(
             resource_address,
             SubstateUpdate {
                 prev_id: None,
-                value: resource_def,
+                value: resource_manager,
             },
         );
         resource_address
@@ -552,7 +563,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         component_address
     }
 
-    /// Creates a new resource definition ID.
+    /// Creates a new resource address.
     fn new_resource_address(&mut self) -> ResourceAddress {
         let resource_address = self
             .id_allocator
@@ -624,11 +635,12 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 .put_encoded_substate(&component_address, &component.value, phys_id);
         }
 
-        let resource_addresses: Vec<ResourceAddress> = self.resource_defs.keys().cloned().collect();
+        let resource_addresses: Vec<ResourceAddress> =
+            self.resource_managers.keys().cloned().collect();
         for resource_address in resource_addresses {
-            let resource_def = self.resource_defs.remove(&resource_address).unwrap();
+            let resource_manager = self.resource_managers.remove(&resource_address).unwrap();
 
-            if let Some(prev_id) = resource_def.prev_id {
+            if let Some(prev_id) = resource_manager.prev_id {
                 receipt.down(prev_id);
             }
             let phys_id = id_gen.next();
@@ -636,7 +648,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
             self.substate_store.put_encoded_substate(
                 &resource_address,
-                &resource_def.value,
+                &resource_manager.value,
                 phys_id,
             );
         }

@@ -31,7 +31,7 @@ blueprint! {
 
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
-                resource_def!(resource_address).mint_non_fungible(
+                resource_manager!(resource_address).mint_non_fungible(
                     &NonFungibleId::from(0u128),
                     Sandwich {
                         name: "Test".to_owned(),
@@ -73,18 +73,18 @@ blueprint! {
 
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
-            let mut data: Sandwich =
-                resource_def!(resource_address).get_non_fungible_data(&NonFungibleId::from(0u128));
+            let mut data: Sandwich = resource_manager!(resource_address)
+                .get_non_fungible_data(&NonFungibleId::from(0u128));
             assert_eq!(data.available, false);
 
             data.available = true;
             mint_badge.authorize(|| {
-                resource_def!(resource_address)
+                resource_manager!(resource_address)
                     .update_non_fungible_data(&NonFungibleId::from(0u128), data);
             });
 
-            let data: Sandwich =
-                resource_def!(resource_address).get_non_fungible_data(&NonFungibleId::from(0u128));
+            let data: Sandwich = resource_manager!(resource_address)
+                .get_non_fungible_data(&NonFungibleId::from(0u128));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
         }
@@ -92,11 +92,13 @@ blueprint! {
         pub fn non_fungible_exists() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             assert_eq!(
-                resource_def!(resource_address).non_fungible_exists(&NonFungibleId::from(0u128)),
+                resource_manager!(resource_address)
+                    .non_fungible_exists(&NonFungibleId::from(0u128)),
                 true
             );
             assert_eq!(
-                resource_def!(resource_address).non_fungible_exists(&NonFungibleId::from(1u128)),
+                resource_manager!(resource_address)
+                    .non_fungible_exists(&NonFungibleId::from(1u128)),
                 false
             );
             (mint_badge, bucket)

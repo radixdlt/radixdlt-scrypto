@@ -525,7 +525,7 @@ mod tests {
     #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "struct Test {a: u32, admin: ResourceDef} impl Test { #[auth(admin)] pub fn x(&self) -> u32 { self.a } }",
+            "struct Test {a: u32, admin: ResourceManager} impl Test { #[auth(admin)] pub fn x(&self) -> u32 { self.a } }",
         )
         .unwrap();
         let output = handle_blueprint(input).unwrap();
@@ -539,7 +539,7 @@ mod tests {
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                     pub struct Test {
                         a: u32,
-                        admin: ResourceDef
+                        admin: ResourceManager
                     }
 
                     impl Test {

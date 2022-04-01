@@ -12,7 +12,7 @@ use crate::model::{
 
 #[derive(Debug)]
 pub struct Proof {
-    /// The resource definition id.
+    /// The resource address.
     resource_address: ResourceAddress,
     /// The resource type.
     resource_type: ResourceType,

@@ -9,7 +9,7 @@ mod non_fungible_id;
 mod proof;
 mod proof_rule;
 mod resource_builder;
-mod resource_def;
+mod resource_manager;
 mod resource_type;
 mod schema_path;
 mod system;
@@ -33,8 +33,8 @@ pub use proof_rule::{
     ProofRule, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
-pub use resource_def::{ParseResourceAddressError, ResourceAddress, ResourceDef};
 pub use resource_flags::*;
+pub use resource_manager::{ParseResourceAddressError, ResourceAddress, ResourceManager};
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;
 pub use schema_path::SchemaPath;

@@ -9,7 +9,7 @@ pub use crate::resource::*;
 pub use crate::{
     all_of, any_of, args, blueprint, compile_package, component, component_authorization, debug,
     dec, error, import, include_package, info, min_amount_of, min_n_of, package, package_init,
-    resource_def, resource_list, this, trace, warn, Decode, Describe, Encode, NonFungibleData,
+    resource_list, resource_manager, this, trace, warn, Decode, Describe, Encode, NonFungibleData,
     TypeId,
 };
 

@@ -5,7 +5,7 @@ use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::resource_def;
+use crate::resource_manager;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::BTreeSet;
 use crate::rust::fmt;
@@ -28,7 +28,7 @@ impl Vault {
         Self(output.vault_id)
     }
 
-    /// Creates an empty vault and fills it with an initial bucket of resources.
+    /// Creates an empty vault and fills it with an initial bucket of resource.
     pub fn with_bucket(bucket: Bucket) -> Self {
         let mut vault = Vault::new(bucket.resource_address());
         vault.put(bucket);
@@ -122,7 +122,7 @@ impl Vault {
         output.amount
     }
 
-    /// Returns the resource definition of resources within this vault.
+    /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
         let input = GetVaultResourceAddressInput { vault_id: self.0 };
         let output: GetVaultResourceAddressOutput = call_engine(GET_VAULT_RESOURCE_ADDRESS, input);
@@ -182,7 +182,7 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
-        resource_def!(self.resource_address()).get_non_fungible_data(id)
+        resource_manager!(self.resource_address()).get_non_fungible_data(id)
     }
 
     /// Updates the mutable part of the data of a non-fungible unit.
@@ -190,7 +190,7 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId, new_data: T) {
-        resource_def!(self.resource_address()).update_non_fungible_data(id, new_data)
+        resource_manager!(self.resource_address()).update_non_fungible_data(id, new_data)
     }
 }
 

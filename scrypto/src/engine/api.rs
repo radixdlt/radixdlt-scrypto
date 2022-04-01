@@ -76,7 +76,7 @@ pub const PUT_INTO_VAULT: u32 = 0x41;
 pub const TAKE_FROM_VAULT: u32 = 0x42;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
-/// Get vault resource definition
+/// Get vault resource address
 pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
 /// Take a non-fungible from this vault, by id
 pub const TAKE_NON_FUNGIBLE_FROM_VAULT: u32 = 0x45;
@@ -91,7 +91,7 @@ pub const PUT_INTO_BUCKET: u32 = 0x51;
 pub const TAKE_FROM_BUCKET: u32 = 0x52;
 /// Get bucket resource amount
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
-/// Get bucket resource definition
+/// Get bucket resource address
 pub const GET_BUCKET_RESOURCE_ADDRESS: u32 = 0x54;
 /// Take a non-fungible from this bucket, by id
 pub const TAKE_NON_FUNGIBLE_FROM_BUCKET: u32 = 0x55;
@@ -116,11 +116,11 @@ pub const CREATE_AUTH_ZONE_PROOF_BY_IDS: u32 = 0x68;
 pub const CLONE_PROOF: u32 = 0x69;
 /// Drop a proof
 pub const DROP_PROOF: u32 = 0x6A;
-/// Get the resource amount behind a proof
+/// Get the resource amount
 pub const GET_PROOF_AMOUNT: u32 = 0x6B;
-/// Get the resource definition behind a proof
+/// Get the resource address
 pub const GET_PROOF_RESOURCE_ADDRESS: u32 = 0x6C;
-/// Get the non-fungible ids in the proof
+/// Get the non-fungible ids
 pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
 /// Push a proof onto auth zone
 pub const PUSH_TO_AUTH_ZONE: u32 = 0x6E;

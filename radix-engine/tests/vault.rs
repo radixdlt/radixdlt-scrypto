@@ -384,7 +384,7 @@ fn create_mutable_vault_with_get_amount() {
 }
 
 #[test]
-fn create_mutable_vault_with_get_resource_def() {
+fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, true);
@@ -395,7 +395,7 @@ fn create_mutable_vault_with_get_resource_def() {
         .call_function(
             package,
             "VaultTest",
-            "new_vault_with_get_resource_def",
+            "new_vault_with_get_resource_manager",
             vec![],
         )
         .build_and_sign(vec![], vec![])

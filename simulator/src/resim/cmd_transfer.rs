@@ -10,7 +10,7 @@ pub struct Transfer {
     /// The amount to transfer.
     amount: Decimal,
 
-    /// The resource definition id.
+    /// The resource address.
     resource_address: ResourceAddress,
 
     /// The recipient component address.

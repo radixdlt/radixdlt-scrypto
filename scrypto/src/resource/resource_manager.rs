@@ -12,16 +12,16 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Represents a resource definition.
+/// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ResourceAddress(pub [u8; 26]);
 
 impl ResourceAddress {}
 
 #[derive(Debug)]
-pub struct ResourceDef(pub(crate) ResourceAddress);
+pub struct ResourceManager(pub(crate) ResourceAddress);
 
-impl ResourceDef {
+impl ResourceManager {
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         let input = MintResourceInput {

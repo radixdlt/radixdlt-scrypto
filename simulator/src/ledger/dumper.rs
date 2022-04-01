@@ -12,7 +12,7 @@ use crate::utils::*;
 pub enum DisplayError {
     PackageNotFound,
     ComponentNotFound,
-    ResourceDefNotFound,
+    ResourceManagerNotFound,
 }
 
 /// Dump a package into console.
@@ -130,27 +130,27 @@ fn dump_resources<T: SubstateStore>(
 
         let amount = vault.total_amount();
         let resource_address = vault.resource_address();
-        let resource_def: ResourceDef = substate_store
+        let resource_manager: ResourceManager = substate_store
             .get_decoded_substate(&resource_address)
             .map(|(resource, _)| resource)
             .unwrap();
         println!(
-            "{} {{ amount: {}, resource definition: {}{}{} }}",
+            "{} {{ amount: {}, resource address: {}{}{} }}",
             list_item_prefix(last),
             amount,
             resource_address,
-            resource_def
+            resource_manager
                 .metadata()
                 .get("name")
                 .map(|name| format!(", name: \"{}\"", name))
                 .unwrap_or(String::new()),
-            resource_def
+            resource_manager
                 .metadata()
                 .get("symbol")
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if matches!(resource_def.resource_type(), ResourceType::NonFungible) {
+        if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
             let ids = vault.total_ids().unwrap();
             for (inner_last, id) in ids.iter().identify_last() {
                 let non_fungible: NonFungible = substate_store
@@ -175,15 +175,15 @@ fn dump_resources<T: SubstateStore>(
     Ok(())
 }
 
-/// Dump a resource definition into console.
-pub fn dump_resource_def<T: SubstateStore>(
+/// Dump a resource into console.
+pub fn dump_resource_manager<T: SubstateStore>(
     resource_address: ResourceAddress,
     substate_store: &T,
 ) -> Result<(), DisplayError> {
-    let resource_def: Option<ResourceDef> = substate_store
+    let resource_manager: Option<ResourceManager> = substate_store
         .get_decoded_substate(&resource_address)
         .map(|(resource, _)| resource);
-    match resource_def {
+    match resource_manager {
         Some(r) => {
             println!(
                 "{}: {:?}",
@@ -199,6 +199,6 @@ pub fn dump_resource_def<T: SubstateStore>(
             println!("{}: {}", "Total Supply".green().bold(), r.total_supply());
             Ok(())
         }
-        None => Err(DisplayError::ResourceDefNotFound),
+        None => Err(DisplayError::ResourceManagerNotFound),
     }
 }

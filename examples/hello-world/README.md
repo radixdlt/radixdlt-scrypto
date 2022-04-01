@@ -50,7 +50,7 @@ Self {
 .instantiate()
 ```
 
-## ResourceDef, Vault and Bucket
+## Resource, Vault and Bucket
 
 In Scrypto, assets like tokens, NFTs, and more are not implemented as blueprints or components. Instead, they are types of *resources* that are configured and requested directly from the system.
 

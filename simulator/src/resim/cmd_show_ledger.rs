@@ -23,8 +23,8 @@ impl ShowLedger {
             println!("{} {}", list_item_prefix(last), component_address);
         }
 
-        println!("{}:", "Resource Definitions".green().bold());
-        for (last, resource_address) in ledger.list_resource_defs().iter().identify_last() {
+        println!("{}:", "Resource Managers".green().bold());
+        for (last, resource_address) in ledger.list_resource_managers().iter().identify_last() {
             println!("{} {}", list_item_prefix(last), resource_address);
         }
 

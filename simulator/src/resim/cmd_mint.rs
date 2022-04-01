@@ -10,10 +10,10 @@ pub struct Mint {
     /// The amount of resource to mint
     amount: Decimal,
 
-    /// The resource definition ID
+    /// The resource address
     resource_address: ResourceAddress,
 
-    /// The minter resource definition ID
+    /// The minter resource address
     minter_resource_address: ResourceAddress,
 
     /// Output a transaction manifest without execution

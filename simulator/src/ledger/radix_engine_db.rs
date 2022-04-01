@@ -35,7 +35,7 @@ impl RadixEngineDB {
         self.list_items(start, end)
     }
 
-    pub fn list_resource_defs(&self) -> Vec<ResourceAddress> {
+    pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
         let start = &scrypto_encode(&ResourceAddress([0; 26]));
         let end = &scrypto_encode(&ResourceAddress([255; 26]));
         self.list_items(start, end)

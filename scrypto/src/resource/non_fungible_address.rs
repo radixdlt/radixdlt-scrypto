@@ -22,7 +22,7 @@ impl NonFungibleAddress {
         }
     }
 
-    /// Returns the resource definition.
+    /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
         self.resource_address
     }

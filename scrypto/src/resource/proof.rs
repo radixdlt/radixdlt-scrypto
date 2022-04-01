@@ -53,7 +53,7 @@ impl Proof {
         output.amount
     }
 
-    /// Returns the resource definition of resources within the bucket.
+    /// Returns the resource address
     pub fn resource_address(&self) -> ResourceAddress {
         let input = GetProofResourceAddressInput { proof_id: self.0 };
         let output: GetProofResourceAddressOutput = call_engine(GET_PROOF_RESOURCE_ADDRESS, input);

@@ -4,7 +4,7 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::resource_def;
+use crate::resource_manager;
 use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
@@ -70,7 +70,7 @@ impl Bucket {
         output.amount
     }
 
-    /// Returns the resource definition of resources in this bucket.
+    /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
         let input = GetBucketResourceAddressInput { bucket_id: self.0 };
         let output: GetBucketResourceAddressOutput =
@@ -81,7 +81,7 @@ impl Bucket {
 
     /// Burns resource within this bucket.
     pub fn burn(self) {
-        resource_def!(self.resource_address()).burn(self);
+        resource_manager!(self.resource_address()).burn(self);
     }
 
     /// Checks if this bucket is empty.
@@ -151,7 +151,7 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, non_fungible_id: &NonFungibleId) -> T {
-        resource_def!(self.resource_address()).get_non_fungible_data(non_fungible_id)
+        resource_manager!(self.resource_address()).get_non_fungible_data(non_fungible_id)
     }
 
     /// Updates the mutable part of the data of a non-fungible unit.
@@ -163,7 +163,8 @@ impl Bucket {
         non_fungible_id: &NonFungibleId,
         new_data: T,
     ) {
-        resource_def!(self.resource_address()).update_non_fungible_data(non_fungible_id, new_data)
+        resource_manager!(self.resource_address())
+            .update_non_fungible_data(non_fungible_id, new_data)
     }
 }
 

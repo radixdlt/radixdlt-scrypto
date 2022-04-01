@@ -64,7 +64,7 @@ impl IdAllocator {
         Ok(ComponentAddress(sha256_twice(data).lower_26_bytes()))
     }
 
-    /// Creates a new resource definition ID.
+    /// Creates a new resource address.
     pub fn new_resource_address(
         &mut self,
         transaction_hash: Hash,

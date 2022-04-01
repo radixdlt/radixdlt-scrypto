@@ -25,7 +25,7 @@ pub enum ResourceContainerError {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ResourceContainer {
     Fungible {
-        /// The resource definition id.
+        /// The resource address.
         resource_address: ResourceAddress,
         /// The resource divisibility.
         divisibility: u8,
@@ -35,7 +35,7 @@ pub enum ResourceContainer {
         liquid_amount: Decimal,
     },
     NonFungible {
-        /// The resource definition id.
+        /// The resource address.
         resource_address: ResourceAddress,
         /// The locked non-fungible ids and the corresponding times of being locked.
         locked_ids: HashMap<NonFungibleId, usize>,
