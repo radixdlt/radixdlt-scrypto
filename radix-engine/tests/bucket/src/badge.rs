@@ -5,9 +5,10 @@ blueprint! {
 
     impl BadgeTest {
         fn create_test_badge(amount: u32) -> Bucket {
-            ResourceBuilder::new_fungible(DIVISIBILITY_NONE)
+            ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
                 .metadata("name", "TestBadge")
-                .initial_supply_fungible(amount)
+                .initial_supply(amount)
         }
 
         pub fn combine() -> Bucket {

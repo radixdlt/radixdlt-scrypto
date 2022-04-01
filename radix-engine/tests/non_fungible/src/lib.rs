@@ -15,8 +15,9 @@ blueprint! {
     impl NonFungibleTest {
         pub fn create_non_fungible_mutable() -> (Bucket, ResourceDefId, Bucket) {
             // Create a mint badge
-            let mint_badge =
-                ResourceBuilder::new_fungible(DIVISIBILITY_NONE).initial_supply_fungible(1);
+            let mint_badge = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_NONE)
+                .initial_supply(1);
 
             // Create non-fungible resource with mutable supply
             let resource_def_id = ResourceBuilder::new_non_fungible()
@@ -45,7 +46,7 @@ blueprint! {
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .initial_supply_non_fungible([
+                .initial_supply([
                     (
                         NonFungibleId::from(1u128),
                         Sandwich {

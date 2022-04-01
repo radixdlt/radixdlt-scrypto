@@ -12,30 +12,33 @@ blueprint! {
 
     impl ResourceCreator {
         pub fn create_restricted_transfer(badge_resource_def_id: ResourceDefId) -> Bucket {
-            ResourceBuilder::new_fungible(0)
+            ResourceBuilder::new_fungible()
+                .divisibility(0)
                 .flags(RESTRICTED_TRANSFER)
                 .badge(badge_resource_def_id, MAY_TRANSFER)
-                .initial_supply_fungible(5)
+                .initial_supply(5)
         }
 
         pub fn create_restricted_mint(badge_resource_def_id: ResourceDefId) -> Bucket {
-            ResourceBuilder::new_fungible(0)
+            ResourceBuilder::new_fungible()
+                .divisibility(0)
                 .flags(MINTABLE)
                 .badge(badge_resource_def_id, MAY_MINT)
-                .initial_supply_fungible(5)
+                .initial_supply(5)
         }
 
         pub fn create_restricted_burn(badge_resource_def_id: ResourceDefId) -> Bucket {
-            ResourceBuilder::new_fungible(0)
+            ResourceBuilder::new_fungible()
+                .divisibility(0)
                 .flags(BURNABLE)
                 .badge(badge_resource_def_id, MAY_BURN)
-                .initial_supply_fungible(5)
+                .initial_supply(5)
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .initial_supply_non_fungible([
+                .initial_supply([
                     (
                         NonFungibleId::from(1u128),
                         Sandwich {
@@ -61,9 +64,10 @@ blueprint! {
         }
 
         pub fn create_fungible_fixed(amount: Decimal, divisibility: u8) -> Bucket {
-            ResourceBuilder::new_fungible(divisibility)
+            ResourceBuilder::new_fungible()
+                .divisibility(divisibility)
                 .metadata("name", "SUPER TOKEN")
-                .initial_supply_fungible(amount)
+                .initial_supply(amount)
         }
     }
 }
