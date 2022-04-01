@@ -126,4 +126,4 @@ impl Proof {
     }
 }
 
-custom_type!(Proof, CustomType::Proof, Vec::new());
+scrypto_type!(Proof, ScryptoType::Proof, Vec::new());

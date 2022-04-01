@@ -7,7 +7,7 @@ use scrypto::resource::{
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use scrypto::types::CustomType;
+use scrypto::types::ScryptoType;
 
 use crate::model::method_authorization::{
     HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
@@ -61,8 +61,8 @@ impl Component {
 
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Vec(type_id, values)) => {
-                        match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceAddress => HardProofRuleResourceList::List(
+                        match ScryptoType::from_id(*type_id).unwrap() {
+                            ScryptoType::ResourceAddress => HardProofRuleResourceList::List(
                                 values
                                     .iter()
                                     .map(|v| {
@@ -75,7 +75,7 @@ impl Component {
                                     })
                                     .collect(),
                             ),
-                            CustomType::NonFungibleAddress => HardProofRuleResourceList::List(
+                            ScryptoType::NonFungibleAddress => HardProofRuleResourceList::List(
                                 values
                                     .iter()
                                     .map(|v| {
@@ -110,8 +110,8 @@ impl Component {
                 }
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Custom(type_id, bytes)) => {
-                        match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceAddress => {
+                        match ScryptoType::from_id(*type_id).unwrap() {
+                            ScryptoType::ResourceAddress => {
                                 ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                             }
                             _ => HardResourceOrNonFungible::SoftResourceNotFound,
@@ -139,11 +139,11 @@ impl Component {
                 }
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Custom(type_id, bytes)) => {
-                        match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceAddress => {
+                        match ScryptoType::from_id(*type_id).unwrap() {
+                            ScryptoType::ResourceAddress => {
                                 ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                             }
-                            CustomType::NonFungibleAddress => {
+                            ScryptoType::NonFungibleAddress => {
                                 NonFungibleAddress::try_from(bytes.as_slice())
                                     .unwrap()
                                     .into()

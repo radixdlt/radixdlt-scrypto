@@ -82,7 +82,7 @@ impl Hash {
     }
 }
 
-custom_type!(Hash, CustomType::Hash, Vec::new());
+scrypto_type!(Hash, ScryptoType::Hash, Vec::new());
 
 //======
 // text

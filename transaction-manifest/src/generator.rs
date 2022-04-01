@@ -622,27 +622,31 @@ fn generate_value(
             generate_pairs(elements, *key_type, *value_type, resolver)?,
         )),
         ast::Value::Decimal(_) => {
-            generate_decimal(value).map(|v| Value::Custom(CustomType::Decimal.id(), v.to_vec()))
+            generate_decimal(value).map(|v| Value::Custom(ScryptoType::Decimal.id(), v.to_vec()))
         }
         ast::Value::PackageAddress(_) => generate_package_address(value)
-            .map(|v| Value::Custom(CustomType::PackageAddress.id(), v.to_vec())),
+            .map(|v| Value::Custom(ScryptoType::PackageAddress.id(), v.to_vec())),
         ast::Value::ComponentAddress(_) => generate_component_address(value)
-            .map(|v| Value::Custom(CustomType::ComponentAddress.id(), v.to_vec())),
+            .map(|v| Value::Custom(ScryptoType::ComponentAddress.id(), v.to_vec())),
         ast::Value::ResourceAddress(_) => generate_resource_address(value)
-            .map(|v| Value::Custom(CustomType::ResourceAddress.id(), v.to_vec())),
+            .map(|v| Value::Custom(ScryptoType::ResourceAddress.id(), v.to_vec())),
         ast::Value::Hash(_) => {
-            generate_hash(value).map(|v| Value::Custom(CustomType::Hash.id(), v.to_vec()))
+            generate_hash(value).map(|v| Value::Custom(ScryptoType::Hash.id(), v.to_vec()))
         }
         ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| {
             Value::Custom(
-                CustomType::Bucket.id(),
+                ScryptoType::Bucket.id(),
                 scrypto::resource::Bucket(v).to_vec(),
             )
         }),
-        ast::Value::Proof(_) => generate_proof(value, resolver)
-            .map(|v| Value::Custom(CustomType::Proof.id(), scrypto::resource::Proof(v).to_vec())),
+        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| {
+            Value::Custom(
+                ScryptoType::Proof.id(),
+                scrypto::resource::Proof(v).to_vec(),
+            )
+        }),
         ast::Value::NonFungibleId(_) => generate_non_fungible_id(value)
-            .map(|v| Value::Custom(CustomType::NonFungibleId.id(), v.to_vec())),
+            .map(|v| Value::Custom(ScryptoType::NonFungibleId.id(), v.to_vec())),
         ast::Value::Blob(_) => match value {
             ast::Value::Blob(bytes) => {
                 let mut elements = Vec::new();
@@ -715,14 +719,14 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::TreeMap => TYPE_TREE_MAP,
         ast::Type::HashSet => TYPE_HASH_SET,
         ast::Type::HashMap => TYPE_HASH_MAP,
-        ast::Type::Decimal => CustomType::Decimal.id(),
-        ast::Type::PackageAddress => CustomType::PackageAddress.id(),
-        ast::Type::ComponentAddress => CustomType::ComponentAddress.id(),
-        ast::Type::ResourceAddress => CustomType::ResourceAddress.id(),
-        ast::Type::Hash => CustomType::Hash.id(),
-        ast::Type::Bucket => CustomType::Bucket.id(),
-        ast::Type::Proof => CustomType::Proof.id(),
-        ast::Type::NonFungibleId => CustomType::NonFungibleId.id(),
+        ast::Type::Decimal => ScryptoType::Decimal.id(),
+        ast::Type::PackageAddress => ScryptoType::PackageAddress.id(),
+        ast::Type::ComponentAddress => ScryptoType::ComponentAddress.id(),
+        ast::Type::ResourceAddress => ScryptoType::ResourceAddress.id(),
+        ast::Type::Hash => ScryptoType::Hash.id(),
+        ast::Type::Bucket => ScryptoType::Bucket.id(),
+        ast::Type::Proof => ScryptoType::Proof.id(),
+        ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
         ast::Type::Blob => TYPE_VEC,
     }
 }
@@ -786,10 +790,13 @@ mod tests {
             r#"Struct(Bucket(1u32), Proof(2u32), "bar")"#,
             Value::Struct(vec![
                 Value::Custom(
-                    CustomType::Bucket.id(),
+                    ScryptoType::Bucket.id(),
                     scrypto::resource::Bucket(1).to_vec()
                 ),
-                Value::Custom(CustomType::Proof.id(), scrypto::resource::Proof(2).to_vec()),
+                Value::Custom(
+                    ScryptoType::Proof.id(),
+                    scrypto::resource::Proof(2).to_vec()
+                ),
                 Value::String("bar".into())
             ])
         );
@@ -797,11 +804,11 @@ mod tests {
             r#"Struct(Decimal("1.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
             Value::Struct(vec![
                 Value::Custom(
-                    CustomType::Decimal.id(),
+                    ScryptoType::Decimal.id(),
                     Decimal::from_str("1.0").unwrap().to_vec()
                 ),
                 Value::Custom(
-                    CustomType::Hash.id(),
+                    ScryptoType::Hash.id(),
                     Hash::from_str(
                         "aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"
                     )

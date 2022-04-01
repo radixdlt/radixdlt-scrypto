@@ -181,4 +181,4 @@ impl Bucket {
     }
 }
 
-custom_type!(Bucket, CustomType::Bucket, Vec::new());
+scrypto_type!(Bucket, ScryptoType::Bucket, Vec::new());

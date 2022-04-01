@@ -217,7 +217,7 @@ impl Vault {
     }
 }
 
-custom_type!(Vault, CustomType::Vault, Vec::new());
+scrypto_type!(Vault, ScryptoType::Vault, Vec::new());
 
 //======
 // text

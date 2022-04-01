@@ -12,7 +12,8 @@ use crate::rust::format;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
-macro_rules! custom_type {
+/// A macro to help create a Scrypto-specific type.
+macro_rules! scrypto_type {
     ($t:ty, $ct:expr, $generics: expr) => {
         impl TypeId for $t {
             #[inline]
@@ -48,7 +49,7 @@ macro_rules! custom_type {
     };
 }
 
-pub(crate) use custom_type;
+pub(crate) use scrypto_type;
 
 /// Scrypto types that are encoded as custom SBOR types.
 ///
@@ -57,7 +58,7 @@ pub(crate) use custom_type;
 ///
 /// Custom types must be encoded as `[length + bytes]`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CustomType {
+pub enum ScryptoType {
     // component
     PackageAddress,
     ComponentAddress,
@@ -81,30 +82,30 @@ pub enum CustomType {
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(CustomType, u8, &str); 13] = [
-    (CustomType::PackageAddress, 0x80, "PackageAddress"),
-    (CustomType::ComponentAddress, 0x81, "ComponentAddress"),
-    (CustomType::LazyMap, 0x82, "LazyMap"),
-    (CustomType::Hash, 0x90, "Hash"),
-    (CustomType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"),
-    (CustomType::EcdsaSignature, 0x92, "EcdsaSignature"),
-    (CustomType::Decimal, 0xa1, "Decimal"),
-    (CustomType::Bucket, 0xb1, "Bucket"),
-    (CustomType::Proof, 0xb2, "Proof"),
-    (CustomType::Vault, 0xb3, "Vault"),
-    (CustomType::NonFungibleId, 0xb4, "NonFungibleId"),
-    (CustomType::NonFungibleAddress, 0xb5, "NonFungibleAddress"),
-    (CustomType::ResourceAddress, 0xb6, "ResourceAddress"),
+const MAPPING: [(ScryptoType, u8, &str); 13] = [
+    (ScryptoType::PackageAddress, 0x80, "PackageAddress"),
+    (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"),
+    (ScryptoType::LazyMap, 0x82, "LazyMap"),
+    (ScryptoType::Hash, 0x90, "Hash"),
+    (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"),
+    (ScryptoType::EcdsaSignature, 0x92, "EcdsaSignature"),
+    (ScryptoType::Decimal, 0xa1, "Decimal"),
+    (ScryptoType::Bucket, 0xb1, "Bucket"),
+    (ScryptoType::Proof, 0xb2, "Proof"),
+    (ScryptoType::Vault, 0xb3, "Vault"),
+    (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"),
+    (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"),
+    (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"),
 ];
 
-impl CustomType {
+impl ScryptoType {
     // TODO: optimize to get rid of loops
 
-    pub fn from_id(id: u8) -> Option<CustomType> {
+    pub fn from_id(id: u8) -> Option<ScryptoType> {
         MAPPING.iter().filter(|e| e.1 == id).map(|e| e.0).next()
     }
 
-    pub fn from_name(name: &str) -> Option<CustomType> {
+    pub fn from_name(name: &str) -> Option<ScryptoType> {
         MAPPING.iter().filter(|e| e.2 == name).map(|e| e.0).next()
     }
 
@@ -129,7 +130,7 @@ impl CustomType {
 }
 
 /// A validator the check a Scrypto-specific value.
-pub struct CustomValueValidator {
+pub struct ScryptoTypeValidator {
     pub buckets: Vec<Bucket>,
     pub proofs: Vec<Proof>,
     pub vaults: Vec<Vault>,
@@ -138,7 +139,7 @@ pub struct CustomValueValidator {
 
 /// Represents an error when validating a Scrypto-specific value.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum CustomValueValidatorError {
+pub enum ScryptoTypeValidationError {
     DecodeError(DecodeError),
     InvalidTypeId(u8),
     InvalidDecimal(ParseDecimalError),
@@ -156,7 +157,7 @@ pub enum CustomValueValidatorError {
     InvalidNonFungibleAddress(ParseNonFungibleAddressError),
 }
 
-impl CustomValueValidator {
+impl ScryptoTypeValidator {
     pub fn new() -> Self {
         Self {
             buckets: Vec::new(),
@@ -167,62 +168,62 @@ impl CustomValueValidator {
     }
 }
 
-impl CustomValueVisitor for CustomValueValidator {
-    type Err = CustomValueValidatorError;
+impl CustomValueVisitor for ScryptoTypeValidator {
+    type Err = ScryptoTypeValidationError;
 
     fn visit(&mut self, type_id: u8, data: &[u8]) -> Result<(), Self::Err> {
-        match CustomType::from_id(type_id).ok_or(Self::Err::InvalidTypeId(type_id))? {
-            CustomType::PackageAddress => {
+        match ScryptoType::from_id(type_id).ok_or(Self::Err::InvalidTypeId(type_id))? {
+            ScryptoType::PackageAddress => {
                 PackageAddress::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidPackageAddress)?;
+                    .map_err(ScryptoTypeValidationError::InvalidPackageAddress)?;
             }
-            CustomType::ComponentAddress => {
+            ScryptoType::ComponentAddress => {
                 ComponentAddress::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidComponentAddress)?;
+                    .map_err(ScryptoTypeValidationError::InvalidComponentAddress)?;
             }
-            CustomType::LazyMap => {
+            ScryptoType::LazyMap => {
                 self.lazy_maps.push(
-                    LazyMap::try_from(data).map_err(CustomValueValidatorError::InvalidLazyMap)?,
+                    LazyMap::try_from(data).map_err(ScryptoTypeValidationError::InvalidLazyMap)?,
                 );
             }
-            CustomType::Hash => {
-                Hash::try_from(data).map_err(CustomValueValidatorError::InvalidHash)?;
+            ScryptoType::Hash => {
+                Hash::try_from(data).map_err(ScryptoTypeValidationError::InvalidHash)?;
             }
-            CustomType::EcdsaPublicKey => {
+            ScryptoType::EcdsaPublicKey => {
                 EcdsaPublicKey::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidEcdsaPublicKey)?;
+                    .map_err(ScryptoTypeValidationError::InvalidEcdsaPublicKey)?;
             }
-            CustomType::EcdsaSignature => {
+            ScryptoType::EcdsaSignature => {
                 EcdsaSignature::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidEcdsaSignature)?;
+                    .map_err(ScryptoTypeValidationError::InvalidEcdsaSignature)?;
             }
-            CustomType::Decimal => {
-                Decimal::try_from(data).map_err(CustomValueValidatorError::InvalidDecimal)?;
+            ScryptoType::Decimal => {
+                Decimal::try_from(data).map_err(ScryptoTypeValidationError::InvalidDecimal)?;
             }
-            CustomType::Bucket => {
+            ScryptoType::Bucket => {
                 self.buckets.push(
-                    Bucket::try_from(data).map_err(CustomValueValidatorError::InvalidBucket)?,
+                    Bucket::try_from(data).map_err(ScryptoTypeValidationError::InvalidBucket)?,
                 );
             }
-            CustomType::Proof => {
+            ScryptoType::Proof => {
                 self.proofs
-                    .push(Proof::try_from(data).map_err(CustomValueValidatorError::InvalidProof)?);
+                    .push(Proof::try_from(data).map_err(ScryptoTypeValidationError::InvalidProof)?);
             }
-            CustomType::Vault => {
+            ScryptoType::Vault => {
                 self.vaults
-                    .push(Vault::try_from(data).map_err(CustomValueValidatorError::InvalidVault)?);
+                    .push(Vault::try_from(data).map_err(ScryptoTypeValidationError::InvalidVault)?);
             }
-            CustomType::NonFungibleId => {
+            ScryptoType::NonFungibleId => {
                 NonFungibleId::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidNonFungibleId)?;
+                    .map_err(ScryptoTypeValidationError::InvalidNonFungibleId)?;
             }
-            CustomType::NonFungibleAddress => {
+            ScryptoType::NonFungibleAddress => {
                 NonFungibleAddress::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidNonFungibleAddress)?;
+                    .map_err(ScryptoTypeValidationError::InvalidNonFungibleAddress)?;
             }
-            CustomType::ResourceAddress => {
+            ScryptoType::ResourceAddress => {
                 ResourceAddress::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidResourceAddress)?;
+                    .map_err(ScryptoTypeValidationError::InvalidResourceAddress)?;
             }
         }
         Ok(())
@@ -230,9 +231,9 @@ impl CustomValueVisitor for CustomValueValidator {
 }
 
 /// A formatter that formats a Scrypto type.
-pub struct CustomValueFormatter {}
+pub struct ScryptoTypeFormatter {}
 
-impl CustomValueFormatter {
+impl ScryptoTypeFormatter {
     /// Format a custom value (checked) using the notation introduced by Transaction Manifest.
     ///
     /// # Panics
@@ -243,38 +244,38 @@ impl CustomValueFormatter {
         bucket_ids: &HashMap<BucketId, String>,
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
-        match CustomType::from_id(type_id).unwrap() {
-            CustomType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
-            CustomType::PackageAddress => {
+        match ScryptoType::from_id(type_id).unwrap() {
+            ScryptoType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
+            ScryptoType::PackageAddress => {
                 format!(
                     "PackageAddress(\"{}\")",
                     PackageAddress::try_from(data).unwrap()
                 )
             }
-            CustomType::ComponentAddress => {
+            ScryptoType::ComponentAddress => {
                 format!(
                     "ComponentAddress(\"{}\")",
                     ComponentAddress::try_from(data).unwrap()
                 )
             }
-            CustomType::LazyMap => format!(
+            ScryptoType::LazyMap => format!(
                 "LazyMap(\"{}\")",
                 LazyMap::<(), ()>::try_from(data).unwrap()
             ),
-            CustomType::Hash => format!("Hash(\"{}\")", Hash::try_from(data).unwrap()),
-            CustomType::EcdsaPublicKey => {
+            ScryptoType::Hash => format!("Hash(\"{}\")", Hash::try_from(data).unwrap()),
+            ScryptoType::EcdsaPublicKey => {
                 format!(
                     "EcdsaPublicKey(\"{}\")",
                     EcdsaPublicKey::try_from(data).unwrap()
                 )
             }
-            CustomType::EcdsaSignature => {
+            ScryptoType::EcdsaSignature => {
                 format!(
                     "EcdsaSignature(\"{}\")",
                     EcdsaSignature::try_from(data).unwrap()
                 )
             }
-            CustomType::Bucket => {
+            ScryptoType::Bucket => {
                 let bucket = Bucket::try_from(data).unwrap();
                 if let Some(name) = bucket_ids.get(&bucket.0) {
                     format!("Bucket(\"{}\")", name)
@@ -282,7 +283,7 @@ impl CustomValueFormatter {
                     format!("Bucket({}u32)", bucket.0)
                 }
             }
-            CustomType::Proof => {
+            ScryptoType::Proof => {
                 let proof = Proof::try_from(data).unwrap();
                 if let Some(name) = proof_ids.get(&proof.0) {
                     format!("Proof(\"{}\")", name)
@@ -290,16 +291,16 @@ impl CustomValueFormatter {
                     format!("Proof({}u32)", proof.0)
                 }
             }
-            CustomType::Vault => format!("Vault(\"{}\")", Vault::try_from(data).unwrap()),
-            CustomType::NonFungibleId => format!(
+            ScryptoType::Vault => format!("Vault(\"{}\")", Vault::try_from(data).unwrap()),
+            ScryptoType::NonFungibleId => format!(
                 "NonFungibleId(\"{}\")",
                 NonFungibleId::try_from(data).unwrap()
             ),
-            CustomType::NonFungibleAddress => format!(
+            ScryptoType::NonFungibleAddress => format!(
                 "NonFungibleAddress(\"{}\")",
                 NonFungibleAddress::try_from(data).unwrap()
             ),
-            CustomType::ResourceAddress => format!(
+            ScryptoType::ResourceAddress => format!(
                 "ResourceAddress(\"{}\")",
                 ResourceAddress::try_from(data).unwrap()
             ),

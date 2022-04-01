@@ -225,7 +225,7 @@ impl ResourceAddress {
     }
 }
 
-custom_type!(ResourceAddress, CustomType::ResourceAddress, Vec::new());
+scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
 
 //======
 // text

@@ -7,7 +7,7 @@ use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
-use crate::types::{custom_type, CustomType};
+use crate::types::{scrypto_type, ScryptoType};
 
 pub const ECDSA_PRIVATE_KEY_LENGTH: usize = 32;
 pub const ECDSA_PUBLIC_KEY_LENGTH: usize = 33;
@@ -135,7 +135,7 @@ impl EcdsaPublicKey {
     }
 }
 
-custom_type!(EcdsaPublicKey, CustomType::EcdsaPublicKey, Vec::new());
+scrypto_type!(EcdsaPublicKey, ScryptoType::EcdsaPublicKey, Vec::new());
 
 impl TryFrom<&[u8]> for EcdsaSignature {
     type Error = ParseEcdsaSignatureError;
@@ -155,7 +155,7 @@ impl EcdsaSignature {
     }
 }
 
-custom_type!(EcdsaSignature, CustomType::EcdsaSignature, Vec::new());
+scrypto_type!(EcdsaSignature, ScryptoType::EcdsaSignature, Vec::new());
 
 impl TryFrom<&[u8]> for EcdsaPrivateKey {
     type Error = ParseEcdsaPrivateKeyError;

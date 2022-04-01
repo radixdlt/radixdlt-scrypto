@@ -31,9 +31,9 @@ impl ValidatedData {
         let value = decode_any(slice).map_err(DataValidationError::DecodeError)?;
 
         // Additional custom value validation
-        let mut validator = CustomValueValidator::new();
+        let mut validator = ScryptoTypeValidator::new();
         traverse_any(&value, &mut validator)
-            .map_err(DataValidationError::CustomValueValidatorError)?;
+            .map_err(DataValidationError::ScryptoTypeValidationError)?;
 
         Ok(ValidatedData {
             raw: slice.to_vec(),
@@ -152,13 +152,13 @@ pub fn format_value(
         ),
         // custom types
         Value::Custom(kind, data) => {
-            CustomValueFormatter::format(*kind, data, bucket_ids, proof_ids)
+            ScryptoTypeFormatter::format(*kind, data, bucket_ids, proof_ids)
         }
     }
 }
 
 pub fn format_kind(kind: u8) -> String {
-    if let Some(ty) = CustomType::from_id(kind) {
+    if let Some(ty) = ScryptoType::from_id(kind) {
         return ty.name();
     }
 

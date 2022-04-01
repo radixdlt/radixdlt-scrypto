@@ -375,7 +375,7 @@ impl Decimal {
     }
 }
 
-custom_type!(Decimal, CustomType::Decimal, Vec::new());
+scrypto_type!(Decimal, ScryptoType::Decimal, Vec::new());
 
 //======
 // text

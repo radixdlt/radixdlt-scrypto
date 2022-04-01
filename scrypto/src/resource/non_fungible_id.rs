@@ -72,7 +72,7 @@ impl NonFungibleId {
     }
 }
 
-custom_type!(NonFungibleId, CustomType::NonFungibleId, Vec::new());
+scrypto_type!(NonFungibleId, ScryptoType::NonFungibleId, Vec::new());
 
 //======
 // text

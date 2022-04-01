@@ -77,7 +77,7 @@ impl PackageAddress {
     }
 }
 
-custom_type!(PackageAddress, CustomType::PackageAddress, Vec::new());
+scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
 
 //======
 // text

@@ -70,7 +70,7 @@ pub enum WasmValidationError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DataValidationError {
     DecodeError(DecodeError),
-    CustomValueValidatorError(CustomValueValidatorError),
+    ScryptoTypeValidationError(ScryptoTypeValidationError),
 }
 
 /// Represents an error when validating a transaction.

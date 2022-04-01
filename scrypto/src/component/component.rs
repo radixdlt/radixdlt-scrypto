@@ -121,7 +121,7 @@ impl ComponentAddress {
     }
 }
 
-custom_type!(ComponentAddress, CustomType::ComponentAddress, Vec::new());
+scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 
 //======
 // text

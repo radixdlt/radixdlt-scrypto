@@ -75,9 +75,9 @@ impl NonFungibleAddress {
     }
 }
 
-custom_type!(
+scrypto_type!(
     NonFungibleAddress,
-    CustomType::NonFungibleAddress,
+    ScryptoType::NonFungibleAddress,
     Vec::new()
 );
 
