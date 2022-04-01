@@ -189,15 +189,17 @@ where
 
 #[macro_export]
 macro_rules! auth {
-    ($rule:ident $args:tt) => {{
-        ::scrypto::resource::AuthRule::ProofRule($rule $args)
-    }};
-    (($($tt:tt)+)) => {{
-        auth!($($tt)+)
-    }};
+    // Handle leaves
+    ($rule:ident $args:tt) => {{ ::scrypto::resource::AuthRule::ProofRule($rule $args) }};
+
+    // Handle group
+    (($($tt:tt)+)) => {{ auth!($($tt)+) }};
+
+    // Handle Ors
     ($left:tt || $($right:tt)+) => {{ auth!($left).or(auth!($($right)+)) }};
     ($left_rule:ident $left:tt || $($right:tt)+) => {{ auth!($left_rule $left).or(auth!($($right)+)) }};
 
+    // Handle Ands. a little more complicated since && has higher precedence over ||
     ($left:tt && $right:tt) => {{ auth!($left).and(auth!($right)) }};
     ($left:tt && $right:tt && $($rest:tt)+) => {{ auth!($left && $right).and(auth!($($rest)+)) }};
     ($left:tt && $right:tt || $($rest:tt)+) => {{ auth!($left && $right).or(auth!($($rest)+)) }};
