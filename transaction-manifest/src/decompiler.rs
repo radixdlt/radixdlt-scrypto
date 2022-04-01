@@ -100,20 +100,20 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     resource_def_id
                 ));
             }
-            Instruction::TakeFromAuthZone => {
+            Instruction::PopFromAuthZone => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::AuthZoneProof)
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
-                buf.push_str(&format!("TAKE_FROM_AUTH_ZONE Proof(\"{}\");\n", name));
+                buf.push_str(&format!("POP_FROM_AUTH_ZONE Proof(\"{}\");\n", name));
             }
-            Instruction::MoveToAuthZone { proof_id } => {
+            Instruction::PushToAuthZone { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "MOVE_TO_AUTH_ZONE Proof({});\n",
+                    "PUSH_TO_AUTH_ZONE Proof({});\n",
                     proofs
                         .get(&proof_id)
                         .map(|name| format!("\"{}\"", name))

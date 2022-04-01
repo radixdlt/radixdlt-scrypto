@@ -51,10 +51,10 @@ pub enum Instruction {
     },
 
     /// Takes the last proof from the auth zone.
-    TakeFromAuthZone,
+    PopFromAuthZone,
 
     /// Adds a proof to the auth zone.
-    MoveToAuthZone { proof_id: ProofId },
+    PushToAuthZone { proof_id: ProofId },
 
     /// Drops all proofs in the auth zone
     ClearAuthZone,
@@ -156,8 +156,8 @@ pub enum ValidatedInstruction {
         ids: BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     },
-    TakeFromAuthZone,
-    MoveToAuthZone {
+    PopFromAuthZone,
+    PushToAuthZone {
         proof_id: ProofId,
     },
     ClearAuthZone,

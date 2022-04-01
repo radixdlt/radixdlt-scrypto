@@ -185,20 +185,20 @@ pub fn generate_instruction(
             ids: generate_non_fungible_ids(ids)?,
             resource_def_id: generate_resource_def_id(resource_def_id)?,
         },
-        ast::Instruction::TakeFromAuthZone { new_proof } => {
+        ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::TakeFromAuthZone
+            Instruction::PopFromAuthZone
         }
-        ast::Instruction::MoveToAuthZone { proof } => {
+        ast::Instruction::PushToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            Instruction::MoveToAuthZone { proof_id }
+            Instruction::PushToAuthZone { proof_id }
         }
         ast::Instruction::ClearAuthZone => Instruction::ClearAuthZone,
 
@@ -1044,7 +1044,7 @@ mod tests {
                             ),
                         ]
                     },
-                    Instruction::TakeFromAuthZone,
+                    Instruction::PopFromAuthZone,
                     Instruction::DropProof { proof_id: 516 },
                     Instruction::ReturnToWorktop { bucket_id: 513 },
                     Instruction::TakeFromWorktopByIds {

@@ -67,7 +67,7 @@ blueprint! {
             // auto dropped here
         }
 
-        pub fn receive_proof_and_move_to_auth_zone(proof: Proof) {
+        pub fn receive_proof_and_push_to_auth_zone(proof: Proof) {
             AuthZone::push(proof); // should fail here
         }
 

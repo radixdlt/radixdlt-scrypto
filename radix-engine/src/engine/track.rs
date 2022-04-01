@@ -106,7 +106,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             process
                 .create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket)
                 .unwrap();
-            process.move_to_auth_zone(ECDSA_TOKEN_PROOF_ID).unwrap();
+            process.push_to_auth_zone(ECDSA_TOKEN_PROOF_ID).unwrap();
         }
 
         process

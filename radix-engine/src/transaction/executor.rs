@@ -220,14 +220,14 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     ids,
                     resource_def_id,
                 } => proc.assert_worktop_contains_by_ids(&ids, *resource_def_id),
-                ValidatedInstruction::TakeFromAuthZone {} => proc
-                    .take_from_auth_zone()
+                ValidatedInstruction::PopFromAuthZone {} => proc
+                    .pop_from_auth_zone()
                     .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::ClearAuthZone => proc
                     .drop_all_auth_zone_proofs()
                     .map(|_| ValidatedData::from_value(&())),
-                ValidatedInstruction::MoveToAuthZone { proof_id } => proc
-                    .move_to_auth_zone(*proof_id)
+                ValidatedInstruction::PushToAuthZone { proof_id } => proc
+                    .push_to_auth_zone(*proof_id)
                     .map(|_| ValidatedData::from_value(&())),
                 ValidatedInstruction::CreateProofFromAuthZone { resource_def_id } => proc
                     .create_auth_zone_proof(*resource_def_id)

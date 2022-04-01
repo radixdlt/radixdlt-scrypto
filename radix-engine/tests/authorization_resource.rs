@@ -103,9 +103,9 @@ fn can_burn_with_auth() {
             auth_token_resource_def_id,
             |builder, bucket_id| {
                 builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
-                    builder.move_to_auth_zone(proof_id);
+                    builder.push_to_auth_zone(proof_id);
                     builder.burn(Decimal::one(), token_resource_def_id);
-                    builder.take_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
+                    builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
                 })
             },
         )

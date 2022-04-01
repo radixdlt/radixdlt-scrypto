@@ -99,10 +99,10 @@ impl Parser {
                 ids: self.parse_value()?,
                 resource_def_id: self.parse_value()?,
             },
-            TokenKind::TakeFromAuthZone => Instruction::TakeFromAuthZone {
+            TokenKind::PopFromAuthZone => Instruction::PopFromAuthZone {
                 new_proof: self.parse_value()?,
             },
-            TokenKind::MoveToAuthZone => Instruction::MoveToAuthZone {
+            TokenKind::PushToAuthZone => Instruction::PushToAuthZone {
                 proof: self.parse_value()?,
             },
             TokenKind::ClearAuthZone => Instruction::ClearAuthZone,

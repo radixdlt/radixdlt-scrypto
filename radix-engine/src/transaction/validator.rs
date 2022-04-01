@@ -74,17 +74,17 @@ pub fn validate_transaction(
                     resource_def_id,
                 });
             }
-            Instruction::TakeFromAuthZone => {
+            Instruction::PopFromAuthZone => {
                 id_validator
                     .new_proof(ProofKind::AuthZoneProof)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::TakeFromAuthZone);
+                instructions.push(ValidatedInstruction::PopFromAuthZone);
             }
-            Instruction::MoveToAuthZone { proof_id } => {
+            Instruction::PushToAuthZone { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
                     .map_err(TransactionValidationError::IdValidatorError)?;
-                instructions.push(ValidatedInstruction::MoveToAuthZone { proof_id });
+                instructions.push(ValidatedInstruction::PushToAuthZone { proof_id });
             }
             Instruction::ClearAuthZone => {
                 instructions.push(ValidatedInstruction::ClearAuthZone);

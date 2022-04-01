@@ -64,14 +64,14 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
             Instruction::AssertWorktopContains { .. }
             | Instruction::AssertWorktopContainsByAmount { .. }
             | Instruction::AssertWorktopContainsByIds { .. } => {}
-            Instruction::TakeFromAuthZone { .. } => {
+            Instruction::PopFromAuthZone { .. } => {
                 new_proof_id = Some(
                     self.id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .unwrap(),
                 );
             }
-            Instruction::MoveToAuthZone { proof_id } => {
+            Instruction::PushToAuthZone { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
             Instruction::ClearAuthZone => {}
@@ -198,16 +198,16 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         .0
     }
 
-    pub fn take_from_auth_zone<F>(&mut self, then: F) -> &mut Self
+    pub fn pop_from_auth_zone<F>(&mut self, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::TakeFromAuthZone {});
+        let (builder, _, proof_id) = self.add_instruction(Instruction::PopFromAuthZone {});
         then(builder, proof_id.unwrap())
     }
 
-    pub fn move_to_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
-        self.add_instruction(Instruction::MoveToAuthZone { proof_id });
+    pub fn push_to_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
+        self.add_instruction(Instruction::PushToAuthZone { proof_id });
         self
     }
 
@@ -558,14 +558,14 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
     ) -> &mut Self {
         self.take_from_worktop(minter_resource_def_id, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
-                builder.move_to_auth_zone(proof_id);
+                builder.push_to_auth_zone(proof_id);
                 builder.add_instruction(Instruction::CallFunction {
                     package_id: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
                     function: "mint".to_owned(),
                     args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
                 });
-                builder.take_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
+                builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
             })
         })
     }
@@ -871,7 +871,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
                                 resource_def_id,
                                 account,
                             );
-                            self.add_instruction(Instruction::TakeFromAuthZone)
+                            self.add_instruction(Instruction::PopFromAuthZone)
                                 .2
                                 .unwrap()
                         } else {
@@ -881,7 +881,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
                     ResourceSpecifier::Ids(ids, resource_def_id) => {
                         if let Some(account) = account {
                             self.create_proof_from_account_by_ids(&ids, resource_def_id, account);
-                            self.add_instruction(Instruction::TakeFromAuthZone)
+                            self.add_instruction(Instruction::PopFromAuthZone)
                                 .2
                                 .unwrap()
                         } else {

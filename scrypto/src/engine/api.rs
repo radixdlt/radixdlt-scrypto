@@ -123,9 +123,9 @@ pub const GET_PROOF_RESOURCE_DEF_ID: u32 = 0x6C;
 /// Get the non-fungible ids in the proof
 pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
 /// Push a proof onto auth zone
-pub const MOVE_TO_AUTH_ZONE: u32 = 0x6E;
+pub const PUSH_TO_AUTH_ZONE: u32 = 0x6E;
 /// Pop a proof from auth zone
-pub const TAKE_FROM_AUTH_ZONE: u32 = 0x6F;
+pub const POP_FROM_AUTH_ZONE: u32 = 0x6F;
 
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
@@ -687,18 +687,18 @@ pub struct CloneProofOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct MoveToAuthZoneInput {
+pub struct PushToAuthZoneInput {
     pub proof_id: ProofId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct MoveToAuthZoneOutput {}
+pub struct PushToAuthZoneOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromAuthZoneInput {}
+pub struct PopFromAuthZoneInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromAuthZoneOutput {
+pub struct PopFromAuthZoneOutput {
     pub proof_id: ProofId,
 }
 
