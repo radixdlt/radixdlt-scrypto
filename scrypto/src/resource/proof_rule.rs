@@ -6,13 +6,13 @@ use scrypto::math::Decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
-    Static(ResourceDefId),
+    Static(ResourceAddress),
     Dynamic(SchemaPath),
 }
 
-impl From<ResourceDefId> for SoftResource {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        SoftResource::Static(resource_def_id)
+impl From<ResourceAddress> for SoftResource {
+    fn from(resource_address: ResourceAddress) -> Self {
+        SoftResource::Static(resource_address)
     }
 }
 
@@ -25,7 +25,7 @@ impl From<SchemaPath> for SoftResource {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
-    StaticResource(ResourceDefId),
+    StaticResource(ResourceAddress),
     Dynamic(SchemaPath),
 }
 
@@ -35,9 +35,9 @@ impl From<NonFungibleAddress> for SoftResourceOrNonFungible {
     }
 }
 
-impl From<ResourceDefId> for SoftResourceOrNonFungible {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        SoftResourceOrNonFungible::StaticResource(resource_def_id)
+impl From<ResourceAddress> for SoftResourceOrNonFungible {
+    fn from(resource_address: ResourceAddress) -> Self {
+        SoftResourceOrNonFungible::StaticResource(resource_address)
     }
 }
 
@@ -75,9 +75,9 @@ impl From<NonFungibleAddress> for ProofRule {
     }
 }
 
-impl From<ResourceDefId> for ProofRule {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        ProofRule::This(resource_def_id.into())
+impl From<ResourceAddress> for ProofRule {
+    fn from(resource_address: ResourceAddress) -> Self {
+        ProofRule::This(resource_address.into())
     }
 }
 

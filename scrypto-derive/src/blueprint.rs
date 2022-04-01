@@ -57,13 +57,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 fn blueprint_name() -> &'static str {
                     #bp_name
                 }
-                fn instantiate(self) -> ::scrypto::component::ComponentId {
+                fn instantiate(self) -> ::scrypto::component::ComponentAddress {
                     ::scrypto::component::component_system().instantiate_component(
                         ::scrypto::resource::ComponentAuthorization::new(),
                         self
                     )
                 }
-                fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
+                fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentAddress {
                     ::scrypto::component::component_system().instantiate_component(
                         authorization,
                         self
@@ -182,7 +182,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let stmt: Stmt = parse_quote! {
-                                let #arg = ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentId>(&calldata.args[#i])
+                                let #arg = ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentAddress>(&calldata.args[#i])
                                 .unwrap();
                             };
                             trace!("Generated stmt: {}", quote! { #stmt });
@@ -428,7 +428,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                         functions.push(parse_quote! {
                             pub fn #ident(#(#input_args: #input_types),*) -> #output {
                                 let rtn = ::scrypto::core::Process::call_function(
-                                    ::scrypto::core::Process::package_id(),
+                                    ::scrypto::core::Process::package_address(),
                                     #bp_name,
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
@@ -440,7 +440,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
                                 let rtn = ::scrypto::core::Process::call_method(
-                                    self.component_id,
+                                    self.component_address,
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
                                 );
@@ -462,7 +462,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     let output = quote! {
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
         pub struct #bp_ident {
-            component_id: ::scrypto::component::ComponentId,
+            component_address: ::scrypto::component::ComponentAddress,
         }
 
         impl #bp_ident {
@@ -471,17 +471,17 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
             #(#methods)*
         }
 
-        impl From<::scrypto::component::ComponentId> for #bp_ident {
-            fn from(component_id: ::scrypto::component::ComponentId) -> Self {
+        impl From<::scrypto::component::ComponentAddress> for #bp_ident {
+            fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
                 Self {
-                    component_id
+                    component_address
                 }
             }
         }
 
-        impl From<#bp_ident> for ::scrypto::component::ComponentId {
-            fn from(a: #bp_ident) -> ::scrypto::component::ComponentId {
-                a.component_id
+        impl From<#bp_ident> for ::scrypto::component::ComponentAddress {
+            fn from(a: #bp_ident) -> ::scrypto::component::ComponentAddress {
+                a.component_address
             }
         }
     };
@@ -553,13 +553,13 @@ mod tests {
                         fn blueprint_name() -> &'static str {
                             "Test"
                         }
-                        fn instantiate(self) -> ::scrypto::component::ComponentId {
+                        fn instantiate(self) -> ::scrypto::component::ComponentAddress {
                             ::scrypto::component::component_system().instantiate_component(
                                 ::scrypto::resource::ComponentAuthorization::new(),
                                 self
                             )
                         }
-                        fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
+                        fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentAddress {
                             ::scrypto::component::component_system().instantiate_component(
                                 authorization,
                                 self
@@ -580,7 +580,7 @@ mod tests {
                     match calldata.function.as_str() {
                         "x" => {
                             let arg0 =
-                                ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentId>(
+                                ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentAddress>(
                                     &calldata.args[0usize]
                                 ).unwrap();
                             let auth =
@@ -616,22 +616,22 @@ mod tests {
                 }
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
                 pub struct Test {
-                    component_id: ::scrypto::component::ComponentId,
+                    component_address: ::scrypto::component::ComponentAddress,
                 }
                 impl Test {
                     pub fn x(&self, auth: ::scrypto::resource::Proof) -> u32 {
-                        let rtn = ::scrypto::core::Process::call_method(self.component_id, "x", ::scrypto::args!(auth));
+                        let rtn = ::scrypto::core::Process::call_method(self.component_address, "x", ::scrypto::args!(auth));
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }
-                impl From<::scrypto::component::ComponentId> for Test {
-                    fn from(component_id: ::scrypto::component::ComponentId) -> Self {
-                        Self { component_id }
+                impl From<::scrypto::component::ComponentAddress> for Test {
+                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
+                        Self { component_address }
                     }
                 }
-                impl From<Test> for ::scrypto::component::ComponentId {
-                    fn from(a: Test) -> ::scrypto::component::ComponentId {
-                        a.component_id
+                impl From<Test> for ::scrypto::component::ComponentAddress {
+                    fn from(a: Test) -> ::scrypto::component::ComponentAddress {
+                        a.component_address
                     }
                 }
             },

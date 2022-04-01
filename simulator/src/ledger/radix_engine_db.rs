@@ -23,21 +23,21 @@ impl RadixEngineDB {
         ledger
     }
 
-    pub fn list_packages(&self) -> Vec<PackageId> {
-        let start = &scrypto_encode(&PackageId([0; 26]));
-        let end = &scrypto_encode(&PackageId([255; 26]));
+    pub fn list_packages(&self) -> Vec<PackageAddress> {
+        let start = &scrypto_encode(&PackageAddress([0; 26]));
+        let end = &scrypto_encode(&PackageAddress([255; 26]));
         self.list_items(start, end)
     }
 
-    pub fn list_components(&self) -> Vec<ComponentId> {
-        let start = &scrypto_encode(&ComponentId([0; 26]));
-        let end = &scrypto_encode(&ComponentId([255; 26]));
+    pub fn list_components(&self) -> Vec<ComponentAddress> {
+        let start = &scrypto_encode(&ComponentAddress([0; 26]));
+        let end = &scrypto_encode(&ComponentAddress([255; 26]));
         self.list_items(start, end)
     }
 
-    pub fn list_resource_defs(&self) -> Vec<ResourceDefId> {
-        let start = &scrypto_encode(&ResourceDefId([0; 26]));
-        let end = &scrypto_encode(&ResourceDefId([255; 26]));
+    pub fn list_resource_defs(&self) -> Vec<ResourceAddress> {
+        let start = &scrypto_encode(&ResourceAddress([0; 26]));
+        let end = &scrypto_encode(&ResourceAddress([255; 26]));
         self.list_items(start, end)
     }
 
@@ -70,10 +70,10 @@ impl RadixEngineDB {
 impl QueryableSubstateStore for RadixEngineDB {
     fn get_lazy_map_entries(
         &self,
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         lazy_map_id: &LazyMapId,
     ) -> HashMap<Vec<u8>, Vec<u8>> {
-        let mut id = scrypto_encode(&component_id);
+        let mut id = scrypto_encode(&component_address);
         id.extend(scrypto_encode(lazy_map_id));
         let key_size = id.len();
 

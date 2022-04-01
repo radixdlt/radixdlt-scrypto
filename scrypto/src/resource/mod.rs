@@ -33,7 +33,7 @@ pub use proof_rule::{
     ProofRule, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
-pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
+pub use resource_def::{ParseResourceAddressError, ResourceAddress, ResourceDef};
 pub use resource_flags::*;
 pub use resource_permissions::*;
 pub use resource_type::ResourceType;

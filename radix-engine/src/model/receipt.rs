@@ -16,9 +16,9 @@ pub struct Receipt {
     pub result: Result<(), RuntimeError>,
     pub outputs: Vec<ValidatedData>,
     pub logs: Vec<(Level, String)>,
-    pub new_package_ids: Vec<PackageId>,
-    pub new_component_ids: Vec<ComponentId>,
-    pub new_resource_def_ids: Vec<ResourceDefId>,
+    pub new_package_addresses: Vec<PackageAddress>,
+    pub new_component_addresses: Vec<ComponentAddress>,
+    pub new_resource_addresses: Vec<ResourceAddress>,
     pub execution_time: Option<u128>,
 }
 
@@ -85,33 +85,33 @@ impl fmt::Debug for Receipt {
             f,
             "\n{} {}",
             "New Entities:".bold().green(),
-            self.new_package_ids.len()
-                + self.new_component_ids.len()
-                + self.new_resource_def_ids.len()
+            self.new_package_addresses.len()
+                + self.new_component_addresses.len()
+                + self.new_resource_addresses.len()
         )?;
 
-        for (i, package_id) in self.new_package_ids.iter().enumerate() {
+        for (i, package_address) in self.new_package_addresses.iter().enumerate() {
             write!(
                 f,
                 "\n{} Package: {}",
-                prefix!(i, self.new_package_ids),
-                package_id
+                prefix!(i, self.new_package_addresses),
+                package_address
             )?;
         }
-        for (i, component_id) in self.new_component_ids.iter().enumerate() {
+        for (i, component_address) in self.new_component_addresses.iter().enumerate() {
             write!(
                 f,
                 "\n{} Component: {}",
-                prefix!(i, self.new_component_ids),
-                component_id
+                prefix!(i, self.new_component_addresses),
+                component_address
             )?;
         }
-        for (i, resource_def_id) in self.new_resource_def_ids.iter().enumerate() {
+        for (i, resource_address) in self.new_resource_addresses.iter().enumerate() {
             write!(
                 f,
                 "\n{} ResourceDef: {}",
-                prefix!(i, self.new_resource_def_ids),
-                resource_def_id
+                prefix!(i, self.new_resource_addresses),
+                resource_address
             )?;
         }
 

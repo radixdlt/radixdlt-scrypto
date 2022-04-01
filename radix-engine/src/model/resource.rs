@@ -26,7 +26,7 @@ pub enum ResourceContainerError {
 pub enum ResourceContainer {
     Fungible {
         /// The resource definition id.
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         /// The resource divisibility.
         divisibility: u8,
         /// The locked amounts and the corresponding times of being locked.
@@ -36,7 +36,7 @@ pub enum ResourceContainer {
     },
     NonFungible {
         /// The resource definition id.
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         /// The locked non-fungible ids and the corresponding times of being locked.
         locked_ids: HashMap<NonFungibleId, usize>,
         /// The liquid non-fungible ids.
@@ -57,7 +57,7 @@ pub enum LockedAmountOrIds {
 pub enum ResourceContainerId {
     Bucket(BucketId),
     Vault(VaultId),
-    Worktop(u32, ResourceDefId),
+    Worktop(u32, ResourceAddress),
 }
 
 impl LockedAmountOrIds {
@@ -81,35 +81,42 @@ impl LockedAmountOrIds {
 }
 
 impl ResourceContainer {
-    pub fn new_fungible(resource_def_id: ResourceDefId, divisibility: u8, amount: Decimal) -> Self {
+    pub fn new_fungible(
+        resource_address: ResourceAddress,
+        divisibility: u8,
+        amount: Decimal,
+    ) -> Self {
         Self::Fungible {
-            resource_def_id,
+            resource_address,
             divisibility,
             locked_amounts: BTreeMap::new(),
             liquid_amount: amount,
         }
     }
 
-    pub fn new_non_fungible(resource_def_id: ResourceDefId, ids: BTreeSet<NonFungibleId>) -> Self {
+    pub fn new_non_fungible(
+        resource_address: ResourceAddress,
+        ids: BTreeSet<NonFungibleId>,
+    ) -> Self {
         Self::NonFungible {
-            resource_def_id,
+            resource_address,
             locked_ids: HashMap::new(),
             liquid_ids: ids.clone(),
         }
     }
 
-    pub fn new_empty(resource_def_id: ResourceDefId, resource_type: ResourceType) -> Self {
+    pub fn new_empty(resource_address: ResourceAddress, resource_type: ResourceType) -> Self {
         match resource_type {
             ResourceType::Fungible { divisibility } => {
-                Self::new_fungible(resource_def_id, divisibility, Decimal::zero())
+                Self::new_fungible(resource_address, divisibility, Decimal::zero())
             }
-            ResourceType::NonFungible => Self::new_non_fungible(resource_def_id, BTreeSet::new()),
+            ResourceType::NonFungible => Self::new_non_fungible(resource_address, BTreeSet::new()),
         }
     }
 
     pub fn put(&mut self, other: Self) -> Result<(), ResourceContainerError> {
         // check resource address
-        if self.resource_def_id() != other.resource_def_id() {
+        if self.resource_address() != other.resource_address() {
             return Err(ResourceContainerError::ResourceAddressNotMatching);
         }
 
@@ -141,7 +148,7 @@ impl ResourceContainer {
                 }
                 *liquid_amount = *liquid_amount - amount;
                 Ok(Self::new_fungible(
-                    self.resource_def_id(),
+                    self.resource_address(),
                     divisibility,
                     amount,
                 ))
@@ -169,7 +176,7 @@ impl ResourceContainer {
                         return Err(ResourceContainerError::InsufficientBalance);
                     }
                 }
-                Ok(Self::new_non_fungible(self.resource_def_id(), ids.clone()))
+                Ok(Self::new_non_fungible(self.resource_address(), ids.clone()))
             }
         }
     }
@@ -364,14 +371,14 @@ impl ResourceContainer {
         self.total_amount().is_zero()
     }
 
-    pub fn resource_def_id(&self) -> ResourceDefId {
+    pub fn resource_address(&self) -> ResourceAddress {
         match self {
             Self::Fungible {
-                resource_def_id, ..
+                resource_address, ..
             }
             | Self::NonFungible {
-                resource_def_id, ..
-            } => *resource_def_id,
+                resource_address, ..
+            } => *resource_address,
         }
     }
 

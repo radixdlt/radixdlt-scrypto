@@ -11,10 +11,10 @@ pub struct Mint {
     amount: Decimal,
 
     /// The resource definition ID
-    resource_def_id: ResourceDefId,
+    resource_address: ResourceAddress,
 
     /// The minter resource definition ID
-    minter_resource_def_id: ResourceDefId,
+    minter_resource_address: ResourceAddress,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -33,11 +33,11 @@ impl Mint {
         let (default_pks, default_sks) = get_default_signers()?;
 
         let transaction = TransactionBuilder::new(&executor)
-            .withdraw_from_account(self.minter_resource_def_id, default_account)
+            .withdraw_from_account(self.minter_resource_address, default_account)
             .mint(
                 self.amount,
-                self.resource_def_id,
-                self.minter_resource_def_id,
+                self.resource_address,
+                self.minter_resource_address,
             )
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build_and_sign(default_pks, default_sks)

@@ -18,10 +18,10 @@ impl Process {
     }
 
     /// Returns the package ID.
-    pub fn package_id() -> PackageId {
+    pub fn package_address() -> PackageAddress {
         let input = GetActorInput {};
         let output: GetActorOutput = call_engine(GET_ACTOR, input);
-        output.package_id
+        output.package_address
     }
 
     /// Generates a UUID.
@@ -34,13 +34,13 @@ impl Process {
 
     /// Invokes a function on a blueprint.
     pub fn call_function<S: AsRef<str>>(
-        package_id: PackageId,
+        package_address: PackageAddress,
         blueprint_name: S,
         function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallFunctionInput {
-            package_id,
+            package_address,
             blueprint_name: blueprint_name.as_ref().to_owned(),
             function: function.as_ref().to_owned(),
             args,
@@ -52,12 +52,12 @@ impl Process {
 
     /// Invokes a method on a component.
     pub fn call_method<S: AsRef<str>>(
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         method: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallMethodInput {
-            component_id: component_id,
+            component_address: component_address,
             method: method.as_ref().to_owned(),
             args,
         };

@@ -10,21 +10,21 @@ use crate::rust::vec::Vec;
 /// Identifier for a non-fungible unit.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct NonFungibleAddress {
-    resource_def_id: ResourceDefId,
+    resource_address: ResourceAddress,
     non_fungible_id: NonFungibleId,
 }
 
 impl NonFungibleAddress {
-    pub fn new(resource_def_id: ResourceDefId, non_fungible_id: NonFungibleId) -> Self {
+    pub fn new(resource_address: ResourceAddress, non_fungible_id: NonFungibleId) -> Self {
         Self {
-            resource_def_id,
+            resource_address,
             non_fungible_id,
         }
     }
 
     /// Returns the resource definition.
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        self.resource_def_id
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.resource_address
     }
 
     /// Returns the non-fungible id.
@@ -50,13 +50,13 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
             return Err(ParseNonFungibleAddressError::Invalid);
         }
 
-        let (resource_def_id_slice, non_fungible_id_slice) = slice.split_at(26);
-        let resource_def_id = ResourceDefId::try_from(resource_def_id_slice)
+        let (resource_address_slice, non_fungible_id_slice) = slice.split_at(26);
+        let resource_address = ResourceAddress::try_from(resource_address_slice)
             .map_err(|_| ParseNonFungibleAddressError::Invalid)?;
         let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)
             .map_err(|_| ParseNonFungibleAddressError::Invalid)?;
         Ok(NonFungibleAddress {
-            resource_def_id,
+            resource_address,
             non_fungible_id,
         })
     }
@@ -64,7 +64,7 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
 
 impl NonFungibleAddress {
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut vec = self.resource_def_id.to_vec();
+        let mut vec = self.resource_address.to_vec();
         let mut other_vec = self.non_fungible_id.to_vec();
         vec.append(&mut other_vec);
         vec
@@ -92,7 +92,7 @@ impl FromStr for NonFungibleAddress {
 
 impl fmt::Display for NonFungibleAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}{}", self.resource_def_id, self.non_fungible_id)
+        write!(f, "{}{}", self.resource_address, self.non_fungible_id)
     }
 }
 

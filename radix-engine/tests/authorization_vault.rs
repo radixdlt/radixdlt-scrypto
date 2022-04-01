@@ -13,12 +13,12 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (pk, sk, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
-    let (_, token_resource_def_id) = test_runner.create_restricted_transfer_token(account);
+    let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account_by_amount(Decimal::one(), token_resource_def_id, account)
+        .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build_and_sign(vec![pk], vec![sk])
         .unwrap();
@@ -36,7 +36,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (pk, sk, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
-    let (auth_resource_def_id, token_resource_def_id) =
+    let (auth_resource_address, token_resource_address) =
         test_runner.create_restricted_transfer_token(account);
 
     // Act
@@ -44,19 +44,19 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .new_transaction_builder()
         .withdraw_from_account_by_ids(
             &BTreeSet::from([NonFungibleId::from(1)]),
-            auth_resource_def_id,
+            auth_resource_address,
             account,
         )
         .take_from_worktop_by_ids(
             &BTreeSet::from([NonFungibleId::from(1)]),
-            auth_resource_def_id,
+            auth_resource_address,
             |builder, bucket_id| {
                 builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                     builder.push_to_auth_zone(proof_id)
                 })
             },
         )
-        .withdraw_from_account_by_amount(Decimal::one(), token_resource_def_id, account)
+        .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build_and_sign(vec![pk], vec![sk])

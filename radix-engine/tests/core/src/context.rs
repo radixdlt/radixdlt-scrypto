@@ -4,9 +4,9 @@ blueprint! {
     struct CoreTest;
 
     impl CoreTest {
-        pub fn query() -> (PackageId, Hash, u64, u128) {
+        pub fn query() -> (PackageAddress, Hash, u64, u128) {
             (
-                Process::package_id(),
+                Process::package_address(),
                 Transaction::transaction_hash(),
                 Transaction::current_epoch(),
                 Process::generate_uuid(),

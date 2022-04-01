@@ -25,16 +25,16 @@ impl AuthZone {
         Proof(output.proof_id.into())
     }
 
-    pub fn create_proof(resource_def_id: ResourceDefId) -> Proof {
-        let input = CreateAuthZoneProofInput { resource_def_id };
+    pub fn create_proof(resource_address: ResourceAddress) -> Proof {
+        let input = CreateAuthZoneProofInput { resource_address };
         let output: CreateAuthZoneProofOutput = call_engine(CREATE_AUTH_ZONE_PROOF, input);
 
         Proof(output.proof_id.into())
     }
 
-    pub fn create_proof_by_amount(amount: Decimal, resource_def_id: ResourceDefId) -> Proof {
+    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let input = CreateAuthZoneProofByAmountInput {
-            resource_def_id,
+            resource_address,
             amount,
         };
         let output: CreateAuthZoneProofByAmountOutput =
@@ -45,10 +45,10 @@ impl AuthZone {
 
     pub fn create_proof_by_ids(
         ids: &BTreeSet<NonFungibleId>,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> Proof {
         let input = CreateAuthZoneProofByIdsInput {
-            resource_def_id,
+            resource_address,
             ids: ids.clone(),
         };
         let output: CreateAuthZoneProofByIdsOutput =

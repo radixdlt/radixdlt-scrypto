@@ -39,9 +39,9 @@ blueprint! {
             bucket
         }
 
-        pub fn query() -> (Decimal, ResourceDefId, Bucket) {
+        pub fn query() -> (Decimal, ResourceAddress, Bucket) {
             let bucket = Self::create_test_token(100);
-            (bucket.amount(), bucket.resource_def_id(), bucket)
+            (bucket.amount(), bucket.resource_address(), bucket)
         }
 
         pub fn test_restricted_transfer() -> Vec<Bucket> {
@@ -51,7 +51,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .flags(RESTRICTED_TRANSFER)
-                .badge(auth_bucket.resource_def_id(), MAY_TRANSFER)
+                .badge(auth_bucket.resource_address(), MAY_TRANSFER)
                 .initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
 
@@ -68,7 +68,7 @@ blueprint! {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .flags(BURNABLE)
-                .badge(badge.resource_def_id(), MAY_BURN)
+                .badge(badge.resource_address(), MAY_BURN)
                 .initial_supply(5);
             badge.authorize(|| bucket.burn());
             vec![badge]

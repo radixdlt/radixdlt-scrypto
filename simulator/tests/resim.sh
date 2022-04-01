@@ -9,9 +9,9 @@ resim="cargo run --bin resim $@ --"
 
 # Create test accounts and public keys
 $resim reset
-temp=`$resim new-account | tee /dev/tty | awk '/Account component ID:/ {print $NF}'`
+temp=`$resim new-account | tee /dev/tty | awk '/Account component address:/ {print $NF}'`
 account=`echo $temp | cut -d " " -f1`
-account2=`$resim new-account | tee /dev/tty | awk '/Account component ID:/ {print $NF}'`
+account2=`$resim new-account | tee /dev/tty | awk '/Account component address:/ {print $NF}'`
 
 # Test - create fixed supply badge
 minter_badge=`$resim new-badge-fixed 1 --name 'MintBadge' | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`

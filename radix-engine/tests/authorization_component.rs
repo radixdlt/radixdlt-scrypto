@@ -19,11 +19,11 @@ fn cannot_make_cross_component_call_without_authorization() {
         "get_component_state" => this!(auth_address.clone())
     };
 
-    let package_id = test_runner.publish_package("component");
+    let package_address = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(
-            package_id,
+            package_address,
             "CrossComponent",
             "create_component_with_auth",
             vec![scrypto_encode(&method_authorization)],
@@ -32,16 +32,21 @@ fn cannot_make_cross_component_call_without_authorization() {
         .unwrap();
     let receipt = test_runner.validate_and_execute(&transaction);
     receipt.result.expect("Should be okay");
-    let secured_component = receipt.new_component_ids[0];
+    let secured_component = receipt.new_component_addresses[0];
 
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package_id, "CrossComponent", "create_component", vec![])
+        .call_function(
+            package_address,
+            "CrossComponent",
+            "create_component",
+            vec![],
+        )
         .build_and_sign(vec![], vec![])
         .unwrap();
     let receipt = test_runner.validate_and_execute(&transaction);
     assert!(receipt.result.is_ok());
-    let my_component = receipt.new_component_ids[0];
+    let my_component = receipt.new_component_addresses[0];
 
     // Act
     let transaction = test_runner
@@ -73,11 +78,11 @@ fn can_make_cross_component_call_with_authorization() {
         "get_component_state" => this!(auth_address.clone())
     };
 
-    let package_id = test_runner.publish_package("component");
+    let package_address = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(
-            package_id,
+            package_address,
             "CrossComponent",
             "create_component_with_auth",
             vec![scrypto_encode(&method_authorization)],
@@ -86,16 +91,21 @@ fn can_make_cross_component_call_with_authorization() {
         .unwrap();
     let receipt = test_runner.validate_and_execute(&transaction);
     receipt.result.expect("Should be okay");
-    let secured_component = receipt.new_component_ids[0];
+    let secured_component = receipt.new_component_addresses[0];
 
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package_id, "CrossComponent", "create_component", vec![])
+        .call_function(
+            package_address,
+            "CrossComponent",
+            "create_component",
+            vec![],
+        )
         .build_and_sign(vec![], vec![])
         .unwrap();
     let receipt = test_runner.validate_and_execute(&transaction);
     assert!(receipt.result.is_ok());
-    let my_component = receipt.new_component_ids[0];
+    let my_component = receipt.new_component_addresses[0];
 
     let transaction = test_runner
         .new_transaction_builder()

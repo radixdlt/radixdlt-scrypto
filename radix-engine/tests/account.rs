@@ -35,12 +35,12 @@ fn can_withdraw_non_fungible_from_my_account() {
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (pk, sk, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
-    let resource_def_id = test_runner.create_non_fungible_resource(account);
+    let resource_address = test_runner.create_non_fungible_resource(account);
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(resource_def_id, account)
+        .withdraw_from_account(resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build_and_sign(vec![pk], vec![sk])
         .unwrap();
@@ -84,7 +84,7 @@ fn account_to_bucket_to_account() {
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallMethod {
-                    component_id: account,
+                    component_address: account,
                     method: "deposit".to_owned(),
                     args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
                 })

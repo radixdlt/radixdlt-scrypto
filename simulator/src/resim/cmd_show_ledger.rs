@@ -14,18 +14,18 @@ impl ShowLedger {
         let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
         println!("{}:", "Packages".green().bold());
-        for (last, package_id) in ledger.list_packages().iter().identify_last() {
-            println!("{} {}", list_item_prefix(last), package_id);
+        for (last, package_address) in ledger.list_packages().iter().identify_last() {
+            println!("{} {}", list_item_prefix(last), package_address);
         }
 
         println!("{}:", "Components".green().bold());
-        for (last, component_id) in ledger.list_components().iter().identify_last() {
-            println!("{} {}", list_item_prefix(last), component_id);
+        for (last, component_address) in ledger.list_components().iter().identify_last() {
+            println!("{} {}", list_item_prefix(last), component_address);
         }
 
         println!("{}:", "Resource Definitions".green().bold());
-        for (last, resource_def_id) in ledger.list_resource_defs().iter().identify_last() {
-            println!("{} {}", list_item_prefix(last), resource_def_id);
+        for (last, resource_address) in ledger.list_resource_defs().iter().identify_last() {
+            println!("{} {}", list_item_prefix(last), resource_address);
         }
 
         println!("{}: {}", "Nonce".green().bold(), ledger.get_nonce());

@@ -20,8 +20,8 @@ impl<T: NonFungibleData> From<NonFungibleAddress> for NonFungible<T> {
 
 impl<T: NonFungibleData> NonFungible<T> {
     /// Returns the resource definition.
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        self.address.resource_def_id()
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.address.resource_address()
     }
 
     /// Returns the non-fungible ID.
@@ -31,11 +31,11 @@ impl<T: NonFungibleData> NonFungible<T> {
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        resource_def!(self.resource_def_id()).get_non_fungible_data(&self.key())
+        resource_def!(self.resource_address()).get_non_fungible_data(&self.key())
     }
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: T) {
-        resource_def!(self.resource_def_id()).update_non_fungible_data(&self.key(), new_data);
+        resource_def!(self.resource_address()).update_non_fungible_data(&self.key(), new_data);
     }
 }

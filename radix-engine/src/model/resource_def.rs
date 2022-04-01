@@ -108,7 +108,7 @@ impl ResourceDef {
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<ResourceDefId, u64>,
+        authorities: HashMap<ResourceAddress, u64>,
     ) -> Result<Self, ResourceDefError> {
         if !resource_flags_are_valid(flags) {
             return Err(ResourceDefError::InvalidResourceFlags(flags));
@@ -152,7 +152,7 @@ impl ResourceDef {
             MethodState::new(IsSet(INDIVIDUAL_METADATA_MUTABLE), AlwaysTrue),
         );
 
-        for (resource_def_id, permission) in authorities {
+        for (resource_address, permission) in authorities {
             if !resource_permissions_are_valid(permission) {
                 return Err(ResourceDefError::InvalidResourcePermission(permission));
             }
@@ -166,13 +166,13 @@ impl ResourceDef {
                         method_state.auth = match cur_rule {
                             MethodAuthorization::Public => {
                                 MethodAuthorization::Protected(HardProofRule::AnyOf(
-                                    HardProofRuleResourceList::List(vec![resource_def_id.into()]),
+                                    HardProofRuleResourceList::List(vec![resource_address.into()]),
                                 ))
                             }
                             MethodAuthorization::Protected(HardProofRule::AnyOf(
                                 HardProofRuleResourceList::List(mut resources),
                             )) => {
-                                resources.push(resource_def_id.into());
+                                resources.push(resource_address.into());
                                 MethodAuthorization::Protected(HardProofRule::AnyOf(
                                     HardProofRuleResourceList::List(resources),
                                 ))

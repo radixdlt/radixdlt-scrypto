@@ -64,23 +64,23 @@ scrypto test
 
 ### Playing with Radix Engine
 
-| Action                             | Command                                                                                           |
-|------------------------------------|---------------------------------------------------------------------------------------------------|
-| Create an account                  | ``` resim new-account ```                                                                         |
-| Change the default account         | ``` resim set-default-account <account_component_id> <account_public_key>```                     |
-| Create a token with fixed supply   | ``` resim new-token-fixed <amount> ```                                                            |
-| Create a token with mutable supply | ``` resim new-token-mutable <minter_resource_def_id> ```                                         |
-| Create a badge with fixed supply   | ``` resim new-badge-fixed <amount> ```                                                            |
-| Create a badge with mutable supply | ``` resim new-badge-mutable <minter_resource_def_id> ```                                         |
-| Mint resource                      | ``` resim mint <amount> <resource_def_id> <minter_resource_def_id>```                           |
-| Transfer resource                  | ``` resim transfer <amount_or_non_fungible_ids>,<resource_def_id> <recipient_component_id> ``` |
-| Publish a package                  | ``` resim publish <path_to_package_dir> ```                                                       |
-| Call a function                    | ``` resim call-function <package_id> <blueprint_name> <function> <args> ```                      |
-| Call a method                      | ``` resim call-method <component_id> <method> <args> ```                                         |
-| Export the ABI of a blueprint      | ``` resim export-abi <package_id> <blueprint_name> ```                                           |
-| Show info about an entity          | ``` resim show <id> ```                                                                      |
-| List all entities in simulator     | ``` resim show-ledger  ```                                                                        |
-| Reset simulator state              | ``` resim reset ```                                                                               |
+| Action                             | Command                                                                                              |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Create an account                  | ``` resim new-account ```                                                                            |
+| Change the default account         | ``` resim set-default-account <account_component_address> <account_public_key>```                    |
+| Create a token with fixed supply   | ``` resim new-token-fixed <amount> ```                                                               |
+| Create a token with mutable supply | ``` resim new-token-mutable <minter_resource_address> ```                                            |
+| Create a badge with fixed supply   | ``` resim new-badge-fixed <amount> ```                                                               |
+| Create a badge with mutable supply | ``` resim new-badge-mutable <minter_resource_address> ```                                            |
+| Mint resource                      | ``` resim mint <amount> <resource_address> <minter_resource_address>```                              |
+| Transfer resource                  | ``` resim transfer <amount_or_non_fungible_ids>,<resource_address> <recipient_component_address> ``` |
+| Publish a package                  | ``` resim publish <path_to_package_dir> ```                                                          |
+| Call a function                    | ``` resim call-function <package_address> <blueprint_name> <function> <args> ```                     |
+| Call a method                      | ``` resim call-method <component_address> <method> <args> ```                                        |
+| Export the ABI of a blueprint      | ``` resim export-abi <package_address> <blueprint_name> ```                                          |
+| Show info about an entity          | ``` resim show <id> ```                                                                              |
+| List all entities in simulator     | ``` resim show-ledger  ```                                                                           |
+| Reset simulator state              | ``` resim reset ```                                                                                  |
 
 **Note:** The commands use the default account as transaction sender.
 

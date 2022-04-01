@@ -74,7 +74,7 @@ impl Bucket {
             (self.container.clone(), locked_amount_or_ids.clone()),
         );
         Proof::new(
-            self.resource_def_id(),
+            self.resource_address(),
             self.resource_type(),
             false,
             locked_amount_or_ids,
@@ -100,7 +100,7 @@ impl Bucket {
             (self.container.clone(), locked_amount_or_ids.clone()),
         );
         Proof::new(
-            self.resource_def_id(),
+            self.resource_address(),
             self.resource_type(),
             false,
             locked_amount_or_ids,
@@ -108,8 +108,8 @@ impl Bucket {
         )
     }
 
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        self.borrow_container().resource_def_id()
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.borrow_container().resource_address()
     }
 
     pub fn resource_type(&self) -> ResourceType {

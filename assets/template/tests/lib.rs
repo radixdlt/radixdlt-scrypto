@@ -21,7 +21,7 @@ fn test_hello() {
     assert!(receipt1.result.is_ok());
 
     // Test the `free_token` method.
-    let component = receipt1.new_component_ids[0];
+    let component = receipt1.new_component_addresses[0];
     let transaction2 = TransactionBuilder::new(&executor)
         .call_method(component, "free_token", vec![])
         .call_method_with_all_resources(account, "deposit_batch")

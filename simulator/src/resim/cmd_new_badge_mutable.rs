@@ -9,7 +9,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct NewBadgeMutable {
     /// The minter resource definition ID
-    minter_resource_def_id: ResourceDefId,
+    minter_resource_address: ResourceAddress,
 
     /// The symbol
     #[clap(long)]
@@ -63,7 +63,7 @@ impl NewBadgeMutable {
         };
 
         let transaction = TransactionBuilder::new(&executor)
-            .new_badge_mutable(metadata, self.minter_resource_def_id)
+            .new_badge_mutable(metadata, self.minter_resource_address)
             .build_and_sign(default_pks, default_sks)
             .map_err(Error::TransactionConstructionError)?;
         process_transaction(transaction, &mut executor, &self.manifest)

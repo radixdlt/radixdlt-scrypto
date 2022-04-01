@@ -3,13 +3,13 @@ use crate::errors::RuntimeError::NotAuthorized;
 use crate::model::Proof;
 use sbor::*;
 use scrypto::math::Decimal;
-use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
+use scrypto::prelude::{NonFungibleAddress, ResourceAddress};
 use scrypto::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleAddress),
-    Resource(ResourceDefId),
+    Resource(ResourceAddress),
     SoftResourceNotFound,
 }
 
@@ -17,16 +17,16 @@ impl HardResourceOrNonFungible {
     pub fn proof_matches(&self, proof: &Proof) -> bool {
         match self {
             HardResourceOrNonFungible::NonFungible(non_fungible_address) => {
-                let proof_resource_def_id = proof.resource_def_id();
-                proof_resource_def_id == non_fungible_address.resource_def_id()
+                let proof_resource_address = proof.resource_address();
+                proof_resource_address == non_fungible_address.resource_address()
                     && match proof.total_ids() {
                         Ok(ids) => ids.contains(&non_fungible_address.non_fungible_id()),
                         Err(_) => false,
                     }
             }
-            HardResourceOrNonFungible::Resource(resource_def_id) => {
-                let proof_resource_def_id = proof.resource_def_id();
-                proof_resource_def_id == *resource_def_id
+            HardResourceOrNonFungible::Resource(resource_address) => {
+                let proof_resource_address = proof.resource_address();
+                proof_resource_address == *resource_address
             }
             HardResourceOrNonFungible::SoftResourceNotFound => false,
         }
@@ -63,9 +63,9 @@ impl From<NonFungibleAddress> for HardResourceOrNonFungible {
     }
 }
 
-impl From<ResourceDefId> for HardResourceOrNonFungible {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        HardResourceOrNonFungible::Resource(resource_def_id)
+impl From<ResourceAddress> for HardResourceOrNonFungible {
+    fn from(resource_address: ResourceAddress) -> Self {
+        HardResourceOrNonFungible::Resource(resource_address)
     }
 }
 
