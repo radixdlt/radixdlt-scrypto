@@ -1,6 +1,6 @@
 use scrypto::abi;
 use scrypto::buffer::*;
-use scrypto::crypto::sha256;
+use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::string::ToString;
@@ -46,7 +46,7 @@ impl BasicAbiProvider {
         package_address: &PackageAddress,
         package: Package,
     ) -> &mut Self {
-        let tx_hash = sha256(self.substate_store.get_and_increase_nonce().to_le_bytes());
+        let tx_hash = hash(self.substate_store.get_and_increase_nonce().to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         self.substate_store
@@ -63,7 +63,7 @@ impl AbiProvider for BasicAbiProvider {
     ) -> Result<abi::Blueprint, RuntimeError> {
         // Deterministic transaction context
         let mut ledger = self.substate_store.clone();
-        let transaction_hash = sha256([]);
+        let transaction_hash = hash([]);
 
         // Start a process and run abi generator
         let mut track = Track::new(&mut ledger, transaction_hash, Vec::new());

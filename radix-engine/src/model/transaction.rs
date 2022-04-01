@@ -220,7 +220,7 @@ impl Transaction {
             &self.instructions
         };
         let bytes = scrypto_encode(instructions);
-        sha256(bytes)
+        hash(bytes)
     }
 
     pub fn sign(&mut self, private_keys: &[EcdsaPrivateKey]) {

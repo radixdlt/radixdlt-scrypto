@@ -1,6 +1,6 @@
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
-use scrypto::crypto::sha256;
+use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
 use scrypto::resource::ProofRule;
@@ -84,7 +84,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Generates a new key pair.
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
         let private_key =
-            EcdsaPrivateKey(sha256(self.substate_store.get_and_increase_nonce().to_le_bytes()).0);
+            EcdsaPrivateKey(hash(self.substate_store.get_and_increase_nonce().to_le_bytes()).0);
         let public_key = private_key.public_key();
         (public_key, private_key)
     }
@@ -144,7 +144,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         package_address: PackageAddress,
         code: Vec<u8>,
     ) -> Result<(), WasmValidationError> {
-        let tx_hash = sha256(self.substate_store.get_and_increase_nonce().to_le_bytes());
+        let tx_hash = hash(self.substate_store.get_and_increase_nonce().to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         let package = Package::new(code)?;
