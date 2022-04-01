@@ -347,9 +347,10 @@ fn generate_args(
     for v in values {
         let value = generate_value(v, None, resolver)?;
 
-        let mut enc = Encoder::with_type(Vec::new());
+        let mut bytes = Vec::new();
+        let mut enc = Encoder::with_type(&mut bytes);
         encode_any(None, &value, &mut enc);
-        result.push(enc.into());
+        result.push(bytes);
     }
     Ok(result)
 }

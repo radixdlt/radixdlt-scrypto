@@ -38,8 +38,8 @@ mod tests {
     #[test]
     fn test_serialization() {
         let obj = GenerateUuidOutput { uuid: 123 };
-        let mut encoded = scrypto_encode(&obj);
-        let decoded = scrypto_decode::<GenerateUuidOutput>(&mut encoded).unwrap();
+        let encoded = scrypto_encode(&obj);
+        let decoded = scrypto_decode::<GenerateUuidOutput>(&encoded).unwrap();
         assert_eq!(decoded.uuid, 123u128);
     }
 
