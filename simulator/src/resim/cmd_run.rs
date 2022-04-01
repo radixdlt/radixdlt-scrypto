@@ -24,7 +24,7 @@ impl Run {
         let mut transaction =
             transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
 
-        transaction.instructions.push(Instruction::IntendedSigners {
+        transaction.instructions.push(Instruction::Nonce {
             signers: default_pks,
             nonce: executor.substate_store().get_nonce(),
         });

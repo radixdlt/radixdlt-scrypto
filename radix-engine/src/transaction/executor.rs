@@ -98,7 +98,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })
-                    .build(vec![])
+                    .build(&[])
                     .unwrap()
                     .sign(&[]),
             )
@@ -124,7 +124,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             .validate_and_execute(
                 &TransactionBuilder::new(self)
                     .publish_package(code.as_ref())
-                    .build(vec![])
+                    .build(&[])
                     .unwrap()
                     .sign(&[]),
             )

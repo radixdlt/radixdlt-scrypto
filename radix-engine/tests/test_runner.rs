@@ -71,7 +71,7 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
+            .build(&[])
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
@@ -92,7 +92,7 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
+            .build(&[])
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
@@ -114,7 +114,7 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
+            .build(&[])
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
@@ -131,7 +131,7 @@ impl<'l> TestRunner<'l> {
                 vec![],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
+            .build(&[])
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
@@ -153,7 +153,7 @@ impl<'l> TestRunner<'l> {
                 args![amount, divisibility],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
+            .build(&[])
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
@@ -180,7 +180,7 @@ impl<'l> TestRunner<'l> {
                 Some(account),
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![pk])
+            .build(&[pk])
             .unwrap()
             .sign(&[sk]);
         let receipt = self.validate_and_execute(&transaction);

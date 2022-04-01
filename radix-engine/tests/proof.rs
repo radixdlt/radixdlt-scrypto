@@ -26,7 +26,7 @@ fn can_create_clone_and_drop_bucket_proof() {
             Some(account),
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -62,7 +62,7 @@ fn can_create_clone_and_drop_vault_proof() {
             "create_clone_drop_vault_proof",
             vec![scrypto_encode(&Decimal::one())],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -100,7 +100,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
             vec!["3".to_owned(), "1".to_owned()],
             None,
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -142,7 +142,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
             "create_clone_drop_vault_proof_by_ids",
             args![total_ids, proof_ids],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -176,7 +176,7 @@ fn can_use_bucket_for_authorization() {
             Some(account),
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -214,7 +214,7 @@ fn can_use_vault_for_authorization() {
             vec![format!("1,{}", burnable_resource_def_id)],
             Some(account),
         )
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -244,7 +244,7 @@ fn can_create_proof_from_account_and_pass_on() {
             vec![format!("1,{}", resource_def_id), "1".to_owned()],
             Some(account),
         )
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -274,7 +274,7 @@ fn cant_move_restricted_proof() {
             vec![format!("1,{}", resource_def_id), "1".to_owned()],
             Some(account),
         )
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -317,7 +317,7 @@ fn can_compose_bucket_and_vault_proof() {
                 args![Bucket(bucket_id)],
             )
         })
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -357,7 +357,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
                 args![Bucket(bucket_id), Decimal::from(2)],
             )
         })
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -407,7 +407,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 )
             },
         )
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -443,7 +443,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
             "create_clone_drop_vault_proof_by_amount",
             args![Decimal::from(3), Decimal::from(1)],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -491,7 +491,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 )
             },
         )
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);

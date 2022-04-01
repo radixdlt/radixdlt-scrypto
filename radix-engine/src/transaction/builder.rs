@@ -107,7 +107,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
                 self.id_validator.move_all_resources().unwrap();
             }
             Instruction::PublishPackage { .. }
-            | Instruction::IntendedSigners { .. }
+            | Instruction::Nonce { .. }
             | Instruction::End { .. } => {}
         }
 
@@ -432,8 +432,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         }
 
         let mut instructions = self.instructions.clone();
-        instructions.push(Instruction::IntendedSigners {
-            signers: intended_signers.as_ref().to_vec(),
+        instructions.push(Instruction::Nonce {
             nonce: self.abi_nonce_provider.get_nonce(intended_signers.as_ref()),
         });
 

@@ -20,7 +20,7 @@ fn can_withdraw_from_my_account() {
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -43,7 +43,7 @@ fn can_withdraw_non_fungible_from_my_account() {
         .new_transaction_builder()
         .withdraw_from_account(resource_def_id, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -63,7 +63,7 @@ fn cannot_withdraw_from_other_account() {
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![other_pk])
+        .build(&[other_pk])
         .unwrap()
         .sign(&[other_sk]);
 
@@ -93,7 +93,7 @@ fn account_to_bucket_to_account() {
                 })
                 .0
         })
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
 

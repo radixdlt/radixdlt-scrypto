@@ -42,7 +42,7 @@ fn test_dynamic_auth(
             "create_component",
             vec![scrypto_encode(addresses.get(initial_auth).unwrap())],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -57,7 +57,7 @@ fn test_dynamic_auth(
                 "update_auth",
                 vec![scrypto_encode(addresses.get(next_auth).unwrap())],
             )
-            .build(vec![])
+            .build(&[])
             .unwrap()
             .sign(&[]);
         test_runner
@@ -122,7 +122,7 @@ fn test_dynamic_authlist(
             "create_component",
             args!(list, authorization),
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt0 = test_runner.validate_and_execute(&transaction1);
@@ -273,7 +273,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
             "create_game",
             vec![scrypto_encode(&players)],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -284,7 +284,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(vec![other_pk])
+        .build(&[other_pk])
         .unwrap()
         .sign(&[other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction2);
@@ -315,7 +315,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
             "create_game",
             vec![scrypto_encode(&players)],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -324,7 +324,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(vec![pk])
+        .build(&[pk])
         .unwrap()
         .sign(&[sk]);
     test_runner
@@ -336,7 +336,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let transaction3 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(vec![other_pk])
+        .build(&[other_pk])
         .unwrap()
         .sign(&[other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction3);

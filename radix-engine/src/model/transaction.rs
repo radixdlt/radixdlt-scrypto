@@ -112,9 +112,8 @@ pub enum Instruction {
     /// Publishes a package.
     PublishPackage { code: Vec<u8> },
 
-    /// Specifies intended signers.
-    IntendedSigners {
-        signers: Vec<EcdsaPublicKey>,
+    /// Specifies transaction nonce
+    Nonce {
         nonce: u64, // TODO: may be replaced with substate id for entropy
     },
 
@@ -223,13 +222,17 @@ impl Transaction {
         sha256(bytes)
     }
 
-    pub fn sign(mut self, private_keys: &[EcdsaPrivateKey]) -> Self {
+    pub fn sign<T: AsRef<[EcdsaPrivateKey]>>(mut self, private_keys: T) -> Self {
         if self.is_signed() {
             panic!("Transaction already signed!");
         }
 
         let hash = self.hash();
-        let signatures = private_keys.iter().map(|sk| sk.sign(&hash)).collect();
+        let signatures = private_keys
+            .as_ref()
+            .iter()
+            .map(|sk| sk.sign(&hash))
+            .collect();
 
         self.instructions.push(Instruction::End { signatures });
         self

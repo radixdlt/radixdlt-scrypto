@@ -28,7 +28,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             "create_component_with_auth",
             vec![scrypto_encode(&method_authorization)],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -38,7 +38,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(package_id, "CrossComponent", "create_component", vec![])
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -53,7 +53,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             "cross_component_call",
             vec![scrypto_encode(&secured_component)],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -85,7 +85,7 @@ fn can_make_cross_component_call_with_authorization() {
             "create_component_with_auth",
             vec![scrypto_encode(&method_authorization)],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -95,7 +95,7 @@ fn can_make_cross_component_call_with_authorization() {
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(package_id, "CrossComponent", "create_component", vec![])
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -106,7 +106,7 @@ fn can_make_cross_component_call_with_authorization() {
         .new_transaction_builder()
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -120,7 +120,7 @@ fn can_make_cross_component_call_with_authorization() {
             "cross_component_call",
             vec![scrypto_encode(&secured_component)],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);

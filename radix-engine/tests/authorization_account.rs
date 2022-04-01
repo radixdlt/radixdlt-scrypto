@@ -22,7 +22,7 @@ fn can_withdraw_from_my_1_of_2_account_with_key0_sign() {
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![pk0])
+        .build(&[pk0])
         .unwrap()
         .sign(&[sk0]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -47,7 +47,7 @@ fn can_withdraw_from_my_1_of_2_account_with_key1_sign() {
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![pk1])
+        .build(&[pk1])
         .unwrap()
         .sign(&[sk1]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -72,7 +72,7 @@ fn can_withdraw_from_my_2_of_2_account_with_both_signatures() {
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![pk0, pk1])
+        .build(&[pk0, pk1])
         .unwrap()
         .sign(&[sk0, sk1]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -97,7 +97,7 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![pk1])
+        .build(&[pk1])
         .unwrap()
         .sign(&[sk1]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -129,7 +129,7 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![pk1, pk2])
+        .build(&[pk1, pk2])
         .unwrap()
         .sign(&[sk1, sk2]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -161,7 +161,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -193,7 +193,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -225,7 +225,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![])
+        .build(&[])
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
