@@ -24,6 +24,11 @@ impl<T: NonFungibleData> NonFungible<T> {
         self.address.resource_address()
     }
 
+    /// Returns the non-fungible address.
+    pub fn address(&self) -> NonFungibleAddress {
+        self.address.clone()
+    }
+
     /// Returns the non-fungible ID.
     pub fn id(&self) -> NonFungibleId {
         self.address.non_fungible_id()
