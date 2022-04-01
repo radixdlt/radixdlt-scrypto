@@ -5,7 +5,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
-use crate::resource::ComponentAuthorization;
+use crate::resource::{ComponentAuthorization, ProofRule};
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
@@ -13,16 +13,54 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
+pub struct LocalComponent {
+    blueprint_name: String,
+    state: Vec<u8>,
+    authorization: ComponentAuthorization,
+}
+
+impl LocalComponent {
+    pub fn new(blueprint_name: String, state: Vec<u8>) -> Self {
+        Self {
+            blueprint_name,
+            state,
+            authorization: ComponentAuthorization::new(),
+        }
+    }
+
+    pub fn auth(mut self, method_name: &str, proof_rule: ProofRule) -> Self {
+        if self.authorization.contains_method(method_name) {
+            panic!("Cannot overwrite current auth for method");
+        }
+
+        self.authorization.insert(method_name, proof_rule);
+        self
+    }
+
+    pub fn set_auth_interface(mut self, authorization: ComponentAuthorization) -> Self {
+        if !self.authorization.is_empty() {
+            panic!("Attempting to override current auth");
+        }
+
+        self.authorization = authorization;
+        self
+    }
+
+    pub fn globalize(self) -> ComponentId {
+        let input = CreateComponentInput {
+            blueprint_name: self.blueprint_name,
+            state: self.state,
+            authorization: self.authorization,
+        };
+        let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
+        output.component_id
+    }
+}
+
 /// Represents the state of a component.
 pub trait ComponentState: Encode + Decode {
-    /// Returns the blueprint name.
-    fn blueprint_name() -> &'static str;
-
     /// Instantiates a component from this data structure.
-    fn instantiate(self) -> ComponentId;
-
-    /// Instantiates a component from this data structure along with authorization rules
-    fn instantiate_with_auth(self, authorization: ComponentAuthorization) -> ComponentId;
+    fn instantiate(self) -> LocalComponent;
 }
 
 /// An instance of a blueprint, which lives in the ledger state.

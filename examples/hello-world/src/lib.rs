@@ -23,6 +23,7 @@ blueprint! {
                 sample_vault: Vault::with_bucket(my_bucket),
             }
             .instantiate()
+            .globalize()
         }
 
         // This is a method, because it needs a reference to self.  Methods can only be called on components

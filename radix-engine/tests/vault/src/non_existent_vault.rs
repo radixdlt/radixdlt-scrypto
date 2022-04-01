@@ -13,6 +13,7 @@ blueprint! {
                 vaults: LazyMap::new(),
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn new() -> ComponentId {
@@ -21,6 +22,7 @@ blueprint! {
                 vaults: LazyMap::new(),
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn create_non_existent_vault(&mut self) {
@@ -35,6 +37,7 @@ blueprint! {
                 vaults,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn create_non_existent_vault_in_lazy_map(&mut self) {

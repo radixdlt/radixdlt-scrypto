@@ -54,18 +54,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
 
             impl ::scrypto::component::ComponentState for #bp_ident {
-                fn blueprint_name() -> &'static str {
-                    #bp_name
-                }
-                fn instantiate(self) -> ::scrypto::component::ComponentId {
-                    ::scrypto::component::component_system().instantiate_component(
-                        ::scrypto::resource::ComponentAuthorization::new(),
-                        self
-                    )
-                }
-                fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
-                    ::scrypto::component::component_system().instantiate_component(
-                        authorization,
+                fn instantiate(self) -> ::scrypto::component::LocalComponent {
+                    ::scrypto::component::component_system().to_component_state_with_auth(
+                        #bp_name,
                         self
                     )
                 }
@@ -550,18 +541,9 @@ mod tests {
                     }
 
                     impl ::scrypto::component::ComponentState for Test {
-                        fn blueprint_name() -> &'static str {
-                            "Test"
-                        }
-                        fn instantiate(self) -> ::scrypto::component::ComponentId {
-                            ::scrypto::component::component_system().instantiate_component(
-                                ::scrypto::resource::ComponentAuthorization::new(),
-                                self
-                            )
-                        }
-                        fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
-                            ::scrypto::component::component_system().instantiate_component(
-                                authorization,
+                        fn instantiate(self) -> ::scrypto::component::LocalComponent {
+                            ::scrypto::component::component_system().to_component_state_with_auth(
+                                "Test",
                                 self
                             )
                         }

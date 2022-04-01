@@ -39,6 +39,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn invalid_double_ownership_of_vault() -> ComponentId {
@@ -56,6 +57,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn new_vault_into_map_then_get() -> ComponentId {
@@ -73,6 +75,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn overwrite_vault_in_map(&mut self) -> () {
@@ -93,6 +96,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn clear_vector(&mut self) -> () {
@@ -117,6 +121,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
+            .globalize()
         }
 
         fn create_non_fungible_vault() -> Vault {
@@ -138,6 +143,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn new_vault_with_get_non_fungible_ids() -> ComponentId {
@@ -151,6 +157,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn new_vault_with_get_amount() -> ComponentId {
@@ -164,6 +171,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn new_vault_with_get_resource_def() -> ComponentId {
@@ -177,6 +185,7 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
+            .globalize()
         }
     }
 }
