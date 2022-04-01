@@ -4,7 +4,7 @@ use scrypto::prelude::{AuthRule, NonFungibleAddress, require};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::{abi, auth2};
+use scrypto::{abi, auth};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -104,7 +104,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let key = self.new_public_key();
         let id = NonFungibleId::new(key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
-        let withdraw_auth = auth2!(require(auth_address));
+        let withdraw_auth = auth!(require(auth_address));
         let account = self.new_account(&withdraw_auth);
         (key, account)
     }

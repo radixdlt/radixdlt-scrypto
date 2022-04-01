@@ -42,8 +42,8 @@ fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
     let (key1, auth1) = test_runner.new_public_key_and_non_fungible_address();
     let auth_addresses = vec![auth0.clone(), auth1.clone()];
     let auths = [
-        auth2!(require_any_of(auth_addresses)),
-        auth2!(require(auth0) || require(auth1)),
+        auth!(require_any_of(auth_addresses)),
+        auth!(require(auth0) || require(auth1)),
     ];
 
     for auth in auths {
@@ -61,14 +61,14 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
     let (key1, auth1) = test_runner.new_public_key_and_non_fungible_address();
     let (key2, auth2) = test_runner.new_public_key_and_non_fungible_address();
     let auths = [
-        auth2!(require_any_of(vec![
+        auth!(require_any_of(vec![
             auth0.clone(),
             auth1.clone(),
             auth2.clone()
         ])),
-        auth2!(require(auth0.clone()) || require(auth1.clone()) || require(auth2.clone())),
-        auth2!((require(auth0.clone()) || require(auth1.clone())) || require(auth2.clone())),
-        auth2!(require(auth0.clone()) || (require(auth1.clone()) || require(auth2.clone()))),
+        auth!(require(auth0.clone()) || require(auth1.clone()) || require(auth2.clone())),
+        auth!((require(auth0.clone()) || require(auth1.clone())) || require(auth2.clone())),
+        auth!(require(auth0.clone()) || (require(auth1.clone()) || require(auth2.clone()))),
     ];
 
     for auth in auths {
@@ -86,8 +86,8 @@ fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
     let auth_addresses = vec![non_fungible_address0.clone(), non_fungible_address1.clone()];
     let auths = [
-        auth2!(require_all_of(auth_addresses)),
-        auth2!(require(non_fungible_address0) && require(non_fungible_address1)),
+        auth!(require_all_of(auth_addresses)),
+        auth!(require(non_fungible_address0) && require(non_fungible_address1)),
     ];
 
     for auth in auths {
@@ -104,8 +104,8 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     let (key1, non_fungible_address1) = test_runner.new_public_key_and_non_fungible_address();
     let auth_addresses = vec![non_fungible_address0.clone(), non_fungible_address1.clone()];
     let auths = [
-        auth2!(require_all_of(auth_addresses)),
-        auth2!(require(non_fungible_address0) && require(non_fungible_address1)),
+        auth!(require_all_of(auth_addresses)),
+        auth!(require(non_fungible_address0) && require(non_fungible_address1)),
     ];
 
     for auth in auths {
@@ -127,7 +127,7 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
         non_fungible_address1,
         non_fungible_address2,
     ];
-    let auth_2_of_3 = auth2!(require_n_of(2, auth_addresses));
+    let auth_2_of_3 = auth!(require_n_of(2, auth_addresses));
 
     test_auth_rule(&mut test_runner, &auth_2_of_3, vec![key1, key2], true);
 }
@@ -140,11 +140,11 @@ fn can_withdraw_from_my_complex_account() {
     let (key1, auth1) = test_runner.new_public_key_and_non_fungible_address();
     let (key2, auth2) = test_runner.new_public_key_and_non_fungible_address();
     let auths = [
-        auth2!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
-        auth2!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
-        auth2!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
-        auth2!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
-        auth2!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
+        auth!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
+        auth!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
+        auth!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
+        auth!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
+        auth!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
     let signers_list = [vec![key2], vec![key0, key1], vec![key0, key1, key2]];
 
@@ -163,11 +163,11 @@ fn cannot_withdraw_from_my_complex_account() {
     let (key1, auth1) = test_runner.new_public_key_and_non_fungible_address();
     let (_, auth2) = test_runner.new_public_key_and_non_fungible_address();
     let auths = [
-        auth2!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
-        auth2!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
-        auth2!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
-        auth2!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
-        auth2!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
+        auth!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
+        auth!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
+        auth!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
+        auth!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
+        auth!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
     let signers_list = [vec![key0], vec![key1]];
 
@@ -183,7 +183,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth = auth2!(require(RADIX_TOKEN));
+    let xrd_auth = auth!(require(RADIX_TOKEN));
     let account = test_runner.new_account(&xrd_auth);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
@@ -214,7 +214,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth = auth2!(require_amount(Decimal(1), RADIX_TOKEN));
+    let xrd_auth = auth!(require_amount(Decimal(1), RADIX_TOKEN));
     let account = test_runner.new_account(&xrd_auth);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
@@ -245,7 +245,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth = auth2!(require_amount(Decimal::from(1), RADIX_TOKEN));
+    let xrd_auth = auth!(require_amount(Decimal::from(1), RADIX_TOKEN));
     let account = test_runner.new_account(&xrd_auth);
     let (_, other_account) = test_runner.new_public_key_with_account();
 

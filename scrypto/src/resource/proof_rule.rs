@@ -131,13 +131,6 @@ impl AuthRule {
     }
 }
 
-#[macro_export]
-macro_rules! auth {
-    ($rule:expr) => {{
-        ::scrypto::resource::AuthRule::ProofRule($rule)
-    }};
-}
-
 pub fn require<T>(resource: T) -> ProofRule where T: Into<SoftResourceOrNonFungible> {
     ProofRule::Require(resource.into())
 }
@@ -159,29 +152,29 @@ pub fn require_amount<T>(amount: Decimal, resource: T) -> ProofRule where T: Int
 }
 
 #[macro_export]
-macro_rules! auth2 {
+macro_rules! auth {
     ($rule:ident $args:tt) => {{
         ::scrypto::resource::AuthRule::ProofRule($rule $args)
     }};
     (($($tt:tt)+)) => {{
-        auth2!($($tt)+)
+        auth!($($tt)+)
     }};
-    ($left:tt || $($right:tt)+) => {{ auth2!($left).or(auth2!($($right)+)) }};
-    ($left_rule:ident $left:tt || $($right:tt)+) => {{ auth2!($left_rule $left).or(auth2!($($right)+)) }};
+    ($left:tt || $($right:tt)+) => {{ auth!($left).or(auth!($($right)+)) }};
+    ($left_rule:ident $left:tt || $($right:tt)+) => {{ auth!($left_rule $left).or(auth!($($right)+)) }};
 
-    ($left:tt && $right:tt) => {{ auth2!($left).and(auth2!($right)) }};
-    ($left:tt && $right:tt && $($rest:tt)+) => {{ auth2!($left && $right).and(auth2!($($rest)+)) }};
-    ($left:tt && $right:tt || $($rest:tt)+) => {{ auth2!($left && $right).or(auth2!($($rest)+)) }};
+    ($left:tt && $right:tt) => {{ auth!($left).and(auth!($right)) }};
+    ($left:tt && $right:tt && $($rest:tt)+) => {{ auth!($left && $right).and(auth!($($rest)+)) }};
+    ($left:tt && $right:tt || $($rest:tt)+) => {{ auth!($left && $right).or(auth!($($rest)+)) }};
 
-    ($left1:ident $left2:tt && $right:tt) => {{ auth2!($left1$left2).and(auth2!($right)) }};
-    ($left1:ident $left2:tt && $right:tt && $($rest:tt)+) => {{ auth2!($left1$left2 && $right).and(auth2!($($rest)+)) }};
-    ($left1:ident $left2:tt && $right:tt || $($rest:tt)+) => {{ auth2!($left1$left2 && $right).or(auth2!($($rest)+)) }};
+    ($left1:ident $left2:tt && $right:tt) => {{ auth!($left1$left2).and(auth!($right)) }};
+    ($left1:ident $left2:tt && $right:tt && $($rest:tt)+) => {{ auth!($left1$left2 && $right).and(auth!($($rest)+)) }};
+    ($left1:ident $left2:tt && $right:tt || $($rest:tt)+) => {{ auth!($left1$left2 && $right).or(auth!($($rest)+)) }};
 
-    ($left:tt && $right1:ident $right2:tt) => {{ auth2!($left).and(auth2!($right1$right2)) }};
-    ($left:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth2!($left && $right1$right2).and(auth2!($($rest)+)) }};
-    ($left:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth2!($left && $right1$right2).or(auth2!($($rest)+)) }};
+    ($left:tt && $right1:ident $right2:tt) => {{ auth!($left).and(auth!($right1$right2)) }};
+    ($left:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth!($left && $right1$right2).and(auth!($($rest)+)) }};
+    ($left:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth!($left && $right1$right2).or(auth!($($rest)+)) }};
 
-    ($left1:ident $left2:tt && $right1:ident $right2:tt) => {{ auth2!($left1$left2).and(auth2!($right1$right2)) }};
-    ($left1:ident $left2:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth2!($left1$left2 && $right1$right2).and(auth2!($($rest)+)) }};
-    ($left1:ident $left2:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth2!($left1$left2 && $right1$right2).or(auth2!($($rest)+)) }};
+    ($left1:ident $left2:tt && $right1:ident $right2:tt) => {{ auth!($left1$left2).and(auth!($right1$right2)) }};
+    ($left1:ident $left2:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth!($left1$left2 && $right1$right2).and(auth!($($rest)+)) }};
+    ($left1:ident $left2:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth!($left1$left2 && $right1$right2).or(auth!($($rest)+)) }};
 }
