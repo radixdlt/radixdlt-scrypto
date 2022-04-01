@@ -549,9 +549,9 @@ mod tests {
         ];
 
         // Encode
-        let mut enc = Encoder::with_type(Vec::with_capacity(512));
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_type(&mut bytes);
         value1.encode(&mut enc);
-        let bytes: Vec<u8> = enc.into();
 
         let mut dec = Decoder::with_type(&bytes);
         let value2 = <[NFA; 2]>::decode(&mut dec).unwrap();

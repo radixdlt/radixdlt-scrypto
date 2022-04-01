@@ -4,7 +4,7 @@ use crate::rust::vec::Vec;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
-    encode_with_type(Vec::with_capacity(512), v)
+    encode_with_type(v)
 }
 
 /// Encodes a data structure into byte array for radix engine.
@@ -14,7 +14,8 @@ pub fn scrypto_encode_for_radix_engine<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     buf.extend(&[0u8; 4]);
 
     // encode the data structure
-    buf = encode_with_type(buf, v);
+    let mut enc = Encoder::with_type(&mut buf);
+    enc.encode(v);
 
     // update the length field
     let len = (buf.len() - 4) as u32;
@@ -37,8 +38,8 @@ mod tests {
     #[test]
     fn test_serialization() {
         let obj = GenerateUuidOutput { uuid: 123 };
-        let encoded = scrypto_encode(&obj);
-        let decoded = scrypto_decode::<GenerateUuidOutput>(&encoded).unwrap();
+        let mut encoded = scrypto_encode(&obj);
+        let decoded = scrypto_decode::<GenerateUuidOutput>(&mut encoded).unwrap();
         assert_eq!(decoded.uuid, 123u128);
     }
 
