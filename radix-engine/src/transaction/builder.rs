@@ -17,6 +17,7 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
+use scrypto::values::*;
 
 use crate::engine::*;
 use crate::model::*;
@@ -100,7 +101,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
             }
             Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
                 for arg in &args {
-                    let validated_arg = ValidatedData::from_slice(arg).unwrap();
+                    let validated_arg = ScryptoValue::from_slice(arg).unwrap();
                     self.id_validator.move_resources(&validated_arg).unwrap();
                 }
             }

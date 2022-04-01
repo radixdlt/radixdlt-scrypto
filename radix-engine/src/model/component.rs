@@ -8,11 +8,12 @@ use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::ScryptoType;
+use scrypto::values::*;
 
 use crate::model::method_authorization::{
     HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
 };
-use crate::model::{MethodAuthorization, ValidatedData};
+use crate::model::MethodAuthorization;
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -196,8 +197,8 @@ impl Component {
         &self,
         schema: &Type,
         method_name: &str,
-    ) -> (ValidatedData, MethodAuthorization) {
-        let data = ValidatedData::from_slice(&self.state).unwrap();
+    ) -> (ScryptoValue, MethodAuthorization) {
+        let data = ScryptoValue::from_slice(&self.state).unwrap();
         let authorization = match self.auth_rules.get(method_name) {
             Some(proof_rule) => MethodAuthorization::Protected(Self::soft_to_hard_rule(
                 schema, proof_rule, &data.dom,

@@ -281,7 +281,7 @@ pub fn generate_instruction(
         } => {
             let args = generate_args(args, resolver)?;
             for arg in &args {
-                let validated_arg = ValidatedData::from_slice(arg).unwrap();
+                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidatorError)?;
@@ -300,7 +300,7 @@ pub fn generate_instruction(
         } => {
             let args = generate_args(args, resolver)?;
             for arg in &args {
-                let validated_arg = ValidatedData::from_slice(arg).unwrap();
+                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidatorError)?;

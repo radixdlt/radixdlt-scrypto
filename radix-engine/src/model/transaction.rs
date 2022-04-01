@@ -5,8 +5,7 @@ use scrypto::engine::types::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-
-use crate::model::ValidatedData;
+use scrypto::values::*;
 
 /// Represents a signed or signed transaction, parsed but not validated.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -185,12 +184,12 @@ pub enum ValidatedInstruction {
         package_address: PackageAddress,
         blueprint_name: String,
         function: String,
-        args: Vec<ValidatedData>,
+        args: Vec<ScryptoValue>,
     },
     CallMethod {
         component_address: ComponentAddress,
         method: String,
-        args: Vec<ValidatedData>,
+        args: Vec<ScryptoValue>,
     },
     CallMethodWithAllResources {
         component_address: ComponentAddress,

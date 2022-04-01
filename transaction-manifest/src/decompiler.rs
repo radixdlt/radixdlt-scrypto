@@ -7,7 +7,7 @@ use scrypto::rust::collections::*;
 #[derive(Debug, Clone)]
 pub enum DecompileError {
     IdValidatorError(IdValidatorError),
-    DataValidationError(DataValidationError),
+    ParseScryptoValueError(ParseScryptoValueError),
 }
 
 pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
@@ -219,8 +219,8 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     package_address, blueprint_name, function
                 ));
                 for arg in args {
-                    let validated_arg = ValidatedData::from_slice(&arg)
-                        .map_err(DecompileError::DataValidationError)?;
+                    let validated_arg = ScryptoValue::from_slice(&arg)
+                        .map_err(DecompileError::ParseScryptoValueError)?;
                     id_validator
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
@@ -239,8 +239,8 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     component_address, method
                 ));
                 for arg in args {
-                    let validated_arg = ValidatedData::from_slice(&arg)
-                        .map_err(DecompileError::DataValidationError)?;
+                    let validated_arg = ScryptoValue::from_slice(&arg)
+                        .map_err(DecompileError::ParseScryptoValueError)?;
                     id_validator
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;

@@ -1,6 +1,5 @@
 mod bucket;
 mod component;
-mod data;
 mod method_authorization;
 mod non_fungible;
 mod package;
@@ -14,7 +13,6 @@ mod worktop;
 
 pub use bucket::Bucket;
 pub use component::Component;
-pub use data::{format_value, ValidatedData};
 pub use method_authorization::{HardProofRule, HardResourceOrNonFungible, MethodAuthorization};
 pub use non_fungible::NonFungible;
 pub use package::{Package, PackageError};

@@ -1,6 +1,7 @@
 use scrypto::engine::types::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::values::*;
 
 use crate::engine::*;
 use crate::errors::*;
@@ -201,11 +202,11 @@ pub fn validate_transaction(
 fn validate_args(
     args: Vec<Vec<u8>>,
     id_validator: &mut IdValidator,
-) -> Result<Vec<ValidatedData>, TransactionValidationError> {
+) -> Result<Vec<ScryptoValue>, TransactionValidationError> {
     let mut result = vec![];
     for arg in args {
-        let validated_arg = ValidatedData::from_slice(&arg)
-            .map_err(TransactionValidationError::DataValidationError)?;
+        let validated_arg = ScryptoValue::from_slice(&arg)
+            .map_err(TransactionValidationError::ParseScryptoValueError)?;
         id_validator
             .move_resources(&validated_arg)
             .map_err(TransactionValidationError::IdValidatorError)?;

@@ -66,7 +66,7 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
             }
 
             let state = c.state();
-            let state_data = ValidatedData::from_slice(state).unwrap();
+            let state_data = ScryptoValue::from_slice(state).unwrap();
             println!("{}: {}", "State".green().bold(), state_data);
 
             // Find all vaults owned by the component, assuming a tree structure.
@@ -102,8 +102,8 @@ fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore>(
         lazy_map_id
     );
     for (last, (k, v)) in map.iter().identify_last() {
-        let k_validated = ValidatedData::from_slice(k).unwrap();
-        let v_validated = ValidatedData::from_slice(v).unwrap();
+        let k_validated = ScryptoValue::from_slice(k).unwrap();
+        let v_validated = ScryptoValue::from_slice(v).unwrap();
         println!(
             "{} {} => {}",
             list_item_prefix(last),
@@ -159,8 +159,8 @@ fn dump_resources<T: SubstateStore>(
                     .0;
 
                 let immutable_data =
-                    ValidatedData::from_slice(&non_fungible.immutable_data()).unwrap();
-                let mutable_data = ValidatedData::from_slice(&non_fungible.mutable_data()).unwrap();
+                    ScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
+                let mutable_data = ScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                 println!(
                     "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                     if last { " " } else { "│" },
