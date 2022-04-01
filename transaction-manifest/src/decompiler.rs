@@ -1,8 +1,8 @@
 use radix_engine::engine::*;
-use radix_engine::errors::*;
 use radix_engine::model::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
+use scrypto::values::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
@@ -225,7 +225,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
                     buf.push(' ');
-                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &proofs));
+                    buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
                 }
                 buf.push_str(";\n");
             }
@@ -245,7 +245,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
                     buf.push(' ');
-                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &proofs));
+                    buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
                 }
                 buf.push_str(";\n");
             }

@@ -12,6 +12,7 @@ use crate::rust::collections::HashMap;
 use crate::rust::fmt;
 use crate::rust::format;
 use crate::rust::string::String;
+use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -194,6 +195,7 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
     }
 }
 
+/// Utility that formats any Scrypto value.
 pub struct ScryptoValueFormatter {}
 
 impl ScryptoValueFormatter {

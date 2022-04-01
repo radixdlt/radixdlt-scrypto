@@ -40,12 +40,9 @@ macro_rules! scrypto_type {
 
 pub(crate) use scrypto_type;
 
-/// Scrypto types that are encoded as custom SBOR types.
+/// Scrypto types are special types that are Scrypto specific and may require special interpretation.
 ///
-/// Any encode-able type in Scrypto library that requires special interpretation
-/// must be declared as a custom type.
-///
-/// Custom types must be encoded as `[length + bytes]`.
+/// They are custom types to SBOR serialization protocol.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ScryptoType {
     // component

@@ -138,7 +138,7 @@ blueprint! {
             );
             assert_eq!(
                 bucket.non_fungible_ids(),
-                BTreeSet::from([NonFungibleId::from_u32(2u128), NonFungibleId::from_u32(3)])
+                BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)])
             );
             (bucket, non_fungible_bucket)
         }
@@ -152,7 +152,7 @@ blueprint! {
             );
             assert_eq!(
                 vault.non_fungible_ids(),
-                BTreeSet::from([NonFungibleId::from_u32(2u128), NonFungibleId::from_u32(3)])
+                BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)])
             );
 
             NonFungibleTest { vault }.instantiate();

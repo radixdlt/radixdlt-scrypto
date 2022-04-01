@@ -5,10 +5,11 @@ use sbor::any::{encode_any, Value};
 use sbor::type_id::*;
 use sbor::Encoder;
 use scrypto::engine::types::*;
+use scrypto::rust::collections::BTreeSet;
+use scrypto::rust::collections::HashMap;
+use scrypto::rust::str::FromStr;
 use scrypto::types::*;
-use std::collections::BTreeSet;
-use std::collections::HashMap;
-use std::str::FromStr;
+use scrypto::values::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
