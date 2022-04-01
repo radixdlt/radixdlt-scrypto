@@ -2,7 +2,6 @@ use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
 use scrypto::resource::ProofRule;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;

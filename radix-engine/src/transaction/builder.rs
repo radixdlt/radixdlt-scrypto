@@ -1,6 +1,3 @@
-use crate::engine::*;
-use crate::model::*;
-use crate::transaction::*;
 use sbor::describe::*;
 use sbor::*;
 use scrypto::abi;
@@ -20,6 +17,10 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
+
+use crate::engine::*;
+use crate::model::*;
+use crate::transaction::*;
 
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider + NonceProvider> {

@@ -1,7 +1,6 @@
 use sbor::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
 use scrypto::types::*;

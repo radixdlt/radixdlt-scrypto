@@ -3,7 +3,6 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;

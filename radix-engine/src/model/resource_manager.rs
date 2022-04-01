@@ -1,14 +1,14 @@
-use crate::model::method_authorization::{HardProofRule, HardProofRuleResourceList};
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::ToString;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::mem;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 
+use crate::model::method_authorization::{HardProofRule, HardProofRuleResourceList};
 use crate::model::resource_manager::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
 use crate::model::MethodAuthorization;
 

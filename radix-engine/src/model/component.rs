@@ -1,18 +1,18 @@
-use crate::model::method_authorization::{
-    HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
-};
-use crate::model::{MethodAuthorization, ValidatedData};
-use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::SoftResource;
 use scrypto::resource::{
-    NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    NonFungibleAddress, ProofRule, SoftResource, SoftResourceOrNonFungible,
+    SoftResourceOrNonFungibleList,
 };
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::CustomType;
+
+use crate::model::method_authorization::{
+    HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
+};
+use crate::model::{MethodAuthorization, ValidatedData};
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
