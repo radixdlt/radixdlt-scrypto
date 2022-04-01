@@ -1,11 +1,10 @@
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
-use scrypto::resource::ProofRule;
+use scrypto::prelude::{AuthRule, NonFungibleAddress};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::{abi, require};
+use scrypto::{abi, auth2};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -83,7 +82,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
+    pub fn new_account(&mut self, withdraw_auth: &AuthRule) -> ComponentId {
         let receipt = self
             .run(
                 TransactionBuilder::new(self)
@@ -105,7 +104,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let key = self.new_public_key();
         let id = NonFungibleId::new(key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
-        let withdraw_auth = require!(auth_address);
+        let withdraw_auth = auth2!(require(auth_address));
         let account = self.new_account(&withdraw_auth);
         (key, account)
     }

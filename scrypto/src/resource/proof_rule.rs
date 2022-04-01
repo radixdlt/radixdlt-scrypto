@@ -3,6 +3,7 @@ use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
+use crate::prelude::AuthRule::{AllOf, AnyOf};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
@@ -143,9 +144,76 @@ pub enum AuthRule {
     AllOf(Vec<AuthRule>),
 }
 
+impl AuthRule {
+    pub fn or(self, other: AuthRule) -> Self {
+        match self {
+            AuthRule::AnyOf(mut rules) => {
+                rules.push(other);
+                AnyOf(rules)
+            },
+            _ => AnyOf(vec![self, other]),
+        }
+    }
+
+    pub fn and(self, other: AuthRule) -> Self {
+        match self {
+            AuthRule::AllOf(mut rules) => {
+                rules.push(other);
+                AllOf(rules)
+            },
+            _ => AllOf(vec![self, other]),
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! auth {
     ($rule:expr) => {{
         ::scrypto::resource::AuthRule::ProofRule($rule)
+    }};
+}
+
+#[macro_export]
+macro_rules! auth2 {
+    (require($rule:expr)) => {{
+        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::Require($rule.into()))
+    }};
+    (require_any_of($list:expr)) => {{
+        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AnyOf($list.into()))
+    }};
+    (require_all_of($list:expr)) => {{
+        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AllOf($list.into()))
+    }};
+    (require_n_of($count:expr, $list:expr)) => {{
+        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::CountOf($count, $list.into()))
+    }};
+    (require_amount($amount:expr, $resource:expr)) => {{
+        ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AmountOf($amount, $resource.into()))
+    }};
+    ($($tt1:tt$tt2:tt)||+) => {{
+        let mut rule = ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AnyOf(SoftResourceOrNonFungibleList::Static(vec![])));
+        $(
+            rule = rule.or(auth2!($tt1$tt2));
+        )*
+        rule
+    }};
+    (($($tt1:tt$tt2:tt)||+)) => {{
+        let mut rule = ::scrypto::resource::AuthRule::ProofRule(::scrypto::resource::ProofRule::AnyOf(SoftResourceOrNonFungibleList::Static(vec![])));
+        $(
+            rule = rule.or(auth2!($tt1$tt2));
+        )*
+        rule
+    }};
+    ($tt1:tt || $tt2:tt$rule2:tt) => {{
+        let rule = auth2!($tt1);
+        rule.or(auth2!($tt2$rule2))
+    }};
+    (($tt1:tt$rule1:tt || $tt2:tt$rule2:tt)) => {{
+        let rule = auth2!($tt1$rule1);
+        rule.or(auth2!($tt2$rule2))
+    }};
+    ($tt1:tt$rule1:tt || $tt2:tt$rule2:tt) => {{
+        let rule = auth2!($tt1$rule1);
+        rule.or(auth2!($tt2$rule2))
     }};
 }

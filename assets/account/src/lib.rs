@@ -6,22 +6,22 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new(withdraw_rule: ProofRule) -> ComponentId {
+        pub fn new(withdraw_rule: AuthRule) -> ComponentId {
             Self {
                 vaults: LazyMap::new(),
             }
             .instantiate()
-            .auth("withdraw", auth!(withdraw_rule))
+            .auth("withdraw", withdraw_rule)
             .globalize()
         }
 
-        pub fn new_with_resource(withdraw_rule: ProofRule, bucket: Bucket) -> ComponentId {
+        pub fn new_with_resource(withdraw_rule: AuthRule, bucket: Bucket) -> ComponentId {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
 
             Self { vaults }
                 .instantiate()
-                .auth("withdraw", auth!(withdraw_rule))
+                .auth("withdraw", withdraw_rule)
                 .globalize()
         }
 

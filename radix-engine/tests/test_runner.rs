@@ -30,7 +30,7 @@ impl<'l> TestRunner<'l> {
         (key, non_fungible_address)
     }
 
-    pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
+    pub fn new_account(&mut self, withdraw_auth: &AuthRule) -> ComponentId {
         self.executor.new_account(withdraw_auth)
     }
 
