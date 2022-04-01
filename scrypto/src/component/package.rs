@@ -27,7 +27,7 @@ impl Package {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> T {
-        let output = Process::call_function(self.0, blueprint_name, function, args);
+        let output = Runtime::call_function(self.0, blueprint_name, function, args);
 
         scrypto_decode(&output).unwrap()
     }

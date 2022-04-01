@@ -37,7 +37,7 @@ pub struct Component(pub(crate) ComponentAddress);
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let output = Process::call_method(self.0, method, args);
+        let output = Runtime::call_method(self.0, method, args);
 
         scrypto_decode(&output).unwrap()
     }

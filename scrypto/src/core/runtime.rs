@@ -1,14 +1,15 @@
 use crate::component::*;
 use crate::core::*;
+use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
 
-/// The process context at runtime.
+/// The transaction runtime.
 #[derive(Debug)]
-pub struct Process {}
+pub struct Runtime {}
 
-impl Process {
+impl Runtime {
     /// Returns the running entity, a component if within a call-method context or a
     /// blueprint if within a call-function context.
     pub fn actor() -> Actor {
@@ -64,5 +65,19 @@ impl Process {
         let output: CallMethodOutput = call_engine(CALL_METHOD, input);
 
         output.rtn
+    }
+
+    /// Returns the transaction hash.
+    pub fn transaction_hash() -> Hash {
+        let input = GetTransactionHashInput {};
+        let output: GetTransactionHashOutput = call_engine(GET_TRANSACTION_HASH, input);
+        output.transaction_hash
+    }
+
+    /// Returns the current epoch number.
+    pub fn current_epoch() -> u64 {
+        let input = GetCurrentEpochInput {};
+        let output: GetCurrentEpochOutput = call_engine(GET_CURRENT_EPOCH, input);
+        output.current_epoch
     }
 }

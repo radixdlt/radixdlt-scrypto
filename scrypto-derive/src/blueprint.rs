@@ -427,8 +427,8 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                     if mutable.is_none() {
                         functions.push(parse_quote! {
                             pub fn #ident(#(#input_args: #input_types),*) -> #output {
-                                let rtn = ::scrypto::core::Process::call_function(
-                                    ::scrypto::core::Process::package_address(),
+                                let rtn = ::scrypto::core::Runtime::call_function(
+                                    ::scrypto::core::Runtime::package_address(),
                                     #bp_name,
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
@@ -439,7 +439,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                let rtn = ::scrypto::core::Process::call_method(
+                                let rtn = ::scrypto::core::Runtime::call_method(
                                     self.component_address,
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
@@ -620,7 +620,7 @@ mod tests {
                 }
                 impl Test {
                     pub fn x(&self, auth: ::scrypto::resource::Proof) -> u32 {
-                        let rtn = ::scrypto::core::Process::call_method(self.component_address, "x", ::scrypto::args!(auth));
+                        let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(auth));
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }
