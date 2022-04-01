@@ -12,16 +12,18 @@ blueprint! {
 
     impl VaultTest {
         pub fn dangling_vault() -> () {
-            let bucket = ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            let bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_fungible(1);
+                .initial_supply(1);
             let _vault = Vault::with_bucket(bucket);
         }
 
         fn new_fungible() -> Bucket {
-            ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_fungible(1)
+                .initial_supply(1)
         }
 
         pub fn new_vault_into_map() -> ComponentId {
@@ -120,7 +122,7 @@ blueprint! {
         fn create_non_fungible_vault() -> Vault {
             let bucket = ResourceBuilder::new_non_fungible()
                 .metadata("name", "TestToken")
-                .initial_supply_non_fungible([(NonFungibleId::from(1u128), Data {})]);
+                .initial_supply([(NonFungibleId::from(1u128), Data {})]);
             Vault::with_bucket(bucket)
         }
 
