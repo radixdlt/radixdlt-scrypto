@@ -6,6 +6,32 @@ use sbor::*;
 use scrypto::math::Decimal;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum SoftCount {
+    Static(u8),
+    Dynamic(SchemaPath),
+}
+
+impl From<u8> for SoftCount {
+    fn from(count: u8) -> Self {
+        SoftCount::Static(count)
+    }
+}
+
+impl From<SchemaPath> for SoftCount {
+    fn from(path: SchemaPath) -> Self {
+        SoftCount::Dynamic(path)
+    }
+}
+
+impl From<&str> for SoftCount {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftCount::Dynamic(schema_path)
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
     Static(ResourceDefId),
     Dynamic(SchemaPath),
@@ -95,7 +121,7 @@ where
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(Decimal, SoftResource),
-    CountOf(u8, SoftResourceOrNonFungibleList),
+    CountOf(SoftCount, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
 }
@@ -173,11 +199,12 @@ where
     ProofRule::AllOf(resources.into())
 }
 
-pub fn require_n_of<T>(count: u8, resources: T) -> ProofRule
+pub fn require_n_of<T,C>(count: C, resources: T) -> ProofRule
 where
+    C: Into<SoftCount>,
     T: Into<SoftResourceOrNonFungibleList>,
 {
-    ProofRule::CountOf(count, resources.into())
+    ProofRule::CountOf(count.into(), resources.into())
 }
 
 pub fn require_amount<T>(amount: Decimal, resource: T) -> ProofRule

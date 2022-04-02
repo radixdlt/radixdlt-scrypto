@@ -7,6 +7,12 @@ use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
 use scrypto::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+pub enum HardCount {
+    Count(u8),
+    SoftCountNotFound,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleAddress),
     Resource(ResourceDefId),
@@ -81,7 +87,7 @@ pub enum HardProofRule {
     SomeOfResource(Decimal, HardResourceOrNonFungible),
     AllOf(HardProofRuleResourceList),
     AnyOf(HardProofRuleResourceList),
-    CountOf(u8, HardProofRuleResourceList),
+    CountOf(HardCount, HardProofRuleResourceList),
 }
 
 impl HardProofRule {
@@ -101,45 +107,37 @@ impl HardProofRule {
                     Err(NotAuthorized)
                 }
             }
-            HardProofRule::AllOf(resource_list) => match resource_list {
-                HardProofRuleResourceList::SoftResourceListNotFound => Err(NotAuthorized),
-                HardProofRuleResourceList::List(resources) => {
-                    for resource in resources {
-                        if !resource.check(proofs_vector) {
-                            return Err(NotAuthorized);
-                        }
+            HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
+                for resource in resources {
+                    if !resource.check(proofs_vector) {
+                        return Err(NotAuthorized);
                     }
-
-                    Ok(())
                 }
+
+                Ok(())
             },
-            HardProofRule::AnyOf(resource_list) => match resource_list {
-                HardProofRuleResourceList::SoftResourceListNotFound => Err(NotAuthorized),
-                HardProofRuleResourceList::List(resources) => {
-                    for resource in resources {
-                        if resource.check(proofs_vector) {
+            HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
+                for resource in resources {
+                    if resource.check(proofs_vector) {
+                        return Ok(());
+                    }
+                }
+
+                Err(NotAuthorized)
+            },
+            HardProofRule::CountOf(HardCount::Count(count), HardProofRuleResourceList::List(resources)) => {
+                let mut left = count.clone();
+                for resource in resources {
+                    if resource.check(proofs_vector) {
+                        left -= 1;
+                        if left == 0 {
                             return Ok(());
                         }
                     }
-
-                    Err(NotAuthorized)
                 }
+                Err(NotAuthorized)
             },
-            HardProofRule::CountOf(count, resource_list) => match resource_list {
-                HardProofRuleResourceList::SoftResourceListNotFound => Err(NotAuthorized),
-                HardProofRuleResourceList::List(resources) => {
-                    let mut left = count.clone();
-                    for resource in resources {
-                        if resource.check(proofs_vector) {
-                            left -= 1;
-                            if left == 0 {
-                                return Ok(());
-                            }
-                        }
-                    }
-                    Err(NotAuthorized)
-                }
-            },
+            _ => Err(NotAuthorized)
         }
     }
 }

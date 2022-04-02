@@ -1,11 +1,9 @@
-use crate::model::method_authorization::{
-    HardAuthRule, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
-};
+use crate::model::method_authorization::{HardAuthRule, HardCount, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible};
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRule, SoftResource};
+use scrypto::prelude::{AuthRule, SoftCount, SoftResource};
 use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
@@ -35,6 +33,26 @@ impl Component {
             blueprint_name,
             auth_rules,
             state,
+        }
+    }
+
+    fn soft_to_hard_count(
+        schema: &Type,
+        soft_count: &SoftCount,
+        dom: &Value,
+    ) -> HardCount {
+        match soft_count {
+            SoftCount::Static(count) => HardCount::Count(count.clone()),
+            SoftCount::Dynamic(schema_path) => {
+                let sbor_path = schema_path.to_sbor_path(schema);
+                if let None = sbor_path {
+                    return HardCount::SoftCountNotFound;
+                }
+                match sbor_path.unwrap().get_from_value(dom) {
+                    Some(Value::U8(count)) => HardCount::Count(count.clone()),
+                    _ => HardCount::SoftCountNotFound
+                }
+            }
         }
     }
 
@@ -189,9 +207,10 @@ impl Component {
                 let hard_resources = Self::soft_to_hard_resource_list(schema, resources, dom);
                 HardProofRule::AnyOf(hard_resources)
             }
-            ProofRule::CountOf(count, resources) => {
+            ProofRule::CountOf(soft_count, resources) => {
+                let hard_count = Self::soft_to_hard_count(schema, soft_count, dom);
                 let hard_resources = Self::soft_to_hard_resource_list(schema, resources, dom);
-                HardProofRule::CountOf(*count, hard_resources)
+                HardProofRule::CountOf(hard_count, hard_resources)
             }
         }
     }
