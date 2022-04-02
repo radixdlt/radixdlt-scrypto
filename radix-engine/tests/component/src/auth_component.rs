@@ -9,10 +9,7 @@ blueprint! {
         pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentId {
             Self { some_non_fungible }
                 .instantiate()
-                .auth(
-                    "get_secret",
-                    auth!(require("some_non_fungible")),
-                )
+                .auth("get_secret", auth!(require("some_non_fungible")))
                 .globalize()
         }
 

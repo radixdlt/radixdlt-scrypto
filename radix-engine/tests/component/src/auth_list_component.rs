@@ -12,13 +12,10 @@ blueprint! {
             auth: Vec<NonFungibleAddress>,
             authorization: ComponentAuthorization,
         ) -> ComponentId {
-            Self {
-                count,
-                auth
-            }
-            .instantiate()
-            .set_auth_interface(authorization)
-            .globalize()
+            Self { count, auth }
+                .instantiate()
+                .set_auth_interface(authorization)
+                .globalize()
         }
 
         pub fn update_count(&mut self, count: u8) {

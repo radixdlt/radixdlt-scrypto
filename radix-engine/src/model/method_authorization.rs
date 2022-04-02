@@ -121,7 +121,7 @@ impl HardProofRule {
                 }
 
                 Ok(())
-            },
+            }
             HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
                     if resource.check(proofs_vector) {
@@ -130,8 +130,11 @@ impl HardProofRule {
                 }
 
                 Err(NotAuthorized)
-            },
-            HardProofRule::CountOf(HardCount::Count(count), HardProofRuleResourceList::List(resources)) => {
+            }
+            HardProofRule::CountOf(
+                HardCount::Count(count),
+                HardProofRuleResourceList::List(resources),
+            ) => {
                 let mut left = count.clone();
                 for resource in resources {
                     if resource.check(proofs_vector) {
@@ -142,8 +145,8 @@ impl HardProofRule {
                     }
                 }
                 Err(NotAuthorized)
-            },
-            _ => Err(NotAuthorized)
+            }
+            _ => Err(NotAuthorized),
         }
     }
 }

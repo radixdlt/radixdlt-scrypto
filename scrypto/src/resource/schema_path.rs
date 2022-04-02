@@ -1,12 +1,12 @@
+use crate::resource::schema_path::SchemaSubPath::{Field, Index};
+use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
-use crate::rust::str::FromStr;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::describe::Fields;
 use sbor::path::SborPath;
 use sbor::*;
-use crate::resource::schema_path::SchemaSubPath::{Field, Index};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 enum SchemaSubPath {
@@ -16,10 +16,11 @@ enum SchemaSubPath {
 
 impl FromStr for SchemaSubPath {
     type Err = ();
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // TODO: check that field is a valid field name string
-        let sub_path = s.parse::<usize>()
+        let sub_path = s
+            .parse::<usize>()
             .map(|i| Index(i))
             .unwrap_or(Field(s.to_string()));
         Ok(sub_path)
@@ -97,7 +98,7 @@ impl SchemaPath {
 
 #[derive(Debug)]
 pub enum SchemaPathParseError {
-    InvalidPath
+    InvalidPath,
 }
 
 impl FromStr for SchemaPath {
@@ -107,7 +108,8 @@ impl FromStr for SchemaPath {
         let sub_paths = s.split("/");
         let mut schema_path = SchemaPath::new();
         for sub_path_str in sub_paths {
-            let sub_path = sub_path_str.parse()
+            let sub_path = sub_path_str
+                .parse()
                 .map_err(|_| SchemaPathParseError::InvalidPath)?;
             schema_path.sub_path(sub_path);
         }

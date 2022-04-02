@@ -55,7 +55,6 @@ impl From<&str> for SoftCount {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
     Static(ResourceDefId),
@@ -224,7 +223,7 @@ where
     ProofRule::AllOf(resources.into())
 }
 
-pub fn require_n_of<C,T>(count: C, resources: T) -> ProofRule
+pub fn require_n_of<C, T>(count: C, resources: T) -> ProofRule
 where
     C: Into<SoftCount>,
     T: Into<SoftResourceOrNonFungibleList>,
@@ -232,7 +231,7 @@ where
     ProofRule::CountOf(count.into(), resources.into())
 }
 
-pub fn require_amount<D,T>(amount: D, resource: T) -> ProofRule
+pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule
 where
     D: Into<SoftDecimal>,
     T: Into<SoftResource>,

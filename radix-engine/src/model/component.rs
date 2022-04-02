@@ -1,4 +1,7 @@
-use crate::model::method_authorization::{HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible};
+use crate::model::method_authorization::{
+    HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
+    HardResourceOrNonFungible,
+};
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
 use sbor::*;
@@ -36,11 +39,7 @@ impl Component {
         }
     }
 
-    fn soft_to_hard_decimal(
-        schema: &Type,
-        soft_decimal: &SoftDecimal,
-        dom: &Value,
-    ) -> HardDecimal {
+    fn soft_to_hard_decimal(schema: &Type, soft_decimal: &SoftDecimal, dom: &Value) -> HardDecimal {
         match soft_decimal {
             SoftDecimal::Static(amount) => HardDecimal::Amount(amount.clone()),
             SoftDecimal::Dynamic(schema_path) => {
@@ -49,23 +48,19 @@ impl Component {
                     return HardDecimal::SoftDecimalNotFound;
                 }
                 match sbor_path.unwrap().get_from_value(dom) {
-                    Some(Value::Custom(ty, value)) => {
-                        match CustomType::from_id(*ty).unwrap() {
-                            CustomType::Decimal => HardDecimal::Amount(Decimal::try_from(value.as_slice()).unwrap()),
-                            _ => HardDecimal::SoftDecimalNotFound
+                    Some(Value::Custom(ty, value)) => match CustomType::from_id(*ty).unwrap() {
+                        CustomType::Decimal => {
+                            HardDecimal::Amount(Decimal::try_from(value.as_slice()).unwrap())
                         }
-                    }
-                    _ => HardDecimal::SoftDecimalNotFound
+                        _ => HardDecimal::SoftDecimalNotFound,
+                    },
+                    _ => HardDecimal::SoftDecimalNotFound,
                 }
             }
         }
     }
 
-    fn soft_to_hard_count(
-        schema: &Type,
-        soft_count: &SoftCount,
-        dom: &Value,
-    ) -> HardCount {
+    fn soft_to_hard_count(schema: &Type, soft_count: &SoftCount, dom: &Value) -> HardCount {
         match soft_count {
             SoftCount::Static(count) => HardCount::Count(count.clone()),
             SoftCount::Dynamic(schema_path) => {
@@ -75,7 +70,7 @@ impl Component {
                 }
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::U8(count)) => HardCount::Count(count.clone()),
-                    _ => HardCount::SoftCountNotFound
+                    _ => HardCount::SoftCountNotFound,
                 }
             }
         }
