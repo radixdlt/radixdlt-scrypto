@@ -17,7 +17,7 @@ fn test_process_and_transaction() {
         .build(vec![])
         .unwrap();
     let receipt1 = executor.run(transaction1).unwrap();
-    assert!(receipt1.result.is_ok());
+    receipt1.result.expect("Should be okay.");
 }
 
 #[test]
@@ -34,5 +34,5 @@ fn test_call() {
         .build(vec![])
         .unwrap();
     let receipt = executor.run(transaction).unwrap();
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }

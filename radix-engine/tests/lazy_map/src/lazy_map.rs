@@ -26,6 +26,9 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .auth("clear_vector", auth!(allow_all))
+            .auth("dangling_lazy_map", auth!(allow_all))
+            .auth("overwrite_lazy_map", auth!(allow_all))
             .globalize()
         }
 
@@ -40,6 +43,9 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .auth("clear_vector", auth!(allow_all))
+            .auth("dangling_lazy_map", auth!(allow_all))
+            .auth("overwrite_lazy_map", auth!(allow_all))
             .globalize()
         }
 
@@ -55,12 +61,12 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .auth("clear_vector", auth!(allow_all))
+            .auth("dangling_lazy_map", auth!(allow_all))
+            .auth("overwrite_lazy_map", auth!(allow_all))
             .globalize()
         }
 
-        pub fn overwrite_lazy_map(&mut self) -> () {
-            self.lazy_maps.insert("hello".to_owned(), LazyMap::new())
-        }
 
         pub fn new_lazy_map_with_get() -> ComponentId {
             let map = LazyMap::new();
@@ -72,6 +78,9 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .auth("clear_vector", auth!(allow_all))
+            .auth("dangling_lazy_map", auth!(allow_all))
+            .auth("overwrite_lazy_map", auth!(allow_all))
             .globalize()
         }
 
@@ -85,7 +94,14 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .auth("clear_vector", auth!(allow_all))
+            .auth("dangling_lazy_map", auth!(allow_all))
+            .auth("overwrite_lazy_map", auth!(allow_all))
             .globalize()
+        }
+
+        pub fn overwrite_lazy_map(&mut self) -> () {
+            self.lazy_maps.insert("hello".to_owned(), LazyMap::new())
         }
 
         pub fn clear_vector(&mut self) -> () {

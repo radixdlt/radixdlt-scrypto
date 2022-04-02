@@ -1,10 +1,10 @@
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
-use scrypto::prelude::{require, AuthRule, NonFungibleAddress};
+use scrypto::prelude::{require, AuthRule, NonFungibleAddress, auth, auth_rule};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::{abi, auth};
+use scrypto::abi;
 
 use crate::engine::*;
 use crate::errors::*;

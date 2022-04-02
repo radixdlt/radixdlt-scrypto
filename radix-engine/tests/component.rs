@@ -55,7 +55,7 @@ fn test_component() {
         .build(vec![key])
         .unwrap();
     let receipt2 = test_runner.run(transaction2);
-    assert!(receipt2.result.is_ok());
+    receipt2.result.expect("Should be okay.");
 }
 
 #[test]

@@ -6,23 +6,31 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new(withdraw_rule: AuthRule) -> ComponentId {
-            Self {
-                vaults: LazyMap::new(),
+        fn internal_new(withdraw_rule: AuthRule, bucket: Option<Bucket>) -> ComponentId {
+            let vaults = LazyMap::new();
+            if let Some(b) = bucket {
+                vaults.insert(b.resource_def_id(), Vault::with_bucket(b));
             }
+
+            Self { vaults }
             .instantiate()
-            .auth("withdraw", withdraw_rule)
+            .auth("withdraw", withdraw_rule.clone())
+            .auth("withdraw_by_ids", withdraw_rule.clone())
+            .auth("withdraw_by_amount", withdraw_rule.clone())
+            .auth("create_proof_by_amount", withdraw_rule.clone())
+            .auth("create_proof_by_ids", withdraw_rule.clone())
+            .auth("deposit", auth!(allow_all))
+            .auth("deposit_batch", auth!(allow_all))
             .globalize()
         }
 
-        pub fn new_with_resource(withdraw_rule: AuthRule, bucket: Bucket) -> ComponentId {
-            let vaults = LazyMap::new();
-            vaults.insert(bucket.resource_def_id(), Vault::with_bucket(bucket));
 
-            Self { vaults }
-                .instantiate()
-                .auth("withdraw", withdraw_rule)
-                .globalize()
+        pub fn new(withdraw_rule: AuthRule) -> ComponentId {
+            Self::internal_new(withdraw_rule, Option::None)
+        }
+
+        pub fn new_with_resource(withdraw_rule: AuthRule, bucket: Bucket) -> ComponentId {
+            Self::internal_new(withdraw_rule, Option::Some(bucket))
         }
 
         /// Deposits resource into this account.

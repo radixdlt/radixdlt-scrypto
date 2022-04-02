@@ -13,6 +13,7 @@ blueprint! {
                     "get_secret",
                     auth!(require("some_non_fungible")),
                 )
+                .auth("update_auth", auth!(allow_all))
                 .globalize()
         }
 

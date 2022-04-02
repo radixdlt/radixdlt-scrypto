@@ -31,7 +31,7 @@ fn cannot_mint_with_wrong_auth() {
 
     // Assert
     let err = receipt.result.expect_err("Should be a runtime error");
-    assert_eq!(err, RuntimeError::NotAuthorized);
+    assert_auth_error!(err);
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn can_mint_with_right_auth() {
     let receipt = test_runner.run(transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -81,7 +81,7 @@ fn cannot_burn_with_no_auth() {
 
     // Assert
     let err = receipt.result.expect_err("Should be a runtime error");
-    assert_eq!(err, RuntimeError::NotAuthorized);
+    assert_auth_error!(err);
 }
 
 #[test]

@@ -69,7 +69,7 @@ fn test_dynamic_auth(
         receipt2.result.expect("Should be okay.");
     } else {
         let error = receipt2.result.expect_err("Should be an error.");
-        assert_eq!(error, RuntimeError::NotAuthorized);
+        assert_auth_error!(error);
     }
 }
 
@@ -125,7 +125,7 @@ fn test_dynamic_authlist(
         receipt.result.expect("Should be okay.");
     } else {
         let error = receipt.result.expect_err("Should be an error.");
-        assert_eq!(error, RuntimeError::NotAuthorized);
+        assert_auth_error!(error);
     }
 }
 
@@ -286,7 +286,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");
-    assert_eq!(error, RuntimeError::NotAuthorized);
+    assert_auth_error!(error);
 }
 
 #[test]

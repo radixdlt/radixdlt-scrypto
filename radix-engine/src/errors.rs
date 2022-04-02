@@ -220,10 +220,7 @@ pub enum RuntimeError {
     EmptyAuthZone,
 
     /// System Authorization Failure
-    NotAuthorized,
-
-    /// Method does not exist
-    UnsupportedMethod,
+    AuthorizationError(String, MethodAuthorizationError),
 
     /// Index out of bounds.
     IndexOutOfBounds { index: usize, max: usize },

@@ -85,7 +85,7 @@ fn cyclic_map_fails_execution() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::CyclicLazyMap(_) => {}
-        _ => panic!("Should be a cyclic lazy map error"),
+        _ => panic!("Should be a cyclic lazy map error but was {}", runtime_error),
     }
 }
 
@@ -107,7 +107,7 @@ fn self_cyclic_map_fails_execution() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::CyclicLazyMap(_) => {}
-        _ => panic!("Should be a cyclic lazy map error"),
+        _ => panic!("Should be a cyclic lazy map error but was {}", runtime_error),
     }
 }
 
@@ -135,7 +135,7 @@ fn cannot_remove_lazy_maps() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::LazyMapRemoved(_) => {}
-        _ => panic!("Should be lazy map removed error"),
+        _ => panic!("Should be lazy map removed error but was {}", runtime_error),
     }
 }
 
@@ -163,7 +163,7 @@ fn cannot_overwrite_lazy_maps() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::LazyMapRemoved(_) => {}
-        _ => panic!("Should be lazy map removed error"),
+        _ => panic!("Should be lazy map removed error but was {}", runtime_error),
     }
 }
 

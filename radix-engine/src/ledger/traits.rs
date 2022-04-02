@@ -1,10 +1,12 @@
 use sbor::*;
+use scrypto::auth;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::string::ToString;
 
 use crate::model::*;
 
@@ -175,10 +177,13 @@ pub trait SubstateStore {
                 self.get_nonce(),
             );
 
+            let mut auth_rules = HashMap::new();
+            auth_rules.insert("free_xrd".to_string(), auth!(allow_all));
+
             let system_component = Component::new(
                 SYSTEM_PACKAGE,
                 SYSTEM_COMPONENT_NAME.to_owned(),
-                HashMap::new(),
+                auth_rules,
                 scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
             );
             self.put_encoded_substate(&SYSTEM_COMPONENT, &system_component, self.get_nonce());

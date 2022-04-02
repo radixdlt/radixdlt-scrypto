@@ -228,7 +228,7 @@ impl Component {
             Some(auth_rule) => MethodAuthorization::Protected(Self::soft_to_hard_auth_rule(
                 schema, auth_rule, &data.dom,
             )),
-            None => MethodAuthorization::Public,
+            None => MethodAuthorization::Private,
         };
 
         (data, authorization)

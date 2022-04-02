@@ -1,3 +1,5 @@
+extern crate core;
+
 #[rustfmt::skip]
 pub mod test_runner;
 
@@ -30,7 +32,7 @@ fn test_auth_rule(
         receipt.result.expect("Should be okay");
     } else {
         let error = receipt.result.expect_err("Should be an error");
-        assert_eq!(error, RuntimeError::NotAuthorized);
+        assert_auth_error!(error);
     }
 }
 
@@ -269,5 +271,5 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");
-    assert_eq!(error, RuntimeError::NotAuthorized);
+    assert_auth_error!(error);
 }

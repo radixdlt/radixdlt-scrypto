@@ -9,6 +9,7 @@ use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use wasmi::*;
@@ -740,7 +741,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let component = self.track.get_component(component_id.clone()).unwrap();
                 let (data, method_auth) =
                     component.initialize_method(&schema, &invocation.function);
-                method_auth.check(&[self.caller_auth_zone])?;
+                method_auth.check(&[self.caller_auth_zone])
+                    .map_err(|e| RuntimeError::AuthorizationError(invocation.function.clone(), e))?;
 
                 // Load state
                 let initial_loaded_object_refs = ComponentObjectRefs {
@@ -1804,6 +1806,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
         let auth_rule = resource_def.get_auth(transition);
         auth_rule.check(&[self.caller_auth_zone, &self.auth_zone])
+            .map_err(|e| RuntimeError::AuthorizationError(transition.to_string(), e))
     }
 
     fn handle_enable_flags(

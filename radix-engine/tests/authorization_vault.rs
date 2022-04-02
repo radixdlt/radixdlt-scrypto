@@ -26,7 +26,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 
     // Assert
     let err = receipt.result.expect_err("Should be a runtime error");
-    assert_eq!(err, RuntimeError::NotAuthorized);
+    assert_auth_error!(err);
 }
 
 #[test]

@@ -174,3 +174,12 @@ impl<'l> TestRunner<'l> {
         receipt.new_component_ids[0]
     }
 }
+
+#[macro_export]
+macro_rules! assert_auth_error {
+    ($error:expr) => {{
+        if !matches!($error, RuntimeError::AuthorizationError(_, ::radix_engine::model::MethodAuthorizationError::NotAuthorized)) {
+            panic!("Not expected error.");
+        }
+    }}
+}

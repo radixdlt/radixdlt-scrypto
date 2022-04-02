@@ -188,31 +188,41 @@ where
 }
 
 #[macro_export]
-macro_rules! auth {
+macro_rules! auth_rule {
     // Handle leaves
     ($rule:ident $args:tt) => {{ ::scrypto::resource::AuthRule::ProofRule($rule $args) }};
 
     // Handle group
-    (($($tt:tt)+)) => {{ auth!($($tt)+) }};
+    (($($tt:tt)+)) => {{ auth_rule!($($tt)+) }};
 
     // Handle Ors
-    ($left:tt || $($right:tt)+) => {{ auth!($left).or(auth!($($right)+)) }};
-    ($left_rule:ident $left:tt || $($right:tt)+) => {{ auth!($left_rule $left).or(auth!($($right)+)) }};
+    ($left:tt || $($right:tt)+) => {{ auth_rule!($left).or(auth_rule!($($right)+)) }};
+    ($left_rule:ident $left:tt || $($right:tt)+) => {{ auth_rule!($left_rule $left).or(auth_rule!($($right)+)) }};
 
     // Handle Ands. a little more complicated since && has higher precedence over ||
-    ($left:tt && $right:tt) => {{ auth!($left).and(auth!($right)) }};
-    ($left:tt && $right:tt && $($rest:tt)+) => {{ auth!($left && $right).and(auth!($($rest)+)) }};
-    ($left:tt && $right:tt || $($rest:tt)+) => {{ auth!($left && $right).or(auth!($($rest)+)) }};
+    ($left:tt && $right:tt) => {{ auth_rule!($left).and(auth_rule!($right)) }};
+    ($left:tt && $right:tt && $($rest:tt)+) => {{ auth_rule!($left && $right).and(auth_rule!($($rest)+)) }};
+    ($left:tt && $right:tt || $($rest:tt)+) => {{ auth_rule!($left && $right).or(auth_rule!($($rest)+)) }};
 
-    ($left1:ident $left2:tt && $right:tt) => {{ auth!($left1$left2).and(auth!($right)) }};
-    ($left1:ident $left2:tt && $right:tt && $($rest:tt)+) => {{ auth!($left1$left2 && $right).and(auth!($($rest)+)) }};
-    ($left1:ident $left2:tt && $right:tt || $($rest:tt)+) => {{ auth!($left1$left2 && $right).or(auth!($($rest)+)) }};
+    ($left1:ident $left2:tt && $right:tt) => {{ auth_rule!($left1$left2).and(auth_rule!($right)) }};
+    ($left1:ident $left2:tt && $right:tt && $($rest:tt)+) => {{ auth_rule!($left1$left2 && $right).and(auth_rule!($($rest)+)) }};
+    ($left1:ident $left2:tt && $right:tt || $($rest:tt)+) => {{ auth_rule!($left1$left2 && $right).or(auth_rule!($($rest)+)) }};
 
-    ($left:tt && $right1:ident $right2:tt) => {{ auth!($left).and(auth!($right1$right2)) }};
-    ($left:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth!($left && $right1$right2).and(auth!($($rest)+)) }};
-    ($left:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth!($left && $right1$right2).or(auth!($($rest)+)) }};
+    ($left:tt && $right1:ident $right2:tt) => {{ auth_rule!($left).and(auth_rule!($right1$right2)) }};
+    ($left:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth_rule!($left && $right1$right2).and(auth_rule!($($rest)+)) }};
+    ($left:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth_rule!($left && $right1$right2).or(auth_rule!($($rest)+)) }};
 
-    ($left1:ident $left2:tt && $right1:ident $right2:tt) => {{ auth!($left1$left2).and(auth!($right1$right2)) }};
-    ($left1:ident $left2:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth!($left1$left2 && $right1$right2).and(auth!($($rest)+)) }};
-    ($left1:ident $left2:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth!($left1$left2 && $right1$right2).or(auth!($($rest)+)) }};
+    ($left1:ident $left2:tt && $right1:ident $right2:tt) => {{ auth_rule!($left1$left2).and(auth_rule!($right1$right2)) }};
+    ($left1:ident $left2:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth_rule!($left1$left2 && $right1$right2).and(auth_rule!($($rest)+)) }};
+    ($left1:ident $left2:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth_rule!($left1$left2 && $right1$right2).or(auth_rule!($($rest)+)) }};
+}
+
+#[macro_export]
+macro_rules! auth {
+    (allow_all) => {{
+        ::scrypto::resource::AuthRule::AllOf(::scrypto::rust::vec::Vec::new())
+    }};
+    ($($tt:tt)+) => {{
+        auth_rule!($($tt)+)
+    }};
 }

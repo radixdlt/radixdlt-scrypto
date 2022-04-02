@@ -20,6 +20,9 @@ blueprint! {
                 secret: "Secret".to_owned(),
             }
             .instantiate()
+            .auth("get_component_info", auth!(allow_all))
+            .auth("get_component_state", auth!(allow_all))
+            .auth("put_component_state", auth!(allow_all))
             .globalize()
         }
 
