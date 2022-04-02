@@ -1,9 +1,9 @@
-use crate::model::method_authorization::{HardAuthRule, HardCount, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible};
+use crate::model::method_authorization::{HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible};
 use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRule, SoftCount, SoftResource};
+use scrypto::prelude::{AuthRule, SoftCount, SoftDecimal, SoftResource};
 use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
@@ -33,6 +33,31 @@ impl Component {
             blueprint_name,
             auth_rules,
             state,
+        }
+    }
+
+    fn soft_to_hard_decimal(
+        schema: &Type,
+        soft_decimal: &SoftDecimal,
+        dom: &Value,
+    ) -> HardDecimal {
+        match soft_decimal {
+            SoftDecimal::Static(amount) => HardDecimal::Amount(amount.clone()),
+            SoftDecimal::Dynamic(schema_path) => {
+                let sbor_path = schema_path.to_sbor_path(schema);
+                if let None = sbor_path {
+                    return HardDecimal::SoftDecimalNotFound;
+                }
+                match sbor_path.unwrap().get_from_value(dom) {
+                    Some(Value::Custom(ty, value)) => {
+                        match CustomType::from_id(*ty).unwrap() {
+                            CustomType::Decimal => HardDecimal::Amount(Decimal::try_from(value.as_slice()).unwrap()),
+                            _ => HardDecimal::SoftDecimalNotFound
+                        }
+                    }
+                    _ => HardDecimal::SoftDecimalNotFound
+                }
+            }
         }
     }
 
@@ -195,9 +220,10 @@ impl Component {
                 );
                 HardProofRule::This(resource)
             }
-            ProofRule::AmountOf(amount, soft_resource) => {
+            ProofRule::AmountOf(soft_decimal, soft_resource) => {
+                let hard_decimal = Self::soft_to_hard_decimal(schema, soft_decimal, dom);
                 let resource = Self::soft_to_hard_resource(schema, soft_resource, dom);
-                HardProofRule::SomeOfResource(*amount, resource)
+                HardProofRule::SomeOfResource(hard_decimal, resource)
             }
             ProofRule::AllOf(resources) => {
                 let hard_resources = Self::soft_to_hard_resource_list(schema, resources, dom);

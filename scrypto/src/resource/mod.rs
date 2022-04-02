@@ -31,7 +31,7 @@ pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::{ParseProofError, Proof};
 pub use proof_rule::{
     require, require_all_of, require_amount, require_any_of, require_n_of, AuthRule, ProofRule,
-    SoftCount, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    SoftDecimal, SoftCount, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};

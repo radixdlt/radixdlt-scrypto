@@ -7,6 +7,12 @@ use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
 use scrypto::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+pub enum HardDecimal {
+    Amount(Decimal),
+    SoftDecimalNotFound,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardCount {
     Count(u8),
     SoftCountNotFound,
@@ -84,7 +90,7 @@ pub enum HardProofRuleResourceList {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardProofRule {
     This(HardResourceOrNonFungible),
-    SomeOfResource(Decimal, HardResourceOrNonFungible),
+    SomeOfResource(HardDecimal, HardResourceOrNonFungible),
     AllOf(HardProofRuleResourceList),
     AnyOf(HardProofRuleResourceList),
     CountOf(HardCount, HardProofRuleResourceList),
@@ -100,7 +106,7 @@ impl HardProofRule {
                     Err(NotAuthorized)
                 }
             }
-            HardProofRule::SomeOfResource(amount, resource) => {
+            HardProofRule::SomeOfResource(HardDecimal::Amount(amount), resource) => {
                 if resource.check_has_amount(*amount, proofs_vector) {
                     Ok(())
                 } else {
