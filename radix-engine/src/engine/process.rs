@@ -740,7 +740,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Auth check
                 let component = self.track.get_component(component_id.clone()).unwrap();
                 let (data, method_auth) =
-                    component.initialize_method(&schema, &invocation.function);
+                    component.method_authorization(&schema, &invocation.function);
                 method_auth.check(&[self.caller_auth_zone])
                     .map_err(|e| RuntimeError::AuthorizationError(invocation.function.clone(), e))?;
 

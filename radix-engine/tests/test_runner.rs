@@ -1,6 +1,5 @@
 use radix_engine::ledger::*;
-use radix_engine::model::Receipt;
-use radix_engine::model::Transaction;
+use radix_engine::model::{Component, Receipt, Transaction};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -48,6 +47,12 @@ impl<'l> TestRunner<'l> {
 
     pub fn compile(name: &str) -> Vec<u8> {
         compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
+    }
+
+    pub fn component(&self, component_id: ComponentId) -> Component {
+        self.executor.substate_store()
+            .get_decoded_substate(&component_id)
+            .map(|(component, _)| component).unwrap()
     }
 
     pub fn create_restricted_mint_token(

@@ -187,6 +187,68 @@ where
     ProofRule::AmountOf(amount, resource.into())
 }
 
+// TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.
+#[macro_export]
+macro_rules! auth_and_or {
+    (|| $tt:tt) => {{
+        let next = auth!($tt);
+        move |e: AuthRule| e.or(next)
+    }};
+    (|| $right1:ident $right2:tt) => {{
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| e.or(next)
+    }};
+    (|| $right:tt && $($rest:tt)+) => {{
+        let f = auth_and_or!(&& $($rest)+);
+        let next = auth!($right);
+        move |e: AuthRule| e.or(f(next))
+    }};
+    (|| $right:tt || $($rest:tt)+) => {{
+        let f = auth_and_or!(|| $($rest)+);
+        let next = auth!($right);
+        move |e: AuthRule| f(e.or(next))
+    }};
+    (|| $right1:ident $right2:tt && $($rest:tt)+) => {{
+        let f = auth_and_or!(&& $($rest)+);
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| e.or(f(next))
+    }};
+    (|| $right1:ident $right2:tt || $($rest:tt)+) => {{
+        let f = auth_and_or!(|| $($rest)+);
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| f(e.or(next))
+    }};
+
+    (&& $tt:tt) => {{
+        let next = auth!($tt);
+        move |e: AuthRule| e.and(next)
+    }};
+    (&& $right1:ident $right2:tt) => {{
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| e.and(next)
+    }};
+    (&& $right:tt && $($rest:tt)+) => {{
+        let f = auth_and_or!(&& $($rest)+);
+        let next = auth!($right);
+        move |e: AuthRule| f(e.and(next))
+    }};
+    (&& $right:tt || $($rest:tt)+) => {{
+        let f = auth_and_or!(|| $($rest)+);
+        let next = auth!($right);
+        move |e: AuthRule| f(e.and(next))
+    }};
+    (&& $right1:ident $right2:tt && $($rest:tt)+) => {{
+        let f = auth_and_or!(&& $($rest)+);
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| f(e.and(next))
+    }};
+    (&& $right1:ident $right2:tt || $($rest:tt)+) => {{
+        let f = auth_and_or!(|| $($rest)+);
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| f(e.and(next))
+    }};
+}
+
 #[macro_export]
 macro_rules! auth_rule {
     // Handle leaves
@@ -195,26 +257,15 @@ macro_rules! auth_rule {
     // Handle group
     (($($tt:tt)+)) => {{ auth_rule!($($tt)+) }};
 
-    // Handle Ors
-    ($left:tt || $($right:tt)+) => {{ auth_rule!($left).or(auth_rule!($($right)+)) }};
-    ($left_rule:ident $left:tt || $($right:tt)+) => {{ auth_rule!($left_rule $left).or(auth_rule!($($right)+)) }};
-
-    // Handle Ands. a little more complicated since && has higher precedence over ||
-    ($left:tt && $right:tt) => {{ auth_rule!($left).and(auth_rule!($right)) }};
-    ($left:tt && $right:tt && $($rest:tt)+) => {{ auth_rule!($left && $right).and(auth_rule!($($rest)+)) }};
-    ($left:tt && $right:tt || $($rest:tt)+) => {{ auth_rule!($left && $right).or(auth_rule!($($rest)+)) }};
-
-    ($left1:ident $left2:tt && $right:tt) => {{ auth_rule!($left1$left2).and(auth_rule!($right)) }};
-    ($left1:ident $left2:tt && $right:tt && $($rest:tt)+) => {{ auth_rule!($left1$left2 && $right).and(auth_rule!($($rest)+)) }};
-    ($left1:ident $left2:tt && $right:tt || $($rest:tt)+) => {{ auth_rule!($left1$left2 && $right).or(auth_rule!($($rest)+)) }};
-
-    ($left:tt && $right1:ident $right2:tt) => {{ auth_rule!($left).and(auth_rule!($right1$right2)) }};
-    ($left:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth_rule!($left && $right1$right2).and(auth_rule!($($rest)+)) }};
-    ($left:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth_rule!($left && $right1$right2).or(auth_rule!($($rest)+)) }};
-
-    ($left1:ident $left2:tt && $right1:ident $right2:tt) => {{ auth_rule!($left1$left2).and(auth_rule!($right1$right2)) }};
-    ($left1:ident $left2:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth_rule!($left1$left2 && $right1$right2).and(auth_rule!($($rest)+)) }};
-    ($left1:ident $left2:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth_rule!($left1$left2 && $right1$right2).or(auth_rule!($($rest)+)) }};
+    // Handle and/or logic
+    ($left1:ident $left2:tt $($right:tt)+) => {{
+        let f = auth_and_or!($($right)+);
+        f(auth!($left1 $left2))
+    }};
+    ($left:tt $($right:tt)+) => {{
+        let f = auth_and_or!($($right)+);
+        f(auth!($left))
+    }};
 }
 
 #[macro_export]
