@@ -6,7 +6,7 @@ blueprint! {
     }
 
     impl Account {
-        fn internal_new(withdraw_rule: AuthRule, bucket: Option<Bucket>) -> ComponentId {
+        fn internal_new(withdraw_rule: AuthRuleNode, bucket: Option<Bucket>) -> ComponentId {
             let vaults = LazyMap::new();
             if let Some(b) = bucket {
                 vaults.insert(b.resource_def_id(), Vault::with_bucket(b));
@@ -25,11 +25,11 @@ blueprint! {
         }
 
 
-        pub fn new(withdraw_rule: AuthRule) -> ComponentId {
+        pub fn new(withdraw_rule: AuthRuleNode) -> ComponentId {
             Self::internal_new(withdraw_rule, Option::None)
         }
 
-        pub fn new_with_resource(withdraw_rule: AuthRule, bucket: Bucket) -> ComponentId {
+        pub fn new_with_resource(withdraw_rule: AuthRuleNode, bucket: Bucket) -> ComponentId {
             Self::internal_new(withdraw_rule, Option::Some(bucket))
         }
 

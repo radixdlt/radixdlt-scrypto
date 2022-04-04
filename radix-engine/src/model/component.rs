@@ -5,7 +5,7 @@ use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRule, SoftResource};
+use scrypto::prelude::{AuthRuleNode, SoftResource};
 use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
@@ -19,7 +19,7 @@ use scrypto::types::CustomType;
 pub struct Component {
     package_id: PackageId,
     blueprint_name: String,
-    auth_rules: HashMap<String, AuthRule>,
+    auth_rules: HashMap<String, AuthRuleNode>,
     state: Vec<u8>,
 }
 
@@ -27,7 +27,7 @@ impl Component {
     pub fn new(
         package_id: PackageId,
         blueprint_name: String,
-        auth_rules: HashMap<String, AuthRule>,
+        auth_rules: HashMap<String, AuthRuleNode>,
         state: Vec<u8>,
     ) -> Self {
         Self {
@@ -196,19 +196,19 @@ impl Component {
         }
     }
 
-    fn soft_to_hard_auth_rule(schema: &Type, auth_rule: &AuthRule, dom: &Value) -> HardAuthRule {
+    fn soft_to_hard_auth_rule(schema: &Type, auth_rule: &AuthRuleNode, dom: &Value) -> HardAuthRule {
         match auth_rule {
-            AuthRule::ProofRule(proof_rule) => {
+            AuthRuleNode::ProofRule(proof_rule) => {
                 HardAuthRule::ProofRule(Self::soft_to_hard_proof_rule(schema, proof_rule, dom))
             }
-            AuthRule::AnyOf(rules) => {
+            AuthRuleNode::AnyOf(rules) => {
                 let hard_rules = rules
                     .iter()
                     .map(|r| Self::soft_to_hard_auth_rule(schema, r, dom))
                     .collect();
                 HardAuthRule::AnyOf(hard_rules)
             }
-            AuthRule::AllOf(rules) => {
+            AuthRuleNode::AllOf(rules) => {
                 let hard_rules = rules
                     .iter()
                     .map(|r| Self::soft_to_hard_auth_rule(schema, r, dom))
@@ -234,7 +234,7 @@ impl Component {
         (data, authorization)
     }
 
-    pub fn auth_rules(&self) -> &HashMap<String, AuthRule> {
+    pub fn auth_rules(&self) -> &HashMap<String, AuthRuleNode> {
         &self.auth_rules
     }
 

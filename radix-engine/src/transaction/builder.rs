@@ -6,7 +6,7 @@ use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::AuthRule;
+use scrypto::prelude::AuthRuleNode;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::borrow::ToOwned;
@@ -571,7 +571,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, withdraw_auth: &AuthRule) -> &mut Self {
+    pub fn new_account(&mut self, withdraw_auth: &AuthRuleNode) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_id: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
@@ -584,7 +584,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Creates an account with some initial resource.
     pub fn new_account_with_resource(
         &mut self,
-        withdraw_auth: &AuthRule,
+        withdraw_auth: &AuthRuleNode,
         bucket_id: BucketId,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {

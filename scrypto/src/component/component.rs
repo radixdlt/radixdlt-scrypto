@@ -5,7 +5,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
-use crate::prelude::AuthRule;
+use crate::prelude::AuthRuleNode;
 use crate::resource::ComponentAuthorization;
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
@@ -29,7 +29,7 @@ impl LocalComponent {
         }
     }
 
-    pub fn auth(mut self, method_name: &str, auth_rule: AuthRule) -> Self {
+    pub fn auth(mut self, method_name: &str, auth_rule: AuthRuleNode) -> Self {
         if self.authorization.contains_method(method_name) {
             panic!("Cannot overwrite current auth for method");
         }

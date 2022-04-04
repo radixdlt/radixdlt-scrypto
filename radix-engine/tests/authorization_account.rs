@@ -10,7 +10,7 @@ use scrypto::prelude::*;
 
 fn test_auth_rule(
     test_runner: &mut TestRunner,
-    auth_rule: &AuthRule,
+    auth_rule: &AuthRuleNode,
     signers: Vec<EcdsaPublicKey>,
     should_succeed: bool,
 ) {
