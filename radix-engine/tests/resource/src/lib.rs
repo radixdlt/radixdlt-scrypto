@@ -43,7 +43,6 @@ blueprint! {
                 .auth("take_from_vault", auth!(allow_all))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .flags(MAY_MINT | BURNABLE)
                 .no_initial_supply();
             token_address
         }
@@ -54,7 +53,6 @@ blueprint! {
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .flags(MINTABLE | BURNABLE)
-                .mutable_flags(MAY_MINT)
                 .no_initial_supply();
             token_address
         }

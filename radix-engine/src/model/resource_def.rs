@@ -14,7 +14,7 @@ pub enum ResourceDefError {
     InvalidDivisibility,
     InvalidAmount(Decimal, u8),
     InvalidResourceFlags(u64),
-    InvalidResourcePermission(u64),
+    InvalidMintPermission,
     TakeFromVaultNotDefined,
     FlagsLocked,
     ResourceTypeDoesNotMatch,
@@ -48,28 +48,11 @@ impl ResourceDef {
             return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
         }
 
-
-
-        /*
-        method_states.insert(
-            "enable_flags".to_string(),
-            MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
-        );
-        method_states.insert(
-            "disable_flags".to_string(),
-            MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
-        );
-        method_states.insert(
-            "lock_flags".to_string(),
-            MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
-        );
-         */
-
         let mut authorization: HashMap<String, MethodAuthorization> = HashMap::new();
         if let Some(mint_auth) = auth.get("mint") {
             // TODO: Check for other invalid mint permissions?
             if let MethodAuth::AllowAll = mint_auth {
-                return Err(ResourceDefError::InvalidResourcePermission(0));
+                return Err(ResourceDefError::InvalidMintPermission);
             }
 
             authorization.insert("mint".to_string(), convert(&Type::Unit, &Value::Unit, mint_auth));
