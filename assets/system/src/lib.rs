@@ -17,7 +17,6 @@ blueprint! {
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
             flags: u64,
-            mutable_flags: u64,
             authorization: ComponentAuthorization,
             initial_supply: Option<MintParams>,
         ) -> (ResourceDefId, Option<Bucket>) {
@@ -25,7 +24,6 @@ blueprint! {
                 resource_type,
                 metadata,
                 flags,
-                mutable_flags,
                 authorization,
                 initial_supply,
             )

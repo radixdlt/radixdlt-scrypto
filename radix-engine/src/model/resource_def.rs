@@ -1,5 +1,5 @@
-use sbor::*;
 use sbor::any::Value;
+use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::{ComponentAuthorization, MethodAuth, ToString};
 use scrypto::resource::resource_flags::*;
@@ -16,7 +16,6 @@ pub enum ResourceDefError {
     InvalidResourceFlags(u64),
     InvalidMintPermission,
     TakeFromVaultNotDefined,
-    FlagsLocked,
     ResourceTypeDoesNotMatch,
     MaxMintAmountExceeded,
 }
@@ -27,7 +26,6 @@ pub struct ResourceDef {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
     flags: u64,
-    mutable_flags: u64,
     authorization: HashMap<String, MethodAuthorization>,
     total_supply: Decimal,
 }
@@ -37,15 +35,10 @@ impl ResourceDef {
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
         flags: u64,
-        mutable_flags: u64,
-        auth: ComponentAuthorization
+        auth: ComponentAuthorization,
     ) -> Result<Self, ResourceDefError> {
         if !resource_flags_are_valid(flags) {
             return Err(ResourceDefError::InvalidResourceFlags(flags));
-        }
-
-        if !resource_flags_are_valid(mutable_flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
         }
 
         let mut authorization: HashMap<String, MethodAuthorization> = HashMap::new();
@@ -55,32 +48,52 @@ impl ResourceDef {
                 return Err(ResourceDefError::InvalidMintPermission);
             }
 
-            authorization.insert("mint".to_string(), convert(&Type::Unit, &Value::Unit, mint_auth));
+            authorization.insert(
+                "mint".to_string(),
+                convert(&Type::Unit, &Value::Unit, mint_auth),
+            );
         }
 
         if let Some(burn_auth) = auth.get("burn") {
-            authorization.insert("burn".to_string(), convert(&Type::Unit, &Value::Unit, burn_auth));
+            authorization.insert(
+                "burn".to_string(),
+                convert(&Type::Unit, &Value::Unit, burn_auth),
+            );
         }
 
         if let Some(take_auth) = auth.get("take_from_vault") {
-            authorization.insert("take_from_vault".to_string(), convert(&Type::Unit, &Value::Unit, take_auth));
+            authorization.insert(
+                "take_from_vault".to_string(),
+                convert(&Type::Unit, &Value::Unit, take_auth),
+            );
         } else {
             return Err(ResourceDefError::TakeFromVaultNotDefined);
         }
 
         if let Some(update_metadata_auth) = auth.get("update_metadata") {
-            authorization.insert("update_metadata".to_string(), convert(&Type::Unit, &Value::Unit, update_metadata_auth));
+            authorization.insert(
+                "update_metadata".to_string(),
+                convert(&Type::Unit, &Value::Unit, update_metadata_auth),
+            );
         }
 
-        if let Some(update_non_fungible_mutable_data_auth) = auth.get("update_non_fungible_mutable_data") {
-            authorization.insert("update_non_fungible_mutable_data".to_string(), convert(&Type::Unit, &Value::Unit, update_non_fungible_mutable_data_auth));
+        if let Some(update_non_fungible_mutable_data_auth) =
+            auth.get("update_non_fungible_mutable_data")
+        {
+            authorization.insert(
+                "update_non_fungible_mutable_data".to_string(),
+                convert(
+                    &Type::Unit,
+                    &Value::Unit,
+                    update_non_fungible_mutable_data_auth,
+                ),
+            );
         }
 
         let resource_def = Self {
             resource_type,
             metadata,
             flags,
-            mutable_flags,
             authorization,
             total_supply: 0.into(),
         };
@@ -105,10 +118,6 @@ impl ResourceDef {
 
     pub fn flags(&self) -> u64 {
         self.flags
-    }
-
-    pub fn mutable_flags(&self) -> u64 {
-        self.mutable_flags
     }
 
     pub fn total_supply(&self) -> Decimal {
@@ -148,45 +157,6 @@ impl ResourceDef {
         new_metadata: HashMap<String, String>,
     ) -> Result<(), ResourceDefError> {
         self.metadata = new_metadata;
-
-        Ok(())
-    }
-
-    pub fn enable_flags(&mut self, flags: u64) -> Result<(), ResourceDefError> {
-        if !resource_flags_are_valid(flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(flags));
-        }
-
-        if self.mutable_flags | flags != self.mutable_flags {
-            return Err(ResourceDefError::FlagsLocked);
-        }
-        self.flags |= flags;
-
-        Ok(())
-    }
-
-    pub fn disable_flags(&mut self, flags: u64) -> Result<(), ResourceDefError> {
-        if !resource_flags_are_valid(flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(flags));
-        }
-
-        if self.mutable_flags | flags != self.mutable_flags {
-            return Err(ResourceDefError::FlagsLocked);
-        }
-        self.flags &= !flags;
-
-        Ok(())
-    }
-
-    pub fn lock_flags(&mut self, flags: u64) -> Result<(), ResourceDefError> {
-        if !resource_flags_are_valid(flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(flags));
-        }
-
-        if self.mutable_flags | flags != self.mutable_flags {
-            return Err(ResourceDefError::FlagsLocked);
-        }
-        self.mutable_flags &= !flags;
 
         Ok(())
     }

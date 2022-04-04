@@ -26,7 +26,10 @@ blueprint! {
                 .auth("take_from_vault", auth!(allow_all))
                 .auth("mint", auth!(require(mint_badge.resource_def_id())))
                 .auth("burn", auth!(require(mint_badge.resource_def_id())))
-                .auth("update_non_fungible_mutable_data", auth!(require(mint_badge.resource_def_id())))
+                .auth(
+                    "update_non_fungible_mutable_data",
+                    auth!(require(mint_badge.resource_def_id())),
+                )
                 .no_initial_supply();
 
             // Mint a non-fungible

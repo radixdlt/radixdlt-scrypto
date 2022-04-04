@@ -1607,7 +1607,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             input.resource_type,
             input.metadata,
             input.flags,
-            input.mutable_flags,
             input.authorization,
         )
         .map_err(RuntimeError::ResourceDefError)?;
@@ -1669,20 +1668,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         Ok(GetResourceFlagsOutput {
             flags: resource_def.flags(),
-        })
-    }
-
-    fn handle_get_resource_mutable_flags(
-        &mut self,
-        input: GetResourceMutableFlagsInput,
-    ) -> Result<GetResourceMutableFlagsOutput, RuntimeError> {
-        let resource_def = self
-            .track
-            .get_resource_def(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-
-        Ok(GetResourceMutableFlagsOutput {
-            mutable_flags: resource_def.mutable_flags(),
         })
     }
 
@@ -1812,63 +1797,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         auth_rule
             .check(&[self.caller_auth_zone, &self.auth_zone])
             .map_err(|e| RuntimeError::AuthorizationError(transition.to_string(), e))
-    }
-
-    fn handle_enable_flags(
-        &mut self,
-        input: EnableFlagsInput,
-    ) -> Result<EnableFlagsOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_def_id, "enable_flags")?;
-
-        // State Update
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .enable_flags(input.flags)
-            .map_err(RuntimeError::ResourceDefError)?;
-
-        Ok(EnableFlagsOutput {})
-    }
-
-    fn handle_disable_flags(
-        &mut self,
-        input: DisableFlagsInput,
-    ) -> Result<DisableFlagsOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_def_id, "disable_flags")?;
-
-        // State Update
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .disable_flags(input.flags)
-            .map_err(RuntimeError::ResourceDefError)?;
-
-        Ok(DisableFlagsOutput {})
-    }
-
-    fn handle_lock_flags(
-        &mut self,
-        input: LockFlagsInput,
-    ) -> Result<LockFlagsOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_def_id, "lock_flags")?;
-
-        // State Update
-        let resource_def = self
-            .track
-            .get_resource_def_mut(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-        resource_def
-            .lock_flags(input.flags)
-            .map_err(RuntimeError::ResourceDefError)?;
-
-        Ok(LockFlagsOutput {})
     }
 
     fn handle_update_resource_metadata(
@@ -2369,14 +2297,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_resource_total_supply)
                     }
                     GET_RESOURCE_FLAGS => self.handle(args, Self::handle_get_resource_flags),
-                    GET_RESOURCE_MUTABLE_FLAGS => {
-                        self.handle(args, Self::handle_get_resource_mutable_flags)
-                    }
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
-                    ENABLE_FLAGS => self.handle(args, Self::handle_enable_flags),
-                    DISABLE_FLAGS => self.handle(args, Self::handle_disable_flags),
-                    LOCK_FLAGS => self.handle(args, Self::handle_lock_flags),
                     UPDATE_NON_FUNGIBLE_MUTABLE_DATA => {
                         self.handle(args, Self::handle_update_non_fungible_mutable_data)
                     }

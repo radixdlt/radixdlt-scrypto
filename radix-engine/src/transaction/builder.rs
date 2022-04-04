@@ -3,11 +3,10 @@ use crate::model::*;
 use crate::transaction::*;
 use sbor::describe::*;
 use sbor::*;
-use scrypto::{abi, auth, auth_rule_node, component_authorization};
-use scrypto::resource::require;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::{AuthRuleNode, MethodAuth};
+use scrypto::resource::require;
 use scrypto::resource::resource_flags::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::BTreeSet;
@@ -19,6 +18,7 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
+use scrypto::{abi, auth, auth_rule_node, component_authorization};
 
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider> {
@@ -451,7 +451,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
-                scrypto_encode(&0u64),
                 scrypto_encode(&component_authorization! {
                     "take_from_vault" => auth!(allow_all),
                     "mint" => auth!(require(minter_resource_def_id.clone())),
@@ -476,7 +475,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
                 scrypto_encode(&component_authorization! {
                     "take_from_vault" => auth!(allow_all)
@@ -503,7 +501,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
-                scrypto_encode(&0u64),
                 scrypto_encode(&component_authorization! {
                     "mint" => auth!(require(minter_resource_def_id.clone())),
                     "burn" => auth!(require(minter_resource_def_id.clone())),
@@ -528,7 +525,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
                 scrypto_encode(&component_authorization! {
                     "take_from_vault" => auth!(allow_all)

@@ -89,4 +89,3 @@ fn mint_too_much_should_fail() {
         RuntimeError::ResourceDefError(ResourceDefError::MaxMintAmountExceeded)
     );
 }
-

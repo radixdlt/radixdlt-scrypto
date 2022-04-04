@@ -73,14 +73,13 @@ blueprint! {
             (badge, token_address)
         }
 
-        pub fn query() -> (Bucket, HashMap<String, String>, u64, u64, Decimal) {
+        pub fn query() -> (Bucket, HashMap<String, String>, u64, Decimal) {
             let (badge, resource_def_id) = Self::create_fungible();
             let resource_def = resource_def!(resource_def_id);
             (
                 badge,
                 resource_def.metadata(),
                 resource_def.flags(),
-                resource_def.mutable_flags(),
                 resource_def.total_supply(),
             )
         }
@@ -92,50 +91,6 @@ blueprint! {
                 let bucket: Bucket = resource_def.mint(1);
                 resource_def.burn(bucket)
             });
-            badge
-        }
-
-        pub fn update_feature_flags() -> Bucket {
-            let badge = ResourceBuilder::new_fungible()
-                .auth("take_from_vault", auth!(allow_all))
-                .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
-            let token_resource_def = resource_def!(ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
-                .mutable_flags(MINTABLE)
-                .auth("take_from_vault", auth!(allow_all))
-                .no_initial_supply());
-
-            badge.authorize(|| {
-                token_resource_def.enable_flags(MINTABLE);
-                assert!(token_resource_def.flags() & MINTABLE == MINTABLE);
-                assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
-
-                token_resource_def.disable_flags(MINTABLE);
-                assert!(token_resource_def.flags() & MINTABLE == 0);
-                assert!(token_resource_def.mutable_flags() & MINTABLE == MINTABLE);
-
-                token_resource_def.lock_flags(MINTABLE);
-                assert!(token_resource_def.flags() & MINTABLE == 0);
-                assert!(token_resource_def.mutable_flags() & MINTABLE == 0);
-            });
-
-            badge
-        }
-
-        pub fn update_feature_flags_should_fail() -> Bucket {
-            let badge = ResourceBuilder::new_fungible()
-                .auth("take_from_vault", auth!(allow_all))
-                .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
-            let token_resource_def = resource_def!(ResourceBuilder::new_fungible()
-                .auth("take_from_vault", auth!(allow_all))
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
-                .no_initial_supply());
-
-            badge.authorize(|| token_resource_def.enable_flags(MINTABLE));
             badge
         }
 

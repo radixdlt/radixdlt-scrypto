@@ -52,7 +52,10 @@ blueprint! {
                 .initial_supply(1);
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .auth("take_from_vault", auth!(require(auth_bucket.resource_def_id())))
+                .auth(
+                    "take_from_vault",
+                    auth!(require(auth_bucket.resource_def_id())),
+                )
                 .flags(RESTRICTED_TRANSFER)
                 .initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);

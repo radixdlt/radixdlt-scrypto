@@ -16,14 +16,12 @@ pub struct FungibleResourceBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
     flags: u64,
-    mutable_flags: u64,
     authorization: ComponentAuthorization,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
     flags: u64,
-    mutable_flags: u64,
     authorization: ComponentAuthorization,
 }
 
@@ -45,7 +43,6 @@ impl FungibleResourceBuilder {
             divisibility: DIVISIBILITY_MAXIMUM,
             metadata: HashMap::new(),
             flags: 0,
-            mutable_flags: 0,
             authorization: ComponentAuthorization::new(),
         }
     }
@@ -71,12 +68,6 @@ impl FungibleResourceBuilder {
     /// Enables feature flags.
     pub fn flags(&mut self, flags: u64) -> &mut Self {
         self.flags |= flags;
-        self
-    }
-
-    /// Sets features flags to mutable.
-    pub fn mutable_flags(&mut self, mutable_flags: u64) -> &mut Self {
-        self.mutable_flags |= mutable_flags;
         self
     }
 
@@ -109,7 +100,6 @@ impl FungibleResourceBuilder {
             },
             self.metadata.clone(),
             self.flags,
-            self.mutable_flags,
             self.authorization.clone(),
             mint_params,
         )
@@ -121,7 +111,6 @@ impl NonFungibleResourceBuilder {
         Self {
             metadata: HashMap::new(),
             flags: 0,
-            mutable_flags: 0,
             authorization: ComponentAuthorization::new(),
         }
     }
@@ -138,12 +127,6 @@ impl NonFungibleResourceBuilder {
     /// Enables feature flags.
     pub fn flags(&mut self, flags: u64) -> &mut Self {
         self.flags |= flags;
-        self
-    }
-
-    /// Sets features flags to mutable.
-    pub fn mutable_flags(&mut self, mutable_flags: u64) -> &mut Self {
-        self.mutable_flags |= mutable_flags;
         self
     }
 
@@ -183,7 +166,6 @@ impl NonFungibleResourceBuilder {
             ResourceType::NonFungible,
             self.metadata.clone(),
             self.flags,
-            self.mutable_flags,
             self.authorization.clone(),
             mint_params,
         )
