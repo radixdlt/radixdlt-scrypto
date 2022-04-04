@@ -5,7 +5,7 @@ use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRuleNode, SoftResource};
+use scrypto::prelude::{AuthRuleNode, MethodAuth, SoftResource};
 use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
@@ -19,7 +19,7 @@ use scrypto::types::CustomType;
 pub struct Component {
     package_id: PackageId,
     blueprint_name: String,
-    auth_rules: HashMap<String, AuthRuleNode>,
+    method_auth: HashMap<String, MethodAuth>,
     state: Vec<u8>,
 }
 
@@ -27,13 +27,13 @@ impl Component {
     pub fn new(
         package_id: PackageId,
         blueprint_name: String,
-        auth_rules: HashMap<String, AuthRuleNode>,
+        auth_rules: HashMap<String, MethodAuth>,
         state: Vec<u8>,
     ) -> Self {
         Self {
             package_id,
             blueprint_name,
-            auth_rules,
+            method_auth: auth_rules,
             state,
         }
     }
@@ -224,18 +224,19 @@ impl Component {
         method_name: &str,
     ) -> (ValidatedData, MethodAuthorization) {
         let data = ValidatedData::from_slice(&self.state).unwrap();
-        let authorization = match self.auth_rules.get(method_name) {
-            Some(auth_rule) => MethodAuthorization::Protected(Self::soft_to_hard_auth_rule(
+        let authorization = match self.method_auth.get(method_name) {
+            Some(MethodAuth::Protected(auth_rule)) => MethodAuthorization::Protected(Self::soft_to_hard_auth_rule(
                 schema, auth_rule, &data.dom,
             )),
+            Some(MethodAuth::AllowAll) => MethodAuthorization::Public,
             None => MethodAuthorization::Private,
         };
 
         (data, authorization)
     }
 
-    pub fn auth_rules(&self) -> &HashMap<String, AuthRuleNode> {
-        &self.auth_rules
+    pub fn auth_rules(&self) -> &HashMap<String, MethodAuth> {
+        &self.method_auth
     }
 
     pub fn package_id(&self) -> PackageId {

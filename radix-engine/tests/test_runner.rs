@@ -29,7 +29,7 @@ impl<'l> TestRunner<'l> {
         (key, non_fungible_address)
     }
 
-    pub fn new_account(&mut self, withdraw_auth: &AuthRuleNode) -> ComponentId {
+    pub fn new_account(&mut self, withdraw_auth: &MethodAuth) -> ComponentId {
         self.executor.new_account(withdraw_auth)
     }
 

@@ -1,6 +1,6 @@
 use scrypto::crypto::sha256;
 use scrypto::engine::types::*;
-use scrypto::prelude::{require, AuthRuleNode, NonFungibleAddress, auth, auth_rule_node};
+use scrypto::prelude::{require, NonFungibleAddress, auth, auth_rule_node, MethodAuth};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
@@ -82,7 +82,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account(&mut self, withdraw_auth: &AuthRuleNode) -> ComponentId {
+    pub fn new_account(&mut self, withdraw_auth: &MethodAuth) -> ComponentId {
         let receipt = self
             .run(
                 TransactionBuilder::new(self)

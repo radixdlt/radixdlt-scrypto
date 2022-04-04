@@ -75,7 +75,7 @@ fn test_dynamic_auth(
 
 fn test_dynamic_authlist(
     list_size: usize,
-    auth_rule: AuthRuleNode,
+    auth_rule: MethodAuth,
     signers: &[usize],
     should_succeed: bool,
 ) {
