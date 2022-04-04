@@ -5,11 +5,10 @@ use crate::model::{MethodAuthorization, ValidatedData};
 use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRuleNode, MethodAuth, SoftResource};
+use scrypto::prelude::{AuthRuleNode, ComponentAuthorization, MethodAuth, SoftResource};
 use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
-use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::CustomType;
@@ -19,7 +18,7 @@ use scrypto::types::CustomType;
 pub struct Component {
     package_id: PackageId,
     blueprint_name: String,
-    method_auth: HashMap<String, MethodAuth>,
+    method_auth: ComponentAuthorization,
     state: Vec<u8>,
 }
 
@@ -27,13 +26,13 @@ impl Component {
     pub fn new(
         package_id: PackageId,
         blueprint_name: String,
-        auth_rules: HashMap<String, MethodAuth>,
+        method_auth: ComponentAuthorization,
         state: Vec<u8>,
     ) -> Self {
         Self {
             package_id,
             blueprint_name,
-            method_auth: auth_rules,
+            method_auth,
             state,
         }
     }
@@ -239,7 +238,7 @@ impl Component {
         (data, authorization)
     }
 
-    pub fn auth_rules(&self) -> &HashMap<String, MethodAuth> {
+    pub fn authorization(&self) -> &ComponentAuthorization {
         &self.method_auth
     }
 

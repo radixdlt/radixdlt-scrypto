@@ -3,9 +3,9 @@ use scrypto::auth;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
+use scrypto::resource::ComponentAuthorization;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 
 use crate::model::*;
@@ -177,13 +177,13 @@ pub trait SubstateStore {
                 self.get_nonce(),
             );
 
-            let mut auth_rules = HashMap::new();
-            auth_rules.insert("free_xrd".to_string(), auth!(allow_all));
+            let mut authorization = ComponentAuthorization::new();
+            authorization.insert("free_xrd", auth!(allow_all));
 
             let system_component = Component::new(
                 SYSTEM_PACKAGE,
                 SYSTEM_COMPONENT_NAME.to_owned(),
-                auth_rules,
+                authorization,
                 scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
             );
             self.put_encoded_substate(&SYSTEM_COMPONENT, &system_component, self.get_nonce());

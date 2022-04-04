@@ -1369,10 +1369,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
-        let authorization = input.authorization.to_map();
         let package_id = wasm_process.vm.invocation.package_id;
-        let component =
-            Component::new(package_id, input.blueprint_name, authorization, input.state);
+        let component = Component::new(
+            package_id,
+            input.blueprint_name,
+            input.authorization,
+            input.state,
+        );
         let component_id = self.track.create_component(component);
         self.track
             .insert_objects_into_component(new_objects, component_id);

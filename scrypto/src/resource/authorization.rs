@@ -1,4 +1,5 @@
 use crate::resource::*;
+use crate::rust::collections::hash_map::Iter;
 use crate::rust::collections::HashMap;
 use crate::rust::str;
 use crate::rust::string::String;
@@ -14,6 +15,10 @@ impl ComponentAuthorization {
         ComponentAuthorization(HashMap::new())
     }
 
+    pub fn get(&self, method_name: &str) -> Option<&MethodAuth> {
+        self.0.get(method_name)
+    }
+
     pub fn contains_method(&self, method_name: &str) -> bool {
         self.0.contains_key(method_name)
     }
@@ -26,8 +31,9 @@ impl ComponentAuthorization {
         self.0.insert(method_name.to_string(), method_auth);
     }
 
-    pub fn to_map(self) -> HashMap<String, MethodAuth> {
-        self.0
+    pub fn iter(&self) -> Iter<'_, String, MethodAuth> {
+        let l = self.0.iter();
+        l
     }
 }
 
