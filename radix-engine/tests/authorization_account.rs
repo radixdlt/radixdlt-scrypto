@@ -3,7 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::ledger::{InMemorySubstateStore};
 use scrypto::prelude::*;
 
 fn test_auth_rule(
@@ -13,13 +13,13 @@ fn test_auth_rule(
     should_succeed: bool,
 ) {
     // Arrange
-    let account = test_runner.new_account(auth_rule);
+    let account_id = test_runner.new_account(auth_rule);
     let (_, other_account) = test_runner.new_public_key_with_account();
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account(RADIX_TOKEN, account)
+        .withdraw_from_account(RADIX_TOKEN, account_id)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(signers)
         .unwrap();
@@ -194,7 +194,7 @@ fn can_withdraw_from_my_complex_account_2() {
 
     for auth in auths {
         for signers in signers_list.clone() {
-            test_auth_rule(&mut test_runner, &auth, signers, false);
+            test_auth_rule(&mut test_runner, &auth, signers, true);
         }
     }
 }

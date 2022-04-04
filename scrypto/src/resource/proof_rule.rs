@@ -187,6 +187,39 @@ where
     ProofRule::AmountOf(amount, resource.into())
 }
 
+// TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.
+#[macro_export]
+macro_rules! auth_rest {
+    (&& $tt:tt) => {{
+        let next = auth!($tt);
+        move |e: AuthRule| e.and(next)
+    }};
+    (&& $right1:ident $right2:tt) => {{
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| e.and(next)
+    }};
+    (&& $right:tt && $($rest:tt)+) => {{
+        let f = auth_rest!(&& $($rest)+);
+        let next = auth!($right);
+        move |e: AuthRule| f(e.and(next))
+    }};
+    (&& $right:tt || $($rest:tt)+) => {{
+        let next = auth!($right);
+        let next2 = auth!($($rest)+);
+        move |e: AuthRule| e.and(next).or(next2)
+    }};
+    (&& $right1:ident $right2:tt && $($rest:tt)+) => {{
+        let f = auth_rest!(&& $($rest)+);
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| f(e.and(next))
+    }};
+    (&& $right1:ident $right2:tt || $($rest:tt)+) => {{
+        let next = auth!($right1 $right2);
+        let next2 = auth!($($rest)+);
+        move |e: AuthRule| e.and(next).or(next2)
+    }};
+}
+
 #[macro_export]
 macro_rules! auth {
     // Handle leaves
@@ -197,10 +230,20 @@ macro_rules! auth {
 
     // Handle Ors
     ($left:tt || $($right:tt)+) => {{ auth!($left).or(auth!($($right)+)) }};
-    ($left_rule:ident $left:tt || $($right:tt)+) => {{ auth!($left_rule $left).or(auth!($($right)+)) }};
+    ($left_rule:ident $left:tt || $($right:tt)+) => {{
+        auth!($left_rule $left).or(auth!($($right)+))
+    }};
 
     // Handle Ands. a little more complicated since && has higher precedence over ||
-    ($left:tt && $right:tt) => {{ auth!($left).and(auth!($right)) }};
+    ($left:tt && $($right:tt)+) => {{
+        let f = auth_rest!(&& $($right)+);
+        f(auth!($left))
+    }};
+    ($left1:ident $left2:tt && $($right:tt)+) => {{
+        let f = auth_rest!(&& $($right)+);
+        f(auth!($left1 $left2))
+    }};
+    /*
     ($left:tt && $right:tt && $($rest:tt)+) => {{ auth!($left && $right).and(auth!($($rest)+)) }};
     ($left:tt && $right:tt || $($rest:tt)+) => {{ auth!($left && $right).or(auth!($($rest)+)) }};
 
@@ -215,4 +258,5 @@ macro_rules! auth {
     ($left1:ident $left2:tt && $right1:ident $right2:tt) => {{ auth!($left1$left2).and(auth!($right1$right2)) }};
     ($left1:ident $left2:tt && $right1:ident $right2:tt && $($rest:tt)+) => {{ auth!($left1$left2 && $right1$right2).and(auth!($($rest)+)) }};
     ($left1:ident $left2:tt && $right1:ident $right2:tt || $($rest:tt)+) => {{ auth!($left1$left2 && $right1$right2).or(auth!($($rest)+)) }};
+     */
 }
