@@ -258,7 +258,7 @@ impl Component {
         }
     }
 
-    pub fn initialize_method(
+    pub fn method_authorization(
         &self,
         schema: &Type,
         method_name: &str,
