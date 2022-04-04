@@ -5,11 +5,9 @@ use scrypto::prelude::ToString;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
-use scrypto::rust::mem;
 use scrypto::rust::string::String;
 use scrypto::rust::vec;
 
-use crate::model::resource_def::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
 use crate::model::MethodAuthorization;
 
 /// Represents an error when accessing a bucket.
@@ -24,58 +22,6 @@ pub enum ResourceDefError {
     MaxMintAmountExceeded,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-enum FlagCondition {
-    IsSet(u64),
-    IsNotSet(u64),
-    AlwaysTrue,
-}
-
-impl FlagCondition {
-    fn matches(&self, flags: u64) -> bool {
-        match self {
-            IsSet(flag) => flags & flag > 0,
-            IsNotSet(flag) => flags & flag == 0,
-            AlwaysTrue => true,
-        }
-    }
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct MethodState {
-    enabled: FlagCondition,
-    use_auth: FlagCondition,
-    auth: MethodAuthorization,
-}
-
-impl MethodState {
-    fn new(enabled: FlagCondition, use_auth: FlagCondition) -> Self {
-        MethodState {
-            enabled,
-            use_auth,
-            auth: MethodAuthorization::Public,
-        }
-    }
-
-    fn get_auth(&self, flags: u64) -> &MethodAuthorization {
-        if !self.is_enabled(flags) {
-            &MethodAuthorization::Private
-        } else if self.use_auth(flags) {
-            &self.auth
-        } else {
-            &MethodAuthorization::Public
-        }
-    }
-
-    fn is_enabled(&self, flags: u64) -> bool {
-        self.enabled.matches(flags)
-    }
-
-    fn use_auth(&self, flags: u64) -> bool {
-        self.use_auth.matches(flags)
-    }
-}
-
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ResourceDef {
@@ -83,7 +29,7 @@ pub struct ResourceDef {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    method_states: HashMap<String, MethodState>,
+    authorization: HashMap<String, MethodAuthorization>,
     total_supply: Decimal,
 }
 
@@ -118,39 +64,67 @@ impl ResourceDef {
             return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
         }
 
-        let mut method_states: HashMap<String, MethodState> = HashMap::new();
-        method_states.insert(
-            "mint".to_string(),
-            MethodState::new(IsSet(MINTABLE), AlwaysTrue),
-        );
-        method_states.insert(
-            "burn".to_string(),
-            MethodState::new(IsSet(BURNABLE), IsNotSet(FREELY_BURNABLE)),
-        );
-        method_states.insert(
-            "take_from_vault".to_string(),
-            MethodState::new(AlwaysTrue, IsSet(RESTRICTED_TRANSFER)),
-        );
+        let mut method_states: HashMap<String, MethodAuthorization> = HashMap::new();
+        if flags & MINTABLE > 0 {
+            method_states.insert(
+                "mint".to_string(),
+                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
+            );
+        }
+
+        if flags & BURNABLE > 0 {
+            method_states.insert(
+                "burn".to_string(),
+                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
+            );
+        }
+
+        if flags & FREELY_BURNABLE > 0 {
+            method_states.insert(
+                "burn".to_string(),
+                MethodAuthorization::Public
+            );
+        }
+
+        if flags & RESTRICTED_TRANSFER > 0 {
+            method_states.insert(
+                "take_from_vault".to_string(),
+                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
+            );
+        } else {
+            method_states.insert(
+                "take_from_vault".to_string(),
+                MethodAuthorization::Public
+            );
+        }
+
+
         method_states.insert(
             "enable_flags".to_string(),
-            MethodState::new(AlwaysTrue, AlwaysTrue),
+            MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
         );
         method_states.insert(
             "disable_flags".to_string(),
-            MethodState::new(AlwaysTrue, AlwaysTrue),
+            MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
         );
         method_states.insert(
             "lock_flags".to_string(),
-            MethodState::new(AlwaysTrue, AlwaysTrue),
+            MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
         );
-        method_states.insert(
-            "update_metadata".to_string(),
-            MethodState::new(IsSet(SHARED_METADATA_MUTABLE), AlwaysTrue),
-        );
-        method_states.insert(
-            "update_non_fungible_mutable_data".to_string(),
-            MethodState::new(IsSet(INDIVIDUAL_METADATA_MUTABLE), AlwaysTrue),
-        );
+
+        if flags & SHARED_METADATA_MUTABLE > 0 {
+            method_states.insert(
+                "update_metadata".to_string(),
+                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
+            );
+        }
+
+        if flags & INDIVIDUAL_METADATA_MUTABLE > 0 {
+            method_states.insert(
+                "update_non_fungible_mutable_data".to_string(),
+                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
+            );
+        }
 
         for (resource_def_id, permission) in authorities {
             if !resource_permissions_are_valid(permission) {
@@ -160,15 +134,18 @@ impl ResourceDef {
             for (flag, methods) in PERMISSION_MAP.iter() {
                 if permission & flag != 0 {
                     for method in methods.iter() {
-                        let method_state = method_states.get_mut(*method).unwrap();
-                        let cur_rule =
-                            mem::replace(&mut method_state.auth, MethodAuthorization::Public);
-                        method_state.auth = match cur_rule {
-                            MethodAuthorization::Public => MethodAuthorization::Protected(
-                                HardAuthRule::ProofRule(HardProofRule::AnyOf(
-                                    HardProofRuleResourceList::List(vec![resource_def_id.into()]),
-                                )),
-                            ),
+                        let method_auth_maybe = method_states.remove(*method);
+                        if let None = method_auth_maybe {
+                            continue;
+                        }
+                        let mut cur_auth = method_auth_maybe.unwrap();
+                        cur_auth = match cur_auth {
+                            MethodAuthorization::Public => MethodAuthorization::Public,
+                            MethodAuthorization::Protected(HardAuthRule::AllOf(_)) => {
+                                MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::AnyOf(
+                                    HardProofRuleResourceList::List(vec![resource_def_id.into()])
+                                )))
+                            }
                             MethodAuthorization::Protected(HardAuthRule::ProofRule(
                                 HardProofRule::AnyOf(HardProofRuleResourceList::List(
                                     mut resources,
@@ -183,6 +160,8 @@ impl ResourceDef {
                             }
                             _ => panic!("Should never get here."),
                         };
+
+                        method_states.insert(method.to_string(), cur_auth);
                     }
                 }
             }
@@ -193,7 +172,7 @@ impl ResourceDef {
             metadata,
             flags,
             mutable_flags,
-            method_states,
+            authorization: method_states,
             total_supply: 0.into(),
         };
 
@@ -201,9 +180,9 @@ impl ResourceDef {
     }
 
     pub fn get_auth(&self, method_name: &str) -> &MethodAuthorization {
-        match self.method_states.get(method_name) {
+        match self.authorization.get(method_name) {
             None => &MethodAuthorization::Unsupported,
-            Some(method_state) => method_state.get_auth(self.flags),
+            Some(authorization) => authorization,
         }
     }
 
