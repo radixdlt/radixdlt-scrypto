@@ -5,7 +5,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
-use radix_engine::ledger::{InMemorySubstateStore};
+use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
 fn test_auth_rule(
@@ -189,8 +189,14 @@ fn can_withdraw_from_my_complex_account_2() {
     let (key2, auth2) = test_runner.new_public_key_and_non_fungible_address();
     let (key3, auth3) = test_runner.new_public_key_and_non_fungible_address();
     let auths = [
-        auth!(require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()) || require(auth3.clone())),
-        auth!((require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())) || require(auth3.clone())),
+        auth!(
+            require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
+                || require(auth3.clone())
+        ),
+        auth!(
+            (require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()))
+                || require(auth3.clone())
+        ),
     ];
     let signers_list = [vec![key0, key1, key2], vec![key3]];
 
@@ -210,10 +216,22 @@ fn cannot_withdraw_from_my_complex_account_2() {
     let (key2, auth2) = test_runner.new_public_key_and_non_fungible_address();
     let (_, auth3) = test_runner.new_public_key_and_non_fungible_address();
     let auths = [
-        auth!(require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()) || require(auth3.clone())),
-        auth!((require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())) || require(auth3.clone())),
+        auth!(
+            require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
+                || require(auth3.clone())
+        ),
+        auth!(
+            (require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()))
+                || require(auth3.clone())
+        ),
     ];
-    let signers_list = [vec![key0], vec![key1], vec![key2], vec![key0, key1], vec![key1, key2]];
+    let signers_list = [
+        vec![key0],
+        vec![key1],
+        vec![key2],
+        vec![key0, key1],
+        vec![key1, key2],
+    ];
 
     for auth in auths {
         for signers in signers_list.clone() {
@@ -221,7 +239,6 @@ fn cannot_withdraw_from_my_complex_account_2() {
         }
     }
 }
-
 
 #[test]
 fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {

@@ -9,10 +9,7 @@ blueprint! {
         pub fn create_game(players: [NonFungibleAddress; 2]) -> ComponentId {
             Self { players }
                 .instantiate()
-                .auth(
-                    "make_move",
-                    auth!(require("players/0")),
-                )
+                .auth("make_move", auth!(require("players/0")))
                 .globalize()
         }
 

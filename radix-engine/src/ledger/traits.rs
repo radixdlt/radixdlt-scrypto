@@ -5,8 +5,8 @@ use scrypto::constants::*;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::rust::vec::Vec;
 use scrypto::rust::string::ToString;
+use scrypto::rust::vec::Vec;
 
 use crate::model::*;
 

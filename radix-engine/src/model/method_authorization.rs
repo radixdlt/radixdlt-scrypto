@@ -1,9 +1,9 @@
+use crate::model::method_authorization::MethodAuthorizationError::NotAuthorized;
 use crate::model::Proof;
 use sbor::*;
 use scrypto::math::Decimal;
 use scrypto::prelude::{NonFungibleAddress, ResourceDefId};
 use scrypto::rust::vec::Vec;
-use crate::model::method_authorization::MethodAuthorizationError::NotAuthorized;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum MethodAuthorizationError {
@@ -184,7 +184,6 @@ pub enum MethodAuthorization {
     Private,
     Unsupported,
 }
-
 
 impl MethodAuthorization {
     pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), MethodAuthorizationError> {

@@ -269,7 +269,10 @@ fn cant_move_restricted_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    assert_eq!(receipt.result, Err(RuntimeError::CantMoveRestrictedProof(512)));
+    assert_eq!(
+        receipt.result,
+        Err(RuntimeError::CantMoveRestrictedProof(512))
+    );
 }
 
 #[test]

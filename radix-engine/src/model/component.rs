@@ -196,7 +196,11 @@ impl Component {
         }
     }
 
-    fn soft_to_hard_auth_rule(schema: &Type, auth_rule: &AuthRuleNode, dom: &Value) -> HardAuthRule {
+    fn soft_to_hard_auth_rule(
+        schema: &Type,
+        auth_rule: &AuthRuleNode,
+        dom: &Value,
+    ) -> HardAuthRule {
         match auth_rule {
             AuthRuleNode::ProofRule(proof_rule) => {
                 HardAuthRule::ProofRule(Self::soft_to_hard_proof_rule(schema, proof_rule, dom))
@@ -225,9 +229,9 @@ impl Component {
     ) -> (ValidatedData, MethodAuthorization) {
         let data = ValidatedData::from_slice(&self.state).unwrap();
         let authorization = match self.method_auth.get(method_name) {
-            Some(MethodAuth::Protected(auth_rule)) => MethodAuthorization::Protected(Self::soft_to_hard_auth_rule(
-                schema, auth_rule, &data.dom,
-            )),
+            Some(MethodAuth::Protected(auth_rule)) => MethodAuthorization::Protected(
+                Self::soft_to_hard_auth_rule(schema, auth_rule, &data.dom),
+            ),
             Some(MethodAuth::AllowAll) => MethodAuthorization::Public,
             None => MethodAuthorization::Private,
         };

@@ -50,9 +50,11 @@ impl<'l> TestRunner<'l> {
     }
 
     pub fn component(&self, component_id: ComponentId) -> Component {
-        self.executor.substate_store()
+        self.executor
+            .substate_store()
             .get_decoded_substate(&component_id)
-            .map(|(component, _)| component).unwrap()
+            .map(|(component, _)| component)
+            .unwrap()
     }
 
     pub fn create_restricted_mint_token(
@@ -183,8 +185,14 @@ impl<'l> TestRunner<'l> {
 #[macro_export]
 macro_rules! assert_auth_error {
     ($error:expr) => {{
-        if !matches!($error, RuntimeError::AuthorizationError(_, ::radix_engine::model::MethodAuthorizationError::NotAuthorized)) {
+        if !matches!(
+            $error,
+            RuntimeError::AuthorizationError(
+                _,
+                ::radix_engine::model::MethodAuthorizationError::NotAuthorized
+            )
+        ) {
             panic!("Not expected error.");
         }
-    }}
+    }};
 }

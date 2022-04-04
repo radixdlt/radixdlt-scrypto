@@ -67,7 +67,6 @@ blueprint! {
             .globalize()
         }
 
-
         pub fn new_lazy_map_with_get() -> ComponentId {
             let map = LazyMap::new();
             map.get(&"hello".to_owned());

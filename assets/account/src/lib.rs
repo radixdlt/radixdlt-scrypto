@@ -13,17 +13,16 @@ blueprint! {
             }
 
             Self { vaults }
-            .instantiate()
-            .auth("withdraw", withdraw_rule.clone())
-            .auth("withdraw_by_ids", withdraw_rule.clone())
-            .auth("withdraw_by_amount", withdraw_rule.clone())
-            .auth("create_proof_by_amount", withdraw_rule.clone())
-            .auth("create_proof_by_ids", withdraw_rule.clone())
-            .auth("deposit", auth!(allow_all))
-            .auth("deposit_batch", auth!(allow_all))
-            .globalize()
+                .instantiate()
+                .auth("withdraw", withdraw_rule.clone())
+                .auth("withdraw_by_ids", withdraw_rule.clone())
+                .auth("withdraw_by_amount", withdraw_rule.clone())
+                .auth("create_proof_by_amount", withdraw_rule.clone())
+                .auth("create_proof_by_ids", withdraw_rule.clone())
+                .auth("deposit", auth!(allow_all))
+                .auth("deposit_batch", auth!(allow_all))
+                .globalize()
         }
-
 
         pub fn new(withdraw_rule: MethodAuth) -> ComponentId {
             Self::internal_new(withdraw_rule, Option::None)

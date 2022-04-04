@@ -741,8 +741,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let component = self.track.get_component(component_id.clone()).unwrap();
                 let (data, method_auth) =
                     component.method_authorization(&schema, &invocation.function);
-                method_auth.check(&[self.caller_auth_zone])
-                    .map_err(|e| RuntimeError::AuthorizationError(invocation.function.clone(), e))?;
+                method_auth.check(&[self.caller_auth_zone]).map_err(|e| {
+                    RuntimeError::AuthorizationError(invocation.function.clone(), e)
+                })?;
 
                 // Load state
                 let initial_loaded_object_refs = ComponentObjectRefs {
@@ -1805,7 +1806,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_resource_def(&resource_def_id)
             .ok_or(RuntimeError::ResourceDefNotFound(resource_def_id.clone()))?;
         let auth_rule = resource_def.get_auth(transition);
-        auth_rule.check(&[self.caller_auth_zone, &self.auth_zone])
+        auth_rule
+            .check(&[self.caller_auth_zone, &self.auth_zone])
             .map_err(|e| RuntimeError::AuthorizationError(transition.to_string(), e))
     }
 
