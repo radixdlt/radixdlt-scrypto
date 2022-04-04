@@ -1,3 +1,4 @@
+mod auth_converter;
 mod bucket;
 mod component;
 mod data;
@@ -12,6 +13,7 @@ mod transaction;
 mod vault;
 mod worktop;
 
+pub use auth_converter::convert;
 pub use bucket::Bucket;
 pub use component::Component;
 pub use data::{format_value, ValidatedData};
