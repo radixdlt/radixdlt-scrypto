@@ -143,7 +143,6 @@ pub trait SubstateStore {
             let mut xrd = ResourceDef::new(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
-                0,
                 component_authorization! {
                     "take_from_vault" => auth!(allow_all)
                 },
@@ -158,7 +157,6 @@ pub trait SubstateStore {
             let ecdsa_token = ResourceDef::new(
                 ResourceType::NonFungible,
                 HashMap::new(),
-                0,
                 component_authorization! {
                     "take_from_vault" => auth!(allow_all)
                 },

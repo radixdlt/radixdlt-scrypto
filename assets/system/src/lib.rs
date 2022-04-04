@@ -16,14 +16,12 @@ blueprint! {
         pub fn new_resource(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            flags: u64,
             authorization: ComponentAuthorization,
             initial_supply: Option<MintParams>,
         ) -> (ResourceDefId, Option<Bucket>) {
             resource_system().instantiate_resource_definition(
                 resource_type,
                 metadata,
-                flags,
                 authorization,
                 initial_supply,
             )

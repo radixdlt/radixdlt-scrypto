@@ -15,13 +15,11 @@ pub struct ResourceBuilder;
 pub struct FungibleResourceBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
-    flags: u64,
     authorization: ComponentAuthorization,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
-    flags: u64,
     authorization: ComponentAuthorization,
 }
 
@@ -42,7 +40,6 @@ impl FungibleResourceBuilder {
         Self {
             divisibility: DIVISIBILITY_MAXIMUM,
             metadata: HashMap::new(),
-            flags: 0,
             authorization: ComponentAuthorization::new(),
         }
     }
@@ -62,12 +59,6 @@ impl FungibleResourceBuilder {
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
         self.metadata
             .insert(name.as_ref().to_owned(), value.as_ref().to_owned());
-        self
-    }
-
-    /// Enables feature flags.
-    pub fn flags(&mut self, flags: u64) -> &mut Self {
-        self.flags |= flags;
         self
     }
 
@@ -99,7 +90,6 @@ impl FungibleResourceBuilder {
                 divisibility: self.divisibility,
             },
             self.metadata.clone(),
-            self.flags,
             self.authorization.clone(),
             mint_params,
         )
@@ -110,7 +100,6 @@ impl NonFungibleResourceBuilder {
     pub fn new() -> Self {
         Self {
             metadata: HashMap::new(),
-            flags: 0,
             authorization: ComponentAuthorization::new(),
         }
     }
@@ -121,12 +110,6 @@ impl NonFungibleResourceBuilder {
     pub fn metadata<K: AsRef<str>, V: AsRef<str>>(&mut self, name: K, value: V) -> &mut Self {
         self.metadata
             .insert(name.as_ref().to_owned(), value.as_ref().to_owned());
-        self
-    }
-
-    /// Enables feature flags.
-    pub fn flags(&mut self, flags: u64) -> &mut Self {
-        self.flags |= flags;
         self
     }
 
@@ -165,7 +148,6 @@ impl NonFungibleResourceBuilder {
         resource_system().instantiate_resource_definition(
             ResourceType::NonFungible,
             self.metadata.clone(),
-            self.flags,
             self.authorization.clone(),
             mint_params,
         )

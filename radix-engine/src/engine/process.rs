@@ -1603,13 +1603,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceInput,
     ) -> Result<CreateResourceOutput, RuntimeError> {
-        let resource_def = ResourceDef::new(
-            input.resource_type,
-            input.metadata,
-            input.flags,
-            input.authorization,
-        )
-        .map_err(RuntimeError::ResourceDefError)?;
+        let resource_def =
+            ResourceDef::new(input.resource_type, input.metadata, input.authorization)
+                .map_err(RuntimeError::ResourceDefError)?;
 
         let resource_def_id = self.track.create_resource_def(resource_def);
         re_debug!(self, "New resource definition: {}", resource_def_id);
@@ -1654,20 +1650,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         Ok(GetResourceTotalSupplyOutput {
             total_supply: resource_def.total_supply(),
-        })
-    }
-
-    fn handle_get_resource_flags(
-        &mut self,
-        input: GetResourceFlagsInput,
-    ) -> Result<GetResourceFlagsOutput, RuntimeError> {
-        let resource_def = self
-            .track
-            .get_resource_def(&input.resource_def_id)
-            .ok_or(RuntimeError::ResourceDefNotFound(input.resource_def_id))?;
-
-        Ok(GetResourceFlagsOutput {
-            flags: resource_def.flags(),
         })
     }
 
@@ -2296,7 +2278,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
                     }
-                    GET_RESOURCE_FLAGS => self.handle(args, Self::handle_get_resource_flags),
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
                     UPDATE_NON_FUNGIBLE_MUTABLE_DATA => {

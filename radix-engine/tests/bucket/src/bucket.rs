@@ -56,7 +56,6 @@ blueprint! {
                     "take_from_vault",
                     auth!(require(auth_bucket.resource_def_id())),
                 )
-                .flags(RESTRICTED_TRANSFER)
                 .initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
 
@@ -75,7 +74,6 @@ blueprint! {
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .auth("take_from_vault", auth!(allow_all))
                 .auth("burn", auth!(require(badge.resource_def_id())))
-                .flags(BURNABLE)
                 .initial_supply(5);
             badge.authorize(|| bucket.burn());
             vec![badge]
@@ -90,7 +88,6 @@ blueprint! {
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .auth("take_from_vault", auth!(allow_all))
                 .auth("burn", auth!(allow_all))
-                .flags(BURNABLE | FREELY_BURNABLE)
                 .initial_supply(5);
             let bucket2 = bucket1.take(2);
             badge.authorize(|| bucket1.burn());

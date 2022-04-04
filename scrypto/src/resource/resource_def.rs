@@ -77,16 +77,6 @@ impl ResourceDef {
         output.metadata
     }
 
-    /// Returns the feature flags.
-    pub fn flags(&self) -> u64 {
-        let input = GetResourceFlagsInput {
-            resource_def_id: self.0,
-        };
-        let output: GetResourceFlagsOutput = call_engine(GET_RESOURCE_FLAGS, input);
-
-        output.flags
-    }
-
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
         let input = GetResourceTotalSupplyInput {

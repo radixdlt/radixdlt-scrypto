@@ -2,7 +2,6 @@ use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::{ComponentAuthorization, MethodAuth, ToString};
-use scrypto::resource::resource_flags::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 
@@ -25,7 +24,6 @@ pub enum ResourceDefError {
 pub struct ResourceDef {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    flags: u64,
     authorization: HashMap<String, MethodAuthorization>,
     total_supply: Decimal,
 }
@@ -34,13 +32,8 @@ impl ResourceDef {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        flags: u64,
         auth: ComponentAuthorization,
     ) -> Result<Self, ResourceDefError> {
-        if !resource_flags_are_valid(flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(flags));
-        }
-
         let mut authorization: HashMap<String, MethodAuthorization> = HashMap::new();
         if let Some(mint_auth) = auth.get("mint") {
             // TODO: Check for other invalid mint permissions?
@@ -93,7 +86,6 @@ impl ResourceDef {
         let resource_def = Self {
             resource_type,
             metadata,
-            flags,
             authorization,
             total_supply: 0.into(),
         };
@@ -116,16 +108,8 @@ impl ResourceDef {
         &self.metadata
     }
 
-    pub fn flags(&self) -> u64 {
-        self.flags
-    }
-
     pub fn total_supply(&self) -> Decimal {
         self.total_supply
-    }
-
-    pub fn is_flag_on(&self, flag: u64) -> bool {
-        self.flags() & flag == flag
     }
 
     pub fn mint(&mut self, mint_params: &MintParams) -> Result<(), ResourceDefError> {

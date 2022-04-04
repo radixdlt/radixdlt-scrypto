@@ -38,14 +38,12 @@ impl ResourceSystem {
         &mut self,
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        flags: u64,
         authorization: ComponentAuthorization,
         mint_params: Option<MintParams>,
     ) -> (ResourceDefId, Option<Bucket>) {
         let input = CreateResourceInput {
             resource_type,
             metadata,
-            flags,
             authorization,
             mint_params,
         };

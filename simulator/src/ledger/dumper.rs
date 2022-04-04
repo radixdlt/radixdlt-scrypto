@@ -190,7 +190,6 @@ pub fn dump_resource_def<T: SubstateStore>(
             for (last, e) in r.metadata().iter().identify_last() {
                 println!("{} {}: {}", list_item_prefix(last), e.0.green().bold(), e.1);
             }
-            println!("{}: {}", "Flags".green().bold(), r.flags());
             println!("{}: {}", "Total Supply".green().bold(), r.total_supply());
             Ok(())
         }

@@ -52,7 +52,6 @@ blueprint! {
                 .auth("take_from_vault", auth!(allow_all))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .flags(MINTABLE | BURNABLE)
                 .no_initial_supply();
             token_address
         }
@@ -65,7 +64,6 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .flags(MINTABLE | BURNABLE)
                 .auth("take_from_vault", auth!(allow_all))
                 .auth("mint", auth!(require(badge.resource_def_id())))
                 .auth("burn", auth!(require(badge.resource_def_id())))
@@ -73,13 +71,12 @@ blueprint! {
             (badge, token_address)
         }
 
-        pub fn query() -> (Bucket, HashMap<String, String>, u64, Decimal) {
+        pub fn query() -> (Bucket, HashMap<String, String>, Decimal) {
             let (badge, resource_def_id) = Self::create_fungible();
             let resource_def = resource_def!(resource_def_id);
             (
                 badge,
                 resource_def.metadata(),
-                resource_def.flags(),
                 resource_def.total_supply(),
             )
         }
@@ -104,7 +101,6 @@ blueprint! {
                 .auth("update_metadata", auth!(require(badge.resource_def_id())))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .flags(SHARED_METADATA_MUTABLE)
                 .no_initial_supply());
 
             let mut new_metadata = HashMap::new();
