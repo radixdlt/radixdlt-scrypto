@@ -17,14 +17,14 @@ pub struct FungibleResourceBuilder {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<ResourceDefId, u64>,
+    authorization: ComponentAuthorization,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<ResourceDefId, u64>,
+    authorization: ComponentAuthorization,
 }
 
 impl ResourceBuilder {
@@ -46,7 +46,7 @@ impl FungibleResourceBuilder {
             metadata: HashMap::new(),
             flags: 0,
             mutable_flags: 0,
-            authorities: HashMap::new(),
+            authorization: ComponentAuthorization::new(),
         }
     }
 
@@ -80,9 +80,8 @@ impl FungibleResourceBuilder {
         self
     }
 
-    /// Allows the badge holder to have permissions.
-    pub fn badge(&mut self, badge: ResourceDefId, permissions: u64) -> &mut Self {
-        self.authorities.insert(badge, permissions);
+    pub fn auth(&mut self, method_name: &str, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(method_name, method_auth);
         self
     }
 
@@ -111,7 +110,7 @@ impl FungibleResourceBuilder {
             self.metadata.clone(),
             self.flags,
             self.mutable_flags,
-            self.authorities.clone(),
+            self.authorization.clone(),
             mint_params,
         )
     }
@@ -123,7 +122,7 @@ impl NonFungibleResourceBuilder {
             metadata: HashMap::new(),
             flags: 0,
             mutable_flags: 0,
-            authorities: HashMap::new(),
+            authorization: ComponentAuthorization::new(),
         }
     }
 
@@ -148,9 +147,8 @@ impl NonFungibleResourceBuilder {
         self
     }
 
-    /// Allows the badge holder to have permissions.
-    pub fn badge(&mut self, badge: ResourceDefId, permissions: u64) -> &mut Self {
-        self.authorities.insert(badge, permissions);
+    pub fn auth(&mut self, method_name: &str, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(method_name, method_auth);
         self
     }
 
@@ -186,7 +184,7 @@ impl NonFungibleResourceBuilder {
             self.metadata.clone(),
             self.flags,
             self.mutable_flags,
-            self.authorities.clone(),
+            self.authorization.clone(),
             mint_params,
         )
     }

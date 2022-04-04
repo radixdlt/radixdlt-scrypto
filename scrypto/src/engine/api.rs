@@ -265,7 +265,7 @@ pub struct CreateResourceInput {
     pub metadata: HashMap<String, String>,
     pub flags: u64,
     pub mutable_flags: u64,
-    pub authorities: HashMap<ResourceDefId, u64>,
+    pub authorization: ComponentAuthorization,
     pub mint_params: Option<MintParams>,
 }
 

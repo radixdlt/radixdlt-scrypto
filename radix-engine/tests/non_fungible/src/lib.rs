@@ -17,16 +17,16 @@ blueprint! {
             // Create a mint badge
             let mint_badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
+                .auth("take_from_vault", auth!(allow_all))
                 .initial_supply(1);
 
             // Create non-fungible resource with mutable supply
             let resource_def_id = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .flags(MINTABLE | BURNABLE | INDIVIDUAL_METADATA_MUTABLE)
-                .badge(
-                    mint_badge.resource_def_id(),
-                    MAY_MINT | MAY_BURN | MAY_CHANGE_INDIVIDUAL_METADATA,
-                )
+                .auth("take_from_vault", auth!(allow_all))
+                .auth("mint", auth!(require(mint_badge.resource_def_id())))
+                .auth("burn", auth!(require(mint_badge.resource_def_id())))
+                .auth("update_non_fungible_mutable_data", auth!(require(mint_badge.resource_def_id())))
                 .no_initial_supply();
 
             // Mint a non-fungible
@@ -46,6 +46,7 @@ blueprint! {
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
+                .auth("take_from_vault", auth!(allow_all))
                 .initial_supply([
                     (
                         NonFungibleId::from(1u128),

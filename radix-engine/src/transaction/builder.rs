@@ -3,12 +3,12 @@ use crate::model::*;
 use crate::transaction::*;
 use sbor::describe::*;
 use sbor::*;
-use scrypto::abi;
+use scrypto::{abi, auth, auth_rule_node, component_authorization};
+use scrypto::resource::require;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::{AuthRuleNode, MethodAuth};
 use scrypto::resource::resource_flags::*;
-use scrypto::resource::resource_permissions::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::*;
@@ -452,10 +452,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
                 scrypto_encode(&0u64),
-                scrypto_encode(&Self::single_authority(
-                    minter_resource_def_id,
-                    MAY_MINT | MAY_BURN,
-                )),
+                scrypto_encode(&component_authorization! {
+                    "take_from_vault" => auth!(allow_all),
+                    "mint" => auth!(require(minter_resource_def_id.clone())),
+                    "burn" => auth!(require(minter_resource_def_id.clone())),
+                }),
                 scrypto_encode::<Option<MintParams>>(&None),
             ],
         })
@@ -477,7 +478,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<ResourceDefId, u64>::new()),
+                scrypto_encode(&component_authorization! {
+                    "take_from_vault" => auth!(allow_all)
+                }),
                 scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -501,10 +504,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&(MINTABLE | BURNABLE)),
                 scrypto_encode(&0u64),
-                scrypto_encode(&Self::single_authority(
-                    minter_resource_def_id,
-                    MAY_MINT | MAY_BURN,
-                )),
+                scrypto_encode(&component_authorization! {
+                    "mint" => auth!(require(minter_resource_def_id.clone())),
+                    "burn" => auth!(require(minter_resource_def_id.clone())),
+                    "take_from_vault" => auth!(allow_all),
+                }),
                 scrypto_encode::<Option<MintParams>>(&None),
             ],
         })
@@ -526,7 +530,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<ResourceDefId, u64>::new()),
+                scrypto_encode(&component_authorization! {
+                    "take_from_vault" => auth!(allow_all)
+                }),
                 scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -690,15 +696,6 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     //===============================
     // private methods below
     //===============================
-
-    fn single_authority(
-        resource_def_id: ResourceDefId,
-        permission: u64,
-    ) -> HashMap<ResourceDefId, u64> {
-        let mut map = HashMap::new();
-        map.insert(resource_def_id, permission);
-        map
-    }
 
     fn find_function_abi(
         abi: &abi::Blueprint,

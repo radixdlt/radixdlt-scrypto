@@ -40,7 +40,7 @@ impl ResourceSystem {
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<ResourceDefId, u64>,
+        authorization: ComponentAuthorization,
         mint_params: Option<MintParams>,
     ) -> (ResourceDefId, Option<Bucket>) {
         let input = CreateResourceInput {
@@ -48,7 +48,7 @@ impl ResourceSystem {
             metadata,
             flags,
             mutable_flags,
-            authorities,
+            authorization,
             mint_params,
         };
         let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);

@@ -1,14 +1,12 @@
-use crate::model::method_authorization::{HardAuthRule, HardProofRule, HardProofRuleResourceList};
 use sbor::*;
+use sbor::any::Value;
 use scrypto::engine::types::*;
-use scrypto::prelude::ToString;
+use scrypto::prelude::{ComponentAuthorization, MethodAuth, ToString};
 use scrypto::resource::resource_flags::*;
-use scrypto::resource::resource_permissions::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
-use scrypto::rust::vec;
 
-use crate::model::MethodAuthorization;
+use crate::model::{convert, MethodAuthorization};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
@@ -17,6 +15,7 @@ pub enum ResourceDefError {
     InvalidAmount(Decimal, u8),
     InvalidResourceFlags(u64),
     InvalidResourcePermission(u64),
+    TakeFromVaultNotDefined,
     FlagsLocked,
     ResourceTypeDoesNotMatch,
     MaxMintAmountExceeded,
@@ -33,28 +32,13 @@ pub struct ResourceDef {
     total_supply: Decimal,
 }
 
-pub const PERMISSION_MAP: [(u64, &[&str]); 6] = [
-    (MAY_MINT, &["mint"]),
-    (MAY_BURN, &["burn"]),
-    (MAY_TRANSFER, &["take_from_vault"]),
-    (
-        MAY_MANAGE_RESOURCE_FLAGS,
-        &["enable_flags", "disable_flags", "lock_flags"],
-    ),
-    (MAY_CHANGE_SHARED_METADATA, &["update_metadata"]),
-    (
-        MAY_CHANGE_INDIVIDUAL_METADATA,
-        &["update_non_fungible_mutable_data"],
-    ),
-];
-
 impl ResourceDef {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<ResourceDefId, u64>,
+        auth: ComponentAuthorization
     ) -> Result<Self, ResourceDefError> {
         if !resource_flags_are_valid(flags) {
             return Err(ResourceDefError::InvalidResourceFlags(flags));
@@ -64,41 +48,9 @@ impl ResourceDef {
             return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
         }
 
-        let mut method_states: HashMap<String, MethodAuthorization> = HashMap::new();
-        if flags & MINTABLE > 0 {
-            method_states.insert(
-                "mint".to_string(),
-                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
-            );
-        }
-
-        if flags & BURNABLE > 0 {
-            method_states.insert(
-                "burn".to_string(),
-                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
-            );
-        }
-
-        if flags & FREELY_BURNABLE > 0 {
-            method_states.insert(
-                "burn".to_string(),
-                MethodAuthorization::Public
-            );
-        }
-
-        if flags & RESTRICTED_TRANSFER > 0 {
-            method_states.insert(
-                "take_from_vault".to_string(),
-                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
-            );
-        } else {
-            method_states.insert(
-                "take_from_vault".to_string(),
-                MethodAuthorization::Public
-            );
-        }
 
 
+        /*
         method_states.insert(
             "enable_flags".to_string(),
             MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
@@ -111,60 +63,34 @@ impl ResourceDef {
             "lock_flags".to_string(),
             MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
         );
+         */
 
-        if flags & SHARED_METADATA_MUTABLE > 0 {
-            method_states.insert(
-                "update_metadata".to_string(),
-                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
-            );
-        }
-
-        if flags & INDIVIDUAL_METADATA_MUTABLE > 0 {
-            method_states.insert(
-                "update_non_fungible_mutable_data".to_string(),
-                MethodAuthorization::Protected(HardAuthRule::AllOf(vec![]))
-            );
-        }
-
-        for (resource_def_id, permission) in authorities {
-            if !resource_permissions_are_valid(permission) {
-                return Err(ResourceDefError::InvalidResourcePermission(permission));
+        let mut authorization: HashMap<String, MethodAuthorization> = HashMap::new();
+        if let Some(mint_auth) = auth.get("mint") {
+            // TODO: Check for other invalid mint permissions?
+            if let MethodAuth::AllowAll = mint_auth {
+                return Err(ResourceDefError::InvalidResourcePermission(0));
             }
 
-            for (flag, methods) in PERMISSION_MAP.iter() {
-                if permission & flag != 0 {
-                    for method in methods.iter() {
-                        let method_auth_maybe = method_states.remove(*method);
-                        if let None = method_auth_maybe {
-                            continue;
-                        }
-                        let mut cur_auth = method_auth_maybe.unwrap();
-                        cur_auth = match cur_auth {
-                            MethodAuthorization::Public => MethodAuthorization::Public,
-                            MethodAuthorization::Protected(HardAuthRule::AllOf(_)) => {
-                                MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::AnyOf(
-                                    HardProofRuleResourceList::List(vec![resource_def_id.into()])
-                                )))
-                            }
-                            MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                                HardProofRule::AnyOf(HardProofRuleResourceList::List(
-                                    mut resources,
-                                )),
-                            )) => {
-                                resources.push(resource_def_id.into());
-                                MethodAuthorization::Protected(HardAuthRule::ProofRule(
-                                    HardProofRule::AnyOf(HardProofRuleResourceList::List(
-                                        resources,
-                                    )),
-                                ))
-                            }
-                            _ => panic!("Should never get here."),
-                        };
+            authorization.insert("mint".to_string(), convert(&Type::Unit, &Value::Unit, mint_auth));
+        }
 
-                        method_states.insert(method.to_string(), cur_auth);
-                    }
-                }
-            }
+        if let Some(burn_auth) = auth.get("burn") {
+            authorization.insert("burn".to_string(), convert(&Type::Unit, &Value::Unit, burn_auth));
+        }
+
+        if let Some(take_auth) = auth.get("take_from_vault") {
+            authorization.insert("take_from_vault".to_string(), convert(&Type::Unit, &Value::Unit, take_auth));
+        } else {
+            return Err(ResourceDefError::TakeFromVaultNotDefined);
+        }
+
+        if let Some(update_metadata_auth) = auth.get("update_metadata") {
+            authorization.insert("update_metadata".to_string(), convert(&Type::Unit, &Value::Unit, update_metadata_auth));
+        }
+
+        if let Some(update_non_fungible_mutable_data_auth) = auth.get("update_non_fungible_mutable_data") {
+            authorization.insert("update_non_fungible_mutable_data".to_string(), convert(&Type::Unit, &Value::Unit, update_non_fungible_mutable_data_auth));
         }
 
         let resource_def = Self {
@@ -172,7 +98,7 @@ impl ResourceDef {
             metadata,
             flags,
             mutable_flags,
-            authorization: method_states,
+            authorization,
             total_supply: 0.into(),
         };
 

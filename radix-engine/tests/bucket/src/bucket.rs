@@ -9,6 +9,7 @@ blueprint! {
         fn create_test_token(amount: u32) -> Bucket {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
+                .auth("take_from_vault", auth!(allow_all))
                 .metadata("name", "TestToken")
                 .initial_supply(amount);
             let proof1 = bucket.create_proof();
@@ -47,11 +48,12 @@ blueprint! {
         pub fn test_restricted_transfer() -> Vec<Bucket> {
             let auth_bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
+                .auth("take_from_vault", auth!(allow_all))
                 .initial_supply(1);
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
+                .auth("take_from_vault", auth!(require(auth_bucket.resource_def_id())))
                 .flags(RESTRICTED_TRANSFER)
-                .badge(auth_bucket.resource_def_id(), MAY_TRANSFER)
                 .initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
 
@@ -64,11 +66,13 @@ blueprint! {
         pub fn test_burn() -> Vec<Bucket> {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
+                .auth("take_from_vault", auth!(allow_all))
                 .initial_supply(1);
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
+                .auth("take_from_vault", auth!(allow_all))
+                .auth("burn", auth!(require(badge.resource_def_id())))
                 .flags(BURNABLE)
-                .badge(badge.resource_def_id(), MAY_BURN)
                 .initial_supply(5);
             badge.authorize(|| bucket.burn());
             vec![badge]
@@ -77,9 +81,12 @@ blueprint! {
         pub fn test_burn_freely() -> Vec<Bucket> {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
+                .auth("take_from_vault", auth!(allow_all))
                 .initial_supply(1);
             let mut bucket1 = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
+                .auth("take_from_vault", auth!(allow_all))
+                .auth("burn", auth!(allow_all))
                 .flags(BURNABLE | FREELY_BURNABLE)
                 .initial_supply(5);
             let bucket2 = bucket1.take(2);

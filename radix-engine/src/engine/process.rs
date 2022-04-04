@@ -1608,7 +1608,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             input.metadata,
             input.flags,
             input.mutable_flags,
-            input.authorities,
+            input.authorization,
         )
         .map_err(RuntimeError::ResourceDefError)?;
 

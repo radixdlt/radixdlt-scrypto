@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::auth;
+use scrypto::{auth, component_authorization};
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
@@ -145,7 +145,9 @@ pub trait SubstateStore {
                 metadata,
                 0,
                 0,
-                HashMap::new(),
+                component_authorization! {
+                    "take_from_vault" => auth!(allow_all)
+                },
             )
             .unwrap();
             xrd.mint(&MintParams::Fungible {
@@ -159,7 +161,9 @@ pub trait SubstateStore {
                 HashMap::new(),
                 0,
                 0,
-                HashMap::new(),
+                component_authorization! {
+                    "take_from_vault" => auth!(allow_all)
+                },
             )
             .unwrap();
             self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, self.get_nonce());
