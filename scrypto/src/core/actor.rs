@@ -15,24 +15,31 @@ pub enum ActorType {
 pub struct Actor {
     package_id: PackageId,
     blueprint_name: String,
-    actor_type: ActorType
+    actor_type: ActorType,
+    export_name: String,
 }
 
 impl Actor {
-    pub fn blueprint(package_id: PackageId, blueprint_name: String) -> Self {
+    pub fn blueprint(package_id: PackageId, blueprint_name: String, export_name: String) -> Self {
         Self {
             package_id,
             blueprint_name,
-            actor_type: Blueprint
+            actor_type: Blueprint,
+            export_name,
         }
     }
 
-    pub fn component(package_id: PackageId, blueprint_name: String, component_id: ComponentId) -> Self {
+    pub fn component(package_id: PackageId, blueprint_name: String, export_name: String, component_id: ComponentId) -> Self {
         Self {
             package_id,
             blueprint_name,
-            actor_type: ActorType::Component(component_id)
+            actor_type: ActorType::Component(component_id),
+            export_name,
         }
+    }
+
+    pub fn export_name(&self) -> &str {
+        &self.export_name
     }
 
     pub fn actor_type(&self) -> &ActorType {

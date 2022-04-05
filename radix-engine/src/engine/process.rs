@@ -63,7 +63,6 @@ pub struct Interpreter {
 #[derive(Debug, Clone)]
 pub struct Invocation {
     actor: Actor,
-    export_name: String,
     function: String,
     args: Vec<ValidatedData>,
 }
@@ -697,12 +696,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn run(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(
-            self,
-            "Run started: actor = {:?}, export = {}",
-            invocation.actor,
-            invocation.export_name
-        );
+        re_info!(self, "Run started: actor = {:?}", invocation.actor);
 
         let package = self
             .track
@@ -774,7 +768,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         });
 
         // run the main function
-        let result = module.invoke_export(invocation.export_name.as_str(), &[], self);
+        let result = module.invoke_export(invocation.actor.export_name(), &[], self);
         re_debug!(self, "Invoke result: {:?}", result);
         let rtn = result
             .map_err(|e| {
@@ -819,8 +813,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::blueprint(package_id, blueprint_name.to_owned()),
-            export_name: format!("{}_main", blueprint_name),
+            actor: Actor::blueprint(
+                package_id,
+                blueprint_name.to_owned(),
+                format!("{}_main", blueprint_name)
+            ),
             function: function.to_owned(),
             args,
         })
@@ -843,8 +840,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args_with_self.extend(args);
 
         Ok(Invocation {
-            actor: Actor::component(component.package_id(), component.blueprint_name().to_owned(), component_id),
-            export_name: format!("{}_main", component.blueprint_name()),
+            actor: Actor::component(
+                component.package_id(),
+                component.blueprint_name().to_owned(),
+                format!("{}_main", component.blueprint_name()),
+                component_id,
+            ),
             function: method.to_owned(),
             args: args_with_self,
         })
@@ -857,8 +858,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         blueprint_name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::blueprint(package_id, blueprint_name.to_owned()),
-            export_name: format!("{}_abi", blueprint_name),
+            actor: Actor::blueprint(
+                package_id,
+                blueprint_name.to_owned(),
+                format!("{}_abi", blueprint_name),
+            ),
             function: String::new(),
             args: Vec::new(),
         })
