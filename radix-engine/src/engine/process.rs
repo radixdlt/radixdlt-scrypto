@@ -703,71 +703,62 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_package(invocation.actor.package_id())
             .ok_or(RuntimeError::PackageNotFound(invocation.actor.package_id().clone()))?;
 
-        let (module, memory, interpreter_state) = match invocation.actor.actor_type() {
-            ActorType::Blueprint => {
-                let (module, memory) =
-                    package
-                        .load_for_function_call(invocation.actor.blueprint_name())
-                        .map_err(|e| match e {
-                            PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
-                                invocation.actor.package_id().clone(),
-                                invocation.actor.blueprint_name().to_string(),
-                            ),
-                        })?;
+        if !package.contains_blueprint(invocation.actor.blueprint_name()) {
+            return Err(RuntimeError::BlueprintNotFound(
+                invocation.actor.package_id().clone(),
+                invocation.actor.blueprint_name().to_string(),
+            ));
+        }
 
-                Ok((module, memory, InterpreterState::Blueprint))
-            }
+        // Load code
+        let (module, memory) = package
+            .load_module()
+            .unwrap();
+
+        // Authorization
+        let state: Option<(ComponentId, Vec<u8>, ValidatedData)> = match invocation.actor.actor_type() {
+            ActorType::Blueprint => Ok(None),
             ActorType::Component(component_id) => {
-                // Retrieve schema
-                let (schema, module, memory) = package
-                    .load_for_method_call(invocation.actor.blueprint_name())
-                    .map_err(|e| match e {
-                        PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
-                            invocation.actor.package_id().clone(),
-                            invocation.actor.blueprint_name().to_string(),
-                        ),
-                    })?;
                 // TODO: Remove clone
-                let schema = schema.clone();
-
-                // Auth check
+                let schema = package.load_blueprint_schema(invocation.actor.blueprint_name()).unwrap().clone();
                 let component = self.track.get_component(component_id.clone()).unwrap();
                 let (data, method_auth) =
                     component.method_authorization(&schema, &invocation.function);
                 method_auth.check(&[self.caller_auth_zone]).map_err(|e| {
                     RuntimeError::AuthorizationError(invocation.function.clone(), e)
                 })?;
-
-                // Load state
-                let initial_loaded_object_refs = ComponentObjectRefs {
-                    vault_ids: data.vault_ids.into_iter().collect(),
-                    lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
-                };
-                let state = component.state().to_vec();
-                let component = InterpreterState::Component {
-                    state,
-                    component_id: *component_id,
-                    initial_loaded_object_refs,
-                    additional_object_refs: ComponentObjectRefs::new(),
-                };
-                Ok((module, memory, component))
+                Ok(Some((component_id.clone(), component.state().to_vec(), data)))
             }
         }?;
 
-        let vm = Interpreter {
-            invocation: invocation.clone(),
-            module: module.clone(),
-            memory,
+        // Load state
+        let interpreter_state = if let Some((component_id, state, data)) = state {
+            let initial_loaded_object_refs = ComponentObjectRefs {
+                vault_ids: data.vault_ids.into_iter().collect(),
+                lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
+            };
+            InterpreterState::Component {
+                state,
+                component_id,
+                initial_loaded_object_refs,
+                additional_object_refs: ComponentObjectRefs::new(),
+            }
+        } else {
+            InterpreterState::Blueprint
         };
         self.wasm_process_state = Some(WasmProcess {
             depth: self.depth,
             trace: self.trace,
-            vm,
+            vm: Interpreter {
+                invocation: invocation.clone(),
+                module: module.clone(),
+                memory,
+            },
             interpreter_state,
             process_owned_objects: ComponentObjects::new(),
         });
 
-        // run the main function
+        // Execution
         let result = module.invoke_export(invocation.actor.export_name(), &[], self);
         re_debug!(self, "Invoke result: {:?}", result);
         let rtn = result
@@ -780,7 +771,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             })?
             .ok_or(RuntimeError::NoReturnData)?;
 
-        // move resource based on return data
+        // Return value
         let output = match rtn {
             RuntimeValue::I32(ptr) => {
                 let data = self.read_return_value(ptr as u32)?;

@@ -18,6 +18,7 @@ pub struct Package {
     blueprints: HashMap<String, Type>,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum PackageError {
     BlueprintNotFound,
 }
@@ -81,27 +82,20 @@ impl Package {
         &self.code
     }
 
-    pub fn load_for_method_call(
-        &self,
-        blueprint_name: &str,
-    ) -> Result<(&Type, ModuleRef, MemoryRef), PackageError> {
-        let blueprint_type = self
-            .blueprints
-            .get(blueprint_name)
-            .ok_or(PackageError::BlueprintNotFound)?;
-        let module = Self::parse_module(&self.code).unwrap();
-        let (module_ref, memory_ref) = Self::instantiate_module(&module).unwrap();
-        Ok((blueprint_type, module_ref, memory_ref))
+    pub fn contains_blueprint(&self, blueprint_name: &str) -> bool {
+        self.blueprints.contains_key(blueprint_name)
     }
 
-    pub fn load_for_function_call(
-        &self,
-        blueprint_name: &str,
-    ) -> Result<(ModuleRef, MemoryRef), PackageError> {
-        if !self.blueprints.contains_key(blueprint_name) {
-            return Err(PackageError::BlueprintNotFound);
-        }
+    pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
+        self
+            .blueprints
+            .get(blueprint_name)
+            .ok_or(PackageError::BlueprintNotFound)
+    }
 
+    pub fn load_module(
+        &self,
+    ) -> Result<(ModuleRef, MemoryRef), PackageError> {
         let module = Self::parse_module(&self.code).unwrap();
         let inst = Self::instantiate_module(&module).unwrap();
         Ok(inst)
