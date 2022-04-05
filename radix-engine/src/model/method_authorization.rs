@@ -7,6 +7,18 @@ use crate::errors::RuntimeError::NotAuthorized;
 use crate::model::Proof;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+pub enum HardDecimal {
+    Amount(Decimal),
+    SoftDecimalNotFound,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+pub enum HardCount {
+    Count(u8),
+    SoftCountNotFound,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardResourceOrNonFungible {
     NonFungible(NonFungibleAddress),
     Resource(ResourceAddress),
@@ -78,10 +90,10 @@ pub enum HardProofRuleResourceList {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardProofRule {
     This(HardResourceOrNonFungible),
-    SomeOfResource(Decimal, HardResourceOrNonFungible),
+    SomeOfResource(HardDecimal, HardResourceOrNonFungible),
     AllOf(HardProofRuleResourceList),
     AnyOf(HardProofRuleResourceList),
-    CountOf(u8, HardProofRuleResourceList),
+    CountOf(HardCount, HardProofRuleResourceList),
 }
 
 impl HardProofRule {
@@ -94,52 +106,47 @@ impl HardProofRule {
                     Err(NotAuthorized)
                 }
             }
-            HardProofRule::SomeOfResource(amount, resource) => {
+            HardProofRule::SomeOfResource(HardDecimal::Amount(amount), resource) => {
                 if resource.check_has_amount(*amount, proofs_vector) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
                 }
             }
-            HardProofRule::AllOf(resource_list) => match resource_list {
-                HardProofRuleResourceList::SoftResourceListNotFound => Err(NotAuthorized),
-                HardProofRuleResourceList::List(resources) => {
-                    for resource in resources {
-                        if !resource.check(proofs_vector) {
-                            return Err(NotAuthorized);
-                        }
+            HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
+                for resource in resources {
+                    if !resource.check(proofs_vector) {
+                        return Err(NotAuthorized);
                     }
-
-                    Ok(())
                 }
-            },
-            HardProofRule::AnyOf(resource_list) => match resource_list {
-                HardProofRuleResourceList::SoftResourceListNotFound => Err(NotAuthorized),
-                HardProofRuleResourceList::List(resources) => {
-                    for resource in resources {
-                        if resource.check(proofs_vector) {
+
+                Ok(())
+            }
+            HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
+                for resource in resources {
+                    if resource.check(proofs_vector) {
+                        return Ok(());
+                    }
+                }
+
+                Err(NotAuthorized)
+            }
+            HardProofRule::CountOf(
+                HardCount::Count(count),
+                HardProofRuleResourceList::List(resources),
+            ) => {
+                let mut left = count.clone();
+                for resource in resources {
+                    if resource.check(proofs_vector) {
+                        left -= 1;
+                        if left == 0 {
                             return Ok(());
                         }
                     }
-
-                    Err(NotAuthorized)
                 }
-            },
-            HardProofRule::CountOf(count, resource_list) => match resource_list {
-                HardProofRuleResourceList::SoftResourceListNotFound => Err(NotAuthorized),
-                HardProofRuleResourceList::List(resources) => {
-                    let mut left = count.clone();
-                    for resource in resources {
-                        if resource.check(proofs_vector) {
-                            left -= 1;
-                            if left == 0 {
-                                return Ok(());
-                            }
-                        }
-                    }
-                    Err(NotAuthorized)
-                }
-            },
+                Err(NotAuthorized)
+            }
+            _ => Err(NotAuthorized),
         }
     }
 }

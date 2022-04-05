@@ -9,6 +9,56 @@ use scrypto::math::Decimal;
 /// TODO: add documentation for public types once they're stable.
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum SoftDecimal {
+    Static(Decimal),
+    Dynamic(SchemaPath),
+}
+
+impl From<Decimal> for SoftDecimal {
+    fn from(amount: Decimal) -> Self {
+        SoftDecimal::Static(amount)
+    }
+}
+
+impl From<SchemaPath> for SoftDecimal {
+    fn from(path: SchemaPath) -> Self {
+        SoftDecimal::Dynamic(path)
+    }
+}
+
+impl From<&str> for SoftDecimal {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftDecimal::Dynamic(schema_path)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum SoftCount {
+    Static(u8),
+    Dynamic(SchemaPath),
+}
+
+impl From<u8> for SoftCount {
+    fn from(count: u8) -> Self {
+        SoftCount::Static(count)
+    }
+}
+
+impl From<SchemaPath> for SoftCount {
+    fn from(path: SchemaPath) -> Self {
+        SoftCount::Dynamic(path)
+    }
+}
+
+impl From<&str> for SoftCount {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftCount::Dynamic(schema_path)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
     Static(ResourceAddress),
     Dynamic(SchemaPath),
@@ -97,8 +147,8 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
-    AmountOf(Decimal, SoftResource),
-    CountOf(u8, SoftResourceOrNonFungibleList),
+    AmountOf(SoftDecimal, SoftResource),
+    CountOf(SoftCount, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
 }
@@ -196,18 +246,20 @@ where
     ProofRule::AllOf(resources.into())
 }
 
-pub fn require_n_of<T>(count: u8, resources: T) -> ProofRule
+pub fn require_n_of<C, T>(count: C, resources: T) -> ProofRule
 where
+    C: Into<SoftCount>,
     T: Into<SoftResourceOrNonFungibleList>,
 {
-    ProofRule::CountOf(count, resources.into())
+    ProofRule::CountOf(count.into(), resources.into())
 }
 
-pub fn require_amount<T>(amount: Decimal, resource: T) -> ProofRule
+pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule
 where
+    D: Into<SoftDecimal>,
     T: Into<SoftResource>,
 {
-    ProofRule::AmountOf(amount, resource.into())
+    ProofRule::AmountOf(amount.into(), resource.into())
 }
 
 // TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.
