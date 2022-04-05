@@ -2,10 +2,8 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::errors::WasmValidationError::{
-    InvalidPackageInit, NoPackageInitExport, NoValidMemoryExport,
-};
-use radix_engine::errors::{RuntimeError, WasmiError};
+use radix_engine::errors::RuntimeError;
+use radix_engine::errors::WasmValidationError::NoValidMemoryExport;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
@@ -42,68 +40,6 @@ fn missing_memory_should_cause_error() {
 }
 
 #[test]
-fn missing_package_init_should_cause_error() {
-    // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
-
-    // Act
-    let code: Vec<u8> = wabt::wat2wasm(
-        r#"
-            (module
-              (memory (export "memory") 1 10)
-              (data (i32.const 0x0) "\01\01\00\00")
-            )
-            "#,
-    )
-    .expect("failed to parse wat");
-    let transaction = test_runner
-        .new_transaction_builder()
-        .publish_package(&code)
-        .build(&[])
-        .unwrap();
-    let receipt = test_runner.validate_and_execute(&transaction);
-    let error = receipt.result.expect_err("Should be error.");
-    if !matches!(
-        error,
-        RuntimeError::WasmValidationError(NoPackageInitExport(WasmiError::Function(_)))
-    ) {
-        panic!("Doesn't match");
-    }
-}
-
-#[test]
-fn invalid_package_init_should_cause_error() {
-    // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
-
-    // Act
-    let code: Vec<u8> = wabt::wat2wasm(
-        r#"
-            (module
-              (memory (export "memory") 1 10)
-              (data (i32.const 0x0) "\01\01\00\00")
-              (func (export "package_init") (result i32)
-                    i32.const 1337
-              )
-            )
-            "#,
-    )
-    .expect("failed to parse wat");
-    let transaction = test_runner
-        .new_transaction_builder()
-        .publish_package(&code)
-        .build(&[])
-        .unwrap();
-    let receipt = test_runner.validate_and_execute(&transaction);
-
-    // Assert
-    let error = receipt.result.expect_err("Should be error.");
-    assert_eq!(error, RuntimeError::WasmValidationError(InvalidPackageInit));
-}
-
-#[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
@@ -115,7 +51,8 @@ fn large_return_len_should_cause_memory_access_error() {
         .new_transaction_builder()
         .call_function(package, "LargeReturnSize", "something", vec![])
         .build(&[])
-        .unwrap();
+        .unwrap()
+        .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert

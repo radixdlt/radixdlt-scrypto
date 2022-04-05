@@ -26,6 +26,7 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn new_lazy_map_into_lazy_map() -> ComponentAddress {
@@ -39,6 +40,7 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn new_lazy_map_into_map_then_get() -> ComponentAddress {
@@ -53,6 +55,7 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn overwrite_lazy_map(&mut self) -> () {
@@ -69,6 +72,7 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn new_lazy_map_with_put() -> ComponentAddress {
@@ -81,6 +85,7 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn clear_vector(&mut self) -> () {

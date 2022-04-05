@@ -7,9 +7,13 @@ blueprint! {
 
     impl AuthComponent {
         pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentAddress {
-            Self { some_non_fungible }.instantiate_with_auth(component_authorization! {
-                "get_secret" => this!(SchemaPath::new().field("some_non_fungible")),
-            })
+            Self { some_non_fungible }
+                .instantiate()
+                .auth(
+                    "get_secret",
+                    require!(SchemaPath::new().field("some_non_fungible")),
+                )
+                .globalize()
         }
 
         pub fn get_secret(&self) -> String {

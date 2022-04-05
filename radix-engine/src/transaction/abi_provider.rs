@@ -1,3 +1,4 @@
+use sbor::Type;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::crypto::sha256;
@@ -68,7 +69,7 @@ impl AbiProvider for BasicAbiProvider {
         // Start a process and run abi generator
         let mut track = Track::new(&mut ledger, transaction_hash, Vec::new());
         let mut proc = track.start_process(self.trace);
-        let output: (Vec<abi::Function>, Vec<abi::Method>) = proc
+        let output: (Type, Vec<abi::Function>, Vec<abi::Method>) = proc
             .call_abi(package_address, blueprint_name)
             .and_then(|rtn| scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError))?;
 
@@ -76,8 +77,8 @@ impl AbiProvider for BasicAbiProvider {
         Ok(abi::Blueprint {
             package_address: package_address.to_string(),
             blueprint_name: blueprint_name.to_owned(),
-            functions: output.0,
-            methods: output.1,
+            functions: output.1,
+            methods: output.2,
         })
     }
 

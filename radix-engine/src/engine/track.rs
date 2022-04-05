@@ -149,7 +149,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         component_addresses
     }
 
-    /// Returns new resource defs created so far.
+    /// Returns new resource addresses created so far.
     pub fn new_resource_addresses(&self) -> Vec<ResourceAddress> {
         let mut resource_addresses = Vec::new();
         for (resource_address, update) in self.resource_managers.iter() {

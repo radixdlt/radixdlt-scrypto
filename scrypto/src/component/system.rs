@@ -54,17 +54,27 @@ impl ComponentSystem {
     /// Instantiates a component.
     pub fn instantiate_component<T: ComponentState>(
         &mut self,
+        blueprint_name: &str,
         authorization: ComponentAuthorization,
         state: T,
     ) -> ComponentAddress {
         let input = CreateComponentInput {
-            blueprint_name: T::blueprint_name().to_owned(),
+            blueprint_name: blueprint_name.to_owned(),
             state: scrypto_encode(&state),
             authorization,
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 
         output.component_address
+    }
+
+    /// Instantiates a component.
+    pub fn to_component_state_with_auth<T: ComponentState>(
+        &self,
+        blueprint_name: &str,
+        state: T,
+    ) -> LocalComponent {
+        LocalComponent::new(blueprint_name.to_owned(), scrypto_encode(&state))
     }
 }
 

@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
-wasmi = { version = "0.11.0", default-features = false }
+wasmi = { git = "https://github.com/radixdlt/wasmi", branch = "expose-exports" }
 colored = { version = "2.0", default-features = false }
 lru = { version = "0.7" }
 bencher = { version = "0.1.5" }

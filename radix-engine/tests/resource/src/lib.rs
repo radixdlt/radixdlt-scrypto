@@ -159,5 +159,3 @@ blueprint! {
         }
     }
 }
-
-package_init!(blueprint::ResourceTest::describe());
