@@ -120,7 +120,7 @@ fn test_dynamic_authlist(
             package,
             "AuthListComponent",
             "create_component",
-            args!(list, authorization),
+            args!(2u8, list, authorization),
         )
         .build(&[])
         .unwrap()
@@ -168,7 +168,7 @@ fn dynamic_auth_should_allow_me_to_call_method_when_change_auth() {
 }
 
 #[test]
-fn dynamic_this_should_fail_on_dynamic_list() {
+fn dynamic_require_should_fail_on_dynamic_list() {
     test_dynamic_authlist(3, auth!(require("auth")), &[0, 1, 2], false);
 }
 
@@ -179,12 +179,26 @@ fn dynamic_all_of_should_fail_on_nonexistent_resource() {
 
 #[test]
 fn dynamic_min_n_of_should_allow_me_to_call_method() {
-    test_dynamic_authlist(3, auth!(require_n_of(2, "auth")), &[0, 1], true);
+    let auths = [
+        auth!(require_n_of(2, "auth")),
+        auth!(require_n_of("count", "auth")),
+    ];
+
+    for auth in auths {
+        test_dynamic_authlist(3, auth, &[0, 1], true);
+    }
 }
 
 #[test]
 fn dynamic_min_n_of_should_fail_if_not_signed_enough() {
-    test_dynamic_authlist(3, auth!(require_n_of(2, "auth")), &[0], false);
+    let auths = [
+        auth!(require_n_of(2, "auth")),
+        auth!(require_n_of("count", "auth")),
+    ];
+
+    for auth in auths {
+        test_dynamic_authlist(3, auth, &[0], false);
+    }
 }
 
 #[test]
