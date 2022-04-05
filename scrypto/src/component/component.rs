@@ -70,6 +70,7 @@ pub struct ComponentAddress(pub [u8; 26]);
 
 impl ComponentAddress {}
 
+/// Represents an instantiated component.
 #[derive(Debug)]
 pub struct Component(pub(crate) ComponentAddress);
 
@@ -120,6 +121,7 @@ impl Component {
 // error
 //========
 
+/// Represents an error when decoding component address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseComponentAddressError {
     InvalidHex(String),
@@ -158,7 +160,7 @@ impl ComponentAddress {
     }
 }
 
-custom_type!(ComponentAddress, CustomType::ComponentAddress, Vec::new());
+scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 
 //======
 // text

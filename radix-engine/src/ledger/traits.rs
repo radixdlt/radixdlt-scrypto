@@ -147,7 +147,7 @@ pub trait SubstateStore {
             .get_decoded_substate(&SYSTEM_PACKAGE)
             .map(|(package, _)| package);
         if package.is_none() {
-            let tx_hash = sha256(self.get_and_increase_nonce().to_le_bytes());
+            let tx_hash = hash(self.get_and_increase_nonce().to_le_bytes());
             let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
             // System package

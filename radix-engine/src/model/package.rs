@@ -1,9 +1,7 @@
-use crate::engine::EnvModuleResolver;
-use crate::errors::WasmValidationError;
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
-use scrypto::prelude::HashMap;
+use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
@@ -12,6 +10,9 @@ use wasmi::{
     ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals,
     RuntimeValue,
 };
+
+use crate::engine::EnvModuleResolver;
+use crate::errors::WasmValidationError;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

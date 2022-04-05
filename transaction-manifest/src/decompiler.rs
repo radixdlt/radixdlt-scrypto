@@ -1,13 +1,13 @@
 use radix_engine::engine::*;
-use radix_engine::errors::*;
 use radix_engine::model::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
+use scrypto::values::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
     IdValidatorError(IdValidatorError),
-    DataValidationError(DataValidationError),
+    ParseScryptoValueError(ParseScryptoValueError),
 }
 
 pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
@@ -219,13 +219,13 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     package_address, blueprint_name, function
                 ));
                 for arg in args {
-                    let validated_arg = ValidatedData::from_slice(&arg)
-                        .map_err(DecompileError::DataValidationError)?;
+                    let validated_arg = ScryptoValue::from_slice(&arg)
+                        .map_err(DecompileError::ParseScryptoValueError)?;
                     id_validator
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
                     buf.push(' ');
-                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &proofs));
+                    buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
                 }
                 buf.push_str(";\n");
             }
@@ -239,13 +239,13 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     component_address, method
                 ));
                 for arg in args {
-                    let validated_arg = ValidatedData::from_slice(&arg)
-                        .map_err(DecompileError::DataValidationError)?;
+                    let validated_arg = ScryptoValue::from_slice(&arg)
+                        .map_err(DecompileError::ParseScryptoValueError)?;
                     id_validator
                         .move_resources(&validated_arg)
                         .map_err(DecompileError::IdValidatorError)?;
                     buf.push(' ');
-                    buf.push_str(&format_value(&validated_arg.dom, &buckets, &proofs));
+                    buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
                 }
                 buf.push_str(";\n");
             }

@@ -59,9 +59,9 @@ blueprint! {
             let proof = self.vault.create_proof_by_ids(&proof_ids);
             let clone = proof.clone();
 
-            assert_eq!(self.vault.get_non_fungible_ids(), total_ids);
-            assert_eq!(proof.get_non_fungible_ids(), proof_ids);
-            assert_eq!(clone.get_non_fungible_ids(), proof_ids);
+            assert_eq!(self.vault.non_fungible_ids(), total_ids);
+            assert_eq!(proof.non_fungible_ids(), proof_ids);
+            assert_eq!(clone.non_fungible_ids(), proof_ids);
 
             clone.drop();
             proof.drop();
@@ -115,7 +115,7 @@ blueprint! {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
                     let proof = AuthZone::create_proof_by_ids(&ids, bucket.resource_address());
-                    assert_eq!(proof.get_non_fungible_ids(), ids);
+                    assert_eq!(proof.non_fungible_ids(), ids);
                     proof.drop();
                 })
             });

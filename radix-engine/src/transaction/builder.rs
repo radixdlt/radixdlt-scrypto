@@ -1,6 +1,3 @@
-use crate::engine::*;
-use crate::model::*;
-use crate::transaction::*;
 use sbor::describe::*;
 use sbor::*;
 use scrypto::abi;
@@ -20,6 +17,11 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
+use scrypto::values::*;
+
+use crate::engine::*;
+use crate::model::*;
+use crate::transaction::*;
 
 /// Utility for building transaction.
 pub struct TransactionBuilder<'a, A: AbiProvider + NonceProvider> {
@@ -99,7 +101,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
             }
             Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
                 for arg in &args {
-                    let validated_arg = ValidatedData::from_slice(arg).unwrap();
+                    let validated_arg = ScryptoValue::from_slice(arg).unwrap();
                     self.id_validator.move_resources(&validated_arg).unwrap();
                 }
             }
@@ -782,44 +784,44 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         name: &str,
         account: Option<ComponentAddress>,
     ) -> Result<Vec<u8>, BuildArgsError> {
-        match CustomType::from_name(name).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
-            CustomType::Decimal => {
+        match ScryptoType::from_name(name).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
+            ScryptoType::Decimal => {
                 let value = arg
                     .parse::<Decimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::PackageAddress => {
+            ScryptoType::PackageAddress => {
                 let value = arg
                     .parse::<PackageAddress>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::ComponentAddress => {
+            ScryptoType::ComponentAddress => {
                 let value = arg
                     .parse::<ComponentAddress>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::ResourceAddress => {
+            ScryptoType::ResourceAddress => {
                 let value = arg
                     .parse::<ResourceAddress>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::Hash => {
+            ScryptoType::Hash => {
                 let value = arg
                     .parse::<Hash>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::NonFungibleId => {
+            ScryptoType::NonFungibleId => {
                 let value = arg
                     .parse::<NonFungibleId>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::Bucket => {
+            ScryptoType::Bucket => {
                 let resource_specifier = parse_resource_specifier(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let bucket_id = match resource_specifier {
@@ -848,7 +850,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
                 };
                 Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
             }
-            CustomType::Proof => {
+            ScryptoType::Proof => {
                 let resource_specifier = parse_resource_specifier(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let proof_id = match resource_specifier {

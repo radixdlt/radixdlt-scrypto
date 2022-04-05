@@ -37,9 +37,13 @@ impl NonFungibleAddress {
 // binary
 //========
 
+/// Represents an error when parsing non-fungible address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleAddressError {
-    Invalid,
+    InvalidLength(usize),
+    InvalidResourceDefId,
+    InvalidNonFungibleId,
+    InvalidHex,
 }
 
 impl TryFrom<&[u8]> for NonFungibleAddress {
@@ -47,14 +51,14 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() < 26 {
-            return Err(ParseNonFungibleAddressError::Invalid);
+            return Err(ParseNonFungibleAddressError::InvalidLength(slice.len()));
         }
 
         let (resource_address_slice, non_fungible_id_slice) = slice.split_at(26);
         let resource_address = ResourceAddress::try_from(resource_address_slice)
-            .map_err(|_| ParseNonFungibleAddressError::Invalid)?;
+            .map_err(|_| ParseNonFungibleAddressError::InvalidResourceDefId)?;
         let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)
-            .map_err(|_| ParseNonFungibleAddressError::Invalid)?;
+            .map_err(|_| ParseNonFungibleAddressError::InvalidNonFungibleId)?;
         Ok(NonFungibleAddress {
             resource_address,
             non_fungible_id,
@@ -71,9 +75,9 @@ impl NonFungibleAddress {
     }
 }
 
-custom_type!(
+scrypto_type!(
     NonFungibleAddress,
-    CustomType::NonFungibleAddress,
+    ScryptoType::NonFungibleAddress,
     Vec::new()
 );
 
@@ -85,7 +89,7 @@ impl FromStr for NonFungibleAddress {
     type Err = ParseNonFungibleAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|_| ParseNonFungibleAddressError::Invalid)?;
+        let bytes = hex::decode(s).map_err(|_| ParseNonFungibleAddressError::InvalidHex)?;
         Self::try_from(bytes.as_slice())
     }
 }

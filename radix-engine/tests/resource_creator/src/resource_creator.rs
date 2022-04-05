@@ -40,21 +40,21 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply([
                     (
-                        NonFungibleId::from(1u128),
+                        NonFungibleId::from_u32(1),
                         Sandwich {
                             name: "One".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        NonFungibleId::from(2u128),
+                        NonFungibleId::from_u32(2),
                         Sandwich {
                             name: "Two".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        NonFungibleId::from(3u128),
+                        NonFungibleId::from_u32(3),
                         Sandwich {
                             name: "Three".to_owned(),
                             available: true,

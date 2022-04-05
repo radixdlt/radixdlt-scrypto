@@ -42,8 +42,10 @@ pub mod prelude;
 pub mod resource;
 /// A facade of types in Rust standard library.
 pub mod rust;
-/// Scrypto custom types.
+/// Scrypto types.
 pub mod types;
+/// Scrypto values.
+pub mod values;
 
 // Export macros
 mod macros;

@@ -40,7 +40,7 @@ impl Proof {
             return false;
         }
 
-        self.get_non_fungible_ids()
+        self.non_fungible_ids()
             .iter()
             .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
     }
@@ -61,25 +61,11 @@ impl Proof {
         output.resource_address
     }
 
-    /// Returns the key of a singleton non-fungible.
-    ///
-    /// # Panic
-    /// If the bucket is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_id(&self) -> NonFungibleId {
-        let ids = self.get_non_fungible_ids();
-        assert!(
-            ids.len() == 1,
-            "1 non-fungible expected, but {} found",
-            ids.len()
-        );
-        ids.into_iter().next().unwrap()
-    }
-
     /// Returns the ids of all non-fungibles in this bucket.
     ///
     /// # Panics
     /// If the bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+    pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
         let input = GetNonFungibleIdsInProofInput { proof_id: self.0 };
         let output: GetNonFungibleIdsInProofOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_PROOF, input);
@@ -103,6 +89,7 @@ impl Proof {
 // error
 //========
 
+/// Represents an error when decoding proof.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseProofError {
     InvalidLength(usize),
@@ -139,4 +126,4 @@ impl Proof {
     }
 }
 
-custom_type!(Proof, CustomType::Proof, Vec::new());
+scrypto_type!(Proof, ScryptoType::Proof, Vec::new());

@@ -3,7 +3,6 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -12,6 +11,7 @@ use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::values::*;
 use wasmi::*;
 
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
@@ -66,7 +66,7 @@ pub struct Invocation {
     package_address: PackageAddress,
     export_name: String,
     function: String,
-    args: Vec<ValidatedData>,
+    args: Vec<ScryptoValue>,
 }
 
 /// Qualitative states for a WASM process
@@ -303,10 +303,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Returns resource back to worktop.
-    pub fn return_to_worktop(
-        &mut self,
-        bucket_id: BucketId,
-    ) -> Result<ValidatedData, RuntimeError> {
+    pub fn return_to_worktop(&mut self, bucket_id: BucketId) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(
             self,
             "(Transaction) Returning to worktop: bucket_id = {}",
@@ -320,18 +317,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.worktop
             .put(bucket)
             .map_err(RuntimeError::WorktopError)?;
-        Ok(ValidatedData::from_value(&()))
+        Ok(ScryptoValue::from_value(&()))
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
     pub fn assert_worktop_contains(
         &mut self,
         resource_address: ResourceAddress,
-    ) -> Result<ValidatedData, RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         if self.worktop.total_amount(resource_address).is_zero() {
             Err(RuntimeError::AssertionFailed)
         } else {
-            Ok(ValidatedData::from_value(&()))
+            Ok(ScryptoValue::from_value(&()))
         }
     }
 
@@ -340,11 +337,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
-    ) -> Result<ValidatedData, RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         if self.worktop.total_amount(resource_address) < amount {
             Err(RuntimeError::AssertionFailed)
         } else {
-            Ok(ValidatedData::from_value(&()))
+            Ok(ScryptoValue::from_value(&()))
         }
     }
 
@@ -353,7 +350,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
-    ) -> Result<ValidatedData, RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         if !self
             .worktop
             .total_ids(resource_address)
@@ -362,7 +359,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         {
             Err(RuntimeError::AssertionFailed)
         } else {
-            Ok(ValidatedData::from_value(&()))
+            Ok(ScryptoValue::from_value(&()))
         }
     }
 
@@ -625,7 +622,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         component_address: ComponentAddress,
         method: &str,
-    ) -> Result<ValidatedData, RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(
             self,
             "(Transaction) Calling method with all resources started"
@@ -662,7 +659,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let invocation = self.prepare_call_method(
             component_address,
             method,
-            vec![ValidatedData::from_slice(&scrypto_encode(&to_deposit)).unwrap()],
+            vec![ScryptoValue::from_value(&to_deposit)],
         )?;
         let result = self.call(invocation);
 
@@ -696,7 +693,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
+    pub fn run(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         re_info!(
@@ -818,7 +815,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         package_address: PackageAddress,
         blueprint_name: &str,
         function: &str,
-        args: Vec<ValidatedData>,
+        args: Vec<ScryptoValue>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
             actor: Actor::Blueprint(blueprint_name.to_owned()),
@@ -834,15 +831,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         component_address: ComponentAddress,
         method: &str,
-        args: Vec<ValidatedData>,
+        args: Vec<ScryptoValue>,
     ) -> Result<Invocation, RuntimeError> {
         let component = self
             .track
             .get_component(component_address)
             .ok_or(RuntimeError::ComponentNotFound(component_address))?
             .clone();
-        let mut args_with_self =
-            vec![ValidatedData::from_slice(&scrypto_encode(&component_address)).unwrap()];
+        let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
         args_with_self.extend(args);
 
         Ok(Invocation {
@@ -870,7 +866,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Calls a function/method.
-    pub fn call(&mut self, invocation: Invocation) -> Result<ValidatedData, RuntimeError> {
+    pub fn call(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
         // figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
@@ -912,8 +908,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         package_address: PackageAddress,
         blueprint_name: &str,
         function: &str,
-        args: Vec<ValidatedData>,
-    ) -> Result<ValidatedData, RuntimeError> {
+        args: Vec<ScryptoValue>,
+    ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call function started");
         let invocation =
             self.prepare_call_function(package_address, blueprint_name, function, args)?;
@@ -927,8 +923,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         component_address: ComponentAddress,
         method: &str,
-        args: Vec<ValidatedData>,
-    ) -> Result<ValidatedData, RuntimeError> {
+        args: Vec<ScryptoValue>,
+    ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call method started");
         let invocation = self.prepare_call_method(component_address, method, args)?;
         let result = self.call(invocation);
@@ -941,7 +937,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
-    ) -> Result<ValidatedData, RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call abi started");
         let invocation = self.prepare_call_abi(package_address, blueprint_name)?;
         let result = self.call(invocation);
@@ -1057,7 +1053,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    fn process_call_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
+    fn process_call_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
         }
@@ -1067,7 +1063,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    fn process_return_data(&mut self, validated: &ValidatedData) -> Result<(), RuntimeError> {
+    fn process_return_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
         }
@@ -1080,7 +1076,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Process and parse entry data from any component object (components and maps)
     fn process_entry_data(data: &[u8]) -> Result<ComponentObjectRefs, RuntimeError> {
         let validated =
-            ValidatedData::from_slice(data).map_err(RuntimeError::DataValidationError)?;
+            ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
         if !validated.bucket_ids.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
         }
@@ -1112,9 +1108,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ValidatedData, RuntimeError> {
+    fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ScryptoValue, RuntimeError> {
         let validated =
-            ValidatedData::from_slice(data).map_err(RuntimeError::DataValidationError)?;
+            ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
         if !validated.bucket_ids.is_empty() {
             return Err(RuntimeError::BucketNotAllowed);
         }
@@ -1226,7 +1222,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Err(RuntimeError::MemoryAllocError)
     }
 
-    fn read_return_value(&mut self, ptr: u32) -> Result<ValidatedData, RuntimeError> {
+    fn read_return_value(&mut self, ptr: u32) -> Result<ScryptoValue, RuntimeError> {
         let wasm_process = self.wasm_process_state.as_ref().unwrap();
         // read length
         let len: u32 = wasm_process
@@ -1247,7 +1243,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::MemoryAccessError);
         }
 
-        ValidatedData::from_slice(&buffer[range]).map_err(RuntimeError::DataValidationError)
+        ScryptoValue::from_slice(&buffer[range]).map_err(RuntimeError::ParseScryptoValueError)
     }
 
     /// Handles a system call.
@@ -1310,8 +1306,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<CallFunctionOutput, RuntimeError> {
         let mut validated_args = Vec::new();
         for arg in input.args {
-            validated_args
-                .push(ValidatedData::from_slice(&arg).map_err(RuntimeError::DataValidationError)?);
+            validated_args.push(
+                ScryptoValue::from_slice(&arg).map_err(RuntimeError::ParseScryptoValueError)?,
+            );
         }
 
         re_debug!(
@@ -1341,8 +1338,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<CallMethodOutput, RuntimeError> {
         let mut validated_args = Vec::new();
         for arg in input.args {
-            validated_args
-                .push(ValidatedData::from_slice(&arg).map_err(RuntimeError::DataValidationError)?);
+            validated_args.push(
+                ScryptoValue::from_slice(&arg).map_err(RuntimeError::ParseScryptoValueError)?,
+            );
         }
 
         re_debug!(
@@ -1985,22 +1983,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(TakeFromVaultOutput { bucket_id })
     }
 
-    fn handle_take_non_fungible_from_vault(
+    fn handle_take_non_fungibles_from_vault(
         &mut self,
-        input: TakeNonFungibleFromVaultInput,
-    ) -> Result<TakeNonFungibleFromVaultOutput, RuntimeError> {
+        input: TakeNonFungiblesFromVaultInput,
+    ) -> Result<TakeNonFungiblesFromVaultOutput, RuntimeError> {
         let resource_address = self.get_local_vault(&input.vault_id)?.resource_address();
         self.check_resource_auth(&resource_address, "take_from_vault")?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
-            .take_non_fungible(&input.non_fungible_id)
+            .take_non_fungibles(&input.non_fungible_ids)
             .map_err(RuntimeError::VaultError)?;
 
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
-        Ok(TakeNonFungibleFromVaultOutput { bucket_id })
+        Ok(TakeNonFungiblesFromVaultOutput { bucket_id })
     }
 
     fn handle_get_non_fungible_ids_in_vault(
@@ -2120,20 +2118,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetBucketResourceAddressOutput { resource_address })
     }
 
-    fn handle_take_non_fungible_from_bucket(
+    fn handle_take_non_fungibles_from_bucket(
         &mut self,
-        input: TakeNonFungibleFromBucketInput,
-    ) -> Result<TakeNonFungibleFromBucketOutput, RuntimeError> {
+        input: TakeNonFungiblesFromBucketInput,
+    ) -> Result<TakeNonFungiblesFromBucketOutput, RuntimeError> {
         let new_bucket = self
             .buckets
             .get_mut(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .take_non_fungible(&input.non_fungible_id)
+            .take_non_fungibles(&input.non_fungible_ids)
             .map_err(RuntimeError::BucketError)?;
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
-        Ok(TakeNonFungibleFromBucketOutput { bucket_id })
+        Ok(TakeNonFungiblesFromBucketOutput { bucket_id })
     }
 
     fn handle_get_non_fungible_ids_in_bucket(
@@ -2422,8 +2420,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
-                    TAKE_NON_FUNGIBLE_FROM_VAULT => {
-                        self.handle(args, Self::handle_take_non_fungible_from_vault)
+                    TAKE_NON_FUNGIBLES_FROM_VAULT => {
+                        self.handle(args, Self::handle_take_non_fungibles_from_vault)
                     }
                     GET_NON_FUNGIBLE_IDS_IN_VAULT => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
@@ -2436,8 +2434,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_BUCKET_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_bucket_resource_address)
                     }
-                    TAKE_NON_FUNGIBLE_FROM_BUCKET => {
-                        self.handle(args, Self::handle_take_non_fungible_from_bucket)
+                    TAKE_NON_FUNGIBLES_FROM_BUCKET => {
+                        self.handle(args, Self::handle_take_non_fungibles_from_bucket)
                     }
                     GET_NON_FUNGIBLE_IDS_IN_BUCKET => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_bucket)

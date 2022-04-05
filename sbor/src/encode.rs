@@ -18,25 +18,26 @@ pub trait Encode: TypeId {
 }
 
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
-pub struct Encoder {
-    buf: Vec<u8>,
+pub struct Encoder<'a> {
+    buf: &'a mut Vec<u8>,
     with_type: bool,
 }
 
-impl Encoder {
-    pub fn new(buf: Vec<u8>, with_type: bool) -> Self {
+impl<'a> Encoder<'a> {
+    pub fn new(buf: &'a mut Vec<u8>, with_type: bool) -> Self {
         Self { buf, with_type }
     }
 
-    pub fn with_type(buf: Vec<u8>) -> Self {
+    pub fn with_type(buf: &'a mut Vec<u8>) -> Self {
         Self::new(buf, true)
     }
 
-    pub fn no_type(buf: Vec<u8>) -> Self {
+    pub fn no_type(buf: &'a mut Vec<u8>) -> Self {
         Self::new(buf, false)
     }
 
     pub fn write_type(&mut self, ty: u8) {
+        // May use compile-time feature flag, instead of runtime check, for performance.
         if self.with_type {
             self.buf.push(ty);
         }
@@ -53,11 +54,9 @@ impl Encoder {
     pub fn write_slice(&mut self, slice: &[u8]) {
         self.buf.extend(slice);
     }
-}
 
-impl From<Encoder> for Vec<u8> {
-    fn from(a: Encoder) -> Vec<u8> {
-        a.buf
+    pub fn encode<T: Encode + ?Sized>(&mut self, value: &T) {
+        value.encode(self)
     }
 }
 
@@ -316,10 +315,10 @@ mod tests {
 
     #[test]
     pub fn test_encoding() {
-        let mut enc = Encoder::with_type(Vec::with_capacity(512));
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_type(&mut bytes);
         do_encoding(&mut enc);
 
-        let bytes: Vec<u8> = enc.into();
         assert_eq!(
             vec![
                 0, // unit
@@ -350,10 +349,10 @@ mod tests {
 
     #[test]
     pub fn test_encoding_no_type() {
-        let mut enc = Encoder::no_type(Vec::with_capacity(512));
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::no_type(&mut bytes);
         do_encoding(&mut enc);
 
-        let bytes: Vec<u8> = enc.into();
         assert_eq!(
             vec![
                 // unit
@@ -385,27 +384,27 @@ mod tests {
     #[test]
     pub fn test_encode_box() {
         let x = Box::new(5u8);
-        let mut enc = Encoder::with_type(Vec::with_capacity(512));
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_type(&mut bytes);
         x.encode(&mut enc);
-        let bytes: Vec<u8> = enc.into();
         assert_eq!(bytes, vec![7, 5])
     }
 
     #[test]
     pub fn test_encode_rc() {
         let x = crate::rust::rc::Rc::new(5u8);
-        let mut enc = Encoder::with_type(Vec::with_capacity(512));
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_type(&mut bytes);
         x.encode(&mut enc);
-        let bytes: Vec<u8> = enc.into();
         assert_eq!(bytes, vec![7, 5])
     }
 
     #[test]
     pub fn test_encode_ref_cell() {
         let x = crate::rust::cell::RefCell::new(5u8);
-        let mut enc = Encoder::with_type(Vec::with_capacity(512));
+        let mut bytes = Vec::with_capacity(512);
+        let mut enc = Encoder::with_type(&mut bytes);
         x.encode(&mut enc);
-        let bytes: Vec<u8> = enc.into();
         assert_eq!(bytes, vec![7, 5])
     }
 }

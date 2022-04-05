@@ -29,17 +29,19 @@ pub use type_id::TypeId;
 use crate::rust::vec::Vec;
 
 /// Encode a `T` into byte array, with type info included.
-pub fn encode_with_type<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
-    let mut enc = Encoder::with_type(buf);
+pub fn encode_with_type<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(512);
+    let mut enc = Encoder::with_type(&mut buf);
     v.encode(&mut enc);
-    enc.into()
+    buf
 }
 
 /// Encode a `T` into byte array, with no type info.
-pub fn encode_no_type<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
-    let mut enc = Encoder::no_type(buf);
+pub fn encode_no_type<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(512);
+    let mut enc = Encoder::no_type(&mut buf);
     v.encode(&mut enc);
-    enc.into()
+    buf
 }
 
 /// Decode an instance of `T` from a slice, with type info included.
