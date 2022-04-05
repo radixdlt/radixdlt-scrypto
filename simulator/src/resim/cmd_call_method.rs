@@ -8,17 +8,13 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct CallMethod {
     /// The component that the method belongs to
-    component_id: ComponentId,
+    component_address: ComponentAddress,
 
     /// The method name
     method_name: String,
 
     /// The call arguments
     arguments: Vec<String>,
-
-    /// The transaction signers
-    #[clap(short, long)]
-    signers: Option<Vec<EcdsaPublicKey>>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -34,18 +30,19 @@ impl CallMethod {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_account = get_default_account()?;
-        let default_signers = get_default_signers()?;
-        let signatures = self.signers.clone().unwrap_or(default_signers);
+        let (default_pks, default_sks) = get_default_signers()?;
+
         let transaction = TransactionBuilder::new(&executor)
             .parse_args_and_call_method(
-                self.component_id,
+                self.component_address,
                 &self.method_name,
                 self.arguments.clone(),
                 Some(default_account),
             )
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(signatures)
-            .map_err(Error::TransactionConstructionError)?;
+            .build(default_pks)
+            .map_err(Error::TransactionConstructionError)?
+            .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)
     }
 }

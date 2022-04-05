@@ -9,7 +9,7 @@ mod non_fungible_id;
 mod proof;
 mod proof_rule;
 mod resource_builder;
-mod resource_def;
+mod resource_manager;
 mod resource_type;
 mod schema_path;
 mod system;
@@ -26,10 +26,10 @@ pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::{ParseProofError, Proof};
 pub use proof_rule::{
     require, require_all_of, require_amount, require_any_of, require_n_of, AuthRuleNode,
-    MethodAuth, ProofRule, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    MethodAuth, ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
-pub use resource_def::{ParseResourceDefIdError, ResourceDef, ResourceDefId};
+pub use resource_manager::{ParseResourceAddressError, ResourceAddress, ResourceManager};
 pub use resource_type::ResourceType;
 pub use schema_path::SchemaPath;
 pub use system::{init_resource_system, resource_system, ResourceSystem};

@@ -1,9 +1,9 @@
 use sbor::*;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
-use scrypto::types::*;
+use scrypto::values::*;
 use wasmi::*;
 
 use crate::engine::*;
@@ -66,21 +66,14 @@ pub enum WasmValidationError {
     InvalidPackageInit,
 }
 
-/// Represents an error when parsing a value from a byte array.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum DataValidationError {
-    DecodeError(DecodeError),
-    CustomValueValidatorError(CustomValueValidatorError),
-}
-
 /// Represents an error when validating a transaction.
 #[derive(Debug, PartialEq, Eq)]
 pub enum TransactionValidationError {
-    DataValidationError(DataValidationError),
+    ParseScryptoValueError(ParseScryptoValueError),
     IdValidatorError(IdValidatorError),
     VaultNotAllowed(VaultId),
     LazyMapNotAllowed(LazyMapId),
-    InvalidSignature,
+    InvalidSignature(SignatureValidationError),
     UnexpectedEnd,
 }
 
@@ -94,7 +87,7 @@ pub enum RuntimeError {
     WasmValidationError(WasmValidationError),
 
     /// The data is not a valid SBOR value.
-    DataValidationError(DataValidationError),
+    ParseScryptoValueError(ParseScryptoValueError),
 
     /// Not a valid ABI.
     AbiValidationError(DecodeError),
@@ -127,22 +120,22 @@ pub enum RuntimeError {
     HostFunctionNotFound(usize),
 
     /// Package does not exist.
-    PackageNotFound(PackageId),
+    PackageNotFound(PackageAddress),
 
     /// Blueprint does not exist.
-    BlueprintNotFound(PackageId, String),
+    BlueprintNotFound(PackageAddress, String),
 
     /// System call not allowed in given context.
     IllegalSystemCall,
 
     /// Component does not exist.
-    ComponentNotFound(ComponentId),
+    ComponentNotFound(ComponentAddress),
 
     /// Component is already loaded
-    ComponentAlreadyLoaded(ComponentId),
+    ComponentAlreadyLoaded(ComponentAddress),
 
-    /// Resource definition does not exist.
-    ResourceDefNotFound(ResourceDefId),
+    /// Resource manager does not exist.
+    ResourceManagerNotFound(ResourceAddress),
 
     /// Non-fungible does not exist.
     NonFungibleNotFound(NonFungibleAddress),
@@ -180,8 +173,8 @@ pub enum RuntimeError {
     /// The bucket contains no resource.
     EmptyProof,
 
-    /// Resource definition access error.
-    ResourceDefError(ResourceDefError),
+    /// Resource manager access error.
+    ResourceManagerError(ResourceManagerError),
 
     /// Bucket access error.
     BucketError(ResourceContainerError),

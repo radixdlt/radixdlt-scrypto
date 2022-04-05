@@ -1,7 +1,7 @@
 use core::ops::*;
 use num_bigint::BigInt;
 use num_traits::Signed;
-use sbor::{describe::Type, *};
+use sbor::*;
 
 use crate::misc::*;
 use crate::rust::convert::TryFrom;
@@ -13,6 +13,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// `Decimal` represents a 128 bit representation of a fixed-scale decimal number.
+///
 /// The finite set of values are of the form `m / 10^18`, where `m` is
 /// an integer such that `-2^127 <= m < 2^127`.
 ///
@@ -20,6 +21,7 @@ use crate::types::*;
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Decimal(pub i128);
 
+/// Defines how rounding should be done.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum RoundingMode {
     /// Rounds towards positive infinity, e.g. `3.1 -> 4`, `-3.1 -> -3`.
@@ -214,6 +216,15 @@ impl From<bool> for Decimal {
     }
 }
 
+/// Creates a `Decimal` from literals.
+///
+/// # Example
+/// ```ignore
+/// use scrypto::prelude::*;
+///
+/// let a = dec!(1);
+/// let b = dec!("1.1");
+/// ```
 #[macro_export]
 macro_rules! dec {
     ($x:literal) => {
@@ -323,6 +334,7 @@ impl<T: Into<Decimal>> DivAssign<T> for Decimal {
 // error
 //========
 
+/// Represents an error when parsing Decimal from hex string.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseDecimalError {
     InvalidDecimal(String),
@@ -363,7 +375,7 @@ impl Decimal {
     }
 }
 
-custom_type!(Decimal, CustomType::Decimal, Vec::new());
+scrypto_type!(Decimal, ScryptoType::Decimal, Vec::new());
 
 //======
 // text

@@ -1,4 +1,4 @@
-use sbor::{describe::Type, *};
+use sbor::*;
 
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
@@ -25,22 +25,22 @@ impl Clone for Proof {
 
 impl Proof {
     /// Whether this proof includes an ownership proof of any of the given resource.
-    pub fn contains(&self, resource_def_id: ResourceDefId) -> bool {
-        self.resource_def_id() == resource_def_id
+    pub fn contains(&self, resource_address: ResourceAddress) -> bool {
+        self.resource_address() == resource_address
     }
 
     /// Whether this proof includes an ownership proof of at least the given amount of resource.
-    pub fn contains_resource(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
-        self.resource_def_id() == resource_def_id && self.amount() > amount
+    pub fn contains_resource(&self, amount: Decimal, resource_address: ResourceAddress) -> bool {
+        self.resource_address() == resource_address && self.amount() > amount
     }
 
     /// Whether this proof includes an ownership proof of the given non-fungible.
     pub fn contains_non_fungible(&self, non_fungible_address: &NonFungibleAddress) -> bool {
-        if self.resource_def_id() != non_fungible_address.resource_def_id() {
+        if self.resource_address() != non_fungible_address.resource_address() {
             return false;
         }
 
-        self.get_non_fungible_ids()
+        self.non_fungible_ids()
             .iter()
             .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
     }
@@ -53,33 +53,19 @@ impl Proof {
         output.amount
     }
 
-    /// Returns the resource definition of resources within the bucket.
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        let input = GetProofResourceDefIdInput { proof_id: self.0 };
-        let output: GetProofResourceDefIdOutput = call_engine(GET_PROOF_RESOURCE_DEF_ID, input);
+    /// Returns the resource address
+    pub fn resource_address(&self) -> ResourceAddress {
+        let input = GetProofResourceAddressInput { proof_id: self.0 };
+        let output: GetProofResourceAddressOutput = call_engine(GET_PROOF_RESOURCE_ADDRESS, input);
 
-        output.resource_def_id
-    }
-
-    /// Returns the key of a singleton non-fungible.
-    ///
-    /// # Panic
-    /// If the bucket is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_id(&self) -> NonFungibleId {
-        let ids = self.get_non_fungible_ids();
-        assert!(
-            ids.len() == 1,
-            "1 non-fungible expected, but {} found",
-            ids.len()
-        );
-        ids.into_iter().next().unwrap()
+        output.resource_address
     }
 
     /// Returns the ids of all non-fungibles in this bucket.
     ///
     /// # Panics
     /// If the bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+    pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
         let input = GetNonFungibleIdsInProofInput { proof_id: self.0 };
         let output: GetNonFungibleIdsInProofOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_PROOF, input);
@@ -103,6 +89,7 @@ impl Proof {
 // error
 //========
 
+/// Represents an error when decoding proof.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseProofError {
     InvalidLength(usize),
@@ -139,4 +126,4 @@ impl Proof {
     }
 }
 
-custom_type!(Proof, CustomType::Proof, Vec::new());
+scrypto_type!(Proof, ScryptoType::Proof, Vec::new());

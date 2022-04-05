@@ -1,5 +1,5 @@
 use crate::model::method_authorization::{
-    HardAuthRule, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
+    HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
 };
 use crate::model::MethodAuthorization;
 use sbor::any::Value;
@@ -7,10 +7,47 @@ use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::{AuthRuleNode, MethodAuth, SoftResource};
 use scrypto::resource::{
-    NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 use scrypto::rust::vec::Vec;
-use scrypto::types::CustomType;
+use scrypto::types::ScryptoType;
+
+fn soft_to_hard_decimal(schema: &Type, soft_decimal: &SoftDecimal, dom: &Value) -> HardDecimal {
+    match soft_decimal {
+        SoftDecimal::Static(amount) => HardDecimal::Amount(amount.clone()),
+        SoftDecimal::Dynamic(schema_path) => {
+            let sbor_path = schema_path.to_sbor_path(schema);
+            if let None = sbor_path {
+                return HardDecimal::SoftDecimalNotFound;
+            }
+            match sbor_path.unwrap().get_from_value(dom) {
+                Some(Value::Custom(ty, value)) => match ScryptoType::from_id(*ty).unwrap() {
+                    ScryptoType::Decimal => {
+                        HardDecimal::Amount(Decimal::try_from(value.as_slice()).unwrap())
+                    }
+                    _ => HardDecimal::SoftDecimalNotFound,
+                },
+                _ => HardDecimal::SoftDecimalNotFound,
+            }
+        }
+    }
+}
+
+fn soft_to_hard_count(schema: &Type, soft_count: &SoftCount, dom: &Value) -> HardCount {
+    match soft_count {
+        SoftCount::Static(count) => HardCount::Count(count.clone()),
+        SoftCount::Dynamic(schema_path) => {
+            let sbor_path = schema_path.to_sbor_path(schema);
+            if let None = sbor_path {
+                return HardCount::SoftCountNotFound;
+            }
+            match sbor_path.unwrap().get_from_value(dom) {
+                Some(Value::U8(count)) => HardCount::Count(count.clone()),
+                _ => HardCount::SoftCountNotFound,
+            }
+        }
+    }
+}
 
 fn soft_to_hard_resource_list(
     schema: &Type,
@@ -33,13 +70,13 @@ fn soft_to_hard_resource_list(
             }
 
             match sbor_path.unwrap().get_from_value(dom) {
-                Some(Value::Vec(type_id, values)) => match CustomType::from_id(*type_id).unwrap() {
-                    CustomType::ResourceDefId => HardProofRuleResourceList::List(
+                Some(Value::Vec(type_id, values)) => match ScryptoType::from_id(*type_id).unwrap() {
+                    ScryptoType::ResourceAddress => HardProofRuleResourceList::List(
                         values
                             .iter()
                             .map(|v| {
                                 if let Value::Custom(_, bytes) = v {
-                                    return ResourceDefId::try_from(bytes.as_slice())
+                                    return ResourceAddress::try_from(bytes.as_slice())
                                         .unwrap()
                                         .into();
                                 }
@@ -47,7 +84,7 @@ fn soft_to_hard_resource_list(
                             })
                             .collect(),
                     ),
-                    CustomType::NonFungibleAddress => HardProofRuleResourceList::List(
+                    ScryptoType::NonFungibleAddress => HardProofRuleResourceList::List(
                         values
                             .iter()
                             .map(|v| {
@@ -81,9 +118,9 @@ fn soft_to_hard_resource(
             }
             match sbor_path.unwrap().get_from_value(dom) {
                 Some(Value::Custom(type_id, bytes)) => {
-                    match CustomType::from_id(*type_id).unwrap() {
-                        CustomType::ResourceDefId => {
-                            ResourceDefId::try_from(bytes.as_slice()).unwrap().into()
+                    match ScryptoType::from_id(*type_id).unwrap() {
+                        ScryptoType::ResourceAddress => {
+                            ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                         }
                         _ => HardResourceOrNonFungible::SoftResourceNotFound,
                     }
@@ -110,11 +147,11 @@ fn soft_to_hard_resource_or_non_fungible(
             }
             match sbor_path.unwrap().get_from_value(dom) {
                 Some(Value::Custom(type_id, bytes)) => {
-                    match CustomType::from_id(*type_id).unwrap() {
-                        CustomType::ResourceDefId => {
-                            ResourceDefId::try_from(bytes.as_slice()).unwrap().into()
+                    match ScryptoType::from_id(*type_id).unwrap() {
+                        ScryptoType::ResourceAddress => {
+                            ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                         }
-                        CustomType::NonFungibleAddress => {
+                        ScryptoType::NonFungibleAddress => {
                             NonFungibleAddress::try_from(bytes.as_slice())
                                 .unwrap()
                                 .into()
@@ -141,9 +178,10 @@ fn soft_to_hard_proof_rule(schema: &Type, proof_rule: &ProofRule, dom: &Value) -
                 soft_to_hard_resource_or_non_fungible(schema, soft_resource_or_non_fungible, dom);
             HardProofRule::This(resource)
         }
-        ProofRule::AmountOf(amount, soft_resource) => {
+        ProofRule::AmountOf(soft_decimal, soft_resource) => {
             let resource = soft_to_hard_resource(schema, soft_resource, dom);
-            HardProofRule::SomeOfResource(*amount, resource)
+            let hard_decimal = soft_to_hard_decimal(schema, soft_decimal, dom);
+            HardProofRule::SomeOfResource(hard_decimal, resource)
         }
         ProofRule::AllOf(resources) => {
             let hard_resources = soft_to_hard_resource_list(schema, resources, dom);
@@ -153,9 +191,10 @@ fn soft_to_hard_proof_rule(schema: &Type, proof_rule: &ProofRule, dom: &Value) -
             let hard_resources = soft_to_hard_resource_list(schema, resources, dom);
             HardProofRule::AnyOf(hard_resources)
         }
-        ProofRule::CountOf(count, resources) => {
+        ProofRule::CountOf(soft_count, resources) => {
+            let hard_count = soft_to_hard_count(schema, soft_count, dom);
             let hard_resources = soft_to_hard_resource_list(schema, resources, dom);
-            HardProofRule::CountOf(*count, hard_resources)
+            HardProofRule::CountOf(hard_count, hard_resources)
         }
     }
 }

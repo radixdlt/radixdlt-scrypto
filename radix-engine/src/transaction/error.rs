@@ -1,7 +1,8 @@
-use crate::errors::RuntimeError;
 use sbor::describe::Type;
 use scrypto::engine::types::*;
 use scrypto::rust::string::String;
+
+use crate::errors::RuntimeError;
 
 /// Represents an error when parsing arguments.
 #[derive(Debug, Clone)]
@@ -29,10 +30,10 @@ pub enum BuildTransactionError {
     FailedToBuildArgs(BuildArgsError),
 
     /// Failed to export the ABI of a function.
-    FailedToExportFunctionAbi(PackageId, String, String, RuntimeError),
+    FailedToExportFunctionAbi(PackageAddress, String, String, RuntimeError),
 
     /// Failed to export the ABI of a method.
-    FailedToExportMethodAbi(ComponentId, String),
+    FailedToExportMethodAbi(ComponentAddress, String),
 
     /// Account is required but not provided.
     AccountNotProvided,

@@ -1,19 +1,72 @@
-use crate::prelude::AuthRuleNode::{AllOf, AnyOf};
+use crate::resource::AuthRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
 
+/// TODO: add documentation for public types once they're stable.
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
-pub enum SoftResource {
-    Static(ResourceDefId),
+pub enum SoftDecimal {
+    Static(Decimal),
     Dynamic(SchemaPath),
 }
 
-impl From<ResourceDefId> for SoftResource {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        SoftResource::Static(resource_def_id)
+impl From<Decimal> for SoftDecimal {
+    fn from(amount: Decimal) -> Self {
+        SoftDecimal::Static(amount)
+    }
+}
+
+impl From<SchemaPath> for SoftDecimal {
+    fn from(path: SchemaPath) -> Self {
+        SoftDecimal::Dynamic(path)
+    }
+}
+
+impl From<&str> for SoftDecimal {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftDecimal::Dynamic(schema_path)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum SoftCount {
+    Static(u8),
+    Dynamic(SchemaPath),
+}
+
+impl From<u8> for SoftCount {
+    fn from(count: u8) -> Self {
+        SoftCount::Static(count)
+    }
+}
+
+impl From<SchemaPath> for SoftCount {
+    fn from(path: SchemaPath) -> Self {
+        SoftCount::Dynamic(path)
+    }
+}
+
+impl From<&str> for SoftCount {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftCount::Dynamic(schema_path)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum SoftResource {
+    Static(ResourceAddress),
+    Dynamic(SchemaPath),
+}
+
+impl From<ResourceAddress> for SoftResource {
+    fn from(resource_address: ResourceAddress) -> Self {
+        SoftResource::Static(resource_address)
     }
 }
 
@@ -33,7 +86,7 @@ impl From<&str> for SoftResource {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
-    StaticResource(ResourceDefId),
+    StaticResource(ResourceAddress),
     Dynamic(SchemaPath),
 }
 
@@ -43,9 +96,9 @@ impl From<NonFungibleAddress> for SoftResourceOrNonFungible {
     }
 }
 
-impl From<ResourceDefId> for SoftResourceOrNonFungible {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        SoftResourceOrNonFungible::StaticResource(resource_def_id)
+impl From<ResourceAddress> for SoftResourceOrNonFungible {
+    fn from(resource_address: ResourceAddress) -> Self {
+        SoftResourceOrNonFungible::StaticResource(resource_address)
     }
 }
 
@@ -91,13 +144,23 @@ where
 }
 
 /// Resource Proof Rules
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
-    AmountOf(Decimal, SoftResource),
-    CountOf(u8, SoftResourceOrNonFungibleList),
+    AmountOf(SoftDecimal, SoftResource),
+    CountOf(SoftCount, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
+}
+
+// FIXME: describe types with cycles
+impl Describe for ProofRule {
+    fn describe() -> sbor::describe::Type {
+        sbor::describe::Type::Custom {
+            name: "ProofRule".to_owned(),
+            generics: vec![],
+        }
+    }
 }
 
 impl From<NonFungibleAddress> for ProofRule {
@@ -106,9 +169,9 @@ impl From<NonFungibleAddress> for ProofRule {
     }
 }
 
-impl From<ResourceDefId> for ProofRule {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        ProofRule::Require(resource_def_id.into())
+impl From<ResourceAddress> for ProofRule {
+    fn from(resource_address: ResourceAddress) -> Self {
+        ProofRule::Require(resource_address.into())
     }
 }
 
@@ -123,11 +186,21 @@ macro_rules! resource_list {
   });
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum AuthRuleNode {
     ProofRule(ProofRule),
     AnyOf(Vec<AuthRuleNode>),
     AllOf(Vec<AuthRuleNode>),
+}
+
+// FIXME: describe types with cycles
+impl Describe for AuthRuleNode {
+    fn describe() -> sbor::describe::Type {
+        sbor::describe::Type::Custom {
+            name: "AuthRuleNode".to_owned(),
+            generics: vec![],
+        }
+    }
 }
 
 impl AuthRuleNode {
@@ -173,18 +246,20 @@ where
     ProofRule::AllOf(resources.into())
 }
 
-pub fn require_n_of<T>(count: u8, resources: T) -> ProofRule
+pub fn require_n_of<C, T>(count: C, resources: T) -> ProofRule
 where
+    C: Into<SoftCount>,
     T: Into<SoftResourceOrNonFungibleList>,
 {
-    ProofRule::CountOf(count, resources.into())
+    ProofRule::CountOf(count.into(), resources.into())
 }
 
-pub fn require_amount<T>(amount: Decimal, resource: T) -> ProofRule
+pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule
 where
+    D: Into<SoftDecimal>,
     T: Into<SoftResource>,
 {
-    ProofRule::AmountOf(amount, resource.into())
+    ProofRule::AmountOf(amount.into(), resource.into())
 }
 
 // TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.

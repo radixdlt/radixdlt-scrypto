@@ -8,7 +8,7 @@ blueprint! {
 
     impl System {
         /// Publishes a package.
-        pub fn publish_package(code: Vec<u8>) -> PackageId {
+        pub fn publish_package(code: Vec<u8>) -> PackageAddress {
             component_system().publish_package(&code)
         }
 
@@ -18,8 +18,8 @@ blueprint! {
             metadata: HashMap<String, String>,
             authorization: ComponentAuthorization,
             initial_supply: Option<MintParams>,
-        ) -> (ResourceDefId, Option<Bucket>) {
-            resource_system().instantiate_resource_definition(
+        ) -> (ResourceAddress, Option<Bucket>) {
+            resource_system().new_resource(
                 resource_type,
                 metadata,
                 authorization,
@@ -28,8 +28,8 @@ blueprint! {
         }
 
         /// Mints fungible resource. TODO: Remove
-        pub fn mint(amount: Decimal, resource_def_id: ResourceDefId) -> Bucket {
-            resource_def!(resource_def_id).mint(amount)
+        pub fn mint(amount: Decimal, resource_address: ResourceAddress) -> Bucket {
+            resource_manager!(resource_address).mint(amount)
         }
 
         /// Burns bucket. TODO: Remove
@@ -43,5 +43,3 @@ blueprint! {
         }
     }
 }
-
-package_init!(blueprint::System::describe());

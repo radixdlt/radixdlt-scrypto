@@ -7,33 +7,33 @@ use crate::rust::string::String;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum ActorType {
     Blueprint,
-    Component(ComponentId),
+    Component(ComponentAddress),
 }
 
 /// Represents the running entity.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Actor {
-    package_id: PackageId,
+    package_address: PackageAddress,
     blueprint_name: String,
     actor_type: ActorType,
     export_name: String,
 }
 
 impl Actor {
-    pub fn blueprint(package_id: PackageId, blueprint_name: String, export_name: String) -> Self {
+    pub fn blueprint(package_address: PackageAddress, blueprint_name: String, export_name: String) -> Self {
         Self {
-            package_id,
+            package_address,
             blueprint_name,
             actor_type: Blueprint,
             export_name,
         }
     }
 
-    pub fn component(package_id: PackageId, blueprint_name: String, export_name: String, component_id: ComponentId) -> Self {
+    pub fn component(package_address: PackageAddress, blueprint_name: String, export_name: String, component_address: ComponentAddress) -> Self {
         Self {
-            package_id,
+            package_address,
             blueprint_name,
-            actor_type: ActorType::Component(component_id),
+            actor_type: ActorType::Component(component_address),
             export_name,
         }
     }
@@ -46,15 +46,15 @@ impl Actor {
         &self.actor_type
     }
 
-    pub fn package_id(&self) -> &PackageId {
-        &self.package_id
+    pub fn package_address(&self) -> &PackageAddress {
+        &self.package_address
     }
 
     pub fn blueprint_name(&self) -> &str {
         &self.blueprint_name
     }
 
-    pub fn to_package_id(self) -> PackageId {
-        self.package_id
+    pub fn to_package_address(self) -> PackageAddress {
+        self.package_address
     }
 }

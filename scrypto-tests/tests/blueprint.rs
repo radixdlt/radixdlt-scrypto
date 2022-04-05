@@ -1,5 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use sbor::Type;
 use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::prelude::*;
@@ -12,7 +13,7 @@ blueprint! {
     }
 
     impl Simple {
-        pub fn new() -> ComponentId {
+        pub fn new() -> ComponentAddress {
             Self {
                 state: 0
             }
@@ -28,7 +29,7 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types() -> (Decimal, PackageId, LazyMap<String, String>, Hash, Bucket, Proof, Vault) {
+        pub fn custom_types() -> (Decimal, PackageAddress, LazyMap<String, String>, Hash, Bucket, Proof, Vault) {
             todo!()
         }
     }
@@ -41,19 +42,32 @@ fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 #[test]
 fn test_simple_abi() {
     let ptr = Simple_abi();
-    let abi: (Vec<abi::Function>, Vec<abi::Method>) =
+    let abi: (Type, Vec<abi::Function>, Vec<abi::Method>) =
         unsafe { scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap()) };
 
     assert_json_eq(
         abi,
         json!([
+            {
+                "fields":{
+                    "named":[
+                        [
+                            "state",
+                            { "type":"U32" }
+                        ]
+                    ],
+                    "type":"Named"
+                },
+                "name":"Simple",
+                "type":"Struct"
+            },
             [
                 {
                     "name": "new",
                     "inputs": [],
                     "output": {
                         "type": "Custom",
-                        "name": "ComponentId",
+                        "name": "ComponentAddress",
                         "generics": []
                     }
                 },
@@ -70,7 +84,7 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "name": "PackageId",
+                                "name": "PackageAddress",
                                 "generics": []
                             },
                             {
