@@ -1,4 +1,4 @@
-use scrypto::crypto::sha256_twice;
+use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::rust::ops::Range;
 
@@ -51,7 +51,7 @@ impl IdAllocator {
     ) -> Result<PackageAddress, IdAllocatorError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(PackageAddress(sha256_twice(data).lower_26_bytes()))
+        Ok(PackageAddress(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new component address.
@@ -61,7 +61,7 @@ impl IdAllocator {
     ) -> Result<ComponentAddress, IdAllocatorError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(ComponentAddress(sha256_twice(data).lower_26_bytes()))
+        Ok(ComponentAddress(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new resource address.
@@ -71,14 +71,14 @@ impl IdAllocator {
     ) -> Result<ResourceAddress, IdAllocatorError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(ResourceAddress(sha256_twice(data).lower_26_bytes()))
+        Ok(ResourceAddress(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new UUID.
     pub fn new_uuid(&mut self, transaction_hash: Hash) -> Result<u128, IdAllocatorError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(u128::from_le_bytes(sha256_twice(data).lower_16_bytes()))
+        Ok(u128::from_le_bytes(hash(data).lower_16_bytes()))
     }
 
     /// Creates a new bucket ID.

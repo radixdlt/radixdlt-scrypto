@@ -80,13 +80,7 @@ blueprint! {
         ) -> Bucket {
             let vault = self.vaults.get(&resource_address);
             match vault {
-                Some(vault) => {
-                    let mut bucket = Bucket::new(resource_address);
-                    for id in ids {
-                        bucket.put(vault.take_non_fungible(&id));
-                    }
-                    bucket
-                }
+                Some(mut vault) => vault.take_non_fungibles(&ids),
                 None => {
                     panic!("No such resource in account");
                 }

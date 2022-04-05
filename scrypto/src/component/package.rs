@@ -16,6 +16,7 @@ pub struct PackageAddress(pub [u8; 26]);
 
 impl PackageAddress {}
 
+/// Represents a published package.
 #[derive(Debug)]
 pub struct Package(pub(crate) PackageAddress);
 
@@ -37,6 +38,7 @@ impl Package {
 // error
 //========
 
+/// Represents an error when decoding package address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParsePackageAddressError {
     InvalidHex(String),
@@ -75,7 +77,7 @@ impl PackageAddress {
     }
 }
 
-custom_type!(PackageAddress, CustomType::PackageAddress, Vec::new());
+scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
 
 //======
 // text

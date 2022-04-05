@@ -1,12 +1,11 @@
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
-use scrypto::crypto::sha256;
+use scrypto::crypto::hash;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
-use scrypto::resource::require;
-use scrypto::resource::AuthRule;
+use scrypto::resource::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::values::*;
 use scrypto::{abi, auth};
 
 use crate::engine::*;
@@ -85,7 +84,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Generates a new key pair.
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
         let private_key =
-            EcdsaPrivateKey(sha256(self.substate_store.get_and_increase_nonce().to_le_bytes()).0);
+            EcdsaPrivateKey(hash(self.substate_store.get_and_increase_nonce().to_le_bytes()).0);
         let public_key = private_key.public_key();
         (public_key, private_key)
     }
@@ -112,7 +111,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     /// Creates a new key and an account which can be accessed using the key.
     pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentAddress) {
         let (public_key, private_key) = self.new_key_pair();
-        let id = NonFungibleId::new(public_key.to_vec());
+        let id = NonFungibleId::from_bytes(public_key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
         let withdraw_auth = auth!(require(auth_address));
         let account = self.new_account_with_auth_rule(&withdraw_auth);
@@ -147,7 +146,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         package_address: PackageAddress,
         code: Vec<u8>,
     ) -> Result<(), WasmValidationError> {
-        let tx_hash = sha256(self.substate_store.get_and_increase_nonce().to_le_bytes());
+        let tx_hash = hash(self.substate_store.get_and_increase_nonce().to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         let package = Package::new(code)?;
@@ -194,7 +193,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 ValidatedInstruction::TakeFromWorktop { resource_address } => proc
                     .take_all_from_worktop(*resource_address)
                     .map(|bucket_id| {
-                        ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
+                        ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id))
                     }),
                 ValidatedInstruction::TakeFromWorktopByAmount {
                     amount,
@@ -202,7 +201,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 } => proc
                     .take_from_worktop(*amount, *resource_address)
                     .map(|bucket_id| {
-                        ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
+                        ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id))
                     }),
                 ValidatedInstruction::TakeFromWorktopByIds {
                     ids,
@@ -210,7 +209,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 } => proc
                     .take_non_fungibles_from_worktop(ids, *resource_address)
                     .map(|bucket_id| {
-                        ValidatedData::from_value(&scrypto::resource::Bucket(bucket_id))
+                        ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id))
                     }),
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     proc.return_to_worktop(*bucket_id)
@@ -228,37 +227,37 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 } => proc.assert_worktop_contains_by_ids(&ids, *resource_address),
                 ValidatedInstruction::PopFromAuthZone {} => proc
                     .pop_from_auth_zone()
-                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::ClearAuthZone => proc
                     .drop_all_auth_zone_proofs()
-                    .map(|_| ValidatedData::from_value(&())),
+                    .map(|_| ScryptoValue::from_value(&())),
                 ValidatedInstruction::PushToAuthZone { proof_id } => proc
                     .push_to_auth_zone(*proof_id)
-                    .map(|_| ValidatedData::from_value(&())),
+                    .map(|_| ScryptoValue::from_value(&())),
                 ValidatedInstruction::CreateProofFromAuthZone { resource_address } => proc
                     .create_auth_zone_proof(*resource_address)
-                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::CreateProofFromAuthZoneByAmount {
                     amount,
                     resource_address,
                 } => proc
                     .create_auth_zone_proof_by_amount(*amount, *resource_address)
-                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::CreateProofFromAuthZoneByIds {
                     ids,
                     resource_address,
                 } => proc
                     .create_auth_zone_proof_by_ids(ids, *resource_address)
-                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::CreateProofFromBucket { bucket_id } => proc
                     .create_bucket_proof(*bucket_id)
-                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::CloneProof { proof_id } => proc
                     .clone_proof(*proof_id)
-                    .map(|proof_id| ValidatedData::from_value(&scrypto::resource::Proof(proof_id))),
+                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::DropProof { proof_id } => proc
                     .drop_proof(*proof_id)
-                    .map(|_| ValidatedData::from_value(&())),
+                    .map(|_| ScryptoValue::from_value(&())),
                 ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
@@ -276,7 +275,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 } => proc.call_method_with_all_resources(*component_address, &method),
                 ValidatedInstruction::PublishPackage { code } => proc
                     .publish_package(code.clone())
-                    .map(|package_address| ValidatedData::from_value(&package_address)),
+                    .map(|package_address| ScryptoValue::from_value(&package_address)),
             };
             match result {
                 Ok(data) => {

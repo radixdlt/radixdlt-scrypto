@@ -31,13 +31,6 @@ impl Vault {
         ))
     }
 
-    pub fn take_non_fungible(
-        &mut self,
-        id: &NonFungibleId,
-    ) -> Result<Bucket, ResourceContainerError> {
-        self.take_non_fungibles(&BTreeSet::from([id.clone()]))
-    }
-
     pub fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,

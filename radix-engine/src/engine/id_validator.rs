@@ -1,8 +1,8 @@
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
+use scrypto::values::*;
 
 use crate::engine::*;
-use crate::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdValidatorError {
@@ -120,7 +120,7 @@ impl IdValidator {
         Ok(())
     }
 
-    pub fn move_resources(&mut self, arg: &ValidatedData) -> Result<(), IdValidatorError> {
+    pub fn move_resources(&mut self, arg: &ScryptoValue) -> Result<(), IdValidatorError> {
         for bucket_id in &arg.bucket_ids {
             self.drop_bucket(*bucket_id)?;
         }

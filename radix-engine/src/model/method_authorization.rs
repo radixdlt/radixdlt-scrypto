@@ -1,10 +1,10 @@
+use sbor::*;
+use scrypto::engine::types::*;
+use scrypto::rust::vec::Vec;
+
 use crate::errors::RuntimeError;
 use crate::errors::RuntimeError::NotAuthorized;
 use crate::model::Proof;
-use sbor::*;
-use scrypto::math::Decimal;
-use scrypto::prelude::{NonFungibleAddress, ResourceAddress};
-use scrypto::rust::vec::Vec;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardDecimal {

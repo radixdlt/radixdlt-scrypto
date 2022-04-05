@@ -520,7 +520,7 @@ mod tests {
             y: map1,
             z: map2,
         };
-        let bytes = encode_with_type(Vec::new(), &data);
+        let bytes = encode_with_type(&data);
         let value = decode_any(&bytes).unwrap();
 
         assert_eq!(
@@ -554,9 +554,9 @@ mod tests {
             value
         );
 
-        let mut enc = Encoder::with_type(Vec::new());
+        let mut bytes2 = Vec::new();
+        let mut enc = Encoder::with_type(&mut bytes2);
         encode_any(None, &value, &mut enc);
-        let bytes2: Vec<u8> = enc.into();
         assert_eq!(bytes2, bytes);
     }
 

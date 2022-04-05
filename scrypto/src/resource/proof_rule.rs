@@ -1,10 +1,12 @@
-use crate::prelude::AuthRule::{AllOf, AnyOf};
+use crate::resource::AuthRule::{AllOf, AnyOf};
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
+
+/// TODO: add documentation for public types once they're stable.
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftDecimal {
