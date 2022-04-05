@@ -104,13 +104,10 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
+    let (_, _, auth1) = test_runner.new_key_pair_with_pk_address();
 
-    let auth = auth!(require_any_of(vec![auth0, auth1,]));
-
-    for (pk, sk) in [(pk0, sk0), (pk1, sk1)] {
-        test_auth_rule(&mut test_runner, &auth, vec![pk], vec![sk], false);
-    }
+    let auth = auth!(require_all_of(vec![auth0, auth1]));
+    test_auth_rule(&mut test_runner, &auth, vec![pk0], vec![sk0], false);
 }
 
 #[test]
@@ -200,7 +197,6 @@ fn can_withdraw_from_my_complex_account_2() {
     ];
     let signers_list = [
         (vec![pk0, pk1, pk2], vec![sk0, sk1, sk2]),
-        (vec![pk2], vec![sk2]),
         (vec![pk3], vec![sk3]),
     ];
 

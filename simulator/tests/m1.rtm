@@ -2,4 +2,4 @@
 CALL_FUNCTION PackageAddress("0109736b3a2653f80ba519d65bba021da67be7714e24b40ac9d4a0") "Hello" "instantiate_hello";
 
 # Clean up - deposit resources
-CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("027ef60667e855e3f4bf717ccf21d9c2bf2c37f1d938aa388de478") "deposit_batch";
+CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("020705fbd24bdc209ccc68bec214cf35652e93bb72fc1bf6aefb43") "deposit_batch";
