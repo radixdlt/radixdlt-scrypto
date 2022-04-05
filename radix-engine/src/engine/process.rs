@@ -8,6 +8,7 @@ use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
@@ -738,7 +739,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let component = self.track.get_component(component_address.clone()).unwrap();
                 let (data, method_auth) =
                     component.method_authorization(&schema, &invocation.function);
-                method_auth.check(&[self.caller_auth_zone])?;
+                method_auth.check(&[self.caller_auth_zone]).map_err(|e| {
+                    RuntimeError::AuthorizationError(invocation.function.clone(), e)
+                })?;
 
                 // Load state
                 let initial_loaded_object_refs = ComponentObjectRefs {
@@ -1370,12 +1373,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
-        let authorization = input.authorization.to_map();
         let package_address = wasm_process.vm.invocation.package_address;
         let component = Component::new(
             package_address,
             input.blueprint_name,
-            authorization,
+            input.authorization,
             input.state,
         );
         let component_address = self.track.create_component(component);
@@ -1818,11 +1820,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         resource_address: &ResourceAddress,
         transition: &str,
     ) -> Result<(), RuntimeError> {
-        let resource_manager = self.track.get_resource_manager(&resource_address).ok_or(
-            RuntimeError::ResourceManagerNotFound(resource_address.clone()),
-        )?;
+        let resource_manager = self
+            .track
+            .get_resource_manager(&resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
         let auth_rule = resource_manager.get_auth(transition);
-        auth_rule.check(&[self.caller_auth_zone, &self.auth_zone])
+        auth_rule
+            .check(&[self.caller_auth_zone, &self.auth_zone])
+            .map_err(|e| RuntimeError::AuthorizationError(transition.to_string(), e))
     }
 
     fn handle_enable_flags(

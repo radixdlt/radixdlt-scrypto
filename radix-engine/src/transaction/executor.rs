@@ -1,12 +1,10 @@
-use sbor::DecodeError;
-use scrypto::buffer::scrypto_decode;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
-use scrypto::{abi, auth};
+use scrypto::{abi, auth, auth_rule_node};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -90,7 +88,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AuthRule) -> ComponentAddress {
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &MethodAuth) -> ComponentAddress {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new(self)
@@ -162,10 +160,6 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let validated_transaction = self.validate(transaction)?;
         let receipt = self.execute(&validated_transaction);
         Ok(receipt)
-    }
-
-    pub fn parse<T: AsRef<[u8]>>(&mut self, transaction: T) -> Result<Transaction, DecodeError> {
-        scrypto_decode(transaction.as_ref())
     }
 
     pub fn validate(

@@ -2,10 +2,9 @@ use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::resource::{
-    AuthRule, NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList,
+    AuthRuleNode, ComponentAuthorization, MethodAuth, NonFungibleAddress,
+    ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
-use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::ScryptoType;
@@ -21,7 +20,7 @@ use crate::model::MethodAuthorization;
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,
-    auth_rules: HashMap<String, AuthRule>,
+    method_auth: ComponentAuthorization,
     state: Vec<u8>,
 }
 
@@ -29,13 +28,13 @@ impl Component {
     pub fn new(
         package_address: PackageAddress,
         blueprint_name: String,
-        auth_rules: HashMap<String, AuthRule>,
+        method_auth: ComponentAuthorization,
         state: Vec<u8>,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
-            auth_rules,
+            method_auth,
             state,
         }
     }
@@ -237,19 +236,23 @@ impl Component {
         }
     }
 
-    fn soft_to_hard_auth_rule(schema: &Type, auth_rule: &AuthRule, dom: &Value) -> HardAuthRule {
+    fn soft_to_hard_auth_rule(
+        schema: &Type,
+        auth_rule: &AuthRuleNode,
+        dom: &Value,
+    ) -> HardAuthRule {
         match auth_rule {
-            AuthRule::ProofRule(proof_rule) => {
+            AuthRuleNode::ProofRule(proof_rule) => {
                 HardAuthRule::ProofRule(Self::soft_to_hard_proof_rule(schema, proof_rule, dom))
             }
-            AuthRule::AnyOf(rules) => {
+            AuthRuleNode::AnyOf(rules) => {
                 let hard_rules = rules
                     .iter()
                     .map(|r| Self::soft_to_hard_auth_rule(schema, r, dom))
                     .collect();
                 HardAuthRule::AnyOf(hard_rules)
             }
-            AuthRule::AllOf(rules) => {
+            AuthRuleNode::AllOf(rules) => {
                 let hard_rules = rules
                     .iter()
                     .map(|r| Self::soft_to_hard_auth_rule(schema, r, dom))
@@ -265,18 +268,19 @@ impl Component {
         method_name: &str,
     ) -> (ScryptoValue, MethodAuthorization) {
         let data = ScryptoValue::from_slice(&self.state).unwrap();
-        let authorization = match self.auth_rules.get(method_name) {
-            Some(auth_rule) => MethodAuthorization::Protected(Self::soft_to_hard_auth_rule(
-                schema, auth_rule, &data.dom,
-            )),
-            None => MethodAuthorization::Public,
+        let authorization = match self.method_auth.get(method_name) {
+            Some(MethodAuth::Protected(auth_rule)) => MethodAuthorization::Protected(
+                Self::soft_to_hard_auth_rule(schema, auth_rule, &data.dom),
+            ),
+            Some(MethodAuth::AllowAll) => MethodAuthorization::Public,
+            None => MethodAuthorization::Private,
         };
 
         (data, authorization)
     }
 
-    pub fn auth_rules(&self) -> &HashMap<String, AuthRule> {
-        &self.auth_rules
+    pub fn authorization(&self) -> &ComponentAuthorization {
+        &self.method_auth
     }
 
     pub fn package_address(&self) -> PackageAddress {

@@ -35,7 +35,7 @@ impl<'l> TestRunner<'l> {
         )
     }
 
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AuthRule) -> ComponentAddress {
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &MethodAuth) -> ComponentAddress {
         self.executor.new_account_with_auth_rule(withdraw_auth)
     }
 
@@ -193,4 +193,19 @@ impl<'l> TestRunner<'l> {
         let receipt = self.validate_and_execute(&transaction);
         receipt.new_component_addresses[0]
     }
+}
+
+#[macro_export]
+macro_rules! assert_auth_error {
+    ($error:expr) => {{
+        if !matches!(
+            $error,
+            RuntimeError::AuthorizationError(
+                _,
+                ::radix_engine::model::MethodAuthorizationError::NotAuthorized
+            )
+        ) {
+            panic!("Not expected error.");
+        }
+    }};
 }

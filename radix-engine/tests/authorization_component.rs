@@ -64,8 +64,8 @@ fn cannot_make_cross_component_call_without_authorization() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be error");
-    assert_eq!(runtime_error, RuntimeError::NotAuthorized);
+    let error = receipt.result.expect_err("Should be error");
+    assert_auth_error!(error);
 }
 
 #[test]
@@ -73,7 +73,7 @@ fn can_make_cross_component_call_with_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (_, _, account) = test_runner.new_account();
+    let (key, sk, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
@@ -109,18 +109,18 @@ fn can_make_cross_component_call_with_authorization() {
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
     let my_component = receipt.new_component_addresses[0];
 
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
-        .build(&[])
+        .build(&[key])
         .unwrap()
-        .sign(&[]);
+        .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 
     // Act
     let transaction = test_runner

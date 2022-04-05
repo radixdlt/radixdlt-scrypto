@@ -1,8 +1,10 @@
 use sbor::*;
+use scrypto::auth;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use scrypto::resource::ComponentAuthorization;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
@@ -202,10 +204,13 @@ pub trait SubstateStore {
                 id_gen.next(),
             );
 
+            let mut authorization = ComponentAuthorization::new();
+            authorization.insert("free_xrd", auth!(allow_all));
+
             let system_component = Component::new(
                 SYSTEM_PACKAGE,
                 SYSTEM_COMPONENT_NAME.to_owned(),
-                HashMap::new(),
+                authorization,
                 scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
             );
             self.put_encoded_substate(&SYSTEM_COMPONENT, &system_component, id_gen.next());

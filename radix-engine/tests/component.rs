@@ -58,7 +58,7 @@ fn test_component() {
         .unwrap()
         .sign(&[sk]);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
-    assert!(receipt2.result.is_ok());
+    receipt2.result.expect("Should be okay.");
 }
 
 #[test]

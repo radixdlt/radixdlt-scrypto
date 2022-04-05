@@ -71,8 +71,8 @@ fn cannot_withdraw_from_other_account() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::NotAuthorized);
+    let error = receipt.result.expect_err("Should be runtime error");
+    assert_auth_error!(error);
 }
 
 #[test]

@@ -1,3 +1,5 @@
+extern crate core;
+
 #[rustfmt::skip]
 pub mod test_runner;
 
@@ -8,7 +10,7 @@ use scrypto::prelude::*;
 
 fn test_auth_rule(
     test_runner: &mut TestRunner,
-    auth_rule: &AuthRule,
+    auth_rule: &MethodAuth,
     pks: Vec<EcdsaPublicKey>,
     sks: Vec<EcdsaPrivateKey>,
     should_succeed: bool,
@@ -32,7 +34,7 @@ fn test_auth_rule(
         receipt.result.expect("Should be okay");
     } else {
         let error = receipt.result.expect_err("Should be an error");
-        assert_eq!(error, RuntimeError::NotAuthorized);
+        assert_auth_error!(error);
     }
 }
 
@@ -334,5 +336,5 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");
-    assert_eq!(error, RuntimeError::NotAuthorized);
+    assert_auth_error!(error);
 }
