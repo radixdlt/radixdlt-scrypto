@@ -59,10 +59,19 @@ impl From<SchemaPath> for SoftResourceOrNonFungibleList {
     }
 }
 
+impl<T> From<Vec<T>> for SoftResourceOrNonFungibleList
+where
+    T: Into<SoftResourceOrNonFungible>,
+{
+    fn from(addresses: Vec<T>) -> Self {
+        SoftResourceOrNonFungibleList::Static(addresses.into_iter().map(|a| a.into()).collect())
+    }
+}
+
 /// Authorization Rule
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum ProofRule {
-    This(SoftResourceOrNonFungible),
+    Require(SoftResourceOrNonFungible),
     AmountOf(Decimal, SoftResource),
     CountOf(u8, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
@@ -71,13 +80,13 @@ pub enum ProofRule {
 
 impl From<NonFungibleAddress> for ProofRule {
     fn from(non_fungible_address: NonFungibleAddress) -> Self {
-        ProofRule::This(non_fungible_address.into())
+        ProofRule::Require(non_fungible_address.into())
     }
 }
 
 impl From<ResourceDefId> for ProofRule {
     fn from(resource_def_id: ResourceDefId) -> Self {
-        ProofRule::This(resource_def_id.into())
+        ProofRule::Require(resource_def_id.into())
     }
 }
 
@@ -93,44 +102,35 @@ macro_rules! resource_list {
 }
 
 #[macro_export]
-macro_rules! this {
+macro_rules! require {
     ($resource:expr) => {{
-        ::scrypto::resource::ProofRule::This($resource.into())
+        ::scrypto::resource::ProofRule::Require($resource.into())
     }};
 }
 
 #[macro_export]
-macro_rules! any_of {
-    ($list:expr) => ({
+macro_rules! require_any_of {
+    ($list:expr) => {{
         ::scrypto::resource::ProofRule::AnyOf($list.into())
-    });
-    ($left:expr, $($right:expr),+) => ({
-        ::scrypto::resource::ProofRule::AnyOf(resource_list!($left, $($right),+))
-    });
+    }};
 }
 
 #[macro_export]
-macro_rules! all_of {
-    ($list:expr) => ({
+macro_rules! require_all_of {
+    ($list:expr) => {{
         ::scrypto::resource::ProofRule::AllOf($list.into())
-    });
-    ($left:expr, $($right:expr),+) => ({
-        ::scrypto::resource::ProofRule::AllOf(resource_list!($left, $($right),+))
-    });
+    }};
 }
 
 #[macro_export]
-macro_rules! min_n_of {
-    ($count:expr, $list:expr) => ({
+macro_rules! require_n_of {
+    ($count:expr, $list:expr) => {{
         ::scrypto::resource::ProofRule::CountOf($count, $list.into())
-    });
-    ($count:expr, $left:expr, $($right:expr),+) => ({
-        ::scrypto::resource::ProofRule::CountOf($count, resource_list!($left, $($right),+))
-    });
+    }};
 }
 
 #[macro_export]
-macro_rules! min_amount_of {
+macro_rules! require_amount {
     ($amount:expr, $resource:expr) => {
         ProofRule::AmountOf($amount, $resource.into())
     };

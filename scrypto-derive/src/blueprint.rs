@@ -54,18 +54,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
 
             impl ::scrypto::component::ComponentState for #bp_ident {
-                fn blueprint_name() -> &'static str {
-                    #bp_name
-                }
-                fn instantiate(self) -> ::scrypto::component::ComponentId {
-                    ::scrypto::component::component_system().instantiate_component(
-                        ::scrypto::resource::ComponentAuthorization::new(),
-                        self
-                    )
-                }
-                fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
-                    ::scrypto::component::component_system().instantiate_component(
-                        authorization,
+                fn instantiate(self) -> ::scrypto::component::LocalComponent {
+                    ::scrypto::component::component_system().to_component_state_with_auth(
+                        #bp_name,
                         self
                     )
                 }
@@ -112,6 +103,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let output_abi = quote! {
         #[no_mangle]
         pub extern "C" fn #abi_ident() -> *mut u8 {
+            use ::sbor::{Describe, Type};
             use ::scrypto::abi::{Function, Method};
             use ::scrypto::rust::borrow::ToOwned;
             use ::scrypto::rust::vec;
@@ -119,7 +111,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             let functions: Vec<Function> = vec![ #(#abi_functions),* ];
             let methods: Vec<Method> = vec![ #(#abi_methods),* ];
-            let output = (functions, methods);
+            let schema: Type = blueprint::#bp_ident::describe();
+            let output = (schema, functions, methods);
 
             // serialize the output
             let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
@@ -550,18 +543,9 @@ mod tests {
                     }
 
                     impl ::scrypto::component::ComponentState for Test {
-                        fn blueprint_name() -> &'static str {
-                            "Test"
-                        }
-                        fn instantiate(self) -> ::scrypto::component::ComponentId {
-                            ::scrypto::component::component_system().instantiate_component(
-                                ::scrypto::resource::ComponentAuthorization::new(),
-                                self
-                            )
-                        }
-                        fn instantiate_with_auth(self, authorization: ::scrypto::resource::ComponentAuthorization) -> ::scrypto::component::ComponentId {
-                            ::scrypto::component::component_system().instantiate_component(
-                                authorization,
+                        fn instantiate(self) -> ::scrypto::component::LocalComponent {
+                            ::scrypto::component::component_system().to_component_state_with_auth(
+                                "Test",
                                 self
                             )
                         }
@@ -597,6 +581,7 @@ mod tests {
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi() -> *mut u8 {
+                    use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{Function, Method};
                     use ::scrypto::rust::borrow::ToOwned;
                     use ::scrypto::rust::vec;
@@ -610,7 +595,8 @@ mod tests {
                         ],
                         output: <u32>::describe(),
                     }];
-                    let output = (functions, methods);
+                    let schema: Type = blueprint::Test::describe();
+                    let output = (schema, functions, methods);
                     let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
                     ::scrypto::buffer::scrypto_wrap(output_bytes)
                 }

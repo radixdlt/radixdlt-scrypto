@@ -20,6 +20,7 @@ blueprint! {
                 secret: "Secret".to_owned(),
             }
             .instantiate()
+            .globalize()
         }
 
         pub fn get_component_info(component_id: ComponentId) -> (PackageId, String) {

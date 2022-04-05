@@ -10,7 +10,10 @@ blueprint! {
             auth: Vec<NonFungibleAddress>,
             authorization: ComponentAuthorization,
         ) -> ComponentId {
-            Self { auth }.instantiate_with_auth(authorization)
+            Self { auth }
+                .instantiate()
+                .set_auth_interface(authorization)
+                .globalize()
         }
 
         pub fn update_auth(&mut self, auth: Vec<NonFungibleAddress>) {
