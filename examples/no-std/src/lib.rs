@@ -32,5 +32,3 @@ blueprint! {
         }
     }
 }
-
-package_init!(blueprint::NoStd::describe());

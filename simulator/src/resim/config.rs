@@ -10,8 +10,9 @@ use crate::resim::*;
 /// Simulator configurations.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Configs {
-    pub default_account: ComponentId,
-    pub default_signers: Vec<EcdsaPublicKey>,
+    pub default_account: ComponentAddress,
+    pub default_public_key: EcdsaPublicKey,
+    pub default_private_key: EcdsaPrivateKey,
 }
 
 /// Returns the data directory.
@@ -48,14 +49,17 @@ pub fn set_configs(configs: &Configs) -> Result<(), Error> {
     fs::write(path, scrypto_encode(configs)).map_err(Error::IOError)
 }
 
-pub fn get_default_account() -> Result<ComponentId, Error> {
+pub fn get_default_account() -> Result<ComponentAddress, Error> {
     get_configs()?
         .ok_or(Error::NoDefaultAccount)
         .map(|config| config.default_account)
 }
 
-pub fn get_default_signers() -> Result<Vec<EcdsaPublicKey>, Error> {
-    get_configs()?
-        .ok_or(Error::NoDefaultAccount)
-        .map(|config| config.default_signers)
+pub fn get_default_signers() -> Result<(Vec<EcdsaPublicKey>, Vec<EcdsaPrivateKey>), Error> {
+    get_configs()?.ok_or(Error::NoDefaultAccount).map(|config| {
+        (
+            vec![config.default_public_key],
+            vec![config.default_private_key],
+        )
+    })
 }

@@ -20,7 +20,7 @@ pub mod rust;
 /// SBOR type ids.
 pub mod type_id;
 
-pub use any::{decode_any, encode_any};
+pub use any::{decode_any, encode_any, Value};
 pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::{Describe, Type};
 pub use encode::{Encode, Encoder};

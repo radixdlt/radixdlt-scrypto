@@ -5,6 +5,7 @@ use sbor::describe::*;
 use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::AuthRule;
 use scrypto::resource::resource_flags::*;
@@ -21,9 +22,9 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 /// Utility for building transaction.
-pub struct TransactionBuilder<'a, A: AbiProvider> {
-    /// ABI provider for constructing arguments
-    abi_provider: &'a A,
+pub struct TransactionBuilder<'a, A: AbiProvider + NonceProvider> {
+    /// ABI and nonce provider
+    abi_nonce_provider: &'a A,
     /// ID validator for calculating transaction object id
     id_validator: IdValidator,
     /// Instructions generated.
@@ -32,11 +33,11 @@ pub struct TransactionBuilder<'a, A: AbiProvider> {
     errors: Vec<BuildTransactionError>,
 }
 
-impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
+impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
     /// Starts a new transaction builder.
-    pub fn new(abi_provider: &'a A) -> Self {
+    pub fn new(abi_nonce_provider: &'a A) -> Self {
         Self {
-            abi_provider,
+            abi_nonce_provider,
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
             errors: Vec::new(),
@@ -63,14 +64,14 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Instruction::AssertWorktopContains { .. }
             | Instruction::AssertWorktopContainsByAmount { .. }
             | Instruction::AssertWorktopContainsByIds { .. } => {}
-            Instruction::TakeFromAuthZone { .. } => {
+            Instruction::PopFromAuthZone { .. } => {
                 new_proof_id = Some(
                     self.id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .unwrap(),
                 );
             }
-            Instruction::MoveToAuthZone { proof_id } => {
+            Instruction::PushToAuthZone { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
             Instruction::ClearAuthZone => {}
@@ -105,7 +106,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Instruction::CallMethodWithAllResources { .. } => {
                 self.id_validator.move_all_resources().unwrap();
             }
-            Instruction::PublishPackage { .. } | Instruction::End { .. } => {}
+            Instruction::PublishPackage { .. }
+            | Instruction::Nonce { .. }
+            | Instruction::End { .. } => {}
         }
 
         self.instructions.push(inst);
@@ -114,12 +117,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Takes resource from worktop.
-    pub fn take_from_worktop<F>(&mut self, resource_def_id: ResourceDefId, then: F) -> &mut Self
+    pub fn take_from_worktop<F>(&mut self, resource_address: ResourceAddress, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, BucketId) -> &mut Self,
     {
         let (builder, bucket_id, _) =
-            self.add_instruction(Instruction::TakeFromWorktop { resource_def_id });
+            self.add_instruction(Instruction::TakeFromWorktop { resource_address });
         then(builder, bucket_id.unwrap())
     }
 
@@ -127,7 +130,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn take_from_worktop_by_amount<F>(
         &mut self,
         amount: Decimal,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         then: F,
     ) -> &mut Self
     where
@@ -135,7 +138,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     {
         let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByAmount {
             amount,
-            resource_def_id,
+            resource_address,
         });
         then(builder, bucket_id.unwrap())
     }
@@ -144,7 +147,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn take_from_worktop_by_ids<F>(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         then: F,
     ) -> &mut Self
     where
@@ -152,7 +155,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     {
         let (builder, bucket_id, _) = self.add_instruction(Instruction::TakeFromWorktopByIds {
             ids: ids.clone(),
-            resource_def_id,
+            resource_address,
         });
         then(builder, bucket_id.unwrap())
     }
@@ -164,8 +167,8 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Asserts that worktop contains resource.
-    pub fn assert_worktop_contains(&mut self, resource_def_id: ResourceDefId) -> &mut Self {
-        self.add_instruction(Instruction::AssertWorktopContains { resource_def_id })
+    pub fn assert_worktop_contains(&mut self, resource_address: ResourceAddress) -> &mut Self {
+        self.add_instruction(Instruction::AssertWorktopContains { resource_address })
             .0
     }
 
@@ -173,11 +176,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn assert_worktop_contains_by_amount(
         &mut self,
         amount: Decimal,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::AssertWorktopContainsByAmount {
             amount,
-            resource_def_id,
+            resource_address,
         })
         .0
     }
@@ -186,45 +189,45 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn assert_worktop_contains_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::AssertWorktopContainsByIds {
             ids: ids.clone(),
-            resource_def_id,
+            resource_address,
         })
         .0
     }
 
-    pub fn take_from_auth_zone<F>(&mut self, then: F) -> &mut Self
+    pub fn pop_from_auth_zone<F>(&mut self, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
-        let (builder, _, proof_id) = self.add_instruction(Instruction::TakeFromAuthZone {});
+        let (builder, _, proof_id) = self.add_instruction(Instruction::PopFromAuthZone {});
         then(builder, proof_id.unwrap())
     }
 
-    pub fn move_to_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
-        self.add_instruction(Instruction::MoveToAuthZone { proof_id });
+    pub fn push_to_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
+        self.add_instruction(Instruction::PushToAuthZone { proof_id });
         self
     }
 
     pub fn create_proof_from_auth_zone<F>(
         &mut self,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         then: F,
     ) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
     {
         let (builder, _, proof_id) =
-            self.add_instruction(Instruction::CreateProofFromAuthZone { resource_def_id });
+            self.add_instruction(Instruction::CreateProofFromAuthZone { resource_address });
         then(builder, proof_id.unwrap())
     }
 
     pub fn create_proof_from_auth_zone_by_amount<F>(
         &mut self,
         amount: Decimal,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         then: F,
     ) -> &mut Self
     where
@@ -233,7 +236,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let (builder, _, proof_id) =
             self.add_instruction(Instruction::CreateProofFromAuthZoneByAmount {
                 amount,
-                resource_def_id,
+                resource_address,
             });
         then(builder, proof_id.unwrap())
     }
@@ -241,7 +244,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn create_proof_from_auth_zone_by_ids<F>(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         then: F,
     ) -> &mut Self
     where
@@ -250,7 +253,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         let (builder, _, proof_id) =
             self.add_instruction(Instruction::CreateProofFromAuthZoneByIds {
                 ids: ids.clone(),
-                resource_def_id,
+                resource_address,
             });
         then(builder, proof_id.unwrap())
     }
@@ -280,13 +283,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
     pub fn call_function(
         &mut self,
-        package_id: PackageId,
+        package_address: PackageAddress,
         blueprint_name: &str,
         function: &str,
         args: Vec<Vec<u8>>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_id,
+            package_address,
             blueprint_name: blueprint_name.to_owned(),
             function: function.to_owned(),
             args,
@@ -299,22 +302,22 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// The implementation will automatically prepare the arguments based on the
     /// function ABI, including resource buckets and proofs.
     ///
-    /// If an Account component ID is provided, resources will be withdrawn from the given account;
+    /// If an Account component address is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
     pub fn parse_args_and_call_function(
         &mut self,
-        package_id: PackageId,
+        package_address: PackageAddress,
         blueprint_name: &str,
         function: &str,
         args: Vec<String>,
-        account: Option<ComponentId>,
+        account: Option<ComponentAddress>,
     ) -> &mut Self {
         let result = self
-            .abi_provider
-            .export_abi(package_id, blueprint_name)
+            .abi_nonce_provider
+            .export_abi(package_address, blueprint_name)
             .map_err(|e| {
                 BuildTransactionError::FailedToExportFunctionAbi(
-                    package_id,
+                    package_address,
                     blueprint_name.to_owned(),
                     function.to_owned(),
                     e,
@@ -329,7 +332,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         match result {
             Ok(args) => {
                 self.add_instruction(Instruction::CallFunction {
-                    package_id,
+                    package_address,
                     blueprint_name: blueprint_name.to_owned(),
                     function: function.to_owned(),
                     args,
@@ -343,12 +346,12 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 
     pub fn call_method(
         &mut self,
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         method: &str,
         args: Vec<Vec<u8>>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_id,
+            component_address,
             method: method.to_owned(),
             args,
         });
@@ -360,20 +363,20 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// The implementation will automatically prepare the arguments based on the
     /// method ABI, including resource buckets and proofs.
     ///
-    /// If an Account component ID is provided, resources will be withdrawn from the given account;
+    /// If an Account component address is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
     pub fn parse_args_and_call_method(
         &mut self,
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         method: &str,
         args: Vec<String>,
-        account: Option<ComponentId>,
+        account: Option<ComponentAddress>,
     ) -> &mut Self {
         let result = self
-            .abi_provider
-            .export_abi_component(component_id)
+            .abi_nonce_provider
+            .export_abi_component(component_address)
             .map_err(|_| {
-                BuildTransactionError::FailedToExportMethodAbi(component_id, method.to_owned())
+                BuildTransactionError::FailedToExportMethodAbi(component_address, method.to_owned())
             })
             .and_then(|abi| Self::find_method_abi(&abi, method))
             .and_then(|m| {
@@ -384,7 +387,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         match result {
             Ok(args) => {
                 self.add_instruction(Instruction::CallMethod {
-                    component_id,
+                    component_address,
                     method: method.to_owned(),
                     args,
                 });
@@ -401,11 +404,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// a runtime failure is triggered.
     pub fn call_method_with_all_resources(
         &mut self,
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         method: &str,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethodWithAllResources {
-            component_id,
+            component_address,
             method: method.into(),
         })
         .0
@@ -420,31 +423,30 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Builds a transaction.
-    pub fn build(
-        &mut self,
-        signers: Vec<EcdsaPublicKey>,
+    pub fn build<PK: AsRef<[EcdsaPublicKey]>>(
+        &self,
+        intended_signers: PK,
     ) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
 
-        let mut v = Vec::new();
-        v.extend(self.instructions.clone());
-        v.push(Instruction::End {
-            signatures: signers, // TODO sign
+        let mut instructions = self.instructions.clone();
+        instructions.push(Instruction::Nonce {
+            nonce: self.abi_nonce_provider.get_nonce(intended_signers.as_ref()),
         });
 
-        Ok(Transaction { instructions: v })
+        Ok(Transaction { instructions })
     }
 
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        minter_resource_def_id: ResourceDefId,
+        minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_id: SYSTEM_PACKAGE,
+            package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
@@ -453,7 +455,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&(MINTABLE | BURNABLE)),
                 scrypto_encode(&0u64),
                 scrypto_encode(&Self::single_authority(
-                    minter_resource_def_id,
+                    minter_resource_address,
                     MAY_MINT | MAY_BURN,
                 )),
                 scrypto_encode::<Option<MintParams>>(&None),
@@ -469,7 +471,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         initial_supply: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_id: SYSTEM_PACKAGE,
+            package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
@@ -477,7 +479,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<ResourceDefId, u64>::new()),
+                scrypto_encode(&HashMap::<ResourceAddress, u64>::new()),
                 scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -490,10 +492,10 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn new_badge_mutable(
         &mut self,
         metadata: HashMap<String, String>,
-        minter_resource_def_id: ResourceDefId,
+        minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_id: SYSTEM_PACKAGE,
+            package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
@@ -502,7 +504,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&(MINTABLE | BURNABLE)),
                 scrypto_encode(&0u64),
                 scrypto_encode(&Self::single_authority(
-                    minter_resource_def_id,
+                    minter_resource_address,
                     MAY_MINT | MAY_BURN,
                 )),
                 scrypto_encode::<Option<MintParams>>(&None),
@@ -518,7 +520,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         initial_supply: Decimal,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_id: SYSTEM_PACKAGE,
+            package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
             args: vec![
@@ -526,7 +528,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 scrypto_encode(&metadata),
                 scrypto_encode(&0u64),
                 scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<ResourceDefId, u64>::new()),
+                scrypto_encode(&HashMap::<ResourceAddress, u64>::new()),
                 scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -539,29 +541,29 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn mint(
         &mut self,
         amount: Decimal,
-        resource_def_id: ResourceDefId,
-        minter_resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
+        minter_resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.take_from_worktop(minter_resource_def_id, |builder, bucket_id| {
+        self.take_from_worktop(minter_resource_address, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
-                builder.move_to_auth_zone(proof_id);
+                builder.push_to_auth_zone(proof_id);
                 builder.add_instruction(Instruction::CallFunction {
-                    package_id: SYSTEM_PACKAGE,
+                    package_address: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
                     function: "mint".to_owned(),
-                    args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
+                    args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
                 });
-                builder.take_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
+                builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
             })
         })
     }
 
     /// Burns a resource.
-    pub fn burn(&mut self, amount: Decimal, resource_def_id: ResourceDefId) -> &mut Self {
-        self.take_from_worktop_by_amount(amount, resource_def_id, |builder, bucket_id| {
+    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+        self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallFunction {
-                    package_id: SYSTEM_PACKAGE,
+                    package_address: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
                     function: "burn".to_owned(),
                     args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
@@ -573,7 +575,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Creates an account.
     pub fn new_account(&mut self, withdraw_auth: &AuthRule) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_id: ACCOUNT_PACKAGE,
+            package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new".to_owned(),
             args: vec![scrypto_encode(withdraw_auth)],
@@ -588,7 +590,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         bucket_id: BucketId,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
-            package_id: ACCOUNT_PACKAGE,
+            package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new_with_resource".to_owned(),
             args: vec![
@@ -602,13 +604,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Withdraws resource from an account.
     pub fn withdraw_from_account(
         &mut self,
-        resource_def_id: ResourceDefId,
-        account: ComponentId,
+        resource_address: ResourceAddress,
+        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_id: account,
+            component_address: account,
             method: "withdraw".to_owned(),
-            args: vec![scrypto_encode(&resource_def_id)],
+            args: vec![scrypto_encode(&resource_address)],
         })
         .0
     }
@@ -617,13 +619,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn withdraw_from_account_by_amount(
         &mut self,
         amount: Decimal,
-        resource_def_id: ResourceDefId,
-        account: ComponentId,
+        resource_address: ResourceAddress,
+        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_id: account,
+            component_address: account,
             method: "withdraw_by_amount".to_owned(),
-            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
+            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
         })
         .0
     }
@@ -632,13 +634,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn withdraw_from_account_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-        resource_def_id: ResourceDefId,
-        account: ComponentId,
+        resource_address: ResourceAddress,
+        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_id: account,
+            component_address: account,
             method: "withdraw_by_ids".to_owned(),
-            args: vec![scrypto_encode(ids), scrypto_encode(&resource_def_id)],
+            args: vec![scrypto_encode(ids), scrypto_encode(&resource_address)],
         })
         .0
     }
@@ -646,13 +648,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     /// Creates resource proof from an account.
     pub fn create_proof_from_account(
         &mut self,
-        resource_def_id: ResourceDefId,
-        account: ComponentId,
+        resource_address: ResourceAddress,
+        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_id: account,
+            component_address: account,
             method: "create_proof".to_owned(),
-            args: vec![scrypto_encode(&resource_def_id)],
+            args: vec![scrypto_encode(&resource_address)],
         })
         .0
     }
@@ -661,13 +663,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn create_proof_from_account_by_amount(
         &mut self,
         amount: Decimal,
-        resource_def_id: ResourceDefId,
-        account: ComponentId,
+        resource_address: ResourceAddress,
+        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_id: account,
+            component_address: account,
             method: "create_proof_by_amount".to_owned(),
-            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_def_id)],
+            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
         })
         .0
     }
@@ -676,13 +678,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     pub fn create_proof_from_account_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-        resource_def_id: ResourceDefId,
-        account: ComponentId,
+        resource_address: ResourceAddress,
+        account: ComponentAddress,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
-            component_id: account,
+            component_address: account,
             method: "create_proof_by_ids".to_owned(),
-            args: vec![scrypto_encode(ids), scrypto_encode(&resource_def_id)],
+            args: vec![scrypto_encode(ids), scrypto_encode(&resource_address)],
         })
         .0
     }
@@ -692,11 +694,11 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     //===============================
 
     fn single_authority(
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         permission: u64,
-    ) -> HashMap<ResourceDefId, u64> {
+    ) -> HashMap<ResourceAddress, u64> {
         let mut map = HashMap::new();
-        map.insert(resource_def_id, permission);
+        map.insert(resource_address, permission);
         map
     }
 
@@ -726,7 +728,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         &mut self,
         types: &[Type],
         args: Vec<String>,
-        account: Option<ComponentId>,
+        account: Option<ComponentAddress>,
     ) -> Result<Vec<Vec<u8>>, BuildArgsError> {
         let mut encoded = Vec::new();
 
@@ -778,7 +780,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         ty: &Type,
         arg: &str,
         name: &str,
-        account: Option<ComponentId>,
+        account: Option<ComponentAddress>,
     ) -> Result<Vec<u8>, BuildArgsError> {
         match CustomType::from_name(name).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
             CustomType::Decimal => {
@@ -787,21 +789,21 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::PackageId => {
+            CustomType::PackageAddress => {
                 let value = arg
-                    .parse::<PackageId>()
+                    .parse::<PackageAddress>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::ComponentId => {
+            CustomType::ComponentAddress => {
                 let value = arg
-                    .parse::<ComponentId>()
+                    .parse::<ComponentAddress>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
-            CustomType::ResourceDefId => {
+            CustomType::ResourceAddress => {
                 let value = arg
-                    .parse::<ResourceDefId>()
+                    .parse::<ResourceAddress>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
@@ -821,24 +823,24 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 let resource_specifier = parse_resource_specifier(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let bucket_id = match resource_specifier {
-                    ResourceSpecifier::Amount(amount, resource_def_id) => {
+                    ResourceSpecifier::Amount(amount, resource_address) => {
                         if let Some(account) = account {
-                            self.withdraw_from_account_by_amount(amount, resource_def_id, account);
+                            self.withdraw_from_account_by_amount(amount, resource_address, account);
                         }
                         self.add_instruction(Instruction::TakeFromWorktopByAmount {
                             amount,
-                            resource_def_id,
+                            resource_address,
                         })
                         .1
                         .unwrap()
                     }
-                    ResourceSpecifier::Ids(ids, resource_def_id) => {
+                    ResourceSpecifier::Ids(ids, resource_address) => {
                         if let Some(account) = account {
-                            self.withdraw_from_account_by_ids(&ids, resource_def_id, account);
+                            self.withdraw_from_account_by_ids(&ids, resource_address, account);
                         }
                         self.add_instruction(Instruction::TakeFromWorktopByIds {
                             ids,
-                            resource_def_id,
+                            resource_address,
                         })
                         .1
                         .unwrap()
@@ -850,24 +852,24 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
                 let resource_specifier = parse_resource_specifier(arg)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let proof_id = match resource_specifier {
-                    ResourceSpecifier::Amount(amount, resource_def_id) => {
+                    ResourceSpecifier::Amount(amount, resource_address) => {
                         if let Some(account) = account {
                             self.create_proof_from_account_by_amount(
                                 amount,
-                                resource_def_id,
+                                resource_address,
                                 account,
                             );
-                            self.add_instruction(Instruction::TakeFromAuthZone)
+                            self.add_instruction(Instruction::PopFromAuthZone)
                                 .2
                                 .unwrap()
                         } else {
                             todo!("Take from worktop and create proof")
                         }
                     }
-                    ResourceSpecifier::Ids(ids, resource_def_id) => {
+                    ResourceSpecifier::Ids(ids, resource_address) => {
                         if let Some(account) = account {
-                            self.create_proof_from_account_by_ids(&ids, resource_def_id, account);
-                            self.add_instruction(Instruction::TakeFromAuthZone)
+                            self.create_proof_from_account_by_ids(&ids, resource_address, account);
+                            self.add_instruction(Instruction::PopFromAuthZone)
                                 .2
                                 .unwrap()
                         } else {
@@ -883,13 +885,13 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
 }
 
 enum ResourceSpecifier {
-    Amount(Decimal, ResourceDefId),
-    Ids(BTreeSet<NonFungibleId>, ResourceDefId),
+    Amount(Decimal, ResourceAddress),
+    Ids(BTreeSet<NonFungibleId>, ResourceAddress),
 }
 
 enum ParseResourceSpecifierError {
     IncompleteResourceSpecifier,
-    InvalidResourceDefId(String),
+    InvalidResourceAddress(String),
     InvalidAmount(String),
     InvalidNonFungibleId(String),
     MoreThanOneAmountSpecified,
@@ -903,11 +905,11 @@ fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResou
         return Err(ParseResourceSpecifierError::IncompleteResourceSpecifier);
     }
 
-    // parse resource definition id
+    // parse resource address
     let token = tokens[tokens.len() - 1];
-    let resource_def_id = token
-        .parse::<ResourceDefId>()
-        .map_err(|_| ParseResourceSpecifierError::InvalidResourceDefId(token.to_owned()))?;
+    let resource_address = token
+        .parse::<ResourceAddress>()
+        .map_err(|_| ParseResourceSpecifierError::InvalidResourceAddress(token.to_owned()))?;
 
     // parse non-fungible ids or amount
     if tokens[0].starts_with('#') {
@@ -919,7 +921,7 @@ fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResou
                 })?,
             );
         }
-        Ok(ResourceSpecifier::Ids(ids, resource_def_id))
+        Ok(ResourceSpecifier::Ids(ids, resource_address))
     } else {
         if tokens.len() != 2 {
             return Err(ParseResourceSpecifierError::MoreThanOneAmountSpecified);
@@ -927,6 +929,6 @@ fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResou
         let amount: Decimal = tokens[0]
             .parse()
             .map_err(|_| ParseResourceSpecifierError::InvalidAmount(tokens[0].to_owned()))?;
-        Ok(ResourceSpecifier::Amount(amount, resource_def_id))
+        Ok(ResourceSpecifier::Amount(amount, resource_address))
     }
 }

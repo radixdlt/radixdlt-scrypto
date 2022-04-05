@@ -6,13 +6,10 @@ blueprint! {
     }
 
     impl Chess {
-        pub fn create_game(players: [NonFungibleAddress; 2]) -> ComponentId {
+        pub fn create_game(players: [NonFungibleAddress; 2]) -> ComponentAddress {
             Self { players }
                 .instantiate()
-                .auth(
-                    "make_move",
-                    auth!(require("players/0")),
-                )
+                .auth("make_move", auth!(require("players/0")))
                 .globalize()
         }
 

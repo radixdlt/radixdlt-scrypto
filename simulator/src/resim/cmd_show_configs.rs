@@ -11,14 +11,19 @@ impl ShowConfigs {
     pub fn run(&self) -> Result<(), Error> {
         if let Some(configs) = get_configs()? {
             println!(
-                "{}: {:?}",
+                "{}: {}",
                 "Default Account".green().bold(),
                 configs.default_account
             );
             println!(
-                "{}: {:?}",
-                "Default Signers".green().bold(),
-                configs.default_signers
+                "{}: {}",
+                "Default Public Key".green().bold(),
+                configs.default_public_key
+            );
+            println!(
+                "{}: {}",
+                "Default Private Key".green().bold(),
+                configs.default_private_key
             );
         } else {
             println!("No configuration found");

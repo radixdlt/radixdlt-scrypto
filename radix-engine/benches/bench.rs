@@ -9,16 +9,17 @@ use scrypto::prelude::*;
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let (key1, account1) = executor.new_public_key_with_account();
-    let (_, account2) = executor.new_public_key_with_account();
+    let (pk, sk, account1) = executor.new_account();
+    let (_, _, account2) = executor.new_account();
     let transaction = TransactionBuilder::new(&executor)
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")
-        .build(vec![key1])
-        .unwrap();
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
 
     b.iter(|| {
-        let receipt = executor.run(transaction.clone()).unwrap();
+        let receipt = executor.validate_and_execute(&transaction).unwrap();
         assert!(receipt.result.is_ok());
     });
 }

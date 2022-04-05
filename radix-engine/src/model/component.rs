@@ -17,7 +17,7 @@ use scrypto::types::CustomType;
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Component {
-    package_id: PackageId,
+    package_address: PackageAddress,
     blueprint_name: String,
     auth_rules: HashMap<String, AuthRule>,
     state: Vec<u8>,
@@ -25,13 +25,13 @@ pub struct Component {
 
 impl Component {
     pub fn new(
-        package_id: PackageId,
+        package_address: PackageAddress,
         blueprint_name: String,
         auth_rules: HashMap<String, AuthRule>,
         state: Vec<u8>,
     ) -> Self {
         Self {
-            package_id,
+            package_address,
             blueprint_name,
             auth_rules,
             state,
@@ -62,12 +62,12 @@ impl Component {
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Vec(type_id, values)) => {
                         match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceDefId => HardProofRuleResourceList::List(
+                            CustomType::ResourceAddress => HardProofRuleResourceList::List(
                                 values
                                     .iter()
                                     .map(|v| {
                                         if let Value::Custom(_, bytes) = v {
-                                            return ResourceDefId::try_from(bytes.as_slice())
+                                            return ResourceAddress::try_from(bytes.as_slice())
                                                 .unwrap()
                                                 .into();
                                         }
@@ -111,8 +111,8 @@ impl Component {
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Custom(type_id, bytes)) => {
                         match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceDefId => {
-                                ResourceDefId::try_from(bytes.as_slice()).unwrap().into()
+                            CustomType::ResourceAddress => {
+                                ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                             }
                             _ => HardResourceOrNonFungible::SoftResourceNotFound,
                         }
@@ -120,8 +120,8 @@ impl Component {
                     _ => HardResourceOrNonFungible::SoftResourceNotFound,
                 }
             }
-            SoftResource::Static(resource_def_id) => {
-                HardResourceOrNonFungible::Resource(resource_def_id.clone())
+            SoftResource::Static(resource_address) => {
+                HardResourceOrNonFungible::Resource(resource_address.clone())
             }
         }
     }
@@ -140,8 +140,8 @@ impl Component {
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Custom(type_id, bytes)) => {
                         match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceDefId => {
-                                ResourceDefId::try_from(bytes.as_slice()).unwrap().into()
+                            CustomType::ResourceAddress => {
+                                ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                             }
                             CustomType::NonFungibleAddress => {
                                 NonFungibleAddress::try_from(bytes.as_slice())
@@ -157,8 +157,8 @@ impl Component {
             SoftResourceOrNonFungible::StaticNonFungible(non_fungible_address) => {
                 HardResourceOrNonFungible::NonFungible(non_fungible_address.clone())
             }
-            SoftResourceOrNonFungible::StaticResource(resource_def_id) => {
-                HardResourceOrNonFungible::Resource(resource_def_id.clone())
+            SoftResourceOrNonFungible::StaticResource(resource_address) => {
+                HardResourceOrNonFungible::Resource(resource_address.clone())
             }
         }
     }
@@ -238,8 +238,8 @@ impl Component {
         &self.auth_rules
     }
 
-    pub fn package_id(&self) -> PackageId {
-        self.package_id.clone()
+    pub fn package_address(&self) -> PackageAddress {
+        self.package_address.clone()
     }
 
     pub fn blueprint_name(&self) -> &str {

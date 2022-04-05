@@ -6,13 +6,10 @@ blueprint! {
     }
 
     impl AuthComponent {
-        pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentId {
+        pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentAddress {
             Self { some_non_fungible }
                 .instantiate()
-                .auth(
-                    "get_secret",
-                    auth!(require("some_non_fungible")),
-                )
+                .auth("get_secret", auth!(require("some_non_fungible")))
                 .globalize()
         }
 
