@@ -11,7 +11,7 @@ use scrypto::rust::vec::Vec;
 import! {
 r#"
 {
-    "package_id": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
+    "package_address": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
     "blueprint_name": "Simple",
     "functions": [
         {
@@ -31,12 +31,12 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "PackageId",
+                    "name": "PackageAddress",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "ComponentId",
+                    "name": "ComponentAddress",
                     "generics": []
                 },
                 {
@@ -68,7 +68,7 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "ResourceDefId",
+                    "name": "ResourceAddress",
                     "generics": []
                 }
             ],
@@ -182,7 +182,7 @@ r#"
 #[test]
 #[should_panic] // asserts it compiles
 fn test_import_from_abi() {
-    let instance = Simple::from(ComponentId::from_str("").unwrap());
+    let instance = Simple::from(ComponentAddress::from_str("").unwrap());
 
     let arg1 = Floor { x: 5, y: 12 };
     let arg2 = (1u8, 2u16);

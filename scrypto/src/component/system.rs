@@ -14,8 +14,8 @@ use crate::rust::collections::*;
 /// TODO: research if need to introduce `&` and `&mut` for packages and components.
 /// TODO: add mutex/lock for non-WebAssembly target
 pub struct ComponentSystem {
-    packages: HashMap<PackageId, Package>,
-    components: HashMap<ComponentId, Component>,
+    packages: HashMap<PackageAddress, Package>,
+    components: HashMap<ComponentAddress, Component>,
 }
 
 impl ComponentSystem {
@@ -28,27 +28,27 @@ impl ComponentSystem {
     }
 
     /// Returns a reference to a package.
-    pub fn get_package(&mut self, package_id: PackageId) -> &Package {
+    pub fn get_package(&mut self, package_address: PackageAddress) -> &Package {
         self.packages
-            .entry(package_id)
-            .or_insert(Package(package_id))
+            .entry(package_address)
+            .or_insert(Package(package_address))
     }
 
     /// Returns a reference to a component.
-    pub fn get_component(&mut self, component_id: ComponentId) -> &Component {
+    pub fn get_component(&mut self, component_address: ComponentAddress) -> &Component {
         self.components
-            .entry(component_id)
-            .or_insert(Component(component_id))
+            .entry(component_address)
+            .or_insert(Component(component_address))
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> PackageId {
+    pub fn publish_package(&mut self, code: &[u8]) -> PackageAddress {
         let input = PublishPackageInput {
             code: code.to_vec(),
         };
         let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
 
-        output.package_id
+        output.package_address
     }
 
     /// Instantiates a component.
@@ -57,7 +57,7 @@ impl ComponentSystem {
         blueprint_name: &str,
         authorization: ComponentAuthorization,
         state: T,
-    ) -> ComponentId {
+    ) -> ComponentAddress {
         let input = CreateComponentInput {
             blueprint_name: blueprint_name.to_owned(),
             state: scrypto_encode(&state),
@@ -65,7 +65,7 @@ impl ComponentSystem {
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 
-        output.component_id
+        output.component_address
     }
 
     /// Instantiates a component.
@@ -90,7 +90,7 @@ pub fn component_system() -> &'static mut ComponentSystem {
     unsafe { COMPONENT_SYSTEM.as_mut().unwrap() }
 }
 
-/// This macro creates a `&Package` from a `PackageId` via the
+/// This macro creates a `&Package` from a `PackageAddress` via the
 /// Radix Engine component subsystem.
 #[macro_export]
 macro_rules! package {
@@ -99,7 +99,7 @@ macro_rules! package {
     };
 }
 
-/// This macro converts a `ComponentId` into a `&Component` via the
+/// This macro converts a `ComponentAddress` into a `&Component` via the
 /// Radix Engine component subsystem.
 #[macro_export]
 macro_rules! component {
@@ -116,25 +116,25 @@ mod tests {
     fn test_component_macro() {
         init_component_system(ComponentSystem::new());
 
-        let component = component!(ComponentId([0u8; 26]));
-        let component_same_id = component!(ComponentId([0u8; 26]));
-        let component_different_id = component!(ComponentId([1u8; 26]));
+        let component = component!(ComponentAddress([0u8; 26]));
+        let component_same_id = component!(ComponentAddress([0u8; 26]));
+        let component_different_id = component!(ComponentAddress([1u8; 26]));
 
-        assert_eq!(ComponentId([0u8; 26]), component.0);
-        assert_eq!(ComponentId([0u8; 26]), component_same_id.0);
-        assert_eq!(ComponentId([1u8; 26]), component_different_id.0);
+        assert_eq!(ComponentAddress([0u8; 26]), component.0);
+        assert_eq!(ComponentAddress([0u8; 26]), component_same_id.0);
+        assert_eq!(ComponentAddress([1u8; 26]), component_different_id.0);
     }
 
     #[test]
     fn test_package_macro() {
         init_component_system(ComponentSystem::new());
 
-        let package = package!(PackageId([0u8; 26]));
-        let package_same_id = package!(PackageId([0u8; 26]));
-        let package_different_id = package!(PackageId([1u8; 26]));
+        let package = package!(PackageAddress([0u8; 26]));
+        let package_same_id = package!(PackageAddress([0u8; 26]));
+        let package_different_id = package!(PackageAddress([1u8; 26]));
 
-        assert_eq!(PackageId([0u8; 26]), package.0);
-        assert_eq!(PackageId([0u8; 26]), package_same_id.0);
-        assert_eq!(PackageId([1u8; 26]), package_different_id.0);
+        assert_eq!(PackageAddress([0u8; 26]), package.0);
+        assert_eq!(PackageAddress([0u8; 26]), package_same_id.0);
+        assert_eq!(PackageAddress([1u8; 26]), package_different_id.0);
     }
 }

@@ -12,8 +12,8 @@ use crate::model::{
 
 #[derive(Debug)]
 pub struct Proof {
-    /// The resource definition id.
-    resource_def_id: ResourceDefId,
+    /// The resource address.
+    resource_address: ResourceAddress,
     /// The resource type.
     resource_type: ResourceType,
     /// Whether movement of this proof is restricted.
@@ -40,7 +40,7 @@ pub enum ProofError {
 
 impl Proof {
     pub fn new(
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         resource_type: ResourceType,
         restricted: bool,
         total_locked: LockedAmountOrIds,
@@ -51,7 +51,7 @@ impl Proof {
         }
 
         Ok(Self {
-            resource_def_id,
+            resource_address,
             resource_type,
             restricted,
             total_locked,
@@ -62,16 +62,16 @@ impl Proof {
     /// Computes the locked amount or non-fungible IDs, in total and per resource container.
     pub fn compute_total_locked(
         proofs: &[Proof],
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> (
         LockedAmountOrIds,
         HashMap<ResourceContainerId, LockedAmountOrIds>,
     ) {
-        // filter proofs by resource def id and restricted flag
+        // filter proofs by resource address and restricted flag
         let proofs: Vec<&Proof> = proofs
             .iter()
-            .filter(|p| p.resource_def_id() == resource_def_id && !p.is_restricted())
+            .filter(|p| p.resource_address() == resource_address && !p.is_restricted())
             .collect();
 
         // calculate the max locked amount (or ids) of each container
@@ -127,16 +127,16 @@ impl Proof {
     /// Creates a composite proof from proofs. This method will generate a max proof.
     pub fn compose(
         proofs: &[Proof],
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
-        let (total, _) = Self::compute_total_locked(proofs, resource_def_id, resource_type);
+        let (total, _) = Self::compute_total_locked(proofs, resource_address, resource_type);
         match total {
             LockedAmountOrIds::Amount(amount) => {
-                Self::compose_by_amount(proofs, amount, resource_def_id, resource_type)
+                Self::compose_by_amount(proofs, amount, resource_address, resource_type)
             }
             LockedAmountOrIds::Ids(ids) => {
-                Self::compose_by_ids(proofs, &ids, resource_def_id, resource_type)
+                Self::compose_by_ids(proofs, &ids, resource_address, resource_type)
             }
         }
     }
@@ -144,11 +144,11 @@ impl Proof {
     pub fn compose_by_amount(
         proofs: &[Proof],
         amount: Decimal,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
         let (total_locked, mut per_container) =
-            Self::compute_total_locked(proofs, resource_def_id, resource_type);
+            Self::compute_total_locked(proofs, resource_address, resource_type);
 
         match total_locked {
             LockedAmountOrIds::Amount(locked_amount) => {
@@ -182,7 +182,7 @@ impl Proof {
                 }
 
                 Proof::new(
-                    resource_def_id,
+                    resource_address,
                     resource_type,
                     false,
                     LockedAmountOrIds::Amount(amount),
@@ -195,7 +195,7 @@ impl Proof {
                 } else {
                     let n: usize = amount.to_string().parse().unwrap();
                     let ids: BTreeSet<NonFungibleId> = locked_ids.iter().cloned().take(n).collect();
-                    Self::compose_by_ids(proofs, &ids, resource_def_id, resource_type)
+                    Self::compose_by_ids(proofs, &ids, resource_address, resource_type)
                 }
             }
         }
@@ -204,11 +204,11 @@ impl Proof {
     pub fn compose_by_ids(
         proofs: &[Proof],
         ids: &BTreeSet<NonFungibleId>,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
         resource_type: ResourceType,
     ) -> Result<Proof, ProofError> {
         let (total_locked, mut per_container) =
-            Self::compute_total_locked(proofs, resource_def_id, resource_type);
+            Self::compute_total_locked(proofs, resource_address, resource_type);
 
         match total_locked {
             LockedAmountOrIds::Amount(_) => Err(ProofError::NonFungibleOperationNotAllowed),
@@ -248,7 +248,7 @@ impl Proof {
                 }
 
                 Proof::new(
-                    resource_def_id,
+                    resource_address,
                     resource_type,
                     false,
                     LockedAmountOrIds::Ids(ids.clone()),
@@ -280,7 +280,7 @@ impl Proof {
             }
         }
         Self {
-            resource_def_id: self.resource_def_id.clone(),
+            resource_address: self.resource_address.clone(),
             resource_type: self.resource_type.clone(),
             restricted: self.restricted,
             total_locked: self.total_locked.clone(),
@@ -298,8 +298,8 @@ impl Proof {
         self.restricted = true;
     }
 
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        self.resource_def_id
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.resource_address
     }
 
     pub fn total_amount(&self) -> Decimal {

@@ -2,6 +2,7 @@ use sbor::*;
 use scrypto::auth;
 use scrypto::buffer::*;
 use scrypto::constants::*;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::resource::ComponentAuthorization;
 use scrypto::rust::borrow::ToOwned;
@@ -28,7 +29,7 @@ struct SystemComponentState {
 pub trait QueryableSubstateStore {
     fn get_lazy_map_entries(
         &self,
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         lazy_map_id: &LazyMapId,
     ) -> HashMap<Vec<u8>, Vec<u8>>;
 }
@@ -36,7 +37,25 @@ pub trait QueryableSubstateStore {
 #[derive(Clone, Debug, Encode, Decode, TypeId)]
 pub struct Substate {
     pub value: Vec<u8>,
-    pub phys_id: u64,
+    pub phys_id: (Hash, u32),
+}
+
+#[derive(Debug)]
+pub struct SubstateIdGenerator {
+    tx_hash: Hash,
+    count: u32,
+}
+
+impl SubstateIdGenerator {
+    pub fn new(tx_hash: Hash) -> Self {
+        Self { tx_hash, count: 0 }
+    }
+
+    pub fn next(&mut self) -> (Hash, u32) {
+        let value = self.count;
+        self.count = self.count + 1;
+        (self.tx_hash.clone(), value)
+    }
 }
 
 /// A ledger stores all transactions and substates.
@@ -48,11 +67,16 @@ pub trait SubstateStore {
     fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate);
 
     // Temporary Encoded/Decoded interface
-    fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<(T, u64)> {
+    fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<(T, (Hash, u32))> {
         self.get_substate(address)
             .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
     }
-    fn put_encoded_substate<A: Encode, V: Encode>(&mut self, address: &A, value: &V, phys_id: u64) {
+    fn put_encoded_substate<A: Encode, V: Encode>(
+        &mut self,
+        address: &A,
+        value: &V,
+        phys_id: (Hash, u32),
+    ) {
         self.put_substate(
             address,
             Substate {
@@ -65,7 +89,7 @@ pub trait SubstateStore {
         &self,
         address: &A,
         key: &K,
-    ) -> Option<(T, u64)> {
+    ) -> Option<(T, (Hash, u32))> {
         let child_key = &scrypto_encode(key);
         self.get_child_substate(address, child_key)
             .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
@@ -75,7 +99,7 @@ pub trait SubstateStore {
         address: &A,
         key: &K,
         value: &V,
-        phys_id: u64,
+        phys_id: (Hash, u32),
     ) {
         let child_key = &scrypto_encode(key);
         self.put_child_substate(
@@ -92,7 +116,7 @@ pub trait SubstateStore {
         address: &A,
         child_key: &C,
         grand_child_key: &[u8],
-    ) -> Option<(Vec<u8>, u64)> {
+    ) -> Option<(Vec<u8>, (Hash, u32))> {
         let mut key = scrypto_encode(child_key);
         key.extend(grand_child_key.to_vec());
         self.get_child_substate(address, &key)
@@ -104,7 +128,7 @@ pub trait SubstateStore {
         child_key: &C,
         grand_child_key: &[u8],
         value: &[u8],
-        phys_id: u64,
+        phys_id: (Hash, u32),
     ) {
         let mut key = scrypto_encode(child_key);
         key.extend(grand_child_key.to_vec());
@@ -123,24 +147,27 @@ pub trait SubstateStore {
             .get_decoded_substate(&SYSTEM_PACKAGE)
             .map(|(package, _)| package);
         if package.is_none() {
+            let tx_hash = sha256(self.get_and_increase_nonce().to_le_bytes());
+            let mut id_gen = SubstateIdGenerator::new(tx_hash);
+
             // System package
             let system_package =
                 Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
-            self.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, self.get_nonce());
+            self.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, id_gen.next());
 
             // Account package
             let account_package =
                 Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
-            self.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, self.get_nonce());
+            self.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, id_gen.next());
 
-            // Radix token resource definition
+            // Radix token resource address
             let mut metadata = HashMap::new();
             metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
             metadata.insert("name".to_owned(), XRD_NAME.to_owned());
             metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
-            let mut xrd = ResourceDef::new(
+            let mut xrd = ResourceManager::new(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 0,
@@ -152,9 +179,9 @@ pub trait SubstateStore {
                 amount: XRD_MAX_SUPPLY.into(),
             })
             .unwrap();
-            self.put_encoded_substate(&RADIX_TOKEN, &xrd, self.get_nonce());
+            self.put_encoded_substate(&RADIX_TOKEN, &xrd, id_gen.next());
 
-            let ecdsa_token = ResourceDef::new(
+            let ecdsa_token = ResourceManager::new(
                 ResourceType::NonFungible,
                 HashMap::new(),
                 0,
@@ -162,7 +189,7 @@ pub trait SubstateStore {
                 HashMap::new(),
             )
             .unwrap();
-            self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, self.get_nonce());
+            self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, id_gen.next());
 
             // Instantiate system component
             let system_vault = Vault::new(ResourceContainer::new_fungible(
@@ -174,7 +201,7 @@ pub trait SubstateStore {
                 &SYSTEM_COMPONENT,
                 &XRD_VAULT_ID,
                 &system_vault,
-                self.get_nonce(),
+                id_gen.next(),
             );
 
             let mut authorization = ComponentAuthorization::new();
@@ -186,7 +213,7 @@ pub trait SubstateStore {
                 authorization,
                 scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
             );
-            self.put_encoded_substate(&SYSTEM_COMPONENT, &system_component, self.get_nonce());
+            self.put_encoded_substate(&SYSTEM_COMPONENT, &system_component, id_gen.next());
         }
     }
 
@@ -194,10 +221,17 @@ pub trait SubstateStore {
 
     fn set_epoch(&mut self, epoch: u64);
 
-    // Before transaction hash is defined, we use the following TEMPORARY interfaces
-    // to introduce entropy for id derivation.
+    // TODO: redefine what nonce is and how it's updated
+    // For now, we bump nonce only when a transaction has been committed
+    // or when an account is created (for testing).
 
     fn get_nonce(&self) -> u64;
 
     fn increase_nonce(&mut self);
+
+    fn get_and_increase_nonce(&mut self) -> u64 {
+        let nonce = self.get_nonce();
+        self.increase_nonce();
+        nonce
+    }
 }

@@ -1,4 +1,4 @@
-use sbor::{describe::Type, *};
+use sbor::*;
 
 use crate::misc::*;
 use crate::rust::borrow::ToOwned;
@@ -8,6 +8,8 @@ use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
+
+pub const HASH_LENGTH: usize = 32;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
