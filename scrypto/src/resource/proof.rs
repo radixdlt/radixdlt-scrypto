@@ -1,4 +1,4 @@
-use sbor::{describe::Type, *};
+use sbor::*;
 
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;

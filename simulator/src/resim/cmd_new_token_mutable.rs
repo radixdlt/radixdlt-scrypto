@@ -35,10 +35,6 @@ pub struct NewTokenMutable {
     #[clap(short, long)]
     manifest: Option<PathBuf>,
 
-    /// The transaction signers
-    #[clap(short, long)]
-    signers: Option<Vec<EcdsaPublicKey>>,
-
     /// Turn on tracing
     #[clap(short, long)]
     trace: bool,
@@ -48,7 +44,7 @@ impl NewTokenMutable {
     pub fn run(&self) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        let default_signers = get_default_signers()?;
+        let (default_pks, default_sks) = get_default_signers()?;
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
@@ -65,11 +61,12 @@ impl NewTokenMutable {
         if let Some(icon_url) = self.icon_url.clone() {
             metadata.insert("icon_url".to_string(), icon_url);
         };
-        let signatures = self.signers.clone().unwrap_or(default_signers);
+
         let transaction = TransactionBuilder::new(&executor)
             .new_token_mutable(metadata, self.minter_resource_def_id)
-            .build(signatures)
-            .map_err(Error::TransactionConstructionError)?;
+            .build(default_pks)
+            .map_err(Error::TransactionConstructionError)?
+            .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)
     }
 }

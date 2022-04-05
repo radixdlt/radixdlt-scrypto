@@ -35,10 +35,6 @@ pub struct NewBadgeFixed {
     #[clap(short, long)]
     manifest: Option<PathBuf>,
 
-    /// The transaction signers
-    #[clap(short, long)]
-    signers: Option<Vec<EcdsaPublicKey>>,
-
     /// Turn on tracing
     #[clap(short, long)]
     trace: bool,
@@ -49,7 +45,7 @@ impl NewBadgeFixed {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_account = get_default_account()?;
-        let default_signers = get_default_signers()?;
+        let (default_pks, default_sks) = get_default_signers()?;
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
@@ -66,12 +62,13 @@ impl NewBadgeFixed {
         if let Some(icon_url) = self.icon_url.clone() {
             metadata.insert("icon_url".to_string(), icon_url);
         };
-        let signatures = self.signers.clone().unwrap_or(default_signers);
+
         let transaction = TransactionBuilder::new(&executor)
             .new_badge_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(signatures)
-            .map_err(Error::TransactionConstructionError)?;
+            .build(default_pks)
+            .map_err(Error::TransactionConstructionError)?
+            .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)
     }
 }

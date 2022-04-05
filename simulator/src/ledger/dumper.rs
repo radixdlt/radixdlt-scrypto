@@ -177,8 +177,7 @@ pub fn dump_resource_def<T: SubstateStore>(
 ) -> Result<(), DisplayError> {
     let resource_def: Option<ResourceDef> = substate_store
         .get_decoded_substate(&resource_def_id)
-        .map(|(resource, _)| resource)
-        .unwrap();
+        .map(|(resource, _)| resource);
     match resource_def {
         Some(r) => {
             println!(

@@ -16,16 +16,21 @@ fn test_dynamic_auth(
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let key_and_addresses: Vec<(EcdsaPublicKey, NonFungibleAddress)> = (0..num_keys)
-        .map(|_| test_runner.new_public_key_and_non_fungible_address())
+    let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
+        ..num_keys)
+        .map(|_| test_runner.new_key_pair_with_pk_address())
         .collect();
     let addresses: Vec<NonFungibleAddress> = key_and_addresses
         .iter()
-        .map(|(_, addr)| addr.clone())
+        .map(|(_, _, addr)| addr.clone())
         .collect();
-    let key_signers = signers
+    let pks: Vec<EcdsaPublicKey> = signers
         .iter()
         .map(|index| key_and_addresses.get(*index).unwrap().0)
+        .collect();
+    let sks: Vec<EcdsaPrivateKey> = signers
+        .iter()
+        .map(|index| key_and_addresses.get(*index).unwrap().1)
         .collect();
 
     let package = test_runner.publish_package("component");
@@ -37,9 +42,10 @@ fn test_dynamic_auth(
             "create_component",
             vec![scrypto_encode(addresses.get(initial_auth).unwrap())],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt1 = test_runner.run(transaction1);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt1 = test_runner.validate_and_execute(&transaction1);
     receipt1.result.expect("Should be okay.");
     let component = receipt1.new_component_ids[0];
 
@@ -51,18 +57,23 @@ fn test_dynamic_auth(
                 "update_auth",
                 vec![scrypto_encode(addresses.get(next_auth).unwrap())],
             )
-            .build(vec![])
-            .unwrap();
-        test_runner.run(update_txn).result.expect("Should be okay.");
+            .build(&[])
+            .unwrap()
+            .sign(&[]);
+        test_runner
+            .validate_and_execute(&update_txn)
+            .result
+            .expect("Should be okay.");
     }
 
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "get_secret", vec![])
-        .build(key_signers)
-        .unwrap();
-    let receipt2 = test_runner.run(transaction2);
+        .build(pks)
+        .unwrap()
+        .sign(&sks);
+    let receipt2 = test_runner.validate_and_execute(&transaction2);
 
     // Assert
     if should_succeed {
@@ -81,16 +92,21 @@ fn test_dynamic_authlist(
 ) {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let key_and_addresses: Vec<(EcdsaPublicKey, NonFungibleAddress)> = (0..list_size)
-        .map(|_| test_runner.new_public_key_and_non_fungible_address())
+    let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
+        ..list_size)
+        .map(|_| test_runner.new_key_pair_with_pk_address())
         .collect();
     let list: Vec<NonFungibleAddress> = key_and_addresses
         .iter()
-        .map(|(_, addr)| addr.clone())
+        .map(|(_, _, addr)| addr.clone())
         .collect();
-    let key_signers = signers
+    let pks: Vec<EcdsaPublicKey> = signers
         .iter()
         .map(|index| key_and_addresses.get(*index).unwrap().0)
+        .collect();
+    let sks: Vec<EcdsaPrivateKey> = signers
+        .iter()
+        .map(|index| key_and_addresses.get(*index).unwrap().1)
         .collect();
     let authorization = component_authorization! {
         "get_secret" => rule
@@ -106,9 +122,10 @@ fn test_dynamic_authlist(
             "create_component",
             args!(list, authorization),
         )
-        .build(vec![])
-        .unwrap();
-    let receipt0 = test_runner.run(transaction1);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt0 = test_runner.validate_and_execute(&transaction1);
     receipt0.result.expect("Should be okay.");
     let component = receipt0.new_component_ids[0];
 
@@ -116,9 +133,10 @@ fn test_dynamic_authlist(
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "get_secret", vec![])
-        .build(key_signers)
-        .unwrap();
-    let receipt = test_runner.run(transaction2);
+        .build(pks)
+        .unwrap()
+        .sign(&sks);
+    let receipt = test_runner.validate_and_execute(&transaction2);
 
     // Assert
     if should_succeed {
@@ -254,13 +272,13 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, _) = test_runner.new_public_key_with_account();
-    let (other_key, _) = test_runner.new_public_key_with_account();
+    let (pk, _, _) = test_runner.new_account();
+    let (other_pk, other_sk, _) = test_runner.new_account();
     let package = test_runner.publish_package("component");
     let non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(key.to_vec()));
+        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(pk.to_vec()));
     let other_non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(other_key.to_vec()));
+        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(other_pk.to_vec()));
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
@@ -270,9 +288,10 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
             "create_game",
             vec![scrypto_encode(&players)],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt1 = test_runner.run(transaction1);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt1 = test_runner.validate_and_execute(&transaction1);
     receipt1.result.expect("Should be okay.");
     let component = receipt1.new_component_ids[0];
 
@@ -280,9 +299,10 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(vec![other_key])
-        .unwrap();
-    let receipt = test_runner.run(transaction2);
+        .build(&[other_pk])
+        .unwrap()
+        .sign(&[other_sk]);
+    let receipt = test_runner.validate_and_execute(&transaction2);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");
@@ -294,13 +314,13 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, _) = test_runner.new_public_key_with_account();
-    let (other_key, _) = test_runner.new_public_key_with_account();
+    let (pk, sk, _) = test_runner.new_account();
+    let (other_pk, other_sk, _) = test_runner.new_account();
     let package = test_runner.publish_package("component");
     let non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(key.to_vec()));
+        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(pk.to_vec()));
     let other_non_fungible_address =
-        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(other_key.to_vec()));
+        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(other_pk.to_vec()));
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
@@ -310,18 +330,20 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
             "create_game",
             vec![scrypto_encode(&players)],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt1 = test_runner.run(transaction1);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt1 = test_runner.validate_and_execute(&transaction1);
     receipt1.result.expect("Should be okay.");
     let component = receipt1.new_component_ids[0];
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(vec![key])
-        .unwrap();
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
     test_runner
-        .run(transaction2)
+        .validate_and_execute(&transaction2)
         .result
         .expect("Should be okay.");
 
@@ -329,9 +351,10 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let transaction3 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(vec![other_key])
-        .unwrap();
-    let receipt = test_runner.run(transaction3);
+        .build(&[other_pk])
+        .unwrap()
+        .sign(&[other_sk]);
+    let receipt = test_runner.validate_and_execute(&transaction3);
 
     // Assert
     receipt.result.expect("Should be okay.");

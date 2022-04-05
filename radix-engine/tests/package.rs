@@ -27,9 +27,9 @@ fn missing_memory_should_cause_error() {
     let transaction = test_runner
         .new_transaction_builder()
         .publish_package(&code)
-        .build(vec![])
+        .build(&[])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let error = receipt.result.expect_err("Should be error.");
@@ -50,9 +50,10 @@ fn large_return_len_should_cause_memory_access_error() {
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(package, "LargeReturnSize", "something", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -70,9 +71,9 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(package, "MaxReturnSize", "something", vec![])
-        .build(vec![])
+        .build(&[])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -90,9 +91,9 @@ fn zero_return_len_should_cause_data_validation_error() {
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(package, "ZeroReturnSize", "something", vec![])
-        .build(vec![])
+        .build(&[])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");

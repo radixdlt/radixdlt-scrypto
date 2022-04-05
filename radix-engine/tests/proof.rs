@@ -11,7 +11,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id = test_runner.create_non_fungible_resource(account);
     let package_id = test_runner.publish_package("proof");
 
@@ -26,9 +26,10 @@ fn can_create_clone_and_drop_bucket_proof() {
             Some(account),
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -40,7 +41,7 @@ fn can_create_clone_and_drop_vault_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id = test_runner.create_non_fungible_resource(account);
     let package_id = test_runner.publish_package("proof");
     let component_id = test_runner.instantiate_component(
@@ -49,7 +50,8 @@ fn can_create_clone_and_drop_vault_proof() {
         "new",
         vec![format!("1,{}", resource_def_id)],
         account,
-        key,
+        pk,
+        sk,
     );
 
     // Act
@@ -58,11 +60,12 @@ fn can_create_clone_and_drop_vault_proof() {
         .call_method(
             component_id,
             "create_clone_drop_vault_proof",
-            vec![scrypto_encode(&Decimal::from(1))],
+            vec![scrypto_encode(&Decimal::one())],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -74,7 +77,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_id = test_runner.publish_package("proof");
@@ -84,7 +87,8 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         "new",
         vec![format!("3,{}", resource_def_id)],
         account,
-        key,
+        pk,
+        sk,
     );
 
     // Act
@@ -96,9 +100,10 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
             vec!["3".to_owned(), "1".to_owned()],
             None,
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -110,7 +115,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id = test_runner.create_non_fungible_resource(account);
     let package_id = test_runner.publish_package("proof");
     let component_id = test_runner.instantiate_component(
@@ -119,7 +124,8 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         "new",
         vec![format!("3,{}", resource_def_id)],
         account,
-        key,
+        pk,
+        sk,
     );
 
     // Act
@@ -136,9 +142,10 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
             "create_clone_drop_vault_proof_by_ids",
             args![total_ids, proof_ids],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -150,7 +157,7 @@ fn can_use_bucket_for_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let (auth_resource_def_id, burnable_resource_def_id) =
         test_runner.create_restricted_burn_token(account);
     let package_id = test_runner.publish_package("proof");
@@ -169,9 +176,10 @@ fn can_use_bucket_for_authorization() {
             Some(account),
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -183,7 +191,7 @@ fn can_use_vault_for_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let (auth_resource_def_id, burnable_resource_def_id) =
         test_runner.create_restricted_burn_token(account);
     let package_id = test_runner.publish_package("proof");
@@ -193,7 +201,8 @@ fn can_use_vault_for_authorization() {
         "new",
         vec![format!("1,{}", auth_resource_def_id)],
         account,
-        key,
+        pk,
+        sk,
     );
 
     // Act
@@ -205,9 +214,10 @@ fn can_use_vault_for_authorization() {
             vec![format!("1,{}", burnable_resource_def_id)],
             Some(account),
         )
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -219,7 +229,7 @@ fn can_create_proof_from_account_and_pass_on() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_id = test_runner.publish_package("proof");
@@ -234,9 +244,10 @@ fn can_create_proof_from_account_and_pass_on() {
             vec![format!("1,{}", resource_def_id), "1".to_owned()],
             Some(account),
         )
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -248,7 +259,7 @@ fn cant_move_restricted_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_id = test_runner.publish_package("proof");
@@ -263,9 +274,10 @@ fn cant_move_restricted_proof() {
             vec![format!("1,{}", resource_def_id), "1".to_owned()],
             Some(account),
         )
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -280,7 +292,7 @@ fn can_compose_bucket_and_vault_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_id = test_runner.publish_package("proof");
@@ -290,7 +302,8 @@ fn can_compose_bucket_and_vault_proof() {
         "new",
         vec![format!("1,{}", resource_def_id)],
         account,
-        key,
+        pk,
+        sk,
     );
 
     // Act
@@ -304,9 +317,10 @@ fn can_compose_bucket_and_vault_proof() {
                 args![Bucket(bucket_id)],
             )
         })
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -318,7 +332,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_id = test_runner.publish_package("proof");
@@ -328,7 +342,8 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         "new",
         vec![format!("1,{}", resource_def_id)],
         account,
-        key,
+        pk,
+        sk,
     );
 
     // Act
@@ -342,9 +357,10 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
                 args![Bucket(bucket_id), Decimal::from(2)],
             )
         })
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -356,7 +372,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id = test_runner.create_non_fungible_resource(account);
     let package_id = test_runner.publish_package("proof");
     let component_id = test_runner.instantiate_component(
@@ -365,7 +381,8 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         "new",
         vec![format!("1,{}", resource_def_id)],
         account,
-        key,
+        pk,
+        sk,
     );
 
     // Act
@@ -390,9 +407,10 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 )
             },
         )
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -404,7 +422,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id = test_runner.create_non_fungible_resource(account);
     let package_id = test_runner.publish_package("proof");
     let component_id = test_runner.instantiate_component(
@@ -413,7 +431,8 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         "new",
         vec![format!("3,{}", resource_def_id)],
         account,
-        key,
+        pk,
+        sk,
     );
 
     // Act
@@ -424,9 +443,10 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
             "create_clone_drop_vault_proof_by_amount",
             args![Decimal::from(3), Decimal::from(1)],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -438,7 +458,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let resource_def_id = test_runner.create_non_fungible_resource(account);
     let package_id = test_runner.publish_package("proof");
 
@@ -471,9 +491,10 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 )
             },
         )
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert

@@ -251,7 +251,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // (Transaction ONLY) Takes resource by non-fungible IDs from worktop and returns a bucket.
     pub fn take_non_fungibles_from_worktop(
         &mut self,
-        ids: BTreeSet<NonFungibleId>,
+        ids: &BTreeSet<NonFungibleId>,
         resource_def_id: ResourceDefId,
     ) -> Result<BucketId, RuntimeError> {
         re_debug!(
@@ -263,7 +263,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_bucket_id = self.new_bucket_id()?;
         let new_bucket = self
             .worktop
-            .take_non_fungibles(&ids, resource_def_id)
+            .take_non_fungibles(ids, resource_def_id)
             .map_err(RuntimeError::WorktopError)?;
         self.buckets.insert(new_bucket_id, new_bucket);
         Ok(new_bucket_id)

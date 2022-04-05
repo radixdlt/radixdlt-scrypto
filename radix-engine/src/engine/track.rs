@@ -10,8 +10,8 @@ use crate::ledger::*;
 use crate::model::*;
 
 pub struct CommitReceipt {
-    pub down_substates: HashSet<u64>,
-    pub up_substates: Vec<u64>,
+    pub down_substates: HashSet<(Hash, u32)>,
+    pub up_substates: Vec<(Hash, u32)>,
 }
 
 impl CommitReceipt {
@@ -22,17 +22,17 @@ impl CommitReceipt {
         }
     }
 
-    fn down(&mut self, id: u64) {
+    fn down(&mut self, id: (Hash, u32)) {
         self.down_substates.insert(id);
     }
 
-    fn up(&mut self, id: u64) {
+    fn up(&mut self, id: (Hash, u32)) {
         self.up_substates.push(id);
     }
 }
 
 struct SubstateUpdate<T> {
-    prev_id: Option<u64>,
+    prev_id: Option<(Hash, u32)>,
     value: T,
 }
 
@@ -574,55 +574,44 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Currently none of these objects are deleted so all commits are puts
     pub fn commit(&mut self) -> CommitReceipt {
         let mut receipt = CommitReceipt::new();
+        let mut id_gen = SubstateIdGenerator::new(self.transaction_hash());
 
-        let package_ids: Vec<PackageId> = self
-            .packages
-            .iter()
-            .map(|(address, _)| address.clone())
-            .collect();
+        let package_ids: Vec<PackageId> = self.packages.keys().cloned().collect();
         for package_id in package_ids {
             let package = self.packages.remove(&package_id).unwrap();
 
             if let Some(prev_id) = package.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             self.substate_store
                 .put_encoded_substate(&package_id, &package.value, phys_id);
         }
 
-        let component_ids: Vec<ComponentId> = self
-            .components
-            .iter()
-            .map(|(address, _)| address.clone())
-            .collect();
+        let component_ids: Vec<ComponentId> = self.components.keys().cloned().collect();
         for component_id in component_ids {
             let component = self.components.remove(&component_id).unwrap();
 
             if let Some(prev_id) = component.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             self.substate_store
                 .put_encoded_substate(&component_id, &component.value, phys_id);
         }
 
-        let resource_def_ids: Vec<ResourceDefId> = self
-            .resource_defs
-            .iter()
-            .map(|(address, _)| address.clone())
-            .collect();
+        let resource_def_ids: Vec<ResourceDefId> = self.resource_defs.keys().cloned().collect();
         for resource_def_id in resource_def_ids {
             let resource_def = self.resource_defs.remove(&resource_def_id).unwrap();
 
             if let Some(prev_id) = resource_def.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             self.substate_store.put_encoded_substate(
@@ -632,17 +621,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
         }
 
-        let entry_ids: Vec<(ComponentId, LazyMapId, Vec<u8>)> = self
-            .lazy_map_entries
-            .iter()
-            .map(|(id, _)| id.clone())
-            .collect();
+        let entry_ids: Vec<(ComponentId, LazyMapId, Vec<u8>)> =
+            self.lazy_map_entries.keys().cloned().collect();
         for entry_id in entry_ids {
             let entry = self.lazy_map_entries.remove(&entry_id).unwrap();
             if let Some(prev_id) = entry.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             let (component_id, lazy_map_id, key) = entry_id;
@@ -655,14 +641,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
         }
 
-        let vault_ids: Vec<(ComponentId, VaultId)> =
-            self.vaults.iter().map(|(id, _)| id.clone()).collect();
+        let vault_ids: Vec<(ComponentId, VaultId)> = self.vaults.keys().cloned().collect();
         for vault_id in vault_ids {
             let vault = self.vaults.remove(&vault_id).unwrap();
             if let Some(prev_id) = vault.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             let (component_id, vault_id) = vault_id;
@@ -674,17 +659,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
         }
 
-        let non_fungible_addresses: Vec<NonFungibleAddress> = self
-            .non_fungibles
-            .iter()
-            .map(|(id, _)| id.clone())
-            .collect();
+        let non_fungible_addresses: Vec<NonFungibleAddress> =
+            self.non_fungibles.keys().cloned().collect();
         for non_fungible_address in non_fungible_addresses {
             let non_fungible = self.non_fungibles.remove(&non_fungible_address).unwrap();
             if let Some(prev_id) = non_fungible.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             self.substate_store.put_encoded_child_substate(

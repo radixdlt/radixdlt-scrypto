@@ -11,7 +11,7 @@ fn cannot_mint_with_wrong_auth() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let (_, random_resource_def_id) = test_runner.create_restricted_mint_token(account);
     let (_, token_resource_def_id) = test_runner.create_restricted_mint_token(account);
 
@@ -25,9 +25,10 @@ fn cannot_mint_with_wrong_auth() {
             random_resource_def_id,
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let err = receipt.result.expect_err("Should be a runtime error");
@@ -39,7 +40,7 @@ fn can_mint_with_right_auth() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let (auth_token_resource_def_id, token_resource_def_id) =
         test_runner.create_restricted_mint_token(account);
 
@@ -53,9 +54,10 @@ fn can_mint_with_right_auth() {
             auth_token_resource_def_id,
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     assert!(receipt.result.is_ok());
@@ -66,7 +68,7 @@ fn cannot_burn_with_no_auth() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let (_, token_resource_def_id) = test_runner.create_restricted_burn_token(account);
 
     // Act
@@ -75,9 +77,10 @@ fn cannot_burn_with_no_auth() {
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_def_id, account)
         .burn(Decimal::one(), token_resource_def_id)
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let err = receipt.result.expect_err("Should be a runtime error");
@@ -89,7 +92,7 @@ fn can_burn_with_auth() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let (auth_token_resource_def_id, token_resource_def_id) =
         test_runner.create_restricted_burn_token(account);
 
@@ -110,9 +113,10 @@ fn can_burn_with_auth() {
             },
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     assert!(receipt.result.is_ok());

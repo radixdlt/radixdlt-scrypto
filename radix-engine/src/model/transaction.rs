@@ -1,4 +1,6 @@
 use sbor::*;
+use scrypto::buffer::scrypto_encode;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::string::String;
@@ -6,13 +8,13 @@ use scrypto::rust::vec::Vec;
 
 use crate::model::ValidatedData;
 
-/// Represents an unvalidated transaction.
+/// Represents a signed or signed transaction, parsed but not validated.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
 }
 
-/// Represents an unvalidated instruction in transaction
+/// Represents an instruction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {
     /// Takes resource from worktop.
@@ -110,13 +112,18 @@ pub enum Instruction {
     /// Publishes a package.
     PublishPackage { code: Vec<u8> },
 
+    /// Specifies transaction nonce
+    Nonce {
+        nonce: u64, // TODO: may be replaced with substate id for entropy
+    },
+
     /// Marks the end of transaction with signatures.
-    /// TODO: replace public key with signature.
-    End { signatures: Vec<EcdsaPublicKey> },
+    End { signatures: Vec<EcdsaSignature> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidatedTransaction {
+    pub hash: Hash,
     pub instructions: Vec<ValidatedInstruction>,
     pub signers: Vec<EcdsaPublicKey>,
 }
@@ -191,4 +198,43 @@ pub enum ValidatedInstruction {
     PublishPackage {
         code: Vec<u8>,
     },
+}
+
+impl Transaction {
+    pub fn to_vec(&self) -> Vec<u8> {
+        scrypto_encode(self)
+    }
+
+    pub fn is_signed(&self) -> bool {
+        match self.instructions.last() {
+            Some(Instruction::End { .. }) => true,
+            _ => false,
+        }
+    }
+
+    pub fn hash(&self) -> Hash {
+        let instructions = if self.is_signed() {
+            &self.instructions[..self.instructions.len() - 1]
+        } else {
+            &self.instructions
+        };
+        let bytes = scrypto_encode(instructions);
+        sha256(bytes)
+    }
+
+    pub fn sign<T: AsRef<[EcdsaPrivateKey]>>(mut self, private_keys: T) -> Self {
+        if self.is_signed() {
+            panic!("Transaction already signed!");
+        }
+
+        let hash = self.hash();
+        let signatures = private_keys
+            .as_ref()
+            .iter()
+            .map(|sk| sk.sign(&hash))
+            .collect();
+
+        self.instructions.push(Instruction::End { signatures });
+        self
+    }
 }

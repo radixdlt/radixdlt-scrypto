@@ -21,25 +21,31 @@ impl<'l> TestRunner<'l> {
         TransactionBuilder::new(&self.executor)
     }
 
-    pub fn new_public_key_and_non_fungible_address(
+    pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
+        self.executor.new_key_pair()
+    }
+
+    pub fn new_key_pair_with_pk_address(
         &mut self,
-    ) -> (EcdsaPublicKey, NonFungibleAddress) {
-        let key = self.executor.new_public_key();
-        let id = NonFungibleId::new(key.to_vec());
-        let non_fungible_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
-        (key, non_fungible_address)
+    ) -> (EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress) {
+        let (pk, sk) = self.new_key_pair();
+        (
+            pk,
+            sk,
+            NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::new(pk.to_vec())),
+        )
     }
 
-    pub fn new_account(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
-        self.executor.new_account(withdraw_auth)
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
+        self.executor.new_account_with_auth_rule(withdraw_auth)
     }
 
-    pub fn new_public_key_with_account(&mut self) -> (EcdsaPublicKey, ComponentId) {
-        self.executor.new_public_key_with_account()
+    pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentId) {
+        self.executor.new_account()
     }
 
-    pub fn run(&mut self, transaction: Transaction) -> Receipt {
-        self.executor.run(transaction).unwrap()
+    pub fn validate_and_execute(&mut self, transaction: &Transaction) -> Receipt {
+        self.executor.validate_and_execute(transaction).unwrap()
     }
 
     pub fn publish_package(&mut self, name: &str) -> PackageId {
@@ -65,9 +71,10 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
-            .unwrap();
-        let receipt = self.executor.run(transaction).unwrap();
+            .build(&[])
+            .unwrap()
+            .sign(&[]);
+        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_def_id, receipt.new_resource_def_ids[0])
     }
 
@@ -85,9 +92,10 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
-            .unwrap();
-        let receipt = self.executor.run(transaction).unwrap();
+            .build(&[])
+            .unwrap()
+            .sign(&[]);
+        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_def_id, receipt.new_resource_def_ids[0])
     }
 
@@ -106,9 +114,10 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_def_id)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
-            .unwrap();
-        let receipt = self.executor.run(transaction).unwrap();
+            .build(&[])
+            .unwrap()
+            .sign(&[]);
+        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_def_id, receipt.new_resource_def_ids[0])
     }
 
@@ -122,9 +131,10 @@ impl<'l> TestRunner<'l> {
                 vec![],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
-            .unwrap();
-        let receipt = self.executor.run(transaction).unwrap();
+            .build(&[])
+            .unwrap()
+            .sign(&[]);
+        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         receipt.new_resource_def_ids[0]
     }
 
@@ -143,9 +153,10 @@ impl<'l> TestRunner<'l> {
                 args![amount, divisibility],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![])
-            .unwrap();
-        let receipt = self.executor.run(transaction).unwrap();
+            .build(&[])
+            .unwrap()
+            .sign(&[]);
+        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         receipt.new_resource_def_ids[0]
     }
 
@@ -156,7 +167,8 @@ impl<'l> TestRunner<'l> {
         function_name: &str,
         args: Vec<String>,
         account: ComponentId,
-        key: EcdsaPublicKey,
+        pk: EcdsaPublicKey,
+        sk: EcdsaPrivateKey,
     ) -> ComponentId {
         let transaction = self
             .new_transaction_builder()
@@ -168,9 +180,10 @@ impl<'l> TestRunner<'l> {
                 Some(account),
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(vec![key])
-            .unwrap();
-        let receipt = self.run(transaction);
+            .build(&[pk])
+            .unwrap()
+            .sign(&[sk]);
+        let receipt = self.validate_and_execute(&transaction);
         receipt.new_component_ids[0]
     }
 }

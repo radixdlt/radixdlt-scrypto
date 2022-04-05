@@ -15,9 +15,10 @@ fn test_package() {
     let transaction1 = test_runner
         .new_transaction_builder()
         .call_function(package, "PackageTest", "publish", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt1 = test_runner.run(transaction1);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt1 = test_runner.validate_and_execute(&transaction1);
     assert!(receipt1.result.is_ok());
 }
 
@@ -25,16 +26,17 @@ fn test_package() {
 fn test_component() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
+    let (pk, sk, account) = test_runner.new_account();
     let package = test_runner.publish_package("component");
 
     // Create component
     let transaction1 = test_runner
         .new_transaction_builder()
         .call_function(package, "ComponentTest", "create_component", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt1 = test_runner.run(transaction1);
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt1 = test_runner.validate_and_execute(&transaction1);
     assert!(receipt1.result.is_ok());
 
     // Find the component ID from receipt
@@ -52,9 +54,10 @@ fn test_component() {
         .call_method(component, "get_component_state", vec![])
         .call_method(component, "put_component_state", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt2 = test_runner.run(transaction2);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt2 = test_runner.validate_and_execute(&transaction2);
     assert!(receipt2.result.is_ok());
 }
 
@@ -74,9 +77,9 @@ fn invalid_blueprint_name_should_cause_error() {
             "create_component",
             vec![],
         )
-        .build(vec![])
+        .build(&[])
         .unwrap();
-    let receipt = test_runner.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");

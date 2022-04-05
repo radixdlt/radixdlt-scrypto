@@ -5,6 +5,7 @@ use sbor::describe::*;
 use sbor::*;
 use scrypto::abi;
 use scrypto::buffer::*;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::resource::resource_flags::*;
 use scrypto::resource::resource_permissions::*;
@@ -21,9 +22,9 @@ use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 
 /// Utility for building transaction.
-pub struct TransactionBuilder<'a, A: AbiProvider> {
-    /// ABI provider for constructing arguments
-    abi_provider: &'a A,
+pub struct TransactionBuilder<'a, A: AbiProvider + NonceProvider> {
+    /// ABI and nonce provider
+    abi_nonce_provider: &'a A,
     /// ID validator for calculating transaction object id
     id_validator: IdValidator,
     /// Instructions generated.
@@ -32,11 +33,11 @@ pub struct TransactionBuilder<'a, A: AbiProvider> {
     errors: Vec<BuildTransactionError>,
 }
 
-impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
+impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
     /// Starts a new transaction builder.
-    pub fn new(abi_provider: &'a A) -> Self {
+    pub fn new(abi_nonce_provider: &'a A) -> Self {
         Self {
-            abi_provider,
+            abi_nonce_provider,
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
             errors: Vec::new(),
@@ -105,7 +106,9 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
             Instruction::CallMethodWithAllResources { .. } => {
                 self.id_validator.move_all_resources().unwrap();
             }
-            Instruction::PublishPackage { .. } | Instruction::End { .. } => {}
+            Instruction::PublishPackage { .. }
+            | Instruction::Nonce { .. }
+            | Instruction::End { .. } => {}
         }
 
         self.instructions.push(inst);
@@ -310,7 +313,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         account: Option<ComponentId>,
     ) -> &mut Self {
         let result = self
-            .abi_provider
+            .abi_nonce_provider
             .export_abi(package_id, blueprint_name)
             .map_err(|e| {
                 BuildTransactionError::FailedToExportFunctionAbi(
@@ -370,7 +373,7 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
         account: Option<ComponentId>,
     ) -> &mut Self {
         let result = self
-            .abi_provider
+            .abi_nonce_provider
             .export_abi_component(component_id)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportMethodAbi(component_id, method.to_owned())
@@ -420,21 +423,20 @@ impl<'a, A: AbiProvider> TransactionBuilder<'a, A> {
     }
 
     /// Builds a transaction.
-    pub fn build(
-        &mut self,
-        signers: Vec<EcdsaPublicKey>,
+    pub fn build<PK: AsRef<[EcdsaPublicKey]>>(
+        &self,
+        intended_signers: PK,
     ) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
 
-        let mut v = Vec::new();
-        v.extend(self.instructions.clone());
-        v.push(Instruction::End {
-            signatures: signers, // TODO sign
+        let mut instructions = self.instructions.clone();
+        instructions.push(Instruction::Nonce {
+            nonce: self.abi_nonce_provider.get_nonce(intended_signers.as_ref()),
         });
 
-        Ok(Transaction { instructions: v })
+        Ok(Transaction { instructions })
     }
 
     /// Creates a token resource with mutable supply.

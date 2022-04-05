@@ -1,4 +1,5 @@
 use sbor::*;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::fmt;
@@ -80,7 +81,7 @@ pub enum TransactionValidationError {
     IdValidatorError(IdValidatorError),
     VaultNotAllowed(VaultId),
     LazyMapNotAllowed(LazyMapId),
-    InvalidSignature,
+    InvalidSignature(SignatureValidationError),
     UnexpectedEnd,
 }
 

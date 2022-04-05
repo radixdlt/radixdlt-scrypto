@@ -28,6 +28,7 @@ impl ShowLedger {
             println!("{} {}", list_item_prefix(last), resource_def_id);
         }
 
+        println!("{}: {}", "Nonce".green().bold(), ledger.get_nonce());
         Ok(())
     }
 }

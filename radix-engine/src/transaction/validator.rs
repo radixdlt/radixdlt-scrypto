@@ -1,3 +1,4 @@
+use scrypto::engine::types::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 
@@ -8,6 +9,7 @@ use crate::model::*;
 pub fn validate_transaction(
     transaction: &Transaction,
 ) -> Result<ValidatedTransaction, TransactionValidationError> {
+    let hash = transaction.hash();
     let mut instructions = vec![];
     let mut signers = vec![];
 
@@ -175,16 +177,22 @@ pub fn validate_transaction(
             Instruction::PublishPackage { code } => {
                 instructions.push(ValidatedInstruction::PublishPackage { code });
             }
+            Instruction::Nonce { .. } => {
+                // TODO: validate nonce
+            }
             Instruction::End { signatures } => {
                 if i != transaction.instructions.len() - 1 {
                     return Err(TransactionValidationError::UnexpectedEnd);
                 }
-                signers.extend(signatures);
+                let public_keys: Result<Vec<EcdsaPublicKey>, _> =
+                    signatures.iter().map(|s| s.validate(&hash)).collect();
+                signers.extend(public_keys.map_err(TransactionValidationError::InvalidSignature)?);
             }
         }
     }
 
     Ok(ValidatedTransaction {
+        hash,
         instructions,
         signers,
     })
@@ -221,7 +229,6 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use scrypto::buffer::*;
-    use scrypto::engine::types::*;
     use scrypto::rust::borrow::ToOwned;
     use scrypto::rust::marker::PhantomData;
 

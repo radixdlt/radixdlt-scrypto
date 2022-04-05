@@ -20,10 +20,6 @@ pub struct Publish {
     #[clap(long)]
     package_id: Option<PackageId>,
 
-    /// The transaction signers
-    #[clap(short, long)]
-    signers: Option<Vec<EcdsaPublicKey>>,
-
     /// Turn on tracing
     #[clap(short, long)]
     trace: bool,

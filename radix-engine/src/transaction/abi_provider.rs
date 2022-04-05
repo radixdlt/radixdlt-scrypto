@@ -43,11 +43,11 @@ impl BasicAbiProvider {
     }
 
     pub fn with_package(&mut self, package_id: &PackageId, package: Package) -> &mut Self {
-        self.substate_store.put_encoded_substate(
-            package_id,
-            &package,
-            self.substate_store.get_nonce(),
-        );
+        let tx_hash = sha256(self.substate_store.get_and_increase_nonce().to_le_bytes());
+        let mut id_gen = SubstateIdGenerator::new(tx_hash);
+
+        self.substate_store
+            .put_encoded_substate(package_id, &package, id_gen.next());
         self
     }
 }
