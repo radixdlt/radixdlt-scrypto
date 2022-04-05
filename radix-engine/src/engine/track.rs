@@ -1,6 +1,5 @@
 use scrypto::constants::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -10,8 +9,8 @@ use crate::ledger::*;
 use crate::model::*;
 
 pub struct CommitReceipt {
-    pub down_substates: HashSet<u64>,
-    pub up_substates: Vec<u64>,
+    pub down_substates: HashSet<(Hash, u32)>,
+    pub up_substates: Vec<(Hash, u32)>,
 }
 
 impl CommitReceipt {
@@ -22,17 +21,17 @@ impl CommitReceipt {
         }
     }
 
-    fn down(&mut self, id: u64) {
+    fn down(&mut self, id: (Hash, u32)) {
         self.down_substates.insert(id);
     }
 
-    fn up(&mut self, id: u64) {
+    fn up(&mut self, id: (Hash, u32)) {
         self.up_substates.push(id);
     }
 }
 
 struct SubstateUpdate<T> {
-    prev_id: Option<u64>,
+    prev_id: Option<(Hash, u32)>,
     value: T,
 }
 
@@ -50,14 +49,14 @@ pub struct Track<'s, S: SubstateStore> {
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
 
-    packages: HashMap<PackageId, SubstateUpdate<Package>>,
-    components: HashMap<ComponentId, SubstateUpdate<Component>>,
-    resource_defs: HashMap<ResourceDefId, SubstateUpdate<ResourceDef>>,
+    packages: HashMap<PackageAddress, SubstateUpdate<Package>>,
+    components: HashMap<ComponentAddress, SubstateUpdate<Component>>,
+    resource_managers: HashMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
 
-    vaults: HashMap<(ComponentId, VaultId), SubstateUpdate<Vault>>,
+    vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
     non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<NonFungible>>,
 
-    lazy_map_entries: HashMap<(ComponentId, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
+    lazy_map_entries: HashMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
 }
 
 impl<'s, S: SubstateStore> Track<'s, S> {
@@ -74,7 +73,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
-            resource_defs: HashMap::new(),
+            resource_managers: HashMap::new(),
             lazy_map_entries: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
@@ -83,12 +82,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 's, S> {
-        // FIXME: This is a temp solution
         let signers: BTreeSet<NonFungibleId> = self
             .transaction_signers
             .clone()
             .into_iter()
-            .map(|public_key| NonFungibleId::new(public_key.to_vec()))
+            .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
             .collect();
         let mut process = Process::new(0, verbose, self);
 
@@ -106,7 +104,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             process
                 .create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket)
                 .unwrap();
-            process.move_to_auth_zone(ECDSA_TOKEN_PROOF_ID).unwrap();
+            process.push_to_auth_zone(ECDSA_TOKEN_PROOF_ID).unwrap();
         }
 
         process
@@ -128,36 +126,36 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns new packages created so far.
-    pub fn new_package_ids(&self) -> Vec<PackageId> {
-        let mut package_ids = Vec::new();
-        for (package_id, update) in self.packages.iter() {
+    pub fn new_package_addresses(&self) -> Vec<PackageAddress> {
+        let mut package_addresses = Vec::new();
+        for (package_address, update) in self.packages.iter() {
             if let None = update.prev_id {
-                package_ids.push(package_id.clone());
+                package_addresses.push(package_address.clone());
             }
         }
-        package_ids
+        package_addresses
     }
 
     /// Returns new components created so far.
-    pub fn new_component_ids(&self) -> Vec<ComponentId> {
-        let mut component_ids = Vec::new();
-        for (component_id, update) in self.components.iter() {
+    pub fn new_component_addresses(&self) -> Vec<ComponentAddress> {
+        let mut component_addresses = Vec::new();
+        for (component_address, update) in self.components.iter() {
             if let None = update.prev_id {
-                component_ids.push(component_id.clone());
+                component_addresses.push(component_address.clone());
             }
         }
-        component_ids
+        component_addresses
     }
 
-    /// Returns new resource defs created so far.
-    pub fn new_resource_def_ids(&self) -> Vec<ResourceDefId> {
-        let mut resource_def_ids = Vec::new();
-        for (resource_def_id, update) in self.resource_defs.iter() {
+    /// Returns new resource addresses created so far.
+    pub fn new_resource_addresses(&self) -> Vec<ResourceAddress> {
+        let mut resource_addresses = Vec::new();
+        for (resource_address, update) in self.resource_managers.iter() {
             if let None = update.prev_id {
-                resource_def_ids.push(resource_def_id.clone());
+                resource_addresses.push(resource_address.clone());
             }
         }
-        resource_def_ids
+        resource_addresses
     }
 
     /// Adds a log message.
@@ -166,91 +164,102 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a package, if exists.
-    pub fn get_package(&mut self, package_id: PackageId) -> Option<&Package> {
-        if self.packages.contains_key(&package_id) {
-            return self.packages.get(&package_id).map(|p| &p.value);
+    pub fn get_package(&mut self, package_address: PackageAddress) -> Option<&Package> {
+        if self.packages.contains_key(&package_address) {
+            return self.packages.get(&package_address).map(|p| &p.value);
         }
 
-        if let Some((package, phys_id)) = self.substate_store.get_decoded_substate(&package_id) {
+        if let Some((package, phys_id)) = self.substate_store.get_decoded_substate(&package_address)
+        {
             self.packages.insert(
-                package_id,
+                package_address,
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: package,
                 },
             );
-            self.packages.get(&package_id).map(|p| &p.value)
+            self.packages.get(&package_address).map(|p| &p.value)
         } else {
             None
         }
     }
 
     /// Inserts a new package.
-    pub fn create_package(&mut self, package: Package) -> PackageId {
-        let package_id = self.new_package_id();
+    pub fn create_package(&mut self, package: Package) -> PackageAddress {
+        let package_address = self.new_package_address();
         self.packages.insert(
-            package_id,
+            package_address,
             SubstateUpdate {
                 prev_id: None,
                 value: package,
             },
         );
-        package_id
+        package_address
     }
 
     /// Returns an immutable reference to a component, if exists.
-    pub fn get_component(&mut self, component_id: ComponentId) -> Option<&Component> {
-        if self.components.contains_key(&component_id) {
-            return self.components.get(&component_id).map(|c| &c.value);
+    pub fn get_component(&mut self, component_address: ComponentAddress) -> Option<&Component> {
+        if self.components.contains_key(&component_address) {
+            return self.components.get(&component_address).map(|c| &c.value);
         }
 
-        if let Some((component, phys_id)) = self.substate_store.get_decoded_substate(&component_id)
+        if let Some((component, phys_id)) =
+            self.substate_store.get_decoded_substate(&component_address)
         {
             self.components.insert(
-                component_id,
+                component_address,
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: component,
                 },
             );
-            self.components.get(&component_id).map(|c| &c.value)
+            self.components.get(&component_address).map(|c| &c.value)
         } else {
             None
         }
     }
 
     /// Returns a mutable reference to a component, if exists.
-    pub fn get_component_mut(&mut self, component_id: ComponentId) -> Option<&mut Component> {
-        if self.components.contains_key(&component_id) {
-            return self.components.get_mut(&component_id).map(|c| &mut c.value);
+    pub fn get_component_mut(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Option<&mut Component> {
+        if self.components.contains_key(&component_address) {
+            return self
+                .components
+                .get_mut(&component_address)
+                .map(|c| &mut c.value);
         }
 
-        if let Some((component, phys_id)) = self.substate_store.get_decoded_substate(&component_id)
+        if let Some((component, phys_id)) =
+            self.substate_store.get_decoded_substate(&component_address)
         {
             self.components.insert(
-                component_id,
+                component_address,
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: component,
                 },
             );
-            self.components.get_mut(&component_id).map(|c| &mut c.value)
+            self.components
+                .get_mut(&component_address)
+                .map(|c| &mut c.value)
         } else {
             None
         }
     }
 
     /// Inserts a new component.
-    pub fn create_component(&mut self, component: Component) -> ComponentId {
-        let component_id = self.new_component_id();
+    pub fn create_component(&mut self, component: Component) -> ComponentAddress {
+        let component_address = self.new_component_address();
         self.components.insert(
-            component_id,
+            component_address,
             SubstateUpdate {
                 prev_id: None,
                 value: component,
             },
         );
-        component_id
+        component_address
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
@@ -266,7 +275,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
 
         if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
-            &non_fungible_address.resource_def_id(),
+            &non_fungible_address.resource_address(),
             &non_fungible_address.non_fungible_id(),
         ) {
             self.non_fungibles.insert(
@@ -297,7 +306,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
 
         if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
-            &non_fungible_address.resource_def_id(),
+            &non_fungible_address.resource_address(),
             &non_fungible_address.non_fungible_id(),
         ) {
             self.non_fungibles.insert(
@@ -332,11 +341,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     pub fn get_lazy_map_entry(
         &mut self,
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         lazy_map_id: &LazyMapId,
         key: &[u8],
     ) -> Option<Vec<u8>> {
-        let canonical_id = (component_id.clone(), lazy_map_id.clone(), key.to_vec());
+        let canonical_id = (component_address.clone(), lazy_map_id.clone(), key.to_vec());
 
         if self.lazy_map_entries.contains_key(&canonical_id) {
             return Some(
@@ -349,7 +358,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
         let grand_child_key = key.to_vec();
         let value = self.substate_store.get_decoded_grand_child_substate(
-            &component_id,
+            &component_address,
             lazy_map_id,
             &grand_child_key,
         );
@@ -367,16 +376,16 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     pub fn put_lazy_map_entry(
         &mut self,
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         lazy_map_id: LazyMapId,
         key: Vec<u8>,
         value: Vec<u8>,
     ) {
-        let canonical_id = (component_id.clone(), lazy_map_id.clone(), key.clone());
+        let canonical_id = (component_address.clone(), lazy_map_id.clone(), key.clone());
 
         if !self.lazy_map_entries.contains_key(&canonical_id) {
             let entry = self.substate_store.get_decoded_grand_child_substate(
-                &component_id,
+                &component_address,
                 &lazy_map_id,
                 &key,
             );
@@ -406,75 +415,90 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
-    /// Returns an immutable reference to a resource definition, if exists.
-    pub fn get_resource_def(&mut self, resource_def_id: &ResourceDefId) -> Option<&ResourceDef> {
-        if self.resource_defs.contains_key(resource_def_id) {
-            return self.resource_defs.get(resource_def_id).map(|r| &r.value);
+    /// Returns an immutable reference to a resource manager, if exists.
+    pub fn get_resource_manager(
+        &mut self,
+        resource_address: &ResourceAddress,
+    ) -> Option<&ResourceManager> {
+        if self.resource_managers.contains_key(resource_address) {
+            return self
+                .resource_managers
+                .get(resource_address)
+                .map(|r| &r.value);
         }
 
-        if let Some((resource_def, phys_id)) =
-            self.substate_store.get_decoded_substate(resource_def_id)
+        if let Some((resource_manager, phys_id)) =
+            self.substate_store.get_decoded_substate(resource_address)
         {
-            self.resource_defs.insert(
-                resource_def_id.clone(),
+            self.resource_managers.insert(
+                resource_address.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
-                    value: resource_def,
+                    value: resource_manager,
                 },
             );
-            self.resource_defs.get(resource_def_id).map(|r| &r.value)
+            self.resource_managers
+                .get(resource_address)
+                .map(|r| &r.value)
         } else {
             None
         }
     }
 
-    /// Returns a mutable reference to a resource definition, if exists.
+    /// Returns a mutable reference to a resource manager, if exists.
     #[allow(dead_code)]
-    pub fn get_resource_def_mut(
+    pub fn get_resource_manager_mut(
         &mut self,
-        resource_def_id: &ResourceDefId,
-    ) -> Option<&mut ResourceDef> {
-        if self.resource_defs.contains_key(resource_def_id) {
+        resource_address: &ResourceAddress,
+    ) -> Option<&mut ResourceManager> {
+        if self.resource_managers.contains_key(resource_address) {
             return self
-                .resource_defs
-                .get_mut(resource_def_id)
+                .resource_managers
+                .get_mut(resource_address)
                 .map(|r| &mut r.value);
         }
 
-        if let Some((resource_def, phys_id)) =
-            self.substate_store.get_decoded_substate(resource_def_id)
+        if let Some((resource_manager, phys_id)) =
+            self.substate_store.get_decoded_substate(resource_address)
         {
-            self.resource_defs.insert(
-                resource_def_id.clone(),
+            self.resource_managers.insert(
+                resource_address.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
-                    value: resource_def,
+                    value: resource_manager,
                 },
             );
-            self.resource_defs
-                .get_mut(resource_def_id)
+            self.resource_managers
+                .get_mut(resource_address)
                 .map(|r| &mut r.value)
         } else {
             None
         }
     }
 
-    /// Inserts a new resource definition.
-    pub fn create_resource_def(&mut self, resource_def: ResourceDef) -> ResourceDefId {
-        let resource_def_id = self.new_resource_def_id();
-        self.resource_defs.insert(
-            resource_def_id,
+    /// Inserts a new resource manager.
+    pub fn create_resource_manager(
+        &mut self,
+        resource_manager: ResourceManager,
+    ) -> ResourceAddress {
+        let resource_address = self.new_resource_address();
+        self.resource_managers.insert(
+            resource_address,
             SubstateUpdate {
                 prev_id: None,
-                value: resource_def,
+                value: resource_manager,
             },
         );
-        resource_def_id
+        resource_address
     }
 
     /// Returns a mutable reference to a vault, if exists.
-    pub fn get_vault_mut(&mut self, component_id: &ComponentId, vid: &VaultId) -> &mut Vault {
-        let canonical_id = (component_id.clone(), vid.clone());
+    pub fn get_vault_mut(
+        &mut self,
+        component_address: &ComponentAddress,
+        vid: &VaultId,
+    ) -> &mut Vault {
+        let canonical_id = (component_address.clone(), vid.clone());
 
         if self.vaults.contains_key(&canonical_id) {
             return self
@@ -486,7 +510,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
         let (vault, phys_id) = self
             .substate_store
-            .get_decoded_child_substate(component_id, vid)
+            .get_decoded_child_substate(component_address, vid)
             .unwrap();
         self.vaults.insert(
             canonical_id,
@@ -502,8 +526,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new vault.
-    pub fn put_vault(&mut self, component_id: ComponentId, vault_id: VaultId, vault: Vault) {
-        let canonical_id = (component_id, vault_id);
+    pub fn put_vault(
+        &mut self,
+        component_address: ComponentAddress,
+        vault_id: VaultId,
+        vault: Vault,
+    ) {
+        let canonical_id = (component_address, vault_id);
         self.vaults.insert(
             canonical_id,
             SubstateUpdate {
@@ -514,31 +543,31 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Creates a new package ID.
-    fn new_package_id(&mut self) -> PackageId {
+    fn new_package_address(&mut self) -> PackageAddress {
         // Security Alert: ensure ID allocating will practically never fail
-        let package_id = self
+        let package_address = self
             .id_allocator
-            .new_package_id(self.transaction_hash())
+            .new_package_address(self.transaction_hash())
             .unwrap();
-        package_id
+        package_address
     }
 
-    /// Creates a new component ID.
-    fn new_component_id(&mut self) -> ComponentId {
-        let component_id = self
+    /// Creates a new component address.
+    fn new_component_address(&mut self) -> ComponentAddress {
+        let component_address = self
             .id_allocator
-            .new_component_id(self.transaction_hash())
+            .new_component_address(self.transaction_hash())
             .unwrap();
-        component_id
+        component_address
     }
 
-    /// Creates a new resource definition ID.
-    fn new_resource_def_id(&mut self) -> ResourceDefId {
-        let resource_def_id = self
+    /// Creates a new resource address.
+    fn new_resource_address(&mut self) -> ResourceAddress {
+        let resource_address = self
             .id_allocator
-            .new_resource_def_id(self.transaction_hash())
+            .new_resource_address(self.transaction_hash())
             .unwrap();
-        resource_def_id
+        resource_address
     }
 
     /// Creates a new UUID.
@@ -574,80 +603,67 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Currently none of these objects are deleted so all commits are puts
     pub fn commit(&mut self) -> CommitReceipt {
         let mut receipt = CommitReceipt::new();
+        let mut id_gen = SubstateIdGenerator::new(self.transaction_hash());
 
-        let package_ids: Vec<PackageId> = self
-            .packages
-            .iter()
-            .map(|(address, _)| address.clone())
-            .collect();
-        for package_id in package_ids {
-            let package = self.packages.remove(&package_id).unwrap();
+        let package_addresses: Vec<PackageAddress> = self.packages.keys().cloned().collect();
+        for package_address in package_addresses {
+            let package = self.packages.remove(&package_address).unwrap();
 
             if let Some(prev_id) = package.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             self.substate_store
-                .put_encoded_substate(&package_id, &package.value, phys_id);
+                .put_encoded_substate(&package_address, &package.value, phys_id);
         }
 
-        let component_ids: Vec<ComponentId> = self
-            .components
-            .iter()
-            .map(|(address, _)| address.clone())
-            .collect();
-        for component_id in component_ids {
-            let component = self.components.remove(&component_id).unwrap();
+        let component_addresses: Vec<ComponentAddress> = self.components.keys().cloned().collect();
+        for component_address in component_addresses {
+            let component = self.components.remove(&component_address).unwrap();
 
             if let Some(prev_id) = component.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             self.substate_store
-                .put_encoded_substate(&component_id, &component.value, phys_id);
+                .put_encoded_substate(&component_address, &component.value, phys_id);
         }
 
-        let resource_def_ids: Vec<ResourceDefId> = self
-            .resource_defs
-            .iter()
-            .map(|(address, _)| address.clone())
-            .collect();
-        for resource_def_id in resource_def_ids {
-            let resource_def = self.resource_defs.remove(&resource_def_id).unwrap();
+        let resource_addresses: Vec<ResourceAddress> =
+            self.resource_managers.keys().cloned().collect();
+        for resource_address in resource_addresses {
+            let resource_manager = self.resource_managers.remove(&resource_address).unwrap();
 
-            if let Some(prev_id) = resource_def.prev_id {
+            if let Some(prev_id) = resource_manager.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             self.substate_store.put_encoded_substate(
-                &resource_def_id,
-                &resource_def.value,
+                &resource_address,
+                &resource_manager.value,
                 phys_id,
             );
         }
 
-        let entry_ids: Vec<(ComponentId, LazyMapId, Vec<u8>)> = self
-            .lazy_map_entries
-            .iter()
-            .map(|(id, _)| id.clone())
-            .collect();
+        let entry_ids: Vec<(ComponentAddress, LazyMapId, Vec<u8>)> =
+            self.lazy_map_entries.keys().cloned().collect();
         for entry_id in entry_ids {
             let entry = self.lazy_map_entries.remove(&entry_id).unwrap();
             if let Some(prev_id) = entry.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
-            let (component_id, lazy_map_id, key) = entry_id;
+            let (component_address, lazy_map_id, key) = entry_id;
             self.substate_store.put_encoded_grand_child_substate(
-                &component_id,
+                &component_address,
                 &lazy_map_id,
                 &key,
                 &entry.value,
@@ -655,40 +671,36 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
         }
 
-        let vault_ids: Vec<(ComponentId, VaultId)> =
-            self.vaults.iter().map(|(id, _)| id.clone()).collect();
+        let vault_ids: Vec<(ComponentAddress, VaultId)> = self.vaults.keys().cloned().collect();
         for vault_id in vault_ids {
             let vault = self.vaults.remove(&vault_id).unwrap();
             if let Some(prev_id) = vault.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
-            let (component_id, vault_id) = vault_id;
+            let (component_address, vault_id) = vault_id;
             self.substate_store.put_encoded_child_substate(
-                &component_id,
+                &component_address,
                 &vault_id,
                 &vault.value,
                 phys_id,
             );
         }
 
-        let non_fungible_addresses: Vec<NonFungibleAddress> = self
-            .non_fungibles
-            .iter()
-            .map(|(id, _)| id.clone())
-            .collect();
+        let non_fungible_addresses: Vec<NonFungibleAddress> =
+            self.non_fungibles.keys().cloned().collect();
         for non_fungible_address in non_fungible_addresses {
             let non_fungible = self.non_fungibles.remove(&non_fungible_address).unwrap();
             if let Some(prev_id) = non_fungible.prev_id {
                 receipt.down(prev_id);
             }
-            let phys_id = self.substate_store.get_nonce();
+            let phys_id = id_gen.next();
             receipt.up(phys_id);
 
             self.substate_store.put_encoded_child_substate(
-                &non_fungible_address.resource_def_id(),
+                &non_fungible_address.resource_address(),
                 &non_fungible_address.non_fungible_id(),
                 &non_fungible.value,
                 phys_id,

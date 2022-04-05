@@ -9,16 +9,16 @@ blueprint! {
     }
 
     impl CyclicMap {
-        pub fn new() -> ComponentId {
+        pub fn new() -> ComponentAddress {
             let map0 = LazyMap::new();
             let map1 = LazyMap::new();
             map0.insert(1u32, map1);
 
             let input = PutLazyMapEntryInput {
-                lazy_map_id: (Transaction::transaction_hash(), 1025),
+                lazy_map_id: (Runtime::transaction_hash(), 1025),
                 key: scrypto_encode(&0u32),
                 value: scrypto_encode(&LazyMap::<(), ()> {
-                    id: (Transaction::transaction_hash(), 1024),
+                    id: (Runtime::transaction_hash(), 1024),
                     key: PhantomData,
                     value: PhantomData,
                 }),
@@ -28,14 +28,14 @@ blueprint! {
             CyclicMap { maps: map0 }.instantiate().globalize()
         }
 
-        pub fn new_self_cyclic() -> ComponentId {
+        pub fn new_self_cyclic() -> ComponentAddress {
             let map0 = LazyMap::new();
 
             let input = PutLazyMapEntryInput {
-                lazy_map_id: (Transaction::transaction_hash(), 1024),
+                lazy_map_id: (Runtime::transaction_hash(), 1024),
                 key: scrypto_encode(&0u32),
                 value: scrypto_encode(&LazyMap::<(), ()> {
-                    id: (Transaction::transaction_hash(), 1024),
+                    id: (Runtime::transaction_hash(), 1024),
                     key: PhantomData,
                     value: PhantomData,
                 }),

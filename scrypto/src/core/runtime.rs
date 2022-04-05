@@ -1,14 +1,15 @@
 use crate::component::*;
 use crate::core::*;
+use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
 
-/// The process context at runtime.
+/// The transaction runtime.
 #[derive(Debug)]
-pub struct Process {}
+pub struct Runtime {}
 
-impl Process {
+impl Runtime {
     /// Returns the running entity, a component if within a call-method context or a
     /// blueprint if within a call-function context.
     pub fn actor() -> Actor {
@@ -18,10 +19,10 @@ impl Process {
     }
 
     /// Returns the package ID.
-    pub fn package_id() -> PackageId {
+    pub fn package_address() -> PackageAddress {
         let input = GetActorInput {};
         let output: GetActorOutput = call_engine(GET_ACTOR, input);
-        output.package_id
+        output.package_address
     }
 
     /// Generates a UUID.
@@ -34,13 +35,13 @@ impl Process {
 
     /// Invokes a function on a blueprint.
     pub fn call_function<S: AsRef<str>>(
-        package_id: PackageId,
+        package_address: PackageAddress,
         blueprint_name: S,
         function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallFunctionInput {
-            package_id,
+            package_address,
             blueprint_name: blueprint_name.as_ref().to_owned(),
             function: function.as_ref().to_owned(),
             args,
@@ -52,17 +53,31 @@ impl Process {
 
     /// Invokes a method on a component.
     pub fn call_method<S: AsRef<str>>(
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         method: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = CallMethodInput {
-            component_id: component_id,
+            component_address: component_address,
             method: method.as_ref().to_owned(),
             args,
         };
         let output: CallMethodOutput = call_engine(CALL_METHOD, input);
 
         output.rtn
+    }
+
+    /// Returns the transaction hash.
+    pub fn transaction_hash() -> Hash {
+        let input = GetTransactionHashInput {};
+        let output: GetTransactionHashOutput = call_engine(GET_TRANSACTION_HASH, input);
+        output.transaction_hash
+    }
+
+    /// Returns the current epoch number.
+    pub fn current_epoch() -> u64 {
+        let input = GetCurrentEpochInput {};
+        let output: GetCurrentEpochOutput = call_engine(GET_CURRENT_EPOCH, input);
+        output.current_epoch
     }
 }

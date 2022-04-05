@@ -1,11 +1,10 @@
-use sbor::{describe::Type, *};
+use sbor::*;
 
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::resource_def;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::BTreeSet;
 use crate::rust::fmt;
@@ -19,18 +18,18 @@ pub struct Vault(pub VaultId);
 
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
-    pub fn new(resource_def_id: ResourceDefId) -> Self {
+    pub fn new(resource_address: ResourceAddress) -> Self {
         let input = CreateEmptyVaultInput {
-            resource_def_id: resource_def_id,
+            resource_address: resource_address,
         };
         let output: CreateEmptyVaultOutput = call_engine(CREATE_EMPTY_VAULT, input);
 
         Self(output.vault_id)
     }
 
-    /// Creates an empty vault and fills it with an initial bucket of resources.
+    /// Creates an empty vault and fills it with an initial bucket of resource.
     pub fn with_bucket(bucket: Bucket) -> Self {
-        let mut vault = Vault::new(bucket.resource_def_id());
+        let mut vault = Vault::new(bucket.resource_address());
         vault.put(bucket);
         vault
     }
@@ -60,17 +59,25 @@ impl Vault {
         self.take(self.amount())
     }
 
-    /// Takes a non-fungible from this vault, by id.
+    /// Takes a specific non-fungible from this vault.
     ///
     /// # Panics
-    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible(&self, non_fungible_id: &NonFungibleId) -> Bucket {
-        let input = TakeNonFungibleFromVaultInput {
+    /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
+    pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
+        self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
+    }
+
+    /// Takes non-fungibles from this vault.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
+    pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+        let input = TakeNonFungiblesFromVaultInput {
             vault_id: self.0,
-            non_fungible_id: non_fungible_id.clone(),
+            non_fungible_ids: non_fungible_ids.clone(),
         };
-        let output: TakeNonFungibleFromVaultOutput =
-            call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
+        let output: TakeNonFungiblesFromVaultOutput =
+            call_engine(TAKE_NON_FUNGIBLES_FROM_VAULT, input);
 
         Bucket(output.bucket_id)
     }
@@ -122,12 +129,12 @@ impl Vault {
         output.amount
     }
 
-    /// Returns the resource definition of resources within this vault.
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        let input = GetVaultResourceDefIdInput { vault_id: self.0 };
-        let output: GetVaultResourceDefIdOutput = call_engine(GET_VAULT_RESOURCE_DEF_ID, input);
+    /// Returns the resource address.
+    pub fn resource_address(&self) -> ResourceAddress {
+        let input = GetVaultResourceAddressInput { vault_id: self.0 };
+        let output: GetVaultResourceAddressOutput = call_engine(GET_VAULT_RESOURCE_ADDRESS, input);
 
-        output.resource_def_id
+        output.resource_address
     }
 
     /// Checks if this vault is empty.
@@ -135,62 +142,31 @@ impl Vault {
         self.amount() == 0.into()
     }
 
+    /// Returns all the non-fungible ids contained.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible vault.
+    pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+        let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
+        let output: GetNonFungibleIdsInVaultOutput =
+            call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
+        output.non_fungible_ids
+    }
+
     /// Returns all the non-fungible units contained.
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault.
-    pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
+    pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
         let output: GetNonFungibleIdsInVaultOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
-        let resource_def_id = self.resource_def_id();
+        let resource_address = self.resource_address();
         output
             .non_fungible_ids
             .iter()
-            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_def_id, id.clone())))
+            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()
-    }
-
-    /// Get all non-fungible IDs in this vault.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible vault.
-    pub fn get_non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
-        let output: GetNonFungibleIdsInVaultOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
-
-        output.non_fungible_ids
-    }
-
-    /// Returns the id of a singleton non-fungible.
-    ///
-    /// # Panic
-    /// If this vault is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_id(&self) -> NonFungibleId {
-        let non_fungible_ids = self.get_non_fungible_ids();
-        assert!(
-            non_fungible_ids.len() == 1,
-            "Expect 1 non-fungible, but found {}",
-            non_fungible_ids.len()
-        );
-        non_fungible_ids.into_iter().next().unwrap()
-    }
-
-    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible bucket.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
-        resource_def!(self.resource_def_id()).get_non_fungible_data(id)
-    }
-
-    /// Updates the mutable part of the data of a non-fungible unit.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId, new_data: T) {
-        resource_def!(self.resource_def_id()).update_non_fungible_data(id, new_data)
     }
 }
 
@@ -198,6 +174,7 @@ impl Vault {
 // error
 //========
 
+/// Represents an error when decoding vault.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseVaultError {
     InvalidHex(String),
@@ -240,7 +217,7 @@ impl Vault {
     }
 }
 
-custom_type!(Vault, CustomType::Vault, Vec::new());
+scrypto_type!(Vault, ScryptoType::Vault, Vec::new());
 
 //======
 // text

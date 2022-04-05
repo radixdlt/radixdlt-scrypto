@@ -10,7 +10,7 @@ use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 use scrypto::rust::vec::Vec;
-use scrypto::types::CustomType;
+use scrypto::types::ScryptoType;
 
 fn soft_to_hard_resource_list(
     schema: &Type,
@@ -33,13 +33,13 @@ fn soft_to_hard_resource_list(
             }
 
             match sbor_path.unwrap().get_from_value(dom) {
-                Some(Value::Vec(type_id, values)) => match CustomType::from_id(*type_id).unwrap() {
-                    CustomType::ResourceDefId => HardProofRuleResourceList::List(
+                Some(Value::Vec(type_id, values)) => match ScryptoType::from_id(*type_id).unwrap() {
+                    ScryptoType::ResourceAddress => HardProofRuleResourceList::List(
                         values
                             .iter()
                             .map(|v| {
                                 if let Value::Custom(_, bytes) = v {
-                                    return ResourceDefId::try_from(bytes.as_slice())
+                                    return ResourceAddress::try_from(bytes.as_slice())
                                         .unwrap()
                                         .into();
                                 }
@@ -47,7 +47,7 @@ fn soft_to_hard_resource_list(
                             })
                             .collect(),
                     ),
-                    CustomType::NonFungibleAddress => HardProofRuleResourceList::List(
+                    ScryptoType::NonFungibleAddress => HardProofRuleResourceList::List(
                         values
                             .iter()
                             .map(|v| {
@@ -81,9 +81,9 @@ fn soft_to_hard_resource(
             }
             match sbor_path.unwrap().get_from_value(dom) {
                 Some(Value::Custom(type_id, bytes)) => {
-                    match CustomType::from_id(*type_id).unwrap() {
-                        CustomType::ResourceDefId => {
-                            ResourceDefId::try_from(bytes.as_slice()).unwrap().into()
+                    match ScryptoType::from_id(*type_id).unwrap() {
+                        ScryptoType::ResourceAddress => {
+                            ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                         }
                         _ => HardResourceOrNonFungible::SoftResourceNotFound,
                     }
@@ -110,11 +110,11 @@ fn soft_to_hard_resource_or_non_fungible(
             }
             match sbor_path.unwrap().get_from_value(dom) {
                 Some(Value::Custom(type_id, bytes)) => {
-                    match CustomType::from_id(*type_id).unwrap() {
-                        CustomType::ResourceDefId => {
-                            ResourceDefId::try_from(bytes.as_slice()).unwrap().into()
+                    match ScryptoType::from_id(*type_id).unwrap() {
+                        ScryptoType::ResourceAddress => {
+                            ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                         }
-                        CustomType::NonFungibleAddress => {
+                        ScryptoType::NonFungibleAddress => {
                             NonFungibleAddress::try_from(bytes.as_slice())
                                 .unwrap()
                                 .into()

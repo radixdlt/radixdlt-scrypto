@@ -1,14 +1,16 @@
-use crate::model::{convert, MethodAuthorization, ValidatedData};
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::ComponentAuthorization;
+use scrypto::resource::ComponentAuthorization;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
+use scrypto::values::*;
+
+use crate::model::{convert, MethodAuthorization};
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Component {
-    package_id: PackageId,
+    package_address: PackageAddress,
     blueprint_name: String,
     method_auth: ComponentAuthorization,
     state: Vec<u8>,
@@ -16,13 +18,13 @@ pub struct Component {
 
 impl Component {
     pub fn new(
-        package_id: PackageId,
+        package_address: PackageAddress,
         blueprint_name: String,
         method_auth: ComponentAuthorization,
         state: Vec<u8>,
     ) -> Self {
         Self {
-            package_id,
+            package_address,
             blueprint_name,
             method_auth,
             state,
@@ -33,8 +35,8 @@ impl Component {
         &self,
         schema: &Type,
         method_name: &str,
-    ) -> (ValidatedData, MethodAuthorization) {
-        let data = ValidatedData::from_slice(&self.state).unwrap();
+    ) -> (ScryptoValue, MethodAuthorization) {
+        let data = ScryptoValue::from_slice(&self.state).unwrap();
         let authorization = match self.method_auth.get(method_name) {
             Some(auth) => convert(schema, &data.dom, auth),
             None => MethodAuthorization::Private,
@@ -47,8 +49,8 @@ impl Component {
         &self.method_auth
     }
 
-    pub fn package_id(&self) -> PackageId {
-        self.package_id.clone()
+    pub fn package_address(&self) -> PackageAddress {
+        self.package_address.clone()
     }
 
     pub fn blueprint_name(&self) -> &str {

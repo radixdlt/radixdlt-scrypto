@@ -1,10 +1,10 @@
-use sbor::{describe::Type, *};
+use sbor::*;
 
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::resource_def;
+use crate::resource_manager;
 use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
@@ -17,9 +17,9 @@ pub struct Bucket(pub BucketId);
 
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
-    pub fn new(resource_def_id: ResourceDefId) -> Self {
+    pub fn new(resource_address: ResourceAddress) -> Self {
         let input = CreateEmptyBucketInput {
-            resource_def_id: resource_def_id,
+            resource_address: resource_address,
         };
         let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
 
@@ -46,6 +46,34 @@ impl Bucket {
         Self(output.bucket_id)
     }
 
+    /// Takes a specific non-fungible from this bucket.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
+    pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
+        self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
+    }
+
+    /// Takes non-fungibles from this bucket.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
+    pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+        let input = TakeNonFungiblesFromBucketInput {
+            bucket_id: self.0,
+            non_fungible_ids: non_fungible_ids.clone(),
+        };
+        let output: TakeNonFungiblesFromBucketOutput =
+            call_engine(TAKE_NON_FUNGIBLES_FROM_BUCKET, input);
+
+        Self(output.bucket_id)
+    }
+
+    /// Burns resource within this bucket.
+    pub fn burn(self) {
+        resource_manager!(self.resource_address()).burn(self);
+    }
+
     /// Creates an ownership proof of this bucket.
     pub fn create_proof(&self) -> Proof {
         let input = CreateBucketProofInput { bucket_id: self.0 };
@@ -70,17 +98,13 @@ impl Bucket {
         output.amount
     }
 
-    /// Returns the resource definition of resources in this bucket.
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        let input = GetBucketResourceDefIdInput { bucket_id: self.0 };
-        let output: GetBucketResourceDefIdOutput = call_engine(GET_BUCKET_RESOURCE_DEF_ID, input);
+    /// Returns the resource address.
+    pub fn resource_address(&self) -> ResourceAddress {
+        let input = GetBucketResourceAddressInput { bucket_id: self.0 };
+        let output: GetBucketResourceAddressOutput =
+            call_engine(GET_BUCKET_RESOURCE_ADDRESS, input);
 
-        output.resource_def_id
-    }
-
-    /// Burns resource within this bucket.
-    pub fn burn(self) {
-        resource_def!(self.resource_def_id()).burn(self);
+        output.resource_address
     }
 
     /// Checks if this bucket is empty.
@@ -88,81 +112,31 @@ impl Bucket {
         self.amount() == 0.into()
     }
 
-    /// Takes a non-fungible from this bucket, by id.
+    /// Returns all the non-fungible ids contained.
     ///
     /// # Panics
-    /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
-    pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
-        let input = TakeNonFungibleFromBucketInput {
-            bucket_id: self.0,
-            non_fungible_id: non_fungible_id.clone(),
-        };
-        let output: TakeNonFungibleFromBucketOutput =
-            call_engine(TAKE_NON_FUNGIBLE_FROM_BUCKET, input);
-
-        Self(output.bucket_id)
+    /// Panics if this is not a non-fungible bucket.
+    pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+        let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
+        let output: GetNonFungibleIdsInBucketOutput =
+            call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);
+        output.non_fungible_ids
     }
 
     /// Returns all the non-fungible units contained.
     ///
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
-    pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
+    pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleIdsInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);
-        let resource_def_id = self.resource_def_id();
+        let resource_address = self.resource_address();
         output
             .non_fungible_ids
             .iter()
-            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_def_id, id.clone())))
+            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()
-    }
-
-    /// Returns the id of a singleton non-fungible.
-    ///
-    /// # Panic
-    /// If this bucket is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_id(&self) -> NonFungibleId {
-        let non_fungible_ids = self.get_non_fungible_ids();
-        assert!(
-            non_fungible_ids.len() == 1,
-            "1 non-fungible expected, but {} found",
-            non_fungible_ids.len()
-        );
-        non_fungible_ids.into_iter().next().unwrap()
-    }
-
-    /// Returns the ids of all non-fungibles in this bucket.
-    ///
-    /// # Panics
-    /// If this bucket is not a non-fungible bucket.
-    pub fn get_non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
-        let output: GetNonFungibleIdsInBucketOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);
-
-        output.non_fungible_ids
-    }
-
-    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible bucket.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, non_fungible_id: &NonFungibleId) -> T {
-        resource_def!(self.resource_def_id()).get_non_fungible_data(non_fungible_id)
-    }
-
-    /// Updates the mutable part of the data of a non-fungible unit.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(
-        &mut self,
-        non_fungible_id: &NonFungibleId,
-        new_data: T,
-    ) {
-        resource_def!(self.resource_def_id()).update_non_fungible_data(non_fungible_id, new_data)
     }
 }
 
@@ -170,6 +144,7 @@ impl Bucket {
 // error
 //========
 
+/// Represents an error when decoding bucket.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseBucketError {
     InvalidLength(usize),
@@ -206,4 +181,4 @@ impl Bucket {
     }
 }
 
-custom_type!(Bucket, CustomType::Bucket, Vec::new());
+scrypto_type!(Bucket, ScryptoType::Bucket, Vec::new());

@@ -22,9 +22,10 @@ fn non_existent_vault_in_component_creation_should_fail() {
             "create_component_with_non_existent_vault",
             vec![],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -42,17 +43,19 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let package = sut.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "NonExistentVault", "new", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "create_non_existent_vault", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .call_method(component_address, "create_non_existent_vault", vec![])
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -77,9 +80,10 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
             "create_lazy_map_with_non_existent_vault",
             vec![],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -97,21 +101,23 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
     let package = sut.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "NonExistentVault", "new", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
         .call_method(
-            component_id,
+            component_address,
             "create_non_existent_vault_in_lazy_map",
             vec![],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -131,9 +137,10 @@ fn dangling_vault_should_fail() {
     // Act
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "dangling_vault", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -150,9 +157,10 @@ fn create_mutable_vault_into_map() {
     // Act
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_into_map", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -173,9 +181,10 @@ fn invalid_double_ownership_of_vault() {
             "invalid_double_ownership_of_vault",
             vec![],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -195,9 +204,10 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Act
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_into_map_then_get", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -211,17 +221,19 @@ fn cannot_overwrite_vault_in_map() {
     let package = sut.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_into_map", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "overwrite_vault_in_map", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .call_method(component_address, "overwrite_vault_in_map", vec![])
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -241,9 +253,10 @@ fn create_mutable_vault_into_vector() {
     // Act
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_into_vector", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -257,17 +270,19 @@ fn cannot_remove_vaults() {
     let package = sut.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_into_vector", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "clear_vector", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .call_method(component_address, "clear_vector", vec![])
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -285,17 +300,19 @@ fn can_push_vault_into_vector() {
     let package = sut.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_into_vector", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "push_vault_into_vector", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .call_method(component_address, "push_vault_into_vector", vec![])
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -311,9 +328,10 @@ fn create_mutable_vault_with_take() {
     // Act
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_with_take", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -334,9 +352,10 @@ fn create_mutable_vault_with_take_non_fungible() {
             "new_vault_with_take_non_fungible",
             vec![],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -357,9 +376,10 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
             "new_vault_with_get_non_fungible_ids",
             vec![],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -375,16 +395,17 @@ fn create_mutable_vault_with_get_amount() {
     // Act
     let transaction = TransactionBuilder::new(&sut)
         .call_function(package, "VaultTest", "new_vault_with_get_amount", vec![])
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     receipt.result.expect("Should be okay");
 }
 
 #[test]
-fn create_mutable_vault_with_get_resource_def() {
+fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, true);
@@ -395,12 +416,13 @@ fn create_mutable_vault_with_get_resource_def() {
         .call_function(
             package,
             "VaultTest",
-            "new_vault_with_get_resource_def",
+            "new_vault_with_get_resource_manager",
             vec![],
         )
-        .build(vec![])
-        .unwrap();
-    let receipt = sut.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = sut.validate_and_execute(&transaction).unwrap();
 
     // Assert
     receipt.result.expect("Should be okay");

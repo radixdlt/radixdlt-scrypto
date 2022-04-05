@@ -2,6 +2,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+/// Compiles a Scrypto package.
 pub fn compile_package<P: AsRef<Path>, S: AsRef<str>>(package_dir: P, wasm_name: S) -> Vec<u8> {
     // build
     let status = Command::new("cargo")

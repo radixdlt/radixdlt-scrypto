@@ -4,7 +4,7 @@ blueprint! {
     struct ResourceTest;
 
     impl ResourceTest {
-        pub fn create_fungible() -> (Bucket, ResourceDefId) {
+        pub fn create_fungible() -> (Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
                 .auth("take_from_vault", auth!(allow_all))
                 .divisibility(DIVISIBILITY_NONE)
@@ -13,8 +13,8 @@ blueprint! {
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .auth("take_from_vault", auth!(allow_all))
-                .auth("mint", auth!(require(badge.resource_def_id())))
-                .auth("burn", auth!(require(badge.resource_def_id())))
+                .auth("mint", auth!(require(badge.resource_address())))
+                .auth("burn", auth!(require(badge.resource_address())))
                 .no_initial_supply();
             (badge, token_address)
         }
@@ -22,7 +22,7 @@ blueprint! {
         pub fn create_fungible_and_mint(
             divisibility: u8,
             amount: Decimal,
-        ) -> (Bucket, Bucket, ResourceDefId) {
+        ) -> (Bucket, Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
                 .auth("take_from_vault", auth!(allow_all))
                 .divisibility(DIVISIBILITY_NONE)
@@ -31,14 +31,14 @@ blueprint! {
                 .divisibility(divisibility)
                 .metadata("name", "TestToken")
                 .auth("take_from_vault", auth!(allow_all))
-                .auth("mint", auth!(require(badge.resource_def_id())))
-                .auth("burn", auth!(require(badge.resource_def_id())))
+                .auth("mint", auth!(require(badge.resource_address())))
+                .auth("burn", auth!(require(badge.resource_address())))
                 .no_initial_supply();
-            let tokens = badge.authorize(|| resource_def!(token_address).mint(amount));
+            let tokens = badge.authorize(|| resource_manager!(token_address).mint(amount));
             (badge, tokens, token_address)
         }
 
-        pub fn create_fungible_wrong_resource_flags_should_fail() -> ResourceDefId {
+        pub fn create_fungible_wrong_resource_flags_should_fail() -> ResourceAddress {
             let token_address = ResourceBuilder::new_fungible()
                 .auth("take_from_vault", auth!(allow_all))
                 .divisibility(DIVISIBILITY_MAXIMUM)
@@ -47,7 +47,7 @@ blueprint! {
             token_address
         }
 
-        pub fn create_fungible_wrong_mutable_flags_should_fail() -> ResourceDefId {
+        pub fn create_fungible_wrong_mutable_flags_should_fail() -> ResourceAddress {
             let token_address = ResourceBuilder::new_fungible()
                 .auth("take_from_vault", auth!(allow_all))
                 .divisibility(DIVISIBILITY_MAXIMUM)
@@ -56,7 +56,8 @@ blueprint! {
             token_address
         }
 
-        pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceDefId) {
+        pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceAddress)
+        {
             let badge = ResourceBuilder::new_fungible()
                 .auth("take_from_vault", auth!(allow_all))
                 .divisibility(DIVISIBILITY_NONE)
@@ -65,28 +66,28 @@ blueprint! {
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .auth("take_from_vault", auth!(allow_all))
-                .auth("mint", auth!(require(badge.resource_def_id())))
-                .auth("burn", auth!(require(badge.resource_def_id())))
+                .auth("mint", auth!(require(badge.resource_address())))
+                .auth("burn", auth!(require(badge.resource_address())))
                 .no_initial_supply();
             (badge, token_address)
         }
 
         pub fn query() -> (Bucket, HashMap<String, String>, Decimal) {
             let (badge, resource_def_id) = Self::create_fungible();
-            let resource_def = resource_def!(resource_def_id);
+            let resource_manager = resource_manager!(resource_def_id);
             (
                 badge,
-                resource_def.metadata(),
-                resource_def.total_supply(),
+                resource_manager.metadata(),
+                resource_manager.total_supply(),
             )
         }
 
         pub fn burn() -> Bucket {
-            let (badge, resource_def_id) = Self::create_fungible();
-            let resource_def = resource_def!(resource_def_id);
+            let (badge, resource_address) = Self::create_fungible();
+            let resource_manager = resource_manager!(resource_address);
             badge.authorize(|| {
-                let bucket: Bucket = resource_def.mint(1);
-                resource_def.burn(bucket)
+                let bucket: Bucket = resource_manager.mint(1);
+                resource_manager.burn(bucket)
             });
             badge
         }
@@ -96,9 +97,9 @@ blueprint! {
                 .auth("take_from_vault", auth!(allow_all))
                 .divisibility(DIVISIBILITY_NONE)
                 .initial_supply(1);
-            let token_resource_def = resource_def!(ResourceBuilder::new_fungible()
+            let token_resource_manager = resource_manager!(ResourceBuilder::new_fungible()
                 .auth("take_from_vault", auth!(allow_all))
-                .auth("update_metadata", auth!(require(badge.resource_def_id())))
+                .auth("update_metadata", auth!(require(badge.resource_address())))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .no_initial_supply());
@@ -106,13 +107,11 @@ blueprint! {
             let mut new_metadata = HashMap::new();
             new_metadata.insert("a".to_owned(), "b".to_owned());
             badge.authorize(|| {
-                token_resource_def.update_metadata(new_metadata.clone());
-                assert_eq!(token_resource_def.metadata(), new_metadata);
+                token_resource_manager.update_metadata(new_metadata.clone());
+                assert_eq!(token_resource_manager.metadata(), new_metadata);
             });
 
             badge
         }
     }
 }
-
-package_init!(blueprint::ResourceTest::describe());

@@ -10,7 +10,7 @@ use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
 /// Worktop collects resources from function or method returns.
 #[derive(Debug)]
 pub struct Worktop {
-    containers: HashMap<ResourceDefId, Rc<RefCell<ResourceContainer>>>,
+    containers: HashMap<ResourceAddress, Rc<RefCell<ResourceContainer>>>,
 }
 
 impl Worktop {
@@ -21,21 +21,21 @@ impl Worktop {
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
-        let resource_def_id = other.resource_def_id();
+        let resource_address = other.resource_address();
         let other_container = other.into_container()?;
-        if let Some(mut container) = self.borrow_container_mut(resource_def_id) {
+        if let Some(mut container) = self.borrow_container_mut(resource_address) {
             return container.put(other_container);
         }
-        self.put_container(resource_def_id, other_container);
+        self.put_container(resource_address, other_container);
         Ok(())
     }
 
     pub fn take(
         &mut self,
         amount: Decimal,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> Result<Bucket, ResourceContainerError> {
-        if let Some(mut container) = self.borrow_container_mut(resource_def_id) {
+        if let Some(mut container) = self.borrow_container_mut(resource_address) {
             container.take_by_amount(amount).map(Bucket::new)
         } else {
             Err(ResourceContainerError::InsufficientBalance)
@@ -45,17 +45,17 @@ impl Worktop {
     pub fn take_non_fungible(
         &mut self,
         id: &NonFungibleId,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> Result<Bucket, ResourceContainerError> {
-        self.take_non_fungibles(&BTreeSet::from([id.clone()]), resource_def_id)
+        self.take_non_fungibles(&BTreeSet::from([id.clone()]), resource_address)
     }
 
     pub fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> Result<Bucket, ResourceContainerError> {
-        if let Some(mut container) = self.borrow_container_mut(resource_def_id) {
+        if let Some(mut container) = self.borrow_container_mut(resource_address) {
             container.take_by_ids(ids).map(Bucket::new)
         } else {
             Err(ResourceContainerError::InsufficientBalance)
@@ -64,21 +64,21 @@ impl Worktop {
 
     pub fn take_all(
         &mut self,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> Result<Option<Bucket>, ResourceContainerError> {
-        if let Some(mut container) = self.borrow_container_mut(resource_def_id) {
+        if let Some(mut container) = self.borrow_container_mut(resource_address) {
             Ok(Some(Bucket::new(container.take_all_liquid()?)))
         } else {
             Ok(None)
         }
     }
 
-    pub fn resource_def_ids(&self) -> Vec<ResourceDefId> {
+    pub fn resource_addresses(&self) -> Vec<ResourceAddress> {
         self.containers.keys().cloned().collect()
     }
 
-    pub fn total_amount(&self, resource_def_id: ResourceDefId) -> Decimal {
-        if let Some(container) = self.borrow_container(resource_def_id) {
+    pub fn total_amount(&self, resource_address: ResourceAddress) -> Decimal {
+        if let Some(container) = self.borrow_container(resource_address) {
             container.total_amount()
         } else {
             Decimal::zero()
@@ -87,9 +87,9 @@ impl Worktop {
 
     pub fn total_ids(
         &self,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
-        if let Some(container) = self.borrow_container(resource_def_id) {
+        if let Some(container) = self.borrow_container(resource_address) {
             container.total_ids()
         } else {
             Ok(BTreeSet::new())
@@ -97,8 +97,8 @@ impl Worktop {
     }
 
     pub fn is_locked(&self) -> bool {
-        for resource_def_id in self.resource_def_ids() {
-            if let Some(container) = self.borrow_container(resource_def_id) {
+        for resource_address in self.resource_addresses() {
+            if let Some(container) = self.borrow_container(resource_address) {
                 if container.is_locked() {
                     return true;
                 }
@@ -108,8 +108,8 @@ impl Worktop {
     }
 
     pub fn is_empty(&self) -> bool {
-        for resource_def_id in self.resource_def_ids() {
-            if let Some(container) = self.borrow_container(resource_def_id) {
+        for resource_address in self.resource_addresses() {
+            if let Some(container) = self.borrow_container(resource_address) {
                 if !container.total_amount().is_zero() {
                     return false;
                 }
@@ -120,27 +120,30 @@ impl Worktop {
 
     pub fn create_reference_for_proof(
         &self,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> Option<Rc<RefCell<ResourceContainer>>> {
-        self.containers.get(&resource_def_id).map(Clone::clone)
+        self.containers.get(&resource_address).map(Clone::clone)
     }
 
-    fn borrow_container(&self, resource_def_id: ResourceDefId) -> Option<Ref<ResourceContainer>> {
-        self.containers.get(&resource_def_id).map(|c| c.borrow())
+    fn borrow_container(
+        &self,
+        resource_address: ResourceAddress,
+    ) -> Option<Ref<ResourceContainer>> {
+        self.containers.get(&resource_address).map(|c| c.borrow())
     }
 
     fn borrow_container_mut(
         &mut self,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> Option<RefMut<ResourceContainer>> {
         self.containers
-            .get(&resource_def_id)
+            .get(&resource_address)
             .map(|c| c.borrow_mut())
     }
 
     // Note that this method overwrites existing container if any
-    fn put_container(&mut self, resource_def_id: ResourceDefId, container: ResourceContainer) {
+    fn put_container(&mut self, resource_address: ResourceAddress, container: ResourceContainer) {
         self.containers
-            .insert(resource_def_id, Rc::new(RefCell::new(container)));
+            .insert(resource_address, Rc::new(RefCell::new(container)));
     }
 }

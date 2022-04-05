@@ -80,12 +80,12 @@ impl FungibleResourceBuilder {
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply(&self) -> ResourceDefId {
+    pub fn no_initial_supply(&self) -> ResourceAddress {
         self.build(None).0
     }
 
-    fn build(&self, mint_params: Option<MintParams>) -> (ResourceDefId, Option<Bucket>) {
-        resource_system().instantiate_resource_definition(
+    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        resource_system().new_resource(
             ResourceType::Fungible {
                 divisibility: self.divisibility,
             },
@@ -140,12 +140,12 @@ impl NonFungibleResourceBuilder {
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply(&self) -> ResourceDefId {
+    pub fn no_initial_supply(&self) -> ResourceAddress {
         self.build(None).0
     }
 
-    fn build(&self, mint_params: Option<MintParams>) -> (ResourceDefId, Option<Bucket>) {
-        resource_system().instantiate_resource_definition(
+    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        resource_system().new_resource(
             ResourceType::NonFungible,
             self.metadata.clone(),
             self.authorization.clone(),

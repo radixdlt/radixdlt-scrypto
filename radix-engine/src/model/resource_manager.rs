@@ -1,15 +1,15 @@
-use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ComponentAuthorization, MethodAuth, ToString};
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
+use scrypto::resource::*;
 
 use crate::model::{convert, MethodAuthorization};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
-pub enum ResourceDefError {
+pub enum ResourceManagerError {
     InvalidDivisibility,
     InvalidAmount(Decimal, u8),
     InvalidResourceFlags(u64),
@@ -21,24 +21,24 @@ pub enum ResourceDefError {
 
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ResourceDef {
+pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
     authorization: HashMap<String, MethodAuthorization>,
     total_supply: Decimal,
 }
 
-impl ResourceDef {
+impl ResourceManager {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
         auth: ComponentAuthorization,
-    ) -> Result<Self, ResourceDefError> {
+    ) -> Result<Self, ResourceManagerError> {
         let mut authorization: HashMap<String, MethodAuthorization> = HashMap::new();
         if let Some(mint_auth) = auth.get("mint") {
             // TODO: Check for other invalid mint permissions?
             if let MethodAuth::AllowAll = mint_auth {
-                return Err(ResourceDefError::InvalidMintPermission);
+                return Err(ResourceManagerError::InvalidMintPermission);
             }
 
             authorization.insert(
@@ -60,7 +60,7 @@ impl ResourceDef {
                 convert(&Type::Unit, &Value::Unit, take_auth),
             );
         } else {
-            return Err(ResourceDefError::TakeFromVaultNotDefined);
+            return Err(ResourceManagerError::TakeFromVaultNotDefined);
         }
 
         if let Some(update_metadata_auth) = auth.get("update_metadata") {
@@ -83,14 +83,14 @@ impl ResourceDef {
             );
         }
 
-        let resource_def = Self {
+        let resource_manager = Self {
             resource_type,
             metadata,
             authorization,
             total_supply: 0.into(),
         };
 
-        Ok(resource_def)
+        Ok(resource_manager)
     }
 
     pub fn get_auth(&self, method_name: &str) -> &MethodAuthorization {
@@ -112,10 +112,10 @@ impl ResourceDef {
         self.total_supply
     }
 
-    pub fn mint(&mut self, mint_params: &MintParams) -> Result<(), ResourceDefError> {
+    pub fn mint(&mut self, mint_params: &MintParams) -> Result<(), ResourceManagerError> {
         // check resource type
         if !mint_params.matches_type(&self.resource_type) {
-            return Err(ResourceDefError::ResourceTypeDoesNotMatch);
+            return Err(ResourceManagerError::ResourceTypeDoesNotMatch);
         }
 
         // check amount
@@ -125,7 +125,7 @@ impl ResourceDef {
         // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
         // which will be impossible with metering.
         if amount > 100_000_000_000i128.into() {
-            return Err(ResourceDefError::MaxMintAmountExceeded);
+            return Err(ResourceManagerError::MaxMintAmountExceeded);
         }
 
         self.total_supply += amount;
@@ -139,17 +139,17 @@ impl ResourceDef {
     pub fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
-    ) -> Result<(), ResourceDefError> {
+    ) -> Result<(), ResourceManagerError> {
         self.metadata = new_metadata;
 
         Ok(())
     }
 
-    pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {
+    pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceManagerError> {
         let divisibility = self.resource_type.divisibility();
 
         if amount.is_negative() || amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
-            Err(ResourceDefError::InvalidAmount(amount, divisibility))
+            Err(ResourceManagerError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
         }

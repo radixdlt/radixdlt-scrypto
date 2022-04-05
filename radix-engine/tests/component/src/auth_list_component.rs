@@ -9,7 +9,7 @@ blueprint! {
         pub fn create_component(
             auth: Vec<NonFungibleAddress>,
             authorization: ComponentAuthorization,
-        ) -> ComponentId {
+        ) -> ComponentAddress {
             Self { auth }
                 .instantiate()
                 .set_auth_interface(authorization)

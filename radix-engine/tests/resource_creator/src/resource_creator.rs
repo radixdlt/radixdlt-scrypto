@@ -11,26 +11,26 @@ blueprint! {
     struct ResourceCreator {}
 
     impl ResourceCreator {
-        pub fn create_restricted_transfer(badge_resource_def_id: ResourceDefId) -> Bucket {
+        pub fn create_restricted_transfer(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .auth("take_from_vault", auth!(require(badge_resource_def_id)))
+                .auth("take_from_vault", auth!(require(badge_resource_address)))
                 .initial_supply(5)
         }
 
-        pub fn create_restricted_mint(badge_resource_def_id: ResourceDefId) -> Bucket {
+        pub fn create_restricted_mint(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
                 .auth("take_from_vault", auth!(allow_all))
-                .auth("mint", auth!(require(badge_resource_def_id)))
+                .auth("mint", auth!(require(badge_resource_address)))
                 .initial_supply(5)
         }
 
-        pub fn create_restricted_burn(badge_resource_def_id: ResourceDefId) -> Bucket {
+        pub fn create_restricted_burn(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
                 .auth("take_from_vault", auth!(allow_all))
-                .auth("burn", auth!(require(badge_resource_def_id)))
+                .auth("burn", auth!(require(badge_resource_address)))
                 .initial_supply(5)
         }
 
@@ -40,21 +40,21 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply([
                     (
-                        NonFungibleId::from(1u128),
+                        NonFungibleId::from_u32(1),
                         Sandwich {
                             name: "One".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        NonFungibleId::from(2u128),
+                        NonFungibleId::from_u32(2),
                         Sandwich {
                             name: "Two".to_owned(),
                             available: true,
                         },
                     ),
                     (
-                        NonFungibleId::from(3u128),
+                        NonFungibleId::from_u32(3),
                         Sandwich {
                             name: "Three".to_owned(),
                             available: true,
