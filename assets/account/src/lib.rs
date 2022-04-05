@@ -6,7 +6,7 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new(withdraw_rule: ProofRule) -> ComponentAddress {
+        pub fn new(withdraw_rule: AuthRule) -> ComponentAddress {
             Self {
                 vaults: LazyMap::new(),
             }
@@ -15,7 +15,7 @@ blueprint! {
             .globalize()
         }
 
-        pub fn new_with_resource(withdraw_rule: ProofRule, bucket: Bucket) -> ComponentAddress {
+        pub fn new_with_resource(withdraw_rule: AuthRule, bucket: Bucket) -> ComponentAddress {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_address(), Vault::with_bucket(bucket));
 

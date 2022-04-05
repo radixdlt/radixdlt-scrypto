@@ -1,4 +1,6 @@
+use crate::prelude::AuthRule::{AllOf, AnyOf};
 use crate::resource::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::*;
@@ -19,6 +21,13 @@ impl From<ResourceAddress> for SoftResource {
 impl From<SchemaPath> for SoftResource {
     fn from(path: SchemaPath) -> Self {
         SoftResource::Dynamic(path)
+    }
+}
+
+impl From<&str> for SoftResource {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftResource::Dynamic(schema_path)
     }
 }
 
@@ -47,6 +56,13 @@ impl From<SchemaPath> for SoftResourceOrNonFungible {
     }
 }
 
+impl From<&str> for SoftResourceOrNonFungible {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftResourceOrNonFungible::Dynamic(schema_path)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResourceOrNonFungibleList {
     Static(Vec<SoftResourceOrNonFungible>),
@@ -59,6 +75,13 @@ impl From<SchemaPath> for SoftResourceOrNonFungibleList {
     }
 }
 
+impl From<&str> for SoftResourceOrNonFungibleList {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftResourceOrNonFungibleList::Dynamic(schema_path)
+    }
+}
+
 impl<T> From<Vec<T>> for SoftResourceOrNonFungibleList
 where
     T: Into<SoftResourceOrNonFungible>,
@@ -68,14 +91,24 @@ where
     }
 }
 
-/// Authorization Rule
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+/// Resource Proof Rules
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(Decimal, SoftResource),
     CountOf(u8, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
+}
+
+// FIXME: describe types with cycles
+impl Describe for ProofRule {
+    fn describe() -> sbor::describe::Type {
+        sbor::describe::Type::Custom {
+            name: "ProofRule".to_owned(),
+            generics: vec![],
+        }
+    }
 }
 
 impl From<NonFungibleAddress> for ProofRule {
@@ -101,37 +134,158 @@ macro_rules! resource_list {
   });
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+pub enum AuthRule {
+    ProofRule(ProofRule),
+    AnyOf(Vec<AuthRule>),
+    AllOf(Vec<AuthRule>),
+}
+
+// FIXME: describe types with cycles
+impl Describe for AuthRule {
+    fn describe() -> sbor::describe::Type {
+        sbor::describe::Type::Custom {
+            name: "AuthRule".to_owned(),
+            generics: vec![],
+        }
+    }
+}
+
+impl AuthRule {
+    pub fn or(self, other: AuthRule) -> Self {
+        match self {
+            AuthRule::AnyOf(mut rules) => {
+                rules.push(other);
+                AnyOf(rules)
+            }
+            _ => AnyOf(vec![self, other]),
+        }
+    }
+
+    pub fn and(self, other: AuthRule) -> Self {
+        match self {
+            AuthRule::AllOf(mut rules) => {
+                rules.push(other);
+                AllOf(rules)
+            }
+            _ => AllOf(vec![self, other]),
+        }
+    }
+}
+
+pub fn require<T>(resource: T) -> ProofRule
+where
+    T: Into<SoftResourceOrNonFungible>,
+{
+    ProofRule::Require(resource.into())
+}
+
+pub fn require_any_of<T>(resources: T) -> ProofRule
+where
+    T: Into<SoftResourceOrNonFungibleList>,
+{
+    ProofRule::AnyOf(resources.into())
+}
+
+pub fn require_all_of<T>(resources: T) -> ProofRule
+where
+    T: Into<SoftResourceOrNonFungibleList>,
+{
+    ProofRule::AllOf(resources.into())
+}
+
+pub fn require_n_of<T>(count: u8, resources: T) -> ProofRule
+where
+    T: Into<SoftResourceOrNonFungibleList>,
+{
+    ProofRule::CountOf(count, resources.into())
+}
+
+pub fn require_amount<T>(amount: Decimal, resource: T) -> ProofRule
+where
+    T: Into<SoftResource>,
+{
+    ProofRule::AmountOf(amount, resource.into())
+}
+
+// TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.
 #[macro_export]
-macro_rules! require {
-    ($resource:expr) => {{
-        ::scrypto::resource::ProofRule::Require($resource.into())
+macro_rules! auth_and_or {
+    (|| $tt:tt) => {{
+        let next = auth!($tt);
+        move |e: AuthRule| e.or(next)
+    }};
+    (|| $right1:ident $right2:tt) => {{
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| e.or(next)
+    }};
+    (|| $right:tt && $($rest:tt)+) => {{
+        let f = auth_and_or!(&& $($rest)+);
+        let next = auth!($right);
+        move |e: AuthRule| e.or(f(next))
+    }};
+    (|| $right:tt || $($rest:tt)+) => {{
+        let f = auth_and_or!(|| $($rest)+);
+        let next = auth!($right);
+        move |e: AuthRule| f(e.or(next))
+    }};
+    (|| $right1:ident $right2:tt && $($rest:tt)+) => {{
+        let f = auth_and_or!(&& $($rest)+);
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| e.or(f(next))
+    }};
+    (|| $right1:ident $right2:tt || $($rest:tt)+) => {{
+        let f = auth_and_or!(|| $($rest)+);
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| f(e.or(next))
+    }};
+
+    (&& $tt:tt) => {{
+        let next = auth!($tt);
+        move |e: AuthRule| e.and(next)
+    }};
+    (&& $right1:ident $right2:tt) => {{
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| e.and(next)
+    }};
+    (&& $right:tt && $($rest:tt)+) => {{
+        let f = auth_and_or!(&& $($rest)+);
+        let next = auth!($right);
+        move |e: AuthRule| f(e.and(next))
+    }};
+    (&& $right:tt || $($rest:tt)+) => {{
+        let f = auth_and_or!(|| $($rest)+);
+        let next = auth!($right);
+        move |e: AuthRule| f(e.and(next))
+    }};
+    (&& $right1:ident $right2:tt && $($rest:tt)+) => {{
+        let f = auth_and_or!(&& $($rest)+);
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| f(e.and(next))
+    }};
+    (&& $right1:ident $right2:tt || $($rest:tt)+) => {{
+        let f = auth_and_or!(|| $($rest)+);
+        let next = auth!($right1 $right2);
+        move |e: AuthRule| f(e.and(next))
     }};
 }
 
 #[macro_export]
-macro_rules! require_any_of {
-    ($list:expr) => {{
-        ::scrypto::resource::ProofRule::AnyOf($list.into())
-    }};
-}
+macro_rules! auth {
+    // Handle leaves
+    ($rule:ident $args:tt) => {{ ::scrypto::resource::AuthRule::ProofRule($rule $args) }};
 
-#[macro_export]
-macro_rules! require_all_of {
-    ($list:expr) => {{
-        ::scrypto::resource::ProofRule::AllOf($list.into())
-    }};
-}
+    // Handle group
+    (($($tt:tt)+)) => {{ auth!($($tt)+) }};
 
-#[macro_export]
-macro_rules! require_n_of {
-    ($count:expr, $list:expr) => {{
-        ::scrypto::resource::ProofRule::CountOf($count, $list.into())
+    // Handle and/or logic
+    ($left1:ident $left2:tt $($right:tt)+) => {{
+        let f = auth_and_or!($($right)+);
+        f(auth!($left1 $left2))
     }};
-}
+    ($left:tt $($right:tt)+) => {{
+        let f = auth_and_or!($($right)+);
+        f(auth!($left))
+    }};
 
-#[macro_export]
-macro_rules! require_amount {
-    ($amount:expr, $resource:expr) => {
-        ProofRule::AmountOf($amount, $resource.into())
-    };
 }

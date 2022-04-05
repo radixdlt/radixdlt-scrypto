@@ -7,7 +7,7 @@ use sbor::*;
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Describe, TypeId, Encode, Decode)]
-pub struct ComponentAuthorization(HashMap<String, ProofRule>);
+pub struct ComponentAuthorization(HashMap<String, AuthRule>);
 
 impl ComponentAuthorization {
     pub fn new() -> Self {
@@ -22,11 +22,11 @@ impl ComponentAuthorization {
         self.0.is_empty()
     }
 
-    pub fn insert(&mut self, method_name: &str, proof_rule: ProofRule) {
+    pub fn insert(&mut self, method_name: &str, proof_rule: AuthRule) {
         self.0.insert(method_name.to_string(), proof_rule);
     }
 
-    pub fn to_map(self) -> HashMap<String, ProofRule> {
+    pub fn to_map(self) -> HashMap<String, AuthRule> {
         self.0
     }
 }

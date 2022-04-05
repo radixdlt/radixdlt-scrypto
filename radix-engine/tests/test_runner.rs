@@ -1,6 +1,5 @@
 use radix_engine::ledger::*;
-use radix_engine::model::Receipt;
-use radix_engine::model::Transaction;
+use radix_engine::model::{Component, Receipt, Transaction};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -36,7 +35,7 @@ impl<'l> TestRunner<'l> {
         )
     }
 
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &ProofRule) -> ComponentAddress {
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AuthRule) -> ComponentAddress {
         self.executor.new_account_with_auth_rule(withdraw_auth)
     }
 
@@ -54,6 +53,14 @@ impl<'l> TestRunner<'l> {
 
     pub fn compile(name: &str) -> Vec<u8> {
         compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
+    }
+
+    pub fn component(&self, component_address: ComponentAddress) -> Component {
+        self.executor
+            .substate_store()
+            .get_decoded_substate(&component_address)
+            .map(|(component, _)| component)
+            .unwrap()
     }
 
     pub fn create_restricted_mint_token(
