@@ -60,6 +60,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
 // error
 //========
 
+/// Represents an error when decoding lazy map.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseLazyMapError {
     InvalidHex(String),
@@ -109,7 +110,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
 impl<K: Encode + Decode, V: Encode + Decode> TypeId for LazyMap<K, V> {
     #[inline]
     fn type_id() -> u8 {
-        CustomType::LazyMap.id()
+        ScryptoType::LazyMap.id()
     }
 }
 
@@ -125,14 +126,14 @@ impl<K: Encode + Decode, V: Encode + Decode> Decode for LazyMap<K, V> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
-        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(CustomType::LazyMap.id()))
+        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(ScryptoType::LazyMap.id()))
     }
 }
 
 impl<K: Encode + Decode + Describe, V: Encode + Decode + Describe> Describe for LazyMap<K, V> {
     fn describe() -> Type {
         Type::Custom {
-            name: CustomType::LazyMap.name(),
+            name: ScryptoType::LazyMap.name(),
             generics: vec![K::describe(), V::describe()],
         }
     }

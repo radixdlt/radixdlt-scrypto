@@ -1,11 +1,12 @@
-use crate::engine::CommitReceipt;
 use colored::*;
 use scrypto::engine::types::*;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
+use scrypto::values::*;
 
+use crate::engine::CommitReceipt;
 use crate::errors::*;
 use crate::model::*;
 
@@ -14,7 +15,7 @@ pub struct Receipt {
     pub commit_receipt: Option<CommitReceipt>,
     pub transaction: ValidatedTransaction,
     pub result: Result<(), RuntimeError>,
-    pub outputs: Vec<ValidatedData>,
+    pub outputs: Vec<ScryptoValue>,
     pub logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,

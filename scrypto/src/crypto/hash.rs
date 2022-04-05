@@ -31,10 +31,19 @@ impl Hash {
     }
 }
 
+/// Computes the hash digest of a message.
+pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
+    // TODO: replace with whatever hash algorithm we eventually agrees on
+    // The point here is to have a single "main" hashing function in the code base
+
+    crate::crypto::sha256_twice(data)
+}
+
 //========
 // error
 //========
 
+/// Represents an error when parsing hash.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseHashError {
     InvalidHex(String),
@@ -73,7 +82,7 @@ impl Hash {
     }
 }
 
-custom_type!(Hash, CustomType::Hash, Vec::new());
+scrypto_type!(Hash, ScryptoType::Hash, Vec::new());
 
 //======
 // text

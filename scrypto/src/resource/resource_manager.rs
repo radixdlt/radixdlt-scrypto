@@ -18,6 +18,7 @@ pub struct ResourceAddress(pub [u8; 26]);
 
 impl ResourceAddress {}
 
+/// Represents a resource manager.
 #[derive(Debug)]
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
@@ -185,6 +186,7 @@ impl ResourceManager {
 // error
 //========
 
+/// Represents an error when decoding resource address.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseResourceAddressError {
     InvalidHex(String),
@@ -223,7 +225,7 @@ impl ResourceAddress {
     }
 }
 
-custom_type!(ResourceAddress, CustomType::ResourceAddress, Vec::new());
+scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
 
 //======
 // text

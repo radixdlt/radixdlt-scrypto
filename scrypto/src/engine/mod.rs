@@ -1,4 +1,6 @@
+/// Radix Engine System APIs.
 pub mod api;
+/// Types and functions shared by both Scrypto and Radix Engine.
 pub mod types;
 
 use crate::buffer::*;

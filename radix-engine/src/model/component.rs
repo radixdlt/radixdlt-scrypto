@@ -1,18 +1,19 @@
-use crate::model::method_authorization::{
-    HardAuthRule, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
-};
-use crate::model::{MethodAuthorization, ValidatedData};
-use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRule, SoftResource};
 use scrypto::resource::{
-    NonFungibleAddress, ProofRule, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    AuthRule, NonFungibleAddress, ProofRule, SoftResource, SoftResourceOrNonFungible,
+    SoftResourceOrNonFungibleList,
 };
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use scrypto::types::CustomType;
+use scrypto::types::ScryptoType;
+use scrypto::values::*;
+
+use crate::model::method_authorization::{
+    HardAuthRule, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
+};
+use crate::model::MethodAuthorization;
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -61,8 +62,8 @@ impl Component {
 
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Vec(type_id, values)) => {
-                        match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceAddress => HardProofRuleResourceList::List(
+                        match ScryptoType::from_id(*type_id).unwrap() {
+                            ScryptoType::ResourceAddress => HardProofRuleResourceList::List(
                                 values
                                     .iter()
                                     .map(|v| {
@@ -75,7 +76,7 @@ impl Component {
                                     })
                                     .collect(),
                             ),
-                            CustomType::NonFungibleAddress => HardProofRuleResourceList::List(
+                            ScryptoType::NonFungibleAddress => HardProofRuleResourceList::List(
                                 values
                                     .iter()
                                     .map(|v| {
@@ -110,8 +111,8 @@ impl Component {
                 }
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Custom(type_id, bytes)) => {
-                        match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceAddress => {
+                        match ScryptoType::from_id(*type_id).unwrap() {
+                            ScryptoType::ResourceAddress => {
                                 ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                             }
                             _ => HardResourceOrNonFungible::SoftResourceNotFound,
@@ -139,11 +140,11 @@ impl Component {
                 }
                 match sbor_path.unwrap().get_from_value(dom) {
                     Some(Value::Custom(type_id, bytes)) => {
-                        match CustomType::from_id(*type_id).unwrap() {
-                            CustomType::ResourceAddress => {
+                        match ScryptoType::from_id(*type_id).unwrap() {
+                            ScryptoType::ResourceAddress => {
                                 ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
                             }
-                            CustomType::NonFungibleAddress => {
+                            ScryptoType::NonFungibleAddress => {
                                 NonFungibleAddress::try_from(bytes.as_slice())
                                     .unwrap()
                                     .into()
@@ -222,8 +223,8 @@ impl Component {
         &self,
         schema: &Type,
         method_name: &str,
-    ) -> (ValidatedData, MethodAuthorization) {
-        let data = ValidatedData::from_slice(&self.state).unwrap();
+    ) -> (ScryptoValue, MethodAuthorization) {
+        let data = ScryptoValue::from_slice(&self.state).unwrap();
         let authorization = match self.auth_rules.get(method_name) {
             Some(auth_rule) => MethodAuthorization::Protected(Self::soft_to_hard_auth_rule(
                 schema, auth_rule, &data.dom,

@@ -1,6 +1,5 @@
 use scrypto::constants::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -83,12 +82,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Start a process.
     pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 's, S> {
-        // FIXME: This is a temp solution
         let signers: BTreeSet<NonFungibleId> = self
             .transaction_signers
             .clone()
             .into_iter()
-            .map(|public_key| NonFungibleId::new(public_key.to_vec()))
+            .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
             .collect();
         let mut process = Process::new(0, verbose, self);
 
