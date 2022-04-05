@@ -166,20 +166,20 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a package, if exists.
-    pub fn get_package(&mut self, package_id: PackageId) -> Option<&Package> {
-        if self.packages.contains_key(&package_id) {
-            return self.packages.get(&package_id).map(|p| &p.value);
+    pub fn get_package(&mut self, package_id: &PackageId) -> Option<&Package> {
+        if self.packages.contains_key(package_id) {
+            return self.packages.get(package_id).map(|p| &p.value);
         }
 
-        if let Some((package, phys_id)) = self.substate_store.get_decoded_substate(&package_id) {
+        if let Some((package, phys_id)) = self.substate_store.get_decoded_substate(package_id) {
             self.packages.insert(
-                package_id,
+                package_id.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: package,
                 },
             );
-            self.packages.get(&package_id).map(|p| &p.value)
+            self.packages.get(package_id).map(|p| &p.value)
         } else {
             None
         }

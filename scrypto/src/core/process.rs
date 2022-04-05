@@ -21,7 +21,7 @@ impl Process {
     pub fn package_id() -> PackageId {
         let input = GetActorInput {};
         let output: GetActorOutput = call_engine(GET_ACTOR, input);
-        output.package_id
+        output.actor.to_package_id()
     }
 
     /// Generates a UUID.

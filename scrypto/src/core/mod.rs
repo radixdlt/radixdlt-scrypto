@@ -4,7 +4,7 @@ mod logger;
 mod process;
 mod transaction;
 
-pub use actor::Actor;
+pub use actor::{Actor, ActorType};
 pub use level::Level;
 pub use logger::Logger;
 pub use process::Process;

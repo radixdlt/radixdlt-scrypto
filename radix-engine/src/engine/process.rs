@@ -3,7 +3,7 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::NonFungibleAddress;
+use scrypto::prelude::{ActorType, NonFungibleAddress};
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -63,7 +63,6 @@ pub struct Interpreter {
 #[derive(Debug, Clone)]
 pub struct Invocation {
     actor: Actor,
-    package_id: PackageId,
     export_name: String,
     function: String,
     args: Vec<ValidatedData>,
@@ -707,31 +706,31 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let package = self
             .track
-            .get_package(invocation.package_id)
-            .ok_or(RuntimeError::PackageNotFound(invocation.package_id))?;
+            .get_package(invocation.actor.package_id())
+            .ok_or(RuntimeError::PackageNotFound(invocation.actor.package_id().clone()))?;
 
-        let (module, memory, interpreter_state) = match invocation.actor {
-            Actor::Blueprint(ref blueprint_name) => {
+        let (module, memory, interpreter_state) = match invocation.actor.actor_type() {
+            ActorType::Blueprint => {
                 let (module, memory) =
                     package
-                        .load_for_function_call(&blueprint_name)
+                        .load_for_function_call(invocation.actor.blueprint_name())
                         .map_err(|e| match e {
                             PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
-                                invocation.package_id,
-                                blueprint_name.clone(),
+                                invocation.actor.package_id().clone(),
+                                invocation.actor.blueprint_name().to_string(),
                             ),
                         })?;
 
                 Ok((module, memory, InterpreterState::Blueprint))
             }
-            Actor::Component(ref blueprint_name, component_id) => {
+            ActorType::Component(component_id) => {
                 // Retrieve schema
                 let (schema, module, memory) = package
-                    .load_for_method_call(&blueprint_name)
+                    .load_for_method_call(invocation.actor.blueprint_name())
                     .map_err(|e| match e {
                         PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
-                            invocation.package_id,
-                            blueprint_name.clone(),
+                            invocation.actor.package_id().clone(),
+                            invocation.actor.blueprint_name().to_string(),
                         ),
                     })?;
                 // TODO: Remove clone
@@ -753,7 +752,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let state = component.state().to_vec();
                 let component = InterpreterState::Component {
                     state,
-                    component_id,
+                    component_id: *component_id,
                     initial_loaded_object_refs,
                     additional_object_refs: ComponentObjectRefs::new(),
                 };
@@ -820,8 +819,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ValidatedData>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::Blueprint(blueprint_name.to_owned()),
-            package_id,
+            actor: Actor::blueprint(package_id, blueprint_name.to_owned()),
             export_name: format!("{}_main", blueprint_name),
             function: function.to_owned(),
             args,
@@ -845,8 +843,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args_with_self.extend(args);
 
         Ok(Invocation {
-            actor: Actor::Component(component.blueprint_name().to_owned(), component_id),
-            package_id: component.package_id(),
+            actor: Actor::component(component.package_id(), component.blueprint_name().to_owned(), component_id),
             export_name: format!("{}_main", component.blueprint_name()),
             function: method.to_owned(),
             args: args_with_self,
@@ -860,8 +857,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         blueprint_name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::Blueprint(blueprint_name.to_owned()),
-            package_id,
+            actor: Actor::blueprint(package_id, blueprint_name.to_owned()),
             export_name: format!("{}_abi", blueprint_name),
             function: String::new(),
             args: Vec::new(),
@@ -1369,7 +1365,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
-        let package_id = wasm_process.vm.invocation.package_id;
+        let package_id = wasm_process.vm.invocation.actor.package_id().clone();
         let component = Component::new(
             package_id,
             input.blueprint_name,
@@ -2240,7 +2236,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .ok_or(RuntimeError::InterpreterNotStarted)?;
         Ok(GetActorOutput {
             actor: wasm_process.vm.invocation.actor.clone(),
-            package_id: wasm_process.vm.invocation.package_id,
         })
     }
 
