@@ -17,20 +17,20 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
     let mut proofs = HashMap::<ProofId, String>::new();
     for inst in &tx.instructions {
         match inst.clone() {
-            Instruction::TakeFromWorktop { resource_def_id } => {
+            Instruction::TakeFromWorktop { resource_address } => {
                 let bucket_id = id_validator
                     .new_bucket()
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_FROM_WORKTOP ResourceDefId(\"{}\") Bucket(\"{}\");\n",
-                    resource_def_id, name
+                    "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");\n",
+                    resource_address, name
                 ));
             }
             Instruction::TakeFromWorktopByAmount {
                 amount,
-                resource_def_id,
+                resource_address,
             } => {
                 let bucket_id = id_validator
                     .new_bucket()
@@ -38,13 +38,13 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceDefId(\"{}\") Bucket(\"{}\");\n",
-                    amount, resource_def_id, name
+                    "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");\n",
+                    amount, resource_address, name
                 ));
             }
             Instruction::TakeFromWorktopByIds {
                 ids,
-                resource_def_id,
+                resource_address,
             } => {
                 let bucket_id = id_validator
                     .new_bucket()
@@ -52,12 +52,12 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
-                    "TAKE_FROM_WORKTOP_BY_IDS TreeSet<NonFungibleId>({}) ResourceDefId(\"{}\") Bucket(\"{}\");\n",
+                    "TAKE_FROM_WORKTOP_BY_IDS TreeSet<NonFungibleId>({}) ResourceAddress(\"{}\") Bucket(\"{}\");\n",
                     ids.iter()
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    resource_def_id, name
+                    resource_address, name
                 ));
             }
             Instruction::ReturnToWorktop { bucket_id } => {
@@ -72,48 +72,48 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                         .unwrap_or(format!("{}u32", bucket_id))
                 ));
             }
-            Instruction::AssertWorktopContains { resource_def_id } => {
+            Instruction::AssertWorktopContains { resource_address } => {
                 buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS ResourceDefId(\"{}\");\n",
-                    resource_def_id
+                    "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");\n",
+                    resource_address
                 ));
             }
             Instruction::AssertWorktopContainsByAmount {
                 amount,
-                resource_def_id,
+                resource_address,
             } => {
                 buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceDefId(\"{}\");\n",
-                    amount, resource_def_id
+                    "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");\n",
+                    amount, resource_address
                 ));
             }
             Instruction::AssertWorktopContainsByIds {
                 ids,
-                resource_def_id,
+                resource_address,
             } => {
                 buf.push_str(&format!(
-                    "ASSERT_WORKTOP_CONTAINS_BY_IDS TreeSet<NonFungibleId>({}) ResourceDefId(\"{}\");\n",
+                    "ASSERT_WORKTOP_CONTAINS_BY_IDS TreeSet<NonFungibleId>({}) ResourceAddress(\"{}\");\n",
                     ids.iter()
                         .map(|k| format!("NonFungibleId(\"{}\")", k))
                         .collect::<Vec<String>>()
                         .join(", "),
-                    resource_def_id
+                    resource_address
                 ));
             }
-            Instruction::TakeFromAuthZone => {
+            Instruction::PopFromAuthZone => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::AuthZoneProof)
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
-                buf.push_str(&format!("TAKE_FROM_AUTH_ZONE Proof(\"{}\");\n", name));
+                buf.push_str(&format!("POP_FROM_AUTH_ZONE Proof(\"{}\");\n", name));
             }
-            Instruction::MoveToAuthZone { proof_id } => {
+            Instruction::PushToAuthZone { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "MOVE_TO_AUTH_ZONE Proof({});\n",
+                    "PUSH_TO_AUTH_ZONE Proof({});\n",
                     proofs
                         .get(&proof_id)
                         .map(|name| format!("\"{}\"", name))
@@ -123,20 +123,20 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::ClearAuthZone => {
                 buf.push_str("CLEAR_AUTH_ZONE;\n");
             }
-            Instruction::CreateProofFromAuthZone { resource_def_id } => {
+            Instruction::CreateProofFromAuthZone { resource_address } => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::AuthZoneProof)
                     .map_err(DecompileError::IdValidatorError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
-                    "CREATE_PROOF_FROM_AUTH_ZONE ResourceDefId(\"{}\") Proof(\"{}\");\n",
-                    resource_def_id, name
+                    "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");\n",
+                    resource_address, name
                 ));
             }
             Instruction::CreateProofFromAuthZoneByAmount {
                 amount,
-                resource_def_id,
+                resource_address,
             } => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::AuthZoneProof)
@@ -144,14 +144,14 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
-                    "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceDefId(\"{}\") Proof(\"{}\");\n",
+                    "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");\n",
                     amount,
-                    resource_def_id, name
+                    resource_address, name
                 ));
             }
             Instruction::CreateProofFromAuthZoneByIds {
                 ids,
-                resource_def_id,
+                resource_address,
             } => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::AuthZoneProof)
@@ -159,11 +159,11 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
-                    "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS TreeSet<NonFungibleId>({}) ResourceDefId(\"{}\") Proof(\"{}\");\n",ids.iter()
+                    "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS TreeSet<NonFungibleId>({}) ResourceAddress(\"{}\") Proof(\"{}\");\n",ids.iter()
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    resource_def_id, name
+                    resource_address, name
                 ));
             }
             Instruction::CreateProofFromBucket { bucket_id } => {
@@ -209,14 +209,14 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 ));
             }
             Instruction::CallFunction {
-                package_id,
+                package_address,
                 blueprint_name,
                 function,
                 args,
             } => {
                 buf.push_str(&format!(
-                    "CALL_FUNCTION PackageId(\"{}\") \"{}\" \"{}\"",
-                    package_id, blueprint_name, function
+                    "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
+                    package_address, blueprint_name, function
                 ));
                 for arg in args {
                     let validated_arg = ValidatedData::from_slice(&arg)
@@ -230,13 +230,13 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 buf.push_str(";\n");
             }
             Instruction::CallMethod {
-                component_id,
+                component_address,
                 method,
                 args,
             } => {
                 buf.push_str(&format!(
-                    "CALL_METHOD ComponentId(\"{}\") \"{}\"",
-                    component_id, method
+                    "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
+                    component_address, method
                 ));
                 for arg in args {
                     let validated_arg = ValidatedData::from_slice(&arg)
@@ -250,15 +250,15 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 buf.push_str(";\n");
             }
             Instruction::CallMethodWithAllResources {
-                component_id,
+                component_address,
                 method,
             } => {
                 id_validator
                     .move_all_resources()
                     .map_err(DecompileError::IdValidatorError)?;
                 buf.push_str(&format!(
-                    "CALL_METHOD_WITH_ALL_RESOURCES ComponentId(\"{}\") \"{}\";\n",
-                    component_id, method
+                    "CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress(\"{}\") \"{}\";\n",
+                    component_address, method
                 ));
             }
             Instruction::PublishPackage { code } => {

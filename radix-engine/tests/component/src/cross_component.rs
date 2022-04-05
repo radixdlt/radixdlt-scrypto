@@ -9,7 +9,7 @@ blueprint! {
     impl CrossComponent {
         pub fn create_component_with_auth(
             component_authorization: ComponentAuthorization,
-        ) -> ComponentId {
+        ) -> ComponentAddress {
             Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
@@ -19,7 +19,7 @@ blueprint! {
             .globalize()
         }
 
-        pub fn create_component() -> ComponentId {
+        pub fn create_component() -> ComponentAddress {
             Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
@@ -32,8 +32,8 @@ blueprint! {
             self.auth_vault = Some(Vault::with_bucket(auth_bucket.remove(0)));
         }
 
-        pub fn cross_component_call(&mut self, component_id: ComponentId) -> String {
-            let other_component = component!(component_id);
+        pub fn cross_component_call(&mut self, component_address: ComponentAddress) -> String {
+            let other_component = component!(component_address);
             match &mut self.auth_vault {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();

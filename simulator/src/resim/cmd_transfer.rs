@@ -10,11 +10,11 @@ pub struct Transfer {
     /// The amount to transfer.
     amount: Decimal,
 
-    /// The resource definition id.
-    resource_def_id: ResourceDefId,
+    /// The resource address.
+    resource_address: ResourceAddress,
 
-    /// The recipient component ID.
-    recipient: ComponentId,
+    /// The recipient component address.
+    recipient: ComponentAddress,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -32,7 +32,7 @@ impl Transfer {
         let default_account = get_default_account()?;
         let (default_pks, default_sks) = get_default_signers()?;
         let transaction = TransactionBuilder::new(&executor)
-            .withdraw_from_account_by_amount(self.amount, self.resource_def_id, default_account)
+            .withdraw_from_account_by_amount(self.amount, self.resource_address, default_account)
             .call_method_with_all_resources(self.recipient, "deposit_batch")
             .build(default_pks)
             .map_err(Error::TransactionConstructionError)?

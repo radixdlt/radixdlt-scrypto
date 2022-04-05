@@ -46,14 +46,14 @@ impl LocalComponent {
         self
     }
 
-    pub fn globalize(self) -> ComponentId {
+    pub fn globalize(self) -> ComponentAddress {
         let input = CreateComponentInput {
             blueprint_name: self.blueprint_name,
             state: self.state,
             authorization: self.authorization,
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
-        output.component_id
+        output.component_address
     }
 }
 
@@ -65,17 +65,17 @@ pub trait ComponentState: Encode + Decode {
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ComponentId(pub [u8; 26]);
+pub struct ComponentAddress(pub [u8; 26]);
 
-impl ComponentId {}
+impl ComponentAddress {}
 
 #[derive(Debug)]
-pub struct Component(pub(crate) ComponentId);
+pub struct Component(pub(crate) ComponentAddress);
 
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let output = Process::call_method(self.0, method, args);
+        let output = Runtime::call_method(self.0, method, args);
 
         scrypto_decode(&output).unwrap()
     }
@@ -97,18 +97,18 @@ impl Component {
     }
 
     /// Returns the package ID of this component.
-    pub fn package_id(&self) -> PackageId {
+    pub fn package_address(&self) -> PackageAddress {
         let input = GetComponentInfoInput {
-            component_id: self.0,
+            component_address: self.0,
         };
         let output: GetComponentInfoOutput = call_engine(GET_COMPONENT_INFO, input);
-        output.package_id
+        output.package_address
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
         let input = GetComponentInfoInput {
-            component_id: self.0,
+            component_address: self.0,
         };
         let output: GetComponentInfoOutput = call_engine(GET_COMPONENT_INFO, input);
         output.blueprint_name
@@ -120,17 +120,17 @@ impl Component {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseComponentIdError {
+pub enum ParseComponentAddressError {
     InvalidHex(String),
     InvalidLength(usize),
     InvalidPrefix,
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseComponentIdError {}
+impl std::error::Error for ParseComponentAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseComponentIdError {
+impl fmt::Display for ParseComponentAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -140,24 +140,24 @@ impl fmt::Display for ParseComponentIdError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ComponentId {
-    type Error = ParseComponentIdError;
+impl TryFrom<&[u8]> for ComponentAddress {
+    type Error = ParseComponentAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseComponentIdError::InvalidLength(slice.len())),
+            _ => Err(ParseComponentAddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl ComponentId {
+impl ComponentAddress {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-custom_type!(ComponentId, CustomType::ComponentId, Vec::new());
+custom_type!(ComponentAddress, CustomType::ComponentAddress, Vec::new());
 
 //======
 // text
@@ -165,25 +165,26 @@ custom_type!(ComponentId, CustomType::ComponentId, Vec::new());
 
 // Before Bech32, we use a fixed prefix for text representation.
 
-impl FromStr for ComponentId {
-    type Err = ParseComponentIdError;
+impl FromStr for ComponentAddress {
+    type Err = ParseComponentAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|_| ParseComponentIdError::InvalidHex(s.to_owned()))?;
+        let bytes =
+            hex::decode(s).map_err(|_| ParseComponentAddressError::InvalidHex(s.to_owned()))?;
         if bytes.get(0) != Some(&2u8) {
-            return Err(ParseComponentIdError::InvalidPrefix);
+            return Err(ParseComponentAddressError::InvalidPrefix);
         }
         Self::try_from(&bytes[1..])
     }
 }
 
-impl fmt::Display for ComponentId {
+impl fmt::Display for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(combine(2, &self.0)))
     }
 }
 
-impl fmt::Debug for ComponentId {
+impl fmt::Debug for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

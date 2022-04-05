@@ -13,7 +13,7 @@ blueprint! {
     }
 
     impl Simple {
-        pub fn new() -> ComponentId {
+        pub fn new() -> ComponentAddress {
             Self {
                 state: 0
             }
@@ -29,7 +29,7 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types() -> (Decimal, PackageId, LazyMap<String, String>, Hash, Bucket, Proof, Vault) {
+        pub fn custom_types() -> (Decimal, PackageAddress, LazyMap<String, String>, Hash, Bucket, Proof, Vault) {
             todo!()
         }
     }
@@ -67,7 +67,7 @@ fn test_simple_abi() {
                     "inputs": [],
                     "output": {
                         "type": "Custom",
-                        "name": "ComponentId",
+                        "name": "ComponentAddress",
                         "generics": []
                     }
                 },
@@ -84,7 +84,7 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "name": "PackageId",
+                                "name": "PackageAddress",
                                 "generics": []
                             },
                             {

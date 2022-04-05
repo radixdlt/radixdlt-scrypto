@@ -70,56 +70,56 @@ impl Parser {
         let token = self.advance()?;
         let instruction = match token.kind {
             TokenKind::TakeFromWorktop => Instruction::TakeFromWorktop {
-                resource_def_id: self.parse_value()?,
+                resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::TakeFromWorktopByAmount => Instruction::TakeFromWorktopByAmount {
                 amount: self.parse_value()?,
-                resource_def_id: self.parse_value()?,
+                resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::TakeFromWorktopByIds => Instruction::TakeFromWorktopByIds {
                 ids: self.parse_value()?,
-                resource_def_id: self.parse_value()?,
+                resource_address: self.parse_value()?,
                 new_bucket: self.parse_value()?,
             },
             TokenKind::ReturnToWorktop => Instruction::ReturnToWorktop {
                 bucket: self.parse_value()?,
             },
             TokenKind::AssertWorktopContains => Instruction::AssertWorktopContains {
-                resource_def_id: self.parse_value()?,
+                resource_address: self.parse_value()?,
             },
             TokenKind::AssertWorktopContainsByAmount => {
                 Instruction::AssertWorktopContainsByAmount {
                     amount: self.parse_value()?,
-                    resource_def_id: self.parse_value()?,
+                    resource_address: self.parse_value()?,
                 }
             }
             TokenKind::AssertWorktopContainsByIds => Instruction::AssertWorktopContainsByIds {
                 ids: self.parse_value()?,
-                resource_def_id: self.parse_value()?,
+                resource_address: self.parse_value()?,
             },
-            TokenKind::TakeFromAuthZone => Instruction::TakeFromAuthZone {
+            TokenKind::PopFromAuthZone => Instruction::PopFromAuthZone {
                 new_proof: self.parse_value()?,
             },
-            TokenKind::MoveToAuthZone => Instruction::MoveToAuthZone {
+            TokenKind::PushToAuthZone => Instruction::PushToAuthZone {
                 proof: self.parse_value()?,
             },
             TokenKind::ClearAuthZone => Instruction::ClearAuthZone,
             TokenKind::CreateProofFromAuthZone => Instruction::CreateProofFromAuthZone {
-                resource_def_id: self.parse_value()?,
+                resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
             TokenKind::CreateProofFromAuthZoneByAmount => {
                 Instruction::CreateProofFromAuthZoneByAmount {
                     amount: self.parse_value()?,
-                    resource_def_id: self.parse_value()?,
+                    resource_address: self.parse_value()?,
                     new_proof: self.parse_value()?,
                 }
             }
             TokenKind::CreateProofFromAuthZoneByIds => Instruction::CreateProofFromAuthZoneByIds {
                 ids: self.parse_value()?,
-                resource_def_id: self.parse_value()?,
+                resource_address: self.parse_value()?,
                 new_proof: self.parse_value()?,
             },
             TokenKind::CreateProofFromBucket => Instruction::CreateProofFromBucket {
@@ -134,7 +134,7 @@ impl Parser {
                 proof: self.parse_value()?,
             },
             TokenKind::CallFunction => Instruction::CallFunction {
-                package_id: self.parse_value()?,
+                package_address: self.parse_value()?,
                 blueprint_name: self.parse_value()?,
                 function: self.parse_value()?,
                 args: {
@@ -146,7 +146,7 @@ impl Parser {
                 },
             },
             TokenKind::CallMethod => Instruction::CallMethod {
-                component_id: self.parse_value()?,
+                component_address: self.parse_value()?,
                 method: self.parse_value()?,
                 args: {
                     let mut values = vec![];
@@ -157,7 +157,7 @@ impl Parser {
                 },
             },
             TokenKind::CallMethodWithAllResources => Instruction::CallMethodWithAllResources {
-                component_id: self.parse_value()?,
+                component_address: self.parse_value()?,
                 method: self.parse_value()?,
             },
             TokenKind::PublishPackage => Instruction::PublishPackage {
@@ -203,9 +203,9 @@ impl Parser {
             TokenKind::HashSet => self.parse_hash_set(),
             TokenKind::HashMap => self.parse_hash_map(),
             TokenKind::Decimal
-            | TokenKind::PackageId
-            | TokenKind::ComponentId
-            | TokenKind::ResourceDefId
+            | TokenKind::PackageAddress
+            | TokenKind::ComponentAddress
+            | TokenKind::ResourceAddress
             | TokenKind::Hash
             | TokenKind::Bucket
             | TokenKind::Proof
@@ -337,9 +337,13 @@ impl Parser {
         let token = self.advance()?;
         match token.kind {
             TokenKind::Decimal => Ok(Value::Decimal(self.parse_values_one()?.into())),
-            TokenKind::PackageId => Ok(Value::PackageId(self.parse_values_one()?.into())),
-            TokenKind::ComponentId => Ok(Value::ComponentId(self.parse_values_one()?.into())),
-            TokenKind::ResourceDefId => Ok(Value::ResourceDefId(self.parse_values_one()?.into())),
+            TokenKind::PackageAddress => Ok(Value::PackageAddress(self.parse_values_one()?.into())),
+            TokenKind::ComponentAddress => {
+                Ok(Value::ComponentAddress(self.parse_values_one()?.into()))
+            }
+            TokenKind::ResourceAddress => {
+                Ok(Value::ResourceAddress(self.parse_values_one()?.into()))
+            }
             TokenKind::Hash => Ok(Value::Hash(self.parse_values_one()?.into())),
             TokenKind::Bucket => Ok(Value::Bucket(self.parse_values_one()?.into())),
             TokenKind::Proof => Ok(Value::Proof(self.parse_values_one()?.into())),
@@ -428,9 +432,9 @@ impl Parser {
             TokenKind::HashSet => Ok(Type::HashSet),
             TokenKind::HashMap => Ok(Type::HashMap),
             TokenKind::Decimal => Ok(Type::Decimal),
-            TokenKind::PackageId => Ok(Type::PackageId),
-            TokenKind::ComponentId => Ok(Type::ComponentId),
-            TokenKind::ResourceDefId => Ok(Type::ResourceDefId),
+            TokenKind::PackageAddress => Ok(Type::PackageAddress),
+            TokenKind::ComponentAddress => Ok(Type::ComponentAddress),
+            TokenKind::ResourceAddress => Ok(Type::ResourceAddress),
             TokenKind::Hash => Ok(Type::Hash),
             TokenKind::Bucket => Ok(Type::Bucket),
             TokenKind::Proof => Ok(Type::Proof),
@@ -616,7 +620,7 @@ mod tests {
             })
         );
         parse_value_error!(
-            r#"PackageId("abc", "def")"#,
+            r#"PackageAddress("abc", "def")"#,
             ParserError::InvalidNumberOfValues {
                 actual: 2,
                 expected: 1
@@ -634,10 +638,10 @@ mod tests {
     #[test]
     fn test_transaction() {
         parse_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
-                resource_def_id: Value::ResourceDefId(
+                resource_address: Value::ResourceAddress(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
@@ -645,9 +649,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
-                resource_def_id: Value::ResourceDefId(
+                resource_address: Value::ResourceAddress(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
@@ -655,10 +659,10 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Value::Decimal(Value::String("1.0".into()).into()),
-                resource_def_id: Value::ResourceDefId(
+                resource_address: Value::ResourceAddress(
                     Value::String("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d".into())
                         .into()
                 ),
@@ -685,9 +689,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_FUNCTION  PackageId("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
-                package_id: Value::PackageId(
+                package_address: Value::PackageAddress(
                     Value::String("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into())
                         .into()
                 ),
@@ -704,9 +708,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
+            r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill"  Bucket("xrd_bucket")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                component_id: Value::ComponentId(
+                component_address: Value::ComponentAddress(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
@@ -718,9 +722,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleId("00")  Proof("admin_auth");"#,
+            r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "withdraw_non_fungible"  NonFungibleId("00")  Proof("admin_auth");"#,
             Instruction::CallMethod {
-                component_id: Value::ComponentId(
+                component_address: Value::ComponentAddress(
                     Value::String("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into())
                         .into()
                 ),
@@ -732,9 +736,9 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentId("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
-                component_id: Value::ComponentId(
+                component_address: Value::ComponentAddress(
                     Value::String("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into())
                         .into()
                 ),

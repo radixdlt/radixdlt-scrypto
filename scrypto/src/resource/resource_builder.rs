@@ -17,14 +17,14 @@ pub struct FungibleResourceBuilder {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<ResourceDefId, u64>,
+    authorities: HashMap<ResourceAddress, u64>,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
     flags: u64,
     mutable_flags: u64,
-    authorities: HashMap<ResourceDefId, u64>,
+    authorities: HashMap<ResourceAddress, u64>,
 }
 
 impl ResourceBuilder {
@@ -81,7 +81,7 @@ impl FungibleResourceBuilder {
     }
 
     /// Allows the badge holder to have permissions.
-    pub fn badge(&mut self, badge: ResourceDefId, permissions: u64) -> &mut Self {
+    pub fn badge(&mut self, badge: ResourceAddress, permissions: u64) -> &mut Self {
         self.authorities.insert(badge, permissions);
         self
     }
@@ -99,12 +99,12 @@ impl FungibleResourceBuilder {
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply(&self) -> ResourceDefId {
+    pub fn no_initial_supply(&self) -> ResourceAddress {
         self.build(None).0
     }
 
-    fn build(&self, mint_params: Option<MintParams>) -> (ResourceDefId, Option<Bucket>) {
-        resource_system().instantiate_resource_definition(
+    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        resource_system().new_resource(
             ResourceType::Fungible {
                 divisibility: self.divisibility,
             },
@@ -149,7 +149,7 @@ impl NonFungibleResourceBuilder {
     }
 
     /// Allows the badge holder to have permissions.
-    pub fn badge(&mut self, badge: ResourceDefId, permissions: u64) -> &mut Self {
+    pub fn badge(&mut self, badge: ResourceAddress, permissions: u64) -> &mut Self {
         self.authorities.insert(badge, permissions);
         self
     }
@@ -176,12 +176,12 @@ impl NonFungibleResourceBuilder {
     }
 
     /// Creates resource with no initial supply.
-    pub fn no_initial_supply(&self) -> ResourceDefId {
+    pub fn no_initial_supply(&self) -> ResourceAddress {
         self.build(None).0
     }
 
-    fn build(&self, mint_params: Option<MintParams>) -> (ResourceDefId, Option<Bucket>) {
-        resource_system().instantiate_resource_definition(
+    fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        resource_system().new_resource(
             ResourceType::NonFungible,
             self.metadata.clone(),
             self.flags,

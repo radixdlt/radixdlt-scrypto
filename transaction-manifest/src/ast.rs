@@ -6,19 +6,19 @@ pub struct Transaction {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
     TakeFromWorktop {
-        resource_def_id: Value,
+        resource_address: Value,
         new_bucket: Value,
     },
 
     TakeFromWorktopByAmount {
         amount: Value,
-        resource_def_id: Value,
+        resource_address: Value,
         new_bucket: Value,
     },
 
     TakeFromWorktopByIds {
         ids: Value,
-        resource_def_id: Value,
+        resource_address: Value,
         new_bucket: Value,
     },
 
@@ -27,43 +27,43 @@ pub enum Instruction {
     },
 
     AssertWorktopContains {
-        resource_def_id: Value,
+        resource_address: Value,
     },
 
     AssertWorktopContainsByAmount {
         amount: Value,
-        resource_def_id: Value,
+        resource_address: Value,
     },
 
     AssertWorktopContainsByIds {
         ids: Value,
-        resource_def_id: Value,
+        resource_address: Value,
     },
 
-    TakeFromAuthZone {
+    PopFromAuthZone {
         new_proof: Value,
     },
 
-    MoveToAuthZone {
+    PushToAuthZone {
         proof: Value,
     },
 
     ClearAuthZone,
 
     CreateProofFromAuthZone {
-        resource_def_id: Value,
+        resource_address: Value,
         new_proof: Value,
     },
 
     CreateProofFromAuthZoneByAmount {
         amount: Value,
-        resource_def_id: Value,
+        resource_address: Value,
         new_proof: Value,
     },
 
     CreateProofFromAuthZoneByIds {
         ids: Value,
-        resource_def_id: Value,
+        resource_address: Value,
         new_proof: Value,
     },
 
@@ -82,20 +82,20 @@ pub enum Instruction {
     },
 
     CallFunction {
-        package_id: Value,
+        package_address: Value,
         blueprint_name: Value,
         function: Value,
         args: Vec<Value>,
     },
 
     CallMethod {
-        component_id: Value,
+        component_address: Value,
         method: Value,
         args: Vec<Value>,
     },
 
     CallMethodWithAllResources {
-        component_id: Value,
+        component_address: Value,
         method: Value,
     },
 
@@ -136,9 +136,9 @@ pub enum Type {
 
     /* Custom types */
     Decimal,
-    PackageId,
-    ComponentId,
-    ResourceDefId,
+    PackageAddress,
+    ComponentAddress,
+    ResourceAddress,
     Hash,
     Bucket,
     Proof,
@@ -177,9 +177,9 @@ pub enum Value {
     HashMap(Type, Type, Vec<Value>),
 
     Decimal(Box<Value>),
-    PackageId(Box<Value>),
-    ComponentId(Box<Value>),
-    ResourceDefId(Box<Value>),
+    PackageAddress(Box<Value>),
+    ComponentAddress(Box<Value>),
+    ResourceAddress(Box<Value>),
     Hash(Box<Value>),
     Bucket(Box<Value>),
     Proof(Box<Value>),
@@ -216,9 +216,9 @@ impl Value {
             Value::HashSet(_, _) => Type::HashSet,
             Value::HashMap(_, _, _) => Type::HashMap,
             Value::Decimal(_) => Type::Decimal,
-            Value::PackageId(_) => Type::PackageId,
-            Value::ComponentId(_) => Type::ComponentId,
-            Value::ResourceDefId(_) => Type::ResourceDefId,
+            Value::PackageAddress(_) => Type::PackageAddress,
+            Value::ComponentAddress(_) => Type::ComponentAddress,
+            Value::ResourceAddress(_) => Type::ResourceAddress,
             Value::Hash(_) => Type::Hash,
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,

@@ -6,7 +6,7 @@ blueprint! {
     }
 
     impl AuthComponent {
-        pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentId {
+        pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentAddress {
             Self { some_non_fungible }
                 .instantiate()
                 .auth(

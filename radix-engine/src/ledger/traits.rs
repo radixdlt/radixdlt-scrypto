@@ -27,7 +27,7 @@ struct SystemComponentState {
 pub trait QueryableSubstateStore {
     fn get_lazy_map_entries(
         &self,
-        component_id: ComponentId,
+        component_address: ComponentAddress,
         lazy_map_id: &LazyMapId,
     ) -> HashMap<Vec<u8>, Vec<u8>>;
 }
@@ -158,14 +158,14 @@ pub trait SubstateStore {
                 Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
             self.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, id_gen.next());
 
-            // Radix token resource definition
+            // Radix token resource address
             let mut metadata = HashMap::new();
             metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
             metadata.insert("name".to_owned(), XRD_NAME.to_owned());
             metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
-            let mut xrd = ResourceDef::new(
+            let mut xrd = ResourceManager::new(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 0,
@@ -179,7 +179,7 @@ pub trait SubstateStore {
             .unwrap();
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, id_gen.next());
 
-            let ecdsa_token = ResourceDef::new(
+            let ecdsa_token = ResourceManager::new(
                 ResourceType::NonFungible,
                 HashMap::new(),
                 0,

@@ -9,12 +9,12 @@ use scrypto::rust::mem;
 use scrypto::rust::string::String;
 use scrypto::rust::vec;
 
-use crate::model::resource_def::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
+use crate::model::resource_manager::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
 use crate::model::MethodAuthorization;
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
-pub enum ResourceDefError {
+pub enum ResourceManagerError {
     InvalidDivisibility,
     InvalidAmount(Decimal, u8),
     InvalidResourceFlags(u64),
@@ -78,7 +78,7 @@ impl MethodState {
 
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ResourceDef {
+pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
     flags: u64,
@@ -102,20 +102,20 @@ pub const PERMISSION_MAP: [(u64, &[&str]); 6] = [
     ),
 ];
 
-impl ResourceDef {
+impl ResourceManager {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
         flags: u64,
         mutable_flags: u64,
-        authorities: HashMap<ResourceDefId, u64>,
-    ) -> Result<Self, ResourceDefError> {
+        authorities: HashMap<ResourceAddress, u64>,
+    ) -> Result<Self, ResourceManagerError> {
         if !resource_flags_are_valid(flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(flags));
+            return Err(ResourceManagerError::InvalidResourceFlags(flags));
         }
 
         if !resource_flags_are_valid(mutable_flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(mutable_flags));
+            return Err(ResourceManagerError::InvalidResourceFlags(mutable_flags));
         }
 
         let mut method_states: HashMap<String, MethodState> = HashMap::new();
@@ -152,9 +152,9 @@ impl ResourceDef {
             MethodState::new(IsSet(INDIVIDUAL_METADATA_MUTABLE), AlwaysTrue),
         );
 
-        for (resource_def_id, permission) in authorities {
+        for (resource_address, permission) in authorities {
             if !resource_permissions_are_valid(permission) {
-                return Err(ResourceDefError::InvalidResourcePermission(permission));
+                return Err(ResourceManagerError::InvalidResourcePermission(permission));
             }
 
             for (flag, methods) in PERMISSION_MAP.iter() {
@@ -166,13 +166,13 @@ impl ResourceDef {
                         method_state.auth = match cur_rule {
                             MethodAuthorization::Public => {
                                 MethodAuthorization::Protected(HardProofRule::AnyOf(
-                                    HardProofRuleResourceList::List(vec![resource_def_id.into()]),
+                                    HardProofRuleResourceList::List(vec![resource_address.into()]),
                                 ))
                             }
                             MethodAuthorization::Protected(HardProofRule::AnyOf(
                                 HardProofRuleResourceList::List(mut resources),
                             )) => {
-                                resources.push(resource_def_id.into());
+                                resources.push(resource_address.into());
                                 MethodAuthorization::Protected(HardProofRule::AnyOf(
                                     HardProofRuleResourceList::List(resources),
                                 ))
@@ -184,7 +184,7 @@ impl ResourceDef {
             }
         }
 
-        let resource_def = Self {
+        let resource_manager = Self {
             resource_type,
             metadata,
             flags,
@@ -193,7 +193,7 @@ impl ResourceDef {
             total_supply: 0.into(),
         };
 
-        Ok(resource_def)
+        Ok(resource_manager)
     }
 
     pub fn get_auth(&self, method_name: &str) -> &MethodAuthorization {
@@ -227,10 +227,10 @@ impl ResourceDef {
         self.flags() & flag == flag
     }
 
-    pub fn mint(&mut self, mint_params: &MintParams) -> Result<(), ResourceDefError> {
+    pub fn mint(&mut self, mint_params: &MintParams) -> Result<(), ResourceManagerError> {
         // check resource type
         if !mint_params.matches_type(&self.resource_type) {
-            return Err(ResourceDefError::ResourceTypeDoesNotMatch);
+            return Err(ResourceManagerError::ResourceTypeDoesNotMatch);
         }
 
         // check amount
@@ -240,7 +240,7 @@ impl ResourceDef {
         // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
         // which will be impossible with metering.
         if amount > 100_000_000_000i128.into() {
-            return Err(ResourceDefError::MaxMintAmountExceeded);
+            return Err(ResourceManagerError::MaxMintAmountExceeded);
         }
 
         self.total_supply += amount;
@@ -254,56 +254,56 @@ impl ResourceDef {
     pub fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
-    ) -> Result<(), ResourceDefError> {
+    ) -> Result<(), ResourceManagerError> {
         self.metadata = new_metadata;
 
         Ok(())
     }
 
-    pub fn enable_flags(&mut self, flags: u64) -> Result<(), ResourceDefError> {
+    pub fn enable_flags(&mut self, flags: u64) -> Result<(), ResourceManagerError> {
         if !resource_flags_are_valid(flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(flags));
+            return Err(ResourceManagerError::InvalidResourceFlags(flags));
         }
 
         if self.mutable_flags | flags != self.mutable_flags {
-            return Err(ResourceDefError::FlagsLocked);
+            return Err(ResourceManagerError::FlagsLocked);
         }
         self.flags |= flags;
 
         Ok(())
     }
 
-    pub fn disable_flags(&mut self, flags: u64) -> Result<(), ResourceDefError> {
+    pub fn disable_flags(&mut self, flags: u64) -> Result<(), ResourceManagerError> {
         if !resource_flags_are_valid(flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(flags));
+            return Err(ResourceManagerError::InvalidResourceFlags(flags));
         }
 
         if self.mutable_flags | flags != self.mutable_flags {
-            return Err(ResourceDefError::FlagsLocked);
+            return Err(ResourceManagerError::FlagsLocked);
         }
         self.flags &= !flags;
 
         Ok(())
     }
 
-    pub fn lock_flags(&mut self, flags: u64) -> Result<(), ResourceDefError> {
+    pub fn lock_flags(&mut self, flags: u64) -> Result<(), ResourceManagerError> {
         if !resource_flags_are_valid(flags) {
-            return Err(ResourceDefError::InvalidResourceFlags(flags));
+            return Err(ResourceManagerError::InvalidResourceFlags(flags));
         }
 
         if self.mutable_flags | flags != self.mutable_flags {
-            return Err(ResourceDefError::FlagsLocked);
+            return Err(ResourceManagerError::FlagsLocked);
         }
         self.mutable_flags &= !flags;
 
         Ok(())
     }
 
-    pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceDefError> {
+    pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceManagerError> {
         let divisibility = self.resource_type.divisibility();
 
         if amount.is_negative() || amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
-            Err(ResourceDefError::InvalidAmount(amount, divisibility))
+            Err(ResourceManagerError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())
         }

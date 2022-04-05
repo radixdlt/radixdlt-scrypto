@@ -12,20 +12,20 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-/// Represents a resource definition.
+/// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ResourceDefId(pub [u8; 26]);
+pub struct ResourceAddress(pub [u8; 26]);
 
-impl ResourceDefId {}
+impl ResourceAddress {}
 
 #[derive(Debug)]
-pub struct ResourceDef(pub(crate) ResourceDefId);
+pub struct ResourceManager(pub(crate) ResourceAddress);
 
-impl ResourceDef {
+impl ResourceManager {
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         let input = MintResourceInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
             mint_params: MintParams::Fungible {
                 amount: amount.into(),
             },
@@ -41,7 +41,7 @@ impl ResourceDef {
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = MintResourceInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
             mint_params: MintParams::NonFungible { entries },
         };
         let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
@@ -60,7 +60,7 @@ impl ResourceDef {
     /// Returns the resource type.
     pub fn resource_type(&self) -> ResourceType {
         let input = GetResourceTypeInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
         };
         let output: GetResourceTypeOutput = call_engine(GET_RESOURCE_TYPE, input);
 
@@ -70,7 +70,7 @@ impl ResourceDef {
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = GetResourceMetadataInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
         };
         let output: GetResourceMetadataOutput = call_engine(GET_RESOURCE_METADATA, input);
 
@@ -80,7 +80,7 @@ impl ResourceDef {
     /// Returns the feature flags.
     pub fn flags(&self) -> u64 {
         let input = GetResourceFlagsInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
         };
         let output: GetResourceFlagsOutput = call_engine(GET_RESOURCE_FLAGS, input);
 
@@ -90,7 +90,7 @@ impl ResourceDef {
     /// Returns the mutable feature flags.
     pub fn mutable_flags(&self) -> u64 {
         let input = GetResourceMutableFlagsInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
         };
         let output: GetResourceMutableFlagsOutput = call_engine(GET_RESOURCE_MUTABLE_FLAGS, input);
 
@@ -100,7 +100,7 @@ impl ResourceDef {
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
         let input = GetResourceTotalSupplyInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
         };
         let output: GetResourceTotalSupplyOutput = call_engine(GET_RESOURCE_TOTAL_SUPPLY, input);
 
@@ -147,7 +147,7 @@ impl ResourceDef {
     /// Turns on feature flags.
     pub fn enable_flags(&self, flags: u64) {
         let input = EnableFlagsInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
             flags,
         };
         let _output: EnableFlagsOutput = call_engine(ENABLE_FLAGS, input);
@@ -156,7 +156,7 @@ impl ResourceDef {
     /// Turns off feature flags.
     pub fn disable_flags(&self, flags: u64) {
         let input = DisableFlagsInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
             flags,
         };
         let _output: DisableFlagsOutput = call_engine(DISABLE_FLAGS, input);
@@ -165,7 +165,7 @@ impl ResourceDef {
     /// Locks feature flag settings.
     pub fn lock_flags(&self, flags: u64) {
         let input = LockFlagsInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
             flags,
         };
         let _output: LockFlagsOutput = call_engine(LOCK_FLAGS, input);
@@ -174,7 +174,7 @@ impl ResourceDef {
     /// Updates the resource metadata
     pub fn update_metadata(&self, new_metadata: HashMap<String, String>) {
         let input = UpdateResourceMetadataInput {
-            resource_def_id: self.0,
+            resource_address: self.0,
             new_metadata,
         };
         let _output: UpdateResourceMetadataOutput = call_engine(UPDATE_RESOURCE_METADATA, input);
@@ -186,17 +186,17 @@ impl ResourceDef {
 //========
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseResourceDefIdError {
+pub enum ParseResourceAddressError {
     InvalidHex(String),
     InvalidLength(usize),
     InvalidPrefix,
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseResourceDefIdError {}
+impl std::error::Error for ParseResourceAddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseResourceDefIdError {
+impl fmt::Display for ParseResourceAddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -206,24 +206,24 @@ impl fmt::Display for ParseResourceDefIdError {
 // binary
 //========
 
-impl TryFrom<&[u8]> for ResourceDefId {
-    type Error = ParseResourceDefIdError;
+impl TryFrom<&[u8]> for ResourceAddress {
+    type Error = ParseResourceAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseResourceDefIdError::InvalidLength(slice.len())),
+            _ => Err(ParseResourceAddressError::InvalidLength(slice.len())),
         }
     }
 }
 
-impl ResourceDefId {
+impl ResourceAddress {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-custom_type!(ResourceDefId, CustomType::ResourceDefId, Vec::new());
+custom_type!(ResourceAddress, CustomType::ResourceAddress, Vec::new());
 
 //======
 // text
@@ -231,26 +231,26 @@ custom_type!(ResourceDefId, CustomType::ResourceDefId, Vec::new());
 
 // Before Bech32, we use a fixed prefix for text representation.
 
-impl FromStr for ResourceDefId {
-    type Err = ParseResourceDefIdError;
+impl FromStr for ResourceAddress {
+    type Err = ParseResourceAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes =
-            hex::decode(s).map_err(|_| ParseResourceDefIdError::InvalidHex(s.to_owned()))?;
+            hex::decode(s).map_err(|_| ParseResourceAddressError::InvalidHex(s.to_owned()))?;
         if bytes.get(0) != Some(&3u8) {
-            return Err(ParseResourceDefIdError::InvalidPrefix);
+            return Err(ParseResourceAddressError::InvalidPrefix);
         }
         Self::try_from(&bytes[1..])
     }
 }
 
-impl fmt::Display for ResourceDefId {
+impl fmt::Display for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(combine(3, &self.0)))
     }
 }
 
-impl fmt::Debug for ResourceDefId {
+impl fmt::Debug for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

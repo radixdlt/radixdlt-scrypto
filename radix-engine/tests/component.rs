@@ -39,8 +39,8 @@ fn test_component() {
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     assert!(receipt1.result.is_ok());
 
-    // Find the component ID from receipt
-    let component = receipt1.new_component_ids[0];
+    // Find the component address from receipt
+    let component = receipt1.new_component_addresses[0];
 
     // Call functions & methods
     let transaction2 = test_runner
@@ -66,13 +66,13 @@ fn invalid_blueprint_name_should_cause_error() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let package_id = test_runner.publish_package("component");
+    let package_address = test_runner.publish_package("component");
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .call_function(
-            package_id,
+            package_address,
             "NonExistentBlueprint",
             "create_component",
             vec![],
@@ -85,6 +85,6 @@ fn invalid_blueprint_name_should_cause_error() {
     let error = receipt.result.expect_err("Should be an error.");
     assert_eq!(
         error,
-        RuntimeError::BlueprintNotFound(package_id, "NonExistentBlueprint".to_string())
+        RuntimeError::BlueprintNotFound(package_address, "NonExistentBlueprint".to_string())
     );
 }

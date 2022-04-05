@@ -4,7 +4,7 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::resource_def;
+use crate::resource_manager;
 use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
@@ -17,9 +17,9 @@ pub struct Bucket(pub BucketId);
 
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
-    pub fn new(resource_def_id: ResourceDefId) -> Self {
+    pub fn new(resource_address: ResourceAddress) -> Self {
         let input = CreateEmptyBucketInput {
-            resource_def_id: resource_def_id,
+            resource_address: resource_address,
         };
         let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
 
@@ -70,17 +70,18 @@ impl Bucket {
         output.amount
     }
 
-    /// Returns the resource definition of resources in this bucket.
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        let input = GetBucketResourceDefIdInput { bucket_id: self.0 };
-        let output: GetBucketResourceDefIdOutput = call_engine(GET_BUCKET_RESOURCE_DEF_ID, input);
+    /// Returns the resource address.
+    pub fn resource_address(&self) -> ResourceAddress {
+        let input = GetBucketResourceAddressInput { bucket_id: self.0 };
+        let output: GetBucketResourceAddressOutput =
+            call_engine(GET_BUCKET_RESOURCE_ADDRESS, input);
 
-        output.resource_def_id
+        output.resource_address
     }
 
     /// Burns resource within this bucket.
     pub fn burn(self) {
-        resource_def!(self.resource_def_id()).burn(self);
+        resource_manager!(self.resource_address()).burn(self);
     }
 
     /// Checks if this bucket is empty.
@@ -111,15 +112,15 @@ impl Bucket {
         let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
         let output: GetNonFungibleIdsInBucketOutput =
             call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);
-        let resource_def_id = self.resource_def_id();
+        let resource_address = self.resource_address();
         output
             .non_fungible_ids
             .iter()
-            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_def_id, id.clone())))
+            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()
     }
 
-    /// Returns the id of a singleton non-fungible.
+    /// Returns the address of  a singleton non-fungible.
     ///
     /// # Panic
     /// If this bucket is empty or contains more than one non-fungibles.
@@ -150,7 +151,7 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, non_fungible_id: &NonFungibleId) -> T {
-        resource_def!(self.resource_def_id()).get_non_fungible_data(non_fungible_id)
+        resource_manager!(self.resource_address()).get_non_fungible_data(non_fungible_id)
     }
 
     /// Updates the mutable part of the data of a non-fungible unit.
@@ -162,7 +163,8 @@ impl Bucket {
         non_fungible_id: &NonFungibleId,
         new_data: T,
     ) {
-        resource_def!(self.resource_def_id()).update_non_fungible_data(non_fungible_id, new_data)
+        resource_manager!(self.resource_address())
+            .update_non_fungible_data(non_fungible_id, new_data)
     }
 }
 

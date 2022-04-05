@@ -47,11 +47,11 @@ fn non_existent_vault_in_committed_component_should_fail() {
         .unwrap()
         .sign(&[]);
     let receipt = sut.validate_and_execute(&transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "create_non_existent_vault", vec![])
+        .call_method(component_address, "create_non_existent_vault", vec![])
         .build(&[])
         .unwrap()
         .sign(&[]);
@@ -105,12 +105,12 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
         .unwrap()
         .sign(&[]);
     let receipt = sut.validate_and_execute(&transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
         .call_method(
-            component_id,
+            component_address,
             "create_non_existent_vault_in_lazy_map",
             vec![],
         )
@@ -225,11 +225,11 @@ fn cannot_overwrite_vault_in_map() {
         .unwrap()
         .sign(&[]);
     let receipt = sut.validate_and_execute(&transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "overwrite_vault_in_map", vec![])
+        .call_method(component_address, "overwrite_vault_in_map", vec![])
         .build(&[])
         .unwrap()
         .sign(&[]);
@@ -274,11 +274,11 @@ fn cannot_remove_vaults() {
         .unwrap()
         .sign(&[]);
     let receipt = sut.validate_and_execute(&transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "clear_vector", vec![])
+        .call_method(component_address, "clear_vector", vec![])
         .build(&[])
         .unwrap()
         .sign(&[]);
@@ -304,11 +304,11 @@ fn can_push_vault_into_vector() {
         .unwrap()
         .sign(&[]);
     let receipt = sut.validate_and_execute(&transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "push_vault_into_vector", vec![])
+        .call_method(component_address, "push_vault_into_vector", vec![])
         .build(&[])
         .unwrap()
         .sign(&[]);
@@ -405,7 +405,7 @@ fn create_mutable_vault_with_get_amount() {
 }
 
 #[test]
-fn create_mutable_vault_with_get_resource_def() {
+fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut sut = TransactionExecutor::new(&mut ledger, true);
@@ -416,7 +416,7 @@ fn create_mutable_vault_with_get_resource_def() {
         .call_function(
             package,
             "VaultTest",
-            "new_vault_with_get_resource_def",
+            "new_vault_with_get_resource_manager",
             vec![],
         )
         .build(&[])

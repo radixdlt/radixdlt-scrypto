@@ -25,18 +25,18 @@ impl Clone for Proof {
 
 impl Proof {
     /// Whether this proof includes an ownership proof of any of the given resource.
-    pub fn contains(&self, resource_def_id: ResourceDefId) -> bool {
-        self.resource_def_id() == resource_def_id
+    pub fn contains(&self, resource_address: ResourceAddress) -> bool {
+        self.resource_address() == resource_address
     }
 
     /// Whether this proof includes an ownership proof of at least the given amount of resource.
-    pub fn contains_resource(&self, amount: Decimal, resource_def_id: ResourceDefId) -> bool {
-        self.resource_def_id() == resource_def_id && self.amount() > amount
+    pub fn contains_resource(&self, amount: Decimal, resource_address: ResourceAddress) -> bool {
+        self.resource_address() == resource_address && self.amount() > amount
     }
 
     /// Whether this proof includes an ownership proof of the given non-fungible.
     pub fn contains_non_fungible(&self, non_fungible_address: &NonFungibleAddress) -> bool {
-        if self.resource_def_id() != non_fungible_address.resource_def_id() {
+        if self.resource_address() != non_fungible_address.resource_address() {
             return false;
         }
 
@@ -53,12 +53,12 @@ impl Proof {
         output.amount
     }
 
-    /// Returns the resource definition of resources within the bucket.
-    pub fn resource_def_id(&self) -> ResourceDefId {
-        let input = GetProofResourceDefIdInput { proof_id: self.0 };
-        let output: GetProofResourceDefIdOutput = call_engine(GET_PROOF_RESOURCE_DEF_ID, input);
+    /// Returns the resource address
+    pub fn resource_address(&self) -> ResourceAddress {
+        let input = GetProofResourceAddressInput { proof_id: self.0 };
+        let output: GetProofResourceAddressOutput = call_engine(GET_PROOF_RESOURCE_ADDRESS, input);
 
-        output.resource_def_id
+        output.resource_address
     }
 
     /// Returns the key of a singleton non-fungible.

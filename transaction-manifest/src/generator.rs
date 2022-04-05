@@ -20,9 +20,9 @@ pub enum GeneratorError {
         expected_type: Vec<ast::Type>,
         actual: ast::Value,
     },
-    InvalidPackageId(String),
-    InvalidComponentId(String),
-    InvalidResourceDefId(String),
+    InvalidPackageAddress(String),
+    InvalidComponentAddress(String),
+    InvalidResourceAddress(String),
     InvalidDecimal(String),
     InvalidHash(String),
     InvalidLazyMapId(String),
@@ -117,7 +117,7 @@ pub fn generate_instruction(
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
-            resource_def_id,
+            resource_address,
             new_bucket,
         } => {
             let bucket_id = id_validator
@@ -126,12 +126,12 @@ pub fn generate_instruction(
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeFromWorktop {
-                resource_def_id: generate_resource_def_id(resource_def_id)?,
+                resource_address: generate_resource_address(resource_address)?,
             }
         }
         ast::Instruction::TakeFromWorktopByAmount {
             amount,
-            resource_def_id,
+            resource_address,
             new_bucket,
         } => {
             let bucket_id = id_validator
@@ -141,12 +141,12 @@ pub fn generate_instruction(
 
             Instruction::TakeFromWorktopByAmount {
                 amount: generate_decimal(amount)?,
-                resource_def_id: generate_resource_def_id(resource_def_id)?,
+                resource_address: generate_resource_address(resource_address)?,
             }
         }
         ast::Instruction::TakeFromWorktopByIds {
             ids,
-            resource_def_id,
+            resource_address,
             new_bucket,
         } => {
             let bucket_id = id_validator
@@ -156,7 +156,7 @@ pub fn generate_instruction(
 
             Instruction::TakeFromWorktopByIds {
                 ids: generate_non_fungible_ids(ids)?,
-                resource_def_id: generate_resource_def_id(resource_def_id)?,
+                resource_address: generate_resource_address(resource_address)?,
             }
         }
         ast::Instruction::ReturnToWorktop { bucket } => {
@@ -166,61 +166,61 @@ pub fn generate_instruction(
                 .map_err(GeneratorError::IdValidatorError)?;
             Instruction::ReturnToWorktop { bucket_id }
         }
-        ast::Instruction::AssertWorktopContains { resource_def_id } => {
+        ast::Instruction::AssertWorktopContains { resource_address } => {
             Instruction::AssertWorktopContains {
-                resource_def_id: generate_resource_def_id(resource_def_id)?,
+                resource_address: generate_resource_address(resource_address)?,
             }
         }
         ast::Instruction::AssertWorktopContainsByAmount {
             amount,
-            resource_def_id,
+            resource_address,
         } => Instruction::AssertWorktopContainsByAmount {
             amount: generate_decimal(amount)?,
-            resource_def_id: generate_resource_def_id(resource_def_id)?,
+            resource_address: generate_resource_address(resource_address)?,
         },
         ast::Instruction::AssertWorktopContainsByIds {
             ids,
-            resource_def_id,
+            resource_address,
         } => Instruction::AssertWorktopContainsByIds {
             ids: generate_non_fungible_ids(ids)?,
-            resource_def_id: generate_resource_def_id(resource_def_id)?,
+            resource_address: generate_resource_address(resource_address)?,
         },
-        ast::Instruction::TakeFromAuthZone { new_proof } => {
+        ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::TakeFromAuthZone
+            Instruction::PopFromAuthZone
         }
-        ast::Instruction::MoveToAuthZone { proof } => {
+        ast::Instruction::PushToAuthZone { proof } => {
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
                 .map_err(GeneratorError::IdValidatorError)?;
-            Instruction::MoveToAuthZone { proof_id }
+            Instruction::PushToAuthZone { proof_id }
         }
         ast::Instruction::ClearAuthZone => Instruction::ClearAuthZone,
 
         ast::Instruction::CreateProofFromAuthZone {
-            resource_def_id,
+            resource_address,
             new_proof,
         } => {
-            let resource_def_id = generate_resource_def_id(resource_def_id)?;
+            let resource_address = generate_resource_address(resource_address)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidatorError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
-            Instruction::CreateProofFromAuthZone { resource_def_id }
+            Instruction::CreateProofFromAuthZone { resource_address }
         }
         ast::Instruction::CreateProofFromAuthZoneByAmount {
             amount,
-            resource_def_id,
+            resource_address,
             new_proof,
         } => {
             let amount = generate_decimal(amount)?;
-            let resource_def_id = generate_resource_def_id(resource_def_id)?;
+            let resource_address = generate_resource_address(resource_address)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidatorError)?;
@@ -228,16 +228,16 @@ pub fn generate_instruction(
 
             Instruction::CreateProofFromAuthZoneByAmount {
                 amount,
-                resource_def_id,
+                resource_address,
             }
         }
         ast::Instruction::CreateProofFromAuthZoneByIds {
             ids,
-            resource_def_id,
+            resource_address,
             new_proof,
         } => {
             let ids = generate_non_fungible_ids(ids)?;
-            let resource_def_id = generate_resource_def_id(resource_def_id)?;
+            let resource_address = generate_resource_address(resource_address)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidatorError)?;
@@ -245,7 +245,7 @@ pub fn generate_instruction(
 
             Instruction::CreateProofFromAuthZoneByIds {
                 ids,
-                resource_def_id,
+                resource_address,
             }
         }
         ast::Instruction::CreateProofFromBucket { bucket, new_proof } => {
@@ -274,7 +274,7 @@ pub fn generate_instruction(
             Instruction::DropProof { proof_id }
         }
         ast::Instruction::CallFunction {
-            package_id,
+            package_address,
             blueprint_name,
             function,
             args,
@@ -287,14 +287,14 @@ pub fn generate_instruction(
                     .map_err(GeneratorError::IdValidatorError)?;
             }
             Instruction::CallFunction {
-                package_id: generate_package_id(package_id)?,
+                package_address: generate_package_address(package_address)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 function: generate_string(function)?,
                 args,
             }
         }
         ast::Instruction::CallMethod {
-            component_id,
+            component_address,
             method,
             args,
         } => {
@@ -306,20 +306,20 @@ pub fn generate_instruction(
                     .map_err(GeneratorError::IdValidatorError)?;
             }
             Instruction::CallMethod {
-                component_id: generate_component_id(component_id)?,
+                component_address: generate_component_address(component_address)?,
                 method: generate_string(method)?,
                 args,
             }
         }
         ast::Instruction::CallMethodWithAllResources {
-            component_id,
+            component_address,
             method,
         } => {
             id_validator
                 .move_all_resources()
                 .map_err(GeneratorError::IdValidatorError)?;
             Instruction::CallMethodWithAllResources {
-                component_id: generate_component_id(component_id)?,
+                component_address: generate_component_address(component_address)?,
                 method: generate_string(method)?,
             }
         }
@@ -404,38 +404,36 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     }
 }
 
-fn generate_package_id(value: &ast::Value) -> Result<PackageId, GeneratorError> {
+fn generate_package_address(value: &ast::Value) -> Result<PackageAddress, GeneratorError> {
     match value {
-        ast::Value::PackageId(inner) => match &**inner {
-            ast::Value::String(s) => {
-                PackageId::from_str(s).map_err(|_| GeneratorError::InvalidPackageId(s.into()))
-            }
+        ast::Value::PackageAddress(inner) => match &**inner {
+            ast::Value::String(s) => PackageAddress::from_str(s)
+                .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::PackageId),
+        v @ _ => invalid_type!(v, ast::Type::PackageAddress),
     }
 }
 
-fn generate_component_id(value: &ast::Value) -> Result<ComponentId, GeneratorError> {
+fn generate_component_address(value: &ast::Value) -> Result<ComponentAddress, GeneratorError> {
     match value {
-        ast::Value::ComponentId(inner) => match &**inner {
-            ast::Value::String(s) => {
-                ComponentId::from_str(s).map_err(|_| GeneratorError::InvalidComponentId(s.into()))
-            }
+        ast::Value::ComponentAddress(inner) => match &**inner {
+            ast::Value::String(s) => ComponentAddress::from_str(s)
+                .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::ComponentId),
+        v @ _ => invalid_type!(v, ast::Type::ComponentAddress),
     }
 }
 
-fn generate_resource_def_id(value: &ast::Value) -> Result<ResourceDefId, GeneratorError> {
+fn generate_resource_address(value: &ast::Value) -> Result<ResourceAddress, GeneratorError> {
     match value {
-        ast::Value::ResourceDefId(inner) => match &**inner {
-            ast::Value::String(s) => ResourceDefId::from_str(s)
-                .map_err(|_| GeneratorError::InvalidResourceDefId(s.into())),
+        ast::Value::ResourceAddress(inner) => match &**inner {
+            ast::Value::String(s) => ResourceAddress::from_str(s)
+                .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
-        v @ _ => invalid_type!(v, ast::Type::ResourceDefId),
+        v @ _ => invalid_type!(v, ast::Type::ResourceAddress),
     }
 }
 
@@ -625,12 +623,12 @@ fn generate_value(
         ast::Value::Decimal(_) => {
             generate_decimal(value).map(|v| Value::Custom(CustomType::Decimal.id(), v.to_vec()))
         }
-        ast::Value::PackageId(_) => generate_package_id(value)
-            .map(|v| Value::Custom(CustomType::PackageId.id(), v.to_vec())),
-        ast::Value::ComponentId(_) => generate_component_id(value)
-            .map(|v| Value::Custom(CustomType::ComponentId.id(), v.to_vec())),
-        ast::Value::ResourceDefId(_) => generate_resource_def_id(value)
-            .map(|v| Value::Custom(CustomType::ResourceDefId.id(), v.to_vec())),
+        ast::Value::PackageAddress(_) => generate_package_address(value)
+            .map(|v| Value::Custom(CustomType::PackageAddress.id(), v.to_vec())),
+        ast::Value::ComponentAddress(_) => generate_component_address(value)
+            .map(|v| Value::Custom(CustomType::ComponentAddress.id(), v.to_vec())),
+        ast::Value::ResourceAddress(_) => generate_resource_address(value)
+            .map(|v| Value::Custom(CustomType::ResourceAddress.id(), v.to_vec())),
         ast::Value::Hash(_) => {
             generate_hash(value).map(|v| Value::Custom(CustomType::Hash.id(), v.to_vec()))
         }
@@ -717,9 +715,9 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::HashSet => TYPE_HASH_SET,
         ast::Type::HashMap => TYPE_HASH_MAP,
         ast::Type::Decimal => CustomType::Decimal.id(),
-        ast::Type::PackageId => CustomType::PackageId.id(),
-        ast::Type::ComponentId => CustomType::ComponentId.id(),
-        ast::Type::ResourceDefId => CustomType::ResourceDefId.id(),
+        ast::Type::PackageAddress => CustomType::PackageAddress.id(),
+        ast::Type::ComponentAddress => CustomType::ComponentAddress.id(),
+        ast::Type::ResourceAddress => CustomType::ResourceAddress.id(),
         ast::Type::Hash => CustomType::Hash.id(),
         ast::Type::Bucket => CustomType::Bucket.id(),
         ast::Type::Proof => CustomType::Proof.id(),
@@ -861,15 +859,15 @@ mod tests {
     #[test]
     fn test_failures() {
         generate_value_error!(
-            r#"ComponentId(100u32)"#,
+            r#"ComponentAddress(100u32)"#,
             GeneratorError::InvalidValue {
                 expected_type: vec![ast::Type::String],
                 actual: ast::Value::U32(100),
             }
         );
         generate_value_error!(
-            r#"PackageId("invalid_package_id")"#,
-            GeneratorError::InvalidPackageId("invalid_package_id".into())
+            r#"PackageAddress("invalid_package_address")"#,
+            GeneratorError::InvalidPackageAddress("invalid_package_address".into())
         );
         generate_value_error!(
             r#"Decimal("invalid_decimal")"#,
@@ -884,38 +882,38 @@ mod tests {
     #[test]
     fn test_instructions() {
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
-                resource_def_id: ResourceDefId::from_str(
+                resource_address: ResourceAddress::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
-                resource_def_id: ResourceDefId::from_str(
+                resource_address: ResourceAddress::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceDefId("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
-                resource_def_id: ResourceDefId::from_str(
+                resource_address: ResourceAddress::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageId("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
-                package_id: PackageId::from_str(
+                package_address: PackageAddress::from_str(
                     "01d1f50010e4102d88aacc347711491f852c515134a9ecf67ba17c".into()
                 )
                 .unwrap(),
@@ -928,9 +926,9 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  ComponentId("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill";"#,
+            r#"CALL_METHOD  ComponentAddress("0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1")  "refill";"#,
             Instruction::CallMethod {
-                component_id: ComponentId::from_str(
+                component_address: ComponentAddress::from_str(
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
@@ -939,9 +937,9 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentId("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
-                component_id: ComponentId::from_str(
+                component_address: ComponentAddress::from_str(
                     "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                 )
                 .unwrap(),
@@ -975,7 +973,7 @@ mod tests {
             Transaction {
                 instructions: vec![
                     Instruction::CallMethod {
-                        component_id: ComponentId::from_str(
+                        component_address: ComponentAddress::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
@@ -983,7 +981,7 @@ mod tests {
                         args: vec![
                             scrypto_encode(&Decimal::from(5u32)),
                             scrypto_encode(
-                                &ResourceDefId::from_str(
+                                &ResourceAddress::from_str(
                                     "030000000000000000000000000000000000000000000000000004"
                                 )
                                 .unwrap()
@@ -992,13 +990,13 @@ mod tests {
                     },
                     Instruction::TakeFromWorktopByAmount {
                         amount: Decimal::from(2),
-                        resource_def_id: ResourceDefId::from_str(
+                        resource_address: ResourceAddress::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
                     Instruction::CallMethod {
-                        component_id: ComponentId::from_str(
+                        component_address: ComponentAddress::from_str(
                             "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                         )
                         .unwrap(),
@@ -1007,19 +1005,19 @@ mod tests {
                     },
                     Instruction::AssertWorktopContainsByAmount {
                         amount: Decimal::from(3),
-                        resource_def_id: ResourceDefId::from_str(
+                        resource_address: ResourceAddress::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
                     Instruction::AssertWorktopContains {
-                        resource_def_id: ResourceDefId::from_str(
+                        resource_address: ResourceAddress::from_str(
                             "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
                         )
                         .unwrap(),
                     },
                     Instruction::TakeFromWorktop {
-                        resource_def_id: ResourceDefId::from_str(
+                        resource_address: ResourceAddress::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
@@ -1029,7 +1027,7 @@ mod tests {
                     Instruction::DropProof { proof_id: 514 },
                     Instruction::DropProof { proof_id: 515 },
                     Instruction::CallMethod {
-                        component_id: ComponentId::from_str(
+                        component_address: ComponentAddress::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
@@ -1037,14 +1035,14 @@ mod tests {
                         args: vec![
                             scrypto_encode(&Decimal::from(5u32)),
                             scrypto_encode(
-                                &ResourceDefId::from_str(
+                                &ResourceAddress::from_str(
                                     "030000000000000000000000000000000000000000000000000004"
                                 )
                                 .unwrap()
                             ),
                         ]
                     },
-                    Instruction::TakeFromAuthZone,
+                    Instruction::PopFromAuthZone,
                     Instruction::DropProof { proof_id: 516 },
                     Instruction::ReturnToWorktop { bucket_id: 513 },
                     Instruction::TakeFromWorktopByIds {
@@ -1052,13 +1050,13 @@ mod tests {
                             NonFungibleId::from_str("11").unwrap(),
                             NonFungibleId::from_str("22").unwrap(),
                         ]),
-                        resource_def_id: ResourceDefId::from_str(
+                        resource_address: ResourceAddress::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap(),
                     },
                     Instruction::CallMethodWithAllResources {
-                        component_id: ComponentId::from_str(
+                        component_address: ComponentAddress::from_str(
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),

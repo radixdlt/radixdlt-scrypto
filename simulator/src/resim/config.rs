@@ -10,7 +10,7 @@ use crate::resim::*;
 /// Simulator configurations.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Configs {
-    pub default_account: ComponentId,
+    pub default_account: ComponentAddress,
     pub default_public_key: EcdsaPublicKey,
     pub default_private_key: EcdsaPrivateKey,
 }
@@ -49,7 +49,7 @@ pub fn set_configs(configs: &Configs) -> Result<(), Error> {
     fs::write(path, scrypto_encode(configs)).map_err(Error::IOError)
 }
 
-pub fn get_default_account() -> Result<ComponentId, Error> {
+pub fn get_default_account() -> Result<ComponentAddress, Error> {
     get_configs()?
         .ok_or(Error::NoDefaultAccount)
         .map(|config| config.default_account)

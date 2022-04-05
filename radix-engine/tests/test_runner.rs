@@ -36,11 +36,11 @@ impl<'l> TestRunner<'l> {
         )
     }
 
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &ProofRule) -> ComponentId {
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &ProofRule) -> ComponentAddress {
         self.executor.new_account_with_auth_rule(withdraw_auth)
     }
 
-    pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentId) {
+    pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentAddress) {
         self.executor.new_account()
     }
 
@@ -48,7 +48,7 @@ impl<'l> TestRunner<'l> {
         self.executor.validate_and_execute(transaction).unwrap()
     }
 
-    pub fn publish_package(&mut self, name: &str) -> PackageId {
+    pub fn publish_package(&mut self, name: &str) -> PackageAddress {
         self.executor.publish_package(&Self::compile(name)).unwrap()
     }
 
@@ -58,9 +58,9 @@ impl<'l> TestRunner<'l> {
 
     pub fn create_restricted_mint_token(
         &mut self,
-        account: ComponentId,
-    ) -> (ResourceDefId, ResourceDefId) {
-        let auth_resource_def_id = self.create_non_fungible_resource(account);
+        account: ComponentAddress,
+    ) -> (ResourceAddress, ResourceAddress) {
+        let auth_resource_address = self.create_non_fungible_resource(account);
 
         let package = self.publish_package("resource_creator");
         let transaction = TransactionBuilder::new(&self.executor)
@@ -68,42 +68,42 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_mint",
-                vec![scrypto_encode(&auth_resource_def_id)],
+                vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(&[])
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
-        (auth_resource_def_id, receipt.new_resource_def_ids[0])
+        (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
     pub fn create_restricted_burn_token(
         &mut self,
-        account: ComponentId,
-    ) -> (ResourceDefId, ResourceDefId) {
-        let auth_resource_def_id = self.create_non_fungible_resource(account);
+        account: ComponentAddress,
+    ) -> (ResourceAddress, ResourceAddress) {
+        let auth_resource_address = self.create_non_fungible_resource(account);
         let package = self.publish_package("resource_creator");
         let transaction = TransactionBuilder::new(&self.executor)
             .call_function(
                 package,
                 "ResourceCreator",
                 "create_restricted_burn",
-                vec![scrypto_encode(&auth_resource_def_id)],
+                vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(&[])
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
-        (auth_resource_def_id, receipt.new_resource_def_ids[0])
+        (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
     pub fn create_restricted_transfer_token(
         &mut self,
-        account: ComponentId,
-    ) -> (ResourceDefId, ResourceDefId) {
-        let auth_resource_def_id = self.create_non_fungible_resource(account);
+        account: ComponentAddress,
+    ) -> (ResourceAddress, ResourceAddress) {
+        let auth_resource_address = self.create_non_fungible_resource(account);
 
         let package = self.publish_package("resource_creator");
         let transaction = TransactionBuilder::new(&self.executor)
@@ -111,17 +111,17 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_transfer",
-                vec![scrypto_encode(&auth_resource_def_id)],
+                vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(&[])
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
-        (auth_resource_def_id, receipt.new_resource_def_ids[0])
+        (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
-    pub fn create_non_fungible_resource(&mut self, account: ComponentId) -> ResourceDefId {
+    pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let package = self.publish_package("resource_creator");
         let transaction = TransactionBuilder::new(&self.executor)
             .call_function(
@@ -135,15 +135,15 @@ impl<'l> TestRunner<'l> {
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
-        receipt.new_resource_def_ids[0]
+        receipt.new_resource_addresses[0]
     }
 
     pub fn create_fungible_resource(
         &mut self,
         amount: Decimal,
         divisibility: u8,
-        account: ComponentId,
-    ) -> ResourceDefId {
+        account: ComponentAddress,
+    ) -> ResourceAddress {
         let package = self.publish_package("resource_creator");
         let transaction = TransactionBuilder::new(&self.executor)
             .call_function(
@@ -157,23 +157,23 @@ impl<'l> TestRunner<'l> {
             .unwrap()
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
-        receipt.new_resource_def_ids[0]
+        receipt.new_resource_addresses[0]
     }
 
     pub fn instantiate_component(
         &mut self,
-        package_id: PackageId,
+        package_address: PackageAddress,
         blueprint_name: &str,
         function_name: &str,
         args: Vec<String>,
-        account: ComponentId,
+        account: ComponentAddress,
         pk: EcdsaPublicKey,
         sk: EcdsaPrivateKey,
-    ) -> ComponentId {
+    ) -> ComponentAddress {
         let transaction = self
             .new_transaction_builder()
             .parse_args_and_call_function(
-                package_id,
+                package_address,
                 blueprint_name,
                 function_name,
                 args,
@@ -184,6 +184,6 @@ impl<'l> TestRunner<'l> {
             .unwrap()
             .sign(&[sk]);
         let receipt = self.validate_and_execute(&transaction);
-        receipt.new_component_ids[0]
+        receipt.new_component_addresses[0]
     }
 }

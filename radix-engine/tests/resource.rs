@@ -1,7 +1,7 @@
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
-use radix_engine::model::ResourceDefError;
-use radix_engine::model::ResourceDefError::FlagsLocked;
+use radix_engine::model::ResourceManagerError;
+use radix_engine::model::ResourceManagerError::FlagsLocked;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -10,7 +10,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 }
 
 #[test]
-fn test_resource_def() {
+fn test_resource_manager() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
@@ -61,7 +61,10 @@ fn mint_with_bad_granularity_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     assert_eq!(
         runtime_error,
-        RuntimeError::ResourceDefError(ResourceDefError::InvalidAmount(Decimal::from("0.1"), 0))
+        RuntimeError::ResourceManagerError(ResourceManagerError::InvalidAmount(
+            Decimal::from("0.1"),
+            0
+        ))
     );
 }
 
@@ -91,7 +94,7 @@ fn mint_too_much_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     assert_eq!(
         runtime_error,
-        RuntimeError::ResourceDefError(ResourceDefError::MaxMintAmountExceeded)
+        RuntimeError::ResourceManagerError(ResourceManagerError::MaxMintAmountExceeded)
     );
 }
 
@@ -119,7 +122,10 @@ fn update_feature_flags_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::ResourceDefError(FlagsLocked));
+    assert_eq!(
+        runtime_error,
+        RuntimeError::ResourceManagerError(FlagsLocked)
+    );
 }
 
 #[test]
@@ -148,7 +154,9 @@ fn create_fungible_with_bad_resource_flags_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     assert_eq!(
         runtime_error,
-        RuntimeError::ResourceDefError(ResourceDefError::InvalidResourceFlags(MAY_MINT | BURNABLE))
+        RuntimeError::ResourceManagerError(ResourceManagerError::InvalidResourceFlags(
+            MAY_MINT | BURNABLE
+        ))
     );
 }
 
@@ -178,7 +186,7 @@ fn create_fungible_with_bad_mutable_flags_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     assert_eq!(
         runtime_error,
-        RuntimeError::ResourceDefError(ResourceDefError::InvalidResourceFlags(MAY_MINT))
+        RuntimeError::ResourceManagerError(ResourceManagerError::InvalidResourceFlags(MAY_MINT))
     );
 }
 
@@ -208,7 +216,7 @@ fn create_fungible_with_bad_resource_permissions_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     assert_eq!(
         runtime_error,
-        RuntimeError::ResourceDefError(ResourceDefError::InvalidResourcePermission(
+        RuntimeError::ResourceManagerError(ResourceManagerError::InvalidResourcePermission(
             MINTABLE | MAY_BURN
         ))
     );

@@ -8,7 +8,7 @@ use crate::resim::*;
 #[derive(Parser, Debug)]
 pub struct CallFunction {
     /// The package which the function belongs to
-    package_id: PackageId,
+    package_address: PackageAddress,
 
     /// The name of the blueprint which the function belongs to
     blueprint_name: String,
@@ -16,7 +16,7 @@ pub struct CallFunction {
     /// The function name
     function_name: String,
 
-    /// The call arguments, e.g. \"5\", \"hello\", \"amount,resource_def_id\" for Bucket, or \"#id1,#id2,..,resource_def_id\" for non-fungible Bucket
+    /// The call arguments, e.g. \"5\", \"hello\", \"amount,resource_address\" for Bucket, or \"#id1,#id2,..,resource_address\" for non-fungible Bucket
     arguments: Vec<String>,
 
     /// Output a transaction manifest without execution
@@ -37,7 +37,7 @@ impl CallFunction {
 
         let transaction = TransactionBuilder::new(&executor)
             .parse_args_and_call_function(
-                self.package_id,
+                self.package_address,
                 &self.blueprint_name,
                 &self.function_name,
                 self.arguments.clone(),

@@ -8,5 +8,5 @@ use crate::rust::string::String;
 pub enum Actor {
     Blueprint(String),
 
-    Component(String, ComponentId),
+    Component(String, ComponentAddress),
 }

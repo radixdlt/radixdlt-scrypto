@@ -18,7 +18,7 @@ pub struct Publish {
 
     /// The package ID, for overwriting
     #[clap(long)]
-    package_id: Option<PackageId>,
+    package_address: Option<PackageAddress>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -37,17 +37,20 @@ impl Publish {
 
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        if let Some(package_id) = self.package_id.clone() {
+        if let Some(package_address) = self.package_address.clone() {
             // Overwrite package
             executor
-                .overwrite_package(package_id, code)
+                .overwrite_package(package_address, code)
                 .map_err(|e| Error::PackageValidationError(e))?;
             println!("Package updated!");
             Ok(())
         } else {
             match executor.publish_package(&code) {
-                Ok(package_id) => {
-                    println!("Success! New Package: {}", package_id.to_string().green());
+                Ok(package_address) => {
+                    println!(
+                        "Success! New Package: {}",
+                        package_address.to_string().green()
+                    );
                     Ok(())
                 }
                 Err(error) => Err(Error::TransactionExecutionError(error)),

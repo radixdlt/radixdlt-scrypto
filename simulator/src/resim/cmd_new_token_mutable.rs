@@ -8,8 +8,8 @@ use crate::resim::*;
 /// Create a token with mutable supply
 #[derive(Parser, Debug)]
 pub struct NewTokenMutable {
-    /// The minter resource definition ID
-    minter_resource_def_id: ResourceDefId,
+    /// The minter resource address
+    minter_resource_address: ResourceAddress,
 
     /// The symbol
     #[clap(long)]
@@ -63,7 +63,7 @@ impl NewTokenMutable {
         };
 
         let transaction = TransactionBuilder::new(&executor)
-            .new_token_mutable(metadata, self.minter_resource_def_id)
+            .new_token_mutable(metadata, self.minter_resource_address)
             .build(default_pks)
             .map_err(Error::TransactionConstructionError)?
             .sign(&default_sks);

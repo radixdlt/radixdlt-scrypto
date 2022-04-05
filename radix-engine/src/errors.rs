@@ -128,22 +128,22 @@ pub enum RuntimeError {
     HostFunctionNotFound(usize),
 
     /// Package does not exist.
-    PackageNotFound(PackageId),
+    PackageNotFound(PackageAddress),
 
     /// Blueprint does not exist.
-    BlueprintNotFound(PackageId, String),
+    BlueprintNotFound(PackageAddress, String),
 
     /// System call not allowed in given context.
     IllegalSystemCall,
 
     /// Component does not exist.
-    ComponentNotFound(ComponentId),
+    ComponentNotFound(ComponentAddress),
 
     /// Component is already loaded
-    ComponentAlreadyLoaded(ComponentId),
+    ComponentAlreadyLoaded(ComponentAddress),
 
-    /// Resource definition does not exist.
-    ResourceDefNotFound(ResourceDefId),
+    /// Resource manager does not exist.
+    ResourceManagerNotFound(ResourceAddress),
 
     /// Non-fungible does not exist.
     NonFungibleNotFound(NonFungibleAddress),
@@ -181,8 +181,8 @@ pub enum RuntimeError {
     /// The bucket contains no resource.
     EmptyProof,
 
-    /// Resource definition access error.
-    ResourceDefError(ResourceDefError),
+    /// Resource manager access error.
+    ResourceManagerError(ResourceManagerError),
 
     /// Bucket access error.
     BucketError(ResourceContainerError),

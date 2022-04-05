@@ -47,7 +47,7 @@ fn test_dynamic_auth(
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     receipt1.result.expect("Should be okay.");
-    let component = receipt1.new_component_ids[0];
+    let component = receipt1.new_component_addresses[0];
 
     if let Some(next_auth) = update_auth {
         let update_txn = test_runner
@@ -127,7 +127,7 @@ fn test_dynamic_authlist(
         .sign(&[]);
     let receipt0 = test_runner.validate_and_execute(&transaction1);
     receipt0.result.expect("Should be okay.");
-    let component = receipt0.new_component_ids[0];
+    let component = receipt0.new_component_addresses[0];
 
     // Act
     let transaction2 = test_runner
@@ -293,7 +293,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     receipt1.result.expect("Should be okay.");
-    let component = receipt1.new_component_ids[0];
+    let component = receipt1.new_component_addresses[0];
 
     // Act
     let transaction2 = test_runner
@@ -335,7 +335,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     receipt1.result.expect("Should be okay.");
-    let component = receipt1.new_component_ids[0];
+    let component = receipt1.new_component_addresses[0];
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])

@@ -128,11 +128,11 @@ fn cannot_remove_lazy_maps() {
         .unwrap()
         .sign(&[]);
     let receipt = sut.validate_and_execute(&transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "clear_vector", vec![])
+        .call_method(component_address, "clear_vector", vec![])
         .build(&[])
         .unwrap()
         .sign(&[]);
@@ -158,11 +158,11 @@ fn cannot_overwrite_lazy_maps() {
         .unwrap()
         .sign(&[]);
     let receipt = sut.validate_and_execute(&transaction).unwrap();
-    let component_id = receipt.new_component_ids[0];
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = TransactionBuilder::new(&sut)
-        .call_method(component_id, "overwrite_lazy_map", vec![])
+        .call_method(component_address, "overwrite_lazy_map", vec![])
         .build(&[])
         .unwrap()
         .sign(&[]);
