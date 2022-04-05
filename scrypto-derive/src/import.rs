@@ -330,6 +330,8 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 "NonFungibleId" => "::scrypto::resource::NonFungibleId",
                 "NonFungibleAddress" => "::scrypto::resource::NonFungibleAddress",
                 "ResourceAddress" => "::scrypto::resource::ResourceAddress",
+                "ProofRule" => "::scrypto::resource::ProofRule",
+                "AuthRule" => "::scrypto::resource::AuthRule",
                 _ => {
                     return Err(Error::new(
                         Span::call_site(),

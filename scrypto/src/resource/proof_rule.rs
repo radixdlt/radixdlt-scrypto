@@ -1,5 +1,6 @@
 use crate::prelude::AuthRule::{AllOf, AnyOf};
 use crate::resource::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::*;
@@ -91,13 +92,23 @@ where
 }
 
 /// Resource Proof Rules
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(Decimal, SoftResource),
     CountOf(u8, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
+}
+
+// FIXME: describe types with cycles
+impl Describe for ProofRule {
+    fn describe() -> sbor::describe::Type {
+        sbor::describe::Type::Custom {
+            name: "ProofRule".to_owned(),
+            generics: vec![],
+        }
+    }
 }
 
 impl From<NonFungibleAddress> for ProofRule {
@@ -123,11 +134,21 @@ macro_rules! resource_list {
   });
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum AuthRule {
     ProofRule(ProofRule),
     AnyOf(Vec<AuthRule>),
     AllOf(Vec<AuthRule>),
+}
+
+// FIXME: describe types with cycles
+impl Describe for AuthRule {
+    fn describe() -> sbor::describe::Type {
+        sbor::describe::Type::Custom {
+            name: "AuthRule".to_owned(),
+            generics: vec![],
+        }
+    }
 }
 
 impl AuthRule {
