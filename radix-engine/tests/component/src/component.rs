@@ -14,7 +14,7 @@ blueprint! {
                 .initial_supply(amount)
         }
 
-        pub fn create_component() -> ComponentId {
+        pub fn create_component() -> ComponentAddress {
             Self {
                 test_vault: Vault::with_bucket(Self::create_test_token(1000)),
                 secret: "Secret".to_owned(),
@@ -23,10 +23,10 @@ blueprint! {
             .globalize()
         }
 
-        pub fn get_component_info(component_id: ComponentId) -> (PackageId, String) {
+        pub fn get_component_info(component_address: ComponentAddress) -> (PackageAddress, String) {
             (
-                component!(component_id).package_id(),
-                component!(component_id).blueprint_name(),
+                component!(component_address).package_address(),
+                component!(component_address).blueprint_name(),
             )
         }
 

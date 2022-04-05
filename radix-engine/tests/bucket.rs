@@ -16,7 +16,7 @@ pub fn compile(name: &str) -> Vec<u8> {
 fn test_bucket() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let (_, account) = executor.new_public_key_with_account();
+    let (_, _, account) = executor.new_account();
     let package = executor.publish_package(&compile("bucket")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
@@ -28,9 +28,10 @@ fn test_bucket() {
         .call_function(package, "BucketTest", "test_burn", vec![])
         .call_function(package, "BucketTest", "test_burn_freely", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![])
-        .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = executor.validate_and_execute(&transaction).unwrap();
     assert!(receipt.result.is_ok());
 }
 
@@ -38,7 +39,7 @@ fn test_bucket() {
 fn test_bucket_of_badges() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let (_, account) = executor.new_public_key_with_account();
+    let (_, _, account) = executor.new_account();
     let package = executor.publish_package(&compile("bucket")).unwrap();
 
     let transaction = TransactionBuilder::new(&executor)
@@ -47,9 +48,10 @@ fn test_bucket_of_badges() {
         .call_function(package, "BadgeTest", "borrow", vec![])
         .call_function(package, "BadgeTest", "query", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![])
-        .unwrap();
-    let receipt = executor.run(transaction).unwrap();
+        .build(&[])
+        .unwrap()
+        .sign(&[]);
+    let receipt = executor.validate_and_execute(&transaction).unwrap();
     assert!(receipt.result.is_ok());
 }
 
@@ -58,23 +60,24 @@ fn test_take_with_invalid_granularity() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
-    let resource_def_id = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_id = test_runner.publish_package("bucket");
+    let (pk, sk, account) = test_runner.new_account();
+    let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
+    let package_address = test_runner.publish_package("bucket");
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .parse_args_and_call_function(
-            package_id,
+            package_address,
             "BucketTest",
             "take_from_bucket",
-            vec![format!("100,{}", resource_def_id), "1.123".to_owned()],
+            vec![format!("100,{}", resource_address), "1.123".to_owned()],
             Some(account),
         )
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert
@@ -91,23 +94,24 @@ fn test_take_with_negative_amount() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let (key, account) = test_runner.new_public_key_with_account();
-    let resource_def_id = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_id = test_runner.publish_package("bucket");
+    let (pk, sk, account) = test_runner.new_account();
+    let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
+    let package_address = test_runner.publish_package("bucket");
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .parse_args_and_call_function(
-            package_id,
+            package_address,
             "BucketTest",
             "take_from_bucket",
-            vec![format!("100,{}", resource_def_id), "-2".to_owned()],
+            vec![format!("100,{}", resource_address), "-2".to_owned()],
             Some(account),
         )
-        .build(vec![key])
-        .unwrap();
-    let receipt = test_runner.run(transaction);
+        .build(&[pk])
+        .unwrap()
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
     // Assert

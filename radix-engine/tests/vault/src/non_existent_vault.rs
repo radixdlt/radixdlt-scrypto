@@ -7,16 +7,16 @@ blueprint! {
     }
 
     impl NonExistentVault {
-        pub fn create_component_with_non_existent_vault() -> ComponentId {
+        pub fn create_component_with_non_existent_vault() -> ComponentAddress {
             NonExistentVault {
-                vault: Option::Some(Vault((Transaction::transaction_hash(), 1025))),
+                vault: Option::Some(Vault((Runtime::transaction_hash(), 1025))),
                 vaults: LazyMap::new(),
             }
             .instantiate()
             .globalize()
         }
 
-        pub fn new() -> ComponentId {
+        pub fn new() -> ComponentAddress {
             NonExistentVault {
                 vault: Option::None,
                 vaults: LazyMap::new(),
@@ -26,12 +26,12 @@ blueprint! {
         }
 
         pub fn create_non_existent_vault(&mut self) {
-            self.vault = Option::Some(Vault((Transaction::transaction_hash(), 1025)))
+            self.vault = Option::Some(Vault((Runtime::transaction_hash(), 1025)))
         }
 
-        pub fn create_lazy_map_with_non_existent_vault() -> ComponentId {
+        pub fn create_lazy_map_with_non_existent_vault() -> ComponentAddress {
             let vaults = LazyMap::new();
-            vaults.insert(0, Vault((Transaction::transaction_hash(), 1025)));
+            vaults.insert(0, Vault((Runtime::transaction_hash(), 1025)));
             NonExistentVault {
                 vault: Option::None,
                 vaults,
@@ -42,7 +42,7 @@ blueprint! {
 
         pub fn create_non_existent_vault_in_lazy_map(&mut self) {
             self.vaults
-                .insert(0, Vault((Transaction::transaction_hash(), 1025)));
+                .insert(0, Vault((Runtime::transaction_hash(), 1025)));
         }
     }
 }

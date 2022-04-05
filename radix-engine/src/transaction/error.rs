@@ -29,10 +29,10 @@ pub enum BuildTransactionError {
     FailedToBuildArgs(BuildArgsError),
 
     /// Failed to export the ABI of a function.
-    FailedToExportFunctionAbi(PackageId, String, String, RuntimeError),
+    FailedToExportFunctionAbi(PackageAddress, String, String, RuntimeError),
 
     /// Failed to export the ABI of a method.
-    FailedToExportMethodAbi(ComponentId, String),
+    FailedToExportMethodAbi(ComponentAddress, String),
 
     /// Account is required but not provided.
     AccountNotProvided,

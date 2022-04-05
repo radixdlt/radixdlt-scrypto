@@ -13,28 +13,28 @@ pub struct AuthZone {}
 impl AuthZone {
     /// Pushes a proof to the auth zone.
     pub fn push(proof: Proof) {
-        let input = MoveToAuthZoneInput { proof_id: proof.0 };
-        let _: MoveToAuthZoneOutput = call_engine(MOVE_TO_AUTH_ZONE, input);
+        let input = PushToAuthZoneInput { proof_id: proof.0 };
+        let _: PushToAuthZoneOutput = call_engine(PUSH_TO_AUTH_ZONE, input);
     }
 
     /// Pops the most recently added proof from the auth zone.
     pub fn pop() -> Proof {
-        let input = TakeFromAuthZoneInput {};
-        let output: TakeFromAuthZoneOutput = call_engine(TAKE_FROM_AUTH_ZONE, input);
+        let input = PopFromAuthZoneInput {};
+        let output: PopFromAuthZoneOutput = call_engine(POP_FROM_AUTH_ZONE, input);
 
         Proof(output.proof_id.into())
     }
 
-    pub fn create_proof(resource_def_id: ResourceDefId) -> Proof {
-        let input = CreateAuthZoneProofInput { resource_def_id };
+    pub fn create_proof(resource_address: ResourceAddress) -> Proof {
+        let input = CreateAuthZoneProofInput { resource_address };
         let output: CreateAuthZoneProofOutput = call_engine(CREATE_AUTH_ZONE_PROOF, input);
 
         Proof(output.proof_id.into())
     }
 
-    pub fn create_proof_by_amount(amount: Decimal, resource_def_id: ResourceDefId) -> Proof {
+    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let input = CreateAuthZoneProofByAmountInput {
-            resource_def_id,
+            resource_address,
             amount,
         };
         let output: CreateAuthZoneProofByAmountOutput =
@@ -45,10 +45,10 @@ impl AuthZone {
 
     pub fn create_proof_by_ids(
         ids: &BTreeSet<NonFungibleId>,
-        resource_def_id: ResourceDefId,
+        resource_address: ResourceAddress,
     ) -> Proof {
         let input = CreateAuthZoneProofByIdsInput {
-            resource_def_id,
+            resource_address,
             ids: ids.clone(),
         };
         let output: CreateAuthZoneProofByIdsOutput =

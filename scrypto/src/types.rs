@@ -38,8 +38,8 @@ macro_rules! custom_type {
         }
 
         impl Describe for $t {
-            fn describe() -> Type {
-                Type::Custom {
+            fn describe() -> sbor::describe::Type {
+                sbor::describe::Type::Custom {
                     name: $ct.name(),
                     generics: $generics,
                 }
@@ -59,12 +59,14 @@ pub(crate) use custom_type;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CustomType {
     // component
-    PackageId,
-    ComponentId,
+    PackageAddress,
+    ComponentAddress,
     LazyMap,
 
     // crypto
     Hash,
+    EcdsaPublicKey,
+    EcdsaSignature,
 
     // math
     Decimal,
@@ -75,21 +77,24 @@ pub enum CustomType {
     Vault,
     NonFungibleId,
     NonFungibleAddress,
-    ResourceDefId,
+    ResourceAddress,
 }
 
-const MAPPING: [(CustomType, u8, &str); 11] = [
-    (CustomType::PackageId, 0x80, "PackageId"),
-    (CustomType::ComponentId, 0x81, "ComponentId"),
+// Need to update `scrypto-derive/src/import.rs` after changing the table below
+const MAPPING: [(CustomType, u8, &str); 13] = [
+    (CustomType::PackageAddress, 0x80, "PackageAddress"),
+    (CustomType::ComponentAddress, 0x81, "ComponentAddress"),
     (CustomType::LazyMap, 0x82, "LazyMap"),
     (CustomType::Hash, 0x90, "Hash"),
+    (CustomType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"),
+    (CustomType::EcdsaSignature, 0x92, "EcdsaSignature"),
     (CustomType::Decimal, 0xa1, "Decimal"),
     (CustomType::Bucket, 0xb1, "Bucket"),
     (CustomType::Proof, 0xb2, "Proof"),
     (CustomType::Vault, 0xb3, "Vault"),
     (CustomType::NonFungibleId, 0xb4, "NonFungibleId"),
     (CustomType::NonFungibleAddress, 0xb5, "NonFungibleAddress"),
-    (CustomType::ResourceDefId, 0xb6, "ResourceDefId"),
+    (CustomType::ResourceAddress, 0xb6, "ResourceAddress"),
 ];
 
 impl CustomType {
@@ -135,10 +140,12 @@ pub enum CustomValueValidatorError {
     DecodeError(DecodeError),
     InvalidTypeId(u8),
     InvalidDecimal(ParseDecimalError),
-    InvalidPackageId(ParsePackageIdError),
-    InvalidComponentId(ParseComponentIdError),
-    InvalidResourceDefId(ParseResourceDefIdError),
+    InvalidPackageAddress(ParsePackageAddressError),
+    InvalidComponentAddress(ParseComponentAddressError),
+    InvalidResourceAddress(ParseResourceAddressError),
     InvalidHash(ParseHashError),
+    InvalidEcdsaPublicKey(ParseEcdsaPublicKeyError),
+    InvalidEcdsaSignature(ParseEcdsaSignatureError),
     InvalidBucket(ParseBucketError),
     InvalidProof(ParseProofError),
     InvalidLazyMap(ParseLazyMapError),
@@ -163,12 +170,13 @@ impl CustomValueVisitor for CustomValueValidator {
 
     fn visit(&mut self, type_id: u8, data: &[u8]) -> Result<(), Self::Err> {
         match CustomType::from_id(type_id).ok_or(Self::Err::InvalidTypeId(type_id))? {
-            CustomType::PackageId => {
-                PackageId::try_from(data).map_err(CustomValueValidatorError::InvalidPackageId)?;
+            CustomType::PackageAddress => {
+                PackageAddress::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidPackageAddress)?;
             }
-            CustomType::ComponentId => {
-                ComponentId::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidComponentId)?;
+            CustomType::ComponentAddress => {
+                ComponentAddress::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidComponentAddress)?;
             }
             CustomType::LazyMap => {
                 self.lazy_maps.push(
@@ -177,6 +185,14 @@ impl CustomValueVisitor for CustomValueValidator {
             }
             CustomType::Hash => {
                 Hash::try_from(data).map_err(CustomValueValidatorError::InvalidHash)?;
+            }
+            CustomType::EcdsaPublicKey => {
+                EcdsaPublicKey::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidEcdsaPublicKey)?;
+            }
+            CustomType::EcdsaSignature => {
+                EcdsaSignature::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidEcdsaSignature)?;
             }
             CustomType::Decimal => {
                 Decimal::try_from(data).map_err(CustomValueValidatorError::InvalidDecimal)?;
@@ -202,9 +218,9 @@ impl CustomValueVisitor for CustomValueValidator {
                 NonFungibleAddress::try_from(data)
                     .map_err(CustomValueValidatorError::InvalidNonFungibleAddress)?;
             }
-            CustomType::ResourceDefId => {
-                ResourceDefId::try_from(data)
-                    .map_err(CustomValueValidatorError::InvalidResourceDefId)?;
+            CustomType::ResourceAddress => {
+                ResourceAddress::try_from(data)
+                    .map_err(CustomValueValidatorError::InvalidResourceAddress)?;
             }
         }
         Ok(())
@@ -226,17 +242,35 @@ impl CustomValueFormatter {
     ) -> String {
         match CustomType::from_id(type_id).unwrap() {
             CustomType::Decimal => format!("Decimal(\"{}\")", Decimal::try_from(data).unwrap()),
-            CustomType::PackageId => {
-                format!("PackageId(\"{}\")", PackageId::try_from(data).unwrap())
+            CustomType::PackageAddress => {
+                format!(
+                    "PackageAddress(\"{}\")",
+                    PackageAddress::try_from(data).unwrap()
+                )
             }
-            CustomType::ComponentId => {
-                format!("ComponentId(\"{}\")", ComponentId::try_from(data).unwrap())
+            CustomType::ComponentAddress => {
+                format!(
+                    "ComponentAddress(\"{}\")",
+                    ComponentAddress::try_from(data).unwrap()
+                )
             }
             CustomType::LazyMap => format!(
                 "LazyMap(\"{}\")",
                 LazyMap::<(), ()>::try_from(data).unwrap()
             ),
             CustomType::Hash => format!("Hash(\"{}\")", Hash::try_from(data).unwrap()),
+            CustomType::EcdsaPublicKey => {
+                format!(
+                    "EcdsaPublicKey(\"{}\")",
+                    EcdsaPublicKey::try_from(data).unwrap()
+                )
+            }
+            CustomType::EcdsaSignature => {
+                format!(
+                    "EcdsaSignature(\"{}\")",
+                    EcdsaSignature::try_from(data).unwrap()
+                )
+            }
             CustomType::Bucket => {
                 let bucket = Bucket::try_from(data).unwrap();
                 if let Some(name) = bucket_ids.get(&bucket.0) {
@@ -262,9 +296,9 @@ impl CustomValueFormatter {
                 "NonFungibleAddress(\"{}\")",
                 NonFungibleAddress::try_from(data).unwrap()
             ),
-            CustomType::ResourceDefId => format!(
-                "ResourceDefId(\"{}\")",
-                ResourceDefId::try_from(data).unwrap()
+            CustomType::ResourceAddress => format!(
+                "ResourceAddress(\"{}\")",
+                ResourceAddress::try_from(data).unwrap()
             ),
         }
     }

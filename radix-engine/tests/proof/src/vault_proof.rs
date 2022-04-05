@@ -6,7 +6,7 @@ blueprint! {
     }
 
     impl VaultProof {
-        pub fn new(bucket: Bucket) -> ComponentId {
+        pub fn new(bucket: Bucket) -> ComponentAddress {
             Self {
                 vault: Vault::with_bucket(bucket),
             }
@@ -68,14 +68,14 @@ blueprint! {
             // auto dropped here
         }
 
-        pub fn receive_proof_and_move_to_auth_zone(proof: Proof) {
+        pub fn receive_proof_and_push_to_auth_zone(proof: Proof) {
             AuthZone::push(proof); // should fail here
         }
 
         pub fn compose_vault_and_bucket_proof(&mut self, bucket: Bucket) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof = AuthZone::create_proof(bucket.resource_def_id());
+                    let proof = AuthZone::create_proof(bucket.resource_address());
                     assert_eq!(proof.amount(), self.vault.amount() + bucket.amount());
                     proof.drop();
                 })
@@ -90,7 +90,7 @@ blueprint! {
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof = AuthZone::create_proof_by_amount(amount, bucket.resource_def_id());
+                    let proof = AuthZone::create_proof_by_amount(amount, bucket.resource_address());
                     assert_eq!(proof.amount(), amount);
                     proof.drop();
                 })
@@ -105,7 +105,7 @@ blueprint! {
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof = AuthZone::create_proof_by_ids(&ids, bucket.resource_def_id());
+                    let proof = AuthZone::create_proof_by_ids(&ids, bucket.resource_address());
                     assert_eq!(proof.get_non_fungible_ids(), ids);
                     proof.drop();
                 })

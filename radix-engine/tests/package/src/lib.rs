@@ -1,5 +1,6 @@
 use sbor::describe::Fields;
 use sbor::Type;
+use scrypto::abi::{Function, Method};
 use scrypto::prelude::*;
 
 static mut LARGE: [u8; 4] = (u32::MAX / 2).to_le_bytes();
@@ -22,32 +23,45 @@ pub extern "C" fn ZeroReturnSize_main() -> *mut u8 {
 }
 
 #[no_mangle]
-pub extern "C" fn package_init() -> *mut u8 {
-    let mut blueprints: HashMap<String, Type> = HashMap::new();
-    blueprints.insert(
-        "LargeReturnSize".to_string(),
-        Type::Struct {
-            name: "LargeReturnSize".to_string(),
-            fields: Fields::Unit,
-        },
-    );
-    blueprints.insert(
-        "MaxReturnSize".to_string(),
-        Type::Struct {
-            name: "MaxReturnSize".to_string(),
-            fields: Fields::Unit,
-        },
-    );
-    blueprints.insert(
-        "ZeroReturnSize".to_string(),
-        Type::Struct {
-            name: "ZeroReturnSize".to_string(),
-            fields: Fields::Unit,
-        },
-    );
+pub extern "C" fn LargeReturnSize_abi() -> *mut u8 {
+    let blueprint_type = Type::Struct {
+        name: "LargeReturnSize".to_string(),
+        fields: Fields::Unit,
+    };
+    let abi: (Type, Vec<Function>, Vec<Method>) = (blueprint_type, vec![], vec![]);
 
     // serialize the output
-    let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprints);
+    let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&abi);
+
+    // return the output wrapped in a radix-style buffer
+    ::scrypto::buffer::scrypto_wrap(output_bytes)
+}
+
+#[no_mangle]
+pub extern "C" fn MaxReturnSize_abi() -> *mut u8 {
+    let blueprint_type = Type::Struct {
+        name: "MaxReturnSize".to_string(),
+        fields: Fields::Unit,
+    };
+    let abi: (Type, Vec<Function>, Vec<Method>) = (blueprint_type, vec![], vec![]);
+
+    // serialize the output
+    let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&abi);
+
+    // return the output wrapped in a radix-style buffer
+    ::scrypto::buffer::scrypto_wrap(output_bytes)
+}
+
+#[no_mangle]
+pub extern "C" fn ZeroReturnSize_abi() -> *mut u8 {
+    let blueprint_type = Type::Struct {
+        name: "ZeroReturnSize".to_string(),
+        fields: Fields::Unit,
+    };
+    let abi: (Type, Vec<Function>, Vec<Method>) = (blueprint_type, vec![], vec![]);
+
+    // serialize the output
+    let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&abi);
 
     // return the output wrapped in a radix-style buffer
     ::scrypto::buffer::scrypto_wrap(output_bytes)

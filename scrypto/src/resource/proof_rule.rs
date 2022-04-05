@@ -1,5 +1,6 @@
 use crate::prelude::AuthRule::{AllOf, AnyOf};
 use crate::resource::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use sbor::*;
@@ -57,13 +58,13 @@ impl From<&str> for SoftCount {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
-    Static(ResourceDefId),
+    Static(ResourceAddress),
     Dynamic(SchemaPath),
 }
 
-impl From<ResourceDefId> for SoftResource {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        SoftResource::Static(resource_def_id)
+impl From<ResourceAddress> for SoftResource {
+    fn from(resource_address: ResourceAddress) -> Self {
+        SoftResource::Static(resource_address)
     }
 }
 
@@ -83,7 +84,7 @@ impl From<&str> for SoftResource {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
-    StaticResource(ResourceDefId),
+    StaticResource(ResourceAddress),
     Dynamic(SchemaPath),
 }
 
@@ -93,9 +94,9 @@ impl From<NonFungibleAddress> for SoftResourceOrNonFungible {
     }
 }
 
-impl From<ResourceDefId> for SoftResourceOrNonFungible {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        SoftResourceOrNonFungible::StaticResource(resource_def_id)
+impl From<ResourceAddress> for SoftResourceOrNonFungible {
+    fn from(resource_address: ResourceAddress) -> Self {
+        SoftResourceOrNonFungible::StaticResource(resource_address)
     }
 }
 
@@ -141,7 +142,7 @@ where
 }
 
 /// Resource Proof Rules
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(SoftDecimal, SoftResource),
@@ -150,15 +151,25 @@ pub enum ProofRule {
     AnyOf(SoftResourceOrNonFungibleList),
 }
 
+// FIXME: describe types with cycles
+impl Describe for ProofRule {
+    fn describe() -> sbor::describe::Type {
+        sbor::describe::Type::Custom {
+            name: "ProofRule".to_owned(),
+            generics: vec![],
+        }
+    }
+}
+
 impl From<NonFungibleAddress> for ProofRule {
     fn from(non_fungible_address: NonFungibleAddress) -> Self {
         ProofRule::Require(non_fungible_address.into())
     }
 }
 
-impl From<ResourceDefId> for ProofRule {
-    fn from(resource_def_id: ResourceDefId) -> Self {
-        ProofRule::Require(resource_def_id.into())
+impl From<ResourceAddress> for ProofRule {
+    fn from(resource_address: ResourceAddress) -> Self {
+        ProofRule::Require(resource_address.into())
     }
 }
 
@@ -173,11 +184,21 @@ macro_rules! resource_list {
   });
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum AuthRule {
     ProofRule(ProofRule),
     AnyOf(Vec<AuthRule>),
     AllOf(Vec<AuthRule>),
+}
+
+// FIXME: describe types with cycles
+impl Describe for AuthRule {
+    fn describe() -> sbor::describe::Type {
+        sbor::describe::Type::Custom {
+            name: "AuthRule".to_owned(),
+            generics: vec![],
+        }
+    }
 }
 
 impl AuthRule {

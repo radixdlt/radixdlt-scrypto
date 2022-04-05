@@ -11,7 +11,7 @@ blueprint! {
             count: u8,
             auth: Vec<NonFungibleAddress>,
             authorization: ComponentAuthorization,
-        ) -> ComponentId {
+        ) -> ComponentAddress {
             Self { count, auth }
                 .instantiate()
                 .set_auth_interface(authorization)

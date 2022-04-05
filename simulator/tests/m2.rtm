@@ -1,0 +1,33 @@
+# Prepare - grab token from the `Hello` component
+CALL_METHOD ComponentAddress("02e0d9c9987cb4545cbb47acd5dbb4bdd1ab0a2ca5fe2e00c0fab1") "free_token";
+
+# Test - assertions
+ASSERT_WORKTOP_CONTAINS ResourceAddress("039c6f63b21e484fcc4e0cf46e132d2823b7004b4d752ca1df8780");
+ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("1.0") ResourceAddress("039c6f63b21e484fcc4e0cf46e132d2823b7004b4d752ca1df8780");
+
+# Test - worktop
+TAKE_FROM_WORKTOP ResourceAddress("039c6f63b21e484fcc4e0cf46e132d2823b7004b4d752ca1df8780") Bucket("bucket1");
+RETURN_TO_WORKTOP Bucket("bucket1");
+TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("1.0") ResourceAddress("039c6f63b21e484fcc4e0cf46e132d2823b7004b4d752ca1df8780") Bucket("bucket2");
+RETURN_TO_WORKTOP Bucket("bucket2");
+
+# Test - auth zone
+CALL_METHOD ComponentAddress("020705fbd24bdc209ccc68bec214cf35652e93bb72fc1bf6aefb43") "create_proof_by_amount" Decimal("5.0") ResourceAddress("030000000000000000000000000000000000000000000000000004");
+CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("030000000000000000000000000000000000000000000000000004") Proof("proof1");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("2.0") ResourceAddress("030000000000000000000000000000000000000000000000000004") Proof("proof2");
+CLONE_PROOF Proof("proof2") Proof("proof3");
+DROP_PROOF Proof("proof1");
+DROP_PROOF Proof("proof2");
+DROP_PROOF Proof("proof3");
+CLEAR_AUTH_ZONE;
+
+# Test - bucket proof
+CALL_METHOD ComponentAddress("020705fbd24bdc209ccc68bec214cf35652e93bb72fc1bf6aefb43") "withdraw_by_amount" Decimal("5.0") ResourceAddress("030000000000000000000000000000000000000000000000000004");
+TAKE_FROM_WORKTOP ResourceAddress("030000000000000000000000000000000000000000000000000004") Bucket("xrd");
+CREATE_PROOF_FROM_BUCKET Bucket("xrd") Proof("proof4");
+CLONE_PROOF Proof("proof4") Proof("proof5");
+DROP_PROOF Proof("proof4");
+DROP_PROOF Proof("proof5");
+
+# Clean up - deposit resources
+CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("020705fbd24bdc209ccc68bec214cf35652e93bb72fc1bf6aefb43") "deposit_batch";

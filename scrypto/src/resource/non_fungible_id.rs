@@ -1,4 +1,4 @@
-use sbor::{describe::Type, *};
+use sbor::*;
 
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
