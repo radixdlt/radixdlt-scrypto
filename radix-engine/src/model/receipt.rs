@@ -110,7 +110,7 @@ impl fmt::Debug for Receipt {
         for (i, resource_address) in self.new_resource_addresses.iter().enumerate() {
             write!(
                 f,
-                "\n{} ResourceManager: {}",
+                "\n{} Resource: {}",
                 prefix!(i, self.new_resource_addresses),
                 resource_address
             )?;

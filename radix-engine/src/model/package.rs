@@ -1,7 +1,9 @@
 use sbor::*;
+use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use wasmi::{
@@ -53,27 +55,50 @@ impl Package {
             _ => return Err(WasmValidationError::NoValidMemoryExport),
         };
 
-        let rtn = module
-            .invoke_export("package_init", &[], &mut NopExternals)
-            .map_err(|e| WasmValidationError::NoPackageInitExport(e.into()))?
-            .ok_or(WasmValidationError::InvalidPackageInit)?;
+        // TODO: Currently a hack so that we don't require a package_init function.
+        // TODO: Fix this by implement package metadata along with the code during compilation.
+        let exports = module.exports();
+        let blueprint_abi_methods: Vec<String> = exports
+            .iter()
+            .filter(|(name, val)| {
+                name.ends_with("_abi") && name.len() > 4 && matches!(val, ExternVal::Func(_))
+            })
+            .map(|(name, _)| name.to_string())
+            .collect();
 
-        let blueprints = match rtn {
-            RuntimeValue::I32(ptr) => {
-                let len: u32 = memory
-                    .get_value(ptr as u32)
-                    .map_err(|_| WasmValidationError::InvalidPackageInit)?;
+        let mut blueprints = HashMap::new();
 
-                // SECURITY: meter before allocating memory
-                let mut data = vec![0u8; len as usize];
-                memory
-                    .get_into((ptr + 4) as u32, &mut data)
-                    .map_err(|_| WasmValidationError::InvalidPackageInit)?;
+        for method_name in blueprint_abi_methods {
+            let rtn = module
+                .invoke_export(&method_name, &[], &mut NopExternals)
+                .map_err(|e| WasmValidationError::NoPackageInitExport(e.into()))?
+                .ok_or(WasmValidationError::InvalidPackageInit)?;
 
-                scrypto_decode(&data).map_err(|_| WasmValidationError::InvalidPackageInit)
+            let blueprint_type: Type = match rtn {
+                RuntimeValue::I32(ptr) => {
+                    let len: u32 = memory
+                        .get_value(ptr as u32)
+                        .map_err(|_| WasmValidationError::InvalidPackageInit)?;
+
+                    // SECURITY: meter before allocating memory
+                    let mut data = vec![0u8; len as usize];
+                    memory
+                        .get_into((ptr + 4) as u32, &mut data)
+                        .map_err(|_| WasmValidationError::InvalidPackageInit)?;
+
+                    let result: (Type, Vec<Function>, Vec<Method>) = scrypto_decode(&data)
+                        .map_err(|_| WasmValidationError::InvalidPackageInit)?;
+                    Ok(result.0)
+                }
+                _ => Err(WasmValidationError::InvalidPackageInit),
+            }?;
+
+            if let Type::Struct { name, fields: _ } = &blueprint_type {
+                blueprints.insert(name.clone(), blueprint_type);
+            } else {
+                return Err(WasmValidationError::InvalidPackageInit);
             }
-            _ => Err(WasmValidationError::InvalidPackageInit),
-        }?;
+        }
 
         Ok(Self { blueprints, code })
     }

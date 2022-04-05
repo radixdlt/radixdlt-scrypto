@@ -124,7 +124,7 @@ blueprint! {
             assert_eq!(vault.amount(), 2.into());
             assert_eq!(non_fungible.amount(), 1.into());
 
-            NonFungibleTest { vault }.instantiate();
+            NonFungibleTest { vault }.instantiate().globalize();
 
             non_fungible
         }
@@ -155,10 +155,9 @@ blueprint! {
                 BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)])
             );
 
-            NonFungibleTest { vault }.instantiate();
+            NonFungibleTest { vault }.instantiate().globalize();
+
             non_fungible_bucket
         }
     }
 }
-
-package_init!(blueprint::NonFungibleTest::describe());

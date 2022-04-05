@@ -8,7 +8,7 @@ use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 
-use crate::model::method_authorization::{HardProofRule, HardProofRuleResourceList};
+use crate::model::method_authorization::{HardAuthRule, HardProofRule, HardProofRuleResourceList};
 use crate::model::resource_manager::FlagCondition::{AlwaysTrue, IsNotSet, IsSet};
 use crate::model::MethodAuthorization;
 
@@ -164,17 +164,21 @@ impl ResourceManager {
                         let cur_rule =
                             mem::replace(&mut method_state.auth, MethodAuthorization::Public);
                         method_state.auth = match cur_rule {
-                            MethodAuthorization::Public => {
-                                MethodAuthorization::Protected(HardProofRule::AnyOf(
+                            MethodAuthorization::Public => MethodAuthorization::Protected(
+                                HardAuthRule::ProofRule(HardProofRule::AnyOf(
                                     HardProofRuleResourceList::List(vec![resource_address.into()]),
-                                ))
-                            }
-                            MethodAuthorization::Protected(HardProofRule::AnyOf(
-                                HardProofRuleResourceList::List(mut resources),
+                                )),
+                            ),
+                            MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                                HardProofRule::AnyOf(HardProofRuleResourceList::List(
+                                    mut resources,
+                                )),
                             )) => {
                                 resources.push(resource_address.into());
-                                MethodAuthorization::Protected(HardProofRule::AnyOf(
-                                    HardProofRuleResourceList::List(resources),
+                                MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                                    HardProofRule::AnyOf(HardProofRuleResourceList::List(
+                                        resources,
+                                    )),
                                 ))
                             }
                             _ => panic!("Should never get here."),

@@ -6,21 +6,23 @@ blueprint! {
     }
 
     impl Account {
-        pub fn new(withdraw_rule: ProofRule) -> ComponentAddress {
-            Account {
+        pub fn new(withdraw_rule: AuthRule) -> ComponentAddress {
+            Self {
                 vaults: LazyMap::new(),
             }
-            .instantiate_with_auth(component_authorization! {
-                "withdraw" => withdraw_rule
-            })
+            .instantiate()
+            .auth("withdraw", withdraw_rule)
+            .globalize()
         }
 
-        pub fn new_with_resource(withdraw_rule: ProofRule, bucket: Bucket) -> ComponentAddress {
+        pub fn new_with_resource(withdraw_rule: AuthRule, bucket: Bucket) -> ComponentAddress {
             let vaults = LazyMap::new();
             vaults.insert(bucket.resource_address(), Vault::with_bucket(bucket));
-            Account { vaults }.instantiate_with_auth(component_authorization! {
-                "withdraw" => withdraw_rule
-            })
+
+            Self { vaults }
+                .instantiate()
+                .auth("withdraw", withdraw_rule)
+                .globalize()
         }
 
         /// Deposits resource into this account.
@@ -133,5 +135,3 @@ blueprint! {
         }
     }
 }
-
-package_init!(blueprint::Account::describe());
