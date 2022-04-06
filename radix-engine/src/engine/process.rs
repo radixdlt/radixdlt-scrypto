@@ -838,6 +838,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                         Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
                     },
+                    "update_metadata" => {
+                        let new_metadata: HashMap<String, String> = scrypto_decode(&invocation.args[0].raw)
+                            .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+
+                        let resource_manager = self
+                            .track
+                            .get_resource_manager_mut(&resource_address)
+                            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
+                        resource_manager
+                            .update_metadata(new_metadata)
+                            .map_err(RuntimeError::ResourceManagerError)?;
+
+                        Ok(ScryptoValue::from_value(&()))
+                    }
                     _ => Err(RuntimeError::IllegalSystemCall)
                 }
             },
@@ -1879,20 +1893,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: UpdateResourceMetadataInput,
     ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_address, "update_metadata")?;
-
-        // State update
-        let resource_manager = self
-            .track
-            .get_resource_manager_mut(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-        resource_manager
-            .update_metadata(input.new_metadata)
-            .map_err(RuntimeError::ResourceManagerError)?;
-
+        let invocation = Invocation {
+            invocation_type: InvocationType::Resource(input.resource_address.clone()),
+            function: "update_metadata".to_string(),
+            args: vec![ScryptoValue::from_value(&input.new_metadata)],
+        };
+        let _ = self.call(invocation)?;
         Ok(UpdateResourceMetadataOutput {})
     }
 
