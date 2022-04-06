@@ -10,13 +10,13 @@ resim="cargo run --bin resim $@ --"
 $resim reset
 account=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 package=`$resim publish ./tests/hello_world.wasm | awk '/Package:/ {print $NF}'`
-sed "s/01c83c78f073a838898a5419e4ba9a8921ab5e928303189a9f2eaf/$package/g;s/02909c0e4d5160b44dd72b7ad1366087c74ff2d52a8f3de9996512/$account/g" ./tests/m1.rtm | tee target/m1.rtm
+sed "s/015c7d0cb306d77130b351005d481923a90448f7843298c7823d2a/$package/g;s/02d4ca16f3a137bc109a16e752aae2bb64a65b318746c6c9199b0c/$account/g" ./tests/m1.rtm > target/m1.rtm
 
 
 tokens=`$resim run ./target/m1.rtm | awk '/Component:|Resource:/ {print $NF}'`
 component=`echo $tokens | cut -d " " -f1`
 resource=`echo $tokens | cut -d " " -f2`
-sed "s/02909c0e4d5160b44dd72b7ad1366087c74ff2d52a8f3de9996512/$account/g;s/02c6f5b89ea519ef26b229e0163446230df2049959e99f395f1396/$component/g;s/0390a1644d70bda3a64bf4260fd238d32973ce735dbef74a25ce8f/$resource/g" ./tests/m2.rtm | tee target/m2.rtm
+sed "s/02d4ca16f3a137bc109a16e752aae2bb64a65b318746c6c9199b0c/$account/g;s/0258a6793957381c8a4951e835093504d8d380881fffa690006c62/$component/g;s/03f90a59c8cc51ff7786d0f9ab6d22f70a885d5ddeea00265b5b6b/$resource/g" ./tests/m2.rtm > target/m2.rtm
 $resim run ./target/m2.rtm
 
 $resim show-ledger
