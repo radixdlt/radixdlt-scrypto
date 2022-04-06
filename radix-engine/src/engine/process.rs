@@ -826,7 +826,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let bucket_id = self.new_bucket_id()?;
                 self.buckets.insert(bucket_id, bucket);
 
-                Ok(ScryptoValue::from_value(&MintResourceOutput { bucket_id }))
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
             }
         }?;
 
@@ -1891,15 +1891,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_address, "mint")?;
-
-        // wrap resource into a bucket
-        let bucket = Bucket::new(self.mint_resource(input.resource_address, input.mint_params)?);
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, bucket);
-
-        Ok(MintResourceOutput { bucket_id })
+        let result = self.call(Invocation {
+            invocation_type: InvocationType::Resource(input.resource_address.clone()),
+            function: "mint".to_string(),
+            args: vec![ScryptoValue::from_value(&input.mint_params)],
+        })?;
+        Ok( MintResourceOutput { bucket_id: result.bucket_ids[0] })
     }
 
     fn handle_burn_resource(
