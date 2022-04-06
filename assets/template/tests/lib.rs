@@ -16,7 +16,7 @@ fn test_hello() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build(&[pk])
         .unwrap()
-        .sign(&[sk]) ;
+        .sign(&[sk.clone()]) ;
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.result.is_ok());
@@ -28,7 +28,7 @@ fn test_hello() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build(&[pk])
         .unwrap()
-        .sign(&[sk]) ;
+        .sign(&[sk.clone()]) ;
     let receipt2 = executor.validate_and_execute(&transaction2).unwrap();
     println!("{:?}\n", receipt2);
     assert!(receipt2.result.is_ok());
