@@ -11,10 +11,10 @@ fn test_hello() {
     let package = executor.publish_package(compile_package!("${wasm_name}")).unwrap();
 
     // Test the `instantiate_hello` function.
-    let transaction1 = TransactionBuilder::new(&executor)
+    let transaction1 = TransactionBuilder::new()
         .call_function(package, "Hello", "instantiate_hello", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk.clone()]) ;
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
@@ -23,10 +23,10 @@ fn test_hello() {
 
     // Test the `free_token` method.
     let component = receipt1.new_component_addresses[0];
-    let transaction2 = TransactionBuilder::new(&executor)
+    let transaction2 = TransactionBuilder::new()
         .call_method(component, "free_token", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk.clone()]) ;
     let receipt2 = executor.validate_and_execute(&transaction2).unwrap();

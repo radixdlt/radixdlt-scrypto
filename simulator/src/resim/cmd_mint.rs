@@ -32,7 +32,7 @@ impl Mint {
         let default_account = get_default_account()?;
         let (default_pks, default_sks) = get_default_signers()?;
 
-        let transaction = TransactionBuilder::new(&executor)
+        let transaction = TransactionBuilder::new()
             .withdraw_from_account(self.minter_resource_address, default_account)
             .mint(
                 self.amount,
@@ -40,7 +40,7 @@ impl Mint {
                 self.minter_resource_address,
             )
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(default_pks)
+            .build(default_pks, &executor)
             .map_err(Error::TransactionConstructionError)?
             .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)

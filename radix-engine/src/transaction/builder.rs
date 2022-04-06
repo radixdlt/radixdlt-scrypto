@@ -24,9 +24,7 @@ use crate::model::*;
 use crate::transaction::*;
 
 /// Utility for building transaction.
-pub struct TransactionBuilder<'a, A: AbiProvider + NonceProvider> {
-    /// ABI and nonce provider
-    abi_nonce_provider: &'a A,
+pub struct TransactionBuilder {
     /// ID validator for calculating transaction object id
     id_validator: IdValidator,
     /// Instructions generated.
@@ -35,11 +33,10 @@ pub struct TransactionBuilder<'a, A: AbiProvider + NonceProvider> {
     errors: Vec<BuildTransactionError>,
 }
 
-impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
+impl TransactionBuilder {
     /// Starts a new transaction builder.
-    pub fn new(abi_nonce_provider: &'a A) -> Self {
+    pub fn new() -> Self {
         Self {
-            abi_nonce_provider,
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
             errors: Vec::new(),
@@ -306,16 +303,16 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
     ///
     /// If an Account component address is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn parse_args_and_call_function(
+    pub fn parse_args_and_call_function<A: AbiProvider>(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
         function: &str,
         args: Vec<String>,
         account: Option<ComponentAddress>,
+        abi_provider: &A,
     ) -> &mut Self {
-        let result = self
-            .abi_nonce_provider
+        let result = abi_provider
             .export_abi(package_address, blueprint_name)
             .map_err(|e| {
                 BuildTransactionError::FailedToExportFunctionAbi(
@@ -367,15 +364,15 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
     ///
     /// If an Account component address is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn parse_args_and_call_method(
+    pub fn parse_args_and_call_method<A: AbiProvider>(
         &mut self,
         component_address: ComponentAddress,
         method: &str,
         args: Vec<String>,
         account: Option<ComponentAddress>,
+        abi_provider: &A,
     ) -> &mut Self {
-        let result = self
-            .abi_nonce_provider
+        let result = abi_provider
             .export_abi_component(component_address)
             .map_err(|_| {
                 BuildTransactionError::FailedToExportMethodAbi(component_address, method.to_owned())
@@ -425,11 +422,12 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
     }
 
     /// Builds a transaction, using the signer set to fetch nonce.
-    pub fn build<PK: AsRef<[EcdsaPublicKey]>>(
+    pub fn build<PK: AsRef<[EcdsaPublicKey]>, N: NonceProvider>(
         &self,
         intended_signers: PK,
+        nonce_provider: &N,
     ) -> Result<Transaction, BuildTransactionError> {
-        let nonce = self.abi_nonce_provider.get_nonce(intended_signers.as_ref());
+        let nonce = nonce_provider.get_nonce(intended_signers.as_ref());
         self.build_with_nonce(nonce)
     }
 

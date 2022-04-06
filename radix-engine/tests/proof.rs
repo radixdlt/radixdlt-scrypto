@@ -24,9 +24,10 @@ fn can_create_clone_and_drop_bucket_proof() {
             "create_clone_drop_bucket_proof",
             vec![format!("1,{}", resource_address), "1".to_owned()],
             Some(account),
+            test_runner.abi_provider(),
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -62,7 +63,7 @@ fn can_create_clone_and_drop_vault_proof() {
             "create_clone_drop_vault_proof",
             vec![scrypto_encode(&Decimal::one())],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -99,8 +100,9 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
             "create_clone_drop_vault_proof_by_amount",
             vec!["3".to_owned(), "1".to_owned()],
             None,
+            test_runner.abi_provider(),
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -142,7 +144,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
             "create_clone_drop_vault_proof_by_ids",
             args![total_ids, proof_ids],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -174,9 +176,10 @@ fn can_use_bucket_for_authorization() {
                 format!("1,{}", burnable_resource_address),
             ],
             Some(account),
+            test_runner.abi_provider(),
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -213,8 +216,9 @@ fn can_use_vault_for_authorization() {
             "use_vault_proof_for_auth",
             vec![format!("1,{}", burnable_resource_address)],
             Some(account),
+            test_runner.abi_provider(),
         )
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk.clone()]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -243,8 +247,9 @@ fn can_create_proof_from_account_and_pass_on() {
             "receive_proof",
             vec![format!("1,{}", resource_address), "1".to_owned()],
             Some(account),
+            test_runner.abi_provider(),
         )
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -273,8 +278,9 @@ fn cant_move_restricted_proof() {
             "receive_proof_and_push_to_auth_zone",
             vec![format!("1,{}", resource_address), "1".to_owned()],
             Some(account),
+            test_runner.abi_provider(),
         )
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -317,7 +323,7 @@ fn can_compose_bucket_and_vault_proof() {
                 args![Bucket(bucket_id)],
             )
         })
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -357,7 +363,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
                 args![Bucket(bucket_id), Decimal::from(2)],
             )
         })
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -407,7 +413,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 )
             },
         )
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -443,7 +449,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
             "create_clone_drop_vault_proof_by_amount",
             args![Decimal::from(3), Decimal::from(1)],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -491,7 +497,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 )
             },
         )
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);

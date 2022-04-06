@@ -28,7 +28,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             "create_component_with_auth",
             vec![scrypto_encode(&method_authorization)],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -43,7 +43,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             "create_component",
             vec![],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -58,7 +58,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             "cross_component_call",
             vec![scrypto_encode(&secured_component)],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -90,7 +90,7 @@ fn can_make_cross_component_call_with_authorization() {
             "create_component_with_auth",
             vec![scrypto_encode(&method_authorization)],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -105,7 +105,7 @@ fn can_make_cross_component_call_with_authorization() {
             "create_component",
             vec![],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -116,7 +116,7 @@ fn can_make_cross_component_call_with_authorization() {
         .new_transaction_builder()
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
-        .build(&[key])
+        .build(&[key], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -130,7 +130,7 @@ fn can_make_cross_component_call_with_authorization() {
             "cross_component_call",
             vec![scrypto_encode(&secured_component)],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);

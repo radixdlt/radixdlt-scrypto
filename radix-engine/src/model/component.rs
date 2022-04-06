@@ -2,8 +2,8 @@ use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::resource::{
-    AuthRuleNode, ComponentAuthorization, MethodAuth, NonFungibleAddress,
-    ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    AuthRuleNode, ComponentAuthorization, MethodAuth, NonFungibleAddress, ProofRule, SoftCount,
+    SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -11,7 +11,8 @@ use scrypto::types::ScryptoType;
 use scrypto::values::*;
 
 use crate::model::method_authorization::{
-    HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
+    HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
+    HardResourceOrNonFungible,
 };
 use crate::model::MethodAuthorization;
 

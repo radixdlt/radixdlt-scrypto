@@ -28,7 +28,7 @@ fn create_non_fungible_mutable() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -44,7 +44,7 @@ fn test_non_fungible() {
     let (pk, sk, account) = executor.new_account();
     let package = executor.publish_package(&compile("non_fungible")).unwrap();
 
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(
             package,
             "NonFungibleTest",
@@ -73,7 +73,7 @@ fn test_non_fungible() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();

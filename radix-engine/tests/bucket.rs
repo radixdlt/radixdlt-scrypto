@@ -19,7 +19,7 @@ fn test_bucket() {
     let (_, _, account) = executor.new_account();
     let package = executor.publish_package(&compile("bucket")).unwrap();
 
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(package, "BucketTest", "combine", vec![])
         .call_function(package, "BucketTest", "split", vec![])
         .call_function(package, "BucketTest", "borrow", vec![])
@@ -28,7 +28,7 @@ fn test_bucket() {
         .call_function(package, "BucketTest", "test_burn", vec![])
         .call_function(package, "BucketTest", "test_burn_freely", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[])
+        .build(&[], &executor)
         .unwrap()
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -42,13 +42,13 @@ fn test_bucket_of_badges() {
     let (_, _, account) = executor.new_account();
     let package = executor.publish_package(&compile("bucket")).unwrap();
 
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(package, "BadgeTest", "combine", vec![])
         .call_function(package, "BadgeTest", "split", vec![])
         .call_function(package, "BadgeTest", "borrow", vec![])
         .call_function(package, "BadgeTest", "query", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[])
+        .build(&[], &executor)
         .unwrap()
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -73,8 +73,9 @@ fn test_take_with_invalid_granularity() {
             "take_from_bucket",
             vec![format!("100,{}", resource_address), "1.123".to_owned()],
             Some(account),
+            test_runner.abi_provider(),
         )
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -107,8 +108,9 @@ fn test_take_with_negative_amount() {
             "take_from_bucket",
             vec![format!("100,{}", resource_address), "-2".to_owned()],
             Some(account),
+            test_runner.abi_provider(),
         )
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);

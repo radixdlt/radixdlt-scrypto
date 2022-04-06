@@ -18,14 +18,14 @@ fn test_resource_manager() {
     let package = executor.publish_package(&compile("resource")).unwrap();
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(package, "ResourceTest", "create_fungible", vec![])
         .call_function(package, "ResourceTest", "query", vec![])
         .call_function(package, "ResourceTest", "burn", vec![])
         .call_function(package, "ResourceTest", "update_feature_flags", vec![])
         .call_function(package, "ResourceTest", "update_resource_metadata", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -44,7 +44,7 @@ fn mint_with_bad_granularity_should_fail() {
     let package = executor.publish_package(&compile("resource")).unwrap();
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(
             package,
             "ResourceTest",
@@ -52,7 +52,7 @@ fn mint_with_bad_granularity_should_fail() {
             args![0u8, dec!("0.1")],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -77,7 +77,7 @@ fn mint_too_much_should_fail() {
     let package = executor.publish_package(&compile("resource")).unwrap();
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(
             package,
             "ResourceTest",
@@ -85,7 +85,7 @@ fn mint_too_much_should_fail() {
             args![0u8, dec!(100_000_000_001i128)],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -107,7 +107,7 @@ fn update_feature_flags_should_fail() {
     let package = executor.publish_package(&compile("resource")).unwrap();
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(
             package,
             "ResourceTest",
@@ -115,7 +115,7 @@ fn update_feature_flags_should_fail() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -137,7 +137,7 @@ fn create_fungible_with_bad_resource_flags_should_fail() {
     let package = executor.publish_package(&compile("resource")).unwrap();
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(
             package,
             "ResourceTest",
@@ -145,7 +145,7 @@ fn create_fungible_with_bad_resource_flags_should_fail() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -169,7 +169,7 @@ fn create_fungible_with_bad_mutable_flags_should_fail() {
     let package = executor.publish_package(&compile("resource")).unwrap();
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(
             package,
             "ResourceTest",
@@ -177,7 +177,7 @@ fn create_fungible_with_bad_mutable_flags_should_fail() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -199,7 +199,7 @@ fn create_fungible_with_bad_resource_permissions_should_fail() {
     let package = executor.publish_package(&compile("resource")).unwrap();
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(
             package,
             "ResourceTest",
@@ -207,7 +207,7 @@ fn create_fungible_with_bad_resource_permissions_should_fail() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], &executor)
         .unwrap()
         .sign(&[sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();

@@ -42,7 +42,7 @@ fn test_dynamic_auth(
             "create_component",
             vec![scrypto_encode(addresses.get(initial_auth).unwrap())],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -57,7 +57,7 @@ fn test_dynamic_auth(
                 "update_auth",
                 vec![scrypto_encode(addresses.get(next_auth).unwrap())],
             )
-            .build(&[])
+            .build(&[], test_runner.nonce_provider())
             .unwrap()
             .sign(&[]);
         test_runner
@@ -70,7 +70,7 @@ fn test_dynamic_auth(
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "get_secret", vec![])
-        .build(pks)
+        .build(pks, test_runner.nonce_provider())
         .unwrap()
         .sign(&sks);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
@@ -122,7 +122,7 @@ fn test_dynamic_authlist(
             "create_component",
             args!(2u8, list, authorization),
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt0 = test_runner.validate_and_execute(&transaction1);
@@ -133,7 +133,7 @@ fn test_dynamic_authlist(
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "get_secret", vec![])
-        .build(pks)
+        .build(pks, test_runner.nonce_provider())
         .unwrap()
         .sign(&sks);
     let receipt = test_runner.validate_and_execute(&transaction2);
@@ -252,7 +252,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
             "create_game",
             vec![scrypto_encode(&players)],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -263,7 +263,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(&[other_pk])
+        .build(&[other_pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction2);
@@ -294,7 +294,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
             "create_game",
             vec![scrypto_encode(&players)],
         )
-        .build(&[])
+        .build(&[], test_runner.nonce_provider())
         .unwrap()
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -303,7 +303,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     test_runner
@@ -315,7 +315,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let transaction3 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(&[other_pk])
+        .build(&[other_pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction3);

@@ -31,10 +31,10 @@ impl Transfer {
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_account = get_default_account()?;
         let (default_pks, default_sks) = get_default_signers()?;
-        let transaction = TransactionBuilder::new(&executor)
+        let transaction = TransactionBuilder::new()
             .withdraw_from_account_by_amount(self.amount, self.resource_address, default_account)
             .call_method_with_all_resources(self.recipient, "deposit_batch")
-            .build(default_pks)
+            .build(default_pks, &executor)
             .map_err(Error::TransactionConstructionError)?
             .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)

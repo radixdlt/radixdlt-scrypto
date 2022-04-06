@@ -15,7 +15,7 @@ fn test_say_hello() {
         .unwrap();
 
     // Test the `say_hello` function.
-    let transaction1 = TransactionBuilder::new(&executor)
+    let transaction1 = TransactionBuilder::new()
         .call_function(package, "NoStd", "say_hello", vec![])
         .build(&[])
         .unwrap()

@@ -63,10 +63,10 @@ impl NewTokenFixed {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let transaction = TransactionBuilder::new(&executor)
+        let transaction = TransactionBuilder::new()
             .new_token_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(default_pks)
+            .build(default_pks, &executor)
             .map_err(Error::TransactionConstructionError)?
             .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)

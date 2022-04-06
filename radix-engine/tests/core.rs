@@ -12,9 +12,9 @@ fn test_process_and_transaction() {
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let package = executor.publish_package(&compile("core")).unwrap();
 
-    let transaction1 = TransactionBuilder::new(&executor)
+    let transaction1 = TransactionBuilder::new()
         .call_function(package, "CoreTest", "query", vec![])
-        .build(&[])
+        .build(&[], &executor)
         .unwrap()
         .sign(&[]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
@@ -28,11 +28,11 @@ fn test_call() {
     let (_, _, account) = executor.new_account();
     let package = executor.publish_package(&compile("core")).unwrap();
 
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(package, "MoveTest", "move_bucket", vec![])
         .call_function(package, "MoveTest", "move_proof", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[])
+        .build(&[], &executor)
         .unwrap()
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();

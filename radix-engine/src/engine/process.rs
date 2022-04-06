@@ -1820,10 +1820,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         resource_address: &ResourceAddress,
         transition: &str,
     ) -> Result<(), RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
+        let resource_manager = self.track.get_resource_manager(&resource_address).ok_or(
+            RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+        )?;
         let auth_rule = resource_manager.get_auth(transition);
         auth_rule
             .check(&[self.caller_auth_zone, &self.auth_zone])

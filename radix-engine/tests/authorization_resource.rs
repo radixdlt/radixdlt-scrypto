@@ -25,7 +25,7 @@ fn cannot_mint_with_wrong_auth() {
             random_resource_address,
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -54,7 +54,7 @@ fn can_mint_with_right_auth() {
             auth_token_resource_address,
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -77,7 +77,7 @@ fn cannot_burn_with_no_auth() {
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .burn(Decimal::one(), token_resource_address)
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -113,7 +113,7 @@ fn can_burn_with_auth() {
             },
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
+        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);

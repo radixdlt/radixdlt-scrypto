@@ -11,7 +11,7 @@ fn bench_transfer(b: &mut Bencher) {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let (pk, sk, account1) = executor.new_account();
     let (_, _, account2) = executor.new_account();
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")
         .build(&[pk])

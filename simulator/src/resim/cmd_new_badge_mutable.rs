@@ -62,9 +62,9 @@ impl NewBadgeMutable {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let transaction = TransactionBuilder::new(&executor)
+        let transaction = TransactionBuilder::new()
             .new_badge_mutable(metadata, self.minter_resource_address)
-            .build(default_pks)
+            .build(default_pks, &executor)
             .map_err(Error::TransactionConstructionError)?
             .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)

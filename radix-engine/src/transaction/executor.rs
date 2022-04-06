@@ -93,12 +93,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &MethodAuth) -> ComponentAddress {
         let receipt = self
             .validate_and_execute(
-                &TransactionBuilder::new(self)
+                &TransactionBuilder::new()
                     .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })
-                    .build(&[])
+                    .build(&[], self)
                     .unwrap()
                     .sign(&[]),
             )
@@ -125,9 +125,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     ) -> Result<PackageAddress, RuntimeError> {
         let receipt = self
             .validate_and_execute(
-                &TransactionBuilder::new(self)
+                &TransactionBuilder::new()
                     .publish_package(code.as_ref())
-                    .build(&[])
+                    .build(&[], self)
                     .unwrap()
                     .sign(&[]),
             )
