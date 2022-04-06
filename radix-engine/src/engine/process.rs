@@ -58,6 +58,7 @@ enum ActorState {
     Scrypto(Actor, Option<(ComponentAddress, Vec<u8>, ScryptoValue)>),
     Resource(ResourceAddress),
     Bucket(BucketId),
+    NonFungible(NonFungibleAddress),
 }
 
 /// Represents an interpreter instance.
@@ -72,6 +73,7 @@ pub enum InvocationType {
     Scrypto(Actor),
     Resource(ResourceAddress),
     Bucket(BucketId),
+    NonFungible(NonFungibleAddress),
 }
 
 /// Keeps invocation information.
@@ -750,6 +752,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let resource_address = self.buckets.get(&bucket_id).unwrap().resource_address();
                 self.check_resource_auth(&resource_address, &invocation.function)?;
                 Ok(ActorState::Bucket(bucket_id.clone()))
+            },
+            InvocationType::NonFungible(non_fungible_address) => {
+                let resource_address = non_fungible_address.resource_address();
+                self.check_resource_auth(&resource_address, &invocation.function)?;
+                Ok(ActorState::NonFungible(non_fungible_address.clone()))
             }
         }?;
 
@@ -864,6 +871,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
                         self.burn_resource(bucket.into_container().map_err(RuntimeError::BucketError)?)?;
 
+                        Ok(ScryptoValue::from_value(&()))
+                    }
+                    _ => Err(RuntimeError::IllegalSystemCall)
+                }
+            },
+            ActorState::NonFungible(non_fungible_address) => {
+                match invocation.function.as_str() {
+                    "update_non_fungible_mutable_data" => {
+                        let new_mutable_data: Vec<u8> = scrypto_decode(&invocation.args[0].raw)
+                            .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+
+                        let data = self.process_non_fungible_data(&new_mutable_data)?;
+                        self.track
+                            .get_non_fungible_mut(&non_fungible_address)
+                            .ok_or(RuntimeError::NonFungibleNotFound(non_fungible_address))?
+                            .set_mutable_data(data.raw);
                         Ok(ScryptoValue::from_value(&()))
                     }
                     _ => Err(RuntimeError::IllegalSystemCall)
@@ -1906,19 +1929,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: UpdateNonFungibleMutableDataInput,
     ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
-        // Auth
-        let resource_address = input.non_fungible_address.resource_address();
-        self.check_resource_auth(&resource_address, "update_non_fungible_mutable_data")?;
-
-        // update state
-        let data = self.process_non_fungible_data(&input.new_mutable_data)?;
-        self.track
-            .get_non_fungible_mut(&input.non_fungible_address)
-            .ok_or(RuntimeError::NonFungibleNotFound(
-                input.non_fungible_address,
-            ))?
-            .set_mutable_data(data.raw);
-
+        let invocation = Invocation {
+            invocation_type: InvocationType::NonFungible(input.non_fungible_address),
+            function: "update_non_fungible_mutable_data".to_string(),
+            args: vec![ScryptoValue::from_value(&input.new_mutable_data)],
+        };
+        let _ = self.call(invocation)?;
         Ok(UpdateNonFungibleMutableDataOutput {})
     }
 
