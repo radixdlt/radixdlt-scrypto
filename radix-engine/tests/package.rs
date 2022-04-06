@@ -28,7 +28,8 @@ fn missing_memory_should_cause_error() {
         .new_transaction_builder()
         .publish_package(&code)
         .build(&[], test_runner.nonce_provider())
-        .unwrap();
+        .unwrap()
+        .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -72,7 +73,8 @@ fn overflow_return_len_should_cause_memory_access_error() {
         .new_transaction_builder()
         .call_function(package, "MaxReturnSize", "something", vec![])
         .build(&[], test_runner.nonce_provider())
-        .unwrap();
+        .unwrap()
+        .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -92,7 +94,8 @@ fn zero_return_len_should_cause_data_validation_error() {
         .new_transaction_builder()
         .call_function(package, "ZeroReturnSize", "something", vec![])
         .build(&[], test_runner.nonce_provider())
-        .unwrap();
+        .unwrap()
+        .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert

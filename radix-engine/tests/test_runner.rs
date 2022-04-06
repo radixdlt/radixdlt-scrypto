@@ -1,5 +1,5 @@
 use radix_engine::ledger::*;
-use radix_engine::model::{Component, Receipt, Transaction};
+use radix_engine::model::{Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -41,7 +41,7 @@ impl<'l> TestRunner<'l> {
         self.executor.new_account()
     }
 
-    pub fn validate_and_execute(&mut self, transaction: &Transaction) -> Receipt {
+    pub fn validate_and_execute(&mut self, transaction: &SignedTransaction) -> Receipt {
         self.executor.validate_and_execute(transaction).unwrap()
     }
 

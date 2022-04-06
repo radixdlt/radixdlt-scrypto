@@ -78,7 +78,8 @@ fn invalid_blueprint_name_should_cause_error() {
             vec![],
         )
         .build(&[], test_runner.nonce_provider())
-        .unwrap();
+        .unwrap()
+        .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert

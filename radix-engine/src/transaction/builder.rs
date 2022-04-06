@@ -105,9 +105,7 @@ impl TransactionBuilder {
             Instruction::CallMethodWithAllResources { .. } => {
                 self.id_validator.move_all_resources().unwrap();
             }
-            Instruction::PublishPackage { .. }
-            | Instruction::Nonce { .. }
-            | Instruction::End { .. } => {}
+            Instruction::PublishPackage { .. } | Instruction::Nonce { .. } => {}
         }
 
         self.instructions.push(inst);
@@ -169,6 +167,11 @@ impl TransactionBuilder {
     pub fn assert_worktop_contains(&mut self, resource_address: ResourceAddress) -> &mut Self {
         self.add_instruction(Instruction::AssertWorktopContains { resource_address })
             .0
+    }
+
+    /// Clears auth zone.
+    pub fn clear_auth_zone(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::ClearAuthZone).0
     }
 
     /// Asserts that worktop contains resource.

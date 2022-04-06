@@ -8,15 +8,23 @@ use crate::errors::*;
 use crate::model::*;
 
 pub fn validate_transaction(
-    transaction: &Transaction,
+    transaction: &SignedTransaction,
 ) -> Result<ValidatedTransaction, TransactionValidationError> {
-    let hash = transaction.hash();
     let mut instructions = vec![];
     let mut signers = vec![];
 
+    // verify signature (may defer to runtime)
+    let hash = transaction.transaction.hash();
+    for (pk, sig) in &transaction.signatures {
+        if !EcdsaVerifier::verify(hash.as_ref(), pk, sig) {
+            return Err(TransactionValidationError::InvalidSignature);
+        }
+        signers.push(pk.clone());
+    }
+
     // semantic analysis
     let mut id_validator = IdValidator::new();
-    for (i, inst) in transaction.instructions.iter().enumerate() {
+    for inst in &transaction.transaction.instructions {
         match inst.clone() {
             Instruction::TakeFromWorktop { resource_address } => {
                 id_validator
@@ -181,17 +189,6 @@ pub fn validate_transaction(
             Instruction::Nonce { .. } => {
                 // TODO: validate nonce
             }
-            Instruction::End { signatures } => {
-                if i != transaction.instructions.len() - 1 {
-                    return Err(TransactionValidationError::UnexpectedEnd);
-                }
-                for (pk, sig) in signatures {
-                    if !EcdsaVerifier::verify(transaction.hash().as_ref(), &pk, &sig) {
-                        return Err(TransactionValidationError::InvalidSignature);
-                    }
-                    signers.push(pk);
-                }
-            }
         }
     }
 
@@ -240,15 +237,18 @@ mod tests {
     #[test]
     fn should_reject_transaction_passing_vault() {
         assert_eq!(
-            validate_transaction(&Transaction {
-                instructions: vec![Instruction::CallMethod {
-                    component_address: ComponentAddress([1u8; 26]),
-                    method: "test".to_owned(),
-                    args: vec![scrypto_encode(&scrypto::resource::Vault((
-                        Hash([2u8; 32]),
-                        0,
-                    )))],
-                }],
+            validate_transaction(&SignedTransaction {
+                transaction: Transaction {
+                    instructions: vec![Instruction::CallMethod {
+                        component_address: ComponentAddress([1u8; 26]),
+                        method: "test".to_owned(),
+                        args: vec![scrypto_encode(&scrypto::resource::Vault((
+                            Hash([2u8; 32]),
+                            0,
+                        )))],
+                    }],
+                },
+                signatures: Vec::new(),
             }),
             Err(TransactionValidationError::VaultNotAllowed((
                 Hash([2u8; 32]),
@@ -260,16 +260,19 @@ mod tests {
     #[test]
     fn should_reject_transaction_passing_lazy_map() {
         assert_eq!(
-            validate_transaction(&Transaction {
-                instructions: vec![Instruction::CallMethod {
-                    component_address: ComponentAddress([1u8; 26]),
-                    method: "test".to_owned(),
-                    args: vec![scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
-                        id: (Hash([2u8; 32]), 0,),
-                        key: PhantomData,
-                        value: PhantomData,
-                    })],
-                }],
+            validate_transaction(&SignedTransaction {
+                transaction: Transaction {
+                    instructions: vec![Instruction::CallMethod {
+                        component_address: ComponentAddress([1u8; 26]),
+                        method: "test".to_owned(),
+                        args: vec![scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
+                            id: (Hash([2u8; 32]), 0,),
+                            key: PhantomData,
+                            value: PhantomData,
+                        })],
+                    }],
+                },
+                signatures: Vec::new()
             }),
             Err(TransactionValidationError::LazyMapNotAllowed((
                 Hash([2u8; 32]),

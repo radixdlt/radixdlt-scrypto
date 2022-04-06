@@ -73,7 +73,6 @@ pub enum TransactionValidationError {
     VaultNotAllowed(VaultId),
     LazyMapNotAllowed(LazyMapId),
     InvalidSignature,
-    UnexpectedEnd,
 }
 
 /// Represents an error when executing a transaction.

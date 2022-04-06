@@ -7,10 +7,26 @@ use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
-/// Represents a signed or signed transaction, parsed but not validated.
+/// Represents an unsigned transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
+}
+
+/// Represents a signed transaction
+pub struct SignedTransaction {
+    /// The unsigned transaction
+    pub transaction: Transaction,
+    /// The signatures. Public keys are for signature algorithm that doesn't support public key recovery, e.g. ed25519.
+    pub signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
+}
+
+/// Represents a validated transaction
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValidatedTransaction {
+    pub hash: Hash,
+    pub instructions: Vec<ValidatedInstruction>,
+    pub signers: Vec<EcdsaPublicKey>,
 }
 
 /// Represents an instruction
@@ -115,19 +131,6 @@ pub enum Instruction {
     Nonce {
         nonce: u64, // TODO: may be replaced with substate id for entropy
     },
-
-    /// Marks the end of transaction with signatures.
-    End {
-        // Public keys are for signature algorithm that doesn't support public key recovery, e.g. ed25519.
-        signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ValidatedTransaction {
-    pub hash: Hash,
-    pub instructions: Vec<ValidatedInstruction>,
-    pub signers: Vec<EcdsaPublicKey>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -207,28 +210,11 @@ impl Transaction {
         scrypto_encode(self)
     }
 
-    pub fn is_signed(&self) -> bool {
-        match self.instructions.last() {
-            Some(Instruction::End { .. }) => true,
-            _ => false,
-        }
-    }
-
     pub fn hash(&self) -> Hash {
-        let instructions = if self.is_signed() {
-            &self.instructions[..self.instructions.len() - 1]
-        } else {
-            &self.instructions
-        };
-        let bytes = scrypto_encode(instructions);
-        hash(bytes)
+        hash(self.to_vec())
     }
 
-    pub fn sign<T: AsRef<[EcdsaPrivateKey]>>(mut self, private_keys: T) -> Self {
-        if self.is_signed() {
-            panic!("Transaction already signed!");
-        }
-
+    pub fn sign<T: AsRef<[EcdsaPrivateKey]>>(self, private_keys: T) -> SignedTransaction {
         let hash = self.hash();
         let signatures = private_keys
             .as_ref()
@@ -236,7 +222,9 @@ impl Transaction {
             .map(|sk| (sk.public_key(), sk.sign(hash.as_ref())))
             .collect();
 
-        self.instructions.push(Instruction::End { signatures });
-        self
+        SignedTransaction {
+            transaction: self,
+            signatures: signatures,
+        }
     }
 }
