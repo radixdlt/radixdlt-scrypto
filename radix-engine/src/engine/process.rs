@@ -53,6 +53,11 @@ macro_rules! re_warn {
     };
 }
 
+enum ActorState {
+    Scrypto(Actor, Option<(ComponentAddress, Vec<u8>, ScryptoValue)>),
+    Resource(ResourceAddress),
+}
+
 /// Represents an interpreter instance.
 pub struct Interpreter {
     invocation: Invocation,
@@ -60,10 +65,16 @@ pub struct Interpreter {
     memory: MemoryRef,
 }
 
+#[derive(Debug, Clone)]
+pub enum InvocationType {
+    Scrypto(Actor),
+    Resource(ResourceAddress),
+}
+
 /// Keeps invocation information.
 #[derive(Debug, Clone)]
 pub struct Invocation {
-    actor: Actor,
+    invocation_type: InvocationType,
     function: String,
     args: Vec<ScryptoValue>,
 }
@@ -695,92 +706,129 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn run(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(self, "Run started: actor = {:?}", invocation.actor);
+        re_info!(self, "Run started: invocation = {:?}", invocation);
 
-        let package = self
-            .track
-            .get_package(invocation.actor.package_address())
-            .ok_or(RuntimeError::PackageNotFound(invocation.actor.package_address().clone()))?;
-
-        if !package.contains_blueprint(invocation.actor.blueprint_name()) {
-            return Err(RuntimeError::BlueprintNotFound(
-                invocation.actor.package_address().clone(),
-                invocation.actor.blueprint_name().to_string(),
-            ));
-        }
-
-        // Load code
-        let (module, memory) = package
-            .load_module()
-            .unwrap();
-
-        // Authorization
-        let state: Option<(ComponentAddress, Vec<u8>, ScryptoValue)> = match invocation.actor.actor_type() {
-            ActorType::Blueprint => Ok(None),
-            ActorType::Component(component_address) => {
-                // TODO: Remove clone
-                let schema = package.load_blueprint_schema(invocation.actor.blueprint_name()).unwrap().clone();
-                let component = self.track.get_component(component_address.clone()).unwrap();
-                let (scrypto_value, method_auth) =
-                    component.method_authorization(&schema, &invocation.function);
-                method_auth.check(&[self.caller_auth_zone]).map_err(|e| {
-                    RuntimeError::AuthorizationError(invocation.function.clone(), e)
-                })?;
-                Ok(Some((component_address.clone(), component.state().to_vec(), scrypto_value)))
+        // Authorization and state load
+        let state: ActorState = match &invocation.invocation_type {
+            InvocationType::Scrypto(actor) => {
+                match actor.actor_type() {
+                    ActorType::Blueprint => Ok(ActorState::Scrypto(actor.clone(), None)),
+                    ActorType::Component(component_address) => {
+                        let package = self
+                            .track
+                            .get_package(actor.package_address())
+                            .ok_or(RuntimeError::PackageNotFound(actor.package_address().clone()))?;
+                        // TODO: Remove clone
+                        let schema = package.load_blueprint_schema(actor.blueprint_name()).unwrap().clone();
+                        let component = self.track.get_component(component_address.clone()).unwrap();
+                        let (scrypto_value, method_auth) =
+                            component.method_authorization(&schema, &invocation.function);
+                        method_auth.check(&[self.caller_auth_zone]).map_err(|e| {
+                            RuntimeError::AuthorizationError(invocation.function.clone(), e)
+                        })?;
+                        Ok(
+                            ActorState::Scrypto(
+                                actor.clone(),
+                                Some((
+                                    component_address.clone(),
+                                    component.state().to_vec(),
+                                    scrypto_value
+                                ))
+                            )
+                        )
+                    }
+                }
+            },
+            InvocationType::Resource(resource_address) => {
+                self.check_resource_auth(resource_address, "mint")?;
+                Ok(ActorState::Resource(resource_address.clone()))
             }
         }?;
 
-        // Load state
-        let interpreter_state = if let Some((component_address, state, data)) = state {
-            let initial_loaded_object_refs = ComponentObjectRefs {
-                vault_ids: data.vault_ids.into_iter().collect(),
-                lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
-            };
-            InterpreterState::Component {
-                state,
-                component_address,
-                initial_loaded_object_refs,
-                additional_object_refs: ComponentObjectRefs::new(),
-            }
-        } else {
-            InterpreterState::Blueprint
-        };
-        self.wasm_process_state = Some(WasmProcess {
-            depth: self.depth,
-            trace: self.trace,
-            vm: Interpreter {
-                invocation: invocation.clone(),
-                module: module.clone(),
-                memory,
-            },
-            interpreter_state,
-            process_owned_objects: ComponentObjects::new(),
-        });
-
         // Execution
-        let result = module.invoke_export(invocation.actor.export_name(), &[], self);
-        re_debug!(self, "Invoke result: {:?}", result);
-        let rtn = result
-            .map_err(|e| {
-                match e.into_host_error() {
-                    // Pass-through runtime errors
-                    Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
-                    None => RuntimeError::InvokeError,
-                }
-            })?
-            .ok_or(RuntimeError::NoReturnData)?;
+        let output = match state {
+            ActorState::Scrypto(actor, component_state) => {
+                let package = self
+                    .track
+                    .get_package(actor.package_address())
+                    .ok_or(RuntimeError::PackageNotFound(actor.package_address().clone()))?;
 
-        // Return value
-        let output = match rtn {
-            RuntimeValue::I32(ptr) => {
-                let data = self.read_return_value(ptr as u32)?;
-                self.process_return_data(&data)?;
-                data
+                if !package.contains_blueprint(actor.blueprint_name()) {
+                    return Err(RuntimeError::BlueprintNotFound(
+                        actor.package_address().clone(),
+                        actor.blueprint_name().to_string(),
+                    ));
+                }
+
+                let (module, memory) = package
+                    .load_module()
+                    .unwrap();
+
+                let interpreter_state = if let Some((component_address, state, data)) = component_state {
+                    let initial_loaded_object_refs = ComponentObjectRefs {
+                        vault_ids: data.vault_ids.into_iter().collect(),
+                        lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
+                    };
+                    InterpreterState::Component {
+                        state,
+                        component_address,
+                        initial_loaded_object_refs,
+                        additional_object_refs: ComponentObjectRefs::new(),
+                    }
+                } else {
+                    InterpreterState::Blueprint
+                };
+
+                self.wasm_process_state = Some(WasmProcess {
+                    depth: self.depth,
+                    trace: self.trace,
+                    vm: Interpreter {
+                        invocation: invocation.clone(),
+                        module: module.clone(),
+                        memory,
+                    },
+                    interpreter_state,
+                    process_owned_objects: ComponentObjects::new(),
+                });
+
+                // Execution
+                let result = module.invoke_export(actor.export_name(), &[], self);
+                re_debug!(self, "Invoke result: {:?}", result);
+                let rtn = result
+                    .map_err(|e| {
+                        match e.into_host_error() {
+                            // Pass-through runtime errors
+                            Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
+                            None => RuntimeError::InvokeError,
+                        }
+                    })?
+                    .ok_or(RuntimeError::NoReturnData)?;
+
+                // Return value
+                match rtn {
+                    RuntimeValue::I32(ptr) => {
+                        let data = self.read_return_value(ptr as u32)?;
+                        self.process_return_data(&data)?;
+                        Ok(data)
+                    }
+                    _ => {
+                        return Err(RuntimeError::InvalidReturnType);
+                    }
+                }
             }
-            _ => {
-                return Err(RuntimeError::InvalidReturnType);
+            ActorState::Resource(resource_address) => {
+                // TODO: cleanup
+                let mint_params: MintParams = scrypto_decode(&invocation.args[0].raw)
+                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+
+                // wrap resource into a bucket
+                let bucket = Bucket::new(self.mint_resource(resource_address, mint_params)?);
+                let bucket_id = self.new_bucket_id()?;
+                self.buckets.insert(bucket_id, bucket);
+
+                Ok(ScryptoValue::from_value(&MintResourceOutput { bucket_id }))
             }
-        };
+        }?;
 
         #[cfg(not(feature = "alloc"))]
         re_info!(
@@ -803,10 +851,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::blueprint(
-                package_address,
-                blueprint_name.to_owned(),
-                format!("{}_main", blueprint_name)
+            invocation_type: InvocationType::Scrypto(
+                Actor::blueprint(
+                    package_address,
+                    blueprint_name.to_owned(),
+                    format!("{}_main", blueprint_name)
+                )
             ),
             function: function.to_owned(),
             args,
@@ -829,11 +879,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args_with_self.extend(args);
 
         Ok(Invocation {
-            actor: Actor::component(
-                component.package_address(),
-                component.blueprint_name().to_owned(),
-                format!("{}_main", component.blueprint_name()),
-                component_address,
+            invocation_type: InvocationType::Scrypto(
+                Actor::component(
+                    component.package_address(),
+                    component.blueprint_name().to_owned(),
+                    format!("{}_main", component.blueprint_name()),
+                    component_address,
+                )
             ),
             function: method.to_owned(),
             args: args_with_self,
@@ -847,10 +899,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         blueprint_name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            actor: Actor::blueprint(
-                package_address,
-                blueprint_name.to_owned(),
-                format!("{}_abi", blueprint_name),
+            invocation_type: InvocationType::Scrypto(
+                Actor::blueprint(
+                    package_address,
+                    blueprint_name.to_owned(),
+                    format!("{}_abi", blueprint_name),
+                )
             ),
             function: String::new(),
             args: Vec::new(),
@@ -1363,20 +1417,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
 
-        let data = Self::process_entry_data(&input.state)?;
-        let new_objects = wasm_process.process_owned_objects.take(data)?;
-        let package_address = wasm_process.vm.invocation.actor.package_address().clone();
-        let component = Component::new(
-            package_address,
-            input.blueprint_name,
-            input.authorization,
-            input.state,
-        );
-        let component_address = self.track.create_component(component);
-        self.track
-            .insert_objects_into_component(new_objects, component_address);
+        if let InvocationType::Scrypto(actor) = &wasm_process.vm.invocation.invocation_type {
+            let data = Self::process_entry_data(&input.state)?;
+            let new_objects = wasm_process.process_owned_objects.take(data)?;
+            let package_address = actor.package_address().clone();
+            let component = Component::new(
+                package_address,
+                input.blueprint_name,
+                input.authorization,
+                input.state,
+            );
+            let component_address = self.track.create_component(component);
+            self.track
+                .insert_objects_into_component(new_objects, component_address);
 
-        Ok(CreateComponentOutput { component_address })
+            Ok(CreateComponentOutput { component_address })
+        } else {
+            Err(RuntimeError::IllegalSystemCall)
+        }
     }
 
     fn handle_get_component_info(
@@ -2250,9 +2308,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)?;
-        Ok(GetActorOutput {
-            actor: wasm_process.vm.invocation.actor.clone(),
-        })
+
+        if let InvocationType::Scrypto(actor) = &wasm_process.vm.invocation.invocation_type {
+            return Ok(GetActorOutput { actor: actor.clone() });
+        } else {
+            return Err(RuntimeError::IllegalSystemCall);
+        }
     }
 
     //============================
