@@ -190,7 +190,8 @@ impl EcdsaPrivateKey {
     }
 }
 
-// Private key is not a custom type, as we don't expect it to be passed around
+// Temporarily for simulator
+scrypto_type!(EcdsaPrivateKey, ScryptoType::EcdsaPrivateKey, Vec::new());
 
 //======
 // text
@@ -265,6 +266,7 @@ impl fmt::Debug for EcdsaPrivateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::rust::string::ToString;
 
     #[test]
     fn sign_and_verify() {
