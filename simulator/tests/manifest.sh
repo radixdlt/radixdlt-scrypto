@@ -9,7 +9,7 @@ resim="cargo run --bin resim $@ --"
 
 $resim reset
 account=`$resim new-account | awk '/Account component address:/ {print $NF}'`
-package=`$resim publish ./tests/hello_world.wasm | awk '/Package:/ {print $NF}'`
+package=`$resim publish ../examples/hello-world | awk '/Package:/ {print $NF}'`
 sed "s/015c7d0cb306d77130b351005d481923a90448f7843298c7823d2a/$package/g;s/02d4ca16f3a137bc109a16e752aae2bb64a65b318746c6c9199b0c/$account/g" ./tests/m1.rtm > target/m1.rtm
 
 
