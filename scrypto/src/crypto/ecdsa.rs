@@ -38,9 +38,10 @@ impl EcdsaPrivateKey {
         EcdsaPublicKey(self.0.public_key())
     }
 
+    /// Signs a message (no pre-hash required).
     pub fn sign(&self, msg: &[u8]) -> EcdsaSignature {
-        let signing_key = SigningKey::from(self.0.clone());
-        EcdsaSignature(signing_key.sign(msg))
+        let signer = SigningKey::from(&self.0);
+        EcdsaSignature(signer.sign(msg))
     }
 }
 
@@ -55,7 +56,7 @@ impl EcdsaSignature {
 
 impl EcdsaVerifier {
     pub fn verify(msg: &[u8], pk: &EcdsaPublicKey, sig: &EcdsaSignature) -> bool {
-        let verifier = VerifyingKey::from_encoded_point(&pk.0.to_encoded_point(false)).unwrap();
+        let verifier = VerifyingKey::from(pk.0);
         verifier.verify(msg, &sig.0).is_ok()
     }
 }
@@ -266,24 +267,24 @@ impl fmt::Debug for EcdsaPrivateKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::string::ToString;
+    use crate::crypto::Hash;
 
     #[test]
     fn sign_and_verify() {
-        // From: https://asecuritysite.com/ecc/rust_ecdsa2
-        let test_sk = "f348b118fa83ef25ecc9057da28e218ad29da650b0c3508defbb3541747180d2";
-        let test_pk = "040c1ed3c9a585d0a756c63109606028012e12d66fa43dcdf272e2e03fe0c16e160b12877a334059614343ee289fe9d8b1752aacd79d2f22a4b2cc99ba54de5d02";
-        let test_message = "Hello World!";
-        let test_signature = "7a075925c0d2d454dbfe188779da3317a82ee152233c78e550a8424c7ed1cbc67f867375a307bb28c00d792a0182de7868f65e3471f74c852f419fe0bc9791b4";
+        // From Babylon Wallet PoC
+        let test_sk = "0000000000000000000000000000000000000000000000000000000000000001";
+        let test_pk = "046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5";
+        let test_message = "{\"a\":\"banan\"}";
+        let test_hash = "c43a1e3a7e822c97004267324ba8df88d114ab3e019d0e85eccb1ff8592d6d36";
+        let test_signature = "468764c570758020eb8392e40de5805757d6e563a507f12ddde56463c23820e10401cae1684cb350bc3ecb45965ee259964f931eb4c165cd1a270fc538b65a75";
         let sk = EcdsaPrivateKey::from_str(test_sk).unwrap();
         let pk = EcdsaPublicKey::from_str(test_pk).unwrap();
+        let hash = Hash::from_str(test_hash).unwrap();
         let sig = EcdsaSignature::from_str(test_signature).unwrap();
+
         assert_eq!(sk.public_key(), pk);
+        assert_eq!(crate::crypto::hash(test_message), hash);
         assert_eq!(sk.sign(test_message.as_bytes()), sig);
         assert!(EcdsaVerifier::verify(test_message.as_bytes(), &pk, &sig));
-
-        assert_eq!(EcdsaPrivateKey::from_str(&sk.to_string()).unwrap(), sk);
-        assert_eq!(EcdsaPublicKey::from_str(&pk.to_string()).unwrap(), pk);
-        assert_eq!(EcdsaSignature::from_str(&sig.to_string()).unwrap(), sig);
     }
 }

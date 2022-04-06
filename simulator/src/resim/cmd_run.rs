@@ -21,13 +21,11 @@ impl Run {
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let (_, default_sks) = get_default_signers()?;
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
-        let mut transaction =
-            transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
-
-        transaction.instructions.push(Instruction::Nonce {
+        let mut unsigned = transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
+        unsigned.instructions.push(Instruction::Nonce {
             nonce: executor.substate_store().get_nonce(),
         });
-        transaction = transaction.sign(&default_sks);
-        process_transaction(transaction, &mut executor, &None)
+        let signed = unsigned.sign(&default_sks);
+        process_transaction(signed, &mut executor, &None)
     }
 }

@@ -215,11 +215,11 @@ impl Transaction {
     }
 
     pub fn sign<T: AsRef<[EcdsaPrivateKey]>>(self, private_keys: T) -> SignedTransaction {
-        let hash = self.hash();
+        let msg = self.to_vec();
         let signatures = private_keys
             .as_ref()
             .iter()
-            .map(|sk| (sk.public_key(), sk.sign(hash.as_ref())))
+            .map(|sk| (sk.public_key(), sk.sign(&msg)))
             .collect();
 
         SignedTransaction {

@@ -14,9 +14,9 @@ pub fn validate_transaction(
     let mut signers = vec![];
 
     // verify signature (may defer to runtime)
-    let hash = transaction.transaction.hash();
+    let msg = transaction.transaction.to_vec();
     for (pk, sig) in &transaction.signatures {
-        if !EcdsaVerifier::verify(hash.as_ref(), pk, sig) {
+        if !EcdsaVerifier::verify(&msg, pk, sig) {
             return Err(TransactionValidationError::InvalidSignature);
         }
         signers.push(pk.clone());
@@ -193,7 +193,7 @@ pub fn validate_transaction(
     }
 
     Ok(ValidatedTransaction {
-        hash,
+        hash: transaction.transaction.hash(),
         instructions,
         signers,
     })

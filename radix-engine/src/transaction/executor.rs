@@ -157,34 +157,34 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     pub fn validate_and_execute(
         &mut self,
-        transaction: &SignedTransaction,
+        signed: &SignedTransaction,
     ) -> Result<Receipt, TransactionValidationError> {
-        let validated_transaction = self.validate(transaction)?;
-        let receipt = self.execute(&validated_transaction);
+        let validated = self.validate(signed)?;
+        let receipt = self.execute(&validated);
         Ok(receipt)
     }
 
     pub fn validate(
         &mut self,
-        transaction: &SignedTransaction,
+        signed: &SignedTransaction,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        validate_transaction(transaction)
+        validate_transaction(signed)
     }
 
-    pub fn execute(&mut self, transaction: &ValidatedTransaction) -> Receipt {
+    pub fn execute(&mut self, validated: &ValidatedTransaction) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
         let mut track = Track::new(
             self.substate_store,
-            transaction.hash.clone(),
-            transaction.signers.clone(),
+            validated.hash.clone(),
+            validated.signers.clone(),
         );
         let mut proc = track.start_process(self.trace);
 
         let mut error: Option<RuntimeError> = None;
         let mut outputs = vec![];
-        for inst in &transaction.instructions {
+        for inst in &validated.instructions {
             let result = match inst {
                 ValidatedInstruction::TakeFromWorktop { resource_address } => proc
                     .take_all_from_worktop(*resource_address)
@@ -318,7 +318,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
         Receipt {
             commit_receipt,
-            transaction: transaction.clone(),
+            validated_transaction: validated.clone(),
             result: match error {
                 Some(error) => Err(error),
                 None => Ok(()),
