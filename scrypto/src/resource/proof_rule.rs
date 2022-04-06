@@ -1,4 +1,4 @@
-use crate::resource::AuthRule::{AllOf, AnyOf};
+use crate::resource::AuthRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
@@ -7,6 +7,56 @@ use sbor::*;
 use scrypto::math::Decimal;
 
 /// TODO: add documentation for public types once they're stable.
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum SoftDecimal {
+    Static(Decimal),
+    Dynamic(SchemaPath),
+}
+
+impl From<Decimal> for SoftDecimal {
+    fn from(amount: Decimal) -> Self {
+        SoftDecimal::Static(amount)
+    }
+}
+
+impl From<SchemaPath> for SoftDecimal {
+    fn from(path: SchemaPath) -> Self {
+        SoftDecimal::Dynamic(path)
+    }
+}
+
+impl From<&str> for SoftDecimal {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftDecimal::Dynamic(schema_path)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum SoftCount {
+    Static(u8),
+    Dynamic(SchemaPath),
+}
+
+impl From<u8> for SoftCount {
+    fn from(count: u8) -> Self {
+        SoftCount::Static(count)
+    }
+}
+
+impl From<SchemaPath> for SoftCount {
+    fn from(path: SchemaPath) -> Self {
+        SoftCount::Dynamic(path)
+    }
+}
+
+impl From<&str> for SoftCount {
+    fn from(path: &str) -> Self {
+        let schema_path: SchemaPath = path.parse().expect("Could not decode path");
+        SoftCount::Dynamic(schema_path)
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftResource {
@@ -97,8 +147,8 @@ where
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
-    AmountOf(Decimal, SoftResource),
-    CountOf(u8, SoftResourceOrNonFungibleList),
+    AmountOf(SoftDecimal, SoftResource),
+    CountOf(SoftCount, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
 }
@@ -137,26 +187,26 @@ macro_rules! resource_list {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
-pub enum AuthRule {
+pub enum AuthRuleNode {
     ProofRule(ProofRule),
-    AnyOf(Vec<AuthRule>),
-    AllOf(Vec<AuthRule>),
+    AnyOf(Vec<AuthRuleNode>),
+    AllOf(Vec<AuthRuleNode>),
 }
 
 // FIXME: describe types with cycles
-impl Describe for AuthRule {
+impl Describe for AuthRuleNode {
     fn describe() -> sbor::describe::Type {
         sbor::describe::Type::Custom {
-            name: "AuthRule".to_owned(),
+            name: "AuthRuleNode".to_owned(),
             generics: vec![],
         }
     }
 }
 
-impl AuthRule {
-    pub fn or(self, other: AuthRule) -> Self {
+impl AuthRuleNode {
+    pub fn or(self, other: AuthRuleNode) -> Self {
         match self {
-            AuthRule::AnyOf(mut rules) => {
+            AuthRuleNode::AnyOf(mut rules) => {
                 rules.push(other);
                 AnyOf(rules)
             }
@@ -164,9 +214,9 @@ impl AuthRule {
         }
     }
 
-    pub fn and(self, other: AuthRule) -> Self {
+    pub fn and(self, other: AuthRuleNode) -> Self {
         match self {
-            AuthRule::AllOf(mut rules) => {
+            AuthRuleNode::AllOf(mut rules) => {
                 rules.push(other);
                 AllOf(rules)
             }
@@ -196,98 +246,115 @@ where
     ProofRule::AllOf(resources.into())
 }
 
-pub fn require_n_of<T>(count: u8, resources: T) -> ProofRule
+pub fn require_n_of<C, T>(count: C, resources: T) -> ProofRule
 where
+    C: Into<SoftCount>,
     T: Into<SoftResourceOrNonFungibleList>,
 {
-    ProofRule::CountOf(count, resources.into())
+    ProofRule::CountOf(count.into(), resources.into())
 }
 
-pub fn require_amount<T>(amount: Decimal, resource: T) -> ProofRule
+pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule
 where
+    D: Into<SoftDecimal>,
     T: Into<SoftResource>,
 {
-    ProofRule::AmountOf(amount, resource.into())
+    ProofRule::AmountOf(amount.into(), resource.into())
 }
 
 // TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.
 #[macro_export]
 macro_rules! auth_and_or {
     (|| $tt:tt) => {{
-        let next = auth!($tt);
-        move |e: AuthRule| e.or(next)
+        let next = auth_rule_node!($tt);
+        move |e: AuthRuleNode| e.or(next)
     }};
     (|| $right1:ident $right2:tt) => {{
-        let next = auth!($right1 $right2);
-        move |e: AuthRule| e.or(next)
+        let next = auth_rule_node!($right1 $right2);
+        move |e: AuthRuleNode| e.or(next)
     }};
     (|| $right:tt && $($rest:tt)+) => {{
         let f = auth_and_or!(&& $($rest)+);
-        let next = auth!($right);
-        move |e: AuthRule| e.or(f(next))
+        let next = auth_rule_node!($right);
+        move |e: AuthRuleNode| e.or(f(next))
     }};
     (|| $right:tt || $($rest:tt)+) => {{
         let f = auth_and_or!(|| $($rest)+);
-        let next = auth!($right);
-        move |e: AuthRule| f(e.or(next))
+        let next = auth_rule_node!($right);
+        move |e: AuthRuleNode| f(e.or(next))
     }};
     (|| $right1:ident $right2:tt && $($rest:tt)+) => {{
         let f = auth_and_or!(&& $($rest)+);
-        let next = auth!($right1 $right2);
-        move |e: AuthRule| e.or(f(next))
+        let next = auth_rule_node!($right1 $right2);
+        move |e: AuthRuleNode| e.or(f(next))
     }};
     (|| $right1:ident $right2:tt || $($rest:tt)+) => {{
         let f = auth_and_or!(|| $($rest)+);
-        let next = auth!($right1 $right2);
-        move |e: AuthRule| f(e.or(next))
+        let next = auth_rule_node!($right1 $right2);
+        move |e: AuthRuleNode| f(e.or(next))
     }};
 
     (&& $tt:tt) => {{
-        let next = auth!($tt);
-        move |e: AuthRule| e.and(next)
+        let next = auth_rule_node!($tt);
+        move |e: AuthRuleNode| e.and(next)
     }};
     (&& $right1:ident $right2:tt) => {{
-        let next = auth!($right1 $right2);
-        move |e: AuthRule| e.and(next)
+        let next = auth_rule_node!($right1 $right2);
+        move |e: AuthRuleNode| e.and(next)
     }};
     (&& $right:tt && $($rest:tt)+) => {{
         let f = auth_and_or!(&& $($rest)+);
-        let next = auth!($right);
-        move |e: AuthRule| f(e.and(next))
+        let next = auth_rule_node!($right);
+        move |e: AuthRuleNode| f(e.and(next))
     }};
     (&& $right:tt || $($rest:tt)+) => {{
         let f = auth_and_or!(|| $($rest)+);
-        let next = auth!($right);
-        move |e: AuthRule| f(e.and(next))
+        let next = auth_rule_node!($right);
+        move |e: AuthRuleNode| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt && $($rest:tt)+) => {{
         let f = auth_and_or!(&& $($rest)+);
-        let next = auth!($right1 $right2);
-        move |e: AuthRule| f(e.and(next))
+        let next = auth_rule_node!($right1 $right2);
+        move |e: AuthRuleNode| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt || $($rest:tt)+) => {{
         let f = auth_and_or!(|| $($rest)+);
-        let next = auth!($right1 $right2);
-        move |e: AuthRule| f(e.and(next))
+        let next = auth_rule_node!($right1 $right2);
+        move |e: AuthRuleNode| f(e.and(next))
     }};
 }
 
 #[macro_export]
-macro_rules! auth {
+macro_rules! auth_rule_node {
     // Handle leaves
-    ($rule:ident $args:tt) => {{ ::scrypto::resource::AuthRule::ProofRule($rule $args) }};
+    ($rule:ident $args:tt) => {{ ::scrypto::resource::AuthRuleNode::ProofRule($rule $args) }};
 
     // Handle group
-    (($($tt:tt)+)) => {{ auth!($($tt)+) }};
+    (($($tt:tt)+)) => {{ auth_rule_node!($($tt)+) }};
 
     // Handle and/or logic
     ($left1:ident $left2:tt $($right:tt)+) => {{
         let f = auth_and_or!($($right)+);
-        f(auth!($left1 $left2))
+        f(auth_rule_node!($left1 $left2))
     }};
     ($left:tt $($right:tt)+) => {{
         let f = auth_and_or!($($right)+);
-        f(auth!($left))
+        f(auth_rule_node!($left))
     }};
+}
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
+pub enum MethodAuth {
+    AllowAll,
+    Protected(AuthRuleNode),
+}
+
+#[macro_export]
+macro_rules! auth {
+    (allow_all) => {{
+        ::scrypto::resource::MethodAuth::AllowAll
+    }};
+    ($($tt:tt)+) => {{
+        ::scrypto::resource::MethodAuth::Protected(auth_rule_node!($($tt)+))
+    }};
 }

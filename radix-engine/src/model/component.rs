@@ -1,17 +1,17 @@
+use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::resource::{
-    AuthRule, NonFungibleAddress, ProofRule, SoftResource, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList,
+    AuthRuleNode, ComponentAuthorization, MethodAuth, NonFungibleAddress,
+    ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
 };
-use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::types::ScryptoType;
 use scrypto::values::*;
 
 use crate::model::method_authorization::{
-    HardAuthRule, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
+    HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
 };
 use crate::model::MethodAuthorization;
 
@@ -20,7 +20,7 @@ use crate::model::MethodAuthorization;
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,
-    auth_rules: HashMap<String, AuthRule>,
+    method_auth: ComponentAuthorization,
     state: Vec<u8>,
 }
 
@@ -28,14 +28,51 @@ impl Component {
     pub fn new(
         package_address: PackageAddress,
         blueprint_name: String,
-        auth_rules: HashMap<String, AuthRule>,
+        method_auth: ComponentAuthorization,
         state: Vec<u8>,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
-            auth_rules,
+            method_auth,
             state,
+        }
+    }
+
+    fn soft_to_hard_decimal(schema: &Type, soft_decimal: &SoftDecimal, dom: &Value) -> HardDecimal {
+        match soft_decimal {
+            SoftDecimal::Static(amount) => HardDecimal::Amount(amount.clone()),
+            SoftDecimal::Dynamic(schema_path) => {
+                let sbor_path = schema_path.to_sbor_path(schema);
+                if let None = sbor_path {
+                    return HardDecimal::SoftDecimalNotFound;
+                }
+                match sbor_path.unwrap().get_from_value(dom) {
+                    Some(Value::Custom(ty, value)) => match ScryptoType::from_id(*ty).unwrap() {
+                        ScryptoType::Decimal => {
+                            HardDecimal::Amount(Decimal::try_from(value.as_slice()).unwrap())
+                        }
+                        _ => HardDecimal::SoftDecimalNotFound,
+                    },
+                    _ => HardDecimal::SoftDecimalNotFound,
+                }
+            }
+        }
+    }
+
+    fn soft_to_hard_count(schema: &Type, soft_count: &SoftCount, dom: &Value) -> HardCount {
+        match soft_count {
+            SoftCount::Static(count) => HardCount::Count(count.clone()),
+            SoftCount::Dynamic(schema_path) => {
+                let sbor_path = schema_path.to_sbor_path(schema);
+                if let None = sbor_path {
+                    return HardCount::SoftCountNotFound;
+                }
+                match sbor_path.unwrap().get_from_value(dom) {
+                    Some(Value::U8(count)) => HardCount::Count(count.clone()),
+                    _ => HardCount::SoftCountNotFound,
+                }
+            }
         }
     }
 
@@ -178,9 +215,10 @@ impl Component {
                 );
                 HardProofRule::This(resource)
             }
-            ProofRule::AmountOf(amount, soft_resource) => {
+            ProofRule::AmountOf(soft_decimal, soft_resource) => {
+                let hard_decimal = Self::soft_to_hard_decimal(schema, soft_decimal, dom);
                 let resource = Self::soft_to_hard_resource(schema, soft_resource, dom);
-                HardProofRule::SomeOfResource(*amount, resource)
+                HardProofRule::SomeOfResource(hard_decimal, resource)
             }
             ProofRule::AllOf(resources) => {
                 let hard_resources = Self::soft_to_hard_resource_list(schema, resources, dom);
@@ -190,26 +228,31 @@ impl Component {
                 let hard_resources = Self::soft_to_hard_resource_list(schema, resources, dom);
                 HardProofRule::AnyOf(hard_resources)
             }
-            ProofRule::CountOf(count, resources) => {
+            ProofRule::CountOf(soft_count, resources) => {
+                let hard_count = Self::soft_to_hard_count(schema, soft_count, dom);
                 let hard_resources = Self::soft_to_hard_resource_list(schema, resources, dom);
-                HardProofRule::CountOf(*count, hard_resources)
+                HardProofRule::CountOf(hard_count, hard_resources)
             }
         }
     }
 
-    fn soft_to_hard_auth_rule(schema: &Type, auth_rule: &AuthRule, dom: &Value) -> HardAuthRule {
+    fn soft_to_hard_auth_rule(
+        schema: &Type,
+        auth_rule: &AuthRuleNode,
+        dom: &Value,
+    ) -> HardAuthRule {
         match auth_rule {
-            AuthRule::ProofRule(proof_rule) => {
+            AuthRuleNode::ProofRule(proof_rule) => {
                 HardAuthRule::ProofRule(Self::soft_to_hard_proof_rule(schema, proof_rule, dom))
             }
-            AuthRule::AnyOf(rules) => {
+            AuthRuleNode::AnyOf(rules) => {
                 let hard_rules = rules
                     .iter()
                     .map(|r| Self::soft_to_hard_auth_rule(schema, r, dom))
                     .collect();
                 HardAuthRule::AnyOf(hard_rules)
             }
-            AuthRule::AllOf(rules) => {
+            AuthRuleNode::AllOf(rules) => {
                 let hard_rules = rules
                     .iter()
                     .map(|r| Self::soft_to_hard_auth_rule(schema, r, dom))
@@ -225,18 +268,19 @@ impl Component {
         method_name: &str,
     ) -> (ScryptoValue, MethodAuthorization) {
         let data = ScryptoValue::from_slice(&self.state).unwrap();
-        let authorization = match self.auth_rules.get(method_name) {
-            Some(auth_rule) => MethodAuthorization::Protected(Self::soft_to_hard_auth_rule(
-                schema, auth_rule, &data.dom,
-            )),
-            None => MethodAuthorization::Public,
+        let authorization = match self.method_auth.get(method_name) {
+            Some(MethodAuth::Protected(auth_rule)) => MethodAuthorization::Protected(
+                Self::soft_to_hard_auth_rule(schema, auth_rule, &data.dom),
+            ),
+            Some(MethodAuth::AllowAll) => MethodAuthorization::Public,
+            None => MethodAuthorization::Private,
         };
 
         (data, authorization)
     }
 
-    pub fn auth_rules(&self) -> &HashMap<String, AuthRule> {
-        &self.auth_rules
+    pub fn authorization(&self) -> &ComponentAuthorization {
+        &self.method_auth
     }
 
     pub fn package_address(&self) -> PackageAddress {

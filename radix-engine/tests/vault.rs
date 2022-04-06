@@ -31,7 +31,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::VaultNotFound(_) => {}
-        _ => panic!("Should be vault not found error"),
+        _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
 
@@ -61,7 +61,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::VaultNotFound(_) => {}
-        _ => panic!("Should be vault not found error"),
+        _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
 
@@ -89,7 +89,7 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::VaultNotFound(_) => {}
-        _ => panic!("Should be vault not found error"),
+        _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
 
@@ -123,7 +123,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::VaultNotFound(_) => {}
-        _ => panic!("Should be vault not found error"),
+        _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
 

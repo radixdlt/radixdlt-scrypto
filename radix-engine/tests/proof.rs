@@ -33,7 +33,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -69,7 +69,7 @@ fn can_create_clone_and_drop_vault_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -107,7 +107,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -149,7 +149,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -183,7 +183,7 @@ fn can_use_bucket_for_authorization() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -221,7 +221,7 @@ fn can_use_vault_for_authorization() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -251,7 +251,7 @@ fn can_create_proof_from_account_and_pass_on() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -281,10 +281,10 @@ fn cant_move_restricted_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(matches!(
+    assert_eq!(
         receipt.result,
         Err(RuntimeError::CantMoveRestrictedProof(512))
-    ));
+    );
 }
 
 #[test]

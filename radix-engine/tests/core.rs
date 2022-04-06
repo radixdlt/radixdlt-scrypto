@@ -18,7 +18,7 @@ fn test_process_and_transaction() {
         .unwrap()
         .sign(&[]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
-    assert!(receipt1.result.is_ok());
+    receipt1.result.expect("Should be okay.");
 }
 
 #[test]
@@ -36,5 +36,5 @@ fn test_call() {
         .unwrap()
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }

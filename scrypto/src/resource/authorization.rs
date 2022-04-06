@@ -1,4 +1,5 @@
 use crate::resource::*;
+use crate::rust::collections::hash_map::Iter;
 use crate::rust::collections::HashMap;
 use crate::rust::str;
 use crate::rust::string::String;
@@ -7,11 +8,15 @@ use sbor::*;
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Describe, TypeId, Encode, Decode)]
-pub struct ComponentAuthorization(HashMap<String, AuthRule>);
+pub struct ComponentAuthorization(HashMap<String, MethodAuth>);
 
 impl ComponentAuthorization {
     pub fn new() -> Self {
         ComponentAuthorization(HashMap::new())
+    }
+
+    pub fn get(&self, method_name: &str) -> Option<&MethodAuth> {
+        self.0.get(method_name)
     }
 
     pub fn contains_method(&self, method_name: &str) -> bool {
@@ -22,12 +27,13 @@ impl ComponentAuthorization {
         self.0.is_empty()
     }
 
-    pub fn insert(&mut self, method_name: &str, proof_rule: AuthRule) {
-        self.0.insert(method_name.to_string(), proof_rule);
+    pub fn insert(&mut self, method_name: &str, method_auth: MethodAuth) {
+        self.0.insert(method_name.to_string(), method_auth);
     }
 
-    pub fn to_map(self) -> HashMap<String, AuthRule> {
-        self.0
+    pub fn iter(&self) -> Iter<'_, String, MethodAuth> {
+        let l = self.0.iter();
+        l
     }
 }
 

@@ -62,7 +62,7 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
             );
 
             println!("{}", "Authorization".green().bold());
-            for (last, (k, v)) in c.auth_rules().iter().identify_last() {
+            for (last, (k, v)) in c.authorization().iter().identify_last() {
                 println!("{} {:?} => {:?}", list_item_prefix(last), k, v);
             }
 
