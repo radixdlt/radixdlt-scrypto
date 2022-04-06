@@ -424,19 +424,25 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         .0
     }
 
-    /// Builds a transaction.
+    /// Builds a transaction, using the signer set to fetch nonce.
     pub fn build<PK: AsRef<[EcdsaPublicKey]>>(
         &self,
         intended_signers: PK,
     ) -> Result<Transaction, BuildTransactionError> {
+        let nonce = self.abi_nonce_provider.get_nonce(intended_signers.as_ref());
+        self.build_with_nonce(nonce)
+    }
+
+    /// Builds a transaction with the given nonce.
+    ///
+    /// Transactions with incorrect nonce will be rejected by Radix Engine.
+    pub fn build_with_nonce(&self, nonce: u64) -> Result<Transaction, BuildTransactionError> {
         if !self.errors.is_empty() {
             return Err(self.errors[0].clone());
         }
 
         let mut instructions = self.instructions.clone();
-        instructions.push(Instruction::Nonce {
-            nonce: self.abi_nonce_provider.get_nonce(intended_signers.as_ref()),
-        });
+        instructions.push(Instruction::Nonce { nonce });
 
         Ok(Transaction { instructions })
     }
