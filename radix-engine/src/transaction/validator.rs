@@ -1,4 +1,4 @@
-use scrypto::engine::types::*;
+use scrypto::crypto::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
@@ -185,9 +185,12 @@ pub fn validate_transaction(
                 if i != transaction.instructions.len() - 1 {
                     return Err(TransactionValidationError::UnexpectedEnd);
                 }
-                let public_keys: Result<Vec<EcdsaPublicKey>, _> =
-                    signatures.iter().map(|s| s.validate(&hash)).collect();
-                signers.extend(public_keys.map_err(TransactionValidationError::InvalidSignature)?);
+                for (pk, sig) in signatures {
+                    if !EcdsaVerifier::verify(transaction.hash().as_ref(), &pk, &sig) {
+                        return Err(TransactionValidationError::InvalidSignature);
+                    }
+                    signers.push(pk);
+                }
             }
         }
     }
@@ -230,6 +233,7 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use scrypto::buffer::*;
+    use scrypto::engine::types::ComponentAddress;
     use scrypto::rust::borrow::ToOwned;
     use scrypto::rust::marker::PhantomData;
 

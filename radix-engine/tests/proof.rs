@@ -202,7 +202,7 @@ fn can_use_vault_for_authorization() {
         vec![format!("1,{}", auth_resource_address)],
         account,
         pk,
-        sk,
+        sk.clone(),
     );
 
     // Act
@@ -216,7 +216,7 @@ fn can_use_vault_for_authorization() {
         )
         .build(&[pk])
         .unwrap()
-        .sign(&[sk]);
+        .sign(&[sk.clone()]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -303,7 +303,7 @@ fn can_compose_bucket_and_vault_proof() {
         vec![format!("1,{}", resource_address)],
         account,
         pk,
-        sk,
+        sk.clone(),
     );
 
     // Act
@@ -343,7 +343,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         vec![format!("1,{}", resource_address)],
         account,
         pk,
-        sk,
+        sk.clone(),
     );
 
     // Act
@@ -382,7 +382,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         vec![format!("1,{}", resource_address)],
         account,
         pk,
-        sk,
+        sk.clone(),
     );
 
     // Act

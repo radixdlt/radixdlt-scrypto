@@ -49,7 +49,7 @@ fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
     ];
 
     for auth in auths {
-        for (pk, sk) in [(pk0, sk0), (pk1, sk1)] {
+        for (pk, sk) in [(pk0, sk0.clone()), (pk1, sk1.clone())] {
             test_auth_rule(&mut test_runner, &auth, vec![pk], vec![sk], true);
         }
     }
@@ -74,7 +74,7 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
     ];
 
     for auth in auths {
-        for (pk, sk) in [(pk0, sk0), (pk1, sk1), (pk2, sk2)] {
+        for (pk, sk) in [(pk0, sk0.clone()), (pk1, sk1.clone()), (pk2, sk2.clone())] {
             test_auth_rule(&mut test_runner, &auth, vec![pk], vec![sk], true);
         }
     }
@@ -142,8 +142,8 @@ fn can_withdraw_from_my_complex_account() {
         auth!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
     let signers_list = [
-        (vec![pk2], vec![sk2]),
-        (vec![pk0, pk1], vec![sk0, sk1]),
+        (vec![pk2], vec![sk2.clone()]),
+        (vec![pk0, pk1], vec![sk0.clone(), sk1.clone()]),
         (vec![pk0, pk1, pk2], vec![sk0, sk1, sk2]),
     ];
 
@@ -226,10 +226,10 @@ fn cannot_withdraw_from_my_complex_account_2() {
         ),
     ];
     let signers_list = [
-        (vec![pk0], vec![sk0]),
-        (vec![pk1], vec![sk1]),
-        (vec![pk2], vec![sk2]),
-        (vec![pk0, pk1], vec![sk0, sk1]),
+        (vec![pk0], vec![sk0.clone()]),
+        (vec![pk1], vec![sk1.clone()]),
+        (vec![pk2], vec![sk2.clone()]),
+        (vec![pk0, pk1], vec![sk0, sk1.clone()]),
         (vec![pk1, pk2], vec![sk1, sk2]),
     ];
 

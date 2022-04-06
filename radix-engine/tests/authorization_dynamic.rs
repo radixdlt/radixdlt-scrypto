@@ -30,7 +30,7 @@ fn test_dynamic_auth(
         .collect();
     let sks: Vec<EcdsaPrivateKey> = signers
         .iter()
-        .map(|index| key_and_addresses.get(*index).unwrap().1)
+        .map(|index| key_and_addresses.get(*index).unwrap().1.clone())
         .collect();
 
     let package = test_runner.publish_package("component");
@@ -106,7 +106,7 @@ fn test_dynamic_authlist(
         .collect();
     let sks: Vec<EcdsaPrivateKey> = signers
         .iter()
-        .map(|index| key_and_addresses.get(*index).unwrap().1)
+        .map(|index| key_and_addresses.get(*index).unwrap().1.clone())
         .collect();
     let authorization = component_authorization! {
         "get_secret" => auth_rule

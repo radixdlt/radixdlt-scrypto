@@ -117,7 +117,10 @@ pub enum Instruction {
     },
 
     /// Marks the end of transaction with signatures.
-    End { signatures: Vec<EcdsaSignature> },
+    End {
+        // Public keys are for signature algorithm that doesn't support public key recovery, e.g. ed25519.
+        signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -230,7 +233,7 @@ impl Transaction {
         let signatures = private_keys
             .as_ref()
             .iter()
-            .map(|sk| sk.sign(&hash))
+            .map(|sk| (sk.public_key(), sk.sign(hash.as_ref())))
             .collect();
 
         self.instructions.push(Instruction::End { signatures });
