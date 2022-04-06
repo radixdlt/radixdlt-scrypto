@@ -1,4 +1,5 @@
 use colored::*;
+
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::core::ActorType;
@@ -56,6 +57,7 @@ macro_rules! re_warn {
 enum ActorState {
     Scrypto(Actor, Option<(ComponentAddress, Vec<u8>, ScryptoValue)>),
     Resource(ResourceAddress),
+    Bucket(BucketId),
 }
 
 /// Represents an interpreter instance.
@@ -69,6 +71,7 @@ pub struct Interpreter {
 pub enum InvocationType {
     Scrypto(Actor),
     Resource(ResourceAddress),
+    Bucket(BucketId),
 }
 
 /// Keeps invocation information.
@@ -740,8 +743,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             },
             InvocationType::Resource(resource_address) => {
-                self.check_resource_auth(resource_address, "mint")?;
+                self.check_resource_auth(resource_address, &invocation.function)?;
                 Ok(ActorState::Resource(resource_address.clone()))
+            },
+            InvocationType::Bucket(bucket_id) => {
+                let resource_address = self.buckets.get(&bucket_id).unwrap().resource_address();
+                self.check_resource_auth(&resource_address, &invocation.function)?;
+                Ok(ActorState::Bucket(bucket_id.clone()))
             }
         }?;
 
@@ -817,18 +825,39 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             ActorState::Resource(resource_address) => {
-                // TODO: cleanup
-                let mint_params: MintParams = scrypto_decode(&invocation.args[0].raw)
-                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+                match invocation.function.as_str() {
+                    "mint" => {
+                        // TODO: cleanup
+                        let mint_params: MintParams = scrypto_decode(&invocation.args[0].raw)
+                            .map_err(|e| RuntimeError::InvalidRequestData(e))?;
 
-                // wrap resource into a bucket
-                let bucket = Bucket::new(self.mint_resource(resource_address, mint_params)?);
-                let bucket_id = self.new_bucket_id()?;
-                self.buckets.insert(bucket_id, bucket);
+                        // wrap resource into a bucket
+                        let bucket = Bucket::new(self.mint_resource(resource_address, mint_params)?);
+                        let bucket_id = self.new_bucket_id()?;
+                        self.buckets.insert(bucket_id, bucket);
 
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
+                        Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
+                    },
+                    _ => Err(RuntimeError::IllegalSystemCall)
+                }
+            },
+            ActorState::Bucket(bucket_id) => {
+                match invocation.function.as_str() {
+                    "burn" => {
+                        let bucket = self
+                            .buckets
+                            .remove(&bucket_id)
+                            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
+                        self.burn_resource(bucket.into_container().map_err(RuntimeError::BucketError)?)?;
+
+                        Ok(ScryptoValue::from_value(&()))
+                    }
+                    _ => Err(RuntimeError::IllegalSystemCall)
+                }
             }
         }?;
+
+
 
         #[cfg(not(feature = "alloc"))]
         re_info!(
@@ -1891,11 +1920,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
-        let result = self.call(Invocation {
+        let invocation = Invocation {
             invocation_type: InvocationType::Resource(input.resource_address.clone()),
             function: "mint".to_string(),
             args: vec![ScryptoValue::from_value(&input.mint_params)],
-        })?;
+        };
+        let result = self.call(invocation)?;
         Ok( MintResourceOutput { bucket_id: result.bucket_ids[0] })
     }
 
@@ -1903,16 +1933,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: BurnResourceInput,
     ) -> Result<BurnResourceOutput, RuntimeError> {
-        // Auth
-        let bucket = self
-            .buckets
-            .remove(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-        self.check_resource_auth(&bucket.resource_address(), "burn")?;
-
-        self.burn_resource(bucket.into_container().map_err(RuntimeError::BucketError)?)?;
-
-        Ok(BurnResourceOutput {})
+        let bucket = scrypto::resource::Bucket(input.bucket_id.clone());
+        let invocation = Invocation {
+            invocation_type: InvocationType::Bucket(input.bucket_id.clone()),
+            function: "burn".to_string(),
+            args: vec![ScryptoValue::from_value(&bucket)],
+        };
+        let _ = self.call(invocation)?;
+        Ok( BurnResourceOutput {})
     }
 
     fn handle_take_from_vault(

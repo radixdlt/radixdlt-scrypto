@@ -34,8 +34,9 @@ blueprint! {
         }
 
         /// Burns bucket. TODO: Remove
-        pub fn burn(bucket: Bucket) {
-            bucket.burn()
+        pub fn burn(bucket: Bucket, auth: Bucket) -> Bucket {
+            auth.authorize(|| bucket.burn());
+            auth
         }
 
         /// Gives away XRD tokens for testing. TODO: Remove

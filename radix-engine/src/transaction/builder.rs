@@ -559,16 +559,27 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
     }
 
     /// Burns a resource.
-    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+    pub fn burn(
+        &mut self,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+        burner_resource_address: ResourceAddress,
+    ) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
+            builder.take_from_worktop(burner_resource_address, |builder, auth_bucket_id| {
+                builder
+                    .add_instruction(Instruction::CallFunction {
+                        package_address: SYSTEM_PACKAGE,
+                        blueprint_name: "System".to_owned(),
+                        function: "burn".to_owned(),
+                        args: vec![
+                            scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
+                            scrypto_encode(&scrypto::resource::Bucket(auth_bucket_id)),
+                        ],
+                    })
+                    .0
+            });
             builder
-                .add_instruction(Instruction::CallFunction {
-                    package_address: SYSTEM_PACKAGE,
-                    blueprint_name: "System".to_owned(),
-                    function: "burn".to_owned(),
-                    args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
-                })
-                .0
         })
     }
 
