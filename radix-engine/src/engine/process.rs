@@ -974,11 +974,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             },
             InvocationType::Resource(resource_address) => {
-                let resource_manager = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
-                let method_auth = resource_manager.get_auth(&invocation.function);
+                let method_auth = self.track.get_resource_method_auth(&resource_address, &invocation.function)?;
                 Ok((ActorState::Resource(resource_address.clone()), method_auth.clone()))
             },
             InvocationType::Bucket(bucket_id) => {
@@ -987,29 +983,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let resource_address = bucket.resource_address();
-                let resource_manager = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
-                let method_auth = resource_manager.get_auth(&invocation.function);
+                let method_auth = self.track.get_resource_method_auth(&resource_address, &invocation.function)?;
                 Ok((ActorState::Bucket(bucket), method_auth.clone()))
             },
             InvocationType::Vault(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
-                let resource_manager = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
-                let method_auth = resource_manager.get_auth(&invocation.function);
+                let method_auth = self.track.get_resource_method_auth(&resource_address, &invocation.function)?;
                 Ok((ActorState::Vault(vault_id.clone()), method_auth.clone()))
             }
             InvocationType::NonFungible(non_fungible_address) => {
                 let resource_address = non_fungible_address.resource_address();
-                let resource_manager = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
-                let method_auth = resource_manager.get_auth(&invocation.function);
+                let method_auth = self.track.get_resource_method_auth(&resource_address, &invocation.function)?;
                 Ok((ActorState::NonFungible(non_fungible_address.clone()), method_auth.clone()))
             }
         }?;

@@ -5,6 +5,7 @@ use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 
 use crate::engine::*;
+use crate::errors::RuntimeError;
 use crate::ledger::*;
 use crate::model::*;
 
@@ -413,6 +414,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 },
             );
         }
+    }
+
+    // TODO: Separate out method auth substates
+    pub fn get_resource_method_auth(&mut self, resource_address: &ResourceAddress, method_name: &str) -> Result<&MethodAuthorization, RuntimeError> {
+        let resource_manager = self
+            .get_resource_manager(&resource_address)
+            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
+        Ok(resource_manager.get_auth(method_name))
     }
 
     /// Returns an immutable reference to a resource manager, if exists.
