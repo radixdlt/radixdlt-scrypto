@@ -16,7 +16,6 @@ pub enum ResourceManagerError {
     InvalidAmount(Decimal, u8),
     InvalidResourceFlags(u64),
     InvalidMintPermission,
-    TakeFromVaultNotDefined,
     ResourceTypeDoesNotMatch,
     MaxMintAmountExceeded,
 }
@@ -67,8 +66,6 @@ impl ResourceManager {
                     convert(&Type::Unit, &Value::Unit, take_auth),
                 );
             }
-        } else {
-            return Err(ResourceManagerError::TakeFromVaultNotDefined);
         }
 
         if let Some(update_metadata_auth) = auth.get(&UpdateMetadata) {

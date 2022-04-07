@@ -73,8 +73,8 @@ blueprint! {
         }
 
         pub fn query() -> (Bucket, HashMap<String, String>, Decimal) {
-            let (badge, resource_def_id) = Self::create_fungible();
-            let resource_manager = resource_manager!(resource_def_id);
+            let (badge, resource_address) = Self::create_fungible();
+            let resource_manager = resource_manager!(resource_address);
             (
                 badge,
                 resource_manager.metadata(),

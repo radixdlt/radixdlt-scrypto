@@ -85,6 +85,11 @@ impl FungibleResourceBuilder {
     }
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        // TODO: Do we still need this check?
+        if !self.authorization.contains_key(&TakeFromVault) {
+            panic!("TakeFromVault authorization not defined.");
+        }
+
         resource_system().new_resource(
             ResourceType::Fungible {
                 divisibility: self.divisibility,
