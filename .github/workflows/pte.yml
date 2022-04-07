@@ -1,0 +1,22 @@
+name: PTE Deployment Trigger
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger-pte-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger PTE deployment
+        env:
+          EVENT_TYPE: "pte"
+        run: |
+          curl --silent --show-error --fail --location --request POST 'https://github-worker.radixdlt.com/repos/radixdlt/${{secrets.DISPATCH_REPO}}/dispatches' \
+            --header 'Accept: application/vnd.github.v3+json' \
+            --header 'Authorization: Basic ${{secrets.CF_GITHUB_WORKER_ENCODED_BASIC_AUTH}}' \
+            --header 'Content-Type: application/json' \
+            --data-raw '{
+                "event_type": "${{env.EVENT_TYPE}}"
+            }'
