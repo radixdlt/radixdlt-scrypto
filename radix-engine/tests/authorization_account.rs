@@ -253,7 +253,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+        .call_method(SYSTEM_COMPONENT, "free_xrd", args![])
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
@@ -284,7 +284,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+        .call_method(SYSTEM_COMPONENT, "free_xrd", args![])
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
@@ -315,7 +315,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+        .call_method(SYSTEM_COMPONENT, "free_xrd", args![])
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);

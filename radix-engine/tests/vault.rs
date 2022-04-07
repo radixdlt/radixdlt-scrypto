@@ -41,7 +41,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let package = executor.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new()
-        .call_function(package, "NonExistentVault", "new", vec![])
+        .call_function(package, "NonExistentVault", "new", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -49,7 +49,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_method(component_address, "create_non_existent_vault", vec![])
+        .call_method(component_address, "create_non_existent_vault", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -96,7 +96,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let package = executor.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new()
-        .call_function(package, "NonExistentVault", "new", vec![])
+        .call_function(package, "NonExistentVault", "new", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -130,7 +130,7 @@ fn dangling_vault_should_fail() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", "dangling_vault", vec![])
+        .call_function(package, "VaultTest", "dangling_vault", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -149,7 +149,7 @@ fn create_mutable_vault_into_map() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", "new_vault_into_map", vec![])
+        .call_function(package, "VaultTest", "new_vault_into_map", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -194,7 +194,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", "new_vault_into_map_then_get", vec![])
+        .call_function(package, "VaultTest", "new_vault_into_map_then_get", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -210,7 +210,7 @@ fn cannot_overwrite_vault_in_map() {
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let package = executor.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", "new_vault_into_map", vec![])
+        .call_function(package, "VaultTest", "new_vault_into_map", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -218,7 +218,7 @@ fn cannot_overwrite_vault_in_map() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_method(component_address, "overwrite_vault_in_map", vec![])
+        .call_method(component_address, "overwrite_vault_in_map", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -240,7 +240,7 @@ fn create_mutable_vault_into_vector() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", "new_vault_into_vector", vec![])
+        .call_function(package, "VaultTest", "new_vault_into_vector", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -256,7 +256,7 @@ fn cannot_remove_vaults() {
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let package = executor.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", "new_vault_into_vector", vec![])
+        .call_function(package, "VaultTest", "new_vault_into_vector", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -264,7 +264,7 @@ fn cannot_remove_vaults() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_method(component_address, "clear_vector", vec![])
+        .call_method(component_address, "clear_vector", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -284,7 +284,7 @@ fn can_push_vault_into_vector() {
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let package = executor.publish_package(&compile("vault")).unwrap();
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", "new_vault_into_vector", vec![])
+        .call_function(package, "VaultTest", "new_vault_into_vector", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -292,7 +292,7 @@ fn can_push_vault_into_vector() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_method(component_address, "push_vault_into_vector", vec![])
+        .call_method(component_address, "push_vault_into_vector", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -310,7 +310,7 @@ fn create_mutable_vault_with_take() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", "new_vault_with_take", vec![])
+        .call_function(package, "VaultTest", "new_vault_with_take", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -374,7 +374,7 @@ fn create_mutable_vault_with_get_amount() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", "new_vault_with_get_amount", vec![])
+        .call_function(package, "VaultTest", "new_vault_with_get_amount", args![])
         .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();

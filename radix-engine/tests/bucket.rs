@@ -20,13 +20,13 @@ fn test_bucket() {
     let package = executor.publish_package(&compile("bucket")).unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "BucketTest", "combine", vec![])
-        .call_function(package, "BucketTest", "split", vec![])
-        .call_function(package, "BucketTest", "borrow", vec![])
-        .call_function(package, "BucketTest", "query", vec![])
-        .call_function(package, "BucketTest", "test_restricted_transfer", vec![])
-        .call_function(package, "BucketTest", "test_burn", vec![])
-        .call_function(package, "BucketTest", "test_burn_freely", vec![])
+        .call_function(package, "BucketTest", "combine", args![])
+        .call_function(package, "BucketTest", "split", args![])
+        .call_function(package, "BucketTest", "borrow", args![])
+        .call_function(package, "BucketTest", "query", args![])
+        .call_function(package, "BucketTest", "test_restricted_transfer", args![])
+        .call_function(package, "BucketTest", "test_burn", args![])
+        .call_function(package, "BucketTest", "test_burn_freely", args![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[]))
         .sign(&[]);
@@ -42,10 +42,10 @@ fn test_bucket_of_badges() {
     let package = executor.publish_package(&compile("bucket")).unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "BadgeTest", "combine", vec![])
-        .call_function(package, "BadgeTest", "split", vec![])
-        .call_function(package, "BadgeTest", "borrow", vec![])
-        .call_function(package, "BadgeTest", "query", vec![])
+        .call_function(package, "BadgeTest", "combine", args![])
+        .call_function(package, "BadgeTest", "split", args![])
+        .call_function(package, "BadgeTest", "borrow", args![])
+        .call_function(package, "BadgeTest", "query", args![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[]))
         .sign(&[]);

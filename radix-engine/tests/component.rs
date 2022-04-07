@@ -14,7 +14,7 @@ fn test_package() {
 
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(package, "PackageTest", "publish", vec![])
+        .call_function(package, "PackageTest", "publish", args![])
         .build(test_runner.get_nonce(&[]))
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -31,7 +31,7 @@ fn test_component() {
     // Create component
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(package, "ComponentTest", "create_component", vec![])
+        .call_function(package, "ComponentTest", "create_component", args![])
         .build(test_runner.get_nonce(&[]))
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -49,8 +49,8 @@ fn test_component() {
             "get_component_info",
             vec![scrypto_encode(&component)],
         )
-        .call_method(component, "get_component_state", vec![])
-        .call_method(component, "put_component_state", vec![])
+        .call_method(component, "get_component_state", args![])
+        .call_method(component, "put_component_state", args![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
         .sign(&[sk]);
