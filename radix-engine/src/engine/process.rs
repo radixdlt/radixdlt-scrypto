@@ -713,13 +713,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run(&mut self, invocation: Invocation, state: SNodeState) -> Result<ScryptoValue, RuntimeError> {
+    pub fn run(&mut self, snode: SNodeState, function: String, args: Vec<ScryptoValue>) -> Result<ScryptoValue, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(self, "Run started: invocation = {:?}", invocation);
+        re_info!(self, "Run started: function = {:?}", function);
 
         // Execution
-        let output = match state {
+        let output = match snode {
             SNodeState::Scrypto(actor, component_state) => {
                 let package = self
                     .track
@@ -749,18 +749,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         additional_object_refs: ComponentObjectRefs::new(),
                     };
                     let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
-                    args_with_self.extend(invocation.args.clone());
+                    args_with_self.extend(args);
 
                     (istate, args_with_self)
                 } else {
-                    (InterpreterState::Blueprint, invocation.args.clone())
+                    (InterpreterState::Blueprint, args)
                 };
 
                 self.wasm_process_state = Some(WasmProcess {
                     depth: self.depth,
                     trace: self.trace,
                     vm: Interpreter {
-                        function: invocation.function.clone(),
+                        function,
                         args,
                         actor: actor.clone(),
                         module: module.clone(),
@@ -796,10 +796,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeState::Resource(resource_address) => {
-                match invocation.function.as_str() {
+                match function.as_str() {
                     "mint" => {
                         // TODO: cleanup
-                        let mint_params: MintParams = scrypto_decode(&invocation.args[0].raw)
+                        let mint_params: MintParams = scrypto_decode(&args[0].raw)
                             .map_err(|e| RuntimeError::InvalidRequestData(e))?;
 
                         // wrap resource into a bucket
@@ -810,7 +810,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
                     },
                     "update_metadata" => {
-                        let new_metadata: HashMap<String, String> = scrypto_decode(&invocation.args[0].raw)
+                        let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
                             .map_err(|e| RuntimeError::InvalidRequestData(e))?;
 
                         let resource_manager = self
@@ -827,7 +827,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             },
             SNodeState::Bucket(bucket) => {
-                match invocation.function.as_str() {
+                match function.as_str() {
                     "burn" => {
                         self.burn_resource(bucket.into_container().map_err(RuntimeError::BucketError)?)?;
 
@@ -837,9 +837,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             },
             SNodeState::NonFungible(non_fungible_address) => {
-                match invocation.function.as_str() {
+                match function.as_str() {
                     "update_non_fungible_mutable_data" => {
-                        let new_mutable_data: Vec<u8> = scrypto_decode(&invocation.args[0].raw)
+                        let new_mutable_data: Vec<u8> = scrypto_decode(&args[0].raw)
                             .map_err(|e| RuntimeError::InvalidRequestData(e))?;
 
                         let data = self.process_non_fungible_data(&new_mutable_data)?;
@@ -881,7 +881,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         // Authorization and state load
-        let (state, method_auth) = match &invocation.snode_ref {
+        let (snode, method_auth) = match &invocation.snode_ref {
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -960,7 +960,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }?;
 
         // Authorization check
-        let proofs_vector = match &state {
+        let proofs_vector = match &snode {
             // Same process auth check
             SNodeState::Vault(_) => vec![self.caller_auth_zone, &self.auth_zone],
             // Extern call auth check
@@ -971,7 +971,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map_err(|e| RuntimeError::AuthorizationError(invocation.function.clone(), e))?;
 
         // Execution
-        let result = match state {
+        let result = match snode {
             SNodeState::Vault(vault_id) => {
                 match invocation.function.as_str() {
                     "take_from_vault" => {
@@ -1013,7 +1013,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 process.receive_proofs(moving_proofs)?;
 
                 // invoke the main function
-                let result = process.run(invocation, state)?;
+                let result = process.run(snode, invocation.function, invocation.args)?;
 
                 // figure out what buckets and resources to move from the new process
                 let moving_buckets = process.send_buckets(&result.bucket_ids)?;
@@ -1085,14 +1085,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call abi started");
 
-        let invocation = Invocation {
-            snode_ref: SNodeRef::Scrypto(
-                ScryptoActor::Blueprint(package_address, blueprint_name.to_owned())
-            ),
-            function: String::new(),
-            args: Vec::new(),
-        };
-        let state = SNodeState::Scrypto(
+        let snode = SNodeState::Scrypto(
             ScryptoActorInfo::blueprint(
                 package_address,
                 blueprint_name.to_string(),
@@ -1102,7 +1095,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        let result = process.run(invocation, state);
+        let result = process.run(snode, String::new(), Vec::new());
 
         re_debug!(self, "Call abi ended");
         result
