@@ -2,7 +2,7 @@ use colored::*;
 
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::core::ActorType;
+use scrypto::core::ScryptoActor;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
@@ -55,7 +55,7 @@ macro_rules! re_warn {
 }
 
 pub enum SNodeState {
-    Scrypto(ScryptoActor, Option<(ComponentAddress, Vec<u8>, ScryptoValue)>),
+    Scrypto(ScryptoActorInfo, Option<(ComponentAddress, Vec<u8>, ScryptoValue)>),
     Resource(ResourceAddress),
     Bucket(Bucket),
     NonFungible(NonFungibleAddress),
@@ -73,7 +73,7 @@ pub enum SNodeRef {
 
 /// Represents an interpreter instance.
 pub struct Interpreter {
-    actor: ScryptoActor,
+    actor: ScryptoActorInfo,
     function: String,
     args: Vec<ScryptoValue>,
     module: ModuleRef,
@@ -675,11 +675,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .cloned()
             .map(|bucket_id| scrypto::resource::Bucket(bucket_id))
             .collect();
-        let invocation = self.prepare_call_method(
-            component_address,
-            method,
-            vec![ScryptoValue::from_value(&to_deposit)],
-        )?;
+
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
+            function: method.to_owned(),
+            args: vec![ScryptoValue::from_value(&to_deposit)],
+        };
         let result = self.call(invocation);
 
         re_debug!(
@@ -736,19 +737,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .load_module()
                     .unwrap();
 
-                let interpreter_state = if let Some((component_address, state, data)) = component_state {
+                let (interpreter_state, args) = if let Some((component_address, state, data)) = component_state {
                     let initial_loaded_object_refs = ComponentObjectRefs {
                         vault_ids: data.vault_ids.into_iter().collect(),
                         lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
                     };
-                    InterpreterState::Component {
+                    let istate = InterpreterState::Component {
                         state,
                         component_address,
                         initial_loaded_object_refs,
                         additional_object_refs: ComponentObjectRefs::new(),
-                    }
+                    };
+                    let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
+                    args_with_self.extend(invocation.args.clone());
+
+                    (istate, args_with_self)
                 } else {
-                    InterpreterState::Blueprint
+                    (InterpreterState::Blueprint, invocation.args.clone())
                 };
 
                 self.wasm_process_state = Some(WasmProcess {
@@ -756,7 +761,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     trace: self.trace,
                     vm: Interpreter {
                         function: invocation.function.clone(),
-                        args: invocation.args.clone(),
+                        args,
                         actor: actor.clone(),
                         module: module.clone(),
                         memory,
@@ -864,54 +869,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(output)
     }
 
-    /// Prepares a method call.
-    pub fn prepare_call_method(
-        &mut self,
-        component_address: ComponentAddress,
-        method: &str,
-        args: Vec<ScryptoValue>,
-    ) -> Result<Invocation, RuntimeError> {
-        let component = self
-            .track
-            .get_component(component_address)
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?
-            .clone();
-        let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
-        args_with_self.extend(args);
-
-        Ok(Invocation {
-            snode_ref: SNodeRef::Scrypto(
-                ScryptoActor::component(
-                    component.package_address(),
-                    component.blueprint_name().to_owned(),
-                    format!("{}_main", component.blueprint_name()),
-                    component_address,
-                )
-            ),
-            function: method.to_owned(),
-            args: args_with_self,
-        })
-    }
-
-    /// Prepares an ABI call.
-    pub fn prepare_call_abi(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> Result<Invocation, RuntimeError> {
-        Ok(Invocation {
-            snode_ref: SNodeRef::Scrypto(
-                ScryptoActor::blueprint(
-                    package_address,
-                    blueprint_name.to_owned(),
-                    format!("{}_abi", blueprint_name),
-                )
-            ),
-            function: String::new(),
-            args: Vec::new(),
-        })
-    }
-
     /// Calls a function/method.
     pub fn call(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
         // figure out what buckets and proofs to move from this process
@@ -926,24 +883,49 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Authorization and state load
         let (state, method_auth) = match &invocation.snode_ref {
             SNodeRef::Scrypto(actor) => {
-                match actor.actor_type() {
-                    ActorType::Blueprint => Ok((SNodeState::Scrypto(actor.clone(), None), MethodAuthorization::Public)),
-                    ActorType::Component(component_address) => {
+                match actor {
+                    ScryptoActor::Blueprint(package_address, blueprint_name) => {
+                        let export_name = format!("{}_main", blueprint_name);
+                        Ok((
+                            SNodeState::Scrypto(
+                                ScryptoActorInfo::blueprint(
+                                     package_address.clone(),
+                                     blueprint_name.clone(),
+                                     export_name.clone(),
+                                ),
+                                None,
+                            ),
+                            MethodAuthorization::Public
+                        ))
+                    },
+                    ScryptoActor::Component(component_address) => {
+                        let component = self.track.get_component(component_address.clone()).unwrap();
+                        let package_address = component.package_address();
+                        let blueprint_name = component.blueprint_name().to_string();
+                        let component_state = component.state().to_vec();
+                        let export_name = format!("{}_main", blueprint_name);
+
                         let package = self
                             .track
-                            .get_package(actor.package_address())
-                            .ok_or(RuntimeError::PackageNotFound(actor.package_address().clone()))?;
+                            .get_package(&package_address)
+                            .ok_or(RuntimeError::PackageNotFound(package_address))?;
                         // TODO: Remove clone
-                        let schema = package.load_blueprint_schema(actor.blueprint_name()).unwrap().clone();
+                        let schema = package.load_blueprint_schema(&blueprint_name).unwrap().clone();
+
                         let component = self.track.get_component(component_address.clone()).unwrap();
                         let (scrypto_value, method_auth) =
                             component.method_authorization(&schema, &invocation.function);
                         Ok((
                             SNodeState::Scrypto(
-                                actor.clone(),
+                               ScryptoActorInfo::component(
+                                   package_address,
+                                   blueprint_name,
+                                   export_name,
+                                   component_address.clone(),
+                               ),
                                 Some((
                                     component_address.clone(),
-                                    component.state().to_vec(),
+                                    component_state,
                                     scrypto_value
                                 ))
                             ),
@@ -1063,10 +1045,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "Call function started");
         let invocation = Invocation {
             snode_ref: SNodeRef::Scrypto(
-                ScryptoActor::blueprint(
+                ScryptoActor::Blueprint(
                     package_address,
                     blueprint_name.to_string(),
-                    format!("{}_main", blueprint_name)
                 )
             ),
             function: function.to_string(),
@@ -1085,21 +1066,44 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call method started");
-        let invocation = self.prepare_call_method(component_address, method, args)?;
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
+            function: method.to_owned(),
+            args,
+        };
         let result = self.call(invocation);
         re_debug!(self, "Call method ended");
         result
     }
 
     /// Calls the ABI generator of a blueprint.
+    // TODO: Remove
     pub fn call_abi(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call abi started");
-        let invocation = self.prepare_call_abi(package_address, blueprint_name)?;
-        let result = self.call(invocation);
+
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Scrypto(
+                ScryptoActor::Blueprint(package_address, blueprint_name.to_owned())
+            ),
+            function: String::new(),
+            args: Vec::new(),
+        };
+        let state = SNodeState::Scrypto(
+            ScryptoActorInfo::blueprint(
+                package_address,
+                blueprint_name.to_string(),
+                format!("{}_abi", blueprint_name),
+            ),
+            None,
+        );
+
+        let mut process = Process::new(self.depth + 1, self.trace, self.track);
+        let result = process.run(invocation, state);
+
         re_debug!(self, "Call abi ended");
         result
     }
@@ -1478,21 +1482,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             input.function,
             validated_args
         );
-
-        let invocation = Invocation {
-            snode_ref: SNodeRef::Scrypto(
-                ScryptoActor::blueprint(
-                    input.package_address,
-                    input.blueprint_name.to_string(),
-                    format!("{}_main", input.blueprint_name)
-                )
-            ),
-            function: input.function.to_string(),
-            args: validated_args,
-        };
-
-        let result = self.call(invocation);
-
+        let result = self.call_function(
+            input.package_address,
+            &input.blueprint_name,
+            &input.function,
+            validated_args
+        );
         re_debug!(self, "CALL finished");
         Ok(CallFunctionOutput { rtn: result?.raw })
     }
@@ -1516,13 +1511,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             validated_args
         );
 
-        let invocation = self.prepare_call_method(
-            input.component_address,
-            input.method.as_str(),
-            validated_args,
-        )?;
-        let result = self.call(invocation);
-
+        let result = self.call_method(input.component_address, input.method.as_str(), validated_args);
         re_debug!(self, "CALL finished");
         Ok(CallMethodOutput { rtn: result?.raw })
     }

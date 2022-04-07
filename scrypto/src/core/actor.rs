@@ -1,30 +1,29 @@
 use sbor::*;
 
 use crate::component::*;
-use crate::core::actor::ActorType::Blueprint;
 use crate::rust::string::String;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum ActorType {
-    Blueprint,
+pub enum ScryptoActor {
+    Blueprint(PackageAddress, String),
     Component(ComponentAddress),
 }
 
 /// Represents the running entity.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct ScryptoActor {
+pub struct ScryptoActorInfo {
     package_address: PackageAddress,
     blueprint_name: String,
-    actor_type: ActorType,
+    component_address: Option<ComponentAddress>,
     export_name: String,
 }
 
-impl ScryptoActor {
+impl ScryptoActorInfo {
     pub fn blueprint(package_address: PackageAddress, blueprint_name: String, export_name: String) -> Self {
         Self {
             package_address,
             blueprint_name,
-            actor_type: Blueprint,
+            component_address: None,
             export_name,
         }
     }
@@ -33,7 +32,7 @@ impl ScryptoActor {
         Self {
             package_address,
             blueprint_name,
-            actor_type: ActorType::Component(component_address),
+            component_address: Some(component_address),
             export_name,
         }
     }
@@ -42,8 +41,12 @@ impl ScryptoActor {
         &self.export_name
     }
 
-    pub fn actor_type(&self) -> &ActorType {
-        &self.actor_type
+    pub fn actor(&self) -> ScryptoActor {
+        if let Some(addr) = self.component_address {
+            ScryptoActor::Component(addr)
+        } else {
+            ScryptoActor::Blueprint(self.package_address.clone(), self.blueprint_name.clone())
+        }
     }
 
     pub fn package_address(&self) -> &PackageAddress {

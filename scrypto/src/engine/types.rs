@@ -3,7 +3,7 @@
 
 pub use crate::component::ComponentAddress;
 pub use crate::component::PackageAddress;
-pub use crate::core::ScryptoActor;
+pub use crate::core::ScryptoActorInfo;
 pub use crate::core::Level;
 pub use crate::crypto::EcdsaPrivateKey;
 pub use crate::crypto::EcdsaPublicKey;
