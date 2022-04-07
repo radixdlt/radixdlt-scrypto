@@ -1,13 +1,21 @@
 use sbor::*;
+use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::ResourceMethod::TakeFromVault;
 use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
 use scrypto::resource::*;
-use scrypto::rust::collections::HashMap;
+use scrypto::rust::collections::*;
+use scrypto::rust::vec::*;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
+use scrypto::values::ScryptoValue;
+use crate::engine::Track;
+use crate::errors::RuntimeError;
+use crate::model::NonFungible;
+use crate::model::Bucket;
+use crate::ledger::SubstateStore;
 
-use crate::model::{convert, MethodAuthorization};
+use crate::model::{convert, MethodAuthorization, ResourceContainer};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
@@ -18,6 +26,8 @@ pub enum ResourceManagerError {
     InvalidMintPermission,
     ResourceTypeDoesNotMatch,
     MaxMintAmountExceeded,
+    InvalidNonFungibleData,
+    NonFungibleAlreadyExists(NonFungibleAddress),
 }
 
 /// The definition of a resource.
@@ -116,14 +126,57 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint(&mut self, mint_params: &MintParams) -> Result<(), ResourceManagerError> {
+    pub fn mint(&mut self, amount: Decimal, self_address: ResourceAddress) -> Result<ResourceContainer, ResourceManagerError> {
+        if let ResourceType::Fungible { divisibility } = self.resource_type {
+            // check amount
+            self.check_amount(amount)?;
+
+            // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
+            // which will be impossible with metering.
+            if amount > 100_000_000_000i128.into() {
+                return Err(ResourceManagerError::MaxMintAmountExceeded);
+            }
+
+            self.total_supply += amount;
+
+            Ok(ResourceContainer::new_fungible(self_address, divisibility, amount))
+        } else {
+            Err(ResourceManagerError::ResourceTypeDoesNotMatch)
+        }
+    }
+
+
+    fn process_non_fungible_data(data: &[u8]) -> Result<ScryptoValue, ResourceManagerError> {
+        let validated =
+            ScryptoValue::from_slice(data).map_err(|_| ResourceManagerError::InvalidNonFungibleData)?;
+        if !validated.bucket_ids.is_empty() {
+            return Err(ResourceManagerError::InvalidNonFungibleData);
+        }
+        if !validated.proof_ids.is_empty() {
+            return Err(ResourceManagerError::InvalidNonFungibleData);
+        }
+        if !validated.lazy_map_ids.is_empty() {
+            return Err(ResourceManagerError::InvalidNonFungibleData);
+        }
+        if !validated.vault_ids.is_empty() {
+            return Err(ResourceManagerError::InvalidNonFungibleData);
+        }
+        Ok(validated)
+    }
+
+    fn mint_non_fungibles<'s,S: SubstateStore>(
+        &mut self,
+        entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
+        self_address: ResourceAddress,
+        track: &mut Track<'s,S>
+    ) -> Result<ResourceContainer, ResourceManagerError> {
         // check resource type
-        if !mint_params.matches_type(&self.resource_type) {
+        if !matches!(self.resource_type, ResourceType::NonFungible) {
             return Err(ResourceManagerError::ResourceTypeDoesNotMatch);
         }
 
         // check amount
-        let amount = mint_params.amount();
+        let amount = entries.len().into();
         self.check_amount(amount)?;
 
         // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
@@ -133,7 +186,27 @@ impl ResourceManager {
         }
 
         self.total_supply += amount;
-        Ok(())
+
+        // Allocate non-fungibles
+        let mut ids = BTreeSet::new();
+        for (id, data) in entries {
+            let non_fungible_address =
+                NonFungibleAddress::new(self_address, id.clone());
+            if track.get_non_fungible(&non_fungible_address).is_some() {
+                return Err(ResourceManagerError::NonFungibleAlreadyExists(non_fungible_address));
+            }
+
+            let immutable_data = Self::process_non_fungible_data(&data.0)?;
+            let mutable_data = Self::process_non_fungible_data(&data.1)?;
+
+            track.put_non_fungible(
+                non_fungible_address,
+                NonFungible::new(immutable_data.raw, mutable_data.raw),
+            );
+            ids.insert(id);
+        }
+
+        Ok(ResourceContainer::new_non_fungible(self_address, ids))
     }
 
     pub fn burn(&mut self, amount: Decimal) {
@@ -147,6 +220,41 @@ impl ResourceManager {
         self.metadata = new_metadata;
 
         Ok(())
+    }
+
+    #[allow(non_snake_case)]
+    pub fn ResourceManager_main<'s,S>(
+        &mut self,
+        resource_address: ResourceAddress,
+        function: &str,
+        args: Vec<ScryptoValue>,
+        track: &mut Track<'s,S>
+    ) -> Result<Option<Bucket>, RuntimeError>
+        where S: SubstateStore {
+        match function {
+            "mint" => {
+                // TODO: cleanup
+                let mint_params: MintParams = scrypto_decode(&args[0].raw)
+                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+                let container = match mint_params {
+                    MintParams::Fungible { amount } =>
+                        self.mint(amount, resource_address.clone()),
+                    MintParams::NonFungible { entries } =>
+                        self.mint_non_fungibles(entries, resource_address.clone(), track),
+                }.map_err(RuntimeError::ResourceManagerError)?;
+
+                Ok(Option::Some(Bucket::new(container)))
+            },
+            "update_metadata" => {
+                let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
+                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+                self
+                    .update_metadata(new_metadata)
+                    .map_err(RuntimeError::ResourceManagerError)?;
+                Ok(Option::None)
+            }
+            _ => Err(RuntimeError::IllegalSystemCall)
+        }
     }
 
     pub fn check_amount(&self, amount: Decimal) -> Result<(), ResourceManagerError> {

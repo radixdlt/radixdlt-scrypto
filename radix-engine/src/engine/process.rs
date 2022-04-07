@@ -796,34 +796,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeState::Resource(resource_address) => {
-                match function.as_str() {
-                    "mint" => {
-                        // TODO: cleanup
-                        let mint_params: MintParams = scrypto_decode(&args[0].raw)
-                            .map_err(|e| RuntimeError::InvalidRequestData(e))?;
-
-                        // wrap resource into a bucket
-                        let bucket = Bucket::new(self.mint_resource(resource_address, mint_params)?);
-                        let bucket_id = self.new_bucket_id()?;
-                        self.buckets.insert(bucket_id, bucket);
-
-                        Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
-                    },
-                    "update_metadata" => {
-                        let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
-                            .map_err(|e| RuntimeError::InvalidRequestData(e))?;
-
-                        let resource_manager = self
-                            .track
-                            .get_resource_manager_mut(&resource_address)
-                            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-                        resource_manager
-                            .update_metadata(new_metadata)
-                            .map_err(RuntimeError::ResourceManagerError)?;
-
-                        Ok(ScryptoValue::from_value(&()))
-                    }
-                    _ => Err(RuntimeError::IllegalSystemCall)
+                let maybe_bucket = self.track.resource_manager_invoke(
+                    &resource_address,
+                    function.as_str(),
+                    args,
+                )?;
+                if let Some(bucket) = maybe_bucket {
+                    let bucket_id = self.new_bucket_id()?;
+                    self.buckets.insert(bucket_id, bucket);
+                    Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
+                } else {
+                    Ok(ScryptoValue::from_value(&()))
                 }
             },
             SNodeState::Bucket(bucket) => {
@@ -871,6 +854,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     /// Calls a function/method.
     pub fn call(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
+        self.internal_call(invocation, false)
+    }
+
+    fn internal_call(&mut self, invocation: Invocation, force: bool) -> Result<ScryptoValue, RuntimeError> {
         // figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
@@ -960,15 +947,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }?;
 
         // Authorization check
-        let proofs_vector = match &snode {
-            // Same process auth check
-            SNodeState::Vault(_) => vec![self.caller_auth_zone, &self.auth_zone],
-            // Extern call auth check
-            _ => vec![self.auth_zone.as_slice()],
-        };
+        if !force {
+            let proofs_vector = match &snode {
+                // Same process auth check
+                SNodeState::Vault(_) => vec![self.caller_auth_zone, &self.auth_zone],
+                // Extern call auth check
+                _ => vec![self.auth_zone.as_slice()],
+            };
 
-        method_auth.check(&proofs_vector)
-            .map_err(|e| RuntimeError::AuthorizationError(invocation.function.clone(), e))?;
+            method_auth.check(&proofs_vector)
+                .map_err(|e| RuntimeError::AuthorizationError(invocation.function.clone(), e))?;
+        }
 
         // Execution
         let result = match snode {
@@ -1141,55 +1130,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         #[cfg(not(feature = "alloc"))]
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
-    }
-
-    fn mint_resource(
-        &mut self,
-        resource_address: ResourceAddress,
-        mint_params: MintParams,
-    ) -> Result<ResourceContainer, RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager_mut(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-
-        // Notify resource manager
-        resource_manager
-            .mint(&mint_params)
-            .map_err(RuntimeError::ResourceManagerError)?;
-
-        match mint_params {
-            MintParams::Fungible { amount } => {
-                // Allocate fungible
-                Ok(ResourceContainer::new_fungible(
-                    resource_address,
-                    resource_manager.resource_type().divisibility(),
-                    amount,
-                ))
-            }
-            MintParams::NonFungible { entries } => {
-                // Allocate non-fungibles
-                let mut ids = BTreeSet::new();
-                for (id, data) in entries {
-                    let non_fungible_address =
-                        NonFungibleAddress::new(resource_address, id.clone());
-                    if self.track.get_non_fungible(&non_fungible_address).is_some() {
-                        return Err(RuntimeError::NonFungibleAlreadyExists(non_fungible_address));
-                    }
-
-                    let immutable_data = self.process_non_fungible_data(&data.0)?;
-                    let mutable_data = self.process_non_fungible_data(&data.1)?;
-
-                    self.track.put_non_fungible(
-                        non_fungible_address,
-                        NonFungible::new(immutable_data.raw, mutable_data.raw),
-                    );
-                    ids.insert(id);
-                }
-
-                Ok(ResourceContainer::new_non_fungible(resource_address, ids))
-            }
-        }
     }
 
     fn burn_resource(&mut self, resource: ResourceContainer) -> Result<(), RuntimeError> {
@@ -1762,10 +1702,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "New resource manager: {}", resource_address);
 
         let bucket_id = if let Some(mint_params) = input.mint_params {
-            let bucket = Bucket::new(self.mint_resource(resource_address, mint_params)?);
-            let bucket_id = self.new_bucket_id()?;
-            self.buckets.insert(bucket_id, bucket);
-            Some(bucket_id)
+            let invocation = Invocation {
+                snode_ref: SNodeRef::Resource(resource_address.clone()),
+                function: "mint".to_string(),
+                args: vec![ScryptoValue::from_value(&mint_params)],
+            };
+            // TODO: Remove force
+            let result = self.internal_call(invocation, true)?;
+            Some(result.bucket_ids[0])
         } else {
             None
         };

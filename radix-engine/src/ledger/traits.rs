@@ -177,11 +177,8 @@ pub trait SubstateStore {
                 resource_auth,
             )
             .unwrap();
-            xrd.mint(&MintParams::Fungible {
-                amount: XRD_MAX_SUPPLY.into(),
-            })
-            .unwrap();
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, id_gen.next());
+            let minted_xrd = xrd.mint( XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone()).unwrap();
 
             let mut ecdsa_resource_auth = HashMap::new();
             ecdsa_resource_auth.insert(TakeFromVault, auth!(allow_all));
@@ -194,11 +191,7 @@ pub trait SubstateStore {
             self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, id_gen.next());
 
             // Instantiate system component
-            let system_vault = Vault::new(ResourceContainer::new_fungible(
-                RADIX_TOKEN,
-                18,
-                XRD_MAX_SUPPLY.into(),
-            ));
+            let system_vault = Vault::new(minted_xrd);
             self.put_encoded_child_substate(
                 &SYSTEM_COMPONENT,
                 &XRD_VAULT_ID,
