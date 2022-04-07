@@ -1,9 +1,11 @@
 use sbor::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::ResourceMethod::TakeFromVault;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::resource::*;
+use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
 
 use crate::model::{convert, MethodAuthorization};
 
@@ -32,10 +34,10 @@ impl ResourceManager {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        auth: ComponentAuthorization,
+        auth: HashMap<ResourceMethod, MethodAuth>,
     ) -> Result<Self, ResourceManagerError> {
         let mut authorization: HashMap<String, MethodAuthorization> = HashMap::new();
-        if let Some(mint_auth) = auth.get("mint") {
+        if let Some(mint_auth) = auth.get(&Mint) {
             // TODO: Check for other invalid mint permissions?
             if let MethodAuth::AllowAll = mint_auth {
                 return Err(ResourceManagerError::InvalidMintPermission);
@@ -47,14 +49,14 @@ impl ResourceManager {
             );
         }
 
-        if let Some(burn_auth) = auth.get("burn") {
+        if let Some(burn_auth) = auth.get(&Burn) {
             authorization.insert(
                 "burn".to_string(),
                 convert(&Type::Unit, &Value::Unit, burn_auth),
             );
         }
 
-        if let Some(take_auth) = auth.get("take_from_vault") {
+        if let Some(take_auth) = auth.get(&TakeFromVault) {
             authorization.insert(
                 "take_from_vault".to_string(),
                 convert(&Type::Unit, &Value::Unit, take_auth),
@@ -69,7 +71,7 @@ impl ResourceManager {
             return Err(ResourceManagerError::TakeFromVaultNotDefined);
         }
 
-        if let Some(update_metadata_auth) = auth.get("update_metadata") {
+        if let Some(update_metadata_auth) = auth.get(&UpdateMetadata) {
             authorization.insert(
                 "update_metadata".to_string(),
                 convert(&Type::Unit, &Value::Unit, update_metadata_auth),
@@ -77,7 +79,7 @@ impl ResourceManager {
         }
 
         if let Some(update_non_fungible_mutable_data_auth) =
-            auth.get("update_non_fungible_mutable_data")
+            auth.get(&UpdateNonFungibleData)
         {
             authorization.insert(
                 "update_non_fungible_mutable_data".to_string(),

@@ -7,7 +7,8 @@ use scrypto::resource::ComponentAuthorization;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
-use scrypto::{auth, component_authorization};
+use scrypto::{auth};
+use scrypto::resource::ResourceMethod::TakeFromVault;
 
 use crate::model::*;
 
@@ -167,12 +168,13 @@ pub trait SubstateStore {
             metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
+            let mut resource_auth = HashMap::new();
+            resource_auth.insert(TakeFromVault, auth!(allow_all));
+
             let mut xrd = ResourceManager::new(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
-                component_authorization! {
-                    "take_from_vault" => auth!(allow_all)
-                },
+                resource_auth,
             )
             .unwrap();
             xrd.mint(&MintParams::Fungible {
@@ -181,12 +183,12 @@ pub trait SubstateStore {
             .unwrap();
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, id_gen.next());
 
+            let mut ecdsa_resource_auth = HashMap::new();
+            ecdsa_resource_auth.insert(TakeFromVault, auth!(allow_all));
             let ecdsa_token = ResourceManager::new(
                 ResourceType::NonFungible,
                 HashMap::new(),
-                component_authorization! {
-                    "take_from_vault" => auth!(allow_all)
-                },
+                ecdsa_resource_auth,
             )
             .unwrap();
             self.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, id_gen.next());

@@ -2,7 +2,7 @@ use sbor::*;
 use scrypto::prelude::ComponentAuthorization;
 
 use crate::engine::types::*;
-use crate::prelude::NonFungibleAddress;
+use crate::prelude::{MethodAuth, NonFungibleAddress, ResourceMethod};
 use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -253,7 +253,7 @@ pub struct PutLazyMapEntryOutput {}
 pub struct CreateResourceInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub authorization: ComponentAuthorization,
+    pub authorization: HashMap<ResourceMethod, MethodAuth>,
     pub mint_params: Option<MintParams>,
 }
 

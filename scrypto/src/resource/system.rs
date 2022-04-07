@@ -38,7 +38,7 @@ impl ResourceSystem {
         &mut self,
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        authorization: ComponentAuthorization,
+        authorization: HashMap<ResourceMethod, MethodAuth>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
         let input = CreateResourceInput {

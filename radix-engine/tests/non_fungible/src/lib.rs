@@ -17,17 +17,17 @@ blueprint! {
             // Create a mint badge
             let mint_badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .auth("take_from_vault", auth!(allow_all))
+                .auth(TakeFromVault, auth!(allow_all))
                 .initial_supply(1);
 
             // Create non-fungible resource with mutable supply
             let resource_address = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .auth("take_from_vault", auth!(allow_all))
-                .auth("mint", auth!(require(mint_badge.resource_address())))
-                .auth("burn", auth!(require(mint_badge.resource_address())))
+                .auth(TakeFromVault, auth!(allow_all))
+                .auth(Mint, auth!(require(mint_badge.resource_address())))
+                .auth(Burn, auth!(require(mint_badge.resource_address())))
                 .auth(
-                    "update_non_fungible_mutable_data",
+                    UpdateNonFungibleData,
                     auth!(require(mint_badge.resource_address())),
                 )
                 .no_initial_supply();
@@ -49,7 +49,7 @@ blueprint! {
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .auth("take_from_vault", auth!(allow_all))
+                .auth(TakeFromVault, auth!(allow_all))
                 .initial_supply([
                     (
                         NonFungibleId::from_u32(1),

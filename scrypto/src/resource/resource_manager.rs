@@ -12,6 +12,15 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
+pub enum ResourceMethod {
+    Mint,
+    Burn,
+    TakeFromVault,
+    UpdateMetadata,
+    UpdateNonFungibleData,
+}
+
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ResourceAddress(pub [u8; 26]);

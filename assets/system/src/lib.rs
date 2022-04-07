@@ -16,7 +16,7 @@ blueprint! {
         pub fn new_resource(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            authorization: ComponentAuthorization,
+            authorization: HashMap<ResourceMethod, MethodAuth>,
             initial_supply: Option<MintParams>,
         ) -> (ResourceAddress, Option<Bucket>) {
             resource_system().new_resource(
