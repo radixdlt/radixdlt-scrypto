@@ -945,10 +945,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         // Authorization and state load
-        let state: ActorState = match &invocation.invocation_type {
+        let (state, method_auth) = match &invocation.invocation_type {
             InvocationType::Scrypto(actor) => {
                 match actor.actor_type() {
-                    ActorType::Blueprint => Ok(ActorState::Scrypto(actor.clone(), None)),
+                    ActorType::Blueprint => Ok((ActorState::Scrypto(actor.clone(), None), MethodAuthorization::Public)),
                     ActorType::Component(component_address) => {
                         let package = self
                             .track
@@ -959,10 +959,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         let component = self.track.get_component(component_address.clone()).unwrap();
                         let (scrypto_value, method_auth) =
                             component.method_authorization(&schema, &invocation.function);
-                        method_auth.check(&[&self.auth_zone]).map_err(|e| {
-                            RuntimeError::AuthorizationError(invocation.function.clone(), e)
-                        })?;
-                        Ok(
+                        Ok((
                             ActorState::Scrypto(
                                 actor.clone(),
                                 Some((
@@ -970,14 +967,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                                     component.state().to_vec(),
                                     scrypto_value
                                 ))
-                            )
-                        )
+                            ),
+                            method_auth
+                        ))
                     }
                 }
             },
             InvocationType::Resource(resource_address) => {
-                self.check_resource_auth(resource_address, &invocation.function)?;
-                Ok(ActorState::Resource(resource_address.clone()))
+                let resource_manager = self
+                    .track
+                    .get_resource_manager(&resource_address)
+                    .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
+                let method_auth = resource_manager.get_auth(&invocation.function);
+                Ok((ActorState::Resource(resource_address.clone()), method_auth.clone()))
             },
             InvocationType::Bucket(bucket_id) => {
                 let bucket = self
@@ -985,22 +987,45 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let resource_address = bucket.resource_address();
-                self.check_resource_auth(&resource_address, &invocation.function)?;
-
-                Ok(ActorState::Bucket(bucket))
+                let resource_manager = self
+                    .track
+                    .get_resource_manager(&resource_address)
+                    .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
+                let method_auth = resource_manager.get_auth(&invocation.function);
+                Ok((ActorState::Bucket(bucket), method_auth.clone()))
             },
             InvocationType::Vault(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
-                self.check_resource_auth(&resource_address, "take_from_vault")?;
-                Ok(ActorState::Vault(vault_id.clone()))
+                let resource_manager = self
+                    .track
+                    .get_resource_manager(&resource_address)
+                    .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
+                let method_auth = resource_manager.get_auth(&invocation.function);
+                Ok((ActorState::Vault(vault_id.clone()), method_auth.clone()))
             }
             InvocationType::NonFungible(non_fungible_address) => {
                 let resource_address = non_fungible_address.resource_address();
-                self.check_resource_auth(&resource_address, &invocation.function)?;
-                Ok(ActorState::NonFungible(non_fungible_address.clone()))
+                let resource_manager = self
+                    .track
+                    .get_resource_manager(&resource_address)
+                    .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
+                let method_auth = resource_manager.get_auth(&invocation.function);
+                Ok((ActorState::NonFungible(non_fungible_address.clone()), method_auth.clone()))
             }
         }?;
 
+        // Authorization check
+        let proofs_vector = match &state {
+            // Same process auth check
+            ActorState::Vault(_) => vec![self.caller_auth_zone, &self.auth_zone],
+            // Extern call auth check
+            _ => vec![self.auth_zone.as_slice()],
+        };
+
+        method_auth.check(&proofs_vector)
+            .map_err(|e| RuntimeError::AuthorizationError(invocation.function.clone(), e))?;
+
+        // Execution
         let result = match state {
             ActorState::Vault(vault_id) => {
                 match invocation.function.as_str() {
@@ -1941,21 +1966,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map_err(RuntimeError::VaultError)?;
 
         Ok(PutIntoVaultOutput {})
-    }
-
-    fn check_resource_auth(
-        &mut self,
-        resource_address: &ResourceAddress,
-        transition: &str,
-    ) -> Result<(), RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
-        let auth_rule = resource_manager.get_auth(transition);
-        auth_rule
-            .check(&[self.caller_auth_zone, &self.auth_zone])
-            .map_err(|e| RuntimeError::AuthorizationError(transition.to_string(), e))
     }
 
     fn handle_update_resource_metadata(
