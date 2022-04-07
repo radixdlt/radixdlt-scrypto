@@ -864,27 +864,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(output)
     }
 
-    /// Prepares a function call.
-    pub fn prepare_call_function(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function: &str,
-        args: Vec<ScryptoValue>,
-    ) -> Result<Invocation, RuntimeError> {
-        Ok(Invocation {
-            snode_ref: SNodeRef::Scrypto(
-                ScryptoActor::blueprint(
-                    package_address,
-                    blueprint_name.to_owned(),
-                    format!("{}_main", blueprint_name)
-                )
-            ),
-            function: function.to_owned(),
-            args,
-        })
-    }
-
     /// Prepares a method call.
     pub fn prepare_call_method(
         &mut self,
@@ -1082,8 +1061,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call function started");
-        let invocation =
-            self.prepare_call_function(package_address, blueprint_name, function, args)?;
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Scrypto(
+                ScryptoActor::blueprint(
+                    package_address,
+                    blueprint_name.to_string(),
+                    format!("{}_main", blueprint_name)
+                )
+            ),
+            function: function.to_string(),
+            args,
+        };
         let result = self.call(invocation);
         re_debug!(self, "Call function ended");
         result
@@ -1491,12 +1479,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             validated_args
         );
 
-        let invocation = self.prepare_call_function(
-            input.package_address,
-            &input.blueprint_name,
-            input.function.as_str(),
-            validated_args,
-        )?;
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Scrypto(
+                ScryptoActor::blueprint(
+                    input.package_address,
+                    input.blueprint_name.to_string(),
+                    format!("{}_main", input.blueprint_name)
+                )
+            ),
+            function: input.function.to_string(),
+            args: validated_args,
+        };
+
         let result = self.call(invocation);
 
         re_debug!(self, "CALL finished");
