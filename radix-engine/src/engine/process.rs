@@ -1016,6 +1016,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         let bucket_id = self.new_bucket_id()?;
                         self.buckets.insert(bucket_id, new_bucket);
                         Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
+                    },
+                    "take_non_fungibles_from_vault" => {
+                        let non_fungible_ids: BTreeSet<NonFungibleId> = scrypto_decode(&invocation.args[0].raw)
+                            .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+
+                        let new_bucket = self
+                            .get_local_vault(&vault_id)?
+                            .take_non_fungibles(&non_fungible_ids)
+                            .map_err(RuntimeError::VaultError)?;
+
+                        let bucket_id = self.new_bucket_id()?;
+                        self.buckets.insert(bucket_id, new_bucket);
+                        Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
                     }
                     _ => Err(RuntimeError::IllegalSystemCall)
                 }
@@ -2014,18 +2027,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeNonFungiblesFromVaultInput,
     ) -> Result<TakeNonFungiblesFromVaultOutput, RuntimeError> {
-        let resource_address = self.get_local_vault(&input.vault_id)?.resource_address();
-        self.check_resource_auth(&resource_address, "take_non_fungibles_from_vault")?;
-
-        let new_bucket = self
-            .get_local_vault(&input.vault_id)?
-            .take_non_fungibles(&input.non_fungible_ids)
-            .map_err(RuntimeError::VaultError)?;
-
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(TakeNonFungiblesFromVaultOutput { bucket_id })
+        let invocation = Invocation {
+            invocation_type: InvocationType::Vault(input.vault_id.clone()),
+            function: "take_non_fungibles_from_vault".to_string(),
+            args: vec![ScryptoValue::from_value(&input.non_fungible_ids)],
+        };
+        let result = self.call(invocation)?;
+        Ok( TakeNonFungiblesFromVaultOutput { bucket_id: result.bucket_ids[0] })
     }
 
     fn handle_get_non_fungible_ids_in_vault(
