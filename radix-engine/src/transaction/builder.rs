@@ -3,7 +3,7 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRuleNode, MethodAuth};
+use scrypto::prelude::{AuthRuleNode, Burn, MethodAuth, Mint, TakeFromVault};
 use scrypto::resource::require;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::BTreeSet;
@@ -446,6 +446,11 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         metadata: HashMap<String, String>,
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
+        let mut resource_auth = HashMap::new();
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+        resource_auth.insert(Mint, auth!(require(minter_resource_address.clone())));
+        resource_auth.insert(Burn, auth!(require(minter_resource_address.clone())));
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
@@ -453,11 +458,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&component_authorization! {
-                    "take_from_vault" => auth!(allow_all),
-                    "mint" => auth!(require(minter_resource_address.clone())),
-                    "burn" => auth!(require(minter_resource_address.clone())),
-                }),
+                scrypto_encode(&resource_auth),
                 scrypto_encode::<Option<MintParams>>(&None),
             ],
         })
@@ -470,6 +471,9 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         metadata: HashMap<String, String>,
         initial_supply: Decimal,
     ) -> &mut Self {
+        let mut resource_auth = HashMap::new();
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
@@ -477,9 +481,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&component_authorization! {
-                    "take_from_vault" => auth!(allow_all)
-                }),
+                scrypto_encode(&resource_auth),
                 scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -494,6 +496,11 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         metadata: HashMap<String, String>,
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
+        let mut resource_auth = HashMap::new();
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+        resource_auth.insert(Mint, auth!(require(minter_resource_address.clone())));
+        resource_auth.insert(Burn, auth!(require(minter_resource_address.clone())));
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
@@ -501,11 +508,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&component_authorization! {
-                    "mint" => auth!(require(minter_resource_address.clone())),
-                    "burn" => auth!(require(minter_resource_address.clone())),
-                    "take_from_vault" => auth!(allow_all),
-                }),
+                scrypto_encode(&resource_auth),
                 scrypto_encode::<Option<MintParams>>(&None),
             ],
         })
@@ -518,6 +521,9 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
         metadata: HashMap<String, String>,
         initial_supply: Decimal,
     ) -> &mut Self {
+        let mut resource_auth = HashMap::new();
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
@@ -525,9 +531,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&component_authorization! {
-                    "take_from_vault" => auth!(allow_all)
-                }),
+                scrypto_encode(&resource_auth),
                 scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),

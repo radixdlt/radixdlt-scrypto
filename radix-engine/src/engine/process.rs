@@ -1778,12 +1778,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceInput,
     ) -> Result<CreateResourceOutput, RuntimeError> {
-        let resource_manager = ResourceManager::new(
-            input.resource_type,
-            input.metadata,
-            input.authorization,
-        )
-        .map_err(RuntimeError::ResourceManagerError)?;
+        let resource_manager =
+            ResourceManager::new(input.resource_type, input.metadata, input.authorization)
+                .map_err(RuntimeError::ResourceManagerError)?;
 
         let resource_address = self.track.create_resource_manager(resource_manager);
         re_debug!(self, "New resource manager: {}", resource_address);

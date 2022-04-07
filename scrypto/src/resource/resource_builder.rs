@@ -15,12 +15,12 @@ pub struct ResourceBuilder;
 pub struct FungibleResourceBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
-    authorization: ComponentAuthorization,
+    authorization: HashMap<ResourceMethod, MethodAuth>,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
-    authorization: ComponentAuthorization,
+    authorization: HashMap<ResourceMethod, MethodAuth>,
 }
 
 impl ResourceBuilder {
@@ -40,7 +40,7 @@ impl FungibleResourceBuilder {
         Self {
             divisibility: DIVISIBILITY_MAXIMUM,
             metadata: HashMap::new(),
-            authorization: ComponentAuthorization::new(),
+            authorization: HashMap::new(),
         }
     }
 
@@ -62,8 +62,8 @@ impl FungibleResourceBuilder {
         self
     }
 
-    pub fn auth(&mut self, method_name: &str, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(method_name, method_auth);
+    pub fn auth(&mut self, method: ResourceMethod, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(method, method_auth);
         self
     }
 
@@ -85,6 +85,11 @@ impl FungibleResourceBuilder {
     }
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        // TODO: Do we still need this check?
+        if !self.authorization.contains_key(&TakeFromVault) {
+            panic!("TakeFromVault authorization not defined.");
+        }
+
         resource_system().new_resource(
             ResourceType::Fungible {
                 divisibility: self.divisibility,
@@ -100,7 +105,7 @@ impl NonFungibleResourceBuilder {
     pub fn new() -> Self {
         Self {
             metadata: HashMap::new(),
-            authorization: ComponentAuthorization::new(),
+            authorization: HashMap::new(),
         }
     }
 
@@ -113,8 +118,8 @@ impl NonFungibleResourceBuilder {
         self
     }
 
-    pub fn auth(&mut self, method_name: &str, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(method_name, method_auth);
+    pub fn auth(&mut self, method: ResourceMethod, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(method, method_auth);
         self
     }
 
