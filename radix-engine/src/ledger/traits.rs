@@ -1,14 +1,14 @@
 use sbor::*;
+use scrypto::auth;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::resource::ComponentAuthorization;
+use scrypto::resource::ResourceMethod::TakeFromVault;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
-use scrypto::{auth};
-use scrypto::resource::ResourceMethod::TakeFromVault;
 
 use crate::model::*;
 

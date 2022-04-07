@@ -19,12 +19,7 @@ blueprint! {
             authorization: HashMap<ResourceMethod, MethodAuth>,
             initial_supply: Option<MintParams>,
         ) -> (ResourceAddress, Option<Bucket>) {
-            resource_system().new_resource(
-                resource_type,
-                metadata,
-                authorization,
-                initial_supply,
-            )
+            resource_system().new_resource(resource_type, metadata, authorization, initial_supply)
         }
 
         /// Mints fungible resource. TODO: Remove

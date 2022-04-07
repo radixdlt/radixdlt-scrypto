@@ -3,7 +3,7 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRuleNode, MethodAuth, Mint, Burn, TakeFromVault};
+use scrypto::prelude::{AuthRuleNode, Burn, MethodAuth, Mint, TakeFromVault};
 use scrypto::resource::require;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::BTreeSet;

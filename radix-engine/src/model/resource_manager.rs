@@ -1,11 +1,11 @@
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::ResourceMethod::TakeFromVault;
+use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
+use scrypto::resource::*;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
-use scrypto::resource::*;
-use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
 
 use crate::model::{convert, MethodAuthorization};
 
@@ -78,9 +78,7 @@ impl ResourceManager {
             );
         }
 
-        if let Some(update_non_fungible_mutable_data_auth) =
-            auth.get(&UpdateNonFungibleData)
-        {
+        if let Some(update_non_fungible_mutable_data_auth) = auth.get(&UpdateNonFungibleData) {
             authorization.insert(
                 "update_non_fungible_mutable_data".to_string(),
                 convert(

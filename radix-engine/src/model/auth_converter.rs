@@ -1,5 +1,6 @@
 use crate::model::method_authorization::{
-    HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList, HardResourceOrNonFungible,
+    HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
+    HardResourceOrNonFungible,
 };
 use crate::model::MethodAuthorization;
 use sbor::any::Value;
@@ -7,7 +8,8 @@ use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::{AuthRuleNode, MethodAuth, SoftResource};
 use scrypto::resource::{
-    NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible, SoftResourceOrNonFungibleList,
+    NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
+    SoftResourceOrNonFungibleList,
 };
 use scrypto::rust::vec::Vec;
 use scrypto::types::ScryptoType;
@@ -70,35 +72,37 @@ fn soft_to_hard_resource_list(
             }
 
             match sbor_path.unwrap().get_from_value(dom) {
-                Some(Value::Vec(type_id, values)) => match ScryptoType::from_id(*type_id).unwrap() {
-                    ScryptoType::ResourceAddress => HardProofRuleResourceList::List(
-                        values
-                            .iter()
-                            .map(|v| {
-                                if let Value::Custom(_, bytes) = v {
-                                    return ResourceAddress::try_from(bytes.as_slice())
-                                        .unwrap()
-                                        .into();
-                                }
-                                panic!("Unexpected type");
-                            })
-                            .collect(),
-                    ),
-                    ScryptoType::NonFungibleAddress => HardProofRuleResourceList::List(
-                        values
-                            .iter()
-                            .map(|v| {
-                                if let Value::Custom(_, bytes) = v {
-                                    return NonFungibleAddress::try_from(bytes.as_slice())
-                                        .unwrap()
-                                        .into();
-                                }
-                                panic!("Unexpected type");
-                            })
-                            .collect(),
-                    ),
-                    _ => HardProofRuleResourceList::SoftResourceListNotFound,
-                },
+                Some(Value::Vec(type_id, values)) => {
+                    match ScryptoType::from_id(*type_id).unwrap() {
+                        ScryptoType::ResourceAddress => HardProofRuleResourceList::List(
+                            values
+                                .iter()
+                                .map(|v| {
+                                    if let Value::Custom(_, bytes) = v {
+                                        return ResourceAddress::try_from(bytes.as_slice())
+                                            .unwrap()
+                                            .into();
+                                    }
+                                    panic!("Unexpected type");
+                                })
+                                .collect(),
+                        ),
+                        ScryptoType::NonFungibleAddress => HardProofRuleResourceList::List(
+                            values
+                                .iter()
+                                .map(|v| {
+                                    if let Value::Custom(_, bytes) = v {
+                                        return NonFungibleAddress::try_from(bytes.as_slice())
+                                            .unwrap()
+                                            .into();
+                                    }
+                                    panic!("Unexpected type");
+                                })
+                                .collect(),
+                        ),
+                        _ => HardProofRuleResourceList::SoftResourceListNotFound,
+                    }
+                }
                 _ => HardProofRuleResourceList::SoftResourceListNotFound,
             }
         }
