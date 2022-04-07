@@ -59,6 +59,13 @@ impl ResourceManager {
                 "take_from_vault".to_string(),
                 convert(&Type::Unit, &Value::Unit, take_auth),
             );
+
+            if let ResourceType::NonFungible = resource_type {
+                authorization.insert(
+                    "take_non_fungibles_from_vault".to_string(),
+                    convert(&Type::Unit, &Value::Unit, take_auth),
+                );
+            }
         } else {
             return Err(ResourceManagerError::TakeFromVaultNotDefined);
         }
