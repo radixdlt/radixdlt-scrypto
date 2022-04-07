@@ -63,7 +63,9 @@ enum ActorState {
 
 /// Represents an interpreter instance.
 pub struct Interpreter {
-    invocation: Invocation,
+    actor: Actor,
+    function: String,
+    args: Vec<ScryptoValue>,
     module: ModuleRef,
     memory: MemoryRef,
 }
@@ -798,7 +800,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     depth: self.depth,
                     trace: self.trace,
                     vm: Interpreter {
-                        invocation: invocation.clone(),
+                        function: invocation.function.clone(),
+                        args: invocation.args.clone(),
+                        actor: actor.clone(),
                         module: module.clone(),
                         memory,
                     },
@@ -1483,24 +1487,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
 
-        if let InvocationType::Scrypto(actor) = &wasm_process.vm.invocation.invocation_type {
-            let data = Self::process_entry_data(&input.state)?;
-            let new_objects = wasm_process.process_owned_objects.take(data)?;
-            let package_address = actor.package_address().clone();
-            let component = Component::new(
-                package_address,
-                input.blueprint_name,
-                input.authorization,
-                input.state,
-            );
-            let component_address = self.track.create_component(component);
-            self.track
-                .insert_objects_into_component(new_objects, component_address);
+        let data = Self::process_entry_data(&input.state)?;
+        let new_objects = wasm_process.process_owned_objects.take(data)?;
+        let package_address = wasm_process.vm.actor.package_address().clone();
+        let component = Component::new(
+            package_address,
+            input.blueprint_name,
+            input.authorization,
+            input.state,
+        );
+        let component_address = self.track.create_component(component);
+        self.track
+            .insert_objects_into_component(new_objects, component_address);
 
-            Ok(CreateComponentOutput { component_address })
-        } else {
-            Err(RuntimeError::IllegalSystemCall)
-        }
+        Ok(CreateComponentOutput { component_address })
     }
 
     fn handle_get_component_info(
@@ -2311,10 +2311,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)?;
         Ok(GetCallDataOutput {
-            function: wasm_process.vm.invocation.function.clone(),
+            function: wasm_process.vm.function.clone(),
             args: wasm_process
                 .vm
-                .invocation
                 .args
                 .iter()
                 .cloned()
@@ -2356,11 +2355,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)?;
 
-        if let InvocationType::Scrypto(actor) = &wasm_process.vm.invocation.invocation_type {
-            return Ok(GetActorOutput { actor: actor.clone() });
-        } else {
-            return Err(RuntimeError::IllegalSystemCall);
-        }
+        return Ok(GetActorOutput { actor: wasm_process.vm.actor.clone() });
     }
 
     //============================
