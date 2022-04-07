@@ -36,17 +36,19 @@ impl CallFunction {
         let (default_pks, default_sks) = get_default_signers()?;
 
         let transaction = TransactionBuilder::new()
-            .parse_args_and_call_function(
+            .call_function_with_abi(
                 self.package_address,
                 &self.blueprint_name,
                 &self.function_name,
                 self.arguments.clone(),
                 Some(default_account),
-                &executor,
+                &executor
+                    .export_abi(self.package_address, &self.blueprint_name)
+                    .map_err(Error::AbiExportError)?,
             )
-            .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(default_pks, &executor)
             .map_err(Error::TransactionConstructionError)?
+            .call_method_with_all_resources(default_account, "deposit_batch")
+            .build(executor.get_nonce(default_pks))
             .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)
     }

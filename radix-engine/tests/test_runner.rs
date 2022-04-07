@@ -1,6 +1,7 @@
 use radix_engine::ledger::*;
 use radix_engine::model::{Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
+use scrypto::abi;
 use scrypto::prelude::*;
 
 pub struct TestRunner<'l> {
@@ -61,12 +62,24 @@ impl<'l> TestRunner<'l> {
             .unwrap()
     }
 
-    pub fn abi_provider(&self) -> &TransactionExecutor<InMemorySubstateStore> {
-        &self.executor
+    pub fn export_abi(
+        &self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+    ) -> abi::Blueprint {
+        self.executor
+            .export_abi(package_address, blueprint_name)
+            .unwrap()
     }
 
-    pub fn nonce_provider(&self) -> &TransactionExecutor<InMemorySubstateStore> {
-        &self.executor
+    pub fn export_abi_by_component(&self, component_address: ComponentAddress) -> abi::Blueprint {
+        self.executor
+            .export_abi_by_component(component_address)
+            .unwrap()
+    }
+
+    pub fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, intended_signers: PKS) -> u64 {
+        self.executor.get_nonce(intended_signers)
     }
 
     pub fn create_restricted_mint_token(
@@ -84,8 +97,7 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[], &self.executor)
-            .unwrap()
+            .build(self.executor.get_nonce(&[]))
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_address, receipt.new_resource_addresses[0])
@@ -105,8 +117,7 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[], &self.executor)
-            .unwrap()
+            .build(self.executor.get_nonce(&[]))
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_address, receipt.new_resource_addresses[0])
@@ -127,8 +138,7 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[], &self.executor)
-            .unwrap()
+            .build(self.executor.get_nonce(&[]))
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_address, receipt.new_resource_addresses[0])
@@ -144,8 +154,7 @@ impl<'l> TestRunner<'l> {
                 vec![],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[], &self.executor)
-            .unwrap()
+            .build(self.executor.get_nonce(&[]))
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         receipt.new_resource_addresses[0]
@@ -166,8 +175,7 @@ impl<'l> TestRunner<'l> {
                 args![amount, divisibility],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[], &self.executor)
-            .unwrap()
+            .build(self.executor.get_nonce(&[]))
             .sign(&[]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         receipt.new_resource_addresses[0]
@@ -185,17 +193,20 @@ impl<'l> TestRunner<'l> {
     ) -> ComponentAddress {
         let transaction = self
             .new_transaction_builder()
-            .parse_args_and_call_function(
+            .call_function_with_abi(
                 package_address,
                 blueprint_name,
                 function_name,
                 args,
                 Some(account),
-                &self.executor,
+                &self
+                    .executor
+                    .export_abi(package_address, blueprint_name)
+                    .unwrap(),
             )
-            .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[pk], &self.executor)
             .unwrap()
+            .call_method_with_all_resources(account, "deposit_batch")
+            .build(self.executor.get_nonce(&[pk]))
             .sign(&[sk]);
         let receipt = self.validate_and_execute(&transaction);
         receipt.new_component_addresses[0]

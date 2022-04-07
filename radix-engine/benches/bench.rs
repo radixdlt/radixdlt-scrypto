@@ -14,8 +14,7 @@ fn bench_transfer(b: &mut Bencher) {
     let transaction = TransactionBuilder::new()
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")
-        .build(&[pk], &executor)
-        .unwrap()
+        .build(executor.get_nonce(&[pk]))
         .sign(&[sk]);
 
     b.iter(|| {

@@ -24,8 +24,7 @@ fn test_auth_rule(
         .new_transaction_builder()
         .withdraw_from_account(RADIX_TOKEN, account_address)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(pks, test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(pks))
         .sign(sks);
     let receipt = test_runner.validate_and_execute(&transaction);
 
@@ -265,8 +264,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(&[], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[]))
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
@@ -297,8 +295,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(&[], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[]))
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
@@ -329,8 +326,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(&[], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[]))
         .sign(&[]);
     let receipt = test_runner.validate_and_execute(&transaction);
 

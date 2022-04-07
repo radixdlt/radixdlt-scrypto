@@ -40,8 +40,7 @@ impl Mint {
                 self.minter_resource_address,
             )
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(default_pks, &executor)
-            .map_err(Error::TransactionConstructionError)?
+            .build(executor.get_nonce(default_pks))
             .sign(&default_sks);
         process_transaction(transaction, &mut executor, &self.manifest)
     }

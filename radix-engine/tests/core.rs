@@ -14,8 +14,7 @@ fn test_process_and_transaction() {
 
     let transaction1 = TransactionBuilder::new()
         .call_function(package, "CoreTest", "query", vec![])
-        .build(&[], &executor)
-        .unwrap()
+        .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
     receipt1.result.expect("Should be okay.");
@@ -32,8 +31,7 @@ fn test_call() {
         .call_function(package, "MoveTest", "move_bucket", vec![])
         .call_function(package, "MoveTest", "move_proof", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[], &executor)
-        .unwrap()
+        .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     receipt.result.expect("Should be okay.");

@@ -19,7 +19,7 @@ pub struct TransactionExecutor<'l, L: SubstateStore> {
 }
 
 impl<'l, L: SubstateStore> NonceProvider for TransactionExecutor<'l, L> {
-    fn get_nonce(&self, _intended_signers: &[EcdsaPublicKey]) -> u64 {
+    fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
         self.substate_store.get_nonce()
     }
 }
@@ -41,7 +41,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .export_abi(package_address, blueprint_name)
     }
 
-    fn export_abi_component(
+    fn export_abi_by_component(
         &self,
         component_address: ComponentAddress,
     ) -> Result<abi::Blueprint, RuntimeError> {
@@ -98,8 +98,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })
-                    .build(&[], self)
-                    .unwrap()
+                    .build(self.get_nonce(&[]))
                     .sign(&[]),
             )
             .unwrap();
@@ -127,8 +126,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             .validate_and_execute(
                 &TransactionBuilder::new()
                     .publish_package(code.as_ref())
-                    .build(&[], self)
-                    .unwrap()
+                    .build(self.get_nonce(&[]))
                     .sign(&[]),
             )
             .unwrap();
@@ -177,7 +175,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
         let mut track = Track::new(
             self.substate_store,
-            validated.hash.clone(),
+            validated.raw_hash.clone(),
             validated.signers.clone(),
         );
         let mut proc = track.start_process(self.trace);

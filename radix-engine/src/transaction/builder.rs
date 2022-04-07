@@ -29,8 +29,6 @@ pub struct TransactionBuilder {
     id_validator: IdValidator,
     /// Instructions generated.
     instructions: Vec<Instruction>,
-    /// Collected Errors
-    errors: Vec<BuildTransactionError>,
 }
 
 impl TransactionBuilder {
@@ -39,7 +37,6 @@ impl TransactionBuilder {
         Self {
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
-            errors: Vec::new(),
         }
     }
 
@@ -169,11 +166,6 @@ impl TransactionBuilder {
             .0
     }
 
-    /// Clears auth zone.
-    pub fn clear_auth_zone(&mut self) -> &mut Self {
-        self.add_instruction(Instruction::ClearAuthZone).0
-    }
-
     /// Asserts that worktop contains resource.
     pub fn assert_worktop_contains_by_amount(
         &mut self,
@@ -200,6 +192,7 @@ impl TransactionBuilder {
         .0
     }
 
+    /// Pops the most recent proof from auth zone.
     pub fn pop_from_auth_zone<F>(&mut self, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
@@ -208,11 +201,18 @@ impl TransactionBuilder {
         then(builder, proof_id.unwrap())
     }
 
+    /// Pushes a proof onto the auth zone
     pub fn push_to_auth_zone(&mut self, proof_id: ProofId) -> &mut Self {
         self.add_instruction(Instruction::PushToAuthZone { proof_id });
         self
     }
 
+    /// Clears the auth zone.
+    pub fn clear_auth_zone(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::ClearAuthZone).0
+    }
+
+    /// Creates proof from the auth zone.
     pub fn create_proof_from_auth_zone<F>(
         &mut self,
         resource_address: ResourceAddress,
@@ -226,6 +226,7 @@ impl TransactionBuilder {
         then(builder, proof_id.unwrap())
     }
 
+    /// Creates proof from the auth zone by amount.
     pub fn create_proof_from_auth_zone_by_amount<F>(
         &mut self,
         amount: Decimal,
@@ -243,6 +244,7 @@ impl TransactionBuilder {
         then(builder, proof_id.unwrap())
     }
 
+    /// Creates proof from the auth zone by non-fungible ids.
     pub fn create_proof_from_auth_zone_by_ids<F>(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
@@ -260,6 +262,7 @@ impl TransactionBuilder {
         then(builder, proof_id.unwrap())
     }
 
+    /// Creates proof from a bucket.
     pub fn create_proof_from_bucket<F>(&mut self, bucket_id: BucketId, then: F) -> &mut Self
     where
         F: FnOnce(&mut Self, ProofId) -> &mut Self,
@@ -283,6 +286,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::DropProof { proof_id }).0
     }
 
+    /// Calls a function where the arguments should be an array of encoded Scrypto value.
     pub fn call_function(
         &mut self,
         package_address: PackageAddress,
@@ -306,46 +310,37 @@ impl TransactionBuilder {
     ///
     /// If an Account component address is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn parse_args_and_call_function<A: AbiProvider>(
+    pub fn call_function_with_abi(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
         function: &str,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-        abi_provider: &A,
-    ) -> &mut Self {
-        let result = abi_provider
-            .export_abi(package_address, blueprint_name)
-            .map_err(|e| {
-                BuildTransactionError::FailedToExportFunctionAbi(
-                    package_address,
-                    blueprint_name.to_owned(),
-                    function.to_owned(),
-                    e,
-                )
+        blueprint_abi: &abi::Blueprint,
+    ) -> Result<&mut Self, CallWithAbiError> {
+        let abi = blueprint_abi
+            .functions
+            .iter()
+            .find(|f| f.name == function)
+            .map(Clone::clone)
+            .ok_or_else(|| CallWithAbiError::FunctionNotFound(function.to_owned()))?;
+
+        let arguments = self
+            .parse_args(&abi.inputs, args, account)
+            .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
+
+        Ok(self
+            .add_instruction(Instruction::CallFunction {
+                package_address,
+                blueprint_name: blueprint_name.to_owned(),
+                function: function.to_owned(),
+                args: arguments,
             })
-            .and_then(|abi| Self::find_function_abi(&abi, function))
-            .and_then(|f| {
-                self.parse_args(&f.inputs, args, account)
-                    .map_err(|e| BuildTransactionError::FailedToBuildArgs(e))
-            });
-
-        match result {
-            Ok(args) => {
-                self.add_instruction(Instruction::CallFunction {
-                    package_address,
-                    blueprint_name: blueprint_name.to_owned(),
-                    function: function.to_owned(),
-                    args,
-                });
-            }
-            Err(e) => self.errors.push(e),
-        }
-
-        self
+            .0)
     }
 
+    /// Calls a method where the arguments should be an array of encoded Scrypto value.
     pub fn call_method(
         &mut self,
         component_address: ComponentAddress,
@@ -367,37 +362,32 @@ impl TransactionBuilder {
     ///
     /// If an Account component address is provided, resources will be withdrawn from the given account;
     /// otherwise, they will be taken from transaction worktop.
-    pub fn parse_args_and_call_method<A: AbiProvider>(
+    pub fn call_method_with_abi(
         &mut self,
         component_address: ComponentAddress,
         method: &str,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-        abi_provider: &A,
-    ) -> &mut Self {
-        let result = abi_provider
-            .export_abi_component(component_address)
-            .map_err(|_| {
-                BuildTransactionError::FailedToExportMethodAbi(component_address, method.to_owned())
+        blueprint_abi: &abi::Blueprint,
+    ) -> Result<&mut Self, CallWithAbiError> {
+        let abi = blueprint_abi
+            .methods
+            .iter()
+            .find(|m| m.name == method)
+            .map(Clone::clone)
+            .ok_or_else(|| CallWithAbiError::MethodNotFound(method.to_owned()))?;
+
+        let arguments = self
+            .parse_args(&abi.inputs, args, account)
+            .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
+
+        Ok(self
+            .add_instruction(Instruction::CallMethod {
+                component_address,
+                method: method.to_owned(),
+                args: arguments,
             })
-            .and_then(|abi| Self::find_method_abi(&abi, method))
-            .and_then(|m| {
-                self.parse_args(&m.inputs, args, account)
-                    .map_err(|e| BuildTransactionError::FailedToBuildArgs(e))
-            });
-
-        match result {
-            Ok(args) => {
-                self.add_instruction(Instruction::CallMethod {
-                    component_address,
-                    method: method.to_owned(),
-                    args,
-                });
-            }
-            Err(e) => self.errors.push(e),
-        }
-
-        self
+            .0)
     }
 
     /// Calls a method with all the resources on worktop.
@@ -424,28 +414,21 @@ impl TransactionBuilder {
         .0
     }
 
-    /// Builds a transaction, using the signer set to fetch nonce.
-    pub fn build<PK: AsRef<[EcdsaPublicKey]>, N: NonceProvider>(
-        &self,
-        intended_signers: PK,
-        nonce_provider: &N,
-    ) -> Result<Transaction, BuildTransactionError> {
-        let nonce = nonce_provider.get_nonce(intended_signers.as_ref());
-        self.build_with_nonce(nonce)
-    }
-
     /// Builds a transaction with the given nonce.
-    ///
-    /// Transactions with incorrect nonce will be rejected by Radix Engine.
-    pub fn build_with_nonce(&self, nonce: u64) -> Result<Transaction, BuildTransactionError> {
-        if !self.errors.is_empty() {
-            return Err(self.errors[0].clone());
-        }
-
+    pub fn build(&self, nonce: u64) -> Transaction {
         let mut instructions = self.instructions.clone();
         instructions.push(Instruction::Nonce { nonce });
 
-        Ok(Transaction { instructions })
+        Transaction { instructions }
+    }
+
+    /// Builds a transaction with no nonce
+    ///
+    /// Nonce can be later filled by a third party or wallet.
+    pub fn build_with_no_nonce(&self) -> Transaction {
+        Transaction {
+            instructions: self.instructions.clone(),
+        }
     }
 
     /// Creates a token resource with mutable supply.
@@ -709,28 +692,6 @@ impl TransactionBuilder {
         let mut map = HashMap::new();
         map.insert(resource_address, permission);
         map
-    }
-
-    fn find_function_abi(
-        abi: &abi::Blueprint,
-        function: &str,
-    ) -> Result<abi::Function, BuildTransactionError> {
-        abi.functions
-            .iter()
-            .find(|f| f.name == function)
-            .map(Clone::clone)
-            .ok_or_else(|| BuildTransactionError::FunctionNotFound(function.to_owned()))
-    }
-
-    fn find_method_abi(
-        abi: &abi::Blueprint,
-        method: &str,
-    ) -> Result<abi::Method, BuildTransactionError> {
-        abi.methods
-            .iter()
-            .find(|m| m.name == method)
-            .map(Clone::clone)
-            .ok_or_else(|| BuildTransactionError::MethodNotFound(method.to_owned()))
     }
 
     fn parse_args(

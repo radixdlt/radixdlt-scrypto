@@ -193,7 +193,7 @@ pub fn validate_transaction(
     }
 
     Ok(ValidatedTransaction {
-        hash: transaction.transaction.hash(),
+        raw_hash: transaction.transaction.raw_hash(),
         instructions,
         signers,
     })

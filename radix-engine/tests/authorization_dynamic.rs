@@ -42,8 +42,7 @@ fn test_dynamic_auth(
             "create_component",
             vec![scrypto_encode(addresses.get(initial_auth).unwrap())],
         )
-        .build(&[], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[]))
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     receipt1.result.expect("Should be okay.");
@@ -57,8 +56,7 @@ fn test_dynamic_auth(
                 "update_auth",
                 vec![scrypto_encode(addresses.get(next_auth).unwrap())],
             )
-            .build(&[], test_runner.nonce_provider())
-            .unwrap()
+            .build(test_runner.get_nonce(&[]))
             .sign(&[]);
         test_runner
             .validate_and_execute(&update_txn)
@@ -70,8 +68,7 @@ fn test_dynamic_auth(
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "get_secret", vec![])
-        .build(pks, test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(pks))
         .sign(&sks);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
 
@@ -122,8 +119,7 @@ fn test_dynamic_authlist(
             "create_component",
             args!(2u8, list, authorization),
         )
-        .build(&[], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[]))
         .sign(&[]);
     let receipt0 = test_runner.validate_and_execute(&transaction1);
     receipt0.result.expect("Should be okay.");
@@ -133,8 +129,7 @@ fn test_dynamic_authlist(
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "get_secret", vec![])
-        .build(pks, test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(pks))
         .sign(&sks);
     let receipt = test_runner.validate_and_execute(&transaction2);
 
@@ -252,8 +247,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
             "create_game",
             vec![scrypto_encode(&players)],
         )
-        .build(&[], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[]))
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     receipt1.result.expect("Should be okay.");
@@ -263,8 +257,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(&[other_pk], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[other_pk]))
         .sign(&[other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction2);
 
@@ -294,8 +287,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
             "create_game",
             vec![scrypto_encode(&players)],
         )
-        .build(&[], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[]))
         .sign(&[]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     receipt1.result.expect("Should be okay.");
@@ -303,8 +295,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let transaction2 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(&[pk], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[pk]))
         .sign(&[sk]);
     test_runner
         .validate_and_execute(&transaction2)
@@ -315,8 +306,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let transaction3 = test_runner
         .new_transaction_builder()
         .call_method(component, "make_move", vec![])
-        .build(&[other_pk], test_runner.nonce_provider())
-        .unwrap()
+        .build(test_runner.get_nonce(&[other_pk]))
         .sign(&[other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction3);
 

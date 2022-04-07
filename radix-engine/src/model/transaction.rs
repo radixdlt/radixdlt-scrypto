@@ -24,7 +24,7 @@ pub struct SignedTransaction {
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidatedTransaction {
-    pub hash: Hash,
+    pub raw_hash: Hash,
     pub instructions: Vec<ValidatedInstruction>,
     pub signers: Vec<EcdsaPublicKey>,
 }
@@ -210,8 +210,12 @@ impl Transaction {
         scrypto_encode(self)
     }
 
-    pub fn hash(&self) -> Hash {
+    pub fn raw_hash(&self) -> Hash {
         hash(self.to_vec())
+    }
+
+    pub fn add_nonce(&mut self, nonce: u64) {
+        self.instructions.push(Instruction::Nonce { nonce });
     }
 
     pub fn sign<T: AsRef<[EcdsaPrivateKey]>>(self, private_keys: T) -> SignedTransaction {

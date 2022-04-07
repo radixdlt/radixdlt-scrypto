@@ -28,8 +28,7 @@ fn test_bucket() {
         .call_function(package, "BucketTest", "test_burn", vec![])
         .call_function(package, "BucketTest", "test_burn_freely", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[], &executor)
-        .unwrap()
+        .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     assert!(receipt.result.is_ok());
@@ -48,8 +47,7 @@ fn test_bucket_of_badges() {
         .call_function(package, "BadgeTest", "borrow", vec![])
         .call_function(package, "BadgeTest", "query", vec![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[], &executor)
-        .unwrap()
+        .build(executor.get_nonce(&[]))
         .sign(&[]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     assert!(receipt.result.is_ok());
@@ -67,16 +65,16 @@ fn test_take_with_invalid_granularity() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .parse_args_and_call_function(
+        .call_function_with_abi(
             package_address,
             "BucketTest",
             "take_from_bucket",
             vec![format!("100,{}", resource_address), "1.123".to_owned()],
             Some(account),
-            test_runner.abi_provider(),
+            &test_runner.export_abi(package_address, "BucketTest"),
         )
-        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
+        .build(test_runner.get_nonce(&[pk]))
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -102,16 +100,16 @@ fn test_take_with_negative_amount() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .parse_args_and_call_function(
+        .call_function_with_abi(
             package_address,
             "BucketTest",
             "take_from_bucket",
             vec![format!("100,{}", resource_address), "-2".to_owned()],
             Some(account),
-            test_runner.abi_provider(),
+            &test_runner.export_abi(package_address, "BucketTest"),
         )
-        .build(&[pk], test_runner.nonce_provider())
         .unwrap()
+        .build(test_runner.get_nonce(&[pk]))
         .sign(&[sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
