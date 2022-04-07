@@ -54,10 +54,10 @@ macro_rules! re_warn {
     };
 }
 
-enum ActorState {
+pub enum ActorState {
     Scrypto(Actor, Option<(ComponentAddress, Vec<u8>, ScryptoValue)>),
     Resource(ResourceAddress),
-    Bucket(BucketId),
+    Bucket(Bucket),
     NonFungible(NonFungibleAddress),
 }
 
@@ -710,57 +710,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
+    pub fn run(&mut self, invocation: Invocation, state: ActorState) -> Result<ScryptoValue, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         re_info!(self, "Run started: invocation = {:?}", invocation);
 
-        // Authorization and state load
-        let state: ActorState = match &invocation.invocation_type {
-            InvocationType::Scrypto(actor) => {
-                match actor.actor_type() {
-                    ActorType::Blueprint => Ok(ActorState::Scrypto(actor.clone(), None)),
-                    ActorType::Component(component_address) => {
-                        let package = self
-                            .track
-                            .get_package(actor.package_address())
-                            .ok_or(RuntimeError::PackageNotFound(actor.package_address().clone()))?;
-                        // TODO: Remove clone
-                        let schema = package.load_blueprint_schema(actor.blueprint_name()).unwrap().clone();
-                        let component = self.track.get_component(component_address.clone()).unwrap();
-                        let (scrypto_value, method_auth) =
-                            component.method_authorization(&schema, &invocation.function);
-                        method_auth.check(&[self.caller_auth_zone]).map_err(|e| {
-                            RuntimeError::AuthorizationError(invocation.function.clone(), e)
-                        })?;
-                        Ok(
-                            ActorState::Scrypto(
-                                actor.clone(),
-                                Some((
-                                    component_address.clone(),
-                                    component.state().to_vec(),
-                                    scrypto_value
-                                ))
-                            )
-                        )
-                    }
-                }
-            },
-            InvocationType::Resource(resource_address) => {
-                self.check_resource_auth(resource_address, &invocation.function)?;
-                Ok(ActorState::Resource(resource_address.clone()))
-            },
-            InvocationType::Bucket(bucket_id) => {
-                let resource_address = self.buckets.get(&bucket_id).unwrap().resource_address();
-                self.check_resource_auth(&resource_address, &invocation.function)?;
-                Ok(ActorState::Bucket(bucket_id.clone()))
-            },
-            InvocationType::NonFungible(non_fungible_address) => {
-                let resource_address = non_fungible_address.resource_address();
-                self.check_resource_auth(&resource_address, &invocation.function)?;
-                Ok(ActorState::NonFungible(non_fungible_address.clone()))
-            }
-        }?;
 
         // Execution
         let output = match state {
@@ -866,13 +820,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     _ => Err(RuntimeError::IllegalSystemCall)
                 }
             },
-            ActorState::Bucket(bucket_id) => {
+            ActorState::Bucket(bucket) => {
                 match invocation.function.as_str() {
                     "burn" => {
-                        let bucket = self
-                            .buckets
-                            .remove(&bucket_id)
-                            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
                         self.burn_resource(bucket.into_container().map_err(RuntimeError::BucketError)?)?;
 
                         Ok(ScryptoValue::from_value(&()))
@@ -992,6 +942,58 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
         }
 
+        // Authorization and state load
+        let state: ActorState = match &invocation.invocation_type {
+            InvocationType::Scrypto(actor) => {
+                match actor.actor_type() {
+                    ActorType::Blueprint => Ok(ActorState::Scrypto(actor.clone(), None)),
+                    ActorType::Component(component_address) => {
+                        let package = self
+                            .track
+                            .get_package(actor.package_address())
+                            .ok_or(RuntimeError::PackageNotFound(actor.package_address().clone()))?;
+                        // TODO: Remove clone
+                        let schema = package.load_blueprint_schema(actor.blueprint_name()).unwrap().clone();
+                        let component = self.track.get_component(component_address.clone()).unwrap();
+                        let (scrypto_value, method_auth) =
+                            component.method_authorization(&schema, &invocation.function);
+                        method_auth.check(&[&self.auth_zone]).map_err(|e| {
+                            RuntimeError::AuthorizationError(invocation.function.clone(), e)
+                        })?;
+                        Ok(
+                            ActorState::Scrypto(
+                                actor.clone(),
+                                Some((
+                                    component_address.clone(),
+                                    component.state().to_vec(),
+                                    scrypto_value
+                                ))
+                            )
+                        )
+                    }
+                }
+            },
+            InvocationType::Resource(resource_address) => {
+                self.check_resource_auth(resource_address, &invocation.function)?;
+                Ok(ActorState::Resource(resource_address.clone()))
+            },
+            InvocationType::Bucket(bucket_id) => {
+                let bucket = self
+                    .buckets
+                    .remove(&bucket_id)
+                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let resource_address = bucket.resource_address();
+                self.check_resource_auth(&resource_address, &invocation.function)?;
+
+                Ok(ActorState::Bucket(bucket))
+            },
+            InvocationType::NonFungible(non_fungible_address) => {
+                let resource_address = non_fungible_address.resource_address();
+                self.check_resource_auth(&resource_address, &invocation.function)?;
+                Ok(ActorState::NonFungible(non_fungible_address.clone()))
+            }
+        }?;
+
         // start a new process
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
         process.caller_auth_zone = &self.auth_zone;
@@ -1001,7 +1003,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         process.receive_proofs(moving_proofs)?;
 
         // invoke the main function
-        let result = process.run(invocation)?;
+        let result = process.run(invocation, state)?;
 
         // figure out what buckets and resources to move from the new process
         let moving_buckets = process.send_buckets(&result.bucket_ids)?;
@@ -1955,11 +1957,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: BurnResourceInput,
     ) -> Result<BurnResourceOutput, RuntimeError> {
-        let bucket = scrypto::resource::Bucket(input.bucket_id.clone());
         let invocation = Invocation {
             invocation_type: InvocationType::Bucket(input.bucket_id.clone()),
             function: "burn".to_string(),
-            args: vec![ScryptoValue::from_value(&bucket)],
+            args: vec![],
         };
         let _ = self.call(invocation)?;
         Ok( BurnResourceOutput {})
