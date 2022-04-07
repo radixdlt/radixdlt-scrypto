@@ -12,14 +12,14 @@ pub enum ActorType {
 
 /// Represents the running entity.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Actor {
+pub struct ScryptoActor {
     package_address: PackageAddress,
     blueprint_name: String,
     actor_type: ActorType,
     export_name: String,
 }
 
-impl Actor {
+impl ScryptoActor {
     pub fn blueprint(package_address: PackageAddress, blueprint_name: String, export_name: String) -> Self {
         Self {
             package_address,

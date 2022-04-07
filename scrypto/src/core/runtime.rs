@@ -12,7 +12,7 @@ pub struct Runtime {}
 impl Runtime {
     /// Returns the running entity, a component if within a call-method context or a
     /// blueprint if within a call-function context.
-    pub fn actor() -> Actor {
+    pub fn actor() -> ScryptoActor {
         let input = GetActorInput {};
         let output: GetActorOutput = call_engine(GET_ACTOR, input);
         output.actor

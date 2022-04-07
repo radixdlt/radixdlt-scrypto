@@ -54,36 +54,36 @@ macro_rules! re_warn {
     };
 }
 
-pub enum ActorState {
-    Scrypto(Actor, Option<(ComponentAddress, Vec<u8>, ScryptoValue)>),
+pub enum SNodeState {
+    Scrypto(ScryptoActor, Option<(ComponentAddress, Vec<u8>, ScryptoValue)>),
     Resource(ResourceAddress),
     Bucket(Bucket),
     NonFungible(NonFungibleAddress),
     Vault(VaultId),
 }
 
-/// Represents an interpreter instance.
-pub struct Interpreter {
-    actor: Actor,
-    function: String,
-    args: Vec<ScryptoValue>,
-    module: ModuleRef,
-    memory: MemoryRef,
-}
-
 #[derive(Debug, Clone)]
-pub enum InvocationType {
-    Scrypto(Actor),
+pub enum SNodeRef {
+    Scrypto(ScryptoActor),
     Resource(ResourceAddress),
     Bucket(BucketId),
     NonFungible(NonFungibleAddress),
     Vault(VaultId),
 }
 
+/// Represents an interpreter instance.
+pub struct Interpreter {
+    actor: ScryptoActor,
+    function: String,
+    args: Vec<ScryptoValue>,
+    module: ModuleRef,
+    memory: MemoryRef,
+}
+
 /// Keeps invocation information.
 #[derive(Debug, Clone)]
 pub struct Invocation {
-    invocation_type: InvocationType,
+    snode_ref: SNodeRef,
     function: String,
     args: Vec<ScryptoValue>,
 }
@@ -712,14 +712,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run(&mut self, invocation: Invocation, state: ActorState) -> Result<ScryptoValue, RuntimeError> {
+    pub fn run(&mut self, invocation: Invocation, state: SNodeState) -> Result<ScryptoValue, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         re_info!(self, "Run started: invocation = {:?}", invocation);
 
         // Execution
         let output = match state {
-            ActorState::Scrypto(actor, component_state) => {
+            SNodeState::Scrypto(actor, component_state) => {
                 let package = self
                     .track
                     .get_package(actor.package_address())
@@ -790,7 +790,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                 }
             }
-            ActorState::Resource(resource_address) => {
+            SNodeState::Resource(resource_address) => {
                 match invocation.function.as_str() {
                     "mint" => {
                         // TODO: cleanup
@@ -821,7 +821,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     _ => Err(RuntimeError::IllegalSystemCall)
                 }
             },
-            ActorState::Bucket(bucket) => {
+            SNodeState::Bucket(bucket) => {
                 match invocation.function.as_str() {
                     "burn" => {
                         self.burn_resource(bucket.into_container().map_err(RuntimeError::BucketError)?)?;
@@ -831,7 +831,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     _ => Err(RuntimeError::IllegalSystemCall)
                 }
             },
-            ActorState::NonFungible(non_fungible_address) => {
+            SNodeState::NonFungible(non_fungible_address) => {
                 match invocation.function.as_str() {
                     "update_non_fungible_mutable_data" => {
                         let new_mutable_data: Vec<u8> = scrypto_decode(&invocation.args[0].raw)
@@ -873,8 +873,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            invocation_type: InvocationType::Scrypto(
-                Actor::blueprint(
+            snode_ref: SNodeRef::Scrypto(
+                ScryptoActor::blueprint(
                     package_address,
                     blueprint_name.to_owned(),
                     format!("{}_main", blueprint_name)
@@ -901,8 +901,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args_with_self.extend(args);
 
         Ok(Invocation {
-            invocation_type: InvocationType::Scrypto(
-                Actor::component(
+            snode_ref: SNodeRef::Scrypto(
+                ScryptoActor::component(
                     component.package_address(),
                     component.blueprint_name().to_owned(),
                     format!("{}_main", component.blueprint_name()),
@@ -921,8 +921,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         blueprint_name: &str,
     ) -> Result<Invocation, RuntimeError> {
         Ok(Invocation {
-            invocation_type: InvocationType::Scrypto(
-                Actor::blueprint(
+            snode_ref: SNodeRef::Scrypto(
+                ScryptoActor::blueprint(
                     package_address,
                     blueprint_name.to_owned(),
                     format!("{}_abi", blueprint_name),
@@ -945,10 +945,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         // Authorization and state load
-        let (state, method_auth) = match &invocation.invocation_type {
-            InvocationType::Scrypto(actor) => {
+        let (state, method_auth) = match &invocation.snode_ref {
+            SNodeRef::Scrypto(actor) => {
                 match actor.actor_type() {
-                    ActorType::Blueprint => Ok((ActorState::Scrypto(actor.clone(), None), MethodAuthorization::Public)),
+                    ActorType::Blueprint => Ok((SNodeState::Scrypto(actor.clone(), None), MethodAuthorization::Public)),
                     ActorType::Component(component_address) => {
                         let package = self
                             .track
@@ -960,7 +960,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         let (scrypto_value, method_auth) =
                             component.method_authorization(&schema, &invocation.function);
                         Ok((
-                            ActorState::Scrypto(
+                            SNodeState::Scrypto(
                                 actor.clone(),
                                 Some((
                                     component_address.clone(),
@@ -973,35 +973,35 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                 }
             },
-            InvocationType::Resource(resource_address) => {
+            SNodeRef::Resource(resource_address) => {
                 let method_auth = self.track.get_resource_method_auth(&resource_address, &invocation.function)?;
-                Ok((ActorState::Resource(resource_address.clone()), method_auth.clone()))
+                Ok((SNodeState::Resource(resource_address.clone()), method_auth.clone()))
             },
-            InvocationType::Bucket(bucket_id) => {
+            SNodeRef::Bucket(bucket_id) => {
                 let bucket = self
                     .buckets
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let resource_address = bucket.resource_address();
                 let method_auth = self.track.get_resource_method_auth(&resource_address, &invocation.function)?;
-                Ok((ActorState::Bucket(bucket), method_auth.clone()))
+                Ok((SNodeState::Bucket(bucket), method_auth.clone()))
             },
-            InvocationType::Vault(vault_id) => {
+            SNodeRef::Vault(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
                 let method_auth = self.track.get_resource_method_auth(&resource_address, &invocation.function)?;
-                Ok((ActorState::Vault(vault_id.clone()), method_auth.clone()))
+                Ok((SNodeState::Vault(vault_id.clone()), method_auth.clone()))
             }
-            InvocationType::NonFungible(non_fungible_address) => {
+            SNodeRef::NonFungible(non_fungible_address) => {
                 let resource_address = non_fungible_address.resource_address();
                 let method_auth = self.track.get_resource_method_auth(&resource_address, &invocation.function)?;
-                Ok((ActorState::NonFungible(non_fungible_address.clone()), method_auth.clone()))
+                Ok((SNodeState::NonFungible(non_fungible_address.clone()), method_auth.clone()))
             }
         }?;
 
         // Authorization check
         let proofs_vector = match &state {
             // Same process auth check
-            ActorState::Vault(_) => vec![self.caller_auth_zone, &self.auth_zone],
+            SNodeState::Vault(_) => vec![self.caller_auth_zone, &self.auth_zone],
             // Extern call auth check
             _ => vec![self.auth_zone.as_slice()],
         };
@@ -1011,7 +1011,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Execution
         let result = match state {
-            ActorState::Vault(vault_id) => {
+            SNodeState::Vault(vault_id) => {
                 match invocation.function.as_str() {
                     "take_from_vault" => {
                         let amount: Decimal = scrypto_decode(&invocation.args[0].raw)
@@ -1957,7 +1957,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateResourceMetadataInput,
     ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
         let invocation = Invocation {
-            invocation_type: InvocationType::Resource(input.resource_address.clone()),
+            snode_ref: SNodeRef::Resource(input.resource_address.clone()),
             function: "update_metadata".to_string(),
             args: vec![ScryptoValue::from_value(&input.new_metadata)],
         };
@@ -1970,7 +1970,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateNonFungibleMutableDataInput,
     ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
         let invocation = Invocation {
-            invocation_type: InvocationType::NonFungible(input.non_fungible_address),
+            snode_ref: SNodeRef::NonFungible(input.non_fungible_address),
             function: "update_non_fungible_mutable_data".to_string(),
             args: vec![ScryptoValue::from_value(&input.new_mutable_data)],
         };
@@ -1983,7 +1983,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
         let invocation = Invocation {
-            invocation_type: InvocationType::Resource(input.resource_address.clone()),
+            snode_ref: SNodeRef::Resource(input.resource_address.clone()),
             function: "mint".to_string(),
             args: vec![ScryptoValue::from_value(&input.mint_params)],
         };
@@ -1996,7 +1996,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: BurnResourceInput,
     ) -> Result<BurnResourceOutput, RuntimeError> {
         let invocation = Invocation {
-            invocation_type: InvocationType::Bucket(input.bucket_id.clone()),
+            snode_ref: SNodeRef::Bucket(input.bucket_id.clone()),
             function: "burn".to_string(),
             args: vec![],
         };
@@ -2009,7 +2009,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
         let invocation = Invocation {
-            invocation_type: InvocationType::Vault(input.vault_id.clone()),
+            snode_ref: SNodeRef::Vault(input.vault_id.clone()),
             function: "take_from_vault".to_string(),
             args: vec![ScryptoValue::from_value(&input.amount)],
         };
@@ -2022,7 +2022,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeNonFungiblesFromVaultInput,
     ) -> Result<TakeNonFungiblesFromVaultOutput, RuntimeError> {
         let invocation = Invocation {
-            invocation_type: InvocationType::Vault(input.vault_id.clone()),
+            snode_ref: SNodeRef::Vault(input.vault_id.clone()),
             function: "take_non_fungibles_from_vault".to_string(),
             args: vec![ScryptoValue::from_value(&input.non_fungible_ids)],
         };
