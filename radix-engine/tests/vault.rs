@@ -3,16 +3,14 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub fn compile(name: &str) -> Vec<u8> {
-    compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
-}
-
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -39,7 +37,9 @@ fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
     let transaction = TransactionBuilder::new()
         .call_function(package, "NonExistentVault", "new", args![])
         .build(executor.get_nonce(&[]))
@@ -67,7 +67,9 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -94,7 +96,9 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
     let transaction = TransactionBuilder::new()
         .call_function(package, "NonExistentVault", "new", args![])
         .build(executor.get_nonce(&[]))
@@ -126,7 +130,9 @@ fn dangling_vault_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -145,7 +151,9 @@ fn create_mutable_vault_into_map() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -163,7 +171,9 @@ fn invalid_double_ownership_of_vault() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -190,7 +200,9 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -208,7 +220,9 @@ fn cannot_overwrite_vault_in_map() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
     let transaction = TransactionBuilder::new()
         .call_function(package, "VaultTest", "new_vault_into_map", args![])
         .build(executor.get_nonce(&[]))
@@ -236,7 +250,9 @@ fn create_mutable_vault_into_vector() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -254,7 +270,9 @@ fn cannot_remove_vaults() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
     let transaction = TransactionBuilder::new()
         .call_function(package, "VaultTest", "new_vault_into_vector", args![])
         .build(executor.get_nonce(&[]))
@@ -282,7 +300,9 @@ fn can_push_vault_into_vector() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
     let transaction = TransactionBuilder::new()
         .call_function(package, "VaultTest", "new_vault_into_vector", args![])
         .build(executor.get_nonce(&[]))
@@ -306,7 +326,9 @@ fn create_mutable_vault_with_take() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -324,7 +346,9 @@ fn create_mutable_vault_with_take_non_fungible() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -347,7 +371,9 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -370,7 +396,9 @@ fn create_mutable_vault_with_get_amount() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -388,7 +416,9 @@ fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("vault")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "vault")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()

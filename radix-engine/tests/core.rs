@@ -2,15 +2,13 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub fn compile(name: &str) -> Vec<u8> {
-    compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
-}
-
 #[test]
 fn test_process_and_transaction() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("core")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "core")))
+        .unwrap();
 
     let transaction1 = TransactionBuilder::new()
         .call_function(package, "CoreTest", "query", args![])
@@ -25,7 +23,9 @@ fn test_call() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (_, _, account) = executor.new_account();
-    let package = executor.publish_package(&compile("core")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "core")))
+        .unwrap();
 
     let transaction = TransactionBuilder::new()
         .call_function(package, "MoveTest", "move_bucket", args![])

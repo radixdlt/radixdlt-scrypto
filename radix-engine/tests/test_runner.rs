@@ -51,7 +51,7 @@ impl<'l> TestRunner<'l> {
     }
 
     pub fn compile(name: &str) -> Vec<u8> {
-        compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
+        compile_package!(format!("./tests/{}", name))
     }
 
     pub fn component(&self, component_address: ComponentAddress) -> Component {

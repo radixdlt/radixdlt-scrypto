@@ -8,9 +8,7 @@ fn test_hello() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let (pk, sk, account) = executor.new_account();
-    let package = executor
-        .publish_package(compile_package!("hello_world"))
-        .unwrap();
+    let package = executor.publish_package(compile_package!()).unwrap();
 
     // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new()

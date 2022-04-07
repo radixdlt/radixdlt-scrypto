@@ -6,10 +6,6 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub fn compile(name: &str) -> Vec<u8> {
-    compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
-}
-
 #[test]
 fn create_non_fungible_mutable() {
     // Arrange
@@ -41,7 +37,9 @@ fn test_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(&compile("non_fungible")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "non_fungible")))
+        .unwrap();
 
     let transaction = TransactionBuilder::new()
         .call_function(

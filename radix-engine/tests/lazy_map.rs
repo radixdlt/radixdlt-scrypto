@@ -3,16 +3,14 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub fn compile(name: &str) -> Vec<u8> {
-    compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
-}
-
 #[test]
 fn dangling_lazy_map_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -31,7 +29,9 @@ fn can_insert_in_child_nodes() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -49,7 +49,9 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -72,7 +74,9 @@ fn cyclic_map_fails_execution() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -97,7 +101,9 @@ fn self_cyclic_map_fails_execution() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -122,7 +128,9 @@ fn cannot_remove_lazy_maps() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
+        .unwrap();
     let transaction = TransactionBuilder::new()
         .call_function(package, "LazyMapTest", "new_lazy_map_into_vector", args![])
         .build(executor.get_nonce(&[]))
@@ -150,7 +158,9 @@ fn cannot_overwrite_lazy_maps() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
+        .unwrap();
     let transaction = TransactionBuilder::new()
         .call_function(
             package,
@@ -183,7 +193,9 @@ fn create_lazy_map_and_get() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -201,7 +213,9 @@ fn create_lazy_map_and_put() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor.publish_package(&compile("lazy_map")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()

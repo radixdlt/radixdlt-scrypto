@@ -5,17 +5,15 @@ use radix_engine::model::ResourceManagerError::FlagsLocked;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub fn compile(name: &str) -> Vec<u8> {
-    compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
-}
-
 #[test]
 fn test_resource_manager() {
     // Arrange
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(&compile("resource")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -40,7 +38,9 @@ fn mint_with_bad_granularity_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(&compile("resource")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -72,7 +72,9 @@ fn mint_too_much_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(&compile("resource")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -101,7 +103,9 @@ fn update_feature_flags_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(&compile("resource")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -130,7 +134,9 @@ fn create_fungible_with_bad_resource_flags_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(&compile("resource")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -161,7 +167,9 @@ fn create_fungible_with_bad_mutable_flags_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(&compile("resource")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -190,7 +198,9 @@ fn create_fungible_with_bad_resource_permissions_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(&compile("resource")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
+        .unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()

@@ -8,16 +8,14 @@ use radix_engine::model::ResourceContainerError;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub fn compile(name: &str) -> Vec<u8> {
-    compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
-}
-
 #[test]
 fn test_bucket() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (_, _, account) = executor.new_account();
-    let package = executor.publish_package(&compile("bucket")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "bucket")))
+        .unwrap();
 
     let transaction = TransactionBuilder::new()
         .call_function(package, "BucketTest", "combine", args![])
@@ -39,7 +37,9 @@ fn test_bucket_of_badges() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (_, _, account) = executor.new_account();
-    let package = executor.publish_package(&compile("bucket")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "bucket")))
+        .unwrap();
 
     let transaction = TransactionBuilder::new()
         .call_function(package, "BadgeTest", "combine", args![])
