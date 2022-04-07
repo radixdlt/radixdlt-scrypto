@@ -1891,7 +1891,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeNonFungiblesFromVaultInput,
     ) -> Result<TakeNonFungiblesFromVaultOutput, RuntimeError> {
         let resource_address = self.get_local_vault(&input.vault_id)?.resource_address();
-        self.check_resource_auth(&resource_address, "take_from_vault")?;
+        self.check_resource_auth(&resource_address, "take_non_fungibles_from_vault")?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
