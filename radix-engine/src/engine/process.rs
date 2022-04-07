@@ -59,6 +59,7 @@ pub enum ActorState {
     Resource(ResourceAddress),
     Bucket(Bucket),
     NonFungible(NonFungibleAddress),
+    Vault(VaultId),
 }
 
 /// Represents an interpreter instance.
@@ -76,6 +77,7 @@ pub enum InvocationType {
     Resource(ResourceAddress),
     Bucket(BucketId),
     NonFungible(NonFungibleAddress),
+    Vault(VaultId),
 }
 
 /// Keeps invocation information.
@@ -715,7 +717,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let now = std::time::Instant::now();
         re_info!(self, "Run started: invocation = {:?}", invocation);
 
-
         // Execution
         let output = match state {
             ActorState::Scrypto(actor, component_state) => {
@@ -845,7 +846,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     _ => Err(RuntimeError::IllegalSystemCall)
                 }
-            }
+            },
+            _ => Err(RuntimeError::IllegalSystemCall)
         }?;
 
 
@@ -987,6 +989,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 Ok(ActorState::Bucket(bucket))
             },
+            InvocationType::Vault(vault_id) => {
+                let resource_address = self.get_local_vault(&vault_id)?.resource_address();
+                self.check_resource_auth(&resource_address, "take_from_vault")?;
+                Ok(ActorState::Vault(vault_id.clone()))
+            }
             InvocationType::NonFungible(non_fungible_address) => {
                 let resource_address = non_fungible_address.resource_address();
                 self.check_resource_auth(&resource_address, &invocation.function)?;
@@ -994,28 +1001,52 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
         }?;
 
-        // start a new process
-        let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        process.caller_auth_zone = &self.auth_zone;
+        let result = match state {
+            ActorState::Vault(vault_id) => {
+                match invocation.function.as_str() {
+                    "take_from_vault" => {
+                        let amount: Decimal = scrypto_decode(&invocation.args[0].raw)
+                            .map_err(|e| RuntimeError::InvalidRequestData(e))?;
 
-        // move buckets and proofs to the new process.
-        process.receive_buckets(moving_buckets)?;
-        process.receive_proofs(moving_proofs)?;
+                        let new_bucket = self
+                            .get_local_vault(&vault_id)?
+                            .take(amount)
+                            .map_err(RuntimeError::VaultError)?;
 
-        // invoke the main function
-        let result = process.run(invocation, state)?;
+                        let bucket_id = self.new_bucket_id()?;
+                        self.buckets.insert(bucket_id, new_bucket);
+                        Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
+                    }
+                    _ => Err(RuntimeError::IllegalSystemCall)
+                }
+            },
+            _ => {
+                // start a new process
+                let mut process = Process::new(self.depth + 1, self.trace, self.track);
+                process.caller_auth_zone = &self.auth_zone;
 
-        // figure out what buckets and resources to move from the new process
-        let moving_buckets = process.send_buckets(&result.bucket_ids)?;
-        let moving_proofs = process.send_proofs(&result.proof_ids, MoveMethod::AsReturn)?;
+                // move buckets and proofs to the new process.
+                process.receive_buckets(moving_buckets)?;
+                process.receive_proofs(moving_proofs)?;
 
-        // drop proofs and check resource leak
-        process.drop_all_proofs()?;
-        process.check_resource()?;
+                // invoke the main function
+                let result = process.run(invocation, state)?;
 
-        // move buckets and proofs to this process.
-        self.receive_buckets(moving_buckets)?;
-        self.receive_proofs(moving_proofs)?;
+                // figure out what buckets and resources to move from the new process
+                let moving_buckets = process.send_buckets(&result.bucket_ids)?;
+                let moving_proofs = process.send_proofs(&result.proof_ids, MoveMethod::AsReturn)?;
+
+                // drop proofs and check resource leak
+                process.drop_all_proofs()?;
+                process.check_resource()?;
+
+                // move buckets and proofs to this process.
+                self.receive_buckets(moving_buckets)?;
+                self.receive_proofs(moving_proofs)?;
+
+                Ok(result)
+            }
+        }?;
 
         Ok(result)
     }
@@ -1970,18 +2001,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        let resource_address = self.get_local_vault(&input.vault_id)?.resource_address();
-        self.check_resource_auth(&resource_address, "take_from_vault")?;
-
-        let new_bucket = self
-            .get_local_vault(&input.vault_id)?
-            .take(input.amount)
-            .map_err(RuntimeError::VaultError)?;
-
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(TakeFromVaultOutput { bucket_id })
+        let invocation = Invocation {
+            invocation_type: InvocationType::Vault(input.vault_id.clone()),
+            function: "take_from_vault".to_string(),
+            args: vec![ScryptoValue::from_value(&input.amount)],
+        };
+        let result = self.call(invocation)?;
+        Ok( TakeFromVaultOutput { bucket_id: result.bucket_ids[0] })
     }
 
     fn handle_take_non_fungibles_from_vault(
