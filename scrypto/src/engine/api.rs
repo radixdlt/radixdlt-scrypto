@@ -1,5 +1,6 @@
 use sbor::*;
 use scrypto::prelude::ComponentAuthorization;
+use crate::core::SNodeRef;
 
 use crate::engine::types::*;
 use crate::prelude::{MethodAuth, NonFungibleAddress, ResourceMethod};
@@ -117,6 +118,9 @@ pub const PUSH_TO_AUTH_ZONE: u32 = 0x6E;
 /// Pop a proof from auth zone
 pub const POP_FROM_AUTH_ZONE: u32 = 0x6F;
 
+
+pub const INVOKE_SNODE: u32 = 0x70;
+
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
 /// Generate a UUID
@@ -129,6 +133,18 @@ pub const GET_CURRENT_EPOCH: u32 = 0xf3;
 pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Retrieve the running entity
 pub const GET_ACTOR: u32 = 0xf5;
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct InvokeSNodeInput {
+    pub snode_ref: SNodeRef,
+    pub function: String,
+    pub args: Vec<Vec<u8>>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct InvokeSNodeOutput {
+    pub rtn: Vec<u8>,
+}
 
 //==========
 // blueprint

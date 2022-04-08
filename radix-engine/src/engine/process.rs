@@ -1820,6 +1820,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(UpdateNonFungibleMutableDataOutput {})
     }
 
+    fn handle_invoke_snode(
+        &mut self,
+        input: InvokeSNodeInput,
+    ) -> Result<InvokeSNodeOutput, RuntimeError> {
+        let mut validated_args = Vec::new();
+        for arg in input.args {
+            validated_args.push(
+                ScryptoValue::from_slice(&arg).map_err(RuntimeError::ParseScryptoValueError)?,
+            );
+        }
+
+        let result = self.call(input.snode_ref, input.function, validated_args)?;
+        Ok(InvokeSNodeOutput {
+            rtn: result.raw
+        })
+    }
+
     fn handle_mint_resource(
         &mut self,
         input: MintResourceInput,
@@ -2332,6 +2349,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
                     PUSH_TO_AUTH_ZONE => self.handle(args, Self::handle_push_to_auth_zone),
                     POP_FROM_AUTH_ZONE => self.handle(args, Self::handle_pop_from_auth_zone),
+
+                    INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
