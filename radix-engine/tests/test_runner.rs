@@ -189,7 +189,7 @@ impl<'l> TestRunner<'l> {
         args: Vec<String>,
         account: ComponentAddress,
         pk: EcdsaPublicKey,
-        sk: EcdsaPrivateKey,
+        sk: &EcdsaPrivateKey,
     ) -> ComponentAddress {
         let transaction = self
             .new_transaction_builder()
@@ -207,7 +207,7 @@ impl<'l> TestRunner<'l> {
             .unwrap()
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce(&[pk]))
-            .sign(&[sk]);
+            .sign([sk]);
         let receipt = self.validate_and_execute(&transaction);
         receipt.new_component_addresses[0]
     }

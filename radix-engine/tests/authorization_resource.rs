@@ -26,7 +26,7 @@ fn cannot_mint_with_wrong_auth() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -54,7 +54,7 @@ fn can_mint_with_right_auth() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -76,7 +76,7 @@ fn cannot_burn_with_no_auth() {
         .burn(Decimal::one(), token_resource_address)
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -111,7 +111,7 @@ fn can_burn_with_auth() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert

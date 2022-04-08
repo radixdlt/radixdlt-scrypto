@@ -81,7 +81,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Generates a new key pair.
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
-        let private_key = EcdsaPrivateKey::try_from(
+        let private_key = EcdsaPrivateKey::from_bytes(
             hash(self.substate_store.get_and_increase_nonce().to_le_bytes()).as_ref(),
         )
         .unwrap();

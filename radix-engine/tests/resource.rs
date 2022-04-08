@@ -24,7 +24,7 @@ fn test_resource_manager() {
         .call_function(package, "ResourceTest", "update_resource_metadata", args![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -52,7 +52,7 @@ fn mint_with_bad_granularity_should_fail() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -86,7 +86,7 @@ fn mint_too_much_should_fail() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -117,7 +117,7 @@ fn update_feature_flags_should_fail() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -148,7 +148,7 @@ fn create_fungible_with_bad_resource_flags_should_fail() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -181,7 +181,7 @@ fn create_fungible_with_bad_mutable_flags_should_fail() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
@@ -212,7 +212,7 @@ fn create_fungible_with_bad_resource_permissions_should_fail() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert

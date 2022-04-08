@@ -11,8 +11,8 @@ use scrypto::prelude::*;
 fn test_auth_rule(
     test_runner: &mut TestRunner,
     auth_rule: &MethodAuth,
-    pks: Vec<EcdsaPublicKey>,
-    sks: Vec<EcdsaPrivateKey>,
+    pks: &[EcdsaPublicKey],
+    sks: &[&EcdsaPrivateKey],
     should_succeed: bool,
 ) {
     // Arrange
@@ -50,8 +50,8 @@ fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
     ];
 
     for auth in auths {
-        for (pk, sk) in [(pk0, sk0.clone()), (pk1, sk1.clone())] {
-            test_auth_rule(&mut test_runner, &auth, vec![pk], vec![sk], true);
+        for (pk, sk) in [(pk0, &sk0), (pk1, &sk1)] {
+            test_auth_rule(&mut test_runner, &auth, &[pk], &[&sk], true);
         }
     }
 }
@@ -75,8 +75,8 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
     ];
 
     for auth in auths {
-        for (pk, sk) in [(pk0, sk0.clone()), (pk1, sk1.clone()), (pk2, sk2.clone())] {
-            test_auth_rule(&mut test_runner, &auth, vec![pk], vec![sk], true);
+        for (pk, sk) in [(pk0, &sk0), (pk1, &sk1), (pk2, &sk2)] {
+            test_auth_rule(&mut test_runner, &auth, &[pk], &[&sk], true);
         }
     }
 }
@@ -90,13 +90,7 @@ fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
 
     let auth = auth!(require_any_of(vec![auth0, auth1,]));
 
-    test_auth_rule(
-        &mut test_runner,
-        &auth,
-        vec![pk0, pk1],
-        vec![sk0, sk1],
-        true,
-    );
+    test_auth_rule(&mut test_runner, &auth, &[pk0, pk1], &[&sk0, &sk1], true);
 }
 
 #[test]
@@ -108,7 +102,7 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     let (_, _, auth1) = test_runner.new_key_pair_with_pk_address();
 
     let auth = auth!(require_all_of(vec![auth0, auth1]));
-    test_auth_rule(&mut test_runner, &auth, vec![pk0], vec![sk0], false);
+    test_auth_rule(&mut test_runner, &auth, &[pk0], &[&sk0], false);
 }
 
 #[test]
@@ -122,8 +116,8 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     test_auth_rule(
         &mut test_runner,
         &auth_2_of_3,
-        vec![pk1, pk2],
-        vec![sk1, sk2],
+        &[pk1, pk2],
+        &[&sk1, &sk2],
         true,
     );
 }
@@ -143,14 +137,14 @@ fn can_withdraw_from_my_complex_account() {
         auth!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
     let signers_list = [
-        (vec![pk2], vec![sk2.clone()]),
-        (vec![pk0, pk1], vec![sk0.clone(), sk1.clone()]),
-        (vec![pk0, pk1, pk2], vec![sk0, sk1, sk2]),
+        (vec![pk2], vec![&sk2]),
+        (vec![pk0, pk1], vec![&sk0, &sk1]),
+        (vec![pk0, pk1, pk2], vec![&sk0, &sk1, &sk2]),
     ];
 
     for auth in auths {
-        for signers in signers_list.clone() {
-            test_auth_rule(&mut test_runner, &auth, signers.0, signers.1, true);
+        for signers in &signers_list {
+            test_auth_rule(&mut test_runner, &auth, &signers.0, &signers.1, true);
         }
     }
 }
@@ -169,11 +163,11 @@ fn cannot_withdraw_from_my_complex_account() {
         auth!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
         auth!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
-    let signers_list = [(vec![pk0], vec![sk0]), (vec![pk1], vec![sk1])];
+    let signers_list = [(vec![pk0], vec![&sk0]), (vec![pk1], vec![&sk1])];
 
     for auth in auths {
-        for signers in signers_list.clone() {
-            test_auth_rule(&mut test_runner, &auth, signers.0, signers.1, false);
+        for signers in &signers_list {
+            test_auth_rule(&mut test_runner, &auth, &signers.0, &signers.1, false);
         }
     }
 }
@@ -197,13 +191,13 @@ fn can_withdraw_from_my_complex_account_2() {
         ),
     ];
     let signers_list = [
-        (vec![pk0, pk1, pk2], vec![sk0, sk1, sk2]),
-        (vec![pk3], vec![sk3]),
+        (vec![pk0, pk1, pk2], vec![&sk0, &sk1, &sk2]),
+        (vec![pk3], vec![&sk3]),
     ];
 
     for auth in auths {
-        for signers in signers_list.clone() {
-            test_auth_rule(&mut test_runner, &auth, signers.0, signers.1, true);
+        for signers in &signers_list {
+            test_auth_rule(&mut test_runner, &auth, &signers.0, &signers.1, true);
         }
     }
 }
@@ -227,16 +221,16 @@ fn cannot_withdraw_from_my_complex_account_2() {
         ),
     ];
     let signers_list = [
-        (vec![pk0], vec![sk0.clone()]),
-        (vec![pk1], vec![sk1.clone()]),
-        (vec![pk2], vec![sk2.clone()]),
-        (vec![pk0, pk1], vec![sk0, sk1.clone()]),
-        (vec![pk1, pk2], vec![sk1, sk2]),
+        (vec![pk0], vec![&sk0]),
+        (vec![pk1], vec![&sk1]),
+        (vec![pk2], vec![&sk2]),
+        (vec![pk0, pk1], vec![&sk0, &sk1]),
+        (vec![pk1, pk2], vec![&sk1, &sk2]),
     ];
 
     for auth in auths {
-        for signers in signers_list.clone() {
-            test_auth_rule(&mut test_runner, &auth, signers.0, signers.1, false);
+        for signers in &signers_list {
+            test_auth_rule(&mut test_runner, &auth, &signers.0, &signers.1, false);
         }
     }
 }

@@ -28,9 +28,9 @@ fn test_dynamic_auth(
         .iter()
         .map(|index| key_and_addresses.get(*index).unwrap().0)
         .collect();
-    let sks: Vec<EcdsaPrivateKey> = signers
+    let sks: Vec<&EcdsaPrivateKey> = signers
         .iter()
-        .map(|index| key_and_addresses.get(*index).unwrap().1.clone())
+        .map(|index| &key_and_addresses.get(*index).unwrap().1)
         .collect();
 
     let package = test_runner.publish_package("component");
@@ -69,7 +69,7 @@ fn test_dynamic_auth(
         .new_transaction_builder()
         .call_method(component, "get_secret", args![])
         .build(test_runner.get_nonce(pks))
-        .sign(&sks);
+        .sign(sks);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
 
     // Assert
@@ -101,9 +101,9 @@ fn test_dynamic_authlist(
         .iter()
         .map(|index| key_and_addresses.get(*index).unwrap().0)
         .collect();
-    let sks: Vec<EcdsaPrivateKey> = signers
+    let sks: Vec<&EcdsaPrivateKey> = signers
         .iter()
-        .map(|index| key_and_addresses.get(*index).unwrap().1.clone())
+        .map(|index| &key_and_addresses.get(*index).unwrap().1)
         .collect();
     let authorization = component_authorization! {
         "get_secret" => auth_rule
@@ -130,7 +130,7 @@ fn test_dynamic_authlist(
         .new_transaction_builder()
         .call_method(component, "get_secret", args![])
         .build(test_runner.get_nonce(pks))
-        .sign(&sks);
+        .sign(sks);
     let receipt = test_runner.validate_and_execute(&transaction2);
 
     // Assert
@@ -258,7 +258,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
         .new_transaction_builder()
         .call_method(component, "make_move", args![])
         .build(test_runner.get_nonce(&[other_pk]))
-        .sign(&[other_sk]);
+        .sign([&other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction2);
 
     // Assert
@@ -296,7 +296,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .new_transaction_builder()
         .call_method(component, "make_move", args![])
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     test_runner
         .validate_and_execute(&transaction2)
         .result
@@ -307,7 +307,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .new_transaction_builder()
         .call_method(component, "make_move", args![])
         .build(test_runner.get_nonce(&[other_pk]))
-        .sign(&[other_sk]);
+        .sign([&other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction3);
 
     // Assert

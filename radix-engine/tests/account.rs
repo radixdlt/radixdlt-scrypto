@@ -21,7 +21,7 @@ fn can_withdraw_from_my_account() {
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -43,7 +43,7 @@ fn can_withdraw_non_fungible_from_my_account() {
         .withdraw_from_account(resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -62,7 +62,7 @@ fn cannot_withdraw_from_other_account() {
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build(test_runner.get_nonce(&[other_pk]))
-        .sign(&[other_sk]);
+        .sign([&other_sk]);
 
     // Act
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -91,7 +91,7 @@ fn account_to_bucket_to_account() {
                 .0
         })
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
 
     // Act
     let receipt = test_runner.validate_and_execute(&transaction);

@@ -12,10 +12,6 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::{scrypto_type, ScryptoType};
 
-/// Represents an ECDSA private key.
-#[derive(Clone, PartialEq, Eq)]
-pub struct EcdsaPrivateKey(SecretKey);
-
 /// Represents an ECDSA public key.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct EcdsaPublicKey(PublicKey);
@@ -31,17 +27,38 @@ pub enum SignatureValidationError {}
 /// Ecdsa signature verifier.
 pub struct EcdsaVerifier;
 
+/// Represents an ECDSA private key.
+///
+/// **Warning: ** This may be removed as whether signing capability should be provided by
+/// Scrypto crypto library is controversial.
+///
+/// TODO: relocate to to another crate if not to be supported
+///
+pub struct EcdsaPrivateKey(SecretKey);
+
 impl EcdsaPrivateKey {
+    /* all public methods are confined to this impl */
+
     pub const LENGTH: usize = 32;
 
     pub fn public_key(&self) -> EcdsaPublicKey {
         EcdsaPublicKey(self.0.public_key())
     }
 
-    /// Signs a message (no pre-hash required).
     pub fn sign(&self, msg: &[u8]) -> EcdsaSignature {
         let signer = SigningKey::from(&self.0);
         EcdsaSignature(signer.sign(msg))
+    }
+
+    pub fn to_bytes(&self) -> Vec<u8> {
+        self.0.to_be_bytes().as_slice().to_vec()
+    }
+
+    pub fn from_bytes(slice: &[u8]) -> Result<Self, ()> {
+        if slice.len() != EcdsaPrivateKey::LENGTH {
+            return Err(());
+        }
+        Ok(Self(SecretKey::from_be_bytes(slice).map_err(|_| ())?))
     }
 }
 
@@ -101,24 +118,6 @@ impl fmt::Display for ParseEcdsaSignatureError {
     }
 }
 
-/// Represents an error when parsing ECDSA private key from hex.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseEcdsaPrivateKeyError {
-    InvalidHex(String),
-    InvalidLength(usize),
-    InvalidKey,
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseEcdsaPrivateKeyError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseEcdsaPrivateKeyError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 //======
 // binary
 //======
@@ -172,25 +171,6 @@ impl EcdsaSignature {
 
 scrypto_type!(EcdsaSignature, ScryptoType::EcdsaSignature, Vec::new());
 
-impl TryFrom<&[u8]> for EcdsaPrivateKey {
-    type Error = ParseEcdsaPrivateKeyError;
-
-    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != EcdsaPrivateKey::LENGTH {
-            return Err(ParseEcdsaPrivateKeyError::InvalidLength(slice.len()));
-        }
-        let sk =
-            SecretKey::from_be_bytes(slice).map_err(|_| ParseEcdsaPrivateKeyError::InvalidKey)?;
-        Ok(Self(sk))
-    }
-}
-
-impl EcdsaPrivateKey {
-    pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_be_bytes().as_slice().to_vec()
-    }
-}
-
 //======
 // text
 //======
@@ -239,28 +219,6 @@ impl fmt::Debug for EcdsaSignature {
     }
 }
 
-impl FromStr for EcdsaPrivateKey {
-    type Err = ParseEcdsaPrivateKeyError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseEcdsaPrivateKeyError::InvalidHex(s.to_owned()))?;
-        Self::try_from(bytes.as_slice())
-    }
-}
-
-impl fmt::Display for EcdsaPrivateKey {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(self.to_vec()))
-    }
-}
-
-impl fmt::Debug for EcdsaPrivateKey {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -274,7 +232,7 @@ mod tests {
         let test_message = "{\"a\":\"banan\"}";
         let test_hash = "c43a1e3a7e822c97004267324ba8df88d114ab3e019d0e85eccb1ff8592d6d36";
         let test_signature = "468764c570758020eb8392e40de5805757d6e563a507f12ddde56463c23820e10401cae1684cb350bc3ecb45965ee259964f931eb4c165cd1a270fc538b65a75";
-        let sk = EcdsaPrivateKey::from_str(test_sk).unwrap();
+        let sk = EcdsaPrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
         let pk = EcdsaPublicKey::from_str(test_pk).unwrap();
         let hash = Hash::from_str(test_hash).unwrap();
         let sig = EcdsaSignature::from_str(test_signature).unwrap();

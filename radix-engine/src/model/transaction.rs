@@ -222,9 +222,10 @@ impl Transaction {
         self.instructions.push(Instruction::Nonce { nonce });
     }
 
-    pub fn sign<T: AsRef<[EcdsaPrivateKey]>>(self, private_keys: T) -> SignedTransaction {
+    // TODO: introduce a `Signer` trait
+    pub fn sign<'a, T: AsRef<[&'a EcdsaPrivateKey]>>(self, sks: T) -> SignedTransaction {
         let msg = self.to_vec();
-        let signatures = private_keys
+        let signatures = sks
             .as_ref()
             .iter()
             .map(|sk| (sk.public_key(), sk.sign(&msg)))
@@ -460,7 +461,6 @@ impl SignedTransaction {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use scrypto::buffer::*;
     use scrypto::engine::types::ComponentAddress;
     use scrypto::rust::borrow::ToOwned;
     use scrypto::rust::marker::PhantomData;

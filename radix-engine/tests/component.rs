@@ -53,7 +53,7 @@ fn test_component() {
         .call_method(component, "put_component_state", args![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
     receipt2.result.expect("Should be okay.");
 }

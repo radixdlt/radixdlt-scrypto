@@ -112,7 +112,7 @@ fn can_make_cross_component_call_with_authorization() {
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
         .build(test_runner.get_nonce(&[key]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     receipt.result.expect("Should be okay.");
 

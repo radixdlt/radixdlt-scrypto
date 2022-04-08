@@ -71,7 +71,7 @@ fn test_non_fungible() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     println!("{:?}", receipt);
     assert!(receipt.result.is_ok());

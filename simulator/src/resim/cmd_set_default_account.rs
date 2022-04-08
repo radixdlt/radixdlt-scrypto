@@ -13,7 +13,7 @@ pub struct SetDefaultAccount {
     public_key: EcdsaPublicKey,
 
     /// The private key for accessing the account
-    private_key: EcdsaPrivateKey,
+    private_key: String,
 }
 
 impl SetDefaultAccount {
@@ -21,7 +21,7 @@ impl SetDefaultAccount {
         set_configs(&Configs {
             default_account: self.component_address,
             default_public_key: self.public_key,
-            default_private_key: self.private_key.to_string(),
+            default_private_key: hex::decode(&self.private_key).unwrap(),
         })?;
 
         println!("Default account updated!");

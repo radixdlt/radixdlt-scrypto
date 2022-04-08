@@ -29,7 +29,7 @@ fn can_create_clone_and_drop_bucket_proof() {
         .unwrap()
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -52,7 +52,7 @@ fn can_create_clone_and_drop_vault_proof() {
         vec![format!("1,{}", resource_address)],
         account,
         pk,
-        sk,
+        &sk,
     );
 
     // Act
@@ -88,7 +88,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         vec![format!("3,{}", resource_address)],
         account,
         pk,
-        sk,
+        &sk,
     );
 
     // Act
@@ -126,7 +126,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         vec![format!("3,{}", resource_address)],
         account,
         pk,
-        sk,
+        &sk,
     );
 
     // Act
@@ -179,7 +179,7 @@ fn can_use_bucket_for_authorization() {
         .unwrap()
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -203,7 +203,7 @@ fn can_use_vault_for_authorization() {
         vec![format!("1,{}", auth_resource_address)],
         account,
         pk,
-        sk.clone(),
+        &sk,
     );
 
     // Act
@@ -218,7 +218,7 @@ fn can_use_vault_for_authorization() {
         )
         .unwrap()
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk.clone()]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -249,7 +249,7 @@ fn can_create_proof_from_account_and_pass_on() {
         )
         .unwrap()
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -280,7 +280,7 @@ fn cant_move_restricted_proof() {
         )
         .unwrap()
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -307,7 +307,7 @@ fn can_compose_bucket_and_vault_proof() {
         vec![format!("1,{}", resource_address)],
         account,
         pk,
-        sk.clone(),
+        &sk,
     );
 
     // Act
@@ -322,7 +322,7 @@ fn can_compose_bucket_and_vault_proof() {
             )
         })
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -346,7 +346,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         vec![format!("1,{}", resource_address)],
         account,
         pk,
-        sk.clone(),
+        &sk,
     );
 
     // Act
@@ -361,7 +361,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             )
         })
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -384,7 +384,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         vec![format!("1,{}", resource_address)],
         account,
         pk,
-        sk.clone(),
+        &sk,
     );
 
     // Act
@@ -410,7 +410,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             },
         )
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -433,7 +433,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         vec![format!("3,{}", resource_address)],
         account,
         pk,
-        sk,
+        &sk,
     );
 
     // Act
@@ -492,7 +492,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
             },
         )
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 

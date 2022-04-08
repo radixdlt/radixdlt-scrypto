@@ -75,7 +75,7 @@ fn test_take_with_invalid_granularity() {
         )
         .unwrap()
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -110,7 +110,7 @@ fn test_take_with_negative_amount() {
         )
         .unwrap()
         .build(test_runner.get_nonce(&[pk]))
-        .sign(&[sk]);
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
