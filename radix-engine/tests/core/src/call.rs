@@ -9,6 +9,7 @@ blueprint! {
         fn create_test_token(amount: u32) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
+                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "TestToken")
                 .initial_supply(amount)
         }

@@ -249,7 +249,6 @@ impl<T: Into<Decimal>> Add<T> for Decimal {
     type Output = Decimal;
 
     fn add(self, other: T) -> Self::Output {
-
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
         let c = a + b;
@@ -562,7 +561,6 @@ mod tests {
     fn test_add_oveflow() {
         let _ = Decimal::MAX + 1;
     }
-
 
     #[test]
     fn test_sub() {

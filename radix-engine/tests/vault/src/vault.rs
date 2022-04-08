@@ -14,6 +14,7 @@ blueprint! {
         pub fn dangling_vault() -> () {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
+                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "TestToken")
                 .initial_supply(1);
             let _vault = Vault::with_bucket(bucket);
@@ -22,6 +23,7 @@ blueprint! {
         fn new_fungible() -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
+                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "TestToken")
                 .initial_supply(1)
         }
@@ -151,6 +153,7 @@ blueprint! {
 
         fn create_non_fungible_vault() -> Vault {
             let bucket = ResourceBuilder::new_non_fungible()
+                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "TestToken")
                 .initial_supply([(NonFungibleId::from_u32(1), Data {})]);
             Vault::with_bucket(bucket)

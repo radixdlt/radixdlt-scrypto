@@ -7,6 +7,7 @@ blueprint! {
         fn create_test_badge(amount: u32) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
+                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "TestBadge")
                 .initial_supply(amount)
         }
