@@ -121,12 +121,12 @@ impl ResourceManager {
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId, new_data: T) {
-        let input = UpdateNonFungibleMutableDataInput {
-            non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
-            new_mutable_data: new_data.mutable_data(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "update_non_fungible_mutable_data".to_string(),
+            args: args![id.clone(), new_data.mutable_data()]
         };
-        let _: UpdateNonFungibleMutableDataOutput =
-            call_engine(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);
+        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }
 
     /// Checks if non-fungible unit, with certain key exists or not.

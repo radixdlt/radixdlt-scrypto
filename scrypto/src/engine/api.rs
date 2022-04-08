@@ -40,8 +40,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create resource
 pub const CREATE_RESOURCE: u32 = 0x30;
-/// Update non-fungible metadata
-pub const UPDATE_NON_FUNGIBLE_MUTABLE_DATA: u32 = 0x33;
 /// Update resource metadata
 pub const UPDATE_RESOURCE_METADATA: u32 = 0x34;
 /// Get resource type
@@ -325,15 +323,6 @@ pub struct NonFungibleExistsInput {
 pub struct NonFungibleExistsOutput {
     pub non_fungible_exists: bool,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateNonFungibleMutableDataInput {
-    pub non_fungible_address: NonFungibleAddress,
-    pub new_mutable_data: Vec<u8>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateNonFungibleMutableDataOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateResourceMetadataInput {

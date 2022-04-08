@@ -1806,20 +1806,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(UpdateResourceMetadataOutput {})
     }
 
-    fn handle_update_non_fungible_mutable_data(
-        &mut self,
-        input: UpdateNonFungibleMutableDataInput,
-    ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
-        let snode_ref = SNodeRef::Resource(input.non_fungible_address.resource_address());
-        let function = "update_non_fungible_mutable_data".to_string();
-        let args = vec![
-            ScryptoValue::from_value(&input.non_fungible_address.non_fungible_id()),
-            ScryptoValue::from_value(&input.new_mutable_data),
-        ];
-        let _ = self.call(snode_ref, function, args)?;
-        Ok(UpdateNonFungibleMutableDataOutput {})
-    }
-
     fn handle_invoke_snode(
         &mut self,
         input: InvokeSNodeInput,
@@ -2257,9 +2243,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_METADATA => self.handle(args, Self::handle_get_resource_metadata),
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
-                    }
-                    UPDATE_NON_FUNGIBLE_MUTABLE_DATA => {
-                        self.handle(args, Self::handle_update_non_fungible_mutable_data)
                     }
                     GET_NON_FUNGIBLE_DATA => self.handle(args, Self::handle_get_non_fungible_data),
                     NON_FUNGIBLE_EXISTS => self.handle(args, Self::handle_non_fungible_exists),
