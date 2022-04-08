@@ -6,10 +6,6 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub fn compile(name: &str) -> Vec<u8> {
-    compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
-}
-
 #[test]
 fn create_non_fungible_mutable() {
     // Arrange
@@ -28,9 +24,8 @@ fn create_non_fungible_mutable() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[])
-        .unwrap()
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -42,9 +37,11 @@ fn test_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(&compile("non_fungible")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "non_fungible")))
+        .unwrap();
 
-    let transaction = TransactionBuilder::new(&executor)
+    let transaction = TransactionBuilder::new()
         .call_function(
             package,
             "NonFungibleTest",
@@ -57,9 +54,9 @@ fn test_non_fungible() {
             "update_and_get_non_fungible",
             vec![],
         )
-        .call_function(package, "NonFungibleTest", "non_fungible_exists", vec![])
-        .call_function(package, "NonFungibleTest", "take_and_put_bucket", vec![])
-        .call_function(package, "NonFungibleTest", "take_and_put_vault", vec![])
+        .call_function(package, "NonFungibleTest", "non_fungible_exists", args![])
+        .call_function(package, "NonFungibleTest", "take_and_put_bucket", args![])
+        .call_function(package, "NonFungibleTest", "take_and_put_vault", args![])
         .call_function(
             package,
             "NonFungibleTest",
@@ -73,9 +70,8 @@ fn test_non_fungible() {
             vec![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[pk])
-        .unwrap()
-        .sign(&[sk]);
+        .build(executor.get_nonce([pk]))
+        .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     println!("{:?}", receipt);
     assert!(receipt.result.is_ok());

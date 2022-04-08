@@ -9,13 +9,13 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
-pub const HASH_LENGTH: usize = 32;
-
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct Hash(pub [u8; 32]);
+pub struct Hash(pub [u8; Self::LENGTH]);
 
 impl Hash {
+    pub const LENGTH: usize = 32;
+
     /// Returns the lower 26 bytes.
     pub fn lower_26_bytes(&self) -> [u8; 26] {
         let mut result = [0u8; 26];
@@ -31,12 +31,18 @@ impl Hash {
     }
 }
 
+impl AsRef<[u8]> for Hash {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 /// Computes the hash digest of a message.
 pub fn hash<T: AsRef<[u8]>>(data: T) -> Hash {
     // TODO: replace with whatever hash algorithm we eventually agrees on
     // The point here is to have a single "main" hashing function in the code base
 
-    crate::crypto::sha256_twice(data)
+    crate::crypto::sha256(data)
 }
 
 //========
@@ -68,11 +74,10 @@ impl TryFrom<&[u8]> for Hash {
     type Error = ParseHashError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() == 32 {
-            Ok(Self(copy_u8_array(slice)))
-        } else {
-            Err(ParseHashError::InvalidLength(slice.len()))
+        if slice.len() != Hash::LENGTH {
+            return Err(ParseHashError::InvalidLength(slice.len()));
         }
+        Ok(Self(copy_u8_array(slice)))
     }
 }
 

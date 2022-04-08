@@ -30,19 +30,22 @@ impl CallMethod {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_account = get_default_account()?;
-        let (default_pks, default_sks) = get_default_signers()?;
+        let (default_pk, default_sk) = get_default_signers()?;
 
-        let transaction = TransactionBuilder::new(&executor)
-            .parse_args_and_call_method(
+        let transaction = TransactionBuilder::new()
+            .call_method_with_abi(
                 self.component_address,
                 &self.method_name,
                 self.arguments.clone(),
                 Some(default_account),
+                &executor
+                    .export_abi_by_component(self.component_address)
+                    .map_err(Error::AbiExportError)?,
             )
-            .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(default_pks)
             .map_err(Error::TransactionConstructionError)?
-            .sign(&default_sks);
+            .call_method_with_all_resources(default_account, "deposit_batch")
+            .build(executor.get_nonce([default_pk]))
+            .sign([&default_sk]);
         process_transaction(transaction, &mut executor, &self.manifest)
     }
 }

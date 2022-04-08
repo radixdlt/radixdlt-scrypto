@@ -106,18 +106,18 @@ pub fn run() -> Result<(), Error> {
 }
 
 pub fn process_transaction<L: SubstateStore>(
-    transaction: Transaction,
+    signed: SignedTransaction,
     executor: &mut TransactionExecutor<L>,
     manifest: &Option<PathBuf>,
 ) -> Result<(), Error> {
     match manifest {
         Some(path) => {
-            let decompiled = decompile(&transaction).map_err(Error::DecompileError)?;
+            let decompiled = decompile(&signed.transaction).map_err(Error::DecompileError)?;
             fs::write(path, decompiled).map_err(Error::IOError)
         }
         None => {
             let receipt = executor
-                .validate_and_execute(&transaction)
+                .validate_and_execute(&signed)
                 .map_err(Error::TransactionValidationError)?;
             println!("{:?}", receipt);
             receipt.result.map_err(Error::TransactionExecutionError)

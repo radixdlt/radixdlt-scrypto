@@ -19,7 +19,7 @@ pub enum BuildArgsError {
 
 /// Represents an error when building a transaction.
 #[derive(Debug, Clone)]
-pub enum BuildTransactionError {
+pub enum CallWithAbiError {
     /// The given blueprint function does not exist.
     FunctionNotFound(String),
 

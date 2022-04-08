@@ -74,7 +74,7 @@ const MAPPING: [(ScryptoType, u8, &str); 13] = [
     (ScryptoType::LazyMap, 0x82, "LazyMap"),
     (ScryptoType::Hash, 0x90, "Hash"),
     (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"),
-    (ScryptoType::EcdsaSignature, 0x92, "EcdsaSignature"),
+    (ScryptoType::EcdsaSignature, 0x93, "EcdsaSignature"),
     (ScryptoType::Decimal, 0xa1, "Decimal"),
     (ScryptoType::Bucket, 0xb1, "Bucket"),
     (ScryptoType::Proof, 0xb2, "Proof"),

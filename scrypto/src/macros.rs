@@ -96,25 +96,24 @@ macro_rules! trace {
 ///
 /// Notes:
 /// * This macro only works when `std` is linked;
-/// * The WASM file name is normally the package name with `-` replaced with `_`.
 ///
 /// # Example
 /// ```ignore
 /// use scrypto::prelude::*;
 ///
 /// // This package
-/// let wasm1 = compile_package!("wasm_name");
+/// let wasm1 = compile_package!();
 ///
 /// // Another package
-/// let wasm2 = compile_package!("/path/to/package", "wasm_name");
+/// let wasm2 = compile_package!("/path/to/package");
 /// ```
 #[macro_export]
 macro_rules! compile_package {
-    ($wasm_name: expr) => {
-        ::scrypto::misc::compile_package(env!("CARGO_MANIFEST_DIR"), $wasm_name)
+    () => {
+        ::scrypto::misc::compile_package(env!("CARGO_MANIFEST_DIR"))
     };
-    ($package_dir: expr, $wasm_name: expr) => {
-        ::scrypto::misc::compile_package($package_dir, $wasm_name)
+    ($package_dir: expr) => {
+        ::scrypto::misc::compile_package($package_dir)
     };
 }
 
