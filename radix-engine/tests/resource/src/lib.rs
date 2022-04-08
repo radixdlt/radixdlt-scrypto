@@ -6,13 +6,15 @@ blueprint! {
     impl ResourceTest {
         pub fn create_fungible() -> (Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
+                .auth(TakeFromVault, auth!(allow_all))
                 .divisibility(DIVISIBILITY_NONE)
                 .initial_supply(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .flags(MINTABLE | BURNABLE)
-                .badge(badge.resource_address(), MAY_MINT | MAY_BURN)
+                .auth(TakeFromVault, auth!(allow_all))
+                .auth(Mint, auth!(require(badge.resource_address())))
+                .auth(Burn, auth!(require(badge.resource_address())))
                 .no_initial_supply();
             (badge, token_address)
         }
@@ -22,13 +24,15 @@ blueprint! {
             amount: Decimal,
         ) -> (Bucket, Bucket, ResourceAddress) {
             let badge = ResourceBuilder::new_fungible()
+                .auth(TakeFromVault, auth!(allow_all))
                 .divisibility(DIVISIBILITY_NONE)
                 .initial_supply(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(divisibility)
                 .metadata("name", "TestToken")
-                .flags(MINTABLE | BURNABLE)
-                .badge(badge.resource_address(), MAY_MINT | MAY_BURN)
+                .auth(TakeFromVault, auth!(allow_all))
+                .auth(Mint, auth!(require(badge.resource_address())))
+                .auth(Burn, auth!(require(badge.resource_address())))
                 .no_initial_supply();
             let tokens = badge.authorize(|| resource_manager!(token_address).mint(amount));
             (badge, tokens, token_address)
@@ -36,19 +40,18 @@ blueprint! {
 
         pub fn create_fungible_wrong_resource_flags_should_fail() -> ResourceAddress {
             let token_address = ResourceBuilder::new_fungible()
+                .auth(TakeFromVault, auth!(allow_all))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .flags(MAY_MINT | BURNABLE)
                 .no_initial_supply();
             token_address
         }
 
         pub fn create_fungible_wrong_mutable_flags_should_fail() -> ResourceAddress {
             let token_address = ResourceBuilder::new_fungible()
+                .auth(TakeFromVault, auth!(allow_all))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .flags(MINTABLE | BURNABLE)
-                .mutable_flags(MAY_MINT)
                 .no_initial_supply();
             token_address
         }
@@ -56,25 +59,25 @@ blueprint! {
         pub fn create_fungible_wrong_resource_permissions_should_fail() -> (Bucket, ResourceAddress)
         {
             let badge = ResourceBuilder::new_fungible()
+                .auth(TakeFromVault, auth!(allow_all))
                 .divisibility(DIVISIBILITY_NONE)
                 .initial_supply(1);
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .flags(MINTABLE | BURNABLE)
-                .badge(badge.resource_address(), MINTABLE | MAY_BURN)
+                .auth(TakeFromVault, auth!(allow_all))
+                .auth(Mint, auth!(require(badge.resource_address())))
+                .auth(Burn, auth!(require(badge.resource_address())))
                 .no_initial_supply();
             (badge, token_address)
         }
 
-        pub fn query() -> (Bucket, HashMap<String, String>, u64, u64, Decimal) {
+        pub fn query() -> (Bucket, HashMap<String, String>, Decimal) {
             let (badge, resource_address) = Self::create_fungible();
             let resource_manager = resource_manager!(resource_address);
             (
                 badge,
                 resource_manager.metadata(),
-                resource_manager.flags(),
-                resource_manager.mutable_flags(),
                 resource_manager.total_supply(),
             )
         }
@@ -89,63 +92,16 @@ blueprint! {
             badge
         }
 
-        pub fn update_feature_flags() -> Bucket {
-            let badge = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
-            let token_resource_manager = resource_manager!(ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
-                .mutable_flags(MINTABLE)
-                .badge(
-                    badge.resource_address(),
-                    MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
-                )
-                .no_initial_supply());
-
-            badge.authorize(|| {
-                token_resource_manager.enable_flags(MINTABLE);
-                assert!(token_resource_manager.flags() & MINTABLE == MINTABLE);
-                assert!(token_resource_manager.mutable_flags() & MINTABLE == MINTABLE);
-
-                token_resource_manager.disable_flags(MINTABLE);
-                assert!(token_resource_manager.flags() & MINTABLE == 0);
-                assert!(token_resource_manager.mutable_flags() & MINTABLE == MINTABLE);
-
-                token_resource_manager.lock_flags(MINTABLE);
-                assert!(token_resource_manager.flags() & MINTABLE == 0);
-                assert!(token_resource_manager.mutable_flags() & MINTABLE == 0);
-            });
-
-            badge
-        }
-
-        pub fn update_feature_flags_should_fail() -> Bucket {
-            let badge = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_NONE)
-                .initial_supply(1);
-            let token_resource_manager = resource_manager!(ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
-                .badge(
-                    badge.resource_address(),
-                    MAY_MANAGE_RESOURCE_FLAGS | MAY_MINT,
-                )
-                .no_initial_supply());
-
-            badge.authorize(|| token_resource_manager.enable_flags(MINTABLE));
-            badge
-        }
-
         pub fn update_resource_metadata() -> Bucket {
             let badge = ResourceBuilder::new_fungible()
+                .auth(TakeFromVault, auth!(allow_all))
                 .divisibility(DIVISIBILITY_NONE)
                 .initial_supply(1);
             let token_resource_manager = resource_manager!(ResourceBuilder::new_fungible()
+                .auth(TakeFromVault, auth!(allow_all))
+                .auth(UpdateMetadata, auth!(require(badge.resource_address())))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .flags(SHARED_METADATA_MUTABLE)
-                .badge(badge.resource_address(), MAY_CHANGE_SHARED_METADATA)
                 .no_initial_supply());
 
             let mut new_metadata = HashMap::new();

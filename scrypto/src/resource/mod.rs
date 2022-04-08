@@ -15,11 +15,6 @@ mod schema_path;
 mod system;
 mod vault;
 
-/// Resource flags.
-pub mod resource_flags;
-/// Resource permissions.
-pub mod resource_permissions;
-
 pub use auth_zone::AuthZone;
 pub use authorization::ComponentAuthorization;
 pub use bucket::{Bucket, ParseBucketError};
@@ -35,9 +30,10 @@ pub use proof_rule::{
     SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
-pub use resource_flags::*;
-pub use resource_manager::{ParseResourceAddressError, ResourceAddress, ResourceManager};
-pub use resource_permissions::*;
+pub use resource_manager::ResourceMethod::*;
+pub use resource_manager::{
+    ParseResourceAddressError, ResourceAddress, ResourceManager, ResourceMethod,
+};
 pub use resource_type::ResourceType;
 pub use schema_path::SchemaPath;
 pub use system::{init_resource_system, resource_system, ResourceSystem};

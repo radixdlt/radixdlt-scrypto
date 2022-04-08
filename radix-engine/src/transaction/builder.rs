@@ -1,12 +1,10 @@
 use sbor::describe::*;
 use sbor::*;
-use scrypto::abi;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRuleNode, MethodAuth};
-use scrypto::resource::resource_flags::*;
-use scrypto::resource::resource_permissions::*;
+use scrypto::prelude::{AuthRuleNode, Burn, MethodAuth, Mint, TakeFromVault};
+use scrypto::resource::require;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::*;
@@ -18,6 +16,7 @@ use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use scrypto::values::*;
+use scrypto::*;
 
 use crate::engine::*;
 use crate::model::*;
@@ -437,6 +436,11 @@ impl TransactionBuilder {
         metadata: HashMap<String, String>,
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
+        let mut resource_auth = HashMap::new();
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+        resource_auth.insert(Mint, auth!(require(minter_resource_address.clone())));
+        resource_auth.insert(Burn, auth!(require(minter_resource_address.clone())));
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
@@ -444,12 +448,7 @@ impl TransactionBuilder {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&(MINTABLE | BURNABLE)),
-                scrypto_encode(&0u64),
-                scrypto_encode(&Self::single_authority(
-                    minter_resource_address,
-                    MAY_MINT | MAY_BURN,
-                )),
+                scrypto_encode(&resource_auth),
                 scrypto_encode::<Option<MintParams>>(&None),
             ],
         })
@@ -462,6 +461,9 @@ impl TransactionBuilder {
         metadata: HashMap<String, String>,
         initial_supply: Decimal,
     ) -> &mut Self {
+        let mut resource_auth = HashMap::new();
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
@@ -469,9 +471,7 @@ impl TransactionBuilder {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&0u64),
-                scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<ResourceAddress, u64>::new()),
+                scrypto_encode(&resource_auth),
                 scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -486,6 +486,11 @@ impl TransactionBuilder {
         metadata: HashMap<String, String>,
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
+        let mut resource_auth = HashMap::new();
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+        resource_auth.insert(Mint, auth!(require(minter_resource_address.clone())));
+        resource_auth.insert(Burn, auth!(require(minter_resource_address.clone())));
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
@@ -493,12 +498,7 @@ impl TransactionBuilder {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&(MINTABLE | BURNABLE)),
-                scrypto_encode(&0u64),
-                scrypto_encode(&Self::single_authority(
-                    minter_resource_address,
-                    MAY_MINT | MAY_BURN,
-                )),
+                scrypto_encode(&resource_auth),
                 scrypto_encode::<Option<MintParams>>(&None),
             ],
         })
@@ -511,6 +511,9 @@ impl TransactionBuilder {
         metadata: HashMap<String, String>,
         initial_supply: Decimal,
     ) -> &mut Self {
+        let mut resource_auth = HashMap::new();
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
@@ -518,9 +521,7 @@ impl TransactionBuilder {
             args: vec![
                 scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
                 scrypto_encode(&metadata),
-                scrypto_encode(&0u64),
-                scrypto_encode(&0u64),
-                scrypto_encode(&HashMap::<ResourceAddress, u64>::new()),
+                scrypto_encode(&resource_auth),
                 scrypto_encode(&Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })),
@@ -684,15 +685,6 @@ impl TransactionBuilder {
     //===============================
     // private methods below
     //===============================
-
-    fn single_authority(
-        resource_address: ResourceAddress,
-        permission: u64,
-    ) -> HashMap<ResourceAddress, u64> {
-        let mut map = HashMap::new();
-        map.insert(resource_address, permission);
-        map
-    }
 
     fn parse_args(
         &mut self,

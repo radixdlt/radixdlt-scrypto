@@ -12,6 +12,15 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
+pub enum ResourceMethod {
+    Mint,
+    Burn,
+    TakeFromVault,
+    UpdateMetadata,
+    UpdateNonFungibleData,
+}
+
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ResourceAddress(pub [u8; 26]);
@@ -78,26 +87,6 @@ impl ResourceManager {
         output.metadata
     }
 
-    /// Returns the feature flags.
-    pub fn flags(&self) -> u64 {
-        let input = GetResourceFlagsInput {
-            resource_address: self.0,
-        };
-        let output: GetResourceFlagsOutput = call_engine(GET_RESOURCE_FLAGS, input);
-
-        output.flags
-    }
-
-    /// Returns the mutable feature flags.
-    pub fn mutable_flags(&self) -> u64 {
-        let input = GetResourceMutableFlagsInput {
-            resource_address: self.0,
-        };
-        let output: GetResourceMutableFlagsOutput = call_engine(GET_RESOURCE_MUTABLE_FLAGS, input);
-
-        output.mutable_flags
-    }
-
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
         let input = GetResourceTotalSupplyInput {
@@ -143,33 +132,6 @@ impl ResourceManager {
         let output: NonFungibleExistsOutput = call_engine(NON_FUNGIBLE_EXISTS, input);
 
         output.non_fungible_exists
-    }
-
-    /// Turns on feature flags.
-    pub fn enable_flags(&self, flags: u64) {
-        let input = EnableFlagsInput {
-            resource_address: self.0,
-            flags,
-        };
-        let _output: EnableFlagsOutput = call_engine(ENABLE_FLAGS, input);
-    }
-
-    /// Turns off feature flags.
-    pub fn disable_flags(&self, flags: u64) {
-        let input = DisableFlagsInput {
-            resource_address: self.0,
-            flags,
-        };
-        let _output: DisableFlagsOutput = call_engine(DISABLE_FLAGS, input);
-    }
-
-    /// Locks feature flag settings.
-    pub fn lock_flags(&self, flags: u64) {
-        let input = LockFlagsInput {
-            resource_address: self.0,
-            flags,
-        };
-        let _output: LockFlagsOutput = call_engine(LOCK_FLAGS, input);
     }
 
     /// Updates the resource metadata

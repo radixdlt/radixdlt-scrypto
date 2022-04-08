@@ -249,7 +249,10 @@ impl<T: Into<Decimal>> Add<T> for Decimal {
     type Output = Decimal;
 
     fn add(self, other: T) -> Self::Output {
-        Decimal(self.0 + other.into().0)
+        let a = BigInt::from(self.0);
+        let b = BigInt::from(other.into().0);
+        let c = a + b;
+        big_int_to_decimal(c)
     }
 }
 
@@ -257,7 +260,10 @@ impl<T: Into<Decimal>> Sub<T> for Decimal {
     type Output = Decimal;
 
     fn sub(self, other: T) -> Self::Output {
-        Decimal(self.0 - other.into().0)
+        let a = BigInt::from(self.0);
+        let b = BigInt::from(other.into().0);
+        let c = a - b;
+        big_int_to_decimal(c)
     }
 }
 
@@ -551,11 +557,23 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Overflow")]
+    fn test_add_oveflow() {
+        let _ = Decimal::MAX + 1;
+    }
+
+    #[test]
     fn test_sub() {
         let a = Decimal::from(5u32);
         let b = Decimal::from(7u32);
         assert_eq!((a - b).to_string(), "-2");
         assert_eq!((b - a).to_string(), "2");
+    }
+
+    #[test]
+    #[should_panic(expected = "Overflow")]
+    fn test_sub_overflow() {
+        let _ = Decimal::MIN - 1;
     }
 
     #[test]
@@ -566,6 +584,31 @@ mod tests {
         let a = Decimal::from_str("1000000000").unwrap();
         let b = Decimal::from_str("1000000000").unwrap();
         assert_eq!((a * b).to_string(), "1000000000000000000");
+    }
+
+    #[test]
+    fn test_mul_no_overflow() {
+        // make sure multiplication DOES NOT overflow
+        // because of bad implementation
+        assert_eq!(Decimal::MAX * 1i8, Decimal::MAX);
+    }
+
+    #[test]
+    #[should_panic(expected = "Overflow")]
+    fn test_mul_overflow_by_small() {
+        let _ = Decimal::MAX * dec!("1.000000000000000001");
+    }
+
+    #[test]
+    #[should_panic(expected = "Overflow")]
+    fn test_mul_overflow_by_a_lot() {
+        let _ = Decimal::MAX * dec!("1.1");
+    }
+
+    #[test]
+    #[should_panic(expected = "Overflow")]
+    fn test_mul_neg_overflow() {
+        let _ = (-Decimal::MAX) * dec!("-1.000000000000000001");
     }
 
     #[test]
@@ -643,7 +686,7 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Shift overflow")]
-    fn test_overflow() {
+    fn test_shift_overflow() {
         // u32::MAX + 1
         dec!(1, 4_294_967_296i128); // use explicit type to defer error to runtime
     }

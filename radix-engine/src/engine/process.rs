@@ -1607,14 +1607,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateResourceInput,
     ) -> Result<CreateResourceOutput, RuntimeError> {
-        let resource_manager = ResourceManager::new(
-            input.resource_type,
-            input.metadata,
-            input.flags,
-            input.mutable_flags,
-            input.authorities,
-        )
-        .map_err(RuntimeError::ResourceManagerError)?;
+        let resource_manager =
+            ResourceManager::new(input.resource_type, input.metadata, input.authorization)
+                .map_err(RuntimeError::ResourceManagerError)?;
 
         let resource_address = self.track.create_resource_manager(resource_manager);
         re_debug!(self, "New resource manager: {}", resource_address);
@@ -1663,38 +1658,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         Ok(GetResourceTotalSupplyOutput {
             total_supply: resource_manager.total_supply(),
-        })
-    }
-
-    fn handle_get_resource_flags(
-        &mut self,
-        input: GetResourceFlagsInput,
-    ) -> Result<GetResourceFlagsOutput, RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-
-        Ok(GetResourceFlagsOutput {
-            flags: resource_manager.flags(),
-        })
-    }
-
-    fn handle_get_resource_mutable_flags(
-        &mut self,
-        input: GetResourceMutableFlagsInput,
-    ) -> Result<GetResourceMutableFlagsOutput, RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-
-        Ok(GetResourceMutableFlagsOutput {
-            mutable_flags: resource_manager.mutable_flags(),
         })
     }
 
@@ -1829,69 +1792,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map_err(|e| RuntimeError::AuthorizationError(transition.to_string(), e))
     }
 
-    fn handle_enable_flags(
-        &mut self,
-        input: EnableFlagsInput,
-    ) -> Result<EnableFlagsOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_address, "enable_flags")?;
-
-        // State Update
-        let resource_manager = self
-            .track
-            .get_resource_manager_mut(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-        resource_manager
-            .enable_flags(input.flags)
-            .map_err(RuntimeError::ResourceManagerError)?;
-
-        Ok(EnableFlagsOutput {})
-    }
-
-    fn handle_disable_flags(
-        &mut self,
-        input: DisableFlagsInput,
-    ) -> Result<DisableFlagsOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_address, "disable_flags")?;
-
-        // State Update
-        let resource_manager = self
-            .track
-            .get_resource_manager_mut(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-        resource_manager
-            .disable_flags(input.flags)
-            .map_err(RuntimeError::ResourceManagerError)?;
-
-        Ok(DisableFlagsOutput {})
-    }
-
-    fn handle_lock_flags(
-        &mut self,
-        input: LockFlagsInput,
-    ) -> Result<LockFlagsOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_address, "lock_flags")?;
-
-        // State Update
-        let resource_manager = self
-            .track
-            .get_resource_manager_mut(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-        resource_manager
-            .lock_flags(input.flags)
-            .map_err(RuntimeError::ResourceManagerError)?;
-
-        Ok(LockFlagsOutput {})
-    }
-
     fn handle_update_resource_metadata(
         &mut self,
         input: UpdateResourceMetadataInput,
@@ -1987,7 +1887,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: TakeNonFungiblesFromVaultInput,
     ) -> Result<TakeNonFungiblesFromVaultOutput, RuntimeError> {
         let resource_address = self.get_local_vault(&input.vault_id)?.resource_address();
-        self.check_resource_auth(&resource_address, "take_from_vault")?;
+        self.check_resource_auth(&resource_address, "take_non_fungibles_from_vault")?;
 
         let new_bucket = self
             .get_local_vault(&input.vault_id)?
@@ -2394,15 +2294,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
                     }
-                    GET_RESOURCE_FLAGS => self.handle(args, Self::handle_get_resource_flags),
-                    GET_RESOURCE_MUTABLE_FLAGS => {
-                        self.handle(args, Self::handle_get_resource_mutable_flags)
-                    }
                     MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
-                    ENABLE_FLAGS => self.handle(args, Self::handle_enable_flags),
-                    DISABLE_FLAGS => self.handle(args, Self::handle_disable_flags),
-                    LOCK_FLAGS => self.handle(args, Self::handle_lock_flags),
                     UPDATE_NON_FUNGIBLE_MUTABLE_DATA => {
                         self.handle(args, Self::handle_update_non_fungible_mutable_data)
                     }

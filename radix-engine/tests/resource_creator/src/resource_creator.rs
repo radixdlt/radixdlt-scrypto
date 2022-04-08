@@ -14,29 +14,29 @@ blueprint! {
         pub fn create_restricted_transfer(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .flags(RESTRICTED_TRANSFER)
-                .badge(badge_resource_address, MAY_TRANSFER)
+                .auth(TakeFromVault, auth!(require(badge_resource_address)))
                 .initial_supply(5)
         }
 
         pub fn create_restricted_mint(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .flags(MINTABLE)
-                .badge(badge_resource_address, MAY_MINT)
+                .auth(TakeFromVault, auth!(allow_all))
+                .auth(Mint, auth!(require(badge_resource_address)))
                 .initial_supply(5)
         }
 
         pub fn create_restricted_burn(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .flags(BURNABLE)
-                .badge(badge_resource_address, MAY_BURN)
+                .auth(TakeFromVault, auth!(allow_all))
+                .auth(Burn, auth!(require(badge_resource_address)))
                 .initial_supply(5)
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
+                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "Katz's Sandwiches")
                 .initial_supply([
                     (
@@ -66,6 +66,7 @@ blueprint! {
         pub fn create_fungible_fixed(amount: Decimal, divisibility: u8) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(divisibility)
+                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "SUPER TOKEN")
                 .initial_supply(amount)
         }

@@ -15,16 +15,12 @@ pub struct ResourceBuilder;
 pub struct FungibleResourceBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
-    flags: u64,
-    mutable_flags: u64,
-    authorities: HashMap<ResourceAddress, u64>,
+    authorization: HashMap<ResourceMethod, MethodAuth>,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
-    flags: u64,
-    mutable_flags: u64,
-    authorities: HashMap<ResourceAddress, u64>,
+    authorization: HashMap<ResourceMethod, MethodAuth>,
 }
 
 impl ResourceBuilder {
@@ -44,9 +40,7 @@ impl FungibleResourceBuilder {
         Self {
             divisibility: DIVISIBILITY_MAXIMUM,
             metadata: HashMap::new(),
-            flags: 0,
-            mutable_flags: 0,
-            authorities: HashMap::new(),
+            authorization: HashMap::new(),
         }
     }
 
@@ -68,21 +62,8 @@ impl FungibleResourceBuilder {
         self
     }
 
-    /// Enables feature flags.
-    pub fn flags(&mut self, flags: u64) -> &mut Self {
-        self.flags |= flags;
-        self
-    }
-
-    /// Sets features flags to mutable.
-    pub fn mutable_flags(&mut self, mutable_flags: u64) -> &mut Self {
-        self.mutable_flags |= mutable_flags;
-        self
-    }
-
-    /// Allows the badge holder to have permissions.
-    pub fn badge(&mut self, badge: ResourceAddress, permissions: u64) -> &mut Self {
-        self.authorities.insert(badge, permissions);
+    pub fn auth(&mut self, method: ResourceMethod, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(method, method_auth);
         self
     }
 
@@ -104,14 +85,17 @@ impl FungibleResourceBuilder {
     }
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        // TODO: Do we still need this check?
+        if !self.authorization.contains_key(&TakeFromVault) {
+            panic!("TakeFromVault authorization not defined.");
+        }
+
         resource_system().new_resource(
             ResourceType::Fungible {
                 divisibility: self.divisibility,
             },
             self.metadata.clone(),
-            self.flags,
-            self.mutable_flags,
-            self.authorities.clone(),
+            self.authorization.clone(),
             mint_params,
         )
     }
@@ -121,9 +105,7 @@ impl NonFungibleResourceBuilder {
     pub fn new() -> Self {
         Self {
             metadata: HashMap::new(),
-            flags: 0,
-            mutable_flags: 0,
-            authorities: HashMap::new(),
+            authorization: HashMap::new(),
         }
     }
 
@@ -136,21 +118,8 @@ impl NonFungibleResourceBuilder {
         self
     }
 
-    /// Enables feature flags.
-    pub fn flags(&mut self, flags: u64) -> &mut Self {
-        self.flags |= flags;
-        self
-    }
-
-    /// Sets features flags to mutable.
-    pub fn mutable_flags(&mut self, mutable_flags: u64) -> &mut Self {
-        self.mutable_flags |= mutable_flags;
-        self
-    }
-
-    /// Allows the badge holder to have permissions.
-    pub fn badge(&mut self, badge: ResourceAddress, permissions: u64) -> &mut Self {
-        self.authorities.insert(badge, permissions);
+    pub fn auth(&mut self, method: ResourceMethod, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(method, method_auth);
         self
     }
 
@@ -184,9 +153,7 @@ impl NonFungibleResourceBuilder {
         resource_system().new_resource(
             ResourceType::NonFungible,
             self.metadata.clone(),
-            self.flags,
-            self.mutable_flags,
-            self.authorities.clone(),
+            self.authorization.clone(),
             mint_params,
         )
     }

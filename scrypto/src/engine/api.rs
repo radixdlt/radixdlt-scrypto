@@ -2,7 +2,7 @@ use sbor::*;
 use scrypto::prelude::ComponentAuthorization;
 
 use crate::engine::types::*;
-use crate::prelude::NonFungibleAddress;
+use crate::prelude::{MethodAuth, NonFungibleAddress, ResourceMethod};
 use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -47,26 +47,16 @@ pub const BURN_RESOURCE: u32 = 0x32;
 pub const UPDATE_NON_FUNGIBLE_MUTABLE_DATA: u32 = 0x33;
 /// Update resource metadata
 pub const UPDATE_RESOURCE_METADATA: u32 = 0x34;
-/// Enable feature flags
-pub const ENABLE_FLAGS: u32 = 0x35;
-/// Disable feature flags
-pub const DISABLE_FLAGS: u32 = 0x36;
-/// Lock feature flags
-pub const LOCK_FLAGS: u32 = 0x37;
 /// Get resource type
-pub const GET_RESOURCE_TYPE: u32 = 0x38;
+pub const GET_RESOURCE_TYPE: u32 = 0x35;
 /// Get resource metadata
-pub const GET_RESOURCE_METADATA: u32 = 0x39;
+pub const GET_RESOURCE_METADATA: u32 = 0x36;
 /// Get resource supply
-pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x3a;
-/// Get feature flags
-pub const GET_RESOURCE_FLAGS: u32 = 0x3b;
-/// Get mutable feature flags
-pub const GET_RESOURCE_MUTABLE_FLAGS: u32 = 0x3c;
+pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x37;
 /// Get the data of a non-fungible
-pub const GET_NON_FUNGIBLE_DATA: u32 = 0x3d;
+pub const GET_NON_FUNGIBLE_DATA: u32 = 0x38;
 /// Check if non-fungible resource with id exists
-pub const NON_FUNGIBLE_EXISTS: u32 = 0x3e;
+pub const NON_FUNGIBLE_EXISTS: u32 = 0x39;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -263,9 +253,7 @@ pub struct PutLazyMapEntryOutput {}
 pub struct CreateResourceInput {
     pub resource_type: ResourceType,
     pub metadata: HashMap<String, String>,
-    pub flags: u64,
-    pub mutable_flags: u64,
-    pub authorities: HashMap<ResourceAddress, u64>,
+    pub authorization: HashMap<ResourceMethod, MethodAuth>,
     pub mint_params: Option<MintParams>,
 }
 
@@ -353,53 +341,6 @@ pub struct UpdateNonFungibleMutableDataInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateNonFungibleMutableDataOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetResourceFlagsInput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetResourceFlagsOutput {
-    pub flags: u64,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct EnableFlagsInput {
-    pub resource_address: ResourceAddress,
-    pub flags: u64,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct EnableFlagsOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct DisableFlagsInput {
-    pub resource_address: ResourceAddress,
-    pub flags: u64,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct DisableFlagsOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct LockFlagsInput {
-    pub resource_address: ResourceAddress,
-    pub flags: u64,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct LockFlagsOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetResourceMutableFlagsInput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetResourceMutableFlagsOutput {
-    pub mutable_flags: u64,
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct UpdateResourceMetadataInput {

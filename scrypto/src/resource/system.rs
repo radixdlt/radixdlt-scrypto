@@ -38,17 +38,13 @@ impl ResourceSystem {
         &mut self,
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        flags: u64,
-        mutable_flags: u64,
-        authorities: HashMap<ResourceAddress, u64>,
+        authorization: HashMap<ResourceMethod, MethodAuth>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
         let input = CreateResourceInput {
             resource_type,
             metadata,
-            flags,
-            mutable_flags,
-            authorities,
+            authorization,
             mint_params,
         };
         let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
