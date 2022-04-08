@@ -1,6 +1,7 @@
 use radix_engine::ledger::*;
-use radix_engine::model::{Component, Receipt, Transaction};
+use radix_engine::model::{Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
+use scrypto::abi;
 use scrypto::prelude::*;
 
 pub struct TestRunner<'l> {
@@ -14,10 +15,8 @@ impl<'l> TestRunner<'l> {
         Self { executor }
     }
 
-    pub fn new_transaction_builder(
-        &self,
-    ) -> TransactionBuilder<TransactionExecutor<InMemorySubstateStore>> {
-        TransactionBuilder::new(&self.executor)
+    pub fn new_transaction_builder(&self) -> TransactionBuilder {
+        TransactionBuilder::new()
     }
 
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
@@ -43,7 +42,7 @@ impl<'l> TestRunner<'l> {
         self.executor.new_account()
     }
 
-    pub fn validate_and_execute(&mut self, transaction: &Transaction) -> Receipt {
+    pub fn validate_and_execute(&mut self, transaction: &SignedTransaction) -> Receipt {
         self.executor.validate_and_execute(transaction).unwrap()
     }
 
@@ -52,7 +51,7 @@ impl<'l> TestRunner<'l> {
     }
 
     pub fn compile(name: &str) -> Vec<u8> {
-        compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
+        compile_package!(format!("./tests/{}", name))
     }
 
     pub fn component(&self, component_address: ComponentAddress) -> Component {
@@ -63,6 +62,26 @@ impl<'l> TestRunner<'l> {
             .unwrap()
     }
 
+    pub fn export_abi(
+        &self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+    ) -> abi::Blueprint {
+        self.executor
+            .export_abi(package_address, blueprint_name)
+            .unwrap()
+    }
+
+    pub fn export_abi_by_component(&self, component_address: ComponentAddress) -> abi::Blueprint {
+        self.executor
+            .export_abi_by_component(component_address)
+            .unwrap()
+    }
+
+    pub fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, intended_signers: PKS) -> u64 {
+        self.executor.get_nonce(intended_signers)
+    }
+
     pub fn create_restricted_mint_token(
         &mut self,
         account: ComponentAddress,
@@ -70,7 +89,7 @@ impl<'l> TestRunner<'l> {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new(&self.executor)
+        let transaction = TransactionBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -78,9 +97,8 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[])
-            .unwrap()
-            .sign(&[]);
+            .build(self.executor.get_nonce([]))
+            .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_address, receipt.new_resource_addresses[0])
     }
@@ -91,7 +109,7 @@ impl<'l> TestRunner<'l> {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
         let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new(&self.executor)
+        let transaction = TransactionBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -99,9 +117,8 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[])
-            .unwrap()
-            .sign(&[]);
+            .build(self.executor.get_nonce([]))
+            .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_address, receipt.new_resource_addresses[0])
     }
@@ -113,7 +130,7 @@ impl<'l> TestRunner<'l> {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
         let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new(&self.executor)
+        let transaction = TransactionBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -121,16 +138,15 @@ impl<'l> TestRunner<'l> {
                 vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[])
-            .unwrap()
-            .sign(&[]);
+            .build(self.executor.get_nonce([]))
+            .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
         let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new(&self.executor)
+        let transaction = TransactionBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -138,9 +154,8 @@ impl<'l> TestRunner<'l> {
                 vec![],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[])
-            .unwrap()
-            .sign(&[]);
+            .build(self.executor.get_nonce([]))
+            .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         receipt.new_resource_addresses[0]
     }
@@ -152,7 +167,7 @@ impl<'l> TestRunner<'l> {
         account: ComponentAddress,
     ) -> ResourceAddress {
         let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new(&self.executor)
+        let transaction = TransactionBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -160,9 +175,8 @@ impl<'l> TestRunner<'l> {
                 args![amount, divisibility],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[])
-            .unwrap()
-            .sign(&[]);
+            .build(self.executor.get_nonce([]))
+            .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
         receipt.new_resource_addresses[0]
     }
@@ -175,21 +189,25 @@ impl<'l> TestRunner<'l> {
         args: Vec<String>,
         account: ComponentAddress,
         pk: EcdsaPublicKey,
-        sk: EcdsaPrivateKey,
+        sk: &EcdsaPrivateKey,
     ) -> ComponentAddress {
         let transaction = self
             .new_transaction_builder()
-            .parse_args_and_call_function(
+            .call_function_with_abi(
                 package_address,
                 blueprint_name,
                 function_name,
                 args,
                 Some(account),
+                &self
+                    .executor
+                    .export_abi(package_address, blueprint_name)
+                    .unwrap(),
             )
-            .call_method_with_all_resources(account, "deposit_batch")
-            .build(&[pk])
             .unwrap()
-            .sign(&[sk]);
+            .call_method_with_all_resources(account, "deposit_batch")
+            .build(self.executor.get_nonce([pk]))
+            .sign([sk]);
         let receipt = self.validate_and_execute(&transaction);
         receipt.new_component_addresses[0]
     }

@@ -8,29 +8,26 @@ use radix_engine::model::ResourceContainerError;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
-pub fn compile(name: &str) -> Vec<u8> {
-    compile_package!(format!("./tests/{}", name), name.replace("-", "_"))
-}
-
 #[test]
 fn test_bucket() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (_, _, account) = executor.new_account();
-    let package = executor.publish_package(&compile("bucket")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "bucket")))
+        .unwrap();
 
-    let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "BucketTest", "combine", vec![])
-        .call_function(package, "BucketTest", "split", vec![])
-        .call_function(package, "BucketTest", "borrow", vec![])
-        .call_function(package, "BucketTest", "query", vec![])
-        .call_function(package, "BucketTest", "test_restricted_transfer", vec![])
-        .call_function(package, "BucketTest", "test_burn", vec![])
-        .call_function(package, "BucketTest", "test_burn_freely", vec![])
+    let transaction = TransactionBuilder::new()
+        .call_function(package, "BucketTest", "combine", args![])
+        .call_function(package, "BucketTest", "split", args![])
+        .call_function(package, "BucketTest", "borrow", args![])
+        .call_function(package, "BucketTest", "query", args![])
+        .call_function(package, "BucketTest", "test_restricted_transfer", args![])
+        .call_function(package, "BucketTest", "test_burn", args![])
+        .call_function(package, "BucketTest", "test_burn_freely", args![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[])
-        .unwrap()
-        .sign(&[]);
+        .build(executor.get_nonce([]))
+        .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     assert!(receipt.result.is_ok());
 }
@@ -40,17 +37,18 @@ fn test_bucket_of_badges() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (_, _, account) = executor.new_account();
-    let package = executor.publish_package(&compile("bucket")).unwrap();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "bucket")))
+        .unwrap();
 
-    let transaction = TransactionBuilder::new(&executor)
-        .call_function(package, "BadgeTest", "combine", vec![])
-        .call_function(package, "BadgeTest", "split", vec![])
-        .call_function(package, "BadgeTest", "borrow", vec![])
-        .call_function(package, "BadgeTest", "query", vec![])
+    let transaction = TransactionBuilder::new()
+        .call_function(package, "BadgeTest", "combine", args![])
+        .call_function(package, "BadgeTest", "split", args![])
+        .call_function(package, "BadgeTest", "borrow", args![])
+        .call_function(package, "BadgeTest", "query", args![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(&[])
-        .unwrap()
-        .sign(&[]);
+        .build(executor.get_nonce([]))
+        .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     assert!(receipt.result.is_ok());
 }
@@ -67,16 +65,17 @@ fn test_take_with_invalid_granularity() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .parse_args_and_call_function(
+        .call_function_with_abi(
             package_address,
             "BucketTest",
             "take_from_bucket",
             vec![format!("100,{}", resource_address), "1.123".to_owned()],
             Some(account),
+            &test_runner.export_abi(package_address, "BucketTest"),
         )
-        .build(&[pk])
         .unwrap()
-        .sign(&[sk]);
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -101,16 +100,17 @@ fn test_take_with_negative_amount() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .parse_args_and_call_function(
+        .call_function_with_abi(
             package_address,
             "BucketTest",
             "take_from_bucket",
             vec![format!("100,{}", resource_address), "-2".to_owned()],
             Some(account),
+            &test_runner.export_abi(package_address, "BucketTest"),
         )
-        .build(&[pk])
         .unwrap()
-        .sign(&[sk]);
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -121,4 +121,35 @@ fn test_take_with_negative_amount() {
             ResourceContainerError::InvalidAmount(dec!("-2"), 2)
         ))
     );
+}
+
+#[test]
+fn create_empty_bucket() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (pk, sk, account) = test_runner.new_account();
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .take_from_worktop(scrypto::prelude::RADIX_TOKEN, |builder, _bucket_id| builder)
+        .take_from_worktop_by_amount(
+            Decimal::zero(),
+            scrypto::prelude::RADIX_TOKEN,
+            |builder, _bucket_id| builder,
+        )
+        .take_from_worktop_by_ids(
+            &BTreeSet::new(),
+            scrypto::prelude::RADIX_TOKEN,
+            |builder, _bucket_id| builder,
+        )
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert!(receipt.result.is_ok());
 }

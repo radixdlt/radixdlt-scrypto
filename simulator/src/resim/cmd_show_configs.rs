@@ -23,7 +23,7 @@ impl ShowConfigs {
             println!(
                 "{}: {}",
                 "Default Private Key".green().bold(),
-                configs.default_private_key
+                hex::encode(configs.default_private_key)
             );
         } else {
             println!("No configuration found");

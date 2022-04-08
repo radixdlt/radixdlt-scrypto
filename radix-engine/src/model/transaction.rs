@@ -4,13 +4,33 @@ use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::string::String;
+use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
-/// Represents a signed or signed transaction, parsed but not validated.
+use crate::engine::*;
+use crate::errors::*;
+
+/// Represents an unsigned transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct Transaction {
     pub instructions: Vec<Instruction>,
+}
+
+/// Represents a signed transaction
+pub struct SignedTransaction {
+    /// The unsigned transaction
+    pub transaction: Transaction,
+    /// The signatures. Public keys are for signature algorithm that doesn't support public key recovery, e.g. ed25519.
+    pub signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
+}
+
+/// Represents a validated transaction
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValidatedTransaction {
+    pub raw_hash: Hash,
+    pub instructions: Vec<ValidatedInstruction>,
+    pub signers: Vec<EcdsaPublicKey>,
 }
 
 /// Represents an instruction
@@ -115,16 +135,6 @@ pub enum Instruction {
     Nonce {
         nonce: u64, // TODO: may be replaced with substate id for entropy
     },
-
-    /// Marks the end of transaction with signatures.
-    End { signatures: Vec<EcdsaSignature> },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ValidatedTransaction {
-    pub hash: Hash,
-    pub instructions: Vec<ValidatedInstruction>,
-    pub signers: Vec<EcdsaPublicKey>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -204,36 +214,303 @@ impl Transaction {
         scrypto_encode(self)
     }
 
-    pub fn is_signed(&self) -> bool {
-        match self.instructions.last() {
-            Some(Instruction::End { .. }) => true,
-            _ => false,
-        }
+    pub fn raw_hash(&self) -> Hash {
+        hash(self.to_vec())
     }
 
-    pub fn hash(&self) -> Hash {
-        let instructions = if self.is_signed() {
-            &self.instructions[..self.instructions.len() - 1]
-        } else {
-            &self.instructions
-        };
-        let bytes = scrypto_encode(instructions);
-        hash(bytes)
+    pub fn add_nonce(&mut self, nonce: u64) {
+        self.instructions.push(Instruction::Nonce { nonce });
     }
 
-    pub fn sign<T: AsRef<[EcdsaPrivateKey]>>(mut self, private_keys: T) -> Self {
-        if self.is_signed() {
-            panic!("Transaction already signed!");
-        }
-
-        let hash = self.hash();
-        let signatures = private_keys
+    // TODO: introduce a `Signer` trait
+    pub fn sign<'a, T: AsRef<[&'a EcdsaPrivateKey]>>(self, sks: T) -> SignedTransaction {
+        let msg = self.to_vec();
+        let signatures = sks
             .as_ref()
             .iter()
-            .map(|sk| sk.sign(&hash))
+            .map(|sk| (sk.public_key(), sk.sign(&msg)))
             .collect();
 
-        self.instructions.push(Instruction::End { signatures });
-        self
+        SignedTransaction {
+            transaction: self,
+            signatures: signatures,
+        }
+    }
+}
+
+impl SignedTransaction {
+    pub fn validate(&self) -> Result<ValidatedTransaction, TransactionValidationError> {
+        let mut instructions = vec![];
+        let mut signers = vec![];
+
+        // verify signature (may defer to runtime)
+        let msg = self.transaction.to_vec();
+        for (pk, sig) in &self.signatures {
+            if !EcdsaVerifier::verify(&msg, pk, sig) {
+                return Err(TransactionValidationError::InvalidSignature);
+            }
+            signers.push(pk.clone());
+        }
+
+        // semantic analysis
+        let mut id_validator = IdValidator::new();
+        for inst in &self.transaction.instructions {
+            match inst.clone() {
+                Instruction::TakeFromWorktop { resource_address } => {
+                    id_validator
+                        .new_bucket()
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::TakeFromWorktop { resource_address });
+                }
+                Instruction::TakeFromWorktopByAmount {
+                    amount,
+                    resource_address,
+                } => {
+                    id_validator
+                        .new_bucket()
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::TakeFromWorktopByAmount {
+                        amount,
+                        resource_address,
+                    });
+                }
+                Instruction::TakeFromWorktopByIds {
+                    ids,
+                    resource_address,
+                } => {
+                    id_validator
+                        .new_bucket()
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::TakeFromWorktopByIds {
+                        ids,
+                        resource_address,
+                    });
+                }
+                Instruction::ReturnToWorktop { bucket_id } => {
+                    id_validator
+                        .drop_bucket(bucket_id)
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::ReturnToWorktop { bucket_id });
+                }
+                Instruction::AssertWorktopContains { resource_address } => {
+                    instructions
+                        .push(ValidatedInstruction::AssertWorktopContains { resource_address });
+                }
+                Instruction::AssertWorktopContainsByAmount {
+                    amount,
+                    resource_address,
+                } => {
+                    instructions.push(ValidatedInstruction::AssertWorktopContainsByAmount {
+                        amount,
+                        resource_address,
+                    });
+                }
+                Instruction::AssertWorktopContainsByIds {
+                    ids,
+                    resource_address,
+                } => {
+                    instructions.push(ValidatedInstruction::AssertWorktopContainsByIds {
+                        ids,
+                        resource_address,
+                    });
+                }
+                Instruction::PopFromAuthZone => {
+                    id_validator
+                        .new_proof(ProofKind::AuthZoneProof)
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::PopFromAuthZone);
+                }
+                Instruction::PushToAuthZone { proof_id } => {
+                    id_validator
+                        .drop_proof(proof_id)
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::PushToAuthZone { proof_id });
+                }
+                Instruction::ClearAuthZone => {
+                    instructions.push(ValidatedInstruction::ClearAuthZone);
+                }
+                Instruction::CreateProofFromAuthZone { resource_address } => {
+                    id_validator
+                        .new_proof(ProofKind::AuthZoneProof)
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions
+                        .push(ValidatedInstruction::CreateProofFromAuthZone { resource_address });
+                }
+                Instruction::CreateProofFromAuthZoneByAmount {
+                    amount,
+                    resource_address,
+                } => {
+                    id_validator
+                        .new_proof(ProofKind::AuthZoneProof)
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::CreateProofFromAuthZoneByAmount {
+                        amount,
+                        resource_address,
+                    });
+                }
+                Instruction::CreateProofFromAuthZoneByIds {
+                    ids,
+                    resource_address,
+                } => {
+                    id_validator
+                        .new_proof(ProofKind::AuthZoneProof)
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::CreateProofFromAuthZoneByIds {
+                        ids,
+                        resource_address,
+                    });
+                }
+                Instruction::CreateProofFromBucket { bucket_id } => {
+                    id_validator
+                        .new_proof(ProofKind::BucketProof(bucket_id))
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::CreateProofFromBucket { bucket_id });
+                }
+                Instruction::CloneProof { proof_id } => {
+                    id_validator
+                        .clone_proof(proof_id)
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::CloneProof { proof_id });
+                }
+                Instruction::DropProof { proof_id } => {
+                    id_validator
+                        .drop_proof(proof_id)
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::DropProof { proof_id });
+                }
+                Instruction::CallFunction {
+                    package_address,
+                    blueprint_name,
+                    function,
+                    args,
+                } => {
+                    instructions.push(ValidatedInstruction::CallFunction {
+                        package_address,
+                        blueprint_name,
+                        function,
+                        args: Self::validate_args(args, &mut id_validator)?,
+                    });
+                }
+                Instruction::CallMethod {
+                    component_address,
+                    method,
+                    args,
+                } => {
+                    instructions.push(ValidatedInstruction::CallMethod {
+                        component_address,
+                        method,
+                        args: Self::validate_args(args, &mut id_validator)?,
+                    });
+                }
+                Instruction::CallMethodWithAllResources {
+                    component_address,
+                    method,
+                } => {
+                    id_validator
+                        .move_all_resources()
+                        .map_err(TransactionValidationError::IdValidatorError)?;
+                    instructions.push(ValidatedInstruction::CallMethodWithAllResources {
+                        component_address,
+                        method,
+                    });
+                }
+                Instruction::PublishPackage { code } => {
+                    instructions.push(ValidatedInstruction::PublishPackage { code });
+                }
+                Instruction::Nonce { .. } => {
+                    // TODO: validate nonce
+                }
+            }
+        }
+
+        Ok(ValidatedTransaction {
+            raw_hash: self.transaction.raw_hash(),
+            instructions,
+            signers,
+        })
+    }
+
+    fn validate_args(
+        args: Vec<Vec<u8>>,
+        id_validator: &mut IdValidator,
+    ) -> Result<Vec<ScryptoValue>, TransactionValidationError> {
+        let mut result = vec![];
+        for arg in args {
+            let validated_arg = ScryptoValue::from_slice(&arg)
+                .map_err(TransactionValidationError::ParseScryptoValueError)?;
+            id_validator
+                .move_resources(&validated_arg)
+                .map_err(TransactionValidationError::IdValidatorError)?;
+            if let Some(vault_id) = validated_arg.vault_ids.first() {
+                return Err(TransactionValidationError::VaultNotAllowed(
+                    vault_id.clone(),
+                ));
+            }
+            if let Some(lazy_map_id) = validated_arg.lazy_map_ids.first() {
+                return Err(TransactionValidationError::LazyMapNotAllowed(
+                    lazy_map_id.clone(),
+                ));
+            }
+            result.push(validated_arg);
+        }
+        Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    use scrypto::engine::types::ComponentAddress;
+    use scrypto::rust::borrow::ToOwned;
+    use scrypto::rust::marker::PhantomData;
+
+    #[test]
+    fn should_reject_transaction_passing_vault() {
+        assert_eq!(
+            SignedTransaction {
+                transaction: Transaction {
+                    instructions: vec![Instruction::CallMethod {
+                        component_address: ComponentAddress([1u8; 26]),
+                        method: "test".to_owned(),
+                        args: vec![scrypto_encode(&scrypto::resource::Vault((
+                            Hash([2u8; 32]),
+                            0,
+                        )))],
+                    }],
+                },
+                signatures: Vec::new(),
+            }
+            .validate(),
+            Err(TransactionValidationError::VaultNotAllowed((
+                Hash([2u8; 32]),
+                0,
+            ))),
+        );
+    }
+
+    #[test]
+    fn should_reject_transaction_passing_lazy_map() {
+        assert_eq!(
+            SignedTransaction {
+                transaction: Transaction {
+                    instructions: vec![Instruction::CallMethod {
+                        component_address: ComponentAddress([1u8; 26]),
+                        method: "test".to_owned(),
+                        args: vec![scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
+                            id: (Hash([2u8; 32]), 0,),
+                            key: PhantomData,
+                            value: PhantomData,
+                        })],
+                    }],
+                },
+                signatures: Vec::new()
+            }
+            .validate(),
+            Err(TransactionValidationError::LazyMapNotAllowed((
+                Hash([2u8; 32]),
+                0,
+            ))),
+        );
     }
 }

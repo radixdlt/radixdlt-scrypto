@@ -19,7 +19,7 @@ pub struct TransactionExecutor<'l, L: SubstateStore> {
 }
 
 impl<'l, L: SubstateStore> NonceProvider for TransactionExecutor<'l, L> {
-    fn get_nonce(&self, _intended_signers: &[EcdsaPublicKey]) -> u64 {
+    fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
         self.substate_store.get_nonce()
     }
 }
@@ -41,7 +41,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .export_abi(package_address, blueprint_name)
     }
 
-    fn export_abi_component(
+    fn export_abi_by_component(
         &self,
         component_address: ComponentAddress,
     ) -> Result<abi::Blueprint, RuntimeError> {
@@ -81,8 +81,10 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Generates a new key pair.
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
-        let private_key =
-            EcdsaPrivateKey(hash(self.substate_store.get_and_increase_nonce().to_le_bytes()).0);
+        let private_key = EcdsaPrivateKey::from_bytes(
+            hash(self.substate_store.get_and_increase_nonce().to_le_bytes()).as_ref(),
+        )
+        .unwrap();
         let public_key = private_key.public_key();
         (public_key, private_key)
     }
@@ -91,14 +93,13 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &MethodAuth) -> ComponentAddress {
         let receipt = self
             .validate_and_execute(
-                &TransactionBuilder::new(self)
+                &TransactionBuilder::new()
                     .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })
-                    .build(&[])
-                    .unwrap()
-                    .sign(&[]),
+                    .build(self.get_nonce([]))
+                    .sign([]),
             )
             .unwrap();
 
@@ -123,11 +124,10 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     ) -> Result<PackageAddress, RuntimeError> {
         let receipt = self
             .validate_and_execute(
-                &TransactionBuilder::new(self)
+                &TransactionBuilder::new()
                     .publish_package(code.as_ref())
-                    .build(&[])
-                    .unwrap()
-                    .sign(&[]),
+                    .build(self.get_nonce([]))
+                    .sign([]),
             )
             .unwrap();
 
@@ -155,34 +155,27 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     pub fn validate_and_execute(
         &mut self,
-        transaction: &Transaction,
+        signed: &SignedTransaction,
     ) -> Result<Receipt, TransactionValidationError> {
-        let validated_transaction = self.validate(transaction)?;
-        let receipt = self.execute(&validated_transaction);
+        let validated = signed.validate()?;
+        let receipt = self.execute(&validated);
         Ok(receipt)
     }
 
-    pub fn validate(
-        &mut self,
-        transaction: &Transaction,
-    ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        validate_transaction(transaction)
-    }
-
-    pub fn execute(&mut self, transaction: &ValidatedTransaction) -> Receipt {
+    pub fn execute(&mut self, validated: &ValidatedTransaction) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
         let mut track = Track::new(
             self.substate_store,
-            transaction.hash.clone(),
-            transaction.signers.clone(),
+            validated.raw_hash.clone(),
+            validated.signers.clone(),
         );
         let mut proc = track.start_process(self.trace);
 
         let mut error: Option<RuntimeError> = None;
         let mut outputs = vec![];
-        for inst in &transaction.instructions {
+        for inst in &validated.instructions {
             let result = match inst {
                 ValidatedInstruction::TakeFromWorktop { resource_address } => proc
                     .take_all_from_worktop(*resource_address)
@@ -316,7 +309,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
         Receipt {
             commit_receipt,
-            transaction: transaction.clone(),
+            validated_transaction: validated.clone(),
             result: match error {
                 Some(error) => Err(error),
                 None => Ok(()),

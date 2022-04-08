@@ -267,7 +267,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     base64::encode(&code)
                 ));
             }
-            Instruction::Nonce { .. } | Instruction::End { .. } => {
+            Instruction::Nonce { .. } => {
                 // TODO: add support for this
             }
         }
