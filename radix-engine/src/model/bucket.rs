@@ -147,11 +147,11 @@ impl Bucket {
         self,
         track: &mut Track<'s, S>,
     ) {
+        // Notify resource manager, TODO: Should not need to notify manually
         let resource_address = self.resource_address();
         let resource_manager = track.get_resource_manager_mut(&resource_address).unwrap();
-        // Notify resource manager, TODO: Should not need to notify manually
         resource_manager.burn(self.total_amount());
-        if matches!(resource.resource_type(), ResourceType::NonFungible) {
+        if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
             // FIXME: remove the non-fungibles from the state
         }
     }

@@ -61,7 +61,6 @@ pub enum SNodeState {
     ),
     Resource(ResourceAddress),
     Bucket(Bucket),
-    NonFungible(NonFungibleAddress),
     Vault(VaultId),
 }
 
@@ -70,7 +69,6 @@ pub enum SNodeRef {
     Scrypto(ScryptoActor),
     Resource(ResourceAddress),
     Bucket(BucketId),
-    NonFungible(NonFungibleAddress),
     Vault(VaultId),
 }
 
@@ -824,20 +822,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
                 _ => Err(RuntimeError::IllegalSystemCall),
             },
-            SNodeState::NonFungible(non_fungible_address) => match function.as_str() {
-                "update_non_fungible_mutable_data" => {
-                    let new_mutable_data: Vec<u8> = scrypto_decode(&args[0].raw)
-                        .map_err(|e| RuntimeError::InvalidRequestData(e))?;
-
-                    let data = self.process_non_fungible_data(&new_mutable_data)?;
-                    self.track
-                        .get_non_fungible_mut(&non_fungible_address)
-                        .ok_or(RuntimeError::NonFungibleNotFound(non_fungible_address))?
-                        .set_mutable_data(data.raw);
-                    Ok(ScryptoValue::from_value(&()))
-                }
-                _ => Err(RuntimeError::IllegalSystemCall),
-            },
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
@@ -953,16 +937,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .track
                     .get_resource_method_auth(&resource_address, &invocation.function)?;
                 Ok((SNodeState::Vault(vault_id.clone()), method_auth.clone()))
-            }
-            SNodeRef::NonFungible(non_fungible_address) => {
-                let resource_address = non_fungible_address.resource_address();
-                let method_auth = self
-                    .track
-                    .get_resource_method_auth(&resource_address, &invocation.function)?;
-                Ok((
-                    SNodeState::NonFungible(non_fungible_address.clone()),
-                    method_auth.clone(),
-                ))
             }
         }?;
 
@@ -1207,24 +1181,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             lazy_map_ids,
             vault_ids,
         })
-    }
-
-    fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ScryptoValue, RuntimeError> {
-        let validated =
-            ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
-        if !validated.bucket_ids.is_empty() {
-            return Err(RuntimeError::BucketNotAllowed);
-        }
-        if !validated.proof_ids.is_empty() {
-            return Err(RuntimeError::ProofNotAllowed);
-        }
-        if !validated.lazy_map_ids.is_empty() {
-            return Err(RuntimeError::LazyMapNotAllowed);
-        }
-        if !validated.vault_ids.is_empty() {
-            return Err(RuntimeError::VaultNotAllowed);
-        }
-        Ok(validated)
     }
 
     /// Sends buckets to another component/blueprint, either as argument or return
@@ -1896,9 +1852,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         input: UpdateNonFungibleMutableDataInput,
     ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
         let invocation = Invocation {
-            snode_ref: SNodeRef::NonFungible(input.non_fungible_address),
+            snode_ref: SNodeRef::Resource(input.non_fungible_address.resource_address()),
             function: "update_non_fungible_mutable_data".to_string(),
-            args: vec![ScryptoValue::from_value(&input.new_mutable_data)],
+            args: vec![
+                ScryptoValue::from_value(&input.non_fungible_address.non_fungible_id()),
+                ScryptoValue::from_value(&input.new_mutable_data),
+            ],
         };
         let _ = self.call(invocation)?;
         Ok(UpdateNonFungibleMutableDataOutput {})

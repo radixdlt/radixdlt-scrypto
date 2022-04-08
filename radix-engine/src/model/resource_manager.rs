@@ -273,6 +273,21 @@ impl ResourceManager {
                     .map_err(RuntimeError::ResourceManagerError)?;
                 Ok(Option::None)
             }
+            "update_non_fungible_mutable_data" => {
+                let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
+                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+                let new_mutable_data: Vec<u8> = scrypto_decode(&args[1].raw)
+                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+
+                let non_fungible_address = NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
+                let data = Self::process_non_fungible_data(&new_mutable_data)
+                    .map_err(RuntimeError::ResourceManagerError)?;
+                track
+                    .get_non_fungible_mut(&non_fungible_address)
+                    .ok_or(RuntimeError::NonFungibleNotFound(non_fungible_address))?
+                    .set_mutable_data(data.raw);
+                Ok(Option::None)
+            }
             _ => Err(RuntimeError::IllegalSystemCall),
         }
     }
