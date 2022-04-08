@@ -59,8 +59,6 @@ pub const PUT_INTO_VAULT: u32 = 0x41;
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource address
 pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
-/// Take a non-fungible from this vault, by id
-pub const TAKE_NON_FUNGIBLES_FROM_VAULT: u32 = 0x45;
 /// Get the IDs of all non-fungibles in this vault
 pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
@@ -361,17 +359,6 @@ pub struct GetVaultResourceAddressInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetVaultResourceAddressOutput {
     pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromVaultInput {
-    pub vault_id: VaultId,
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromVaultOutput {
-    pub bucket_id: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

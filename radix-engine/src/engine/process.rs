@@ -861,7 +861,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     ScryptoActor::Component(component_address) => {
                         let component =
-                            self.track.get_component(component_address.clone()).unwrap();
+                            self.track.get_component(component_address.clone())
+                                .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
                         let component_state = component.state().to_vec();
@@ -1814,20 +1815,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_take_non_fungibles_from_vault(
-        &mut self,
-        input: TakeNonFungiblesFromVaultInput,
-    ) -> Result<TakeNonFungiblesFromVaultOutput, RuntimeError> {
-        let result = self.call(
-            SNodeRef::Vault(input.vault_id.clone()),
-            "take_non_fungibles_from_vault".to_string(),
-            vec![ScryptoValue::from_value(&input.non_fungible_ids)],
-        )?;
-        Ok(TakeNonFungiblesFromVaultOutput {
-            bucket_id: result.bucket_ids[0],
-        })
-    }
-
     fn handle_get_non_fungible_ids_in_vault(
         &mut self,
         input: GetNonFungibleIdsInVaultInput,
@@ -2229,9 +2216,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)
-                    }
-                    TAKE_NON_FUNGIBLES_FROM_VAULT => {
-                        self.handle(args, Self::handle_take_non_fungibles_from_vault)
                     }
                     GET_NON_FUNGIBLE_IDS_IN_VAULT => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_vault)

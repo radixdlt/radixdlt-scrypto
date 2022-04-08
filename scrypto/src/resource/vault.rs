@@ -1,6 +1,6 @@
 use sbor::*;
 use crate::args;
-use crate::buffer::scrypto_decode;
+use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
 
 use crate::crypto::*;
@@ -15,6 +15,7 @@ use crate::rust::str::FromStr;
 use crate::rust::string::ToString;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::rust::vec;
 use crate::types::*;
 
 /// Represents a persistent resource container on ledger state.
@@ -78,14 +79,14 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
     pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
-        let input = TakeNonFungiblesFromVaultInput {
-            vault_id: self.0,
-            non_fungible_ids: non_fungible_ids.clone(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Vault(self.0),
+            function: "take_non_fungibles_from_vault".to_string(),
+            args: vec![scrypto_encode(non_fungible_ids)]
         };
-        let output: TakeNonFungiblesFromVaultOutput =
-            call_engine(TAKE_NON_FUNGIBLES_FROM_VAULT, input);
-
-        Bucket(output.bucket_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
+        bucket
     }
 
     /// Creates an ownership proof of this vault.
