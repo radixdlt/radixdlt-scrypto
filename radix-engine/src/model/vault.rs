@@ -1,9 +1,13 @@
 use sbor::*;
+use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
+use scrypto::rust::vec::Vec;
 use scrypto::rust::rc::Rc;
+use scrypto::values::ScryptoValue;
+use crate::errors::RuntimeError;
 
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -131,5 +135,33 @@ impl Vault {
 
     fn borrow_container_mut(&mut self) -> RefMut<ResourceContainer> {
         self.container.borrow_mut()
+    }
+
+    pub fn main(
+        &mut self,
+        function: &str,
+        args: Vec<ScryptoValue>,
+    ) -> Result<Option<Bucket>, RuntimeError> {
+        match function {
+            "take_from_vault" => {
+                let amount: Decimal = scrypto_decode(&args[0].raw)
+                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+                let new_bucket = self
+                    .take(amount)
+                    .map_err(RuntimeError::VaultError)?;
+                Ok(Some(new_bucket))
+
+            }
+            "take_non_fungibles_from_vault" => {
+                let non_fungible_ids: BTreeSet<NonFungibleId> =
+                    scrypto_decode(&args[0].raw)
+                        .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+                let new_bucket = self
+                    .take_non_fungibles(&non_fungible_ids)
+                    .map_err(RuntimeError::VaultError)?;
+                Ok(Some(new_bucket))
+            }
+            _ => Err(RuntimeError::IllegalSystemCall),
+        }
     }
 }

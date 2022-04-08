@@ -815,13 +815,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Ok(ScryptoValue::from_value(&()))
                 }
             }
-            SNodeState::Bucket(bucket) => match function.as_str() {
-                "burn" => {
-                    bucket.drop(self.track);
-                    Ok(ScryptoValue::from_value(&()))
-                }
-                _ => Err(RuntimeError::IllegalSystemCall),
-            },
+
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
@@ -944,7 +938,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !force {
             let proofs_vector = match &snode {
                 // Same process auth check
-                SNodeState::Vault(_) => vec![self.caller_auth_zone, &self.auth_zone],
+                SNodeState::Vault(_) | SNodeState::Bucket(_)  => vec![self.caller_auth_zone, &self.auth_zone],
                 // Extern call auth check
                 _ => vec![self.auth_zone.as_slice()],
             };
@@ -956,37 +950,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Execution
         let result = match snode {
-            SNodeState::Vault(vault_id) => match invocation.function.as_str() {
-                "take_from_vault" => {
-                    let amount: Decimal = scrypto_decode(&invocation.args[0].raw)
-                        .map_err(|e| RuntimeError::InvalidRequestData(e))?;
-
-                    let new_bucket = self
-                        .get_local_vault(&vault_id)?
-                        .take(amount)
-                        .map_err(RuntimeError::VaultError)?;
-
+            SNodeState::Vault(vault_id) => {
+                let vault = self.get_local_vault(&vault_id)?;
+                let maybe_bucket = vault.main(invocation.function.as_str(), invocation.args)?;
+                if let Some(bucket) = maybe_bucket {
                     let bucket_id = self.new_bucket_id()?;
-                    self.buckets.insert(bucket_id, new_bucket);
+                    self.buckets.insert(bucket_id, bucket);
                     Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                         bucket_id,
                     )))
+                } else {
+                    Ok(ScryptoValue::from_value(&()))
                 }
-                "take_non_fungibles_from_vault" => {
-                    let non_fungible_ids: BTreeSet<NonFungibleId> =
-                        scrypto_decode(&invocation.args[0].raw)
-                            .map_err(|e| RuntimeError::InvalidRequestData(e))?;
-
-                    let new_bucket = self
-                        .get_local_vault(&vault_id)?
-                        .take_non_fungibles(&non_fungible_ids)
-                        .map_err(RuntimeError::VaultError)?;
-
-                    let bucket_id = self.new_bucket_id()?;
-                    self.buckets.insert(bucket_id, new_bucket);
-                    Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                        bucket_id,
-                    )))
+            },
+            SNodeState::Bucket(bucket) => match invocation.function.as_str() {
+                "burn" => {
+                    bucket.drop(self.track);
+                    Ok(ScryptoValue::from_value(&()))
                 }
                 _ => Err(RuntimeError::IllegalSystemCall),
             },
