@@ -1,5 +1,4 @@
 use crate::engine::Track;
-use crate::errors::RuntimeError;
 use crate::ledger::SubstateStore;
 use crate::model::Bucket;
 use crate::model::NonFungible;
@@ -28,6 +27,9 @@ pub enum ResourceManagerError {
     MaxMintAmountExceeded,
     InvalidNonFungibleData,
     NonFungibleAlreadyExists(NonFungibleAddress),
+    NonFungibleNotFound(NonFungibleAddress),
+    InvalidRequestData(DecodeError),
+    MethodNotFound(String),
 }
 
 /// The definition of a resource.
@@ -240,56 +242,51 @@ impl ResourceManager {
         }
     }
 
-    #[allow(non_snake_case)]
-    pub fn ResourceManager_main<'s, S>(
+    pub fn main<'s, S: SubstateStore>(
         &mut self,
         resource_address: ResourceAddress,
         function: &str,
         args: Vec<ScryptoValue>,
         track: &mut Track<'s, S>,
-    ) -> Result<Option<Bucket>, RuntimeError>
-    where
-        S: SubstateStore,
-    {
+    ) -> Result<Option<Bucket>, ResourceManagerError> {
         match function {
             "mint" => {
                 // TODO: cleanup
                 let mint_params: MintParams = scrypto_decode(&args[0].raw)
-                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let container = match mint_params {
                     MintParams::Fungible { amount } => self.mint(amount, resource_address.clone()),
                     MintParams::NonFungible { entries } => {
                         self.mint_non_fungibles(entries, resource_address.clone(), track)
                     }
-                }
-                .map_err(RuntimeError::ResourceManagerError)?;
+                }?;
 
                 Ok(Option::Some(Bucket::new(container)))
             }
             "update_metadata" => {
                 let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
-                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
-                self.update_metadata(new_metadata)
-                    .map_err(RuntimeError::ResourceManagerError)?;
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                self.update_metadata(new_metadata)?;
                 Ok(Option::None)
             }
             "update_non_fungible_mutable_data" => {
                 let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
-                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let new_mutable_data: Vec<u8> = scrypto_decode(&args[1].raw)
-                    .map_err(|e| RuntimeError::InvalidRequestData(e))?;
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
-                let data = Self::process_non_fungible_data(&new_mutable_data)
-                    .map_err(RuntimeError::ResourceManagerError)?;
+                let data = Self::process_non_fungible_data(&new_mutable_data)?;
                 track
                     .get_non_fungible_mut(&non_fungible_address)
-                    .ok_or(RuntimeError::NonFungibleNotFound(non_fungible_address))?
+                    .ok_or(ResourceManagerError::NonFungibleNotFound(
+                        non_fungible_address,
+                    ))?
                     .set_mutable_data(data.raw);
                 Ok(Option::None)
             }
-            _ => Err(RuntimeError::IllegalSystemCall),
+            _ => Err(ResourceManagerError::MethodNotFound(function.to_string())),
         }
     }
 }

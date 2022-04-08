@@ -467,12 +467,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     ) -> Result<Option<Bucket>, RuntimeError> {
         if let Some(substate_update) = self.resource_managers.remove(resource_address) {
             let mut resource_manager: ResourceManager = substate_update.value;
-            let result = resource_manager.ResourceManager_main(
-                resource_address.clone(),
-                function,
-                args,
-                self,
-            )?;
+            let result = resource_manager
+                .main(resource_address.clone(), function, args, self)
+                .map_err(RuntimeError::ResourceManagerError)?;
             self.resource_managers.insert(
                 resource_address.clone(),
                 SubstateUpdate {
