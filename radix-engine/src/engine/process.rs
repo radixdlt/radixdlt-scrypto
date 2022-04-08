@@ -2,7 +2,7 @@ use colored::*;
 
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::core::ScryptoActor;
+use scrypto::core::{ScryptoActor,SNodeRef};
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
@@ -64,14 +64,6 @@ pub enum SNodeState {
     Vault(VaultId),
 }
 
-#[derive(Debug, Clone)]
-pub enum SNodeRef {
-    Scrypto(ScryptoActor),
-    Resource(ResourceAddress),
-    Bucket(BucketId),
-    Vault(VaultId),
-}
-
 /// Represents an interpreter instance.
 pub struct Interpreter {
     actor: ScryptoActorInfo,
@@ -81,14 +73,6 @@ pub struct Interpreter {
     memory: MemoryRef,
 }
 
-/// Keeps invocation information.
-#[allow(dead_code)]
-#[derive(Debug, Clone)]
-pub struct Invocation {
-    snode_ref: SNodeRef,
-    function: String,
-    args: Vec<ScryptoValue>,
-}
 
 /// Qualitative states for a WASM process
 #[derive(Debug)]
