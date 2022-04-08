@@ -75,7 +75,11 @@ fn cannot_burn_with_wrong_auth() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account_by_amount(Decimal::from(2), token_resource_address, account)
-        .burn(Decimal::one(), token_resource_address, token_resource_address)
+        .burn(
+            Decimal::one(),
+            token_resource_address,
+            token_resource_address,
+        )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(&[pk])
         .unwrap()
@@ -101,7 +105,11 @@ fn can_burn_with_auth() {
         .new_transaction_builder()
         .withdraw_from_account_by_amount(Decimal::one(), auth_token_resource_address, account)
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
-        .burn(Decimal::one(), token_resource_address, auth_token_resource_address)
+        .burn(
+            Decimal::one(),
+            token_resource_address,
+            auth_token_resource_address,
+        )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(&[pk])
         .unwrap()

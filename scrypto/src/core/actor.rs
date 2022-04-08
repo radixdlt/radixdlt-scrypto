@@ -19,7 +19,11 @@ pub struct ScryptoActorInfo {
 }
 
 impl ScryptoActorInfo {
-    pub fn blueprint(package_address: PackageAddress, blueprint_name: String, export_name: String) -> Self {
+    pub fn blueprint(
+        package_address: PackageAddress,
+        blueprint_name: String,
+        export_name: String,
+    ) -> Self {
         Self {
             package_address,
             blueprint_name,
@@ -28,7 +32,12 @@ impl ScryptoActorInfo {
         }
     }
 
-    pub fn component(package_address: PackageAddress, blueprint_name: String, export_name: String, component_address: ComponentAddress) -> Self {
+    pub fn component(
+        package_address: PackageAddress,
+        blueprint_name: String,
+        export_name: String,
+        component_address: ComponentAddress,
+    ) -> Self {
         Self {
             package_address,
             blueprint_name,

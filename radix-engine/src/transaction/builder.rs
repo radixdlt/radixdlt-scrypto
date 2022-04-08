@@ -555,7 +555,7 @@ impl<'a, A: AbiProvider + NonceProvider> TransactionBuilder<'a, A> {
                 args: vec![
                     scrypto_encode(&amount),
                     scrypto_encode(&resource_address),
-                    scrypto_encode(&scrypto::resource::Bucket(bucket_id))
+                    scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
                 ],
             });
             builder

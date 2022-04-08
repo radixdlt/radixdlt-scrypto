@@ -418,10 +418,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     // TODO: Separate out method auth substates
-    pub fn get_resource_method_auth(&mut self, resource_address: &ResourceAddress, method_name: &str) -> Result<&MethodAuthorization, RuntimeError> {
-        let resource_manager = self
-            .get_resource_manager(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))?;
+    pub fn get_resource_method_auth(
+        &mut self,
+        resource_address: &ResourceAddress,
+        method_name: &str,
+    ) -> Result<&MethodAuthorization, RuntimeError> {
+        let resource_manager = self.get_resource_manager(&resource_address).ok_or(
+            RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+        )?;
         Ok(resource_manager.get_auth(method_name))
     }
 
@@ -467,12 +471,15 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 resource_address.clone(),
                 function,
                 args,
-                self
+                self,
             )?;
-            self.resource_managers.insert(resource_address.clone(), SubstateUpdate {
-                prev_id: substate_update.prev_id,
-                value: resource_manager,
-            });
+            self.resource_managers.insert(
+                resource_address.clone(),
+                SubstateUpdate {
+                    prev_id: substate_update.prev_id,
+                    value: resource_manager,
+                },
+            );
             Ok(result)
         } else {
             panic!("Resource Manager not found");

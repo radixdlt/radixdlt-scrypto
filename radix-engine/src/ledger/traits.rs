@@ -178,7 +178,9 @@ pub trait SubstateStore {
             )
             .unwrap();
             self.put_encoded_substate(&RADIX_TOKEN, &xrd, id_gen.next());
-            let minted_xrd = xrd.mint( XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone()).unwrap();
+            let minted_xrd = xrd
+                .mint(XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone())
+                .unwrap();
 
             let mut ecdsa_resource_auth = HashMap::new();
             ecdsa_resource_auth.insert(TakeFromVault, auth!(allow_all));

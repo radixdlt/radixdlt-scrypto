@@ -113,15 +113,12 @@ impl Package {
     }
 
     pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
-        self
-            .blueprints
+        self.blueprints
             .get(blueprint_name)
             .ok_or(PackageError::BlueprintNotFound)
     }
 
-    pub fn load_module(
-        &self,
-    ) -> Result<(ModuleRef, MemoryRef), PackageError> {
+    pub fn load_module(&self) -> Result<(ModuleRef, MemoryRef), PackageError> {
         let module = Self::parse_module(&self.code).unwrap();
         let inst = Self::instantiate_module(&module).unwrap();
         Ok(inst)
