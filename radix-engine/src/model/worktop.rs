@@ -40,6 +40,8 @@ impl Worktop {
                 .take_by_amount(amount)
                 .map(Bucket::new)
                 .map(Option::Some)
+        } else if !amount.is_zero() {
+            Err(ResourceContainerError::InsufficientBalance)
         } else {
             Ok(None)
         }
@@ -55,6 +57,8 @@ impl Worktop {
                 .take_by_ids(ids)
                 .map(Bucket::new)
                 .map(Option::Some)
+        } else if !ids.is_empty() {
+            Err(ResourceContainerError::InsufficientBalance)
         } else {
             Ok(None)
         }
