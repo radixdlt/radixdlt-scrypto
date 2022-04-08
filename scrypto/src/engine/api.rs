@@ -17,8 +17,6 @@ extern "C" {
 
 /// Publish a code package
 pub const PUBLISH_PACKAGE: u32 = 0x00;
-/// Call a function
-pub const CALL_FUNCTION: u32 = 0x01;
 /// Call a method
 pub const CALL_METHOD: u32 = 0x02;
 
@@ -146,19 +144,6 @@ pub struct PublishPackageInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PublishPackageOutput {
     pub package_address: PackageAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CallFunctionInput {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
-    pub function: String,
-    pub args: Vec<Vec<u8>>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CallFunctionOutput {
-    pub rtn: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

@@ -1321,35 +1321,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PublishPackageOutput { package_address })
     }
 
-    fn handle_call_function(
-        &mut self,
-        input: CallFunctionInput,
-    ) -> Result<CallFunctionOutput, RuntimeError> {
-        let mut validated_args = Vec::new();
-        for arg in input.args {
-            validated_args.push(
-                ScryptoValue::from_slice(&arg).map_err(RuntimeError::ParseScryptoValueError)?,
-            );
-        }
-
-        re_debug!(
-            self,
-            "CALL started: package_address = {}, blueprint_name = {}, function = {}, args = {:?}",
-            input.package_address,
-            input.blueprint_name,
-            input.function,
-            validated_args
-        );
-        let result = self.call_function(
-            input.package_address,
-            &input.blueprint_name,
-            &input.function,
-            validated_args,
-        );
-        re_debug!(self, "CALL finished");
-        Ok(CallFunctionOutput { rtn: result?.raw })
-    }
-
     fn handle_call_method(
         &mut self,
         input: CallMethodInput,
@@ -2190,7 +2161,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
                     PUBLISH_PACKAGE => self.handle(args, Self::handle_publish),
-                    CALL_FUNCTION => self.handle(args, Self::handle_call_function),
                     CALL_METHOD => self.handle(args, Self::handle_call_method),
 
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
