@@ -28,7 +28,7 @@ fn can_create_clone_and_drop_bucket_proof() {
         )
         .unwrap()
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -63,8 +63,8 @@ fn can_create_clone_and_drop_vault_proof() {
             "create_clone_drop_vault_proof",
             vec![scrypto_encode(&Decimal::one())],
         )
-        .build(test_runner.get_nonce(&[]))
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -102,8 +102,8 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
             &test_runner.export_abi_by_component(component_address),
         )
         .unwrap()
-        .build(test_runner.get_nonce(&[]))
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -143,8 +143,8 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
             "create_clone_drop_vault_proof_by_ids",
             args![total_ids, proof_ids],
         )
-        .build(test_runner.get_nonce(&[]))
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -178,7 +178,7 @@ fn can_use_bucket_for_authorization() {
         )
         .unwrap()
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -217,7 +217,7 @@ fn can_use_vault_for_authorization() {
             &test_runner.export_abi_by_component(component_address),
         )
         .unwrap()
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -248,7 +248,7 @@ fn can_create_proof_from_account_and_pass_on() {
             &test_runner.export_abi(package_address, "VaultProof"),
         )
         .unwrap()
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -279,7 +279,7 @@ fn cant_move_restricted_proof() {
             &test_runner.export_abi(package_address, "VaultProof"),
         )
         .unwrap()
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -321,7 +321,7 @@ fn can_compose_bucket_and_vault_proof() {
                 args![Bucket(bucket_id)],
             )
         })
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -360,7 +360,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
                 args![Bucket(bucket_id), Decimal::from(2)],
             )
         })
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -409,7 +409,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 )
             },
         )
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -444,8 +444,8 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
             "create_clone_drop_vault_proof_by_amount",
             args![Decimal::from(3), Decimal::from(1)],
         )
-        .build(test_runner.get_nonce(&[]))
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
 
@@ -491,7 +491,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 )
             },
         )
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);

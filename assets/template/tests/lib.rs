@@ -13,8 +13,8 @@ fn test_hello() {
     // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new()
         .call_function(package, "Hello", "instantiate_hello", args![])
-        .build(executor.get_nonce(&[pk]))
-        .sign(&[&sk]);
+        .build(executor.get_nonce([pk]))
+        .sign([&sk]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
     println!("{:?}\n", receipt1);
     assert!(receipt1.result.is_ok());
@@ -24,8 +24,8 @@ fn test_hello() {
     let transaction2 = TransactionBuilder::new()
         .call_method(component, "free_token", args![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(executor.get_nonce(&[pk]))
-        .sign(&[&sk]);
+        .build(executor.get_nonce([pk]))
+        .sign([&sk]);
     let receipt2 = executor.validate_and_execute(&transaction2).unwrap();
     println!("{:?}\n", receipt2);
     assert!(receipt2.result.is_ok());

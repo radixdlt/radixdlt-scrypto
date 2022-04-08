@@ -26,8 +26,8 @@ fn test_bucket() {
         .call_function(package, "BucketTest", "test_burn", args![])
         .call_function(package, "BucketTest", "test_burn_freely", args![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(executor.get_nonce(&[]))
-        .sign(&[]);
+        .build(executor.get_nonce([]))
+        .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     assert!(receipt.result.is_ok());
 }
@@ -47,8 +47,8 @@ fn test_bucket_of_badges() {
         .call_function(package, "BadgeTest", "borrow", args![])
         .call_function(package, "BadgeTest", "query", args![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(executor.get_nonce(&[]))
-        .sign(&[]);
+        .build(executor.get_nonce([]))
+        .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     assert!(receipt.result.is_ok());
 }
@@ -74,7 +74,7 @@ fn test_take_with_invalid_granularity() {
             &test_runner.export_abi(package_address, "BucketTest"),
         )
         .unwrap()
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);
@@ -109,7 +109,7 @@ fn test_take_with_negative_amount() {
             &test_runner.export_abi(package_address, "BucketTest"),
         )
         .unwrap()
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     println!("{:?}", receipt);

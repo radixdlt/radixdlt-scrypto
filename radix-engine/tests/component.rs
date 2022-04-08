@@ -15,8 +15,8 @@ fn test_package() {
     let transaction1 = test_runner
         .new_transaction_builder()
         .call_function(package, "PackageTest", "publish", args![])
-        .build(test_runner.get_nonce(&[]))
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     assert!(receipt1.result.is_ok());
 }
@@ -32,8 +32,8 @@ fn test_component() {
     let transaction1 = test_runner
         .new_transaction_builder()
         .call_function(package, "ComponentTest", "create_component", args![])
-        .build(test_runner.get_nonce(&[]))
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
     assert!(receipt1.result.is_ok());
 
@@ -52,7 +52,7 @@ fn test_component() {
         .call_method(component, "get_component_state", args![])
         .call_method(component, "put_component_state", args![])
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(test_runner.get_nonce(&[pk]))
+        .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
     receipt2.result.expect("Should be okay.");
@@ -74,8 +74,8 @@ fn invalid_blueprint_name_should_cause_error() {
             "create_component",
             vec![],
         )
-        .build(test_runner.get_nonce(&[]))
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
