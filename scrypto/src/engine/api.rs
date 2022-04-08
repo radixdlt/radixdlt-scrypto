@@ -40,8 +40,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create resource
 pub const CREATE_RESOURCE: u32 = 0x30;
-/// Mint resource
-pub const MINT_RESOURCE: u32 = 0x31;
 /// Burn resource
 pub const BURN_RESOURCE: u32 = 0x32;
 /// Update non-fungible metadata
@@ -277,17 +275,6 @@ pub struct CreateResourceInput {
 pub struct CreateResourceOutput {
     pub resource_address: ResourceAddress,
     pub bucket_id: Option<BucketId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct MintResourceInput {
-    pub resource_address: ResourceAddress,
-    pub mint_params: MintParams,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct MintResourceOutput {
-    pub bucket_id: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

@@ -1837,21 +1837,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_mint_resource(
-        &mut self,
-        input: MintResourceInput,
-    ) -> Result<MintResourceOutput, RuntimeError> {
-        let snode_ref = SNodeRef::Resource(input.resource_address.clone());
-        let result = self.call(
-            snode_ref,
-            "mint".to_string(),
-            vec![ScryptoValue::from_value(&input.mint_params)],
-        )?;
-        Ok(MintResourceOutput {
-            bucket_id: result.bucket_ids[0],
-        })
-    }
-
     fn handle_burn_resource(
         &mut self,
         input: BurnResourceInput,
@@ -2282,7 +2267,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
                     }
-                    MINT_RESOURCE => self.handle(args, Self::handle_mint_resource),
                     BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
                     UPDATE_NON_FUNGIBLE_MUTABLE_DATA => {
                         self.handle(args, Self::handle_update_non_fungible_mutable_data)

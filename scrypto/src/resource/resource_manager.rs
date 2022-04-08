@@ -1,4 +1,7 @@
 use sbor::*;
+use crate::args;
+use crate::buffer::scrypto_decode;
+use crate::core::SNodeRef;
 
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
@@ -9,6 +12,7 @@ use crate::rust::collections::HashMap;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
+use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -34,15 +38,15 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 impl ResourceManager {
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
-        let input = MintResourceInput {
-            resource_address: self.0,
-            mint_params: MintParams::Fungible {
-                amount: amount.into(),
-            },
+        let snode_ref = SNodeRef::Resource(self.0);
+        let input = InvokeSNodeInput {
+            snode_ref,
+            function: "mint".to_string(),
+            args: args![MintParams::Fungible { amount: amount.into() }]
         };
-        let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
-
-        Bucket(output.bucket_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
+        bucket
     }
 
     /// Mints non-fungible resources
@@ -50,13 +54,15 @@ impl ResourceManager {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
 
-        let input = MintResourceInput {
-            resource_address: self.0,
-            mint_params: MintParams::NonFungible { entries },
+        let snode_ref = SNodeRef::Resource(self.0);
+        let input = InvokeSNodeInput {
+            snode_ref,
+            function: "mint".to_string(),
+            args: args![MintParams::NonFungible { entries }]
         };
-        let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
-
-        Bucket(output.bucket_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
+        bucket
     }
 
     /// Burns a bucket of resources.
