@@ -180,7 +180,7 @@ pub enum RuntimeError {
     BucketError(ResourceContainerError),
 
     /// Vault access error.
-    VaultError(ResourceContainerError),
+    VaultError(VaultError),
 
     /// Worktop access error.
     WorktopError(ResourceContainerError),

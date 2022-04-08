@@ -954,7 +954,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = match snode {
             SNodeState::Vault(vault_id) => {
                 let vault = self.get_local_vault(&vault_id)?;
-                let maybe_bucket = vault.main(invocation.function.as_str(), invocation.args)?;
+                let maybe_bucket = vault.main(invocation.function.as_str(), invocation.args)
+                    .map_err(RuntimeError::VaultError)?;
                 if let Some(bucket) = maybe_bucket {
                     let bucket_id = self.new_bucket_id()?;
                     self.buckets.insert(bucket_id, bucket);
@@ -1811,7 +1812,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         self.get_local_vault(&input.vault_id)?
             .put(bucket)
-            .map_err(RuntimeError::VaultError)?;
+            .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?;
 
         Ok(PutIntoVaultOutput {})
     }
@@ -1910,7 +1911,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let vault = self.get_local_vault(&input.vault_id)?;
         let non_fungible_ids = vault
             .total_ids()
-            .map_err(RuntimeError::VaultError)?
+            .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?
             .into_iter()
             .collect();
 
