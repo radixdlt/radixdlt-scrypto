@@ -3,6 +3,8 @@ use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
+use crate::engine::Track;
+use crate::ledger::SubstateStore;
 
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -131,11 +133,26 @@ impl Bucket {
             .map(|c| c.into_inner())
     }
 
+
     fn borrow_container(&self) -> Ref<ResourceContainer> {
         self.container.borrow()
     }
 
     fn borrow_container_mut(&mut self) -> RefMut<ResourceContainer> {
         self.container.borrow_mut()
+    }
+
+    #[allow(non_snake_case)]
+    pub fn drop<'s, S: SubstateStore>(
+        self,
+        track: &mut Track<'s, S>,
+    ) {
+        let resource_address = self.resource_address();
+        let resource_manager = track.get_resource_manager_mut(&resource_address).unwrap();
+        // Notify resource manager, TODO: Should not need to notify manually
+        resource_manager.burn(self.total_amount());
+        if matches!(resource.resource_type(), ResourceType::NonFungible) {
+            // FIXME: remove the non-fungibles from the state
+        }
     }
 }

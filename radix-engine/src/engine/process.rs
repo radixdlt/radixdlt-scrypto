@@ -819,10 +819,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
             SNodeState::Bucket(bucket) => match function.as_str() {
                 "burn" => {
-                    self.burn_resource(
-                        bucket.into_container().map_err(RuntimeError::BucketError)?,
-                    )?;
-
+                    bucket.drop(self.track);
                     Ok(ScryptoValue::from_value(&()))
                 }
                 _ => Err(RuntimeError::IllegalSystemCall),
@@ -1155,23 +1152,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         #[cfg(not(feature = "alloc"))]
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
-    }
-
-    fn burn_resource(&mut self, resource: ResourceContainer) -> Result<(), RuntimeError> {
-        let resource_address = resource.resource_address();
-        let resource_manager = self
-            .track
-            .get_resource_manager_mut(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-
-        // Notify resource manager
-        resource_manager.burn(resource.total_amount());
-
-        if matches!(resource.resource_type(), ResourceType::NonFungible) {
-            // FIXME: remove the non-fungibles from the state
-        }
-
-        Ok(())
     }
 
     fn process_call_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
