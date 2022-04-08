@@ -460,7 +460,6 @@ impl SignedTransaction {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
-    use scrypto::buffer::*;
     use scrypto::engine::types::ComponentAddress;
     use scrypto::rust::borrow::ToOwned;
     use scrypto::rust::marker::PhantomData;

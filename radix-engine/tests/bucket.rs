@@ -122,3 +122,34 @@ fn test_take_with_negative_amount() {
         ))
     );
 }
+
+#[test]
+fn create_empty_bucket() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (pk, sk, account) = test_runner.new_account();
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .take_from_worktop(scrypto::prelude::RADIX_TOKEN, |builder, _bucket_id| builder)
+        .take_from_worktop_by_amount(
+            Decimal::zero(),
+            scrypto::prelude::RADIX_TOKEN,
+            |builder, _bucket_id| builder,
+        )
+        .take_from_worktop_by_ids(
+            &BTreeSet::new(),
+            scrypto::prelude::RADIX_TOKEN,
+            |builder, _bucket_id| builder,
+        )
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build(test_runner.get_nonce(&[pk]))
+        .sign(&[sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
+    println!("{:?}", receipt);
+
+    // Assert
+    assert!(receipt.result.is_ok());
+}

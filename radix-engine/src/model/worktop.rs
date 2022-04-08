@@ -34,31 +34,29 @@ impl Worktop {
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
-    ) -> Result<Bucket, ResourceContainerError> {
+    ) -> Result<Option<Bucket>, ResourceContainerError> {
         if let Some(mut container) = self.borrow_container_mut(resource_address) {
-            container.take_by_amount(amount).map(Bucket::new)
+            container
+                .take_by_amount(amount)
+                .map(Bucket::new)
+                .map(Option::Some)
         } else {
-            Err(ResourceContainerError::InsufficientBalance)
+            Ok(None)
         }
-    }
-
-    pub fn take_non_fungible(
-        &mut self,
-        id: &NonFungibleId,
-        resource_address: ResourceAddress,
-    ) -> Result<Bucket, ResourceContainerError> {
-        self.take_non_fungibles(&BTreeSet::from([id.clone()]), resource_address)
     }
 
     pub fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
-    ) -> Result<Bucket, ResourceContainerError> {
+    ) -> Result<Option<Bucket>, ResourceContainerError> {
         if let Some(mut container) = self.borrow_container_mut(resource_address) {
-            container.take_by_ids(ids).map(Bucket::new)
+            container
+                .take_by_ids(ids)
+                .map(Bucket::new)
+                .map(Option::Some)
         } else {
-            Err(ResourceContainerError::InsufficientBalance)
+            Ok(None)
         }
     }
 
