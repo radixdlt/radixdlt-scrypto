@@ -1837,15 +1837,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_burn_resource(
-        &mut self,
-        input: BurnResourceInput,
-    ) -> Result<BurnResourceOutput, RuntimeError> {
-        let snode_ref = SNodeRef::Bucket(input.bucket_id.clone());
-        let _ = self.call(snode_ref, "burn".to_string(), vec![])?;
-        Ok(BurnResourceOutput {})
-    }
-
     fn handle_take_from_vault(
         &mut self,
         input: TakeFromVaultInput,
@@ -2267,7 +2258,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
                     }
-                    BURN_RESOURCE => self.handle(args, Self::handle_burn_resource),
                     UPDATE_NON_FUNGIBLE_MUTABLE_DATA => {
                         self.handle(args, Self::handle_update_non_fungible_mutable_data)
                     }

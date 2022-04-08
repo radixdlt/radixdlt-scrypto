@@ -38,9 +38,8 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 impl ResourceManager {
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
-        let snode_ref = SNodeRef::Resource(self.0);
         let input = InvokeSNodeInput {
-            snode_ref,
+            snode_ref: SNodeRef::Resource(self.0),
             function: "mint".to_string(),
             args: args![MintParams::Fungible { amount: amount.into() }]
         };
@@ -54,9 +53,8 @@ impl ResourceManager {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
 
-        let snode_ref = SNodeRef::Resource(self.0);
         let input = InvokeSNodeInput {
-            snode_ref,
+            snode_ref: SNodeRef::Resource(self.0),
             function: "mint".to_string(),
             args: args![MintParams::NonFungible { entries }]
         };
@@ -67,10 +65,12 @@ impl ResourceManager {
 
     /// Burns a bucket of resources.
     pub fn burn(&self, bucket: Bucket) {
-        let input = BurnResourceInput {
-            bucket_id: bucket.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Bucket(bucket.0),
+            function: "burn".to_string(),
+            args: args![]
         };
-        let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
+        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }
 
     /// Returns the resource type.

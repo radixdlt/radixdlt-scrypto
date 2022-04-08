@@ -40,8 +40,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create resource
 pub const CREATE_RESOURCE: u32 = 0x30;
-/// Burn resource
-pub const BURN_RESOURCE: u32 = 0x32;
 /// Update non-fungible metadata
 pub const UPDATE_NON_FUNGIBLE_MUTABLE_DATA: u32 = 0x33;
 /// Update resource metadata
@@ -276,14 +274,6 @@ pub struct CreateResourceOutput {
     pub resource_address: ResourceAddress,
     pub bucket_id: Option<BucketId>,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BurnResourceInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BurnResourceOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetResourceMetadataInput {
