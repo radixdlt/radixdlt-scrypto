@@ -21,7 +21,7 @@ impl SetDefaultAccount {
         set_configs(&Configs {
             default_account: self.component_address,
             default_public_key: self.public_key,
-            default_private_key: self.private_key.clone(),
+            default_private_key: self.private_key.to_string(),
         })?;
 
         println!("Default account updated!");

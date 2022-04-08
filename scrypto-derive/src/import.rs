@@ -322,7 +322,6 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 "LazyMap" => "::scrypto::component::LazyMap",
                 "Hash" => "::scrypto::crypto::Hash",
                 "EcdsaPublicKey" => "::scrypto::crypto::EcdsaPublicKey",
-                "EcdsaPrivateKey" => "::scrypto::crypto::EcdsaPrivateKey",
                 "EcdsaSignature" => "::scrypto::crypto::EcdsaSignature",
                 "Decimal" => "::scrypto::math::Decimal",
                 "Bucket" => "::scrypto::resource::Bucket",

@@ -110,7 +110,6 @@ pub enum ScryptoCustomValueCheckError {
     InvalidResourceAddress(ParseResourceAddressError),
     InvalidHash(ParseHashError),
     InvalidEcdsaPublicKey(ParseEcdsaPublicKeyError),
-    InvalidEcdsaPrivateKey(ParseEcdsaPrivateKeyError),
     InvalidEcdsaSignature(ParseEcdsaSignatureError),
     InvalidBucket(ParseBucketError),
     InvalidProof(ParseProofError),
@@ -156,10 +155,6 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             ScryptoType::EcdsaPublicKey => {
                 EcdsaPublicKey::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEcdsaPublicKey)?;
-            }
-            ScryptoType::EcdsaPrivateKey => {
-                EcdsaPrivateKey::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidEcdsaPrivateKey)?;
             }
             ScryptoType::EcdsaSignature => {
                 EcdsaSignature::try_from(data)
@@ -376,12 +371,6 @@ impl ScryptoValueFormatter {
                 format!(
                     "EcdsaPublicKey(\"{}\")",
                     EcdsaPublicKey::try_from(data).unwrap()
-                )
-            }
-            ScryptoType::EcdsaPrivateKey => {
-                format!(
-                    "EcdsaPrivateKey(\"{}\")",
-                    EcdsaPrivateKey::try_from(data).unwrap()
                 )
             }
             ScryptoType::EcdsaSignature => {

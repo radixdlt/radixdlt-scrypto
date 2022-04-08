@@ -53,7 +53,6 @@ pub enum ScryptoType {
     // crypto
     Hash,
     EcdsaPublicKey,
-    EcdsaPrivateKey,
     EcdsaSignature,
 
     // math
@@ -69,13 +68,12 @@ pub enum ScryptoType {
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(ScryptoType, u8, &str); 14] = [
+const MAPPING: [(ScryptoType, u8, &str); 13] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"),
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"),
     (ScryptoType::LazyMap, 0x82, "LazyMap"),
     (ScryptoType::Hash, 0x90, "Hash"),
     (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"),
-    (ScryptoType::EcdsaPrivateKey, 0x92, "EcdsaPrivateKey"),
     (ScryptoType::EcdsaSignature, 0x93, "EcdsaSignature"),
     (ScryptoType::Decimal, 0xa1, "Decimal"),
     (ScryptoType::Bucket, 0xb1, "Bucket"),

@@ -26,7 +26,7 @@ impl NewAccount {
             set_configs(&Configs {
                 default_account: account,
                 default_public_key: public_key,
-                default_private_key: private_key,
+                default_private_key: private_key.to_string(),
             })?;
         }
 

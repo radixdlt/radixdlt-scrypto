@@ -191,9 +191,6 @@ impl EcdsaPrivateKey {
     }
 }
 
-// Temporarily for simulator
-scrypto_type!(EcdsaPrivateKey, ScryptoType::EcdsaPrivateKey, Vec::new());
-
 //======
 // text
 //======
