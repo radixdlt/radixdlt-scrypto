@@ -157,16 +157,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         &mut self,
         signed: &SignedTransaction,
     ) -> Result<Receipt, TransactionValidationError> {
-        let validated = self.validate(signed)?;
+        let validated = signed.validate()?;
         let receipt = self.execute(&validated);
         Ok(receipt)
-    }
-
-    pub fn validate(
-        &mut self,
-        signed: &SignedTransaction,
-    ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        validate_transaction(signed)
     }
 
     pub fn execute(&mut self, validated: &ValidatedTransaction) -> Receipt {
