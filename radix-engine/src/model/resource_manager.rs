@@ -279,7 +279,8 @@ impl ResourceManager {
                 let new_mutable_data: Vec<u8> = scrypto_decode(&args[1].raw)
                     .map_err(|e| RuntimeError::InvalidRequestData(e))?;
 
-                let non_fungible_address = NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
+                let non_fungible_address =
+                    NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
                 let data = Self::process_non_fungible_data(&new_mutable_data)
                     .map_err(RuntimeError::ResourceManagerError)?;
                 track

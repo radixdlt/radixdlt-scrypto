@@ -938,7 +938,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !force {
             let proofs_vector = match &snode {
                 // Same process auth check
-                SNodeState::Vault(_) | SNodeState::Bucket(_)  => vec![self.caller_auth_zone, &self.auth_zone],
+                SNodeState::Vault(_) | SNodeState::Bucket(_) => {
+                    vec![self.caller_auth_zone, &self.auth_zone]
+                }
                 // Extern call auth check
                 _ => vec![self.auth_zone.as_slice()],
             };
@@ -962,7 +964,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 } else {
                     Ok(ScryptoValue::from_value(&()))
                 }
-            },
+            }
             SNodeState::Bucket(bucket) => match invocation.function.as_str() {
                 "burn" => {
                     bucket.drop(self.track);
