@@ -61,12 +61,14 @@ impl Runtime {
         method: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
-        let input = CallMethodInput {
-            component_address: component_address,
-            method: method.as_ref().to_owned(),
-            args,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Scrypto(
+                ScryptoActor::Component(component_address)
+            ),
+            function: method.as_ref().to_owned(),
+            args
         };
-        let output: CallMethodOutput = call_engine(CALL_METHOD, input);
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
         output.rtn
     }

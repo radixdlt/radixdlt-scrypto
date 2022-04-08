@@ -17,8 +17,6 @@ extern "C" {
 
 /// Publish a code package
 pub const PUBLISH_PACKAGE: u32 = 0x00;
-/// Call a method
-pub const CALL_METHOD: u32 = 0x02;
 
 /// Create a component
 pub const CREATE_COMPONENT: u32 = 0x10;
@@ -144,18 +142,6 @@ pub struct PublishPackageInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PublishPackageOutput {
     pub package_address: PackageAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CallMethodInput {
-    pub component_address: ComponentAddress,
-    pub method: String,
-    pub args: Vec<Vec<u8>>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CallMethodOutput {
-    pub rtn: Vec<u8>,
 }
 
 //==========
