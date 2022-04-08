@@ -55,8 +55,6 @@ pub const NON_FUNGIBLE_EXISTS: u32 = 0x39;
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
 /// Put fungible resource into this vault
 pub const PUT_INTO_VAULT: u32 = 0x41;
-/// Take fungible resource from this vault
-pub const TAKE_FROM_VAULT: u32 = 0x42;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource address
@@ -344,17 +342,6 @@ pub struct PutIntoVaultInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PutIntoVaultOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromVaultInput {
-    pub vault_id: VaultId,
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromVaultOutput {
-    pub bucket_id: BucketId,
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetVaultAmountInput {

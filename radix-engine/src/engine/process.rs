@@ -1814,20 +1814,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_take_from_vault(
-        &mut self,
-        input: TakeFromVaultInput,
-    ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        let result = self.call(
-            SNodeRef::Vault(input.vault_id.clone()),
-            "take_from_vault".to_string(),
-            vec![ScryptoValue::from_value(&input.amount)],
-        )?;
-        Ok(TakeFromVaultOutput {
-            bucket_id: result.bucket_ids[0],
-        })
-    }
-
     fn handle_take_non_fungibles_from_vault(
         &mut self,
         input: TakeNonFungiblesFromVaultInput,
@@ -2240,7 +2226,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
-                    TAKE_FROM_VAULT => self.handle(args, Self::handle_take_from_vault),
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)

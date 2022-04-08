@@ -1,4 +1,7 @@
 use sbor::*;
+use crate::args;
+use crate::buffer::scrypto_decode;
+use crate::core::SNodeRef;
 
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::VaultId};
@@ -9,6 +12,7 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::collections::BTreeSet;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::ToString;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
@@ -45,13 +49,15 @@ impl Vault {
 
     /// Takes some amount of resource from this vault into a bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
-        let input = TakeFromVaultInput {
-            vault_id: self.0,
-            amount: amount.into(),
+        let amount: Decimal = amount.into();
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Vault(self.0),
+            function: "take_from_vault".to_string(),
+            args: args![amount]
         };
-        let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
-
-        Bucket(output.bucket_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
+        bucket
     }
 
     /// Takes all resource stored in this vault.
