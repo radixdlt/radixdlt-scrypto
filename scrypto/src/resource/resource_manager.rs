@@ -142,11 +142,12 @@ impl ResourceManager {
 
     /// Updates the resource metadata
     pub fn update_metadata(&self, new_metadata: HashMap<String, String>) {
-        let input = UpdateResourceMetadataInput {
-            resource_address: self.0,
-            new_metadata,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "update_metadata".to_string(),
+            args: args![new_metadata]
         };
-        let _output: UpdateResourceMetadataOutput = call_engine(UPDATE_RESOURCE_METADATA, input);
+        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }
 }
 

@@ -40,8 +40,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create resource
 pub const CREATE_RESOURCE: u32 = 0x30;
-/// Update resource metadata
-pub const UPDATE_RESOURCE_METADATA: u32 = 0x34;
 /// Get resource type
 pub const GET_RESOURCE_TYPE: u32 = 0x35;
 /// Get resource metadata
@@ -323,15 +321,6 @@ pub struct NonFungibleExistsInput {
 pub struct NonFungibleExistsOutput {
     pub non_fungible_exists: bool,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateResourceMetadataInput {
-    pub resource_address: ResourceAddress,
-    pub new_metadata: HashMap<String, String>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateResourceMetadataOutput {}
 
 //==========
 // vault

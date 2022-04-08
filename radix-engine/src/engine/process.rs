@@ -1797,15 +1797,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutIntoVaultOutput {})
     }
 
-    fn handle_update_resource_metadata(
-        &mut self,
-        input: UpdateResourceMetadataInput,
-    ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
-        let snode_ref = SNodeRef::Resource(input.resource_address.clone());
-        let _ = self.call(snode_ref, "update_metadata".to_string(), vec![ScryptoValue::from_value(&input.new_metadata)])?;
-        Ok(UpdateResourceMetadataOutput {})
-    }
-
     fn handle_invoke_snode(
         &mut self,
         input: InvokeSNodeInput,
@@ -2246,9 +2237,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
                     GET_NON_FUNGIBLE_DATA => self.handle(args, Self::handle_get_non_fungible_data),
                     NON_FUNGIBLE_EXISTS => self.handle(args, Self::handle_non_fungible_exists),
-                    UPDATE_RESOURCE_METADATA => {
-                        self.handle(args, Self::handle_update_resource_metadata)
-                    }
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
