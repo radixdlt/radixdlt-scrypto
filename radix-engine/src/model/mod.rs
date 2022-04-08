@@ -24,6 +24,8 @@ pub use proof::*;
 pub use receipt::Receipt;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
-pub use transaction::{Instruction, Transaction, ValidatedInstruction, ValidatedTransaction};
+pub use transaction::{
+    Instruction, SignedTransaction, Transaction, ValidatedInstruction, ValidatedTransaction,
+};
 pub use vault::{Vault, VaultError};
 pub use worktop::Worktop;

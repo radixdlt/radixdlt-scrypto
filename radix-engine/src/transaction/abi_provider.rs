@@ -22,7 +22,7 @@ pub trait AbiProvider {
     ) -> Result<abi::Blueprint, RuntimeError>;
 
     /// Exports the ABI of the blueprint, from which the given component is instantiated.
-    fn export_abi_component(
+    fn export_abi_by_component(
         &self,
         component_address: ComponentAddress,
     ) -> Result<abi::Blueprint, RuntimeError>;
@@ -82,7 +82,7 @@ impl AbiProvider for BasicAbiProvider {
         })
     }
 
-    fn export_abi_component(
+    fn export_abi_by_component(
         &self,
         component_address: ComponentAddress,
     ) -> Result<abi::Blueprint, RuntimeError> {

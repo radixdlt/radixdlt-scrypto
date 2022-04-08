@@ -28,9 +28,8 @@ fn cannot_make_cross_component_call_without_authorization() {
             "create_component_with_auth",
             vec![scrypto_encode(&method_authorization)],
         )
-        .build(&[])
-        .unwrap()
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
     receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_addresses[0];
@@ -43,9 +42,8 @@ fn cannot_make_cross_component_call_without_authorization() {
             "create_component",
             vec![],
         )
-        .build(&[])
-        .unwrap()
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
     assert!(receipt.result.is_ok());
     let my_component = receipt.new_component_addresses[0];
@@ -58,9 +56,8 @@ fn cannot_make_cross_component_call_without_authorization() {
             "cross_component_call",
             vec![scrypto_encode(&secured_component)],
         )
-        .build(&[])
-        .unwrap()
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -90,9 +87,8 @@ fn can_make_cross_component_call_with_authorization() {
             "create_component_with_auth",
             vec![scrypto_encode(&method_authorization)],
         )
-        .build(&[])
-        .unwrap()
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
     receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_addresses[0];
@@ -105,9 +101,8 @@ fn can_make_cross_component_call_with_authorization() {
             "create_component",
             vec![],
         )
-        .build(&[])
-        .unwrap()
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
     receipt.result.expect("Should be okay.");
     let my_component = receipt.new_component_addresses[0];
@@ -116,9 +111,8 @@ fn can_make_cross_component_call_with_authorization() {
         .new_transaction_builder()
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
-        .build(&[key])
-        .unwrap()
-        .sign(&[sk]);
+        .build(test_runner.get_nonce([key]))
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
     receipt.result.expect("Should be okay.");
 
@@ -130,9 +124,8 @@ fn can_make_cross_component_call_with_authorization() {
             "cross_component_call",
             vec![scrypto_encode(&secured_component)],
         )
-        .build(&[])
-        .unwrap()
-        .sign(&[]);
+        .build(test_runner.get_nonce([]))
+        .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert

@@ -26,7 +26,7 @@ pub enum Error {
 
     PackageValidationError(WasmValidationError),
 
-    TransactionConstructionError(BuildTransactionError),
+    TransactionConstructionError(CallWithAbiError),
 
     TransactionValidationError(TransactionValidationError),
 

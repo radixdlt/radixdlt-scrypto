@@ -13,7 +13,7 @@ use crate::model::*;
 /// Represents a transaction receipt.
 pub struct Receipt {
     pub commit_receipt: Option<CommitReceipt>,
-    pub transaction: ValidatedTransaction,
+    pub validated_transaction: ValidatedTransaction,
     pub result: Result<(), RuntimeError>,
     pub outputs: Vec<ScryptoValue>,
     pub logs: Vec<(Level, String)>,
@@ -56,11 +56,11 @@ impl fmt::Debug for Receipt {
         )?;
 
         write!(f, "\n{}", "Instructions:".bold().green())?;
-        for (i, inst) in self.transaction.instructions.iter().enumerate() {
+        for (i, inst) in self.validated_transaction.instructions.iter().enumerate() {
             write!(
                 f,
                 "\n{} {:?}",
-                prefix!(i, self.transaction.instructions),
+                prefix!(i, self.validated_transaction.instructions),
                 inst
             )?;
         }

@@ -20,9 +20,8 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
         .new_transaction_builder()
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(&[pk])
-        .unwrap()
-        .sign(&[sk]);
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
@@ -60,9 +59,8 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(&[pk])
-        .unwrap()
-        .sign(&[sk]);
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
