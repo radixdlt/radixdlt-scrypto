@@ -1,5 +1,6 @@
 use sbor::*;
 use scrypto::prelude::ComponentAuthorization;
+use crate::core::SNodeRef;
 
 use crate::engine::types::*;
 use crate::prelude::{MethodAuth, NonFungibleAddress, ResourceMethod};
@@ -16,10 +17,6 @@ extern "C" {
 
 /// Publish a code package
 pub const PUBLISH_PACKAGE: u32 = 0x00;
-/// Call a function
-pub const CALL_FUNCTION: u32 = 0x01;
-/// Call a method
-pub const CALL_METHOD: u32 = 0x02;
 
 /// Create a component
 pub const CREATE_COMPONENT: u32 = 0x10;
@@ -39,14 +36,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create resource
 pub const CREATE_RESOURCE: u32 = 0x30;
-/// Mint resource
-pub const MINT_RESOURCE: u32 = 0x31;
-/// Burn resource
-pub const BURN_RESOURCE: u32 = 0x32;
-/// Update non-fungible metadata
-pub const UPDATE_NON_FUNGIBLE_MUTABLE_DATA: u32 = 0x33;
-/// Update resource metadata
-pub const UPDATE_RESOURCE_METADATA: u32 = 0x34;
 /// Get resource type
 pub const GET_RESOURCE_TYPE: u32 = 0x35;
 /// Get resource metadata
@@ -62,14 +51,10 @@ pub const NON_FUNGIBLE_EXISTS: u32 = 0x39;
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
 /// Put fungible resource into this vault
 pub const PUT_INTO_VAULT: u32 = 0x41;
-/// Take fungible resource from this vault
-pub const TAKE_FROM_VAULT: u32 = 0x42;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource address
 pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
-/// Take a non-fungible from this vault, by id
-pub const TAKE_NON_FUNGIBLES_FROM_VAULT: u32 = 0x45;
 /// Get the IDs of all non-fungibles in this vault
 pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
@@ -117,6 +102,9 @@ pub const PUSH_TO_AUTH_ZONE: u32 = 0x6E;
 /// Pop a proof from auth zone
 pub const POP_FROM_AUTH_ZONE: u32 = 0x6F;
 
+
+pub const INVOKE_SNODE: u32 = 0x70;
+
 /// Log a message
 pub const EMIT_LOG: u32 = 0xf0;
 /// Generate a UUID
@@ -130,6 +118,18 @@ pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Retrieve the running entity
 pub const GET_ACTOR: u32 = 0xf5;
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct InvokeSNodeInput {
+    pub snode_ref: SNodeRef,
+    pub function: String,
+    pub args: Vec<Vec<u8>>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct InvokeSNodeOutput {
+    pub rtn: Vec<u8>,
+}
+
 //==========
 // blueprint
 //==========
@@ -142,31 +142,6 @@ pub struct PublishPackageInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PublishPackageOutput {
     pub package_address: PackageAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CallFunctionInput {
-    pub package_address: PackageAddress,
-    pub blueprint_name: String,
-    pub function: String,
-    pub args: Vec<Vec<u8>>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CallFunctionOutput {
-    pub rtn: Vec<u8>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CallMethodInput {
-    pub component_address: ComponentAddress,
-    pub method: String,
-    pub args: Vec<Vec<u8>>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CallMethodOutput {
-    pub rtn: Vec<u8>,
 }
 
 //==========
@@ -264,25 +239,6 @@ pub struct CreateResourceOutput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct MintResourceInput {
-    pub resource_address: ResourceAddress,
-    pub mint_params: MintParams,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct MintResourceOutput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BurnResourceInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct BurnResourceOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetResourceMetadataInput {
     pub resource_address: ResourceAddress,
 }
@@ -333,24 +289,6 @@ pub struct NonFungibleExistsOutput {
     pub non_fungible_exists: bool,
 }
 
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateNonFungibleMutableDataInput {
-    pub non_fungible_address: NonFungibleAddress,
-    pub new_mutable_data: Vec<u8>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateNonFungibleMutableDataOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateResourceMetadataInput {
-    pub resource_address: ResourceAddress,
-    pub new_metadata: HashMap<String, String>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct UpdateResourceMetadataOutput {}
-
 //==========
 // vault
 //==========
@@ -375,17 +313,6 @@ pub struct PutIntoVaultInput {
 pub struct PutIntoVaultOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromVaultInput {
-    pub vault_id: VaultId,
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromVaultOutput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetVaultAmountInput {
     pub vault_id: VaultId,
 }
@@ -403,17 +330,6 @@ pub struct GetVaultResourceAddressInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetVaultResourceAddressOutput {
     pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromVaultInput {
-    pub vault_id: VaultId,
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromVaultOutput {
-    pub bucket_id: BucketId,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
