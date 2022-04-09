@@ -85,3 +85,39 @@ fn invalid_blueprint_name_should_cause_error() {
         RuntimeError::BlueprintNotFound(package_address, "NonExistentBlueprint".to_string())
     );
 }
+
+#[test]
+fn reentrancy_should_not_be_possible() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let package_address = test_runner.publish_package("component");
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_function(
+            package_address,
+            "ReentrantComponent",
+            "new",
+            vec![],
+        )
+        .build(test_runner.get_nonce([]))
+        .sign([]);
+    let receipt = test_runner.validate_and_execute(&transaction);
+    receipt.result.expect("Should be okay");
+    let component = receipt.new_component_addresses[0];
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_method(
+            component,
+            "call_self",
+            vec![],
+        )
+        .build(test_runner.get_nonce([]))
+        .sign([]);
+    let receipt = test_runner.validate_and_execute(&transaction);
+
+    // Assert
+    let error = receipt.result.expect_err("Should be an error.");
+}
