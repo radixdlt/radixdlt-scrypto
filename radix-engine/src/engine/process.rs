@@ -55,6 +55,24 @@ macro_rules! re_warn {
     };
 }
 
+pub trait SystemApi {
+    fn get_non_fungible(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&NonFungible>;
+
+    fn get_non_fungible_mut(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&mut NonFungible>;
+
+    fn put_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+        non_fungible: NonFungible,
+    );
+}
+
 pub enum SNodeState {
     Scrypto(ScryptoActorInfo, Option<Component>),
     Resource(ResourceAddress, ResourceManager),
@@ -832,7 +850,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
             SNodeState::Resource(resource_address, mut resource_manager) => {
                 let maybe_bucket = resource_manager
-                    .main(resource_address, function.as_str(), args, self.track)
+                    .main(resource_address, function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
 
                 self.track
@@ -2305,6 +2323,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     //============================
     // SYSTEM CALL HANDLERS END
     //============================
+}
+
+impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
+    fn get_non_fungible_mut(&mut self, non_fungible_address: &NonFungibleAddress) -> Option<&mut NonFungible> {
+        self.track.get_non_fungible_mut(non_fungible_address)
+    }
+
+    fn get_non_fungible(&mut self, non_fungible_address: &NonFungibleAddress) -> Option<&NonFungible> {
+        self.track.get_non_fungible(non_fungible_address)
+    }
+
+    fn put_non_fungible(&mut self, non_fungible_address: NonFungibleAddress, non_fungible: NonFungible) {
+        self.track.put_non_fungible(non_fungible_address, non_fungible)
+    }
 }
 
 impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
