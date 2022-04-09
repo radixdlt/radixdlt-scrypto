@@ -104,13 +104,13 @@ fn reentrancy_should_not_be_possible() {
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
     receipt.result.expect("Should be okay");
-    let component = receipt.new_component_addresses[0];
+    let component_address = receipt.new_component_addresses[0];
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .call_method(
-            component,
+            component_address,
             "call_self",
             vec![],
         )
@@ -120,4 +120,5 @@ fn reentrancy_should_not_be_possible() {
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
+    assert_eq!(error, RuntimeError::ComponentReentrancy(component_address))
 }

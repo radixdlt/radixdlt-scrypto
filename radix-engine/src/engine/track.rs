@@ -52,7 +52,10 @@ pub struct Track<'s, S: SubstateStore> {
     logs: Vec<(Level, String)>,
 
     packages: HashMap<PackageAddress, SubstateUpdate<Package>>,
+
     components: HashMap<ComponentAddress, SubstateUpdate<Component>>,
+    borrowed_components: HashMap<ComponentAddress, Option<(Hash, u32)>>,
+
     resource_managers: HashMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
 
     vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
@@ -75,6 +78,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             logs: Vec::new(),
             packages: HashMap::new(),
             components: HashMap::new(),
+            borrowed_components: HashMap::new(),
             resource_managers: HashMap::new(),
             lazy_map_entries: HashMap::new(),
             vaults: HashMap::new(),
@@ -199,6 +203,29 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         package_address
     }
 
+    pub fn borrow_global_mut_component(&mut self, component_address: ComponentAddress) -> Result<Component, RuntimeError> {
+        let maybe_component = self.components.remove(&component_address);
+        if let Some(SubstateUpdate { value, prev_id }) = maybe_component {
+            self.borrowed_components.insert(component_address, prev_id);
+            Ok(value)
+        } else if self.borrowed_components.contains_key(&component_address) {
+            Err(RuntimeError::ComponentReentrancy(component_address))
+        } else if let Some((component, phys_id)) = self.substate_store.get_decoded_substate(&component_address) {
+            self.borrowed_components.insert(component_address, Some(phys_id));
+            Ok(component)
+        } else {
+            Err(RuntimeError::ComponentNotFound(component_address))
+        }
+    }
+
+    pub fn return_borrowed_global_component(&mut self, component_address: ComponentAddress, component: Component) {
+        if let Some(prev_id) = self.borrowed_components.remove(&component_address) {
+            self.components.insert(component_address, SubstateUpdate { prev_id, value: component });
+        } else {
+            panic!("Component was never borrowed");
+        }
+    }
+
     /// Returns an immutable reference to a component, if exists.
     pub fn get_component(&mut self, component_address: ComponentAddress) -> Option<&Component> {
         if self.components.contains_key(&component_address) {
@@ -216,36 +243,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 },
             );
             self.components.get(&component_address).map(|c| &c.value)
-        } else {
-            None
-        }
-    }
-
-    /// Returns a mutable reference to a component, if exists.
-    pub fn get_component_mut(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Option<&mut Component> {
-        if self.components.contains_key(&component_address) {
-            return self
-                .components
-                .get_mut(&component_address)
-                .map(|c| &mut c.value);
-        }
-
-        if let Some((component, phys_id)) =
-            self.substate_store.get_decoded_substate(&component_address)
-        {
-            self.components.insert(
-                component_address,
-                SubstateUpdate {
-                    prev_id: Some(phys_id),
-                    value: component,
-                },
-            );
-            self.components
-                .get_mut(&component_address)
-                .map(|c| &mut c.value)
         } else {
             None
         }
