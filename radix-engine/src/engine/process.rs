@@ -882,8 +882,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
-                        let component =
-                            self.track.get_component(component_address.clone()).unwrap();
+                        let component = self
+                            .track
+                            .get_component(component_address.clone())
+                            .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
                         let component_state = component.state().to_vec();
@@ -967,7 +969,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = match snode {
             SNodeState::Vault(vault_id) => {
                 let vault = self.get_local_vault(&vault_id)?;
-                let maybe_bucket = vault.main(invocation.function.as_str(), invocation.args)
+                let maybe_bucket = vault
+                    .main(invocation.function.as_str(), invocation.args)
                     .map_err(RuntimeError::VaultError)?;
                 if let Some(bucket) = maybe_bucket {
                     let bucket_id = self.new_bucket_id()?;
