@@ -98,6 +98,8 @@ impl ResourceManager {
             );
         }
 
+        authorization.insert("get_metadata".to_string(), MethodAuthorization::Public);
+
         if let ResourceType::NonFungible = resource_type {
             authorization.insert(
                 "non_fungible_exists".to_string(),
@@ -273,6 +275,9 @@ impl ResourceManager {
 
                 let bucket_id = system_api.create_bucket(container).map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
+            }
+            "get_metadata" => {
+                Ok(ScryptoValue::from_value(&self.metadata))
             }
             "update_metadata" => {
                 let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)

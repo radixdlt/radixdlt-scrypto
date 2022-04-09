@@ -38,8 +38,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 pub const CREATE_RESOURCE: u32 = 0x30;
 /// Get resource type
 pub const GET_RESOURCE_TYPE: u32 = 0x35;
-/// Get resource metadata
-pub const GET_RESOURCE_METADATA: u32 = 0x36;
 /// Get resource supply
 pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x37;
 
@@ -232,16 +230,6 @@ pub struct CreateResourceInput {
 pub struct CreateResourceOutput {
     pub resource_address: ResourceAddress,
     pub bucket_id: Option<BucketId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetResourceMetadataInput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetResourceMetadataOutput {
-    pub metadata: HashMap<String, String>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

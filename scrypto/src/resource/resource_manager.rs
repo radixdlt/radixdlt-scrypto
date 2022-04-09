@@ -83,12 +83,13 @@ impl ResourceManager {
 
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
-        let input = GetResourceMetadataInput {
-            resource_address: self.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "get_metadata".to_string(),
+            args: args![]
         };
-        let output: GetResourceMetadataOutput = call_engine(GET_RESOURCE_METADATA, input);
-
-        output.metadata
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the current supply of this resource.

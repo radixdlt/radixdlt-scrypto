@@ -1636,22 +1636,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_resource_metadata(
-        &mut self,
-        input: GetResourceMetadataInput,
-    ) -> Result<GetResourceMetadataOutput, RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-
-        Ok(GetResourceMetadataOutput {
-            metadata: resource_manager.metadata().clone(),
-        })
-    }
-
     fn handle_get_resource_total_supply(
         &mut self,
         input: GetResourceTotalSupplyInput,
@@ -2188,7 +2172,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
 
                     CREATE_RESOURCE => self.handle(args, Self::handle_create_resource),
                     GET_RESOURCE_TYPE => self.handle(args, Self::handle_get_resource_type),
-                    GET_RESOURCE_METADATA => self.handle(args, Self::handle_get_resource_metadata),
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
                     }
