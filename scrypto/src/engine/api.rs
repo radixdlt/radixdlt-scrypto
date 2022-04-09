@@ -44,8 +44,6 @@ pub const GET_RESOURCE_METADATA: u32 = 0x36;
 pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x37;
 /// Get the data of a non-fungible
 pub const GET_NON_FUNGIBLE_DATA: u32 = 0x38;
-/// Check if non-fungible resource with id exists
-pub const NON_FUNGIBLE_EXISTS: u32 = 0x39;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -277,16 +275,6 @@ pub struct GetNonFungibleDataInput {
 pub struct GetNonFungibleDataOutput {
     pub immutable_data: Vec<u8>,
     pub mutable_data: Vec<u8>,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct NonFungibleExistsInput {
-    pub non_fungible_address: NonFungibleAddress,
-}
-
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct NonFungibleExistsOutput {
-    pub non_fungible_exists: bool,
 }
 
 //==========

@@ -98,6 +98,13 @@ impl ResourceManager {
             );
         }
 
+        if let ResourceType::NonFungible = resource_type {
+            authorization.insert(
+                "non_fungible_exists".to_string(),
+                MethodAuthorization::Public,
+            );
+        }
+
         let resource_manager = Self {
             resource_type,
             metadata,
@@ -285,6 +292,14 @@ impl ResourceManager {
                     ))?
                     .set_mutable_data(data.raw);
                 Ok(ScryptoValue::from_value(&()))
+            }
+            "non_fungible_exists" => {
+                let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let non_fungible_address =
+                    NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
+                let non_fungible = system_api.get_non_fungible(&non_fungible_address);
+                Ok(ScryptoValue::from_value(&non_fungible.is_some()))
             }
             _ => Err(ResourceManagerError::MethodNotFound(function.to_string())),
         }

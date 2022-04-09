@@ -44,8 +44,7 @@ impl ResourceManager {
             args: args![MintParams::Fungible { amount: amount.into() }]
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
-        bucket
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Mints non-fungible resources
@@ -59,8 +58,7 @@ impl ResourceManager {
             args: args![MintParams::NonFungible { entries }]
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
-        bucket
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Burns a bucket of resources.
@@ -132,12 +130,13 @@ impl ResourceManager {
     /// Checks if non-fungible unit, with certain key exists or not.
     ///
     pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
-        let input = NonFungibleExistsInput {
-            non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "non_fungible_exists".to_string(),
+            args: args![id.clone()]
         };
-        let output: NonFungibleExistsOutput = call_engine(NON_FUNGIBLE_EXISTS, input);
-
-        output.non_fungible_exists
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Updates the resource metadata
