@@ -637,6 +637,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
     pub fn commit(&mut self) -> CommitReceipt {
+        // Sanity check
+        if !self.borrowed_components.is_empty() {
+            panic!("Borrowed components should be empty by end of transaction.");
+        }
+
         let mut receipt = CommitReceipt::new();
         let mut id_gen = SubstateIdGenerator::new(self.transaction_hash());
 
