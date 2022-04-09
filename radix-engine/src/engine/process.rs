@@ -71,6 +71,9 @@ pub trait SystemApi {
         non_fungible_address: NonFungibleAddress,
         non_fungible: NonFungible,
     );
+
+    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
+
 }
 
 pub enum SNodeState {
@@ -838,33 +841,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     })?
                     .ok_or(RuntimeError::NoReturnData)?;
                 match rtn {
-                    RuntimeValue::I32(ptr) => {
-                        let data = self.read_return_value(ptr as u32)?;
-                        self.process_return_data(&data)?;
-                        Ok(data)
-                    }
-                    _ => {
-                        return Err(RuntimeError::InvalidReturnType);
-                    }
+                    RuntimeValue::I32(ptr) => self.read_return_value(ptr as u32),
+                    _ => Err(RuntimeError::InvalidReturnType)
                 }
             }
             SNodeState::Resource(resource_address, mut resource_manager) => {
-                let maybe_bucket = resource_manager
+                let return_value = resource_manager
                     .main(resource_address, function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
 
-                self.track
-                    .return_borrowed_global_resource_manager(resource_address, resource_manager);
+                self.track.return_borrowed_global_resource_manager(resource_address, resource_manager);
 
-                if let Some(bucket) = maybe_bucket {
-                    let bucket_id = self.new_bucket_id()?;
-                    self.buckets.insert(bucket_id, bucket);
-                    Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                        bucket_id,
-                    )))
-                } else {
-                    Ok(ScryptoValue::from_value(&()))
-                }
+                Ok(return_value)
             }
 
             _ => Err(RuntimeError::IllegalSystemCall),
@@ -2336,6 +2324,12 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
 
     fn put_non_fungible(&mut self, non_fungible_address: NonFungibleAddress, non_fungible: NonFungible) {
         self.track.put_non_fungible(non_fungible_address, non_fungible)
+    }
+
+    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
+        let bucket_id = self.new_bucket_id()?;
+        self.buckets.insert(bucket_id, Bucket::new(container));
+        Ok(bucket_id)
     }
 }
 

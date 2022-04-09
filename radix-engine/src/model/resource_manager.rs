@@ -1,5 +1,4 @@
 use crate::engine::SystemApi;
-use crate::model::Bucket;
 use crate::model::NonFungible;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
@@ -29,6 +28,7 @@ pub enum ResourceManagerError {
     NonFungibleNotFound(NonFungibleAddress),
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
+    CouldNotCreateBucket,
 }
 
 /// The definition of a resource.
@@ -247,7 +247,7 @@ impl ResourceManager {
         function: &str,
         args: Vec<ScryptoValue>,
         system_api: &mut S
-    ) -> Result<Option<Bucket>, ResourceManagerError> {
+    ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
             "mint" => {
                 // TODO: cleanup
@@ -260,13 +260,14 @@ impl ResourceManager {
                     }
                 }?;
 
-                Ok(Option::Some(Bucket::new(container)))
+                let bucket_id = system_api.create_bucket(container).map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
             }
             "update_metadata" => {
                 let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 self.update_metadata(new_metadata)?;
-                Ok(Option::None)
+                Ok(ScryptoValue::from_value(&()))
             }
             "update_non_fungible_mutable_data" => {
                 let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
@@ -283,7 +284,7 @@ impl ResourceManager {
                         non_fungible_address,
                     ))?
                     .set_mutable_data(data.raw);
-                Ok(Option::None)
+                Ok(ScryptoValue::from_value(&()))
             }
             _ => Err(ResourceManagerError::MethodNotFound(function.to_string())),
         }
