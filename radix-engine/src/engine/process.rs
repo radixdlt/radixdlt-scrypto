@@ -72,8 +72,12 @@ pub trait SystemApi {
         non_fungible: NonFungible,
     );
 
-    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
+    fn get_resource_manager_mut(
+        &mut self,
+        resource_address: &ResourceAddress,
+    ) -> Option<&mut ResourceManager>;
 
+    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
 }
 
 pub enum SNodeState {
@@ -1012,10 +1016,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeState::Bucket(bucket) => match invocation.function.as_str() {
-                "burn" => {
-                    bucket.drop(self.track);
-                    Ok(ScryptoValue::from_value(&()))
-                }
+                "burn" => bucket.drop(self),
                 _ => Err(RuntimeError::IllegalSystemCall),
             },
             _ => {
@@ -2324,6 +2325,13 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
 
     fn put_non_fungible(&mut self, non_fungible_address: NonFungibleAddress, non_fungible: NonFungible) {
         self.track.put_non_fungible(non_fungible_address, non_fungible)
+    }
+
+    fn get_resource_manager_mut(
+        &mut self,
+        resource_address: &ResourceAddress,
+    ) -> Option<&mut ResourceManager> {
+        self.track.get_resource_manager_mut(resource_address)
     }
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
