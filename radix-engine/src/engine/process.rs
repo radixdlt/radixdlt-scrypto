@@ -873,9 +873,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
-                        let component =
-                            self.track.get_component(component_address.clone())
-                                .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
+                        let component = self
+                            .track
+                            .get_component(component_address.clone())
+                            .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
                         let component_state = component.state().to_vec();

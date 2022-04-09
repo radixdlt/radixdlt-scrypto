@@ -39,16 +39,17 @@ impl Vault {
     }
 
     fn take(&mut self, amount: Decimal) -> Result<Bucket, VaultError> {
-        let container = self.borrow_container_mut().take_by_amount(amount)
+        let container = self
+            .borrow_container_mut()
+            .take_by_amount(amount)
             .map_err(VaultError::ResourceContainerError)?;
         Ok(Bucket::new(container))
     }
 
-    fn take_non_fungibles(
-        &mut self,
-        ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<Bucket, VaultError> {
-        let container = self.borrow_container_mut().take_by_ids(ids)
+    fn take_non_fungibles(&mut self, ids: &BTreeSet<NonFungibleId>) -> Result<Bucket, VaultError> {
+        let container = self
+            .borrow_container_mut()
+            .take_by_ids(ids)
             .map_err(VaultError::ResourceContainerError)?;
         Ok(Bucket::new(container))
     }
@@ -155,14 +156,14 @@ impl Vault {
     ) -> Result<Option<Bucket>, VaultError> {
         match function {
             "take_from_vault" => {
-                let amount: Decimal = scrypto_decode(&args[0].raw)
-                    .map_err(|e| VaultError::InvalidRequestData(e))?;
+                let amount: Decimal =
+                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let new_bucket = self.take(amount)?;
                 Ok(Some(new_bucket))
             }
             "take_non_fungibles_from_vault" => {
-                let non_fungible_ids: BTreeSet<NonFungibleId> = scrypto_decode(&args[0].raw)
-                    .map_err(|e| VaultError::InvalidRequestData(e))?;
+                let non_fungible_ids: BTreeSet<NonFungibleId> =
+                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let new_bucket = self.take_non_fungibles(&non_fungible_ids)?;
                 Ok(Some(new_bucket))
             }
