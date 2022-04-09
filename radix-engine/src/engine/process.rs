@@ -1684,23 +1684,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_non_fungible_data(
-        &mut self,
-        input: GetNonFungibleDataInput,
-    ) -> Result<GetNonFungibleDataOutput, RuntimeError> {
-        let non_fungible = self
-            .track
-            .get_non_fungible(&input.non_fungible_address)
-            .ok_or(RuntimeError::NonFungibleNotFound(
-                input.non_fungible_address,
-            ))?;
-
-        Ok(GetNonFungibleDataOutput {
-            immutable_data: non_fungible.immutable_data(),
-            mutable_data: non_fungible.mutable_data(),
-        })
-    }
-
     fn handle_create_vault(
         &mut self,
         input: CreateEmptyVaultInput,
@@ -2209,7 +2192,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_RESOURCE_TOTAL_SUPPLY => {
                         self.handle(args, Self::handle_get_resource_total_supply)
                     }
-                    GET_NON_FUNGIBLE_DATA => self.handle(args, Self::handle_get_non_fungible_data),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),

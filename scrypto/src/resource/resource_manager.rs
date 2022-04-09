@@ -106,12 +106,14 @@ impl ResourceManager {
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
-        let input = GetNonFungibleDataInput {
-            non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "get_non_fungible".to_string(),
+            args: args![id.clone()]
         };
-        let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
-
-        T::decode(&output.immutable_data, &output.mutable_data).unwrap()
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let non_fungible: [Vec<u8>; 2] = scrypto_decode(&output.rtn).unwrap();
+        T::decode(&non_fungible[0], &non_fungible[1]).unwrap()
     }
 
     /// Updates the mutable part of a non-fungible unit.

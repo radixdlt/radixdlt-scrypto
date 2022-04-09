@@ -3,7 +3,7 @@ use scrypto::prelude::ComponentAuthorization;
 use crate::core::SNodeRef;
 
 use crate::engine::types::*;
-use crate::prelude::{MethodAuth, NonFungibleAddress, ResourceMethod};
+use crate::prelude::{MethodAuth, ResourceMethod};
 use crate::rust::collections::BTreeSet;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -42,8 +42,6 @@ pub const GET_RESOURCE_TYPE: u32 = 0x35;
 pub const GET_RESOURCE_METADATA: u32 = 0x36;
 /// Get resource supply
 pub const GET_RESOURCE_TOTAL_SUPPLY: u32 = 0x37;
-/// Get the data of a non-fungible
-pub const GET_NON_FUNGIBLE_DATA: u32 = 0x38;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -264,17 +262,6 @@ pub struct GetResourceTotalSupplyInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetResourceTotalSupplyOutput {
     pub total_supply: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleDataInput {
-    pub non_fungible_address: NonFungibleAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleDataOutput {
-    pub immutable_data: Vec<u8>,
-    pub mutable_data: Vec<u8>,
 }
 
 //==========
