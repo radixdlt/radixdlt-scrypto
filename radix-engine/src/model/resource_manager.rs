@@ -98,7 +98,9 @@ impl ResourceManager {
             );
         }
 
-        authorization.insert("get_metadata".to_string(), MethodAuthorization::Public);
+        for pub_method in ["get_metadata", "get_resource_type"] {
+            authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
+        }
 
         if let ResourceType::NonFungible = resource_type {
             authorization.insert(
@@ -278,6 +280,9 @@ impl ResourceManager {
             }
             "get_metadata" => {
                 Ok(ScryptoValue::from_value(&self.metadata))
+            }
+            "get_resource_type" => {
+                Ok(ScryptoValue::from_value(&self.resource_type))
             }
             "update_metadata" => {
                 let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)

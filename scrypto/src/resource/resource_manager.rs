@@ -73,12 +73,13 @@ impl ResourceManager {
 
     /// Returns the resource type.
     pub fn resource_type(&self) -> ResourceType {
-        let input = GetResourceTypeInput {
-            resource_address: self.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "get_resource_type".to_string(),
+            args: args![]
         };
-        let output: GetResourceTypeOutput = call_engine(GET_RESOURCE_TYPE, input);
-
-        output.resource_type
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the metadata associated with this resource.
