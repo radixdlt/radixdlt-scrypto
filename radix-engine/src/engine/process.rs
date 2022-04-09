@@ -974,7 +974,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = match snode {
             SNodeState::Vault(vault_id) => {
                 let vault = self.get_local_vault(&vault_id)?;
-                let maybe_bucket = vault.main(invocation.function.as_str(), invocation.args)
+                let maybe_bucket = vault
+                    .main(invocation.function.as_str(), invocation.args)
                     .map_err(RuntimeError::VaultError)?;
                 if let Some(bucket) = maybe_bucket {
                     let bucket_id = self.new_bucket_id()?;
