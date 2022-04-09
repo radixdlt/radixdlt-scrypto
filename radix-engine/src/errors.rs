@@ -216,7 +216,10 @@ pub enum RuntimeError {
     AuthorizationError(String, MethodAuthorizationError),
 
     /// Index out of bounds.
-    IndexOutOfBounds { index: usize, max: usize },
+    IndexOutOfBounds {
+        index: usize,
+        max: usize,
+    },
 
     /// Can't move a locked bucket.
     CantMoveLockedBucket,
