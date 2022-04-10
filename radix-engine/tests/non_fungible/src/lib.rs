@@ -25,7 +25,7 @@ blueprint! {
                 .metadata("name", "Katz's Sandwiches")
                 .auth(TakeFromVault, auth!(allow_all))
                 .auth(Mint, auth!(require(mint_badge.resource_address())))
-                .auth(Burn, auth!(require(mint_badge.resource_address())))
+                .auth(Burn, auth!(allow_all))
                 .auth(
                     UpdateNonFungibleData,
                     auth!(require(mint_badge.resource_address())),
@@ -44,6 +44,29 @@ blueprint! {
             });
 
             (mint_badge, resource_address, non_fungible)
+        }
+
+        pub fn create_burnable_non_fungible() -> Bucket {
+            ResourceBuilder::new_non_fungible()
+                .metadata("name", "Katz's Sandwiches")
+                .auth(TakeFromVault, auth!(allow_all))
+                .auth(Burn, auth!(allow_all))
+                .initial_supply([
+                    (
+                        NonFungibleId::from_u32(0),
+                        Sandwich {
+                            name: "Zero".to_owned(),
+                            available: true,
+                        },
+                    ),
+                    (
+                        NonFungibleId::from_u32(1),
+                        Sandwich {
+                            name: "One".to_owned(),
+                            available: true,
+                        },
+                    ),
+                ])
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
@@ -73,6 +96,14 @@ blueprint! {
                         },
                     ),
                 ])
+        }
+
+        pub fn verify_does_not_exist(address: NonFungibleAddress) {
+            assert_eq!(
+                resource_manager!(address.resource_address())
+                    .non_fungible_exists(&address.non_fungible_id()),
+                false
+            );
         }
 
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {

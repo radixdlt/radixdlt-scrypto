@@ -72,6 +72,11 @@ pub trait SystemApi {
         non_fungible: NonFungible,
     );
 
+    fn remove_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+    );
+
     fn borrow_global_mut_resource_manager(
         &mut self,
         resource_address: ResourceAddress,
@@ -2087,6 +2092,13 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
     ) {
         self.track
             .put_non_fungible(non_fungible_address, non_fungible)
+    }
+
+    fn remove_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+    ) {
+        self.track.remove_non_fungible(non_fungible_address)
     }
 
     fn borrow_global_mut_resource_manager(
