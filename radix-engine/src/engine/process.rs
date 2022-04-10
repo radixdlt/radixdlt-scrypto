@@ -2,7 +2,7 @@ use colored::*;
 
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::core::{ScryptoActor,SNodeRef};
+use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
@@ -72,16 +72,25 @@ pub trait SystemApi {
         non_fungible: NonFungible,
     );
 
-    fn get_resource_manager_mut(
+    fn borrow_global_mut_resource_manager(
         &mut self,
-        resource_address: &ResourceAddress,
-    ) -> Option<&mut ResourceManager>;
+        resource_address: ResourceAddress,
+    ) -> Result<ResourceManager, RuntimeError>;
+
+    fn return_borrowed_global_resource_manager(
+        &mut self,
+        resource_address: ResourceAddress,
+        resource_manager: ResourceManager,
+    );
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
+
+    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 }
 
 pub enum SNodeState {
     Scrypto(ScryptoActorInfo, Option<Component>),
+    ResourceStatic,
     Resource(ResourceAddress, ResourceManager),
     Bucket(Bucket),
     Vault(VaultId),
@@ -95,7 +104,6 @@ pub struct Interpreter {
     module: ModuleRef,
     memory: MemoryRef,
 }
-
 
 /// Qualitative states for a WASM process
 #[derive(Debug)]
@@ -701,7 +709,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = self.call(
             SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             method.to_owned(),
-            vec![ScryptoValue::from_value(&to_deposit)]
+            vec![ScryptoValue::from_value(&to_deposit)],
         );
 
         re_debug!(
@@ -830,15 +838,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .ok_or(RuntimeError::NoReturnData)?;
                 match rtn {
                     RuntimeValue::I32(ptr) => self.read_return_value(ptr as u32),
-                    _ => Err(RuntimeError::InvalidReturnType)
+                    _ => Err(RuntimeError::InvalidReturnType),
                 }
+            }
+            SNodeState::ResourceStatic => {
+                ResourceManager::static_main(function.as_str(), args, self)
+                    .map_err(RuntimeError::ResourceManagerError)
             }
             SNodeState::Resource(resource_address, mut resource_manager) => {
                 let return_value = resource_manager
                     .main(resource_address, function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
 
-                self.track.return_borrowed_global_resource_manager(resource_address, resource_manager);
+                self.track
+                    .return_borrowed_global_resource_manager(resource_address, resource_manager);
 
                 Ok(return_value)
             }
@@ -866,16 +879,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         snode_ref: SNodeRef,
         function: String,
         args: Vec<ScryptoValue>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.internal_call(snode_ref, function, args, false)
-    }
-
-    fn internal_call(
-        &mut self,
-        snode_ref: SNodeRef,
-        function: String,
-        args: Vec<ScryptoValue>,
-        force: bool,
     ) -> Result<ScryptoValue, RuntimeError> {
         // figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
@@ -922,8 +925,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .unwrap()
                             .clone();
 
-                        let (_, method_auth) =
-                            component.method_authorization(&schema, &function);
+                        let (_, method_auth) = component.method_authorization(&schema, &function);
                         Ok((
                             SNodeState::Scrypto(
                                 ScryptoActorInfo::component(
@@ -938,6 +940,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         ))
                     }
                 }
+            }
+            SNodeRef::ResourceStatic => {
+                Ok((SNodeState::ResourceStatic, MethodAuthorization::Public))
             }
             SNodeRef::Resource(resource_address) => {
                 let resource_manager: ResourceManager = self
@@ -974,26 +979,25 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }?;
 
         // Authorization check
-        if !force {
-            let proofs_vector = match &snode {
-                // Same process auth check
-                SNodeState::Vault(_) | SNodeState::Bucket(_) => {
-                    vec![self.caller_auth_zone, &self.auth_zone]
-                }
-                // Extern call auth check
-                _ => vec![self.auth_zone.as_slice()],
-            };
+        let proofs_vector = match &snode {
+            // Same process auth check
+            SNodeState::Vault(_) | SNodeState::Bucket(_) => {
+                vec![self.caller_auth_zone, &self.auth_zone]
+            }
+            // Extern call auth check
+            _ => vec![self.auth_zone.as_slice()],
+        };
 
-            method_auth
-                .check(&proofs_vector)
-                .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
-        }
+        method_auth
+            .check(&proofs_vector)
+            .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
 
         // Execution
         let result = match snode {
             SNodeState::Vault(vault_id) => {
                 let vault = self.get_local_vault(&vault_id)?;
-                let maybe_bucket = vault.main(function.as_str(), args)
+                let maybe_bucket = vault
+                    .main(function.as_str(), args)
                     .map_err(RuntimeError::VaultError)?;
                 if let Some(bucket) = maybe_bucket {
                     let bucket_id = self.new_bucket_id()?;
@@ -1049,7 +1053,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call function started");
-        let snode_ref = SNodeRef::Scrypto(ScryptoActor::Blueprint(package_address, blueprint_name.to_string()));
+        let snode_ref = SNodeRef::Scrypto(ScryptoActor::Blueprint(
+            package_address,
+            blueprint_name.to_string(),
+        ));
         let result = self.call(snode_ref, function.to_string(), args);
         re_debug!(self, "Call function ended");
         result
@@ -1606,36 +1613,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutLazyMapEntryOutput {})
     }
 
-    fn handle_create_resource(
-        &mut self,
-        input: CreateResourceInput,
-    ) -> Result<CreateResourceOutput, RuntimeError> {
-        let resource_manager =
-            ResourceManager::new(input.resource_type, input.metadata, input.authorization)
-                .map_err(RuntimeError::ResourceManagerError)?;
-
-        let resource_address = self.track.create_resource_manager(resource_manager);
-        re_debug!(self, "New resource manager: {}", resource_address);
-
-        let bucket_id = if let Some(mint_params) = input.mint_params {
-            // TODO: Remove force
-            let result = self.internal_call(
-                SNodeRef::Resource(resource_address.clone()),
-                "mint".to_string(),
-                vec![ScryptoValue::from_value(&mint_params)],
-                true
-            )?;
-            Some(result.bucket_ids[0])
-        } else {
-            None
-        };
-
-        Ok(CreateResourceOutput {
-            resource_address,
-            bucket_id,
-        })
-    }
-
     fn handle_create_vault(
         &mut self,
         input: CreateEmptyVaultInput,
@@ -1721,9 +1698,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         let result = self.call(input.snode_ref, input.function, validated_args)?;
-        Ok(InvokeSNodeOutput {
-            rtn: result.raw
-        })
+        Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
     fn handle_get_non_fungible_ids_in_vault(
@@ -2091,29 +2066,54 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 }
 
 impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
-    fn get_non_fungible_mut(&mut self, non_fungible_address: &NonFungibleAddress) -> Option<&mut NonFungible> {
+    fn get_non_fungible_mut(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&mut NonFungible> {
         self.track.get_non_fungible_mut(non_fungible_address)
     }
 
-    fn get_non_fungible(&mut self, non_fungible_address: &NonFungibleAddress) -> Option<&NonFungible> {
+    fn get_non_fungible(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&NonFungible> {
         self.track.get_non_fungible(non_fungible_address)
     }
 
-    fn put_non_fungible(&mut self, non_fungible_address: NonFungibleAddress, non_fungible: NonFungible) {
-        self.track.put_non_fungible(non_fungible_address, non_fungible)
+    fn put_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+        non_fungible: NonFungible,
+    ) {
+        self.track
+            .put_non_fungible(non_fungible_address, non_fungible)
     }
 
-    fn get_resource_manager_mut(
+    fn borrow_global_mut_resource_manager(
         &mut self,
-        resource_address: &ResourceAddress,
-    ) -> Option<&mut ResourceManager> {
-        self.track.get_resource_manager_mut(resource_address)
+        resource_address: ResourceAddress,
+    ) -> Result<ResourceManager, RuntimeError> {
+        self.track
+            .borrow_global_mut_resource_manager(resource_address)
+    }
+
+    fn return_borrowed_global_resource_manager(
+        &mut self,
+        resource_address: ResourceAddress,
+        resource_manager: ResourceManager,
+    ) {
+        self.track
+            .return_borrowed_global_resource_manager(resource_address, resource_manager)
     }
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, Bucket::new(container));
         Ok(bucket_id)
+    }
+
+    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
+        self.track.create_resource_manager(resource_manager)
     }
 }
 
@@ -2137,8 +2137,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
-
-                    CREATE_RESOURCE => self.handle(args, Self::handle_create_resource),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),

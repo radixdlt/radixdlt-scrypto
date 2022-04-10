@@ -1,11 +1,9 @@
+use crate::core::SNodeRef;
 use sbor::*;
 use scrypto::prelude::ComponentAuthorization;
-use crate::core::SNodeRef;
 
 use crate::engine::types::*;
-use crate::prelude::{MethodAuth, ResourceMethod};
 use crate::rust::collections::BTreeSet;
-use crate::rust::collections::HashMap;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
@@ -33,9 +31,6 @@ pub const CREATE_LAZY_MAP: u32 = 0x20;
 pub const GET_LAZY_MAP_ENTRY: u32 = 0x21;
 /// Insert a key-value pair into a lazy map
 pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
-
-/// Create resource
-pub const CREATE_RESOURCE: u32 = 0x30;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
@@ -91,7 +86,6 @@ pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
 pub const PUSH_TO_AUTH_ZONE: u32 = 0x6E;
 /// Pop a proof from auth zone
 pub const POP_FROM_AUTH_ZONE: u32 = 0x6F;
-
 
 pub const INVOKE_SNODE: u32 = 0x70;
 
@@ -209,24 +203,6 @@ pub struct PutLazyMapEntryInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PutLazyMapEntryOutput {}
-
-//=========
-// resource
-//=========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateResourceInput {
-    pub resource_type: ResourceType,
-    pub metadata: HashMap<String, String>,
-    pub authorization: HashMap<ResourceMethod, MethodAuth>,
-    pub mint_params: Option<MintParams>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateResourceOutput {
-    pub resource_address: ResourceAddress,
-    pub bucket_id: Option<BucketId>,
-}
 
 //==========
 // vault

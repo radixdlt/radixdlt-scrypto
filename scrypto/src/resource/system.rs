@@ -1,7 +1,11 @@
+use crate::args;
+use crate::buffer::scrypto_decode;
+use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::resource::*;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
+use crate::rust::string::ToString;
 
 /// Represents the Radix Engine resource subsystem.
 ///
@@ -41,18 +45,13 @@ impl ResourceSystem {
         authorization: HashMap<ResourceMethod, MethodAuth>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
-        let input = CreateResourceInput {
-            resource_type,
-            metadata,
-            authorization,
-            mint_params,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ResourceStatic,
+            function: "create".to_string(),
+            args: args![resource_type, metadata, authorization, mint_params],
         };
-        let output: CreateResourceOutput = call_engine(CREATE_RESOURCE, input);
-
-        (
-            output.resource_address,
-            output.bucket_id.map(|id| Bucket(id)),
-        )
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 }
 

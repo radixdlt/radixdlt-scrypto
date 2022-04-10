@@ -1,7 +1,7 @@
-use sbor::*;
 use crate::args;
 use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
+use sbor::*;
 
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::VaultId};
@@ -12,10 +12,10 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::collections::BTreeSet;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
-use crate::rust::string::ToString;
 use crate::rust::string::String;
-use crate::rust::vec::Vec;
+use crate::rust::string::ToString;
 use crate::rust::vec;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a persistent resource container on ledger state.
@@ -54,7 +54,7 @@ impl Vault {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Vault(self.0),
             function: "take_from_vault".to_string(),
-            args: args![amount]
+            args: args![amount],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
@@ -82,7 +82,7 @@ impl Vault {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Vault(self.0),
             function: "take_non_fungibles_from_vault".to_string(),
-            args: vec![scrypto_encode(non_fungible_ids)]
+            args: vec![scrypto_encode(non_fungible_ids)],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();

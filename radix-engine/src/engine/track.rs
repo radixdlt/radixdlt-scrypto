@@ -504,38 +504,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
-    /// Returns a mutable reference to a resource manager, if exists.
-    // TODO: Remove
-    #[allow(dead_code)]
-    pub fn get_resource_manager_mut(
-        &mut self,
-        resource_address: &ResourceAddress,
-    ) -> Option<&mut ResourceManager> {
-        if self.resource_managers.contains_key(resource_address) {
-            return self
-                .resource_managers
-                .get_mut(resource_address)
-                .map(|r| &mut r.value);
-        }
-
-        if let Some((resource_manager, phys_id)) =
-            self.substate_store.get_decoded_substate(resource_address)
-        {
-            self.resource_managers.insert(
-                resource_address.clone(),
-                SubstateUpdate {
-                    prev_id: Some(phys_id),
-                    value: resource_manager,
-                },
-            );
-            self.resource_managers
-                .get_mut(resource_address)
-                .map(|r| &mut r.value)
-        } else {
-            None
-        }
-    }
-
     /// Inserts a new resource manager.
     pub fn create_resource_manager(
         &mut self,
