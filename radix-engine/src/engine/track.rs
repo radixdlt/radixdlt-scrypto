@@ -59,7 +59,7 @@ pub struct Track<'s, S: SubstateStore> {
     borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
 
     vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
-    non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<NonFungible>>,
+    non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
 
     lazy_map_entries: HashMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
 }
@@ -287,7 +287,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self
                 .non_fungibles
                 .get(non_fungible_address)
-                .map(|s| &s.value);
+                .map(|s| s.value.as_ref())
+                .unwrap_or(Option::None);
         }
 
         if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
@@ -303,7 +304,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
             self.non_fungibles
                 .get(non_fungible_address)
-                .map(|s| &s.value)
+                .map(|s| s.value.as_ref())
+                .unwrap()
         } else {
             None
         }
@@ -318,7 +320,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self
                 .non_fungibles
                 .get_mut(non_fungible_address)
-                .map(|s| &mut s.value);
+                .map(|s| s.value.as_mut())
+                .unwrap_or(Option::None);
         }
 
         if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
@@ -334,7 +337,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
             self.non_fungibles
                 .get_mut(non_fungible_address)
-                .map(|s| &mut s.value)
+                .map(|s| s.value.as_mut())
+                .unwrap()
         } else {
             None
         }
@@ -350,7 +354,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             non_fungible_address,
             SubstateUpdate {
                 prev_id: None,
-                value: non_fungible,
+                value: Option::Some(non_fungible),
             },
         );
     }
