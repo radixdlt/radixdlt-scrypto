@@ -1636,22 +1636,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_resource_total_supply(
-        &mut self,
-        input: GetResourceTotalSupplyInput,
-    ) -> Result<GetResourceTotalSupplyOutput, RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-
-        Ok(GetResourceTotalSupplyOutput {
-            total_supply: resource_manager.total_supply(),
-        })
-    }
-
     fn handle_create_vault(
         &mut self,
         input: CreateEmptyVaultInput,
@@ -2155,9 +2139,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_RESOURCE => self.handle(args, Self::handle_create_resource),
-                    GET_RESOURCE_TOTAL_SUPPLY => {
-                        self.handle(args, Self::handle_get_resource_total_supply)
-                    }
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
                     PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),

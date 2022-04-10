@@ -98,7 +98,11 @@ impl ResourceManager {
             );
         }
 
-        for pub_method in ["get_metadata", "get_resource_type"] {
+        for pub_method in [
+            "get_metadata",
+            "get_resource_type",
+            "get_total_supply"
+        ] {
             authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
         }
 
@@ -283,6 +287,9 @@ impl ResourceManager {
             }
             "get_resource_type" => {
                 Ok(ScryptoValue::from_value(&self.resource_type))
+            }
+            "get_total_supply" => {
+                Ok(ScryptoValue::from_value(&self.total_supply))
             }
             "update_metadata" => {
                 let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)

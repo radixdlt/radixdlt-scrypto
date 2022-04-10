@@ -95,12 +95,13 @@ impl ResourceManager {
 
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
-        let input = GetResourceTotalSupplyInput {
-            resource_address: self.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "get_total_supply".to_string(),
+            args: args![]
         };
-        let output: GetResourceTotalSupplyOutput = call_engine(GET_RESOURCE_TOTAL_SUPPLY, input);
-
-        output.total_supply
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
