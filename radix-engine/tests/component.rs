@@ -85,3 +85,26 @@ fn invalid_blueprint_name_should_cause_error() {
         RuntimeError::BlueprintNotFound(package_address, "NonExistentBlueprint".to_string())
     );
 }
+
+#[test]
+fn missing_component_address_should_cause_error() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let _ = test_runner.publish_package("component");
+    let component_address =
+        ComponentAddress::from_str("0200000000000000000000000000000000000000000000deadbeef")
+            .unwrap();
+
+    // Act
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_method(component_address, "get_component_state", args![])
+        .build(test_runner.get_nonce([]))
+        .sign([]);
+    let receipt = test_runner.validate_and_execute(&transaction);
+
+    // Assert
+    let error = receipt.result.expect_err("Should be an error.");
+    assert_eq!(error, RuntimeError::ComponentNotFound(component_address));
+}

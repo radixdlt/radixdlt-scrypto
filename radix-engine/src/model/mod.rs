@@ -27,5 +27,5 @@ pub use resource_manager::{ResourceManager, ResourceManagerError};
 pub use transaction::{
     Instruction, SignedTransaction, Transaction, ValidatedInstruction, ValidatedTransaction,
 };
-pub use vault::Vault;
+pub use vault::{Vault, VaultError};
 pub use worktop::Worktop;

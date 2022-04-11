@@ -1,6 +1,8 @@
 use colored::*;
+
 use sbor::*;
 use scrypto::buffer::*;
+use scrypto::core::ScryptoActor;
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
@@ -52,9 +54,29 @@ macro_rules! re_warn {
     };
 }
 
+pub enum SNodeState {
+    Scrypto(
+        ScryptoActorInfo,
+        Option<(ComponentAddress, Vec<u8>, ScryptoValue)>,
+    ),
+    Resource(ResourceAddress),
+    Bucket(Bucket),
+    Vault(VaultId),
+}
+
+#[derive(Debug, Clone)]
+pub enum SNodeRef {
+    Scrypto(ScryptoActor),
+    Resource(ResourceAddress),
+    Bucket(BucketId),
+    Vault(VaultId),
+}
+
 /// Represents an interpreter instance.
 pub struct Interpreter {
-    invocation: Invocation,
+    actor: ScryptoActorInfo,
+    function: String,
+    args: Vec<ScryptoValue>,
     module: ModuleRef,
     memory: MemoryRef,
 }
@@ -62,9 +84,7 @@ pub struct Interpreter {
 /// Keeps invocation information.
 #[derive(Debug, Clone)]
 pub struct Invocation {
-    actor: Actor,
-    package_address: PackageAddress,
-    export_name: String,
+    snode_ref: SNodeRef,
     function: String,
     args: Vec<ScryptoValue>,
 }
@@ -669,11 +689,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .cloned()
             .map(|bucket_id| scrypto::resource::Bucket(bucket_id))
             .collect();
-        let invocation = self.prepare_call_method(
-            component_address,
-            method,
-            vec![ScryptoValue::from_value(&to_deposit)],
-        )?;
+
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
+            function: method.to_owned(),
+            args: vec![ScryptoValue::from_value(&to_deposit)],
+        };
         let result = self.call(invocation);
 
         re_debug!(
@@ -706,109 +727,110 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
+    pub fn run(
+        &mut self,
+        snode: SNodeState,
+        function: String,
+        args: Vec<ScryptoValue>,
+    ) -> Result<ScryptoValue, RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(
-            self,
-            "Run started: actor = {:?}, export = {}",
-            invocation.actor,
-            invocation.export_name
-        );
+        re_info!(self, "Run started: function = {:?}", function);
 
-        let package = self
-            .track
-            .get_package(invocation.package_address)
-            .ok_or(RuntimeError::PackageNotFound(invocation.package_address))?;
+        // Execution
+        let output = match snode {
+            SNodeState::Scrypto(actor, component_state) => {
+                let package = self.track.get_package(actor.package_address()).ok_or(
+                    RuntimeError::PackageNotFound(actor.package_address().clone()),
+                )?;
 
-        let (module, memory, interpreter_state) = match invocation.actor {
-            Actor::Blueprint(ref blueprint_name) => {
-                let (module, memory) =
-                    package
-                        .load_for_function_call(&blueprint_name)
-                        .map_err(|e| match e {
-                            PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
-                                invocation.package_address,
-                                blueprint_name.clone(),
-                            ),
-                        })?;
-
-                Ok((module, memory, InterpreterState::Blueprint))
-            }
-            Actor::Component(ref blueprint_name, component_address) => {
-                // Retrieve schema
-                let (schema, module, memory) = package
-                    .load_for_method_call(&blueprint_name)
-                    .map_err(|e| match e {
-                        PackageError::BlueprintNotFound => RuntimeError::BlueprintNotFound(
-                            invocation.package_address,
-                            blueprint_name.clone(),
-                        ),
-                    })?;
-                // TODO: Remove clone
-                let schema = schema.clone();
-
-                // Auth check
-                let component = self.track.get_component(component_address.clone()).unwrap();
-                let (data, method_auth) =
-                    component.method_authorization(&schema, &invocation.function);
-                method_auth.check(&[self.caller_auth_zone]).map_err(|e| {
-                    RuntimeError::AuthorizationError(invocation.function.clone(), e)
-                })?;
-
-                // Load state
-                let initial_loaded_object_refs = ComponentObjectRefs {
-                    vault_ids: data.vault_ids.into_iter().collect(),
-                    lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
-                };
-                let state = component.state().to_vec();
-                let component = InterpreterState::Component {
-                    state,
-                    component_address,
-                    initial_loaded_object_refs,
-                    additional_object_refs: ComponentObjectRefs::new(),
-                };
-                Ok((module, memory, component))
-            }
-        }?;
-
-        let vm = Interpreter {
-            invocation: invocation.clone(),
-            module: module.clone(),
-            memory,
-        };
-        self.wasm_process_state = Some(WasmProcess {
-            depth: self.depth,
-            trace: self.trace,
-            vm,
-            interpreter_state,
-            process_owned_objects: ComponentObjects::new(),
-        });
-
-        // run the main function
-        let result = module.invoke_export(invocation.export_name.as_str(), &[], self);
-        re_debug!(self, "Invoke result: {:?}", result);
-        let rtn = result
-            .map_err(|e| {
-                match e.into_host_error() {
-                    // Pass-through runtime errors
-                    Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
-                    None => RuntimeError::InvokeError,
+                if !package.contains_blueprint(actor.blueprint_name()) {
+                    return Err(RuntimeError::BlueprintNotFound(
+                        actor.package_address().clone(),
+                        actor.blueprint_name().to_string(),
+                    ));
                 }
-            })?
-            .ok_or(RuntimeError::NoReturnData)?;
 
-        // move resource based on return data
-        let output = match rtn {
-            RuntimeValue::I32(ptr) => {
-                let data = self.read_return_value(ptr as u32)?;
-                self.process_return_data(&data)?;
-                data
+                let (module, memory) = package.load_module().unwrap();
+
+                let (interpreter_state, args) =
+                    if let Some((component_address, state, data)) = component_state {
+                        let initial_loaded_object_refs = ComponentObjectRefs {
+                            vault_ids: data.vault_ids.into_iter().collect(),
+                            lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
+                        };
+                        let istate = InterpreterState::Component {
+                            state,
+                            component_address,
+                            initial_loaded_object_refs,
+                            additional_object_refs: ComponentObjectRefs::new(),
+                        };
+                        let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
+                        args_with_self.extend(args);
+
+                        (istate, args_with_self)
+                    } else {
+                        (InterpreterState::Blueprint, args)
+                    };
+
+                self.wasm_process_state = Some(WasmProcess {
+                    depth: self.depth,
+                    trace: self.trace,
+                    vm: Interpreter {
+                        function,
+                        args,
+                        actor: actor.clone(),
+                        module: module.clone(),
+                        memory,
+                    },
+                    interpreter_state,
+                    process_owned_objects: ComponentObjects::new(),
+                });
+
+                // Execution
+                let result = module.invoke_export(actor.export_name(), &[], self);
+                re_debug!(self, "Invoke result: {:?}", result);
+                let rtn = result
+                    .map_err(|e| {
+                        match e.into_host_error() {
+                            // Pass-through runtime errors
+                            Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
+                            None => RuntimeError::InvokeError,
+                        }
+                    })?
+                    .ok_or(RuntimeError::NoReturnData)?;
+
+                // Return value
+                match rtn {
+                    RuntimeValue::I32(ptr) => {
+                        let data = self.read_return_value(ptr as u32)?;
+                        self.process_return_data(&data)?;
+                        Ok(data)
+                    }
+                    _ => {
+                        return Err(RuntimeError::InvalidReturnType);
+                    }
+                }
             }
-            _ => {
-                return Err(RuntimeError::InvalidReturnType);
+            SNodeState::Resource(resource_address) => {
+                let maybe_bucket = self.track.resource_manager_invoke(
+                    &resource_address,
+                    function.as_str(),
+                    args,
+                )?;
+                if let Some(bucket) = maybe_bucket {
+                    let bucket_id = self.new_bucket_id()?;
+                    self.buckets.insert(bucket_id, bucket);
+                    Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                        bucket_id,
+                    )))
+                } else {
+                    Ok(ScryptoValue::from_value(&()))
+                }
             }
-        };
+
+            _ => Err(RuntimeError::IllegalSystemCall),
+        }?;
 
         #[cfg(not(feature = "alloc"))]
         re_info!(
@@ -822,64 +844,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(output)
     }
 
-    /// Prepares a function call.
-    pub fn prepare_call_function(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function: &str,
-        args: Vec<ScryptoValue>,
-    ) -> Result<Invocation, RuntimeError> {
-        Ok(Invocation {
-            actor: Actor::Blueprint(blueprint_name.to_owned()),
-            package_address,
-            export_name: format!("{}_main", blueprint_name),
-            function: function.to_owned(),
-            args,
-        })
-    }
-
-    /// Prepares a method call.
-    pub fn prepare_call_method(
-        &mut self,
-        component_address: ComponentAddress,
-        method: &str,
-        args: Vec<ScryptoValue>,
-    ) -> Result<Invocation, RuntimeError> {
-        let component = self
-            .track
-            .get_component(component_address)
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?
-            .clone();
-        let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
-        args_with_self.extend(args);
-
-        Ok(Invocation {
-            actor: Actor::Component(component.blueprint_name().to_owned(), component_address),
-            package_address: component.package_address(),
-            export_name: format!("{}_main", component.blueprint_name()),
-            function: method.to_owned(),
-            args: args_with_self,
-        })
-    }
-
-    /// Prepares an ABI call.
-    pub fn prepare_call_abi(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> Result<Invocation, RuntimeError> {
-        Ok(Invocation {
-            actor: Actor::Blueprint(blueprint_name.to_owned()),
-            package_address,
-            export_name: format!("{}_abi", blueprint_name),
-            function: String::new(),
-            args: Vec::new(),
-        })
-    }
-
     /// Calls a function/method.
     pub fn call(&mut self, invocation: Invocation) -> Result<ScryptoValue, RuntimeError> {
+        self.internal_call(invocation, false)
+    }
+
+    fn internal_call(
+        &mut self,
+        invocation: Invocation,
+        force: bool,
+    ) -> Result<ScryptoValue, RuntimeError> {
         // figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
@@ -889,28 +863,159 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
         }
 
-        // start a new process
-        let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        process.caller_auth_zone = &self.auth_zone;
+        // Authorization and state load
+        let (snode, method_auth) = match &invocation.snode_ref {
+            SNodeRef::Scrypto(actor) => {
+                match actor {
+                    ScryptoActor::Blueprint(package_address, blueprint_name) => {
+                        let export_name = format!("{}_main", blueprint_name);
+                        Ok((
+                            SNodeState::Scrypto(
+                                ScryptoActorInfo::blueprint(
+                                    package_address.clone(),
+                                    blueprint_name.clone(),
+                                    export_name.clone(),
+                                ),
+                                None,
+                            ),
+                            MethodAuthorization::Public,
+                        ))
+                    }
+                    ScryptoActor::Component(component_address) => {
+                        let component = self
+                            .track
+                            .get_component(component_address.clone())
+                            .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
+                        let package_address = component.package_address();
+                        let blueprint_name = component.blueprint_name().to_string();
+                        let component_state = component.state().to_vec();
+                        let export_name = format!("{}_main", blueprint_name);
 
-        // move buckets and proofs to the new process.
-        process.receive_buckets(moving_buckets)?;
-        process.receive_proofs(moving_proofs)?;
+                        let package = self
+                            .track
+                            .get_package(&package_address)
+                            .ok_or(RuntimeError::PackageNotFound(package_address))?;
+                        // TODO: Remove clone
+                        let schema = package
+                            .load_blueprint_schema(&blueprint_name)
+                            .unwrap()
+                            .clone();
 
-        // invoke the main function
-        let result = process.run(invocation)?;
+                        let component =
+                            self.track.get_component(component_address.clone()).unwrap();
+                        let (scrypto_value, method_auth) =
+                            component.method_authorization(&schema, &invocation.function);
+                        Ok((
+                            SNodeState::Scrypto(
+                                ScryptoActorInfo::component(
+                                    package_address,
+                                    blueprint_name,
+                                    export_name,
+                                    component_address.clone(),
+                                ),
+                                Some((component_address.clone(), component_state, scrypto_value)),
+                            ),
+                            method_auth,
+                        ))
+                    }
+                }
+            }
+            SNodeRef::Resource(resource_address) => {
+                let method_auth = self
+                    .track
+                    .get_resource_method_auth(&resource_address, &invocation.function)?;
+                Ok((
+                    SNodeState::Resource(resource_address.clone()),
+                    method_auth.clone(),
+                ))
+            }
+            SNodeRef::Bucket(bucket_id) => {
+                let bucket = self
+                    .buckets
+                    .remove(&bucket_id)
+                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let resource_address = bucket.resource_address();
+                let method_auth = self
+                    .track
+                    .get_resource_method_auth(&resource_address, &invocation.function)?;
+                Ok((SNodeState::Bucket(bucket), method_auth.clone()))
+            }
+            SNodeRef::Vault(vault_id) => {
+                let resource_address = self.get_local_vault(&vault_id)?.resource_address();
+                let method_auth = self
+                    .track
+                    .get_resource_method_auth(&resource_address, &invocation.function)?;
+                Ok((SNodeState::Vault(vault_id.clone()), method_auth.clone()))
+            }
+        }?;
 
-        // figure out what buckets and resources to move from the new process
-        let moving_buckets = process.send_buckets(&result.bucket_ids)?;
-        let moving_proofs = process.send_proofs(&result.proof_ids, MoveMethod::AsReturn)?;
+        // Authorization check
+        if !force {
+            let proofs_vector = match &snode {
+                // Same process auth check
+                SNodeState::Vault(_) | SNodeState::Bucket(_) => {
+                    vec![self.caller_auth_zone, &self.auth_zone]
+                }
+                // Extern call auth check
+                _ => vec![self.auth_zone.as_slice()],
+            };
 
-        // drop proofs and check resource leak
-        process.drop_all_proofs()?;
-        process.check_resource()?;
+            method_auth
+                .check(&proofs_vector)
+                .map_err(|e| RuntimeError::AuthorizationError(invocation.function.clone(), e))?;
+        }
 
-        // move buckets and proofs to this process.
-        self.receive_buckets(moving_buckets)?;
-        self.receive_proofs(moving_proofs)?;
+        // Execution
+        let result = match snode {
+            SNodeState::Vault(vault_id) => {
+                let vault = self.get_local_vault(&vault_id)?;
+                let maybe_bucket = vault
+                    .main(invocation.function.as_str(), invocation.args)
+                    .map_err(RuntimeError::VaultError)?;
+                if let Some(bucket) = maybe_bucket {
+                    let bucket_id = self.new_bucket_id()?;
+                    self.buckets.insert(bucket_id, bucket);
+                    Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                        bucket_id,
+                    )))
+                } else {
+                    Ok(ScryptoValue::from_value(&()))
+                }
+            }
+            SNodeState::Bucket(bucket) => match invocation.function.as_str() {
+                "burn" => {
+                    bucket.drop(self.track);
+                    Ok(ScryptoValue::from_value(&()))
+                }
+                _ => Err(RuntimeError::IllegalSystemCall),
+            },
+            _ => {
+                // start a new process
+                let mut process = Process::new(self.depth + 1, self.trace, self.track);
+                process.caller_auth_zone = &self.auth_zone;
+
+                // move buckets and proofs to the new process.
+                process.receive_buckets(moving_buckets)?;
+                process.receive_proofs(moving_proofs)?;
+
+                // invoke the main function
+                let result = process.run(snode, invocation.function, invocation.args)?;
+
+                // figure out what buckets and resources to move from the new process
+                let moving_buckets = process.send_buckets(&result.bucket_ids)?;
+                let moving_proofs = process.send_proofs(&result.proof_ids, MoveMethod::AsReturn)?;
+
+                // drop proofs and check resource leak
+                process.drop_all_proofs()?;
+                process.check_resource()?;
+
+                // move buckets and proofs to this process.
+                self.receive_buckets(moving_buckets)?;
+                self.receive_proofs(moving_proofs)?;
+
+                Ok(result)
+            }
+        }?;
 
         Ok(result)
     }
@@ -924,8 +1029,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call function started");
-        let invocation =
-            self.prepare_call_function(package_address, blueprint_name, function, args)?;
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Scrypto(ScryptoActor::Blueprint(
+                package_address,
+                blueprint_name.to_string(),
+            )),
+            function: function.to_string(),
+            args,
+        };
         let result = self.call(invocation);
         re_debug!(self, "Call function ended");
         result
@@ -939,21 +1050,37 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call method started");
-        let invocation = self.prepare_call_method(component_address, method, args)?;
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
+            function: method.to_owned(),
+            args,
+        };
         let result = self.call(invocation);
         re_debug!(self, "Call method ended");
         result
     }
 
     /// Calls the ABI generator of a blueprint.
+    // TODO: Remove
     pub fn call_abi(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call abi started");
-        let invocation = self.prepare_call_abi(package_address, blueprint_name)?;
-        let result = self.call(invocation);
+
+        let snode = SNodeState::Scrypto(
+            ScryptoActorInfo::blueprint(
+                package_address,
+                blueprint_name.to_string(),
+                format!("{}_abi", blueprint_name),
+            ),
+            None,
+        );
+
+        let mut process = Process::new(self.depth + 1, self.trace, self.track);
+        let result = process.run(snode, String::new(), Vec::new());
+
         re_debug!(self, "Call abi ended");
         result
     }
@@ -998,72 +1125,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         #[cfg(not(feature = "alloc"))]
         println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
-    }
-
-    fn mint_resource(
-        &mut self,
-        resource_address: ResourceAddress,
-        mint_params: MintParams,
-    ) -> Result<ResourceContainer, RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager_mut(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-
-        // Notify resource manager
-        resource_manager
-            .mint(&mint_params)
-            .map_err(RuntimeError::ResourceManagerError)?;
-
-        match mint_params {
-            MintParams::Fungible { amount } => {
-                // Allocate fungible
-                Ok(ResourceContainer::new_fungible(
-                    resource_address,
-                    resource_manager.resource_type().divisibility(),
-                    amount,
-                ))
-            }
-            MintParams::NonFungible { entries } => {
-                // Allocate non-fungibles
-                let mut ids = BTreeSet::new();
-                for (id, data) in entries {
-                    let non_fungible_address =
-                        NonFungibleAddress::new(resource_address, id.clone());
-                    if self.track.get_non_fungible(&non_fungible_address).is_some() {
-                        return Err(RuntimeError::NonFungibleAlreadyExists(non_fungible_address));
-                    }
-
-                    let immutable_data = self.process_non_fungible_data(&data.0)?;
-                    let mutable_data = self.process_non_fungible_data(&data.1)?;
-
-                    self.track.put_non_fungible(
-                        non_fungible_address,
-                        NonFungible::new(immutable_data.raw, mutable_data.raw),
-                    );
-                    ids.insert(id);
-                }
-
-                Ok(ResourceContainer::new_non_fungible(resource_address, ids))
-            }
-        }
-    }
-
-    fn burn_resource(&mut self, resource: ResourceContainer) -> Result<(), RuntimeError> {
-        let resource_address = resource.resource_address();
-        let resource_manager = self
-            .track
-            .get_resource_manager_mut(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-
-        // Notify resource manager
-        resource_manager.burn(resource.total_amount());
-
-        if matches!(resource.resource_type(), ResourceType::NonFungible) {
-            // FIXME: remove the non-fungibles from the state
-        }
-
-        Ok(())
     }
 
     fn process_call_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -1119,24 +1180,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             lazy_map_ids,
             vault_ids,
         })
-    }
-
-    fn process_non_fungible_data(&mut self, data: &[u8]) -> Result<ScryptoValue, RuntimeError> {
-        let validated =
-            ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
-        if !validated.bucket_ids.is_empty() {
-            return Err(RuntimeError::BucketNotAllowed);
-        }
-        if !validated.proof_ids.is_empty() {
-            return Err(RuntimeError::ProofNotAllowed);
-        }
-        if !validated.lazy_map_ids.is_empty() {
-            return Err(RuntimeError::LazyMapNotAllowed);
-        }
-        if !validated.vault_ids.is_empty() {
-            return Err(RuntimeError::VaultNotAllowed);
-        }
-        Ok(validated)
     }
 
     /// Sends buckets to another component/blueprint, either as argument or return
@@ -1332,15 +1375,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             input.function,
             validated_args
         );
-
-        let invocation = self.prepare_call_function(
+        let result = self.call_function(
             input.package_address,
             &input.blueprint_name,
-            input.function.as_str(),
+            &input.function,
             validated_args,
-        )?;
-        let result = self.call(invocation);
-
+        );
         re_debug!(self, "CALL finished");
         Ok(CallFunctionOutput { rtn: result?.raw })
     }
@@ -1364,13 +1404,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             validated_args
         );
 
-        let invocation = self.prepare_call_method(
+        let result = self.call_method(
             input.component_address,
             input.method.as_str(),
             validated_args,
-        )?;
-        let result = self.call(invocation);
-
+        );
         re_debug!(self, "CALL finished");
         Ok(CallMethodOutput { rtn: result?.raw })
     }
@@ -1386,7 +1424,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let data = Self::process_entry_data(&input.state)?;
         let new_objects = wasm_process.process_owned_objects.take(data)?;
-        let package_address = wasm_process.vm.invocation.package_address;
+        let package_address = wasm_process.vm.actor.package_address().clone();
         let component = Component::new(
             package_address,
             input.blueprint_name,
@@ -1628,10 +1666,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "New resource manager: {}", resource_address);
 
         let bucket_id = if let Some(mint_params) = input.mint_params {
-            let bucket = Bucket::new(self.mint_resource(resource_address, mint_params)?);
-            let bucket_id = self.new_bucket_id()?;
-            self.buckets.insert(bucket_id, bucket);
-            Some(bucket_id)
+            let invocation = Invocation {
+                snode_ref: SNodeRef::Resource(resource_address.clone()),
+                function: "mint".to_string(),
+                args: vec![ScryptoValue::from_value(&mint_params)],
+            };
+            // TODO: Remove force
+            let result = self.internal_call(invocation, true)?;
+            Some(result.bucket_ids[0])
         } else {
             None
         };
@@ -1786,43 +1828,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         self.get_local_vault(&input.vault_id)?
             .put(bucket)
-            .map_err(RuntimeError::VaultError)?;
+            .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?;
 
         Ok(PutIntoVaultOutput {})
-    }
-
-    fn check_resource_auth(
-        &mut self,
-        resource_address: &ResourceAddress,
-        transition: &str,
-    ) -> Result<(), RuntimeError> {
-        let resource_manager = self.track.get_resource_manager(&resource_address).ok_or(
-            RuntimeError::ResourceManagerNotFound(resource_address.clone()),
-        )?;
-        let auth_rule = resource_manager.get_auth(transition);
-        auth_rule
-            .check(&[self.caller_auth_zone, &self.auth_zone])
-            .map_err(|e| RuntimeError::AuthorizationError(transition.to_string(), e))
     }
 
     fn handle_update_resource_metadata(
         &mut self,
         input: UpdateResourceMetadataInput,
     ) -> Result<UpdateResourceMetadataOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_address, "update_metadata")?;
-
-        // State update
-        let resource_manager = self
-            .track
-            .get_resource_manager_mut(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-        resource_manager
-            .update_metadata(input.new_metadata)
-            .map_err(RuntimeError::ResourceManagerError)?;
-
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Resource(input.resource_address.clone()),
+            function: "update_metadata".to_string(),
+            args: vec![ScryptoValue::from_value(&input.new_metadata)],
+        };
+        let _ = self.call(invocation)?;
         Ok(UpdateResourceMetadataOutput {})
     }
 
@@ -1830,19 +1850,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: UpdateNonFungibleMutableDataInput,
     ) -> Result<UpdateNonFungibleMutableDataOutput, RuntimeError> {
-        // Auth
-        let resource_address = input.non_fungible_address.resource_address();
-        self.check_resource_auth(&resource_address, "update_non_fungible_mutable_data")?;
-
-        // update state
-        let data = self.process_non_fungible_data(&input.new_mutable_data)?;
-        self.track
-            .get_non_fungible_mut(&input.non_fungible_address)
-            .ok_or(RuntimeError::NonFungibleNotFound(
-                input.non_fungible_address,
-            ))?
-            .set_mutable_data(data.raw);
-
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Resource(input.non_fungible_address.resource_address()),
+            function: "update_non_fungible_mutable_data".to_string(),
+            args: vec![
+                ScryptoValue::from_value(&input.non_fungible_address.non_fungible_id()),
+                ScryptoValue::from_value(&input.new_mutable_data),
+            ],
+        };
+        let _ = self.call(invocation)?;
         Ok(UpdateNonFungibleMutableDataOutput {})
     }
 
@@ -1850,30 +1866,27 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: MintResourceInput,
     ) -> Result<MintResourceOutput, RuntimeError> {
-        // Auth
-        self.check_resource_auth(&input.resource_address, "mint")?;
-
-        // wrap resource into a bucket
-        let bucket = Bucket::new(self.mint_resource(input.resource_address, input.mint_params)?);
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, bucket);
-
-        Ok(MintResourceOutput { bucket_id })
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Resource(input.resource_address.clone()),
+            function: "mint".to_string(),
+            args: vec![ScryptoValue::from_value(&input.mint_params)],
+        };
+        let result = self.call(invocation)?;
+        Ok(MintResourceOutput {
+            bucket_id: result.bucket_ids[0],
+        })
     }
 
     fn handle_burn_resource(
         &mut self,
         input: BurnResourceInput,
     ) -> Result<BurnResourceOutput, RuntimeError> {
-        // Auth
-        let bucket = self
-            .buckets
-            .remove(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-        self.check_resource_auth(&bucket.resource_address(), "burn")?;
-
-        self.burn_resource(bucket.into_container().map_err(RuntimeError::BucketError)?)?;
-
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Bucket(input.bucket_id.clone()),
+            function: "burn".to_string(),
+            args: vec![],
+        };
+        let _ = self.call(invocation)?;
         Ok(BurnResourceOutput {})
     }
 
@@ -1881,36 +1894,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: TakeFromVaultInput,
     ) -> Result<TakeFromVaultOutput, RuntimeError> {
-        let resource_address = self.get_local_vault(&input.vault_id)?.resource_address();
-        self.check_resource_auth(&resource_address, "take_from_vault")?;
-
-        let new_bucket = self
-            .get_local_vault(&input.vault_id)?
-            .take(input.amount)
-            .map_err(RuntimeError::VaultError)?;
-
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(TakeFromVaultOutput { bucket_id })
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Vault(input.vault_id.clone()),
+            function: "take_from_vault".to_string(),
+            args: vec![ScryptoValue::from_value(&input.amount)],
+        };
+        let result = self.call(invocation)?;
+        Ok(TakeFromVaultOutput {
+            bucket_id: result.bucket_ids[0],
+        })
     }
 
     fn handle_take_non_fungibles_from_vault(
         &mut self,
         input: TakeNonFungiblesFromVaultInput,
     ) -> Result<TakeNonFungiblesFromVaultOutput, RuntimeError> {
-        let resource_address = self.get_local_vault(&input.vault_id)?.resource_address();
-        self.check_resource_auth(&resource_address, "take_non_fungibles_from_vault")?;
-
-        let new_bucket = self
-            .get_local_vault(&input.vault_id)?
-            .take_non_fungibles(&input.non_fungible_ids)
-            .map_err(RuntimeError::VaultError)?;
-
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(TakeNonFungiblesFromVaultOutput { bucket_id })
+        let invocation = Invocation {
+            snode_ref: SNodeRef::Vault(input.vault_id.clone()),
+            function: "take_non_fungibles_from_vault".to_string(),
+            args: vec![ScryptoValue::from_value(&input.non_fungible_ids)],
+        };
+        let result = self.call(invocation)?;
+        Ok(TakeNonFungiblesFromVaultOutput {
+            bucket_id: result.bucket_ids[0],
+        })
     }
 
     fn handle_get_non_fungible_ids_in_vault(
@@ -1920,7 +1927,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let vault = self.get_local_vault(&input.vault_id)?;
         let non_fungible_ids = vault
             .total_ids()
-            .map_err(RuntimeError::VaultError)?
+            .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?
             .into_iter()
             .collect();
 
@@ -2223,10 +2230,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)?;
         Ok(GetCallDataOutput {
-            function: wasm_process.vm.invocation.function.clone(),
+            function: wasm_process.vm.function.clone(),
             args: wasm_process
                 .vm
-                .invocation
                 .args
                 .iter()
                 .cloned()
@@ -2267,10 +2273,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)?;
-        Ok(GetActorOutput {
-            actor: wasm_process.vm.invocation.actor.clone(),
-            package_address: wasm_process.vm.invocation.package_address,
-        })
+
+        return Ok(GetActorOutput {
+            actor: wasm_process.vm.actor.clone(),
+        });
     }
 
     //============================

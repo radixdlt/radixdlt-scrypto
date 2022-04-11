@@ -538,30 +538,42 @@ impl TransactionBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         self.take_from_worktop(minter_resource_address, |builder, bucket_id| {
-            builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
-                builder.push_to_auth_zone(proof_id);
-                builder.add_instruction(Instruction::CallFunction {
-                    package_address: SYSTEM_PACKAGE,
-                    blueprint_name: "System".to_owned(),
-                    function: "mint".to_owned(),
-                    args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
-                });
-                builder.pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
-            })
+            builder.add_instruction(Instruction::CallFunction {
+                package_address: SYSTEM_PACKAGE,
+                blueprint_name: "System".to_owned(),
+                function: "mint".to_owned(),
+                args: vec![
+                    scrypto_encode(&amount),
+                    scrypto_encode(&resource_address),
+                    scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
+                ],
+            });
+            builder
         })
     }
 
     /// Burns a resource.
-    pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
+    pub fn burn(
+        &mut self,
+        amount: Decimal,
+        resource_address: ResourceAddress,
+        burner_resource_address: ResourceAddress,
+    ) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
+            builder.take_from_worktop(burner_resource_address, |builder, auth_bucket_id| {
+                builder
+                    .add_instruction(Instruction::CallFunction {
+                        package_address: SYSTEM_PACKAGE,
+                        blueprint_name: "System".to_owned(),
+                        function: "burn".to_owned(),
+                        args: vec![
+                            scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
+                            scrypto_encode(&scrypto::resource::Bucket(auth_bucket_id)),
+                        ],
+                    })
+                    .0
+            });
             builder
-                .add_instruction(Instruction::CallFunction {
-                    package_address: SYSTEM_PACKAGE,
-                    blueprint_name: "System".to_owned(),
-                    function: "burn".to_owned(),
-                    args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
-                })
-                .0
         })
     }
 

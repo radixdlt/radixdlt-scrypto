@@ -23,13 +23,19 @@ blueprint! {
         }
 
         /// Mints fungible resource. TODO: Remove
-        pub fn mint(amount: Decimal, resource_address: ResourceAddress) -> Bucket {
-            resource_manager!(resource_address).mint(amount)
+        pub fn mint(
+            amount: Decimal,
+            resource_address: ResourceAddress,
+            auth: Bucket,
+        ) -> (Bucket, Bucket) {
+            let minted = auth.authorize(|| resource_manager!(resource_address).mint(amount));
+            (minted, auth)
         }
 
         /// Burns bucket. TODO: Remove
-        pub fn burn(bucket: Bucket) {
-            bucket.burn()
+        pub fn burn(bucket: Bucket, auth: Bucket) -> Bucket {
+            auth.authorize(|| bucket.burn());
+            auth
         }
 
         /// Gives away XRD tokens for testing. TODO: Remove

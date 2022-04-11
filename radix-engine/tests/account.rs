@@ -47,7 +47,7 @@ fn can_withdraw_non_fungible_from_my_account() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]

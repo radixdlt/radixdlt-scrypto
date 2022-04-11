@@ -3,8 +3,10 @@ use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
+use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
+use crate::errors::RuntimeError;
 use crate::ledger::*;
 use crate::model::*;
 
@@ -164,21 +166,21 @@ impl<'s, S: SubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a package, if exists.
-    pub fn get_package(&mut self, package_address: PackageAddress) -> Option<&Package> {
-        if self.packages.contains_key(&package_address) {
-            return self.packages.get(&package_address).map(|p| &p.value);
+    pub fn get_package(&mut self, package_address: &PackageAddress) -> Option<&Package> {
+        if self.packages.contains_key(package_address) {
+            return self.packages.get(package_address).map(|p| &p.value);
         }
 
-        if let Some((package, phys_id)) = self.substate_store.get_decoded_substate(&package_address)
+        if let Some((package, phys_id)) = self.substate_store.get_decoded_substate(package_address)
         {
             self.packages.insert(
-                package_address,
+                package_address.clone(),
                 SubstateUpdate {
                     prev_id: Some(phys_id),
                     value: package,
                 },
             );
-            self.packages.get(&package_address).map(|p| &p.value)
+            self.packages.get(package_address).map(|p| &p.value)
         } else {
             None
         }
@@ -415,6 +417,18 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
+    // TODO: Separate out method auth substates
+    pub fn get_resource_method_auth(
+        &mut self,
+        resource_address: &ResourceAddress,
+        method_name: &str,
+    ) -> Result<&MethodAuthorization, RuntimeError> {
+        let resource_manager = self.get_resource_manager(&resource_address).ok_or(
+            RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+        )?;
+        Ok(resource_manager.get_auth(method_name))
+    }
+
     /// Returns an immutable reference to a resource manager, if exists.
     pub fn get_resource_manager(
         &mut self,
@@ -442,6 +456,30 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 .map(|r| &r.value)
         } else {
             None
+        }
+    }
+
+    pub fn resource_manager_invoke(
+        &mut self,
+        resource_address: &ResourceAddress,
+        function: &str,
+        args: Vec<ScryptoValue>,
+    ) -> Result<Option<Bucket>, RuntimeError> {
+        if let Some(substate_update) = self.resource_managers.remove(resource_address) {
+            let mut resource_manager: ResourceManager = substate_update.value;
+            let result = resource_manager
+                .main(resource_address.clone(), function, args, self)
+                .map_err(RuntimeError::ResourceManagerError)?;
+            self.resource_managers.insert(
+                resource_address.clone(),
+                SubstateUpdate {
+                    prev_id: substate_update.prev_id,
+                    value: resource_manager,
+                },
+            );
+            Ok(result)
+        } else {
+            panic!("Resource Manager not found");
         }
     }
 
