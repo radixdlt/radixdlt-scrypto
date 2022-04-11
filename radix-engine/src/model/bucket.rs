@@ -153,7 +153,7 @@ impl Bucket {
         if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
             for id in self.total_ids().unwrap() {
                 let non_fungible_address = NonFungibleAddress::new(resource_address, id);
-                system_api.remove_non_fungible(non_fungible_address);
+                system_api.set_non_fungible(non_fungible_address, Option::None);
             }
         }
         system_api.return_borrowed_global_resource_manager(resource_address, resource_manager);
