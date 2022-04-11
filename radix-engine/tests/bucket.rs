@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::*;
 use radix_engine::ledger::*;
-use radix_engine::model::ResourceContainerError;
+use radix_engine::model::{BucketError, ResourceContainerError};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 
@@ -83,7 +83,9 @@ fn test_take_with_invalid_granularity() {
     assert_eq!(
         receipt.result,
         Err(RuntimeError::BucketError(
-            ResourceContainerError::InvalidAmount(dec!("1.123"), 2)
+            BucketError::ResourceContainerError(
+                ResourceContainerError::InvalidAmount(dec!("1.123"), 2)
+            )
         ))
     );
 }
@@ -118,7 +120,9 @@ fn test_take_with_negative_amount() {
     assert_eq!(
         receipt.result,
         Err(RuntimeError::BucketError(
-            ResourceContainerError::InvalidAmount(dec!("-2"), 2)
+            BucketError::ResourceContainerError(
+                ResourceContainerError::InvalidAmount(dec!("-2"), 2)
+            )
         ))
     );
 }

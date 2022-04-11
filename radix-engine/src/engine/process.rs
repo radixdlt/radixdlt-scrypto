@@ -87,7 +87,7 @@ pub enum SNodeState {
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
     Resource(ResourceAddress, ResourceManager),
-    Bucket(Bucket),
+    Bucket(BucketId, Bucket),
     Vault(VaultId),
 }
 
@@ -960,7 +960,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::Bucket(bucket), method_auth.clone()))
+                Ok((SNodeState::Bucket(bucket_id.clone(), bucket), method_auth.clone()))
             }
             SNodeRef::Vault(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
@@ -976,7 +976,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Authorization check
         let proofs_vector = match &snode {
             // Same process auth check
-            SNodeState::Vault(_) | SNodeState::Bucket(_) => {
+            SNodeState::Vault(_) | SNodeState::Bucket(_, _) => {
                 vec![self.caller_auth_zone, &self.auth_zone]
             }
             // Extern call auth check
@@ -1004,9 +1004,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Ok(ScryptoValue::from_value(&()))
                 }
             }
-            SNodeState::Bucket(bucket) => match function.as_str() {
-                "burn" => bucket.drop(self),
-                _ => Err(RuntimeError::IllegalSystemCall),
+            SNodeState::Bucket(bucket_id, mut bucket) => match function.as_str() {
+                "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
+                method => {
+                    let rtn = bucket.main(method, args, self)
+                        .map_err(RuntimeError::BucketError)?;
+                    self.buckets.insert(bucket_id, bucket);
+                    Ok(rtn)
+                },
             },
             _ => {
                 // start a new process
@@ -1766,25 +1771,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_mut(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
             .put(other)
-            .map_err(RuntimeError::BucketError)?;
+            .map_err(|e| RuntimeError::BucketError(BucketError::ResourceContainerError(e)))?;
 
         Ok(PutIntoBucketOutput {})
-    }
-
-    fn handle_take_from_bucket(
-        &mut self,
-        input: TakeFromBucketInput,
-    ) -> Result<TakeFromBucketOutput, RuntimeError> {
-        let new_bucket = self
-            .buckets
-            .get_mut(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .take(input.amount)
-            .map_err(RuntimeError::BucketError)?;
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(TakeFromBucketOutput { bucket_id })
     }
 
     fn handle_get_bucket_amount(
@@ -1822,7 +1811,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_mut(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
             .take_non_fungibles(&input.non_fungible_ids)
-            .map_err(RuntimeError::BucketError)?;
+            .map_err(|e| RuntimeError::BucketError(BucketError::ResourceContainerError(e)))?;
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, new_bucket);
 
@@ -1841,7 +1830,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetNonFungibleIdsInBucketOutput {
             non_fungible_ids: bucket
                 .total_ids()
-                .map_err(RuntimeError::BucketError)?
+                .map_err(|e| RuntimeError::BucketError(BucketError::ResourceContainerError(e)))?
                 .into_iter()
                 .collect(),
         })
@@ -2138,7 +2127,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
                     PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
-                    TAKE_FROM_BUCKET => self.handle(args, Self::handle_take_from_bucket),
                     GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
                     GET_BUCKET_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_bucket_resource_address)

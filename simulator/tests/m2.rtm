@@ -1,14 +1,14 @@
 # Prepare - grab token from the `Hello` component
-CALL_METHOD ComponentAddress("02164c4e1eb6f4bf2d8f39771751323564d52969731a11e8505475") "free_token";
+CALL_METHOD ComponentAddress("02d28b416875900786bef97fbb43d4997fdc22ae3f34033a35518a") "free_token";
 
 # Test - assertions
-ASSERT_WORKTOP_CONTAINS ResourceAddress("03c620de0a92d5c44c3656834d6bb360c8d4ed3f44f6c81c237d2e");
-ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("1.0") ResourceAddress("03c620de0a92d5c44c3656834d6bb360c8d4ed3f44f6c81c237d2e");
+ASSERT_WORKTOP_CONTAINS ResourceAddress("03cbe9bceec37c8360b27c57f33358bd8b342a956b62429c8c5909");
+ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("1.0") ResourceAddress("03cbe9bceec37c8360b27c57f33358bd8b342a956b62429c8c5909");
 
 # Test - worktop
-TAKE_FROM_WORKTOP ResourceAddress("03c620de0a92d5c44c3656834d6bb360c8d4ed3f44f6c81c237d2e") Bucket("bucket1");
+TAKE_FROM_WORKTOP ResourceAddress("03cbe9bceec37c8360b27c57f33358bd8b342a956b62429c8c5909") Bucket("bucket1");
 RETURN_TO_WORKTOP Bucket("bucket1");
-TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("1.0") ResourceAddress("03c620de0a92d5c44c3656834d6bb360c8d4ed3f44f6c81c237d2e") Bucket("bucket2");
+TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("1.0") ResourceAddress("03cbe9bceec37c8360b27c57f33358bd8b342a956b62429c8c5909") Bucket("bucket2");
 RETURN_TO_WORKTOP Bucket("bucket2");
 
 # Test - auth zone

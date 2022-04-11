@@ -13,7 +13,7 @@ mod vault;
 mod worktop;
 
 pub use auth_converter::convert;
-pub use bucket::Bucket;
+pub use bucket::{Bucket, BucketError};
 pub use component::Component;
 pub use method_authorization::{
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization, MethodAuthorizationError,

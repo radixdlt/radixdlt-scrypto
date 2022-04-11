@@ -1,14 +1,17 @@
 use sbor::*;
+use crate::core::SNodeRef;
 
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::resource_manager;
+use crate::{args, resource_manager};
+use crate::buffer::scrypto_decode;
 use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
+use crate::rust::string::ToString;
 use crate::types::*;
 
 /// Represents a transient resource container.
@@ -37,13 +40,14 @@ impl Bucket {
 
     /// Takes some amount of resources from this bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
-        let input = TakeFromBucketInput {
-            bucket_id: self.0,
-            amount: amount.into(),
+        let amount: Decimal = amount.into();
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Bucket(self.0),
+            function: "take_from_bucket".to_string(),
+            args: args![amount],
         };
-        let output: TakeFromBucketOutput = call_engine(TAKE_FROM_BUCKET, input);
-
-        Self(output.bucket_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Takes a specific non-fungible from this bucket.
