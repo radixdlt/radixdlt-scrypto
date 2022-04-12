@@ -1,6 +1,6 @@
-use sbor::Value;
 use radix_engine::engine::*;
 use radix_engine::model::*;
+use sbor::Value;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::values::*;
@@ -229,7 +229,9 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 if let Value::Struct(params) = validated_arg.dom {
                     for param in params {
                         buf.push(' ');
-                        buf.push_str(&ScryptoValueFormatter::format_value(&param, &buckets, &proofs));
+                        buf.push_str(&ScryptoValueFormatter::format_value(
+                            &param, &buckets, &proofs,
+                        ));
                     }
                 } else {
                     return Err(DecompileError::InvalidFunctionParam);
@@ -253,7 +255,9 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 if let Value::Struct(params) = validated_arg.dom {
                     for param in params {
                         buf.push(' ');
-                        buf.push_str(&ScryptoValueFormatter::format_value(&param, &buckets, &proofs));
+                        buf.push_str(&ScryptoValueFormatter::format_value(
+                            &param, &buckets, &proofs,
+                        ));
                     }
                 } else {
                     return Err(DecompileError::InvalidFunctionParam);

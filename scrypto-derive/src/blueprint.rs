@@ -181,8 +181,6 @@ fn generate_input_output(blueprint_id: &Ident, items: &[ImplItem]) -> Vec<ItemSt
                 struct #fn_input_ident_input(#(#fields),*);
             };
             input_output_structs.push(item_struct);
-
-
         }
     }
 
@@ -246,11 +244,8 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                             }
                         }
                         FnArg::Typed(_) => {
-                            let arg_index: Index = if get_state.is_some() {
-                                i - 1
-                            } else {
-                                i
-                            }.into();
+                            let arg_index: Index =
+                                if get_state.is_some() { i - 1 } else { i }.into();
                             let arg = format_ident!("arg{}", arg_index);
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument

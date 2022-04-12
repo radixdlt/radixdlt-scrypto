@@ -241,12 +241,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "Chess",
-            "create_game",
-            args![players],
-        )
+        .call_function(package, "Chess", "create_game", args![players])
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -281,12 +276,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "Chess",
-            "create_game",
-            args![players],
-        )
+        .call_function(package, "Chess", "create_game", args![players])
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);

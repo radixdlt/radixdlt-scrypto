@@ -729,10 +729,10 @@ fn generate_type(ty: &ast::Type) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::args;
     use super::*;
     use crate::lexer::tokenize;
     use crate::parser::Parser;
+    use scrypto::args;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -923,10 +923,7 @@ mod tests {
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
                 function: "new".into(),
-                arg: args![
-                    500u32,
-                    HashMap::from([("key", 1u8),])
-                ]
+                arg: args![500u32, HashMap::from([("key", 1u8),])]
             }
         );
         generate_instruction_ok!(

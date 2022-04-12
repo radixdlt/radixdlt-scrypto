@@ -467,7 +467,9 @@ impl TransactionBuilder {
             ResourceType::Fungible { divisibility: 18 },
             metadata,
             resource_auth,
-            Some(MintParams::Fungible { amount: initial_supply.into()})
+            Some(MintParams::Fungible {
+                amount: initial_supply.into()
+            })
         );
 
         self.add_instruction(Instruction::CallFunction {
@@ -490,7 +492,7 @@ impl TransactionBuilder {
         resource_auth.insert(Mint, auth!(require(minter_resource_address.clone())));
         resource_auth.insert(Burn, auth!(require(minter_resource_address.clone())));
 
-        let arg  = args!(
+        let arg = args!(
             ResourceType::Fungible { divisibility: 0 },
             metadata,
             resource_auth,
@@ -519,7 +521,9 @@ impl TransactionBuilder {
             ResourceType::Fungible { divisibility: 0 },
             metadata,
             resource_auth,
-            Some(MintParams::Fungible { amount: initial_supply.into()})
+            Some(MintParams::Fungible {
+                amount: initial_supply.into()
+            })
         );
 
         self.add_instruction(Instruction::CallFunction {
@@ -563,7 +567,10 @@ impl TransactionBuilder {
     ) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder.take_from_worktop(burner_resource_address, |builder, auth_bucket_id| {
-                let arg = args!(scrypto::resource::Bucket(bucket_id), scrypto::resource::Bucket(auth_bucket_id));
+                let arg = args!(
+                    scrypto::resource::Bucket(bucket_id),
+                    scrypto::resource::Bucket(auth_bucket_id)
+                );
                 builder
                     .add_instruction(Instruction::CallFunction {
                         package_address: SYSTEM_PACKAGE,
@@ -733,17 +740,15 @@ impl TransactionBuilder {
         Ok(bytes)
     }
 
-    fn ty_to_value<T>(t: &T) -> Value where T:Encode {
+    fn ty_to_value<T>(t: &T) -> Value
+    where
+        T: Encode,
+    {
         // TODO: Directly go from type to Value
         decode_any(&scrypto_encode(t)).unwrap()
     }
 
-    fn parse_basic_ty<T>(
-        &mut self,
-        i: usize,
-        ty: &Type,
-        arg: &str,
-    ) -> Result<Value, BuildArgsError>
+    fn parse_basic_ty<T>(&mut self, i: usize, ty: &Type, arg: &str) -> Result<Value, BuildArgsError>
     where
         T: FromStr + Encode,
         T::Err: fmt::Debug,
@@ -864,7 +869,6 @@ impl TransactionBuilder {
         }
     }
 }
-
 
 enum ResourceSpecifier {
     Amount(Decimal, ResourceAddress),

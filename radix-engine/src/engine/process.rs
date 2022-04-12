@@ -692,7 +692,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .collect();
 
         // FIXME: This is horribly inefficient
-        let arg = ScryptoValue::from_slice(&args!(to_deposit)).map_err(RuntimeError::ParseScryptoValueError)?;
+        let arg = ScryptoValue::from_slice(&args!(to_deposit))
+            .map_err(RuntimeError::ParseScryptoValueError)?;
 
         let invocation = Invocation {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
@@ -1359,7 +1360,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CallFunctionInput,
     ) -> Result<CallFunctionOutput, RuntimeError> {
-        let arg = ScryptoValue::from_slice(&input.arg).map_err(RuntimeError::ParseScryptoValueError)?;
+        let arg =
+            ScryptoValue::from_slice(&input.arg).map_err(RuntimeError::ParseScryptoValueError)?;
 
         re_debug!(
             self,
@@ -1383,7 +1385,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CallMethodInput,
     ) -> Result<CallMethodOutput, RuntimeError> {
-        let arg = ScryptoValue::from_slice(&input.arg).map_err(RuntimeError::ParseScryptoValueError)?;
+        let arg =
+            ScryptoValue::from_slice(&input.arg).map_err(RuntimeError::ParseScryptoValueError)?;
 
         re_debug!(
             self,
@@ -1393,11 +1396,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             arg
         );
 
-        let result = self.call_method(
-            input.component_address,
-            input.method.as_str(),
-            arg,
-        );
+        let result = self.call_method(input.component_address, input.method.as_str(), arg);
         re_debug!(self, "CALL finished");
         Ok(CallMethodOutput { rtn: result?.raw })
     }
@@ -1844,8 +1843,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             function: "update_non_fungible_mutable_data".to_string(),
             arg: ScryptoValue::from_value(&(
                 input.non_fungible_address.non_fungible_id(),
-                input.new_mutable_data)
-            )
+                input.new_mutable_data,
+            )),
         };
         let _ = self.call(invocation)?;
         Ok(UpdateNonFungibleMutableDataOutput {})
@@ -2219,13 +2218,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)?;
         let component = match wasm_process.interpreter_state {
-            InterpreterState::Component { component_address, .. } => Some(component_address.clone()),
-            InterpreterState::Blueprint  => None,
+            InterpreterState::Component {
+                component_address, ..
+            } => Some(component_address.clone()),
+            InterpreterState::Blueprint => None,
         };
         Ok(GetCallDataOutput {
             function: wasm_process.vm.function.clone(),
             component,
-            arg: wasm_process.vm.arg.raw.clone()
+            arg: wasm_process.vm.arg.raw.clone(),
         })
     }
 
