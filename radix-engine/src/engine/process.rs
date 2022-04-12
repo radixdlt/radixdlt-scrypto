@@ -215,7 +215,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     wasm_process_state: Option<WasmProcess<'r>>,
 
     /// ID allocator for buckets and proofs created within transaction.
-    id_allocator: IdAllocator,
+    id_allocator: Option<IdAllocator>,
     /// Resources collected from previous returns or self.
     worktop: Worktop,
     /// Proofs collected from previous returns or self. Also used for system authorization.
@@ -226,7 +226,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Create a new process, which is not started.
-    pub fn new(depth: usize, trace: bool, track: &'r mut Track<'l, L>) -> Self {
+    pub fn new(depth: usize, trace: bool, track: &'r mut Track<'l, L>, id_allocator: Option<IdAllocator>) -> Self {
         Self {
             depth,
             trace,
@@ -234,7 +234,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             buckets: HashMap::new(),
             proofs: HashMap::new(),
             wasm_process_state: None,
-            id_allocator: IdAllocator::new(IdSpace::Transaction),
+            id_allocator,
             worktop: Worktop::new(),
             auth_zone: Vec::new(),
             caller_auth_zone: &[],
@@ -242,8 +242,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn new_bucket_id(&mut self) -> Result<BucketId, RuntimeError> {
-        if self.depth == 0 {
-            self.id_allocator
+        if let Some(id_allocator) = &mut self.id_allocator {
+            id_allocator
                 .new_bucket_id()
                 .map_err(RuntimeError::IdAllocatorError)
         } else {
@@ -252,8 +252,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn new_proof_id(&mut self) -> Result<ProofId, RuntimeError> {
-        if self.depth == 0 {
-            self.id_allocator
+        if let Some(id_allocator) = &mut self.id_allocator {
+            id_allocator
                 .new_proof_id()
                 .map_err(RuntimeError::IdAllocatorError)
         } else {
@@ -1018,7 +1018,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
             _ => {
                 // start a new process
-                let mut process = Process::new(self.depth + 1, self.trace, self.track);
+                let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
                 process.caller_auth_zone = &self.auth_zone;
 
                 // move buckets and proofs to the new process.
@@ -1105,7 +1105,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
-        let mut process = Process::new(self.depth + 1, self.trace, self.track);
+        let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
         let result = process.run(&mut snode, String::new(), Vec::new()).map(|(r,_,_)| r);
 
         re_debug!(self, "Call abi ended");
