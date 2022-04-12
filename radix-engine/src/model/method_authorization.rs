@@ -3,7 +3,7 @@ use scrypto::engine::types::*;
 use scrypto::rust::vec::Vec;
 
 use crate::model::method_authorization::MethodAuthorizationError::NotAuthorized;
-use crate::model::Proof;
+use crate::model::{AuthZone, Proof};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum MethodAuthorizationError {
@@ -49,10 +49,10 @@ impl HardResourceOrNonFungible {
         }
     }
 
-    pub fn check_has_amount(&self, amount: Decimal, proofs_vector: &[&[Proof]]) -> bool {
-        for proofs in proofs_vector {
+    pub fn check_has_amount(&self, amount: Decimal, auth_zones: &[&AuthZone]) -> bool {
+        for auth_zone in auth_zones {
             // FIXME: Need to check the composite max amount rather than just each proof individually
-            if proofs
+            if auth_zone.proofs
                 .iter()
                 .any(|p| self.proof_matches(p) && p.total_amount() >= amount)
             {
@@ -63,9 +63,9 @@ impl HardResourceOrNonFungible {
         false
     }
 
-    pub fn check(&self, proofs_vector: &[&[Proof]]) -> bool {
-        for proofs in proofs_vector {
-            if proofs.iter().any(|p| self.proof_matches(p)) {
+    pub fn check(&self, auth_zones: &[&AuthZone]) -> bool {
+        for auth_zone in auth_zones {
+            if auth_zone.proofs.iter().any(|p| self.proof_matches(p)) {
                 return true;
             }
         }
@@ -102,17 +102,17 @@ pub enum HardProofRule {
 }
 
 impl HardProofRule {
-    pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), MethodAuthorizationError> {
+    pub fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
         match self {
             HardProofRule::This(resource) => {
-                if resource.check(proofs_vector) {
+                if resource.check(auth_zones) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
                 }
             }
             HardProofRule::SomeOfResource(HardDecimal::Amount(amount), resource) => {
-                if resource.check_has_amount(*amount, proofs_vector) {
+                if resource.check_has_amount(*amount, auth_zones) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
@@ -120,7 +120,7 @@ impl HardProofRule {
             }
             HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
-                    if !resource.check(proofs_vector) {
+                    if !resource.check(auth_zones) {
                         return Err(NotAuthorized);
                     }
                 }
@@ -129,7 +129,7 @@ impl HardProofRule {
             }
             HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
-                    if resource.check(proofs_vector) {
+                    if resource.check(auth_zones) {
                         return Ok(());
                     }
                 }
@@ -142,7 +142,7 @@ impl HardProofRule {
             ) => {
                 let mut left = count.clone();
                 for resource in resources {
-                    if resource.check(proofs_vector) {
+                    if resource.check(auth_zones) {
                         left -= 1;
                         if left == 0 {
                             return Ok(());
@@ -164,17 +164,17 @@ pub enum HardAuthRule {
 }
 
 impl HardAuthRule {
-    fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), MethodAuthorizationError> {
+    fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
         match self {
-            HardAuthRule::ProofRule(rule) => rule.check(proofs_vector),
+            HardAuthRule::ProofRule(rule) => rule.check(auth_zones),
             HardAuthRule::AnyOf(rules) => {
-                if !rules.iter().any(|r| r.check(proofs_vector).is_ok()) {
+                if !rules.iter().any(|r| r.check(auth_zones).is_ok()) {
                     return Err(NotAuthorized);
                 }
                 Ok(())
             }
             HardAuthRule::AllOf(rules) => {
-                if rules.iter().any(|r| r.check(proofs_vector).is_err()) {
+                if rules.iter().any(|r| r.check(auth_zones).is_err()) {
                     return Err(NotAuthorized);
                 }
                 Ok(())
@@ -193,9 +193,9 @@ pub enum MethodAuthorization {
 }
 
 impl MethodAuthorization {
-    pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), MethodAuthorizationError> {
+    pub fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
         match self {
-            MethodAuthorization::Protected(rule) => rule.check(proofs_vector),
+            MethodAuthorization::Protected(rule) => rule.check(auth_zones),
             MethodAuthorization::Public => Ok(()),
             MethodAuthorization::Private => Err(MethodAuthorizationError::NotAuthorized),
             MethodAuthorization::Unsupported => Err(MethodAuthorizationError::UnsupportedMethod),

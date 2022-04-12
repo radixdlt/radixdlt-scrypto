@@ -213,9 +213,9 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
     /// Proofs collected from previous returns or self. Also used for system authorization.
-    auth_zone: Vec<Proof>,
+    auth_zone: AuthZone,
     /// The caller's auth zone
-    caller_auth_zone: Option<&'r [Proof]>,
+    caller_auth_zone: Option<&'r AuthZone>,
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
@@ -244,7 +244,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             wasm_process_state: None,
             id_allocator,
             worktop: Worktop::new(),
-            auth_zone: Vec::new(),
+            auth_zone: AuthZone::new(),
             caller_auth_zone: None,
         }
     }
@@ -420,12 +420,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // Takes a proof from the auth zone.
     pub fn pop_from_auth_zone(&mut self) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Popping from auth zone");
-        if self.auth_zone.is_empty() {
-            return Err(RuntimeError::EmptyAuthZone);
-        }
-
         let new_proof_id = self.new_proof_id()?;
-        let proof = self.auth_zone.remove(self.auth_zone.len() - 1);
+        let proof = self.auth_zone.pop().map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, proof);
         Ok(new_proof_id)
     }
@@ -526,8 +522,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof = Proof::compose(&self.auth_zone, resource_address, resource_type)
-            .map_err(RuntimeError::ProofError)?;
+        let new_proof = self.auth_zone.create_proof(resource_address, resource_type)
+            .map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -547,9 +543,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof =
-            Proof::compose_by_amount(&self.auth_zone, amount, resource_address, resource_type)
-                .map_err(RuntimeError::ProofError)?;
+        let new_proof = self.auth_zone.create_proof_by_amount(amount, resource_address, resource_type)
+            .map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -569,9 +564,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof =
-            Proof::compose_by_ids(&self.auth_zone, ids, resource_address, resource_type)
-                .map_err(RuntimeError::ProofError)?;
+        let new_proof = self.auth_zone.create_proof_by_ids(ids, resource_address, resource_type)
+            .map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -615,13 +609,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     pub fn drop_all_auth_zone_proofs(&mut self) -> Result<(), RuntimeError> {
-        loop {
-            if let Some(proof) = self.auth_zone.pop() {
-                proof.drop();
-            } else {
-                break;
-            }
-        }
+        self.auth_zone.clear();
         Ok(())
     }
 
@@ -953,12 +941,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 if let Some(auth_zone) = self.caller_auth_zone {
                     vec![auth_zone, &self.auth_zone]
                 } else {
-                    vec![self.auth_zone.as_slice()]
+                    vec![&self.auth_zone]
                 }
 
             }
             // Extern call auth check
-            _ => vec![self.auth_zone.as_slice()],
+            _ => vec![&self.auth_zone],
         };
 
         method_auth
