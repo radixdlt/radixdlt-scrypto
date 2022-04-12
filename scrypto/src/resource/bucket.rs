@@ -42,7 +42,7 @@ impl Bucket {
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
         let amount: Decimal = amount.into();
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Bucket(self.0),
+            snode_ref: SNodeRef::BucketRef(self.0),
             function: "take_from_bucket".to_string(),
             args: args![amount],
         };

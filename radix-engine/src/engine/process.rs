@@ -85,9 +85,10 @@ pub trait SystemApi {
 pub enum SNodeState {
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
-    Resource(ResourceAddress, ResourceManager),
-    Bucket(BucketId, Bucket),
-    Vault(VaultId),
+    ResourceRef(ResourceAddress, ResourceManager),
+    BucketRef(BucketId, Bucket),
+    Bucket(Bucket),
+    VaultRef(VaultId),
 }
 
 /// Represents an interpreter instance.
@@ -820,7 +821,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 ResourceManager::static_main(function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)
             }
-            SNodeState::Resource(resource_address, resource_manager) => {
+            SNodeState::ResourceRef(resource_address, resource_manager) => {
                 let return_value = resource_manager
                     .main(*resource_address, function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
@@ -916,13 +917,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeRef::ResourceStatic => {
                 Ok((SNodeState::ResourceStatic, MethodAuthorization::Public))
             }
-            SNodeRef::Resource(resource_address) => {
+            SNodeRef::ResourceRef(resource_address) => {
                 let resource_manager: ResourceManager = self
                     .track
                     .borrow_global_mut_resource_manager(resource_address.clone())?;
                 let method_auth = resource_manager.get_auth(&function).clone();
                 Ok((
-                    SNodeState::Resource(resource_address.clone(), resource_manager),
+                    SNodeState::ResourceRef(resource_address.clone(), resource_manager),
                     method_auth,
                 ))
             }
@@ -937,23 +938,36 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::Bucket(bucket_id.clone(), bucket), method_auth.clone()))
+                Ok((SNodeState::Bucket(bucket), method_auth.clone()))
             }
-            SNodeRef::Vault(vault_id) => {
+            SNodeRef::BucketRef(bucket_id) => {
+                let bucket = self
+                    .buckets
+                    .remove(&bucket_id)
+                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let resource_address = bucket.resource_address();
+                let method_auth = self
+                    .track
+                    .get_resource_manager(&resource_address)
+                    .unwrap()
+                    .get_auth(&function);
+                Ok((SNodeState::BucketRef(bucket_id.clone(), bucket), method_auth.clone()))
+            }
+            SNodeRef::VaultRef(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
                 let method_auth = self
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::Vault(vault_id.clone()), method_auth.clone()))
+                Ok((SNodeState::VaultRef(vault_id.clone()), method_auth.clone()))
             }
         }?;
 
         // Authorization check
         let proofs_vector = match &snode {
             // Same process auth check
-            SNodeState::Vault(_) | SNodeState::Bucket(_, _) => {
+            SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) => {
                 vec![self.caller_auth_zone, &self.auth_zone]
             }
             // Extern call auth check
@@ -977,7 +991,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         let result = match snode {
-            SNodeState::Vault(vault_id) => {
+            SNodeState::VaultRef(vault_id) => {
                 let vault = self.get_local_vault(&vault_id)?;
                 let maybe_bucket = vault
                     .main(function.as_str(), args)
@@ -992,14 +1006,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Ok(ScryptoValue::from_value(&()))
                 }
             }
-            SNodeState::Bucket(bucket_id, mut bucket) => match function.as_str() {
+            SNodeState::Bucket(bucket) => match function.as_str() {
                 "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
-                method => {
-                    let rtn = bucket.main(method, args, self)
-                        .map_err(RuntimeError::BucketError)?;
-                    self.buckets.insert(bucket_id, bucket);
-                    Ok(rtn)
-                },
+                _ => Err(RuntimeError::IllegalSystemCall)
+            }
+            SNodeState::BucketRef(bucket_id, mut bucket) => {
+                let rtn = bucket.main(function.as_str(), args, self)
+                    .map_err(RuntimeError::BucketError)?;
+                self.buckets.insert(bucket_id, bucket);
+                Ok(rtn)
             },
             _ => {
                 // start a new process
@@ -1017,13 +1032,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 self.receive_buckets(moving_buckets)?;
                 self.receive_proofs(moving_proofs)?;
 
+                // Return borrowed snodes
                 match snode {
                     SNodeState::Scrypto(actor, component_state) => {
                         if let Some(component_address) = actor.component_address() {
                             self.track.return_borrowed_global_component(component_address, component_state.unwrap());
                         }
                     }
-                    SNodeState::Resource(resource_address, resource_manager) => {
+                    SNodeState::ResourceRef(resource_address, resource_manager) => {
                         self.track.return_borrowed_global_resource_manager(resource_address, resource_manager);
                     }
                     _ => {}

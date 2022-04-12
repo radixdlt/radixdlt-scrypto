@@ -39,7 +39,7 @@ impl ResourceManager {
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Resource(self.0),
+            snode_ref: SNodeRef::ResourceRef(self.0),
             function: "mint".to_string(),
             args: args![MintParams::Fungible {
                 amount: amount.into()
@@ -55,7 +55,7 @@ impl ResourceManager {
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
 
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Resource(self.0),
+            snode_ref: SNodeRef::ResourceRef(self.0),
             function: "mint".to_string(),
             args: args![MintParams::NonFungible { entries }],
         };
@@ -76,7 +76,7 @@ impl ResourceManager {
     /// Returns the resource type.
     pub fn resource_type(&self) -> ResourceType {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Resource(self.0),
+            snode_ref: SNodeRef::ResourceRef(self.0),
             function: "get_resource_type".to_string(),
             args: args![],
         };
@@ -87,7 +87,7 @@ impl ResourceManager {
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Resource(self.0),
+            snode_ref: SNodeRef::ResourceRef(self.0),
             function: "get_metadata".to_string(),
             args: args![],
         };
@@ -98,7 +98,7 @@ impl ResourceManager {
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Resource(self.0),
+            snode_ref: SNodeRef::ResourceRef(self.0),
             function: "get_total_supply".to_string(),
             args: args![],
         };
@@ -112,7 +112,7 @@ impl ResourceManager {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Resource(self.0),
+            snode_ref: SNodeRef::ResourceRef(self.0),
             function: "get_non_fungible".to_string(),
             args: args![id.clone()],
         };
@@ -127,7 +127,7 @@ impl ResourceManager {
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId, new_data: T) {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Resource(self.0),
+            snode_ref: SNodeRef::ResourceRef(self.0),
             function: "update_non_fungible_mutable_data".to_string(),
             args: args![id.clone(), new_data.mutable_data()],
         };
@@ -138,7 +138,7 @@ impl ResourceManager {
     ///
     pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Resource(self.0),
+            snode_ref: SNodeRef::ResourceRef(self.0),
             function: "non_fungible_exists".to_string(),
             args: args![id.clone()],
         };
@@ -149,7 +149,7 @@ impl ResourceManager {
     /// Updates the resource metadata
     pub fn update_metadata(&self, new_metadata: HashMap<String, String>) {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Resource(self.0),
+            snode_ref: SNodeRef::ResourceRef(self.0),
             function: "update_metadata".to_string(),
             args: args![new_metadata],
         };
