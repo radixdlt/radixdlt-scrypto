@@ -98,7 +98,7 @@ impl ResourceManager {
             );
         }
 
-        for pub_method in ["get_metadata", "get_resource_type", "get_total_supply", "take_from_bucket", "put_into_bucket"] {
+        for pub_method in ["get_metadata", "get_resource_type", "get_total_supply", "take_from_bucket", "put_into_bucket", "get_bucket_amount"] {
             authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
         }
 

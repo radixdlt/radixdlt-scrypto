@@ -124,7 +124,7 @@ impl Bucket {
         self.borrow_container().resource_type()
     }
 
-    pub fn total_amount(&self) -> Decimal {
+    fn total_amount(&self) -> Decimal {
         self.borrow_container().total_amount()
     }
 
@@ -177,11 +177,13 @@ impl Bucket {
                 self.put(bucket).map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&()))
             }
+            "get_bucket_amount" => {
+                Ok(ScryptoValue::from_value(&self.total_amount()))
+            }
             _ => Err(BucketError::MethodNotFound(function.to_string())),
         }
     }
 
-    #[allow(non_snake_case)]
     pub fn drop<'s, S: SystemApi>(self, system_api: &mut S) -> Result<ScryptoValue, BucketError> {
         // Notify resource manager, TODO: Should not need to notify manually
         let resource_address = self.resource_address();

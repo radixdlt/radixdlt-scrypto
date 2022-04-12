@@ -1769,19 +1769,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateEmptyBucketOutput { bucket_id })
     }
 
-    fn handle_get_bucket_amount(
-        &mut self,
-        input: GetBucketAmountInput,
-    ) -> Result<GetBucketAmountOutput, RuntimeError> {
-        let amount = self
-            .buckets
-            .get(&input.bucket_id)
-            .map(|b| b.total_amount())
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-
-        Ok(GetBucketAmountOutput { amount })
-    }
-
     fn handle_get_bucket_resource_address(
         &mut self,
         input: GetBucketResourceAddressInput,
@@ -2126,7 +2113,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
-                    GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
                     GET_BUCKET_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_bucket_resource_address)
                     }

@@ -98,10 +98,13 @@ impl Bucket {
 
     /// Returns the amount of resources in this bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetBucketAmountInput { bucket_id: self.0 };
-        let output: GetBucketAmountOutput = call_engine(GET_BUCKET_AMOUNT, input);
-
-        output.amount
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::BucketRef(self.0),
+            function: "get_bucket_amount".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the resource address.
