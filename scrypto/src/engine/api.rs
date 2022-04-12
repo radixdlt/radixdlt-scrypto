@@ -43,9 +43,6 @@ pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
 /// Get the IDs of all non-fungibles in this vault
 pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
-/// Create an empty bucket
-pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
-
 /// Create a bucket proof
 pub const CREATE_BUCKET_PROOF: u32 = 0x60;
 /// Create a vault proof
@@ -243,20 +240,6 @@ pub struct GetNonFungibleIdsInVaultInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleIdsInVaultOutput {
     pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-//==========
-// bucket
-//==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateEmptyBucketInput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateEmptyBucketOutput {
-    pub bucket_id: BucketId,
 }
 
 //==========

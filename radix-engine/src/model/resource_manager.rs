@@ -99,6 +99,7 @@ impl ResourceManager {
         }
 
         for pub_method in [
+            "create_bucket",
             "get_metadata",
             "get_resource_type",
             "get_total_supply",
@@ -330,6 +331,18 @@ impl ResourceManager {
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
+            "create_empty_bucket" => {
+                let container = ResourceContainer::new_empty(
+                    resource_address,
+                    self.resource_type(),
+                );
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
+            }
             "mint" => {
                 // TODO: cleanup
                 let mint_params: MintParams = scrypto_decode(&args[0].raw)

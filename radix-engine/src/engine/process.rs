@@ -1748,27 +1748,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_create_bucket(
-        &mut self,
-        input: CreateEmptyBucketInput,
-    ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
-        let definition = self
-            .track
-            .get_resource_manager(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-
-        let new_bucket = Bucket::new(ResourceContainer::new_empty(
-            input.resource_address,
-            definition.resource_type(),
-        ));
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(CreateEmptyBucketOutput { bucket_id })
-    }
-
     fn handle_create_bucket_proof(
         &mut self,
         input: CreateBucketProofInput,
@@ -2064,8 +2043,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_NON_FUNGIBLE_IDS_IN_VAULT => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
                     }
-
-                    CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
 
                     CREATE_BUCKET_PROOF => self.handle(args, Self::handle_create_bucket_proof),
                     CREATE_VAULT_PROOF => self.handle(args, Self::handle_create_vault_proof),

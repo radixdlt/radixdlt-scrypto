@@ -21,12 +21,13 @@ pub struct Bucket(pub BucketId);
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = CreateEmptyBucketInput {
-            resource_address: resource_address,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ResourceRef(resource_address),
+            function: "create_empty_bucket".to_string(),
+            args: args![],
         };
-        let output: CreateEmptyBucketOutput = call_engine(CREATE_EMPTY_BUCKET, input);
-
-        Self(output.bucket_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Puts resources from another bucket into this bucket.
