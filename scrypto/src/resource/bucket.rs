@@ -31,11 +31,13 @@ impl Bucket {
 
     /// Puts resources from another bucket into this bucket.
     pub fn put(&mut self, other: Self) {
-        let input = PutIntoBucketInput {
-            bucket_id: self.0,
-            other: other.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::BucketRef(self.0),
+            function: "put_into_bucket".to_string(),
+            args: args![other],
         };
-        let _: PutIntoBucketOutput = call_engine(PUT_INTO_BUCKET, input);
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Takes some amount of resources from this bucket.

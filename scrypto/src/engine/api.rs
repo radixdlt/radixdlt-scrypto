@@ -45,8 +45,6 @@ pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
 /// Create an empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
-/// Put fungible resource into this bucket
-pub const PUT_INTO_BUCKET: u32 = 0x51;
 /// Get bucket resource amount
 pub const GET_BUCKET_AMOUNT: u32 = 0x53;
 /// Get bucket resource address
@@ -268,15 +266,6 @@ pub struct CreateEmptyBucketInput {
 pub struct CreateEmptyBucketOutput {
     pub bucket_id: BucketId,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoBucketInput {
-    pub bucket_id: BucketId,
-    pub other: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoBucketOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetBucketAmountInput {

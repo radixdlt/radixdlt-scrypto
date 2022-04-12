@@ -79,6 +79,8 @@ pub trait SystemApi {
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
 
+    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError>;
+
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 }
 
@@ -828,6 +830,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 Ok(return_value)
             }
+            SNodeState::BucketRef(_, bucket) => {
+                bucket.main(function.as_str(), args, self)
+                    .map_err(RuntimeError::BucketError)
+            },
 
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
@@ -1010,12 +1016,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
                 _ => Err(RuntimeError::IllegalSystemCall)
             }
-            SNodeState::BucketRef(bucket_id, mut bucket) => {
-                let rtn = bucket.main(function.as_str(), args, self)
-                    .map_err(RuntimeError::BucketError)?;
-                self.buckets.insert(bucket_id, bucket);
-                Ok(rtn)
-            },
             _ => {
                 // start a new process
                 let mut process = Process::new(self.depth + 1, self.trace, self.track);
@@ -1041,6 +1041,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     SNodeState::ResourceRef(resource_address, resource_manager) => {
                         self.track.return_borrowed_global_resource_manager(resource_address, resource_manager);
+                    }
+                    SNodeState::BucketRef(bucket_id, bucket) => {
+                        self.buckets.insert(bucket_id, bucket);
                     }
                     _ => {}
                 }
@@ -1766,24 +1769,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateEmptyBucketOutput { bucket_id })
     }
 
-    fn handle_put_into_bucket(
-        &mut self,
-        input: PutIntoBucketInput,
-    ) -> Result<PutIntoBucketOutput, RuntimeError> {
-        let other = self
-            .buckets
-            .remove(&input.other)
-            .ok_or(RuntimeError::BucketNotFound(input.other))?;
-
-        self.buckets
-            .get_mut(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .put(other)
-            .map_err(|e| RuntimeError::BucketError(BucketError::ResourceContainerError(e)))?;
-
-        Ok(PutIntoBucketOutput {})
-    }
-
     fn handle_get_bucket_amount(
         &mut self,
         input: GetBucketAmountInput,
@@ -2097,6 +2082,13 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         Ok(bucket_id)
     }
 
+    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
+        self
+            .buckets
+            .remove(&bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(bucket_id))
+    }
+
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
         self.track.create_resource_manager(resource_manager)
     }
@@ -2134,7 +2126,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
-                    PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
                     GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
                     GET_BUCKET_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_bucket_resource_address)

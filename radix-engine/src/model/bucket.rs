@@ -20,6 +20,7 @@ pub enum BucketError {
     InvalidDivisibility,
     InvalidRequestData(DecodeError),
     CouldNotCreateBucket,
+    CouldNotTakeBucket,
     MethodNotFound(String),
     ResourceContainerError(ResourceContainerError),
 }
@@ -37,7 +38,7 @@ impl Bucket {
         }
     }
 
-    pub fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
+    fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
         self.borrow_container_mut().put(other.into_container()?)
     }
 
@@ -168,6 +169,13 @@ impl Bucket {
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
+            }
+            "put_into_bucket" => {
+                let bucket_id: scrypto::resource::Bucket = scrypto_decode(&args[0].raw)
+                    .map_err(|e| BucketError::InvalidRequestData(e))?;
+                let bucket = system_api.take_bucket(bucket_id.0).map_err(|_| BucketError::CouldNotTakeBucket)?;
+                self.put(bucket).map_err(BucketError::ResourceContainerError)?;
+                Ok(ScryptoValue::from_value(&()))
             }
             _ => Err(BucketError::MethodNotFound(function.to_string())),
         }
