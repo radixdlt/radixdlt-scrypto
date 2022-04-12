@@ -212,6 +212,10 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     buckets: HashMap<BucketId, Bucket>,
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
+    /// Proofs collected from previous returns or self. Also used for system authorization.
+    auth_zone: Vec<Proof>,
+    /// The caller's auth zone
+    caller_auth_zone: &'r [Proof],
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
@@ -221,15 +225,16 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     id_allocator: Option<IdAllocator>,
     /// Resources collected from previous returns or self.
     worktop: Worktop,
-    /// Proofs collected from previous returns or self. Also used for system authorization.
-    auth_zone: Vec<Proof>,
-    /// The caller's auth zone
-    caller_auth_zone: &'r [Proof],
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Create a new process, which is not started.
-    pub fn new(depth: usize, trace: bool, track: &'r mut Track<'l, L>, id_allocator: Option<IdAllocator>) -> Self {
+    pub fn new(
+        depth: usize,
+        trace: bool,
+        track: &'r mut Track<'l, L>,
+        id_allocator: Option<IdAllocator>,
+    ) -> Self {
         Self {
             depth,
             trace,
@@ -443,9 +448,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // Creates a bucket proof.
-    pub fn txn_create_bucket_proof(&mut self, bucket_id: BucketId) -> Result<ProofId, RuntimeError> {
+    pub fn txn_create_bucket_proof(
+        &mut self,
+        bucket_id: BucketId,
+    ) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Creating proof: bucket_id = {}", bucket_id);
-        let rtn = self.call(SNodeRef::BucketRef(bucket_id), "create_bucket_proof".to_string(), args![])?;
+        let rtn = self.call(
+            SNodeRef::BucketRef(bucket_id),
+            "create_bucket_proof".to_string(),
+            args![],
+        )?;
         let proof = self.proofs.remove(&rtn.proof_ids[0]).unwrap();
         let proof_id = self.new_proof_id()?;
         self.proofs.insert(proof_id, proof);
@@ -700,7 +712,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         snode: &'r mut SNodeState,
         function: String,
         args: Vec<ScryptoValue>,
-    ) -> Result<(ScryptoValue, HashMap<BucketId, Bucket>, HashMap<ProofId, Proof>), RuntimeError> {
+    ) -> Result<
+        (
+            ScryptoValue,
+            HashMap<BucketId, Bucket>,
+            HashMap<ProofId, Proof>,
+        ),
+        RuntimeError,
+    > {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         re_info!(self, "Run started: function = {:?}", function);
@@ -786,10 +805,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 Ok(return_value)
             }
-            SNodeState::BucketRef(bucket_id, bucket) => {
-                bucket.main(*bucket_id, function.as_str(), args, self)
-                    .map_err(RuntimeError::BucketError)
-            },
+            SNodeState::BucketRef(bucket_id, bucket) => bucket
+                .main(*bucket_id, function.as_str(), args, self)
+                .map_err(RuntimeError::BucketError),
 
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
@@ -823,7 +841,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         function: String,
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
-
         // Authorization and state load
         let (mut snode, method_auth) = match &mut snode_ref {
             SNodeRef::Scrypto(actor) => {
@@ -913,7 +930,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::BucketRef(bucket_id.clone(), bucket), method_auth.clone()))
+                Ok((
+                    SNodeState::BucketRef(bucket_id.clone(), bucket),
+                    method_auth.clone(),
+                ))
             }
             SNodeRef::VaultRef(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
@@ -939,7 +959,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         method_auth
             .check(&proofs_vector)
             .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
-
 
         // Execution
 
@@ -970,8 +989,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
             SNodeState::Bucket(bucket) => match function.as_str() {
                 "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
-                _ => Err(RuntimeError::IllegalSystemCall)
-            }
+                _ => Err(RuntimeError::IllegalSystemCall),
+            },
             _ => {
                 // start a new process
                 let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
@@ -982,7 +1001,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 process.receive_proofs(moving_proofs);
 
                 // invoke the main function
-                let (result, moving_buckets, moving_proofs) = process.run(&mut snode, function, args)?;
+                let (result, moving_buckets, moving_proofs) =
+                    process.run(&mut snode, function, args)?;
 
                 // move buckets and proofs to this process.
                 self.receive_buckets(moving_buckets)?;
@@ -992,11 +1012,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 match snode {
                     SNodeState::Scrypto(actor, component_state) => {
                         if let Some(component_address) = actor.component_address() {
-                            self.track.return_borrowed_global_component(component_address, component_state.unwrap());
+                            self.track.return_borrowed_global_component(
+                                component_address,
+                                component_state.unwrap(),
+                            );
                         }
                     }
                     SNodeState::ResourceRef(resource_address, resource_manager) => {
-                        self.track.return_borrowed_global_resource_manager(resource_address, resource_manager);
+                        self.track.return_borrowed_global_resource_manager(
+                            resource_address,
+                            resource_manager,
+                        );
                     }
                     SNodeState::BucketRef(bucket_id, bucket) => {
                         self.buckets.insert(bucket_id, bucket);
@@ -1076,7 +1102,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
-        let result = process.run(&mut snode, String::new(), Vec::new()).map(|(r,_,_)| r);
+        let result = process
+            .run(&mut snode, String::new(), Vec::new())
+            .map(|(r, _, _)| r);
 
         re_debug!(self, "Call abi ended");
         result
@@ -1957,8 +1985,7 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
     }
 
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
-        self
-            .buckets
+        self.buckets
             .remove(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))
     }
@@ -1998,7 +2025,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_NON_FUNGIBLE_IDS_IN_VAULT => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
                     }
-
                     CREATE_VAULT_PROOF => self.handle(args, Self::handle_create_vault_proof),
                     CREATE_VAULT_PROOF_BY_AMOUNT => {
                         self.handle(args, Self::handle_create_vault_proof_by_amount)
@@ -2006,6 +2032,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_VAULT_PROOF_BY_IDS => {
                         self.handle(args, Self::handle_create_vault_proof_by_ids)
                     }
+
                     CREATE_AUTH_ZONE_PROOF => {
                         self.handle(args, Self::handle_create_auth_zone_proof)
                     }

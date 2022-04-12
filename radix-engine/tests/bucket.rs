@@ -83,9 +83,10 @@ fn test_take_with_invalid_granularity() {
     assert_eq!(
         receipt.result,
         Err(RuntimeError::BucketError(
-            BucketError::ResourceContainerError(
-                ResourceContainerError::InvalidAmount(dec!("1.123"), 2)
-            )
+            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+                dec!("1.123"),
+                2
+            ))
         ))
     );
 }
@@ -120,9 +121,10 @@ fn test_take_with_negative_amount() {
     assert_eq!(
         receipt.result,
         Err(RuntimeError::BucketError(
-            BucketError::ResourceContainerError(
-                ResourceContainerError::InvalidAmount(dec!("-2"), 2)
-            )
+            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
+                dec!("-2"),
+                2
+            ))
         ))
     );
 }

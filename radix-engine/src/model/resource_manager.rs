@@ -107,7 +107,7 @@ impl ResourceManager {
             "take_from_bucket",
             "put_into_bucket",
             "get_bucket_amount",
-            "get_bucket_resource_address"
+            "get_bucket_resource_address",
         ] {
             authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
         }
@@ -248,10 +248,7 @@ impl ResourceManager {
             let mutable_data = Self::process_non_fungible_data(&data.1)?;
             let non_fungible = NonFungible::new(immutable_data.raw, mutable_data.raw);
 
-            system_api.set_non_fungible(
-                non_fungible_address,
-                Some(non_fungible),
-            );
+            system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
             ids.insert(id);
         }
 
@@ -333,10 +330,8 @@ impl ResourceManager {
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
             "create_empty_bucket" => {
-                let container = ResourceContainer::new_empty(
-                    resource_address,
-                    self.resource_type(),
-                );
+                let container =
+                    ResourceContainer::new_empty(resource_address, self.resource_type());
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;

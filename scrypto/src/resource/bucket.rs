@@ -1,18 +1,18 @@
-use sbor::*;
 use crate::core::SNodeRef;
+use sbor::*;
 
+use crate::buffer::scrypto_decode;
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::{args, resource_manager};
-use crate::buffer::scrypto_decode;
 use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
-use crate::rust::vec::Vec;
 use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 use crate::types::*;
+use crate::{args, resource_manager};
 
 /// Represents a transient resource container.
 #[derive(Debug)]
@@ -85,7 +85,7 @@ impl Bucket {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::BucketRef(self.0),
             function: "create_bucket_proof".to_string(),
-            args: args![]
+            args: args![],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

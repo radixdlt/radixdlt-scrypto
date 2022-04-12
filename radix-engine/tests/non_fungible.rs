@@ -53,7 +53,8 @@ fn can_burn_non_fungible() {
     let receipt = test_runner.validate_and_execute(&transaction);
     receipt.result.expect("Should be okay.");
     let resource_address = receipt.new_resource_addresses[0];
-    let non_fungible_address = NonFungibleAddress::new(resource_address, NonFungibleId::from_u32(0));
+    let non_fungible_address =
+        NonFungibleAddress::new(resource_address, NonFungibleId::from_u32(0));
     let mut ids = BTreeSet::new();
     ids.insert(NonFungibleId::from_u32(0));
 
@@ -62,7 +63,12 @@ fn can_burn_non_fungible() {
         .new_transaction_builder()
         .withdraw_from_account(resource_address, account)
         .burn_non_fungible(non_fungible_address.clone(), resource_address)
-        .call_function(package, "NonFungibleTest", "verify_does_not_exist", args![non_fungible_address])
+        .call_function(
+            package,
+            "NonFungibleTest",
+            "verify_does_not_exist",
+            args![non_fungible_address],
+        )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);

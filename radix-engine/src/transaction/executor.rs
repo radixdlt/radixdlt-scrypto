@@ -250,7 +250,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     blueprint_name,
                     function,
                     args,
-                } => proc.txn_call_function(*package_address, &blueprint_name, &function, args.clone()),
+                } => proc.txn_call_function(
+                    *package_address,
+                    &blueprint_name,
+                    &function,
+                    args.clone(),
+                ),
                 ValidatedInstruction::CallMethod {
                     component_address,
                     method,

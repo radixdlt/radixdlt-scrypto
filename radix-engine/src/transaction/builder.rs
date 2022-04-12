@@ -584,22 +584,26 @@ impl TransactionBuilder {
     ) -> &mut Self {
         let mut ids = BTreeSet::new();
         ids.insert(non_fungible_address.non_fungible_id());
-        self.take_from_worktop_by_ids(&ids, non_fungible_address.resource_address(), |builder, bucket_id| {
-            builder.take_from_worktop(burner_resource_address, |builder, auth_bucket_id| {
+        self.take_from_worktop_by_ids(
+            &ids,
+            non_fungible_address.resource_address(),
+            |builder, bucket_id| {
+                builder.take_from_worktop(burner_resource_address, |builder, auth_bucket_id| {
+                    builder
+                        .add_instruction(Instruction::CallFunction {
+                            package_address: SYSTEM_PACKAGE,
+                            blueprint_name: "System".to_owned(),
+                            function: "burn".to_owned(),
+                            args: vec![
+                                scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
+                                scrypto_encode(&scrypto::resource::Bucket(auth_bucket_id)),
+                            ],
+                        })
+                        .0
+                });
                 builder
-                    .add_instruction(Instruction::CallFunction {
-                        package_address: SYSTEM_PACKAGE,
-                        blueprint_name: "System".to_owned(),
-                        function: "burn".to_owned(),
-                        args: vec![
-                            scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-                            scrypto_encode(&scrypto::resource::Bucket(auth_bucket_id)),
-                        ],
-                    })
-                    .0
-            });
-            builder
-        })
+            },
+        )
     }
 
     /// Creates an account.

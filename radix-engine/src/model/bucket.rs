@@ -1,6 +1,6 @@
+use crate::engine::SystemApi;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use crate::engine::SystemApi;
 use scrypto::engine::types::*;
 use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
@@ -166,45 +166,58 @@ impl Bucket {
     ) -> Result<ScryptoValue, BucketError> {
         match function {
             "take_from_bucket" => {
-                let amount: Decimal = scrypto_decode(&args[0].raw)
-                    .map_err(|e| BucketError::InvalidRequestData(e))?;
-                let container = self.take(amount).map_err(BucketError::ResourceContainerError)?;
-                let bucket_id = system_api.create_bucket(container).map_err(|_| BucketError::CouldNotCreateBucket)?;
+                let amount: Decimal =
+                    scrypto_decode(&args[0].raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                let container = self
+                    .take(amount)
+                    .map_err(BucketError::ResourceContainerError)?;
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| BucketError::CouldNotCreateBucket)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
             "take_non_fungibles_from_bucket" => {
-                let ids: BTreeSet<NonFungibleId> = scrypto_decode(&args[0].raw)
-                    .map_err(|e| BucketError::InvalidRequestData(e))?;
-                let container = self.take_non_fungibles(&ids).map_err(BucketError::ResourceContainerError)?;
-                let bucket_id = system_api.create_bucket(container).map_err(|_| BucketError::CouldNotCreateBucket)?;
+                let ids: BTreeSet<NonFungibleId> =
+                    scrypto_decode(&args[0].raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                let container = self
+                    .take_non_fungibles(&ids)
+                    .map_err(BucketError::ResourceContainerError)?;
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| BucketError::CouldNotCreateBucket)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
             "get_non_fungible_ids_in_bucket" => {
-                let ids = self.total_ids().map_err(BucketError::ResourceContainerError)?;
+                let ids = self
+                    .total_ids()
+                    .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&ids))
             }
             "put_into_bucket" => {
-                let bucket_id: scrypto::resource::Bucket = scrypto_decode(&args[0].raw)
-                    .map_err(|e| BucketError::InvalidRequestData(e))?;
-                let bucket = system_api.take_bucket(bucket_id.0).map_err(|_| BucketError::CouldNotTakeBucket)?;
-                self.put(bucket).map_err(BucketError::ResourceContainerError)?;
+                let bucket_id: scrypto::resource::Bucket =
+                    scrypto_decode(&args[0].raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                let bucket = system_api
+                    .take_bucket(bucket_id.0)
+                    .map_err(|_| BucketError::CouldNotTakeBucket)?;
+                self.put(bucket)
+                    .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&()))
             }
-            "get_bucket_amount" => {
-                Ok(ScryptoValue::from_value(&self.total_amount()))
-            }
-            "get_bucket_resource_address" => {
-                Ok(ScryptoValue::from_value(&self.resource_address()))
-            }
+            "get_bucket_amount" => Ok(ScryptoValue::from_value(&self.total_amount())),
+            "get_bucket_resource_address" => Ok(ScryptoValue::from_value(&self.resource_address())),
             "create_bucket_proof" => {
-                let proof = self.create_proof(bucket_id).map_err(BucketError::ProofError)?;
-                let proof_id = system_api.create_proof(proof).map_err(|_| BucketError::CouldNotCreateProof)?;
+                let proof = self
+                    .create_proof(bucket_id)
+                    .map_err(BucketError::ProofError)?;
+                let proof_id = system_api
+                    .create_proof(proof)
+                    .map_err(|_| BucketError::CouldNotCreateProof)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
-                    proof_id
+                    proof_id,
                 )))
             }
             _ => Err(BucketError::MethodNotFound(function.to_string())),
