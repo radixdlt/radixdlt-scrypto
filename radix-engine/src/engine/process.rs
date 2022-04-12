@@ -1769,19 +1769,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateEmptyBucketOutput { bucket_id })
     }
 
-    fn handle_get_bucket_resource_address(
-        &mut self,
-        input: GetBucketResourceAddressInput,
-    ) -> Result<GetBucketResourceAddressOutput, RuntimeError> {
-        let resource_address = self
-            .buckets
-            .get(&input.bucket_id)
-            .map(|b| b.resource_address())
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-
-        Ok(GetBucketResourceAddressOutput { resource_address })
-    }
-
     fn handle_take_non_fungibles_from_bucket(
         &mut self,
         input: TakeNonFungiblesFromBucketInput,
@@ -2113,9 +2100,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
-                    GET_BUCKET_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_bucket_resource_address)
-                    }
                     TAKE_NON_FUNGIBLES_FROM_BUCKET => {
                         self.handle(args, Self::handle_take_non_fungibles_from_bucket)
                     }

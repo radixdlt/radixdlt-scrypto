@@ -109,11 +109,13 @@ impl Bucket {
 
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
-        let input = GetBucketResourceAddressInput { bucket_id: self.0 };
-        let output: GetBucketResourceAddressOutput =
-            call_engine(GET_BUCKET_RESOURCE_ADDRESS, input);
-
-        output.resource_address
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::BucketRef(self.0),
+            function: "get_bucket_resource_address".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Checks if this bucket is empty.

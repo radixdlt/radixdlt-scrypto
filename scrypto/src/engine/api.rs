@@ -45,8 +45,6 @@ pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
 /// Create an empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
-/// Get bucket resource address
-pub const GET_BUCKET_RESOURCE_ADDRESS: u32 = 0x54;
 /// Take a non-fungible from this bucket, by id
 pub const TAKE_NON_FUNGIBLES_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all non-fungibles in this bucket
@@ -263,16 +261,6 @@ pub struct CreateEmptyBucketInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateEmptyBucketOutput {
     pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceAddressInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceAddressOutput {
-    pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

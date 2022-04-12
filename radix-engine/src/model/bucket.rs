@@ -180,6 +180,9 @@ impl Bucket {
             "get_bucket_amount" => {
                 Ok(ScryptoValue::from_value(&self.total_amount()))
             }
+            "get_bucket_resource_address" => {
+                Ok(ScryptoValue::from_value(&self.resource_address()))
+            }
             _ => Err(BucketError::MethodNotFound(function.to_string())),
         }
     }
