@@ -23,6 +23,8 @@ pub enum BucketError {
     CouldNotTakeBucket,
     MethodNotFound(String),
     ResourceContainerError(ResourceContainerError),
+    ProofError(ProofError),
+    CouldNotCreateProof,
 }
 
 /// A transient resource container.
@@ -53,7 +55,8 @@ impl Bucket {
         self.borrow_container_mut().take_by_ids(ids)
     }
 
-    pub fn create_proof(&mut self, container_id: ResourceContainerId) -> Result<Proof, ProofError> {
+    pub fn create_proof(&mut self, self_bucket_id: BucketId) -> Result<Proof, ProofError> {
+        let container_id = ResourceContainerId::Bucket(self_bucket_id);
         match self.resource_type() {
             ResourceType::Fungible { .. } => {
                 self.create_proof_by_amount(self.total_amount(), container_id)
@@ -156,6 +159,7 @@ impl Bucket {
 
     pub fn main<S: SystemApi>(
         &mut self,
+        bucket_id: BucketId,
         function: &str,
         args: Vec<ScryptoValue>,
         system_api: &mut S,
@@ -195,6 +199,13 @@ impl Bucket {
             }
             "get_bucket_resource_address" => {
                 Ok(ScryptoValue::from_value(&self.resource_address()))
+            }
+            "create_bucket_proof" => {
+                let proof = self.create_proof(bucket_id).map_err(BucketError::ProofError)?;
+                let proof_id = system_api.create_proof(proof).map_err(|_| BucketError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                    proof_id
+                )))
             }
             _ => Err(BucketError::MethodNotFound(function.to_string())),
         }

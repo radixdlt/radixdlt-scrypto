@@ -82,10 +82,13 @@ impl Bucket {
 
     /// Creates an ownership proof of this bucket.
     pub fn create_proof(&self) -> Proof {
-        let input = CreateBucketProofInput { bucket_id: self.0 };
-        let output: CreateBucketProofOutput = call_engine(CREATE_BUCKET_PROOF, input);
-
-        Proof(output.proof_id)
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::BucketRef(self.0),
+            function: "create_bucket_proof".to_string(),
+            args: args![]
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Uses resources in this bucket as authorization for an operation.

@@ -43,8 +43,6 @@ pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
 /// Get the IDs of all non-fungibles in this vault
 pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
-/// Create a bucket proof
-pub const CREATE_BUCKET_PROOF: u32 = 0x60;
 /// Create a vault proof
 pub const CREATE_VAULT_PROOF: u32 = 0x63;
 /// Create a vault proof by amount
@@ -245,16 +243,6 @@ pub struct GetNonFungibleIdsInVaultOutput {
 //==========
 // proof
 //==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofOutput {
-    pub proof_id: ProofId,
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateVaultProofInput {

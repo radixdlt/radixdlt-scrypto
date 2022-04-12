@@ -263,7 +263,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -294,7 +294,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]

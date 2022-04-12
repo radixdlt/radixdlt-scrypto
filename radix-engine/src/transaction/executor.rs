@@ -237,7 +237,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     .create_auth_zone_proof_by_ids(ids, *resource_address)
                     .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::CreateProofFromBucket { bucket_id } => proc
-                    .create_bucket_proof(*bucket_id)
+                    .txn_create_bucket_proof(*bucket_id)
                     .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
                 ValidatedInstruction::CloneProof { proof_id } => proc
                     .clone_proof(*proof_id)
@@ -250,12 +250,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     blueprint_name,
                     function,
                     args,
-                } => proc.call_function(*package_address, &blueprint_name, &function, args.clone()),
+                } => proc.txn_call_function(*package_address, &blueprint_name, &function, args.clone()),
                 ValidatedInstruction::CallMethod {
                     component_address,
                     method,
                     args,
-                } => proc.call_method(*component_address, &method, args.clone()),
+                } => proc.txn_call_method(*component_address, &method, args.clone()),
                 ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,
