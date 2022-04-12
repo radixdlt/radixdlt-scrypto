@@ -8,10 +8,13 @@
 /// ```
 #[macro_export]
 macro_rules! args {
-    ($($args: expr),*) => {
+    () => {
+        ::scrypto::rust::vec::Vec::new()
+    };
+    ($($args: expr),+) => {
         {
             let mut args = ::scrypto::rust::vec::Vec::new();
-            $(args.push(scrypto::buffer::scrypto_encode(&$args));)*
+            $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
             args
         }
     };

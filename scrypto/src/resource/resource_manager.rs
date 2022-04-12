@@ -1,3 +1,6 @@
+use crate::args;
+use crate::buffer::scrypto_decode;
+use crate::core::SNodeRef;
 use sbor::*;
 
 use crate::engine::{api::*, call_engine};
@@ -9,6 +12,7 @@ use crate::rust::collections::HashMap;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
 use crate::rust::string::String;
+use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -34,15 +38,16 @@ pub struct ResourceManager(pub(crate) ResourceAddress);
 impl ResourceManager {
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
-        let input = MintResourceInput {
-            resource_address: self.0,
-            mint_params: MintParams::Fungible {
-                amount: amount.into(),
-            },
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "mint".to_string(),
+            args: args![MintParams::Fungible {
+                amount: amount.into()
+            }],
         };
-        let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
-
-        Bucket(output.bucket_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
+        bucket
     }
 
     /// Mints non-fungible resources
@@ -50,21 +55,24 @@ impl ResourceManager {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
 
-        let input = MintResourceInput {
-            resource_address: self.0,
-            mint_params: MintParams::NonFungible { entries },
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "mint".to_string(),
+            args: args![MintParams::NonFungible { entries }],
         };
-        let output: MintResourceOutput = call_engine(MINT_RESOURCE, input);
-
-        Bucket(output.bucket_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
+        bucket
     }
 
     /// Burns a bucket of resources.
     pub fn burn(&self, bucket: Bucket) {
-        let input = BurnResourceInput {
-            bucket_id: bucket.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Bucket(bucket.0),
+            function: "burn".to_string(),
+            args: args![],
         };
-        let _output: BurnResourceOutput = call_engine(BURN_RESOURCE, input);
+        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }
 
     /// Returns the resource type.
@@ -115,12 +123,12 @@ impl ResourceManager {
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId, new_data: T) {
-        let input = UpdateNonFungibleMutableDataInput {
-            non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
-            new_mutable_data: new_data.mutable_data(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "update_non_fungible_mutable_data".to_string(),
+            args: args![id.clone(), new_data.mutable_data()],
         };
-        let _: UpdateNonFungibleMutableDataOutput =
-            call_engine(UPDATE_NON_FUNGIBLE_MUTABLE_DATA, input);
+        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }
 
     /// Checks if non-fungible unit, with certain key exists or not.
@@ -136,11 +144,12 @@ impl ResourceManager {
 
     /// Updates the resource metadata
     pub fn update_metadata(&self, new_metadata: HashMap<String, String>) {
-        let input = UpdateResourceMetadataInput {
-            resource_address: self.0,
-            new_metadata,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "update_metadata".to_string(),
+            args: args![new_metadata],
         };
-        let _output: UpdateResourceMetadataOutput = call_engine(UPDATE_RESOURCE_METADATA, input);
+        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }
 }
 

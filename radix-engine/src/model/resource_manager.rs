@@ -176,7 +176,7 @@ impl ResourceManager {
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
-        system_api: &mut S
+        system_api: &mut S,
     ) -> Result<ResourceContainer, ResourceManagerError> {
         // check resource type
         if !matches!(self.resource_type, ResourceType::NonFungible) {
@@ -246,7 +246,7 @@ impl ResourceManager {
         resource_address: ResourceAddress,
         function: &str,
         args: Vec<ScryptoValue>,
-        system_api: &mut S
+        system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
             "mint" => {
@@ -260,8 +260,12 @@ impl ResourceManager {
                     }
                 }?;
 
-                let bucket_id = system_api.create_bucket(container).map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
             }
             "update_metadata" => {
                 let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
