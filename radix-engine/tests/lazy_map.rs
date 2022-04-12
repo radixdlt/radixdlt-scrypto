@@ -59,7 +59,7 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
             package,
             "LazyMapTest",
             "new_lazy_map_into_map_then_get",
-            vec![],
+            args![],
         )
         .build(executor.get_nonce([]))
         .sign([]);

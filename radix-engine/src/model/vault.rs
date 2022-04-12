@@ -7,7 +7,6 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
 use crate::model::{
@@ -152,18 +151,18 @@ impl Vault {
     pub fn main(
         &mut self,
         function: &str,
-        args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
     ) -> Result<Option<Bucket>, VaultError> {
         match function {
             "take_from_vault" => {
                 let amount: Decimal =
-                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let new_bucket = self.take(amount)?;
                 Ok(Some(new_bucket))
             }
             "take_non_fungibles_from_vault" => {
                 let non_fungible_ids: BTreeSet<NonFungibleId> =
-                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let new_bucket = self.take_non_fungibles(&non_fungible_ids)?;
                 Ok(Some(new_bucket))
             }

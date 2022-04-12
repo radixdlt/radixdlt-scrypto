@@ -21,7 +21,7 @@ fn create_non_fungible_mutable() {
             package,
             "NonFungibleTest",
             "create_non_fungible_mutable",
-            vec![],
+            args![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([]))
@@ -46,13 +46,13 @@ fn test_non_fungible() {
             package,
             "NonFungibleTest",
             "create_non_fungible_fixed",
-            vec![],
+            args![],
         )
         .call_function(
             package,
             "NonFungibleTest",
             "update_and_get_non_fungible",
-            vec![],
+            args![],
         )
         .call_function(package, "NonFungibleTest", "non_fungible_exists", args![])
         .call_function(package, "NonFungibleTest", "take_and_put_bucket", args![])
@@ -61,13 +61,13 @@ fn test_non_fungible() {
             package,
             "NonFungibleTest",
             "get_non_fungible_ids_bucket",
-            vec![],
+            args![],
         )
         .call_function(
             package,
             "NonFungibleTest",
             "get_non_fungible_ids_vault",
-            vec![],
+            args![],
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))

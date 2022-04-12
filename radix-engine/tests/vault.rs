@@ -18,7 +18,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
             package,
             "NonExistentVault",
             "create_component_with_non_existent_vault",
-            vec![],
+            args![],
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -77,7 +77,7 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
             package,
             "NonExistentVault",
             "create_lazy_map_with_non_existent_vault",
-            vec![],
+            args![],
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -111,7 +111,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
         .call_method(
             component_address,
             "create_non_existent_vault_in_lazy_map",
-            vec![],
+            args![],
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -181,7 +181,7 @@ fn invalid_double_ownership_of_vault() {
             package,
             "VaultTest",
             "invalid_double_ownership_of_vault",
-            vec![],
+            args![],
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -356,7 +356,7 @@ fn create_mutable_vault_with_take_non_fungible() {
             package,
             "VaultTest",
             "new_vault_with_take_non_fungible",
-            vec![],
+            args![],
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -381,7 +381,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
             package,
             "VaultTest",
             "new_vault_with_get_non_fungible_ids",
-            vec![],
+            args![],
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -426,7 +426,7 @@ fn create_mutable_vault_with_get_resource_manager() {
             package,
             "VaultTest",
             "new_vault_with_get_resource_manager",
-            vec![],
+            args![],
         )
         .build(executor.get_nonce([]))
         .sign([]);

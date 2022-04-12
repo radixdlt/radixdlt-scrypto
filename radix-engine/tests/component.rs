@@ -47,7 +47,7 @@ fn test_component() {
             package,
             "ComponentTest",
             "get_component_info",
-            vec![scrypto_encode(&component)],
+            args![component],
         )
         .call_method(component, "get_component_state", args![])
         .call_method(component, "put_component_state", args![])
@@ -72,7 +72,7 @@ fn invalid_blueprint_name_should_cause_error() {
             package_address,
             "NonExistentBlueprint",
             "create_component",
-            vec![],
+            args![],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);

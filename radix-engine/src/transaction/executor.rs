@@ -4,7 +4,7 @@ use scrypto::resource::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
-use scrypto::{abi, auth, auth_rule_node};
+use scrypto::{abi, args, auth, auth_rule_node};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -94,7 +94,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+                    .call_method(SYSTEM_COMPONENT, "free_xrd", args![])
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })
@@ -249,13 +249,13 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                     package_address,
                     blueprint_name,
                     function,
-                    args,
-                } => proc.call_function(*package_address, &blueprint_name, &function, args.clone()),
+                    arg,
+                } => proc.call_function(*package_address, &blueprint_name, &function, arg.clone()),
                 ValidatedInstruction::CallMethod {
                     component_address,
                     method,
-                    args,
-                } => proc.call_method(*component_address, &method, args.clone()),
+                    arg,
+                } => proc.call_method(*component_address, &method, arg.clone()),
                 ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,

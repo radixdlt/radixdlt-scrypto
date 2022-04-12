@@ -280,18 +280,16 @@ pub fn generate_instruction(
             function,
             args,
         } => {
-            let args = generate_args(args, resolver)?;
-            for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
-                id_validator
-                    .move_resources(&validated_arg)
-                    .map_err(GeneratorError::IdValidatorError)?;
-            }
+            let arg = generate_args(args, resolver)?;
+            let validated_arg = ScryptoValue::from_slice(&arg).unwrap();
+            id_validator
+                .move_resources(&validated_arg)
+                .map_err(GeneratorError::IdValidatorError)?;
             Instruction::CallFunction {
                 package_address: generate_package_address(package_address)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 function: generate_string(function)?,
-                args,
+                arg,
             }
         }
         ast::Instruction::CallMethod {
@@ -299,17 +297,15 @@ pub fn generate_instruction(
             method,
             args,
         } => {
-            let args = generate_args(args, resolver)?;
-            for arg in &args {
-                let validated_arg = ScryptoValue::from_slice(arg).unwrap();
-                id_validator
-                    .move_resources(&validated_arg)
-                    .map_err(GeneratorError::IdValidatorError)?;
-            }
+            let arg = generate_args(args, resolver)?;
+            let validated_arg = ScryptoValue::from_slice(&arg).unwrap();
+            id_validator
+                .move_resources(&validated_arg)
+                .map_err(GeneratorError::IdValidatorError)?;
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address)?,
                 method: generate_string(method)?,
-                args,
+                arg,
             }
         }
         ast::Instruction::CallMethodWithAllResources {
@@ -343,17 +339,16 @@ macro_rules! invalid_type {
 fn generate_args(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
-) -> Result<Vec<Vec<u8>>, GeneratorError> {
-    let mut result = Vec::new();
+) -> Result<Vec<u8>, GeneratorError> {
+    let mut params = Vec::new();
     for v in values {
         let value = generate_value(v, None, resolver)?;
-
-        let mut bytes = Vec::new();
-        let mut enc = Encoder::with_type(&mut bytes);
-        encode_any(None, &value, &mut enc);
-        result.push(bytes);
+        params.push(value);
     }
-    Ok(result)
+    let mut bytes = Vec::new();
+    let mut enc = Encoder::with_type(&mut bytes);
+    encode_any(None, &Value::Struct(params), &mut enc);
+    Ok(bytes)
 }
 
 fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
@@ -734,10 +729,10 @@ fn generate_type(ty: &ast::Type) -> u8 {
 
 #[cfg(test)]
 mod tests {
+    use scrypto::args;
     use super::*;
     use crate::lexer::tokenize;
     use crate::parser::Parser;
-    use scrypto::buffer::*;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -893,7 +888,7 @@ mod tests {
         generate_instruction_ok!(
             r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
-                amount: Decimal::from(1),
+                amount: Decimal::from(1u32),
                 resource_address: ResourceAddress::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
@@ -912,7 +907,7 @@ mod tests {
         generate_instruction_ok!(
             r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d");"#,
             Instruction::AssertWorktopContainsByAmount {
-                amount: Decimal::from(1),
+                amount: Decimal::from(1u32),
                 resource_address: ResourceAddress::from_str(
                     "03cbdf875789d08cc80c97e2915b920824a69ea8d809e50b9fe09d"
                 )
@@ -928,9 +923,9 @@ mod tests {
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
                 function: "new".into(),
-                args: vec![
-                    scrypto_encode(&500u32),
-                    scrypto_encode(&HashMap::from([("key", 1u8),])),
+                arg: args![
+                    500u32,
+                    HashMap::from([("key", 1u8),])
                 ]
             }
         );
@@ -942,7 +937,7 @@ mod tests {
                 )
                 .unwrap(),
                 method: "refill".into(),
-                args: vec![]
+                arg: args![]
             }
         );
         generate_instruction_ok!(
@@ -987,14 +982,12 @@ mod tests {
                         )
                         .unwrap(),
                         method: "withdraw_by_amount".into(),
-                        args: vec![
-                            scrypto_encode(&Decimal::from(5u32)),
-                            scrypto_encode(
-                                &ResourceAddress::from_str(
-                                    "030000000000000000000000000000000000000000000000000004"
-                                )
-                                .unwrap()
-                            ),
+                        arg: args![
+                            Decimal::from(5u32),
+                            ResourceAddress::from_str(
+                                "030000000000000000000000000000000000000000000000000004"
+                            )
+                            .unwrap()
                         ]
                     },
                     Instruction::TakeFromWorktopByAmount {
@@ -1010,7 +1003,7 @@ mod tests {
                         )
                         .unwrap(),
                         method: "buy_gumball".into(),
-                        args: vec![scrypto_encode(&scrypto::resource::Bucket(512)),]
+                        arg: args![scrypto::resource::Bucket(512)]
                     },
                     Instruction::AssertWorktopContainsByAmount {
                         amount: Decimal::from(3),
@@ -1041,14 +1034,12 @@ mod tests {
                         )
                         .unwrap(),
                         method: "create_proof_by_amount".into(),
-                        args: vec![
-                            scrypto_encode(&Decimal::from(5u32)),
-                            scrypto_encode(
-                                &ResourceAddress::from_str(
-                                    "030000000000000000000000000000000000000000000000000004"
-                                )
-                                .unwrap()
-                            ),
+                        arg: args![
+                            Decimal::from(5u32),
+                            ResourceAddress::from_str(
+                                "030000000000000000000000000000000000000000000000000004"
+                            )
+                            .unwrap()
                         ]
                     },
                     Instruction::PopFromAuthZone,

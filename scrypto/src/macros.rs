@@ -10,9 +10,15 @@
 macro_rules! args {
     ($($args: expr),*) => {
         {
-            let mut args = ::scrypto::rust::vec::Vec::new();
-            $(args.push(scrypto::buffer::scrypto_encode(&$args));)*
-            args
+            let mut values = Vec::new();
+            let mut bytes = Vec::new();
+            let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+            $(
+                let encoded = ::scrypto::prelude::scrypto_encode(&$args);
+                values.push(::sbor::decode_any(&encoded).unwrap());
+            )*
+            ::sbor::encode_any(None, &::sbor::Value::Struct(values), &mut enc);
+            bytes
         }
     };
 }

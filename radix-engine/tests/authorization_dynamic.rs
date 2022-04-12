@@ -40,7 +40,7 @@ fn test_dynamic_auth(
             package,
             "AuthComponent",
             "create_component",
-            vec![scrypto_encode(addresses.get(initial_auth).unwrap())],
+            args![addresses.get(initial_auth).unwrap().clone()],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -54,7 +54,7 @@ fn test_dynamic_auth(
             .call_method(
                 component,
                 "update_auth",
-                vec![scrypto_encode(addresses.get(next_auth).unwrap())],
+                args![addresses.get(next_auth).unwrap().clone()],
             )
             .build(test_runner.get_nonce([]))
             .sign([]);
@@ -245,7 +245,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
             package,
             "Chess",
             "create_game",
-            vec![scrypto_encode(&players)],
+            args![players],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -285,7 +285,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
             package,
             "Chess",
             "create_game",
-            vec![scrypto_encode(&players)],
+            args![players],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);

@@ -61,7 +61,7 @@ fn can_create_clone_and_drop_vault_proof() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
-            vec![scrypto_encode(&Decimal::one())],
+            args![Decimal::one()],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);

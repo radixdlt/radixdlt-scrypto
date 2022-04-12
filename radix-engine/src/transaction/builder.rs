@@ -12,7 +12,6 @@ use scrypto::rust::fmt;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
-use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use scrypto::values::*;
@@ -92,11 +91,9 @@ impl TransactionBuilder {
             Instruction::DropProof { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
-            Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
-                for arg in &args {
-                    let validated_arg = ScryptoValue::from_slice(arg).unwrap();
-                    self.id_validator.move_resources(&validated_arg).unwrap();
-                }
+            Instruction::CallFunction { arg, .. } | Instruction::CallMethod { arg, .. } => {
+                let validated_arg = ScryptoValue::from_slice(&arg).unwrap();
+                self.id_validator.move_resources(&validated_arg).unwrap();
             }
             Instruction::CallMethodWithAllResources { .. } => {
                 self.id_validator.move_all_resources().unwrap();
@@ -291,13 +288,13 @@ impl TransactionBuilder {
         package_address: PackageAddress,
         blueprint_name: &str,
         function: &str,
-        args: Vec<Vec<u8>>,
+        arg: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address,
             blueprint_name: blueprint_name.to_owned(),
             function: function.to_owned(),
-            args,
+            arg,
         });
         self
     }
@@ -325,7 +322,7 @@ impl TransactionBuilder {
             .map(Clone::clone)
             .ok_or_else(|| CallWithAbiError::FunctionNotFound(function.to_owned()))?;
 
-        let arguments = self
+        let arg = self
             .parse_args(&abi.inputs, args, account)
             .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
 
@@ -334,7 +331,7 @@ impl TransactionBuilder {
                 package_address,
                 blueprint_name: blueprint_name.to_owned(),
                 function: function.to_owned(),
-                args: arguments,
+                arg,
             })
             .0)
     }
@@ -344,12 +341,12 @@ impl TransactionBuilder {
         &mut self,
         component_address: ComponentAddress,
         method: &str,
-        args: Vec<Vec<u8>>,
+        arg: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address,
             method: method.to_owned(),
-            args,
+            arg,
         });
         self
     }
@@ -376,7 +373,7 @@ impl TransactionBuilder {
             .map(Clone::clone)
             .ok_or_else(|| CallWithAbiError::MethodNotFound(method.to_owned()))?;
 
-        let arguments = self
+        let arg = self
             .parse_args(&abi.inputs, args, account)
             .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
 
@@ -384,7 +381,7 @@ impl TransactionBuilder {
             .add_instruction(Instruction::CallMethod {
                 component_address,
                 method: method.to_owned(),
-                args: arguments,
+                arg,
             })
             .0)
     }
@@ -441,16 +438,18 @@ impl TransactionBuilder {
         resource_auth.insert(Mint, auth!(require(minter_resource_address.clone())));
         resource_auth.insert(Burn, auth!(require(minter_resource_address.clone())));
 
+        let arg = args!(
+            ResourceType::Fungible { divisibility: 18 },
+            metadata,
+            resource_auth,
+            None::<MintParams>
+        );
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: vec![
-                scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
-                scrypto_encode(&metadata),
-                scrypto_encode(&resource_auth),
-                scrypto_encode::<Option<MintParams>>(&None),
-            ],
+            arg,
         })
         .0
     }
@@ -464,18 +463,18 @@ impl TransactionBuilder {
         let mut resource_auth = HashMap::new();
         resource_auth.insert(TakeFromVault, auth!(allow_all));
 
+        let arg = args!(
+            ResourceType::Fungible { divisibility: 18 },
+            metadata,
+            resource_auth,
+            Some(MintParams::Fungible { amount: initial_supply.into()})
+        );
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: vec![
-                scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
-                scrypto_encode(&metadata),
-                scrypto_encode(&resource_auth),
-                scrypto_encode(&Some(MintParams::Fungible {
-                    amount: initial_supply.into(),
-                })),
-            ],
+            arg,
         })
         .0
     }
@@ -491,16 +490,18 @@ impl TransactionBuilder {
         resource_auth.insert(Mint, auth!(require(minter_resource_address.clone())));
         resource_auth.insert(Burn, auth!(require(minter_resource_address.clone())));
 
+        let arg  = args!(
+            ResourceType::Fungible { divisibility: 0 },
+            metadata,
+            resource_auth,
+            None::<MintParams>
+        );
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: vec![
-                scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
-                scrypto_encode(&metadata),
-                scrypto_encode(&resource_auth),
-                scrypto_encode::<Option<MintParams>>(&None),
-            ],
+            arg,
         })
         .0
     }
@@ -514,18 +515,18 @@ impl TransactionBuilder {
         let mut resource_auth = HashMap::new();
         resource_auth.insert(TakeFromVault, auth!(allow_all));
 
+        let arg = args!(
+            ResourceType::Fungible { divisibility: 0 },
+            metadata,
+            resource_auth,
+            Some(MintParams::Fungible { amount: initial_supply.into()})
+        );
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: vec![
-                scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
-                scrypto_encode(&metadata),
-                scrypto_encode(&resource_auth),
-                scrypto_encode(&Some(MintParams::Fungible {
-                    amount: initial_supply.into(),
-                })),
-            ],
+            arg,
         })
         .0
     }
@@ -538,15 +539,16 @@ impl TransactionBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         self.take_from_worktop(minter_resource_address, |builder, bucket_id| {
+            let arg = args!(
+                amount,
+                resource_address,
+                scrypto::resource::Bucket(bucket_id)
+            );
             builder.add_instruction(Instruction::CallFunction {
                 package_address: SYSTEM_PACKAGE,
                 blueprint_name: "System".to_owned(),
                 function: "mint".to_owned(),
-                args: vec![
-                    scrypto_encode(&amount),
-                    scrypto_encode(&resource_address),
-                    scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-                ],
+                arg,
             });
             builder
         })
@@ -561,15 +563,13 @@ impl TransactionBuilder {
     ) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
             builder.take_from_worktop(burner_resource_address, |builder, auth_bucket_id| {
+                let arg = args!(scrypto::resource::Bucket(bucket_id), scrypto::resource::Bucket(auth_bucket_id));
                 builder
                     .add_instruction(Instruction::CallFunction {
                         package_address: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
                         function: "burn".to_owned(),
-                        args: vec![
-                            scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-                            scrypto_encode(&scrypto::resource::Bucket(auth_bucket_id)),
-                        ],
+                        arg,
                     })
                     .0
             });
@@ -583,7 +583,7 @@ impl TransactionBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new".to_owned(),
-            args: vec![scrypto_encode(withdraw_auth)],
+            arg: args!(withdraw_auth.clone()),
         })
         .0
     }
@@ -598,10 +598,7 @@ impl TransactionBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new_with_resource".to_owned(),
-            args: vec![
-                scrypto_encode(withdraw_auth),
-                scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-            ],
+            arg: args!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
         })
         .0
     }
@@ -615,7 +612,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "withdraw".to_owned(),
-            args: vec![scrypto_encode(&resource_address)],
+            arg: args!(resource_address),
         })
         .0
     }
@@ -630,7 +627,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "withdraw_by_amount".to_owned(),
-            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
+            arg: args!(amount, resource_address),
         })
         .0
     }
@@ -645,7 +642,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "withdraw_by_ids".to_owned(),
-            args: vec![scrypto_encode(ids), scrypto_encode(&resource_address)],
+            arg: args!(ids.clone(), resource_address),
         })
         .0
     }
@@ -659,7 +656,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "create_proof".to_owned(),
-            args: vec![scrypto_encode(&resource_address)],
+            arg: args!(resource_address),
         })
         .0
     }
@@ -674,7 +671,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "create_proof_by_amount".to_owned(),
-            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
+            arg: args!(amount, resource_address),
         })
         .0
     }
@@ -689,7 +686,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "create_proof_by_ids".to_owned(),
-            args: vec![scrypto_encode(ids), scrypto_encode(&resource_address)],
+            arg: args!(ids.clone(), resource_address),
         })
         .0
     }
@@ -703,14 +700,14 @@ impl TransactionBuilder {
         types: &[Type],
         args: Vec<String>,
         account: Option<ComponentAddress>,
-    ) -> Result<Vec<Vec<u8>>, BuildArgsError> {
-        let mut encoded = Vec::new();
+    ) -> Result<Vec<u8>, BuildArgsError> {
+        let mut values = Vec::new();
 
         for (i, t) in types.iter().enumerate() {
             let arg = args
                 .get(i)
                 .ok_or_else(|| BuildArgsError::MissingArgument(i, t.clone()))?;
-            let res = match t {
+            let value = match t {
                 Type::Bool => self.parse_basic_ty::<bool>(i, t, arg),
                 Type::I8 => self.parse_basic_ty::<i8>(i, t, arg),
                 Type::I16 => self.parse_basic_ty::<i16>(i, t, arg),
@@ -725,11 +722,20 @@ impl TransactionBuilder {
                 Type::String => self.parse_basic_ty::<String>(i, t, arg),
                 Type::Custom { name, .. } => self.parse_custom_ty(i, t, arg, name, account),
                 _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
-            };
-            encoded.push(res?);
+            }?;
+            values.push(value);
         }
 
-        Ok(encoded)
+        let mut bytes = Vec::new();
+        let mut enc = Encoder::with_type(&mut bytes);
+        encode_any(None, &Value::Struct(values), &mut enc);
+
+        Ok(bytes)
+    }
+
+    fn ty_to_value<T>(t: &T) -> Value where T:Encode {
+        // TODO: Directly go from type to Value
+        decode_any(&scrypto_encode(t)).unwrap()
     }
 
     fn parse_basic_ty<T>(
@@ -737,7 +743,7 @@ impl TransactionBuilder {
         i: usize,
         ty: &Type,
         arg: &str,
-    ) -> Result<Vec<u8>, BuildArgsError>
+    ) -> Result<Value, BuildArgsError>
     where
         T: FromStr + Encode,
         T::Err: fmt::Debug,
@@ -745,7 +751,8 @@ impl TransactionBuilder {
         let value = arg
             .parse::<T>()
             .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-        Ok(scrypto_encode(&value))
+
+        Ok(Self::ty_to_value(&value))
     }
 
     fn parse_custom_ty(
@@ -755,43 +762,43 @@ impl TransactionBuilder {
         arg: &str,
         name: &str,
         account: Option<ComponentAddress>,
-    ) -> Result<Vec<u8>, BuildArgsError> {
+    ) -> Result<Value, BuildArgsError> {
         match ScryptoType::from_name(name).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
             ScryptoType::Decimal => {
                 let value = arg
                     .parse::<Decimal>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
+                Ok(Self::ty_to_value(&value))
             }
             ScryptoType::PackageAddress => {
                 let value = arg
                     .parse::<PackageAddress>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
+                Ok(Self::ty_to_value(&value))
             }
             ScryptoType::ComponentAddress => {
                 let value = arg
                     .parse::<ComponentAddress>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
+                Ok(Self::ty_to_value(&value))
             }
             ScryptoType::ResourceAddress => {
                 let value = arg
                     .parse::<ResourceAddress>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
+                Ok(Self::ty_to_value(&value))
             }
             ScryptoType::Hash => {
                 let value = arg
                     .parse::<Hash>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
+                Ok(Self::ty_to_value(&value))
             }
             ScryptoType::NonFungibleId => {
                 let value = arg
                     .parse::<NonFungibleId>()
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
-                Ok(scrypto_encode(&value))
+                Ok(Self::ty_to_value(&value))
             }
             ScryptoType::Bucket => {
                 let resource_specifier = parse_resource_specifier(arg)
@@ -820,7 +827,7 @@ impl TransactionBuilder {
                         .unwrap()
                     }
                 };
-                Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
+                Ok(Self::ty_to_value(&scrypto::resource::Bucket(bucket_id)))
             }
             ScryptoType::Proof => {
                 let resource_specifier = parse_resource_specifier(arg)
@@ -851,12 +858,13 @@ impl TransactionBuilder {
                         }
                     }
                 };
-                Ok(scrypto_encode(&scrypto::resource::Proof(proof_id)))
+                Ok(Self::ty_to_value(&scrypto::resource::Proof(proof_id)))
             }
             _ => Err(BuildArgsError::UnsupportedType(i, ty.clone())),
         }
     }
 }
+
 
 enum ResourceSpecifier {
     Amount(Decimal, ResourceAddress),

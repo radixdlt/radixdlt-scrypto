@@ -246,13 +246,13 @@ impl ResourceManager {
         &mut self,
         resource_address: ResourceAddress,
         function: &str,
-        args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
         track: &mut Track<'s, S>,
     ) -> Result<Option<Bucket>, ResourceManagerError> {
         match function {
             "mint" => {
                 // TODO: cleanup
-                let mint_params: MintParams = scrypto_decode(&args[0].raw)
+                let mint_params: MintParams = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let container = match mint_params {
                     MintParams::Fungible { amount } => self.mint(amount, resource_address.clone()),
@@ -264,16 +264,15 @@ impl ResourceManager {
                 Ok(Option::Some(Bucket::new(container)))
             }
             "update_metadata" => {
-                let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
+                let new_metadata: HashMap<String, String> = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 self.update_metadata(new_metadata)?;
                 Ok(Option::None)
             }
             "update_non_fungible_mutable_data" => {
-                let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
+                let parsed_arg: (NonFungibleId, Vec<u8>) = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let new_mutable_data: Vec<u8> = scrypto_decode(&args[1].raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let (non_fungible_id, new_mutable_data) = parsed_arg;
 
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);

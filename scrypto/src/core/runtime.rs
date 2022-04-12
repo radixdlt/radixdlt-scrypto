@@ -38,13 +38,13 @@ impl Runtime {
         package_address: PackageAddress,
         blueprint_name: S,
         function: S,
-        args: Vec<Vec<u8>>,
+        arg: Vec<u8>,
     ) -> Vec<u8> {
         let input = CallFunctionInput {
             package_address,
             blueprint_name: blueprint_name.as_ref().to_owned(),
             function: function.as_ref().to_owned(),
-            args,
+            arg,
         };
         let output: CallFunctionOutput = call_engine(CALL_FUNCTION, input);
 
@@ -55,12 +55,12 @@ impl Runtime {
     pub fn call_method<S: AsRef<str>>(
         component_address: ComponentAddress,
         method: S,
-        args: Vec<Vec<u8>>,
+        arg: Vec<u8>,
     ) -> Vec<u8> {
         let input = CallMethodInput {
             component_address: component_address,
             method: method.as_ref().to_owned(),
-            args,
+            arg,
         };
         let output: CallMethodOutput = call_engine(CALL_METHOD, input);
 

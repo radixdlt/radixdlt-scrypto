@@ -149,7 +149,7 @@ pub struct CallFunctionInput {
     pub package_address: PackageAddress,
     pub blueprint_name: String,
     pub function: String,
-    pub args: Vec<Vec<u8>>,
+    pub arg: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -161,7 +161,7 @@ pub struct CallFunctionOutput {
 pub struct CallMethodInput {
     pub component_address: ComponentAddress,
     pub method: String,
-    pub args: Vec<Vec<u8>>,
+    pub arg: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -663,7 +663,7 @@ pub struct GetCallDataInput {}
 pub struct GetCallDataOutput {
     pub function: String,
     pub component: Option<ComponentAddress>,
-    pub args: Vec<Vec<u8>>,
+    pub arg: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

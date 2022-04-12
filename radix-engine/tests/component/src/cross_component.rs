@@ -41,11 +41,11 @@ blueprint! {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();
                     let value = auth_bucket
-                        .authorize(|| other_component.call("get_component_state", vec![]));
+                        .authorize(|| other_component.call("get_component_state", args![]));
                     vault.put(auth_bucket);
                     value
                 }
-                None => other_component.call("get_component_state", vec![]),
+                None => other_component.call("get_component_state", args![]),
             }
         }
 

@@ -26,7 +26,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            vec![scrypto_encode(&method_authorization)],
+            args![method_authorization],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -40,7 +40,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            vec![],
+            args![],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -54,7 +54,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            vec![scrypto_encode(&secured_component)],
+            args![secured_component],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -85,7 +85,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            vec![scrypto_encode(&method_authorization)],
+            args!(method_authorization),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -99,7 +99,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            vec![],
+            args![],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -122,7 +122,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            vec![scrypto_encode(&secured_component)],
+            args![secured_component],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);

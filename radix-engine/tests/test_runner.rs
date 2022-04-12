@@ -94,7 +94,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_mint",
-                vec![scrypto_encode(&auth_resource_address)],
+                args!(auth_resource_address),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -114,7 +114,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_burn",
-                vec![scrypto_encode(&auth_resource_address)],
+                args!(auth_resource_address),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -135,7 +135,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_transfer",
-                vec![scrypto_encode(&auth_resource_address)],
+                args!(auth_resource_address),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -151,7 +151,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_non_fungible_fixed",
-                vec![],
+                args![],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))

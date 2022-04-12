@@ -1,3 +1,4 @@
+use sbor::Value;
 use radix_engine::engine::*;
 use radix_engine::model::*;
 use scrypto::engine::types::*;
@@ -6,6 +7,7 @@ use scrypto::values::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
+    InvalidFunctionParam,
     IdValidatorError(IdValidatorError),
     ParseScryptoValueError(ParseScryptoValueError),
 }
@@ -212,40 +214,49 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 package_address,
                 blueprint_name,
                 function,
-                args,
+                arg,
             } => {
                 buf.push_str(&format!(
                     "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
                     package_address, blueprint_name, function
                 ));
-                for arg in args {
-                    let validated_arg = ScryptoValue::from_slice(&arg)
-                        .map_err(DecompileError::ParseScryptoValueError)?;
-                    id_validator
-                        .move_resources(&validated_arg)
-                        .map_err(DecompileError::IdValidatorError)?;
-                    buf.push(' ');
-                    buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                let validated_arg = ScryptoValue::from_slice(&arg)
+                    .map_err(DecompileError::ParseScryptoValueError)?;
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(DecompileError::IdValidatorError)?;
+
+                if let Value::Struct(params) = validated_arg.dom {
+                    for param in params {
+                        buf.push(' ');
+                        buf.push_str(&ScryptoValueFormatter::format_value(&param, &buckets, &proofs));
+                    }
+                } else {
+                    return Err(DecompileError::InvalidFunctionParam);
                 }
                 buf.push_str(";\n");
             }
             Instruction::CallMethod {
                 component_address,
                 method,
-                args,
+                arg,
             } => {
                 buf.push_str(&format!(
                     "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
                     component_address, method
                 ));
-                for arg in args {
-                    let validated_arg = ScryptoValue::from_slice(&arg)
-                        .map_err(DecompileError::ParseScryptoValueError)?;
-                    id_validator
-                        .move_resources(&validated_arg)
-                        .map_err(DecompileError::IdValidatorError)?;
-                    buf.push(' ');
-                    buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                let validated_arg = ScryptoValue::from_slice(&arg)
+                    .map_err(DecompileError::ParseScryptoValueError)?;
+                id_validator
+                    .move_resources(&validated_arg)
+                    .map_err(DecompileError::IdValidatorError)?;
+                if let Value::Struct(params) = validated_arg.dom {
+                    for param in params {
+                        buf.push(' ');
+                        buf.push_str(&ScryptoValueFormatter::format_value(&param, &buckets, &proofs));
+                    }
+                } else {
+                    return Err(DecompileError::InvalidFunctionParam);
                 }
                 buf.push_str(";\n");
             }

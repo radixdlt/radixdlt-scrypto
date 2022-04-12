@@ -25,7 +25,7 @@ fn can_withdraw_from_my_account() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }
 
 #[test]
@@ -86,7 +86,7 @@ fn account_to_bucket_to_account() {
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
                     method: "deposit".to_owned(),
-                    args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
+                    arg: args![scrypto::resource::Bucket(bucket_id)],
                 })
                 .0
         })
