@@ -9,7 +9,6 @@ use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
-use scrypto::rust::mem;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
@@ -102,11 +101,11 @@ pub struct Interpreter {
 
 /// Qualitative states for a WASM process
 #[derive(Debug)]
-enum InterpreterState {
+enum InterpreterState<'a> {
     Blueprint,
     Component {
         component_address: ComponentAddress,
-        component: Component,
+        component: &'a mut Component,
         initial_loaded_object_refs: ComponentObjectRefs,
         additional_object_refs: ComponentObjectRefs,
     },
@@ -115,16 +114,16 @@ enum InterpreterState {
 /// Top level state machine for a process. Empty currently only
 /// refers to the initial process since it doesn't run on a wasm interpreter (yet)
 #[allow(dead_code)]
-struct WasmProcess {
+struct WasmProcess<'a> {
     /// The call depth
     depth: usize,
     trace: bool,
     vm: Interpreter,
-    interpreter_state: InterpreterState,
+    interpreter_state: InterpreterState<'a>,
     process_owned_objects: ComponentObjects,
 }
 
-impl WasmProcess {
+impl<'a> WasmProcess<'a> {
     fn check_resource(&self) -> bool {
         let mut success = true;
 
@@ -210,7 +209,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
-    wasm_process_state: Option<WasmProcess>,
+    wasm_process_state: Option<WasmProcess<'r>>,
 
     /// ID allocator for buckets and proofs created within transaction.
     id_allocator: IdAllocator,
@@ -739,7 +738,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Runs the given export within this process.
     pub fn run(
         &mut self,
-        snode: SNodeState,
+        snode: &'r mut SNodeState,
         function: String,
         args: Vec<ScryptoValue>,
     ) -> Result<(ScryptoValue, HashMap<BucketId, Bucket>, HashMap<ProofId, Proof>), RuntimeError> {
@@ -801,25 +800,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Execution
                 let result = module.invoke_export(actor.export_name(), &[], self);
 
-                // TODO: Do this in a better way
-                if let Some(WasmProcess {
-                    ref mut interpreter_state,
-                    ..
-                }) = &mut self.wasm_process_state
-                {
-                    let interpreter_state =
-                        mem::replace(interpreter_state, InterpreterState::Blueprint);
-                    if let InterpreterState::Component {
-                        component_address,
-                        component,
-                        ..
-                    } = interpreter_state
-                    {
-                        self.track
-                            .return_borrowed_global_component(component_address, component);
-                    }
-                }
-
                 // Return value
                 re_debug!(self, "Invoke result: {:?}", result);
                 let rtn = result
@@ -840,13 +820,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 ResourceManager::static_main(function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)
             }
-            SNodeState::Resource(resource_address, mut resource_manager) => {
+            SNodeState::Resource(resource_address, resource_manager) => {
                 let return_value = resource_manager
-                    .main(resource_address, function.as_str(), args, self)
+                    .main(*resource_address, function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
-
-                self.track
-                    .return_borrowed_global_resource_manager(resource_address, resource_manager);
 
                 Ok(return_value)
             }
@@ -879,13 +856,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Calls a function/method.
     pub fn call(
         &mut self,
-        snode_ref: SNodeRef,
+        mut snode_ref: SNodeRef,
         function: String,
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
 
         // Authorization and state load
-        let (snode, method_auth) = match &snode_ref {
+        let (mut snode, method_auth) = match &mut snode_ref {
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1034,11 +1011,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 process.receive_proofs(moving_proofs)?;
 
                 // invoke the main function
-                let (result, moving_buckets, moving_proofs) = process.run(snode, function, args)?;
+                let (result, moving_buckets, moving_proofs) = process.run(&mut snode, function, args)?;
 
                 // move buckets and proofs to this process.
                 self.receive_buckets(moving_buckets)?;
                 self.receive_proofs(moving_proofs)?;
+
+                match snode {
+                    SNodeState::Scrypto(actor, component_state) => {
+                        if let Some(component_address) = actor.component_address() {
+                            self.track.return_borrowed_global_component(component_address, component_state.unwrap());
+                        }
+                    }
+                    SNodeState::Resource(resource_address, resource_manager) => {
+                        self.track.return_borrowed_global_resource_manager(resource_address, resource_manager);
+                    }
+                    _ => {}
+                }
 
                 Ok(result)
             }
@@ -1088,7 +1077,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call abi started");
 
-        let snode = SNodeState::Scrypto(
+        let mut snode = SNodeState::Scrypto(
             ScryptoActorInfo::blueprint(
                 package_address,
                 blueprint_name.to_string(),
@@ -1098,7 +1087,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        let result = process.run(snode, String::new(), Vec::new()).map(|(r,_,_)| r);
+        let result = process.run(&mut snode, String::new(), Vec::new()).map(|(r,_,_)| r);
 
         re_debug!(self, "Call abi ended");
         result
