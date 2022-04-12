@@ -65,14 +65,13 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
     pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
-        let input = TakeNonFungiblesFromBucketInput {
-            bucket_id: self.0,
-            non_fungible_ids: non_fungible_ids.clone(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::BucketRef(self.0),
+            function: "take_non_fungibles_from_bucket".to_string(),
+            args: args![non_fungible_ids.clone()],
         };
-        let output: TakeNonFungiblesFromBucketOutput =
-            call_engine(TAKE_NON_FUNGIBLES_FROM_BUCKET, input);
-
-        Self(output.bucket_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Burns resource within this bucket.

@@ -46,11 +46,11 @@ impl Bucket {
         self.borrow_container_mut().take_by_amount(amount)
     }
 
-    pub fn take_non_fungibles(
+    fn take_non_fungibles(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<Bucket, ResourceContainerError> {
-        Ok(Bucket::new(self.borrow_container_mut().take_by_ids(ids)?))
+    ) -> Result<ResourceContainer, ResourceContainerError> {
+        self.borrow_container_mut().take_by_ids(ids)
     }
 
     pub fn create_proof(&mut self, container_id: ResourceContainerId) -> Result<Proof, ProofError> {
@@ -165,6 +165,15 @@ impl Bucket {
                 let amount: Decimal = scrypto_decode(&args[0].raw)
                     .map_err(|e| BucketError::InvalidRequestData(e))?;
                 let container = self.take(amount).map_err(BucketError::ResourceContainerError)?;
+                let bucket_id = system_api.create_bucket(container).map_err(|_| BucketError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
+            }
+            "take_non_fungibles_from_bucket" => {
+                let ids: BTreeSet<NonFungibleId> = scrypto_decode(&args[0].raw)
+                    .map_err(|e| BucketError::InvalidRequestData(e))?;
+                let container = self.take_non_fungibles(&ids).map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api.create_bucket(container).map_err(|_| BucketError::CouldNotCreateBucket)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,

@@ -45,8 +45,6 @@ pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
 /// Create an empty bucket
 pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
-/// Take a non-fungible from this bucket, by id
-pub const TAKE_NON_FUNGIBLES_FROM_BUCKET: u32 = 0x55;
 /// Get the IDs of all non-fungibles in this bucket
 pub const GET_NON_FUNGIBLE_IDS_IN_BUCKET: u32 = 0x56;
 
@@ -260,17 +258,6 @@ pub struct CreateEmptyBucketInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateEmptyBucketOutput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromBucketInput {
-    pub bucket_id: BucketId,
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromBucketOutput {
     pub bucket_id: BucketId,
 }
 

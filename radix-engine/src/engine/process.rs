@@ -1769,22 +1769,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateEmptyBucketOutput { bucket_id })
     }
 
-    fn handle_take_non_fungibles_from_bucket(
-        &mut self,
-        input: TakeNonFungiblesFromBucketInput,
-    ) -> Result<TakeNonFungiblesFromBucketOutput, RuntimeError> {
-        let new_bucket = self
-            .buckets
-            .get_mut(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .take_non_fungibles(&input.non_fungible_ids)
-            .map_err(|e| RuntimeError::BucketError(BucketError::ResourceContainerError(e)))?;
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(TakeNonFungiblesFromBucketOutput { bucket_id })
-    }
-
     fn handle_get_non_fungible_ids_in_bucket(
         &mut self,
         input: GetNonFungibleIdsInBucketInput,
@@ -2100,9 +2084,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
-                    TAKE_NON_FUNGIBLES_FROM_BUCKET => {
-                        self.handle(args, Self::handle_take_non_fungibles_from_bucket)
-                    }
                     GET_NON_FUNGIBLE_IDS_IN_BUCKET => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_bucket)
                     }

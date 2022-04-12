@@ -111,11 +111,13 @@ impl ResourceManager {
         }
 
         if let ResourceType::NonFungible = resource_type {
-            authorization.insert(
-                "non_fungible_exists".to_string(),
-                MethodAuthorization::Public,
-            );
-            authorization.insert("get_non_fungible".to_string(), MethodAuthorization::Public);
+            for pub_method in [
+                "take_non_fungibles_from_bucket",
+                "non_fungible_exists",
+                "get_non_fungible",
+            ] {
+                authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
+            }
         }
 
         let resource_manager = Self {
