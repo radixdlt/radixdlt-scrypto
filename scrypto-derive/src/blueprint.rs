@@ -65,9 +65,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     };
     trace!("Generated mod: \n{}", quote! { #output_mod });
 
+    let fn_input_output = generate_input_output(bp_ident, bp_items);
+
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
     let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items)?;
     let output_dispatcher = quote! {
+        #(#fn_input_output)*
+
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident() -> *mut u8 {
             // Set up panic hook
@@ -143,6 +147,28 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     crate::utils::print_generated_code("blueprint!", &output);
 
     Ok(output)
+}
+
+fn generate_input_output(blueprint_id: &Ident, items: &[ImplItem]) -> Vec<ItemStruct> {
+    let mut input_output_structs = Vec::new();
+
+    for item in items {
+        trace!("Processing item: {}", quote! { #item });
+
+        if let ImplItem::Method(ref m) = item {
+            if let Visibility::Public(_) = &m.vis {
+                let fn_ident = &m.sig.ident;
+                let fn_input_ident = format_ident!("{}_{}_Input", blueprint_id, fn_ident);
+                let item_struct = parse_quote! {
+                    #[allow(non_camel_case_types)]
+                    struct #fn_input_ident();
+                };
+                input_output_structs.push(item_struct);
+            }
+        }
+    }
+
+    input_output_structs
 }
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
@@ -510,6 +536,10 @@ mod tests {
                         }
                     }
                 }
+
+                #[allow(non_camel_case_types)]
+                struct Test_x_Input();
+
                 #[no_mangle]
                 pub extern "C" fn Test_main() -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
