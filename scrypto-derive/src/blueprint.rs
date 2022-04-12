@@ -208,7 +208,6 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                 let mut get_state: Option<Stmt> = None;
                 let mut put_state: Option<Stmt> = None;
                 for (i, input) in (&m.sig.inputs).into_iter().enumerate() {
-                    let arg = format_ident!("arg{}", i);
                     match input {
                         FnArg::Receiver(ref r) => {
                             // Check receiver type and mutability
@@ -219,8 +218,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let stmt: Stmt = parse_quote! {
-                                let #arg = ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentAddress>(&calldata.args[#i])
-                                .unwrap();
+                                let component_address = calldata.component.unwrap();
                             };
                             trace!("Generated stmt: {}", quote! { #stmt });
                             args.push(parse_quote! { & #mutability state });
@@ -229,22 +227,29 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can have at most 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = component!(#arg).get_state();
+                                let #mutability state: blueprint::#bp_ident = component!(component_address).get_state();
                             });
 
                             // Generate a `Stmt` for writing back component state
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
-                                    ::scrypto::component!(#arg).put_state(state);
+                                    ::scrypto::component!(component_address).put_state(state);
                                 });
                             }
                         }
                         FnArg::Typed(ref t) => {
+                            let arg_index = if get_state.is_some() {
+                                i - 1
+                            } else {
+                                i
+                            };
+                            let arg = format_ident!("arg{}", arg_index);
+
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let ty = &t.ty;
                             let stmt: Stmt = parse_quote! {
                                 let #arg =
-                                    ::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i])
+                                    ::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#arg_index])
                                     .unwrap();
                             };
                             trace!("Generated stmt: {}", quote! { #stmt });
@@ -571,16 +576,13 @@ mod tests {
                     let rtn;
                     match calldata.function.as_str() {
                         "x" => {
+                            let component_address = calldata.component.unwrap();
                             let arg0 =
-                                ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentAddress>(
+                                ::scrypto::buffer::scrypto_decode::<u32>(
                                     &calldata.args[0usize]
                                 ).unwrap();
-                            let arg1 =
-                                ::scrypto::buffer::scrypto_decode::<u32>(
-                                    &calldata.args[1usize]
-                                ).unwrap();
-                            let state: blueprint::Test = component!(arg0).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, arg1));
+                            let state: blueprint::Test = component!(component_address).get_state();
+                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, arg0));
                         }
                         _ => {
                             panic!("Function/method not fund")
