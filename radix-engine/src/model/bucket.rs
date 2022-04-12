@@ -128,7 +128,7 @@ impl Bucket {
         self.borrow_container().total_amount()
     }
 
-    pub fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
+    fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
         self.borrow_container().total_ids()
     }
 
@@ -178,6 +178,10 @@ impl Bucket {
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
+            }
+            "get_non_fungible_ids_in_bucket" => {
+                let ids = self.total_ids().map_err(BucketError::ResourceContainerError)?;
+                Ok(ScryptoValue::from_value(&ids))
             }
             "put_into_bucket" => {
                 let bucket_id: scrypto::resource::Bucket = scrypto_decode(&args[0].raw)

@@ -127,10 +127,13 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
-        let output: GetNonFungibleIdsInBucketOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);
-        output.non_fungible_ids
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::BucketRef(self.0),
+            function: "get_non_fungible_ids_in_bucket".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns all the non-fungible units contained.
@@ -138,12 +141,8 @@ impl Bucket {
     /// # Panics
     /// Panics if this is not a non-fungible bucket.
     pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let input = GetNonFungibleIdsInBucketInput { bucket_id: self.0 };
-        let output: GetNonFungibleIdsInBucketOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_BUCKET, input);
         let resource_address = self.resource_address();
-        output
-            .non_fungible_ids
+        self.non_fungible_ids()
             .iter()
             .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()

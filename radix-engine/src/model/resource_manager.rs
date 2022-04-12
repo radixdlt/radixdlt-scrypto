@@ -115,6 +115,7 @@ impl ResourceManager {
                 "take_non_fungibles_from_bucket",
                 "non_fungible_exists",
                 "get_non_fungible",
+                "get_non_fungible_ids_in_bucket",
             ] {
                 authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
             }
