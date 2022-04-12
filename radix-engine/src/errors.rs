@@ -126,6 +126,8 @@ pub enum RuntimeError {
     /// System call not allowed in given context.
     IllegalSystemCall,
 
+    ComponentReentrancy(ComponentAddress),
+
     /// Component does not exist.
     ComponentNotFound(ComponentAddress),
 

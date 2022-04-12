@@ -13,6 +13,7 @@ use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::mem;
 use scrypto::values::*;
 use wasmi::*;
 
@@ -57,7 +58,7 @@ macro_rules! re_warn {
 pub enum SNodeState {
     Scrypto(
         ScryptoActorInfo,
-        Option<(ComponentAddress, Vec<u8>, ScryptoValue)>,
+        Option<Component>,
     ),
     Resource(ResourceAddress),
     Bucket(Bucket),
@@ -95,7 +96,7 @@ enum InterpreterState {
     Blueprint,
     Component {
         component_address: ComponentAddress,
-        state: Vec<u8>,
+        component: Component,
         initial_loaded_object_refs: ComponentObjectRefs,
         additional_object_refs: ComponentObjectRefs,
     },
@@ -754,14 +755,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let (module, memory) = package.load_module().unwrap();
 
                 let (interpreter_state, args) =
-                    if let Some((component_address, state, data)) = component_state {
+                    if let Some(component) = component_state {
+                        let component_address = actor.component_address().unwrap().clone();
+                        let data = ScryptoValue::from_slice(component.state()).unwrap();
                         let initial_loaded_object_refs = ComponentObjectRefs {
                             vault_ids: data.vault_ids.into_iter().collect(),
                             lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
                         };
                         let istate = InterpreterState::Component {
-                            state,
                             component_address,
+                            component,
                             initial_loaded_object_refs,
                             additional_object_refs: ComponentObjectRefs::new(),
                         };
@@ -789,6 +792,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 // Execution
                 let result = module.invoke_export(actor.export_name(), &[], self);
+
+                // TODO: Do this in a better way
+                if let Some(WasmProcess { ref mut interpreter_state, .. }) = &mut self.wasm_process_state {
+                    let interpreter_state = mem::replace(interpreter_state, InterpreterState::Blueprint);
+                    if let InterpreterState::Component { component_address, component, .. } = interpreter_state {
+                        self.track.return_borrowed_global_component(component_address, component);
+                    }
+                }
+
+                // Return value
                 re_debug!(self, "Invoke result: {:?}", result);
                 let rtn = result
                     .map_err(|e| {
@@ -799,8 +812,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         }
                     })?
                     .ok_or(RuntimeError::NoReturnData)?;
-
-                // Return value
                 match rtn {
                     RuntimeValue::I32(ptr) => {
                         let data = self.read_return_value(ptr as u32)?;
@@ -882,13 +893,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
-                        let component = self
-                            .track
-                            .get_component(component_address.clone())
-                            .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
+                        let component = self.track.borrow_global_mut_component(component_address.clone())?;
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
-                        let component_state = component.state().to_vec();
                         let export_name = format!("{}_main", blueprint_name);
 
                         let package = self
@@ -901,9 +908,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .unwrap()
                             .clone();
 
-                        let component =
-                            self.track.get_component(component_address.clone()).unwrap();
-                        let (scrypto_value, method_auth) =
+                        let (_, method_auth) =
                             component.method_authorization(&schema, &invocation.function);
                         Ok((
                             SNodeState::Scrypto(
@@ -913,7 +918,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                                     export_name,
                                     component_address.clone(),
                                 ),
-                                Some((component_address.clone(), component_state, scrypto_value)),
+                                Some(component),
                             ),
                             method_auth,
                         ))
@@ -1461,11 +1466,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
-        let return_state = match &wasm_process.interpreter_state {
-            InterpreterState::Component { state, .. } => Ok(state),
+        let component_state = match &wasm_process.interpreter_state {
+            InterpreterState::Component { component, .. } => Ok(component.state()),
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
-        let state = return_state.to_vec();
+        let state = component_state.to_vec();
         Ok(GetComponentStateOutput { state })
     }
 
@@ -1477,8 +1482,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
-        match &wasm_process.interpreter_state {
+        match &mut wasm_process.interpreter_state {
             InterpreterState::Component {
+                ref mut component,
                 component_address,
                 initial_loaded_object_refs,
                 ..
@@ -1491,7 +1497,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 // TODO: Verify that process_owned_objects is empty
 
-                let component = self.track.get_component_mut(*component_address).unwrap();
                 component.set_state(input.state);
                 Ok(())
             }

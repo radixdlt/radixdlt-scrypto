@@ -46,6 +46,10 @@ impl ScryptoActorInfo {
         }
     }
 
+    pub fn component_address(&self) -> Option<ComponentAddress> {
+        self.component_address
+    }
+
     pub fn export_name(&self) -> &str {
         &self.export_name
     }

@@ -8,7 +8,7 @@ use scrypto::values::*;
 use crate::model::{convert, MethodAuthorization};
 
 /// A component is an instance of blueprint.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,
