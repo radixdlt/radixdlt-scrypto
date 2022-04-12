@@ -215,7 +215,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Proofs collected from previous returns or self. Also used for system authorization.
     auth_zone: Vec<Proof>,
     /// The caller's auth zone
-    caller_auth_zone: &'r [Proof],
+    caller_auth_zone: Option<&'r [Proof]>,
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
@@ -245,7 +245,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             id_allocator,
             worktop: Worktop::new(),
             auth_zone: Vec::new(),
-            caller_auth_zone: &[],
+            caller_auth_zone: None,
         }
     }
 
@@ -950,7 +950,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let proofs_vector = match &snode {
             // Same process auth check
             SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) => {
-                vec![self.caller_auth_zone, &self.auth_zone]
+                if let Some(auth_zone) = self.caller_auth_zone {
+                    vec![auth_zone, &self.auth_zone]
+                } else {
+                    vec![self.auth_zone.as_slice()]
+                }
+
             }
             // Extern call auth check
             _ => vec![self.auth_zone.as_slice()],
@@ -994,7 +999,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             _ => {
                 // start a new process
                 let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
-                process.caller_auth_zone = &self.auth_zone;
+                process.caller_auth_zone = Option::Some(&self.auth_zone);
 
                 // move buckets and proofs to the new process.
                 process.receive_buckets(moving_buckets)?;
