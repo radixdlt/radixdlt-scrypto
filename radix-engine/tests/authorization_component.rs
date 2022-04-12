@@ -129,5 +129,5 @@ fn can_make_cross_component_call_with_authorization() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
