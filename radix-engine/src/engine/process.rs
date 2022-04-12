@@ -742,7 +742,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         snode: SNodeState,
         function: String,
         args: Vec<ScryptoValue>,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<(ScryptoValue, HashMap<BucketId, Bucket>, HashMap<ProofId, Proof>), RuntimeError> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         re_info!(self, "Run started: function = {:?}", function);
@@ -856,6 +856,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         self.process_return_data(&output)?;
 
+        // figure out what buckets and resources to return
+        let moving_buckets = self.send_buckets(&output.bucket_ids)?;
+        let moving_proofs = self.send_proofs(&output.proof_ids, MoveMethod::AsReturn)?;
+
+        // drop proofs and check resource leak
+        self.drop_all_proofs()?;
+        self.check_resource()?;
+
         #[cfg(not(feature = "alloc"))]
         re_info!(
             self,
@@ -865,7 +873,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         #[cfg(feature = "alloc")]
         re_info!(self, "Run ended");
 
-        Ok(output)
+        Ok((output, moving_buckets, moving_proofs))
     }
 
     /// Calls a function/method.
@@ -875,14 +883,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         function: String,
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        // figure out what buckets and proofs to move from this process
-        let mut moving_buckets = HashMap::new();
-        let mut moving_proofs = HashMap::new();
-        for arg in &args {
-            self.process_call_data(arg)?;
-            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
-            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
-        }
 
         // Authorization and state load
         let (snode, method_auth) = match &snode_ref {
@@ -987,7 +987,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .check(&proofs_vector)
             .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
 
+
         // Execution
+
+        // Figure out what buckets and proofs to move from this process
+        let mut moving_buckets = HashMap::new();
+        let mut moving_proofs = HashMap::new();
+        for arg in &args {
+            self.process_call_data(arg)?;
+            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
+            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
+        }
+
         let result = match snode {
             SNodeState::Vault(vault_id) => {
                 let vault = self.get_local_vault(&vault_id)?;
@@ -1023,15 +1034,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 process.receive_proofs(moving_proofs)?;
 
                 // invoke the main function
-                let result = process.run(snode, function, args)?;
-
-                // figure out what buckets and resources to move from the new process
-                let moving_buckets = process.send_buckets(&result.bucket_ids)?;
-                let moving_proofs = process.send_proofs(&result.proof_ids, MoveMethod::AsReturn)?;
-
-                // drop proofs and check resource leak
-                process.drop_all_proofs()?;
-                process.check_resource()?;
+                let (result, moving_buckets, moving_proofs) = process.run(snode, function, args)?;
 
                 // move buckets and proofs to this process.
                 self.receive_buckets(moving_buckets)?;
@@ -1095,7 +1098,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        let result = process.run(snode, String::new(), Vec::new());
+        let result = process.run(snode, String::new(), Vec::new()).map(|(r,_,_)| r);
 
         re_debug!(self, "Call abi ended");
         result
