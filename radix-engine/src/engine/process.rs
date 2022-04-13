@@ -1790,20 +1790,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(DropProofOutput {})
     }
 
-    fn handle_get_proof_amount(
-        &mut self,
-        input: GetProofAmountInput,
-    ) -> Result<GetProofAmountOutput, RuntimeError> {
-        let proof = self
-            .proofs
-            .get(&input.proof_id)
-            .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
-
-        Ok(GetProofAmountOutput {
-            amount: proof.total_amount(),
-        })
-    }
-
     fn handle_get_proof_resource_address(
         &mut self,
         input: GetProofResourceAddressInput,
@@ -2018,7 +2004,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
-                    GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),
                     GET_PROOF_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_proof_resource_address)
                     }

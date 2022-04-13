@@ -3,6 +3,7 @@ use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
+use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;

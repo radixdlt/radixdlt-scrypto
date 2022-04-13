@@ -1,4 +1,7 @@
 use sbor::*;
+use crate::args;
+use crate::buffer::scrypto_decode;
+use crate::core::SNodeRef;
 
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
@@ -8,6 +11,7 @@ use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
+use crate::rust::string::ToString;
 use crate::types::*;
 
 /// Represents a proof of owning some resource.
@@ -47,10 +51,13 @@ impl Proof {
 
     /// Returns the resource amount within the bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetProofAmountInput { proof_id: self.0 };
-        let output: GetProofAmountOutput = call_engine(GET_PROOF_AMOUNT, input);
-
-        output.amount
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ProofRef(self.0),
+            function: "get_total_amount".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the resource address
