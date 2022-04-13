@@ -42,7 +42,6 @@ impl Proof {
     pub fn new(
         resource_address: ResourceAddress,
         resource_type: ResourceType,
-        restricted: bool,
         total_locked: LockedAmountOrIds,
         evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
     ) -> Result<Proof, ProofError> {
@@ -53,7 +52,7 @@ impl Proof {
         Ok(Self {
             resource_address,
             resource_type,
-            restricted,
+            restricted: false,
             total_locked,
             evidence,
         })
@@ -184,7 +183,6 @@ impl Proof {
                 Proof::new(
                     resource_address,
                     resource_type,
-                    false,
                     LockedAmountOrIds::Amount(amount),
                     evidence,
                 )
@@ -250,7 +248,6 @@ impl Proof {
                 Proof::new(
                     resource_address,
                     resource_type,
-                    false,
                     LockedAmountOrIds::Ids(ids.clone()),
                     evidence,
                 )
