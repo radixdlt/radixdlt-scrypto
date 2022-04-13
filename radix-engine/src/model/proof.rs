@@ -326,11 +326,15 @@ impl Proof {
     pub fn main<S: SystemApi>(
         &mut self,
         function: &str,
-        args: Vec<ScryptoValue>,
+        _: Vec<ScryptoValue>,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
         match function {
             "get_total_amount" => Ok(ScryptoValue::from_value(&self.total_amount())),
+            "get_non_fungible_ids" => {
+                let ids = self.total_ids()?;
+                Ok(ScryptoValue::from_value(&ids))
+            },
             "get_resource_address" => Ok(ScryptoValue::from_value(&self.resource_address())),
             _ => Err(ProofError::MethodNotFound(function.to_string())),
         }

@@ -53,8 +53,6 @@ pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
 pub const CLONE_PROOF: u32 = 0x69;
 /// Drop a proof
 pub const DROP_PROOF: u32 = 0x6A;
-/// Get the non-fungible ids
-pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
 
 pub const INVOKE_SNODE: u32 = 0x70;
 
@@ -269,16 +267,6 @@ pub struct DropProofInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct DropProofOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInProofInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInProofOutput {
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CloneProofInput {

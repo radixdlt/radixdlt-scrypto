@@ -76,11 +76,13 @@ impl Proof {
     /// # Panics
     /// If the bucket is not a non-fungible bucket.
     pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = GetNonFungibleIdsInProofInput { proof_id: self.0 };
-        let output: GetNonFungibleIdsInProofOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_PROOF, input);
-
-        output.non_fungible_ids
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ProofRef(self.0),
+            function: "get_non_fungible_ids".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Destroys this proof.
