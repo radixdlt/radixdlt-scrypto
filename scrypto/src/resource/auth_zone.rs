@@ -61,13 +61,12 @@ impl AuthZone {
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
     ) -> Proof {
-        let input = CreateAuthZoneProofByIdsInput {
-            resource_address,
-            ids: ids.clone(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::AuthZone,
+            function: "create_proof_by_ids".to_string(),
+            args: args![ids.clone(), resource_address],
         };
-        let output: CreateAuthZoneProofByIdsOutput =
-            call_engine(CREATE_AUTH_ZONE_PROOF_BY_IDS, input);
-
-        Proof(output.proof_id.into())
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 }

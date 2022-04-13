@@ -114,6 +114,16 @@ impl AuthZone {
                 let proof_id = system_api.create_proof(proof).map_err(|_| AuthZoneError::CouldNotCreateProof)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
             }
+            "create_proof_by_ids" => {
+                let ids = scrypto_decode(&args[0].raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+                let resource_address = scrypto_decode(&args[1].raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+                let resource_manager: ResourceManager = system_api.borrow_global_mut_resource_manager(resource_address).map_err(|_| AuthZoneError::CouldNotGetResource)?;
+                let resource_type = resource_manager.resource_type();
+                system_api.return_borrowed_global_resource_manager(resource_address, resource_manager);
+                let proof = self.create_proof_by_ids(&ids, resource_address, resource_type)?;
+                let proof_id = system_api.create_proof(proof).map_err(|_| AuthZoneError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
+            }
             _ => Err(AuthZoneError::MethodNotFound(function.to_string())),
         }
     }
