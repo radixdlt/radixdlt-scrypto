@@ -10,6 +10,7 @@ use scrypto::values::*;
 
 use crate::engine::*;
 use crate::errors::*;
+use crate::model::{ValidatedInstruction, ValidatedTransaction};
 
 /// Represents an unsigned transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -25,13 +26,6 @@ pub struct SignedTransaction {
     pub signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
 }
 
-/// Represents a validated transaction
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ValidatedTransaction {
-    pub raw_hash: Hash,
-    pub instructions: Vec<ValidatedInstruction>,
-    pub signers: Vec<EcdsaPublicKey>,
-}
 
 /// Represents an instruction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -134,78 +128,6 @@ pub enum Instruction {
     /// Specifies transaction nonce
     Nonce {
         nonce: u64, // TODO: may be replaced with substate id for entropy
-    },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValidatedInstruction {
-    TakeFromWorktop {
-        resource_address: ResourceAddress,
-    },
-    TakeFromWorktopByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    TakeFromWorktopByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    ReturnToWorktop {
-        bucket_id: BucketId,
-    },
-    AssertWorktopContains {
-        resource_address: ResourceAddress,
-    },
-    AssertWorktopContainsByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    AssertWorktopContainsByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    PopFromAuthZone,
-    PushToAuthZone {
-        proof_id: ProofId,
-    },
-    ClearAuthZone,
-    CreateProofFromAuthZone {
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromAuthZoneByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromAuthZoneByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromBucket {
-        bucket_id: BucketId,
-    },
-    CloneProof {
-        proof_id: ProofId,
-    },
-    DropProof {
-        proof_id: ProofId,
-    },
-    CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        function: String,
-        args: Vec<ScryptoValue>,
-    },
-    CallMethod {
-        component_address: ComponentAddress,
-        method: String,
-        args: Vec<ScryptoValue>,
-    },
-    CallMethodWithAllResources {
-        component_address: ComponentAddress,
-        method: String,
-    },
-    PublishPackage {
-        code: Vec<u8>,
     },
 }
 

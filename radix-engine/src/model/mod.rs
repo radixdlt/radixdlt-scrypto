@@ -10,6 +10,7 @@ mod receipt;
 mod resource;
 mod resource_manager;
 mod transaction;
+mod validated_transaction;
 mod vault;
 mod worktop;
 
@@ -27,7 +28,8 @@ pub use receipt::Receipt;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
 pub use transaction::{
-    Instruction, SignedTransaction, Transaction, ValidatedInstruction, ValidatedTransaction,
+    Instruction, SignedTransaction, Transaction,
 };
+pub use validated_transaction::{ValidatedTransaction, ValidatedInstruction};
 pub use vault::{Vault, VaultError};
 pub use worktop::Worktop;
