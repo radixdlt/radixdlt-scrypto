@@ -7,7 +7,7 @@ pub enum ParserError {
     UnexpectedToken(Token),
     InvalidNumberOfValues { actual: usize, expected: usize },
     InvalidNumberOfTypes { actual: usize, expected: usize },
-    InvalidBase64(String),
+    InvalidHex(String),
     MissingEnumIndex,
 }
 
@@ -210,7 +210,7 @@ impl Parser {
             | TokenKind::Bucket
             | TokenKind::Proof
             | TokenKind::NonFungibleId => self.parse_scrypto_types(),
-            TokenKind::Blob => self.parse_blob(),
+            TokenKind::Bytes => self.parse_bytes(),
             _ => Err(ParserError::UnexpectedToken(token)),
         }
     }
@@ -279,18 +279,18 @@ impl Parser {
         ))
     }
 
-    pub fn parse_blob(&mut self) -> Result<Value, ParserError> {
-        advance_match!(self, TokenKind::Blob);
+    pub fn parse_bytes(&mut self) -> Result<Value, ParserError> {
+        advance_match!(self, TokenKind::Bytes);
         advance_match!(self, TokenKind::OpenParenthesis);
         let token = self.advance()?;
         let bytes = match token.kind {
             TokenKind::StringLiteral(s) => {
-                base64::decode(&s).map_err(|_| ParserError::InvalidBase64(s.to_owned()))
+                hex::decode(&s).map_err(|_| ParserError::InvalidHex(s.to_owned()))
             }
             _ => Err(ParserError::UnexpectedToken(token)),
         };
         advance_match!(self, TokenKind::CloseParenthesis);
-        Ok(Value::Blob(bytes?))
+        Ok(Value::Bytes(bytes?))
     }
 
     pub fn parse_tree_set(&mut self) -> Result<Value, ParserError> {

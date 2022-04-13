@@ -263,8 +263,8 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             }
             Instruction::PublishPackage { code } => {
                 buf.push_str(&format!(
-                    "PUBLISH_PACKAGE Blob(\"{}\");\n",
-                    base64::encode(&code)
+                    "PUBLISH_PACKAGE Bytes(\"{}\");\n",
+                    hex::encode(&code)
                 ));
             }
             Instruction::Nonce { .. } => {
