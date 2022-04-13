@@ -345,4 +345,14 @@ impl Proof {
             _ => Err(ProofError::MethodNotFound(function.to_string())),
         }
     }
+
+    pub fn main_consume(self, function: &str) -> Result<ScryptoValue, ProofError> {
+        match function {
+            "drop" => {
+                self.drop();
+                Ok(ScryptoValue::from_value(&()))
+            },
+            _ => Err(ProofError::MethodNotFound(function.to_string())),
+        }
+    }
 }

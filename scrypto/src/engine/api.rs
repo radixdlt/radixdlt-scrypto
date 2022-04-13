@@ -49,8 +49,6 @@ pub const CREATE_VAULT_PROOF: u32 = 0x63;
 pub const CREATE_VAULT_PROOF_BY_AMOUNT: u32 = 0x64;
 /// Create a vault proof by ids
 pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
-/// Drop a proof
-pub const DROP_PROOF: u32 = 0x6A;
 
 pub const INVOKE_SNODE: u32 = 0x70;
 
@@ -257,14 +255,6 @@ pub struct CreateVaultProofByIdsInput {
 pub struct CreateVaultProofByIdsOutput {
     pub proof_id: ProofId,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct DropProofInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct DropProofOutput {}
 
 //=======
 // others

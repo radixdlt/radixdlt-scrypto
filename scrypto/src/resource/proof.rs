@@ -90,8 +90,13 @@ impl Proof {
 
     /// Destroys this proof.
     pub fn drop(self) {
-        let input = DropProofInput { proof_id: self.0 };
-        let _: DropProofOutput = call_engine(DROP_PROOF, input);
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Proof(self.0),
+            function: "drop".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Checks if the referenced bucket is empty.

@@ -98,6 +98,7 @@ pub enum SNodeState {
     BucketRef(BucketId, Bucket),
     Bucket(Bucket),
     ProofRef(ProofId, Proof),
+    Proof(Proof),
     VaultRef(VaultId),
 }
 
@@ -809,7 +810,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::ProofRef(_, proof) => proof
                 .main(function.as_str(), args, self)
                 .map_err(RuntimeError::ProofError),
-
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
@@ -944,6 +944,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 Ok((SNodeState::ProofRef(proof_id.clone(), proof), MethodAuthorization::Public))
             }
+            SNodeRef::Proof(proof_id) => {
+                let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                Ok((SNodeState::Proof(proof), MethodAuthorization::Public))
+            }
             SNodeRef::VaultRef(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
                 let method_auth = self
@@ -1001,6 +1005,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Ok(ScryptoValue::from_value(&()))
                 }
             }
+            SNodeState::Proof(proof) => {
+                proof.main_consume(function.as_str())
+                    .map_err(RuntimeError::ProofError)
+            },
             SNodeState::Bucket(bucket) => match function.as_str() {
                 "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
                 _ => Err(RuntimeError::IllegalSystemCall),
@@ -1781,15 +1789,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_drop_proof(
-        &mut self,
-        input: DropProofInput,
-    ) -> Result<DropProofOutput, RuntimeError> {
-        self.drop_proof(input.proof_id)?;
-
-        Ok(DropProofOutput {})
-    }
-
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
@@ -1961,8 +1960,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_VAULT_PROOF_BY_IDS => {
                         self.handle(args, Self::handle_create_vault_proof_by_ids)
                     }
-
-                    DROP_PROOF => self.handle(args, Self::handle_drop_proof),
 
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 

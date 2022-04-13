@@ -12,5 +12,6 @@ pub enum SNodeRef {
     Bucket(BucketId),
     BucketRef(BucketId),
     ProofRef(ProofId),
+    Proof(ProofId),
     VaultRef(VaultId),
 }
