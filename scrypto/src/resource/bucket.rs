@@ -12,7 +12,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a transient resource container.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Bucket(pub BucketId);
 
 impl Bucket {

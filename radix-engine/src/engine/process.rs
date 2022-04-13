@@ -1201,7 +1201,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
         &mut self,
-        bucket_ids: &[BucketId],
+        bucket_ids: &HashSet<BucketId>,
     ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
         let mut buckets = HashMap::new();
         for bucket_id in bucket_ids {
@@ -1238,7 +1238,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
         &mut self,
-        proof_ids: &[ProofId],
+        proof_ids: &HashSet<ProofId>,
         method: MoveMethod,
     ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
         let mut proofs = HashMap::new();

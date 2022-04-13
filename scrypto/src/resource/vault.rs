@@ -19,6 +19,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a persistent resource container on ledger state.
+#[derive(PartialEq, Eq, Hash)]
 pub struct Vault(pub VaultId);
 
 impl Vault {
