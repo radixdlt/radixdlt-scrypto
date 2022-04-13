@@ -331,6 +331,7 @@ impl Proof {
     ) -> Result<ScryptoValue, ProofError> {
         match function {
             "get_total_amount" => Ok(ScryptoValue::from_value(&self.total_amount())),
+            "get_resource_address" => Ok(ScryptoValue::from_value(&self.resource_address())),
             _ => Err(ProofError::MethodNotFound(function.to_string())),
         }
     }

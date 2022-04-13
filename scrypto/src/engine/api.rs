@@ -53,8 +53,6 @@ pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
 pub const CLONE_PROOF: u32 = 0x69;
 /// Drop a proof
 pub const DROP_PROOF: u32 = 0x6A;
-/// Get the resource address
-pub const GET_PROOF_RESOURCE_ADDRESS: u32 = 0x6C;
 /// Get the non-fungible ids
 pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
 
@@ -271,16 +269,6 @@ pub struct DropProofInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct DropProofOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofResourceAddressInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofResourceAddressOutput {
-    pub resource_address: ResourceAddress,
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetNonFungibleIdsInProofInput {

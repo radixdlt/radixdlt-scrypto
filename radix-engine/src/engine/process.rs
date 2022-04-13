@@ -1790,20 +1790,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(DropProofOutput {})
     }
 
-    fn handle_get_proof_resource_address(
-        &mut self,
-        input: GetProofResourceAddressInput,
-    ) -> Result<GetProofResourceAddressOutput, RuntimeError> {
-        let proof = self
-            .proofs
-            .get(&input.proof_id)
-            .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
-
-        Ok(GetProofResourceAddressOutput {
-            resource_address: proof.resource_address(),
-        })
-    }
-
     fn handle_get_non_fungible_ids_in_proof(
         &mut self,
         input: GetNonFungibleIdsInProofInput,
@@ -2004,9 +1990,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
-                    GET_PROOF_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_proof_resource_address)
-                    }
                     GET_NON_FUNGIBLE_IDS_IN_PROOF => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_proof)
                     }

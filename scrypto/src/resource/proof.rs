@@ -62,10 +62,13 @@ impl Proof {
 
     /// Returns the resource address
     pub fn resource_address(&self) -> ResourceAddress {
-        let input = GetProofResourceAddressInput { proof_id: self.0 };
-        let output: GetProofResourceAddressOutput = call_engine(GET_PROOF_RESOURCE_ADDRESS, input);
-
-        output.resource_address
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ProofRef(self.0),
+            function: "get_resource_address".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the ids of all non-fungibles in this bucket.
