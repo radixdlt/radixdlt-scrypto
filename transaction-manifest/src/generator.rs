@@ -365,7 +365,7 @@ fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
 
 fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
     match value {
-        ast::Value::Blob(bytes) => Ok(bytes.clone()),
+        ast::Value::Bytes(bytes) => Ok(bytes.clone()),
         ast::Value::Vec(ty, values) => {
             if ty == &ast::Type::U8 {
                 let mut result = Vec::new();
@@ -390,7 +390,7 @@ fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
                 })
             }
         }
-        v @ _ => invalid_type!(v, ast::Type::Vec, ast::Type::Blob),
+        v @ _ => invalid_type!(v, ast::Type::Vec, ast::Type::Bytes),
     }
 }
 
@@ -658,8 +658,8 @@ fn generate_value(
             type_id: ScryptoType::NonFungibleId.id(),
             bytes: v.to_vec(),
         }),
-        ast::Value::Blob(_) => match value {
-            ast::Value::Blob(bytes) => {
+        ast::Value::Bytes(_) => match value {
+            ast::Value::Bytes(bytes) => {
                 let mut elements = Vec::new();
                 for b in bytes {
                     elements.push(Value::U8 { value: *b });
@@ -669,7 +669,7 @@ fn generate_value(
                     elements,
                 })
             }
-            v @ _ => invalid_type!(v, ast::Type::Blob),
+            v @ _ => invalid_type!(v, ast::Type::Bytes),
         },
     }
 }
@@ -741,7 +741,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Bucket => ScryptoType::Bucket.id(),
         ast::Type::Proof => ScryptoType::Proof.id(),
         ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
-        ast::Type::Blob => TYPE_VEC,
+        ast::Type::Bytes => TYPE_VEC,
     }
 }
 

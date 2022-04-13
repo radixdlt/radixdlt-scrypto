@@ -260,7 +260,7 @@ impl ScryptoValueFormatter {
                             _ => panic!("Unexpected element value"),
                         })
                         .collect::<Vec<u8>>();
-                    format!("Blob(\"{}\")", base64::encode(bytes))
+                    format!("Bytes(\"{}\")", hex::encode(bytes))
                 } else {
                     format!(
                         "Vec<{}>({})",
