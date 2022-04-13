@@ -85,6 +85,8 @@ pub trait SystemApi {
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError>;
 
+    fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError>;
+
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 }
 
@@ -1860,14 +1862,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_push_to_auth_zone(
-        &mut self,
-        input: PushToAuthZoneInput,
-    ) -> Result<PushToAuthZoneOutput, RuntimeError> {
-        self.push_to_auth_zone(input.proof_id)
-            .map(|_| PushToAuthZoneOutput {})
-    }
-
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
@@ -1977,6 +1971,14 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         Ok(proof_id)
     }
 
+    fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
+        let proof = self.proofs
+            .remove(&proof_id)
+            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
+
+        Ok(proof)
+    }
+
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, Bucket::new(container));
@@ -2041,7 +2043,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_AUTH_ZONE_PROOF_BY_IDS => {
                         self.handle(args, Self::handle_create_auth_zone_proof_by_ids)
                     }
-                    PUSH_TO_AUTH_ZONE => self.handle(args, Self::handle_push_to_auth_zone),
 
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
                     GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),

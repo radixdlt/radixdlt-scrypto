@@ -65,8 +65,6 @@ pub const GET_PROOF_AMOUNT: u32 = 0x6B;
 pub const GET_PROOF_RESOURCE_ADDRESS: u32 = 0x6C;
 /// Get the non-fungible ids
 pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
-/// Push a proof onto auth zone
-pub const PUSH_TO_AUTH_ZONE: u32 = 0x6E;
 
 pub const INVOKE_SNODE: u32 = 0x70;
 
@@ -353,14 +351,6 @@ pub struct CloneProofInput {
 pub struct CloneProofOutput {
     pub proof_id: ProofId,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushToAuthZoneInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushToAuthZoneOutput {}
 
 //=======
 // others

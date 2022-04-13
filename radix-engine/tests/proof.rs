@@ -327,7 +327,7 @@ fn can_compose_bucket_and_vault_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]

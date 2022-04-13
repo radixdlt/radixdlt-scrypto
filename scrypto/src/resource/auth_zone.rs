@@ -17,8 +17,13 @@ pub struct AuthZone {}
 impl AuthZone {
     /// Pushes a proof to the auth zone.
     pub fn push(proof: Proof) {
-        let input = PushToAuthZoneInput { proof_id: proof.0 };
-        let _: PushToAuthZoneOutput = call_engine(PUSH_TO_AUTH_ZONE, input);
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::AuthZone,
+            function: "push".to_string(),
+            args: args![proof],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Pops the most recently added proof from the auth zone.

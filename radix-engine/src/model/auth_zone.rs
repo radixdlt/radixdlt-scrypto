@@ -1,4 +1,6 @@
+use sbor::DecodeError;
 use scrypto::engine::types::*;
+use scrypto::prelude::scrypto_decode;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::vec::Vec;
 use scrypto::rust::string::String;
@@ -16,6 +18,8 @@ pub enum AuthZoneError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound(String),
+    InvalidRequestData(DecodeError),
+    CouldNotGetProof,
 }
 
 /// A transient resource container.
@@ -72,7 +76,7 @@ impl AuthZone {
     pub fn main<S: SystemApi>(
         &mut self,
         function: &str,
-        _args: Vec<ScryptoValue>,
+        args: Vec<ScryptoValue>,
         system_api: &mut S,
     ) -> Result<ScryptoValue, AuthZoneError> {
         match function {
@@ -80,6 +84,17 @@ impl AuthZone {
                 let proof = self.pop()?;
                 let proof_id = system_api.create_proof(proof).map_err(|_| AuthZoneError::CouldNotCreateProof)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
+            }
+            "push" => {
+                let proof_id: scrypto::resource::Proof =
+                    scrypto_decode(&args[0].raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+                let mut proof = system_api.take_proof(proof_id.0).map_err(|_| AuthZoneError::CouldNotGetProof)?;
+                // FIXME: this is a hack for now until we can get snode_state into process
+                // FIXME: and be able to determine which snode the proof is going into
+                proof.change_to_unrestricted();
+
+                self.push(proof);
+                Ok(ScryptoValue::from_value(&()))
             }
             _ => Err(AuthZoneError::MethodNotFound(function.to_string())),
         }
