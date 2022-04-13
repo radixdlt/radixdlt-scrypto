@@ -73,8 +73,8 @@ pub enum TokenKind {
     Comma,
     Semicolon,
 
-    /* Blob is a convenient way of producing `Vec<u8>` */
-    Blob,
+    /* Bytes is a convenient way of producing `Vec<u8>` */
+    Bytes,
 
     /* Instructions */
     TakeFromWorktop,
@@ -393,7 +393,7 @@ impl Lexer {
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
 
-            "Blob" => Ok(TokenKind::Blob),
+            "Bytes" => Ok(TokenKind::Bytes),
 
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
             "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),

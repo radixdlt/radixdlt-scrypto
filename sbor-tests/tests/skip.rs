@@ -1,10 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[rustfmt::skip]
+pub mod utils;
+
+use crate::utils::assert_json_eq;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use serde::Serialize;
-use serde_json::{json, to_value, Value};
+use serde_json::json;
 
 #[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
 pub struct TestStructNamed {
@@ -29,10 +32,6 @@ pub enum TestEnum {
     },
     B(#[sbor(skip)] u32, u32),
     C,
-}
-
-fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
-    assert_eq!(to_value(&actual).unwrap(), expected);
 }
 
 #[test]
