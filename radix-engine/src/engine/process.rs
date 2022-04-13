@@ -2,18 +2,18 @@ use colored::*;
 
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::core::{ScryptoActor,SNodeRef};
+use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
+use scrypto::rust::mem;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::rust::mem;
 use scrypto::values::*;
 use wasmi::*;
 
@@ -55,12 +55,34 @@ macro_rules! re_warn {
     };
 }
 
+pub trait SystemApi {
+    fn get_non_fungible(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&NonFungible>;
+
+    fn get_non_fungible_mut(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&mut NonFungible>;
+
+    fn put_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+        non_fungible: NonFungible,
+    );
+
+    fn get_resource_manager_mut(
+        &mut self,
+        resource_address: &ResourceAddress,
+    ) -> Option<&mut ResourceManager>;
+
+    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
+}
+
 pub enum SNodeState {
-    Scrypto(
-        ScryptoActorInfo,
-        Option<Component>,
-    ),
-    Resource(ResourceAddress),
+    Scrypto(ScryptoActorInfo, Option<Component>),
+    Resource(ResourceAddress, ResourceManager),
     Bucket(Bucket),
     Vault(VaultId),
 }
@@ -73,7 +95,6 @@ pub struct Interpreter {
     module: ModuleRef,
     memory: MemoryRef,
 }
-
 
 /// Qualitative states for a WASM process
 #[derive(Debug)]
@@ -679,7 +700,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = self.call(
             SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             method.to_owned(),
-            vec![ScryptoValue::from_value(&to_deposit)]
+            vec![ScryptoValue::from_value(&to_deposit)],
         );
 
         re_debug!(
@@ -738,27 +759,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 let (module, memory) = package.load_module().unwrap();
 
-                let (interpreter_state, args) =
-                    if let Some(component) = component_state {
-                        let component_address = actor.component_address().unwrap().clone();
-                        let data = ScryptoValue::from_slice(component.state()).unwrap();
-                        let initial_loaded_object_refs = ComponentObjectRefs {
-                            vault_ids: data.vault_ids.into_iter().collect(),
-                            lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
-                        };
-                        let istate = InterpreterState::Component {
-                            component_address,
-                            component,
-                            initial_loaded_object_refs,
-                            additional_object_refs: ComponentObjectRefs::new(),
-                        };
-                        let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
-                        args_with_self.extend(args);
-
-                        (istate, args_with_self)
-                    } else {
-                        (InterpreterState::Blueprint, args)
+                let (interpreter_state, args) = if let Some(component) = component_state {
+                    let component_address = actor.component_address().unwrap().clone();
+                    let data = ScryptoValue::from_slice(component.state()).unwrap();
+                    let initial_loaded_object_refs = ComponentObjectRefs {
+                        vault_ids: data.vault_ids.into_iter().collect(),
+                        lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
                     };
+                    let istate = InterpreterState::Component {
+                        component_address,
+                        component,
+                        initial_loaded_object_refs,
+                        additional_object_refs: ComponentObjectRefs::new(),
+                    };
+                    let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
+                    args_with_self.extend(args);
+
+                    (istate, args_with_self)
+                } else {
+                    (InterpreterState::Blueprint, args)
+                };
 
                 self.wasm_process_state = Some(WasmProcess {
                     depth: self.depth,
@@ -778,10 +798,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let result = module.invoke_export(actor.export_name(), &[], self);
 
                 // TODO: Do this in a better way
-                if let Some(WasmProcess { ref mut interpreter_state, .. }) = &mut self.wasm_process_state {
-                    let interpreter_state = mem::replace(interpreter_state, InterpreterState::Blueprint);
-                    if let InterpreterState::Component { component_address, component, .. } = interpreter_state {
-                        self.track.return_borrowed_global_component(component_address, component);
+                if let Some(WasmProcess {
+                    ref mut interpreter_state,
+                    ..
+                }) = &mut self.wasm_process_state
+                {
+                    let interpreter_state =
+                        mem::replace(interpreter_state, InterpreterState::Blueprint);
+                    if let InterpreterState::Component {
+                        component_address,
+                        component,
+                        ..
+                    } = interpreter_state
+                    {
+                        self.track
+                            .return_borrowed_global_component(component_address, component);
                     }
                 }
 
@@ -797,35 +828,25 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     })?
                     .ok_or(RuntimeError::NoReturnData)?;
                 match rtn {
-                    RuntimeValue::I32(ptr) => {
-                        let data = self.read_return_value(ptr as u32)?;
-                        self.process_return_data(&data)?;
-                        Ok(data)
-                    }
-                    _ => {
-                        return Err(RuntimeError::InvalidReturnType);
-                    }
+                    RuntimeValue::I32(ptr) => self.read_return_value(ptr as u32),
+                    _ => Err(RuntimeError::InvalidReturnType),
                 }
             }
-            SNodeState::Resource(resource_address) => {
-                let maybe_bucket = self.track.resource_manager_invoke(
-                    &resource_address,
-                    function.as_str(),
-                    args,
-                )?;
-                if let Some(bucket) = maybe_bucket {
-                    let bucket_id = self.new_bucket_id()?;
-                    self.buckets.insert(bucket_id, bucket);
-                    Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                        bucket_id,
-                    )))
-                } else {
-                    Ok(ScryptoValue::from_value(&()))
-                }
+            SNodeState::Resource(resource_address, mut resource_manager) => {
+                let return_value = resource_manager
+                    .main(resource_address, function.as_str(), args, self)
+                    .map_err(RuntimeError::ResourceManagerError)?;
+
+                self.track
+                    .return_borrowed_global_resource_manager(resource_address, resource_manager);
+
+                Ok(return_value)
             }
 
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
+
+        self.process_return_data(&output)?;
 
         #[cfg(not(feature = "alloc"))]
         re_info!(
@@ -884,7 +905,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
-                        let component = self.track.borrow_global_mut_component(component_address.clone())?;
+                        let component = self
+                            .track
+                            .borrow_global_mut_component(component_address.clone())?;
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
                         let export_name = format!("{}_main", blueprint_name);
@@ -899,8 +922,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .unwrap()
                             .clone();
 
-                        let (_, method_auth) =
-                            component.method_authorization(&schema, &function);
+                        let (_, method_auth) = component.method_authorization(&schema, &function);
                         Ok((
                             SNodeState::Scrypto(
                                 ScryptoActorInfo::component(
@@ -917,12 +939,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeRef::Resource(resource_address) => {
-                let method_auth = self
+                let resource_manager: ResourceManager = self
                     .track
-                    .get_resource_method_auth(&resource_address, &function)?;
+                    .borrow_global_mut_resource_manager(resource_address.clone())?;
+                let method_auth = resource_manager.get_auth(&function).clone();
                 Ok((
-                    SNodeState::Resource(resource_address.clone()),
-                    method_auth.clone(),
+                    SNodeState::Resource(resource_address.clone(), resource_manager),
+                    method_auth,
                 ))
             }
             SNodeRef::Bucket(bucket_id) => {
@@ -933,14 +956,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let resource_address = bucket.resource_address();
                 let method_auth = self
                     .track
-                    .get_resource_method_auth(&resource_address, &function)?;
+                    .get_resource_manager(&resource_address)
+                    .unwrap()
+                    .get_auth(&function);
                 Ok((SNodeState::Bucket(bucket), method_auth.clone()))
             }
             SNodeRef::Vault(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
                 let method_auth = self
                     .track
-                    .get_resource_method_auth(&resource_address, &function)?;
+                    .get_resource_manager(&resource_address)
+                    .unwrap()
+                    .get_auth(&function);
                 Ok((SNodeState::Vault(vault_id.clone()), method_auth.clone()))
             }
         }?;
@@ -965,7 +992,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = match snode {
             SNodeState::Vault(vault_id) => {
                 let vault = self.get_local_vault(&vault_id)?;
-                let maybe_bucket = vault.main(function.as_str(), args)
+                let maybe_bucket = vault
+                    .main(function.as_str(), args)
                     .map_err(RuntimeError::VaultError)?;
                 if let Some(bucket) = maybe_bucket {
                     let bucket_id = self.new_bucket_id()?;
@@ -978,10 +1006,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeState::Bucket(bucket) => match function.as_str() {
-                "burn" => {
-                    bucket.drop(self.track);
-                    Ok(ScryptoValue::from_value(&()))
-                }
+                "burn" => bucket.drop(self),
                 _ => Err(RuntimeError::IllegalSystemCall),
             },
             _ => {
@@ -1024,7 +1049,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call function started");
-        let snode_ref = SNodeRef::Scrypto(ScryptoActor::Blueprint(package_address, blueprint_name.to_string()));
+        let snode_ref = SNodeRef::Scrypto(ScryptoActor::Blueprint(
+            package_address,
+            blueprint_name.to_string(),
+        ));
         let result = self.call(snode_ref, function.to_string(), args);
         re_debug!(self, "Call function ended");
         result
@@ -1598,7 +1626,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 SNodeRef::Resource(resource_address.clone()),
                 "mint".to_string(),
                 vec![ScryptoValue::from_value(&mint_params)],
-                true
+                true,
             )?;
             Some(result.bucket_ids[0])
         } else {
@@ -1772,9 +1800,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         let result = self.call(input.snode_ref, input.function, validated_args)?;
-        Ok(InvokeSNodeOutput {
-            rtn: result.raw
-        })
+        Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
     fn handle_get_non_fungible_ids_in_vault(
@@ -2139,6 +2165,44 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     //============================
     // SYSTEM CALL HANDLERS END
     //============================
+}
+
+impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
+    fn get_non_fungible_mut(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&mut NonFungible> {
+        self.track.get_non_fungible_mut(non_fungible_address)
+    }
+
+    fn get_non_fungible(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&NonFungible> {
+        self.track.get_non_fungible(non_fungible_address)
+    }
+
+    fn put_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+        non_fungible: NonFungible,
+    ) {
+        self.track
+            .put_non_fungible(non_fungible_address, non_fungible)
+    }
+
+    fn get_resource_manager_mut(
+        &mut self,
+        resource_address: &ResourceAddress,
+    ) -> Option<&mut ResourceManager> {
+        self.track.get_resource_manager_mut(resource_address)
+    }
+
+    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
+        let bucket_id = self.new_bucket_id()?;
+        self.buckets.insert(bucket_id, Bucket::new(container));
+        Ok(bucket_id)
+    }
 }
 
 impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {

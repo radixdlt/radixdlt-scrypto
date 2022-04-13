@@ -1,6 +1,4 @@
-use crate::engine::Track;
-use crate::ledger::SubstateStore;
-use crate::model::Bucket;
+use crate::engine::SystemApi;
 use crate::model::NonFungible;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
@@ -30,6 +28,7 @@ pub enum ResourceManagerError {
     NonFungibleNotFound(NonFungibleAddress),
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
+    CouldNotCreateBucket,
 }
 
 /// The definition of a resource.
@@ -173,11 +172,11 @@ impl ResourceManager {
         Ok(validated)
     }
 
-    fn mint_non_fungibles<'s, S: SubstateStore>(
+    fn mint_non_fungibles<S: SystemApi>(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
-        track: &mut Track<'s, S>,
+        system_api: &mut S,
     ) -> Result<ResourceContainer, ResourceManagerError> {
         // check resource type
         if !matches!(self.resource_type, ResourceType::NonFungible) {
@@ -200,7 +199,7 @@ impl ResourceManager {
         let mut ids = BTreeSet::new();
         for (id, data) in entries {
             let non_fungible_address = NonFungibleAddress::new(self_address, id.clone());
-            if track.get_non_fungible(&non_fungible_address).is_some() {
+            if system_api.get_non_fungible(&non_fungible_address).is_some() {
                 return Err(ResourceManagerError::NonFungibleAlreadyExists(
                     non_fungible_address,
                 ));
@@ -209,7 +208,7 @@ impl ResourceManager {
             let immutable_data = Self::process_non_fungible_data(&data.0)?;
             let mutable_data = Self::process_non_fungible_data(&data.1)?;
 
-            track.put_non_fungible(
+            system_api.put_non_fungible(
                 non_fungible_address,
                 NonFungible::new(immutable_data.raw, mutable_data.raw),
             );
@@ -242,13 +241,13 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<'s, S: SubstateStore>(
+    pub fn main<S: SystemApi>(
         &mut self,
         resource_address: ResourceAddress,
         function: &str,
         args: Vec<ScryptoValue>,
-        track: &mut Track<'s, S>,
-    ) -> Result<Option<Bucket>, ResourceManagerError> {
+        system_api: &mut S,
+    ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
             "mint" => {
                 // TODO: cleanup
@@ -257,17 +256,22 @@ impl ResourceManager {
                 let container = match mint_params {
                     MintParams::Fungible { amount } => self.mint(amount, resource_address.clone()),
                     MintParams::NonFungible { entries } => {
-                        self.mint_non_fungibles(entries, resource_address.clone(), track)
+                        self.mint_non_fungibles(entries, resource_address.clone(), system_api)
                     }
                 }?;
 
-                Ok(Option::Some(Bucket::new(container)))
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
             }
             "update_metadata" => {
                 let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 self.update_metadata(new_metadata)?;
-                Ok(Option::None)
+                Ok(ScryptoValue::from_value(&()))
             }
             "update_non_fungible_mutable_data" => {
                 let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
@@ -278,13 +282,13 @@ impl ResourceManager {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
                 let data = Self::process_non_fungible_data(&new_mutable_data)?;
-                track
+                system_api
                     .get_non_fungible_mut(&non_fungible_address)
                     .ok_or(ResourceManagerError::NonFungibleNotFound(
                         non_fungible_address,
                     ))?
                     .set_mutable_data(data.raw);
-                Ok(Option::None)
+                Ok(ScryptoValue::from_value(&()))
             }
             _ => Err(ResourceManagerError::MethodNotFound(function.to_string())),
         }

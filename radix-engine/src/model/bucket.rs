@@ -1,10 +1,11 @@
-use crate::engine::Track;
-use crate::ledger::SubstateStore;
+use crate::engine::SystemApi;
+use crate::errors::RuntimeError;
 use scrypto::engine::types::*;
 use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
+use scrypto::values::ScryptoValue;
 
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -142,13 +143,17 @@ impl Bucket {
     }
 
     #[allow(non_snake_case)]
-    pub fn drop<'s, S: SubstateStore>(self, track: &mut Track<'s, S>) {
+    pub fn drop<'s, S: SystemApi>(self, system_api: &mut S) -> Result<ScryptoValue, RuntimeError> {
         // Notify resource manager, TODO: Should not need to notify manually
         let resource_address = self.resource_address();
-        let resource_manager = track.get_resource_manager_mut(&resource_address).unwrap();
+        let resource_manager = system_api
+            .get_resource_manager_mut(&resource_address)
+            .unwrap();
         resource_manager.burn(self.total_amount());
         if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
             // FIXME: remove the non-fungibles from the state
         }
+
+        Ok(ScryptoValue::from_value(&()))
     }
 }

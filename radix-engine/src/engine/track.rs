@@ -3,7 +3,6 @@ use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
 use crate::errors::RuntimeError;
@@ -57,6 +56,7 @@ pub struct Track<'s, S: SubstateStore> {
     borrowed_components: HashMap<ComponentAddress, Option<(Hash, u32)>>,
 
     resource_managers: HashMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
+    borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
 
     vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
     non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<NonFungible>>,
@@ -80,6 +80,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             components: HashMap::new(),
             borrowed_components: HashMap::new(),
             resource_managers: HashMap::new(),
+            borrowed_resource_managers: HashMap::new(),
             lazy_map_entries: HashMap::new(),
             vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
@@ -203,24 +204,40 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         package_address
     }
 
-    pub fn borrow_global_mut_component(&mut self, component_address: ComponentAddress) -> Result<Component, RuntimeError> {
+    pub fn borrow_global_mut_component(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<Component, RuntimeError> {
         let maybe_component = self.components.remove(&component_address);
         if let Some(SubstateUpdate { value, prev_id }) = maybe_component {
             self.borrowed_components.insert(component_address, prev_id);
             Ok(value)
         } else if self.borrowed_components.contains_key(&component_address) {
             Err(RuntimeError::ComponentReentrancy(component_address))
-        } else if let Some((component, phys_id)) = self.substate_store.get_decoded_substate(&component_address) {
-            self.borrowed_components.insert(component_address, Some(phys_id));
+        } else if let Some((component, phys_id)) =
+            self.substate_store.get_decoded_substate(&component_address)
+        {
+            self.borrowed_components
+                .insert(component_address, Some(phys_id));
             Ok(component)
         } else {
             Err(RuntimeError::ComponentNotFound(component_address))
         }
     }
 
-    pub fn return_borrowed_global_component(&mut self, component_address: ComponentAddress, component: Component) {
+    pub fn return_borrowed_global_component(
+        &mut self,
+        component_address: ComponentAddress,
+        component: Component,
+    ) {
         if let Some(prev_id) = self.borrowed_components.remove(&component_address) {
-            self.components.insert(component_address, SubstateUpdate { prev_id, value: component });
+            self.components.insert(
+                component_address,
+                SubstateUpdate {
+                    prev_id,
+                    value: component,
+                },
+            );
         } else {
             panic!("Component was never borrowed");
         }
@@ -414,18 +431,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
-    // TODO: Separate out method auth substates
-    pub fn get_resource_method_auth(
-        &mut self,
-        resource_address: &ResourceAddress,
-        method_name: &str,
-    ) -> Result<&MethodAuthorization, RuntimeError> {
-        let resource_manager = self.get_resource_manager(&resource_address).ok_or(
-            RuntimeError::ResourceManagerNotFound(resource_address.clone()),
-        )?;
-        Ok(resource_manager.get_auth(method_name))
-    }
-
     /// Returns an immutable reference to a resource manager, if exists.
     pub fn get_resource_manager(
         &mut self,
@@ -456,31 +461,51 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn resource_manager_invoke(
+    pub fn borrow_global_mut_resource_manager(
         &mut self,
-        resource_address: &ResourceAddress,
-        function: &str,
-        args: Vec<ScryptoValue>,
-    ) -> Result<Option<Bucket>, RuntimeError> {
-        if let Some(substate_update) = self.resource_managers.remove(resource_address) {
-            let mut resource_manager: ResourceManager = substate_update.value;
-            let result = resource_manager
-                .main(resource_address.clone(), function, args, self)
-                .map_err(RuntimeError::ResourceManagerError)?;
+        resource_address: ResourceAddress,
+    ) -> Result<ResourceManager, RuntimeError> {
+        let maybe_resource = self.resource_managers.remove(&resource_address);
+        if let Some(SubstateUpdate { value, prev_id }) = maybe_resource {
+            self.borrowed_resource_managers
+                .insert(resource_address, prev_id);
+            Ok(value)
+        } else if self
+            .borrowed_resource_managers
+            .contains_key(&resource_address)
+        {
+            panic!("Invalid resource manager reentrancy");
+        } else if let Some((resource_manager, phys_id)) =
+            self.substate_store.get_decoded_substate(&resource_address)
+        {
+            self.borrowed_resource_managers
+                .insert(resource_address, Some(phys_id));
+            Ok(resource_manager)
+        } else {
+            Err(RuntimeError::ResourceManagerNotFound(resource_address))
+        }
+    }
+
+    pub fn return_borrowed_global_resource_manager(
+        &mut self,
+        resource_address: ResourceAddress,
+        resource_manager: ResourceManager,
+    ) {
+        if let Some(prev_id) = self.borrowed_resource_managers.remove(&resource_address) {
             self.resource_managers.insert(
-                resource_address.clone(),
+                resource_address,
                 SubstateUpdate {
-                    prev_id: substate_update.prev_id,
+                    prev_id,
                     value: resource_manager,
                 },
             );
-            Ok(result)
         } else {
-            panic!("Resource Manager not found");
+            panic!("Component was never borrowed");
         }
     }
 
     /// Returns a mutable reference to a resource manager, if exists.
+    // TODO: Remove
     #[allow(dead_code)]
     pub fn get_resource_manager_mut(
         &mut self,
@@ -640,6 +665,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         // Sanity check
         if !self.borrowed_components.is_empty() {
             panic!("Borrowed components should be empty by end of transaction.");
+        }
+        if !self.borrowed_resource_managers.is_empty() {
+            panic!("Borrowed resource managers should be empty by end of transaction.");
         }
 
         let mut receipt = CommitReceipt::new();

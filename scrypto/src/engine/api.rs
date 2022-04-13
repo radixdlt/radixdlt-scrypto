@@ -1,6 +1,6 @@
+use crate::core::SNodeRef;
 use sbor::*;
 use scrypto::prelude::ComponentAuthorization;
-use crate::core::SNodeRef;
 
 use crate::engine::types::*;
 use crate::prelude::{MethodAuth, NonFungibleAddress, ResourceMethod};
@@ -101,7 +101,6 @@ pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
 pub const PUSH_TO_AUTH_ZONE: u32 = 0x6E;
 /// Pop a proof from auth zone
 pub const POP_FROM_AUTH_ZONE: u32 = 0x6F;
-
 
 pub const INVOKE_SNODE: u32 = 0x70;
 

@@ -94,12 +94,7 @@ fn reentrancy_should_not_be_possible() {
     let package_address = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(
-            package_address,
-            "ReentrantComponent",
-            "new",
-            vec![],
-        )
+        .call_function(package_address, "ReentrantComponent", "new", vec![])
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -109,11 +104,7 @@ fn reentrancy_should_not_be_possible() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(
-            component_address,
-            "call_self",
-            vec![],
-        )
+        .call_method(component_address, "call_self", vec![])
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
