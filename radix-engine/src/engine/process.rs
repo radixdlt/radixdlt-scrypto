@@ -14,6 +14,7 @@ use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::mem;
 use scrypto::values::*;
 use wasmi::*;
 
@@ -88,6 +89,7 @@ pub trait SystemApi {
 }
 
 pub enum SNodeState {
+    AuthZone(AuthZone),
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
     ResourceRef(ResourceAddress, ResourceManager),
@@ -714,6 +716,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Execution
         let output = match snode {
+            SNodeState::AuthZone(auth_zone) => {
+                auth_zone
+                    .main(function.as_str(), args, self)
+                    .map_err(RuntimeError::AuthZoneError)
+            }
             SNodeState::Scrypto(actor, component_state) => {
                 let package = self.track.get_package(actor.package_address()).ok_or(
                     RuntimeError::PackageNotFound(actor.package_address().clone()),
@@ -831,6 +838,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         // Authorization and state load
         let (mut snode, method_auth) = match &mut snode_ref {
+            SNodeRef::AuthZone => {
+                let auth_zone = mem::replace(&mut self.auth_zone, AuthZone::new());
+                Ok((SNodeState::AuthZone(auth_zone), MethodAuthorization::Public))
+            }
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1003,6 +1014,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 // Return borrowed snodes
                 match snode {
+                    SNodeState::AuthZone(auth_zone) => {
+                        self.auth_zone = auth_zone;
+                    }
                     SNodeState::Scrypto(actor, component_state) => {
                         if let Some(component_address) = actor.component_address() {
                             self.track.return_borrowed_global_component(
@@ -1854,14 +1868,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .map(|_| PushToAuthZoneOutput {})
     }
 
-    fn handle_pop_from_auth_zone(
-        &mut self,
-        _input: PopFromAuthZoneInput,
-    ) -> Result<PopFromAuthZoneOutput, RuntimeError> {
-        self.pop_from_auth_zone()
-            .map(|proof_id| PopFromAuthZoneOutput { proof_id })
-    }
-
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
@@ -2035,6 +2041,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_AUTH_ZONE_PROOF_BY_IDS => {
                         self.handle(args, Self::handle_create_auth_zone_proof_by_ids)
                     }
+                    PUSH_TO_AUTH_ZONE => self.handle(args, Self::handle_push_to_auth_zone),
+
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
                     GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),
                     GET_PROOF_RESOURCE_ADDRESS => {
@@ -2044,8 +2052,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_proof)
                     }
                     CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
-                    PUSH_TO_AUTH_ZONE => self.handle(args, Self::handle_push_to_auth_zone),
-                    POP_FROM_AUTH_ZONE => self.handle(args, Self::handle_pop_from_auth_zone),
 
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 

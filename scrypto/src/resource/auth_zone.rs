@@ -1,7 +1,11 @@
+use crate::args;
+use crate::buffer::scrypto_decode;
+use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::resource::*;
 use crate::rust::collections::BTreeSet;
+use crate::rust::string::ToString;
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
@@ -19,10 +23,13 @@ impl AuthZone {
 
     /// Pops the most recently added proof from the auth zone.
     pub fn pop() -> Proof {
-        let input = PopFromAuthZoneInput {};
-        let output: PopFromAuthZoneOutput = call_engine(POP_FROM_AUTH_ZONE, input);
-
-        Proof(output.proof_id.into())
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::AuthZone,
+            function: "pop".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
