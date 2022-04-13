@@ -1,6 +1,8 @@
 use colored::*;
 use scrypto::engine::types::*;
+use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::fmt;
+use scrypto::rust::format;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
