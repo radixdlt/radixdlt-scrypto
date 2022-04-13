@@ -20,6 +20,10 @@ pub struct Publish {
     #[clap(long)]
     package_address: Option<PackageAddress>,
 
+    /// Output a transaction manifest without execution
+    #[clap(short, long)]
+    manifest: Option<PathBuf>,
+
     /// Turn on tracing
     #[clap(short, long)]
     trace: bool,
@@ -34,6 +38,15 @@ impl Publish {
             self.path.clone()
         })
         .map_err(Error::IOError)?;
+
+        if let Some(path) = &self.manifest {
+            let transaction = TransactionBuilder::new()
+                .publish_package(code.as_ref())
+                .build_with_no_nonce();
+
+            let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
+            return fs::write(path, manifest).map_err(Error::IOError);
+        }
 
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);

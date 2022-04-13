@@ -29,6 +29,7 @@ pub enum GeneratorError {
     InvalidLazyMapId(String),
     InvalidVaultId(String),
     InvalidNonFungibleId(String),
+    InvalidNonFungibleAddress(String),
     OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidatorError(IdValidatorError),
@@ -365,7 +366,7 @@ fn generate_string(value: &ast::Value) -> Result<String, GeneratorError> {
 
 fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
     match value {
-        ast::Value::Blob(bytes) => Ok(bytes.clone()),
+        ast::Value::Bytes(bytes) => Ok(bytes.clone()),
         ast::Value::Vec(ty, values) => {
             if ty == &ast::Type::U8 {
                 let mut result = Vec::new();
@@ -390,7 +391,7 @@ fn generate_bytes(value: &ast::Value) -> Result<Vec<u8>, GeneratorError> {
                 })
             }
         }
-        v @ _ => invalid_type!(v, ast::Type::Vec, ast::Type::Blob),
+        v @ _ => invalid_type!(v, ast::Type::Vec, ast::Type::Bytes),
     }
 }
 
@@ -526,6 +527,17 @@ fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleId, Generat
     }
 }
 
+fn generate_non_fungible_address(value: &ast::Value) -> Result<NonFungibleAddress, GeneratorError> {
+    match value {
+        ast::Value::NonFungibleAddress(inner) => match &**inner {
+            ast::Value::String(s) => NonFungibleAddress::from_str(s)
+                .map_err(|_| GeneratorError::InvalidNonFungibleAddress(s.into())),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::NonFungibleAddress),
+    }
+}
+
 fn generate_non_fungible_ids(
     value: &ast::Value,
 ) -> Result<BTreeSet<NonFungibleId>, GeneratorError> {
@@ -560,103 +572,122 @@ fn generate_value(
 
     match value {
         ast::Value::Unit => Ok(Value::Unit),
-        ast::Value::Bool(v) => Ok(Value::Bool(*v)),
-        ast::Value::I8(v) => Ok(Value::I8(*v)),
-        ast::Value::I16(v) => Ok(Value::I16(*v)),
-        ast::Value::I32(v) => Ok(Value::I32(*v)),
-        ast::Value::I64(v) => Ok(Value::I64(*v)),
-        ast::Value::I128(v) => Ok(Value::I128(*v)),
-        ast::Value::U8(v) => Ok(Value::U8(*v)),
-        ast::Value::U16(v) => Ok(Value::U16(*v)),
-        ast::Value::U32(v) => Ok(Value::U32(*v)),
-        ast::Value::U64(v) => Ok(Value::U64(*v)),
-        ast::Value::U128(v) => Ok(Value::U128(*v)),
-        ast::Value::String(v) => Ok(Value::String(v.clone())),
-        ast::Value::Struct(fields) => {
-            Ok(Value::Struct(generate_singletons(fields, None, resolver)?))
-        }
-        ast::Value::Enum(index, fields) => Ok(Value::Enum(
-            *index,
-            generate_singletons(fields, None, resolver)?,
-        )),
-        ast::Value::Option(v) => match &**v {
-            Some(inner) => Ok(Value::Option(
-                Some(generate_value(inner, None, resolver)?).into(),
-            )),
-            None => Ok(Value::Option(None.into())),
-        },
-        ast::Value::Array(element_type, elements) => Ok(Value::Array(
-            generate_type(element_type),
-            generate_singletons(elements, Some(*element_type), resolver)?,
-        )),
-        ast::Value::Tuple(elements) => {
-            Ok(Value::Tuple(generate_singletons(elements, None, resolver)?))
-        }
-        ast::Value::Result(v) => match &**v {
-            Ok(inner) => Ok(Value::Result(
-                Ok(generate_value(inner, None, resolver)?).into(),
-            )),
-            Err(inner) => Ok(Value::Result(
-                Err(generate_value(inner, None, resolver)?).into(),
-            )),
-        },
-        ast::Value::Vec(element_type, elements) => Ok(Value::Vec(
-            generate_type(element_type),
-            generate_singletons(elements, Some(*element_type), resolver)?,
-        )),
-        ast::Value::TreeSet(element_type, elements) => Ok(Value::TreeSet(
-            generate_type(element_type),
-            generate_singletons(elements, Some(*element_type), resolver)?,
-        )),
-        ast::Value::TreeMap(key_type, value_type, elements) => Ok(Value::TreeMap(
-            generate_type(key_type),
-            generate_type(value_type),
-            generate_pairs(elements, *key_type, *value_type, resolver)?,
-        )),
-        ast::Value::HashSet(element_type, elements) => Ok(Value::HashSet(
-            generate_type(element_type),
-            generate_singletons(elements, Some(*element_type), resolver)?,
-        )),
-        ast::Value::HashMap(key_type, value_type, elements) => Ok(Value::HashMap(
-            generate_type(key_type),
-            generate_type(value_type),
-            generate_pairs(elements, *key_type, *value_type, resolver)?,
-        )),
-        ast::Value::Decimal(_) => {
-            generate_decimal(value).map(|v| Value::Custom(ScryptoType::Decimal.id(), v.to_vec()))
-        }
-        ast::Value::PackageAddress(_) => generate_package_address(value)
-            .map(|v| Value::Custom(ScryptoType::PackageAddress.id(), v.to_vec())),
-        ast::Value::ComponentAddress(_) => generate_component_address(value)
-            .map(|v| Value::Custom(ScryptoType::ComponentAddress.id(), v.to_vec())),
-        ast::Value::ResourceAddress(_) => generate_resource_address(value)
-            .map(|v| Value::Custom(ScryptoType::ResourceAddress.id(), v.to_vec())),
-        ast::Value::Hash(_) => {
-            generate_hash(value).map(|v| Value::Custom(ScryptoType::Hash.id(), v.to_vec()))
-        }
-        ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| {
-            Value::Custom(
-                ScryptoType::Bucket.id(),
-                scrypto::resource::Bucket(v).to_vec(),
-            )
+        ast::Value::Bool(value) => Ok(Value::Bool { value: *value }),
+        ast::Value::I8(value) => Ok(Value::I8 { value: *value }),
+        ast::Value::I16(value) => Ok(Value::I16 { value: *value }),
+        ast::Value::I32(value) => Ok(Value::I32 { value: *value }),
+        ast::Value::I64(value) => Ok(Value::I64 { value: *value }),
+        ast::Value::I128(value) => Ok(Value::I128 { value: *value }),
+        ast::Value::U8(value) => Ok(Value::U8 { value: *value }),
+        ast::Value::U16(value) => Ok(Value::U16 { value: *value }),
+        ast::Value::U32(value) => Ok(Value::U32 { value: *value }),
+        ast::Value::U64(value) => Ok(Value::U64 { value: *value }),
+        ast::Value::U128(value) => Ok(Value::U128 { value: *value }),
+        ast::Value::String(value) => Ok(Value::String {
+            value: value.clone(),
         }),
-        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| {
-            Value::Custom(
-                ScryptoType::Proof.id(),
-                scrypto::resource::Proof(v).to_vec(),
-            )
+        ast::Value::Struct(fields) => Ok(Value::Struct {
+            fields: generate_singletons(fields, None, resolver)?,
         }),
-        ast::Value::NonFungibleId(_) => generate_non_fungible_id(value)
-            .map(|v| Value::Custom(ScryptoType::NonFungibleId.id(), v.to_vec())),
-        ast::Value::Blob(_) => match value {
-            ast::Value::Blob(bytes) => {
+        ast::Value::Enum(index, fields) => Ok(Value::Enum {
+            index: *index,
+            fields: generate_singletons(fields, None, resolver)?,
+        }),
+        ast::Value::Option(value) => match &**value {
+            Some(inner) => Ok(Value::Option {
+                value: Some(generate_value(inner, None, resolver)?).into(),
+            }),
+            None => Ok(Value::Option { value: None.into() }),
+        },
+        ast::Value::Array(element_type, elements) => Ok(Value::Array {
+            element_type_id: generate_type_id(element_type),
+            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+        }),
+        ast::Value::Tuple(elements) => Ok(Value::Tuple {
+            elements: generate_singletons(elements, None, resolver)?,
+        }),
+        ast::Value::Result(value) => match &**value {
+            Ok(inner) => Ok(Value::Result {
+                value: Ok(generate_value(inner, None, resolver)?).into(),
+            }),
+            Err(inner) => Ok(Value::Result {
+                value: Err(generate_value(inner, None, resolver)?).into(),
+            }),
+        },
+        ast::Value::Vec(element_type, elements) => Ok(Value::Vec {
+            element_type_id: generate_type_id(element_type),
+            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+        }),
+        ast::Value::TreeSet(element_type, elements) => Ok(Value::TreeSet {
+            element_type_id: generate_type_id(element_type),
+            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+        }),
+        ast::Value::TreeMap(key_type, value_type, elements) => Ok(Value::TreeMap {
+            key_type_id: generate_type_id(key_type),
+            value_type_id: generate_type_id(value_type),
+            elements: generate_pairs(elements, *key_type, *value_type, resolver)?,
+        }),
+        ast::Value::HashSet(element_type, elements) => Ok(Value::HashSet {
+            element_type_id: generate_type_id(element_type),
+            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+        }),
+        ast::Value::HashMap(key_type, value_type, elements) => Ok(Value::HashMap {
+            key_type_id: generate_type_id(key_type),
+            value_type_id: generate_type_id(value_type),
+            elements: generate_pairs(elements, *key_type, *value_type, resolver)?,
+        }),
+        ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
+            type_id: ScryptoType::Decimal.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::PackageAddress(_) => generate_package_address(value).map(|v| Value::Custom {
+            type_id: ScryptoType::PackageAddress.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::ComponentAddress(_) => {
+            generate_component_address(value).map(|v| Value::Custom {
+                type_id: ScryptoType::ComponentAddress.id(),
+                bytes: v.to_vec(),
+            })
+        }
+        ast::Value::ResourceAddress(_) => generate_resource_address(value).map(|v| Value::Custom {
+            type_id: ScryptoType::ResourceAddress.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::Hash(_) => generate_hash(value).map(|v| Value::Custom {
+            type_id: ScryptoType::Hash.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::Bucket(_) => generate_bucket(value, resolver).map(|v| Value::Custom {
+            type_id: ScryptoType::Bucket.id(),
+            bytes: scrypto::resource::Bucket(v).to_vec(),
+        }),
+        ast::Value::Proof(_) => generate_proof(value, resolver).map(|v| Value::Custom {
+            type_id: ScryptoType::Proof.id(),
+            bytes: scrypto::resource::Proof(v).to_vec(),
+        }),
+        ast::Value::NonFungibleId(_) => generate_non_fungible_id(value).map(|v| Value::Custom {
+            type_id: ScryptoType::NonFungibleId.id(),
+            bytes: v.to_vec(),
+        }),
+        ast::Value::NonFungibleAddress(_) => {
+            generate_non_fungible_address(value).map(|v| Value::Custom {
+                type_id: ScryptoType::NonFungibleAddress.id(),
+                bytes: v.to_vec(),
+            })
+        }
+        ast::Value::Bytes(_) => match value {
+            ast::Value::Bytes(bytes) => {
                 let mut elements = Vec::new();
                 for b in bytes {
-                    elements.push(Value::U8(*b));
+                    elements.push(Value::U8 { value: *b });
                 }
-                Ok(Value::Vec(TYPE_U8, elements))
+                Ok(Value::Vec {
+                    element_type_id: TYPE_U8,
+                    elements,
+                })
             }
-            v @ _ => invalid_type!(v, ast::Type::Blob),
+            v @ _ => invalid_type!(v, ast::Type::Bytes),
         },
     }
 }
@@ -694,7 +725,7 @@ fn generate_pairs(
     Ok(result)
 }
 
-fn generate_type(ty: &ast::Type) -> u8 {
+fn generate_type_id(ty: &ast::Type) -> u8 {
     match ty {
         ast::Type::Unit => TYPE_UNIT,
         ast::Type::Bool => TYPE_BOOL,
@@ -728,7 +759,8 @@ fn generate_type(ty: &ast::Type) -> u8 {
         ast::Type::Bucket => ScryptoType::Bucket.id(),
         ast::Type::Proof => ScryptoType::Proof.id(),
         ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
-        ast::Type::Blob => TYPE_VEC,
+        ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
+        ast::Type::Bytes => TYPE_VEC,
     }
 }
 
@@ -781,87 +813,124 @@ mod tests {
     #[test]
     fn test_value() {
         generate_value_ok!(r#"()"#, Value::Unit);
-        generate_value_ok!(r#"true"#, Value::Bool(true));
-        generate_value_ok!(r#"false"#, Value::Bool(false));
-        generate_value_ok!(r#"1i8"#, Value::I8(1));
-        generate_value_ok!(r#"1i128"#, Value::I128(1));
-        generate_value_ok!(r#"1u8"#, Value::U8(1));
-        generate_value_ok!(r#"1u128"#, Value::U128(1));
+        generate_value_ok!(r#"true"#, Value::Bool { value: true });
+        generate_value_ok!(r#"false"#, Value::Bool { value: false });
+        generate_value_ok!(r#"1i8"#, Value::I8 { value: 1 });
+        generate_value_ok!(r#"1i128"#, Value::I128 { value: 1 });
+        generate_value_ok!(r#"1u8"#, Value::U8 { value: 1 });
+        generate_value_ok!(r#"1u128"#, Value::U128 { value: 1 });
         generate_value_ok!(
             r#"Struct(Bucket(1u32), Proof(2u32), "bar")"#,
-            Value::Struct(vec![
-                Value::Custom(
-                    ScryptoType::Bucket.id(),
-                    scrypto::resource::Bucket(1).to_vec()
-                ),
-                Value::Custom(
-                    ScryptoType::Proof.id(),
-                    scrypto::resource::Proof(2).to_vec()
-                ),
-                Value::String("bar".into())
-            ])
+            Value::Struct {
+                fields: vec![
+                    Value::Custom {
+                        type_id: ScryptoType::Bucket.id(),
+                        bytes: scrypto::resource::Bucket(1).to_vec()
+                    },
+                    Value::Custom {
+                        type_id: ScryptoType::Proof.id(),
+                        bytes: scrypto::resource::Proof(2).to_vec()
+                    },
+                    Value::String {
+                        value: "bar".into()
+                    }
+                ]
+            }
         );
         generate_value_ok!(
             r#"Struct(Decimal("1.0"), Hash("aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"))"#,
-            Value::Struct(vec![
-                Value::Custom(
-                    ScryptoType::Decimal.id(),
-                    Decimal::from_str("1.0").unwrap().to_vec()
-                ),
-                Value::Custom(
-                    ScryptoType::Hash.id(),
-                    Hash::from_str(
-                        "aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"
-                    )
-                    .unwrap()
-                    .to_vec()
-                ),
-            ])
+            Value::Struct {
+                fields: vec![
+                    Value::Custom {
+                        type_id: ScryptoType::Decimal.id(),
+                        bytes: Decimal::from_str("1.0").unwrap().to_vec()
+                    },
+                    Value::Custom {
+                        type_id: ScryptoType::Hash.id(),
+                        bytes: Hash::from_str(
+                            "aa37f5a71083a9aa044fb936678bfd74f848e930d2de482a49a73540ea72aa5c"
+                        )
+                        .unwrap()
+                        .to_vec()
+                    },
+                ]
+            }
         );
-        generate_value_ok!(r#"Struct()"#, Value::Struct(vec![]));
+        generate_value_ok!(r#"Struct()"#, Value::Struct { fields: vec![] });
         generate_value_ok!(
             r#"Enum(0u8, "abc")"#,
-            Value::Enum(0, vec![Value::String("abc".to_owned())])
+            Value::Enum {
+                index: 0,
+                fields: vec![Value::String {
+                    value: "abc".to_owned()
+                }]
+            }
         );
-        generate_value_ok!(r#"Enum(2u8)"#, Value::Enum(2, vec![]));
+        generate_value_ok!(
+            r#"Enum(2u8)"#,
+            Value::Enum {
+                index: 2,
+                fields: vec![]
+            }
+        );
         generate_value_ok!(
             r#"Array<Option>(Some(1u64), None)"#,
-            Value::Array(
-                TYPE_OPTION,
-                vec![
-                    Value::Option(Some(Value::U64(1)).into()),
-                    Value::Option(None.into())
+            Value::Array {
+                element_type_id: TYPE_OPTION,
+                elements: vec![
+                    Value::Option {
+                        value: Some(Value::U64 { value: 1 }).into()
+                    },
+                    Value::Option { value: None.into() }
                 ]
-            )
+            }
         );
         generate_value_ok!(
             r#"Tuple(Ok(1u64), Err(2u64))"#,
-            Value::Tuple(vec![
-                Value::Result(Ok(Value::U64(1)).into()),
-                Value::Result(Err(Value::U64(2)).into()),
-            ])
+            Value::Tuple {
+                elements: vec![
+                    Value::Result {
+                        value: Ok(Value::U64 { value: 1 }).into()
+                    },
+                    Value::Result {
+                        value: Err(Value::U64 { value: 2 }).into()
+                    },
+                ]
+            }
         );
         generate_value_ok!(
             r#"HashMap<HashSet, Vec>(HashSet<U8>(1u8), Vec<U8>(2u8))"#,
-            Value::HashMap(
-                TYPE_HASH_SET,
-                TYPE_VEC,
-                vec![
-                    Value::HashSet(TYPE_U8, vec![Value::U8(1)]),
-                    Value::Vec(TYPE_U8, vec![Value::U8(2)]),
+            Value::HashMap {
+                key_type_id: TYPE_HASH_SET,
+                value_type_id: TYPE_VEC,
+                elements: vec![
+                    Value::HashSet {
+                        element_type_id: TYPE_U8,
+                        elements: vec![Value::U8 { value: 1 }]
+                    },
+                    Value::Vec {
+                        element_type_id: TYPE_U8,
+                        elements: vec![Value::U8 { value: 2 }]
+                    },
                 ]
-            )
+            }
         );
         generate_value_ok!(
             r#"TreeMap<TreeSet, Vec>(TreeSet<U8>(1u8), Vec<U8>(2u8))"#,
-            Value::TreeMap(
-                TYPE_TREE_SET,
-                TYPE_VEC,
-                vec![
-                    Value::TreeSet(TYPE_U8, vec![Value::U8(1)]),
-                    Value::Vec(TYPE_U8, vec![Value::U8(2)])
+            Value::TreeMap {
+                key_type_id: TYPE_TREE_SET,
+                value_type_id: TYPE_VEC,
+                elements: vec![
+                    Value::TreeSet {
+                        element_type_id: TYPE_U8,
+                        elements: vec![Value::U8 { value: 1 }]
+                    },
+                    Value::Vec {
+                        element_type_id: TYPE_U8,
+                        elements: vec![Value::U8 { value: 2 }]
+                    }
                 ]
-            )
+            }
         );
     }
 
