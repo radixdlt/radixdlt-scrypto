@@ -49,8 +49,6 @@ pub const CREATE_VAULT_PROOF: u32 = 0x63;
 pub const CREATE_VAULT_PROOF_BY_AMOUNT: u32 = 0x64;
 /// Create a vault proof by ids
 pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
-/// Clone proof
-pub const CLONE_PROOF: u32 = 0x69;
 /// Drop a proof
 pub const DROP_PROOF: u32 = 0x6A;
 
@@ -267,16 +265,6 @@ pub struct DropProofInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct DropProofOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CloneProofInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CloneProofOutput {
-    pub proof_id: ProofId,
-}
 
 //=======
 // others

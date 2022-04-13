@@ -39,6 +39,7 @@ pub enum ProofError {
     NonFungibleOperationNotAllowed,
     /// Can't apply a fungible operation on non-fungible proofs.
     FungibleOperationNotAllowed,
+    CouldNotCreateProof,
     MethodNotFound(String),
 }
 
@@ -336,6 +337,11 @@ impl Proof {
                 Ok(ScryptoValue::from_value(&ids))
             },
             "get_resource_address" => Ok(ScryptoValue::from_value(&self.resource_address())),
+            "clone" => {
+                let cloned_proof = self.clone();
+                let proof_id = system_api.create_proof(cloned_proof).map_err(|_| ProofError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
+            },
             _ => Err(ProofError::MethodNotFound(function.to_string())),
         }
     }

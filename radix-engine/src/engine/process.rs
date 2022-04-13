@@ -806,7 +806,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::BucketRef(bucket_id, bucket) => bucket
                 .main(*bucket_id, function.as_str(), args, self)
                 .map_err(RuntimeError::BucketError),
-            SNodeState::ProofRef(proof_id, proof) => proof
+            SNodeState::ProofRef(_, proof) => proof
                 .main(function.as_str(), args, self)
                 .map_err(RuntimeError::ProofError),
 
@@ -1790,15 +1790,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(DropProofOutput {})
     }
 
-    fn handle_clone_proof(
-        &mut self,
-        input: CloneProofInput,
-    ) -> Result<CloneProofOutput, RuntimeError> {
-        Ok(CloneProofOutput {
-            proof_id: self.clone_proof(input.proof_id)?,
-        })
-    }
-
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
@@ -1972,7 +1963,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     }
 
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
-                    CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
 
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 

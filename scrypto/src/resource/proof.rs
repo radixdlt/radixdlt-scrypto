@@ -20,10 +20,13 @@ pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
     fn clone(&self) -> Self {
-        let input = CloneProofInput { proof_id: self.0 };
-        let output: CloneProofOutput = call_engine(CLONE_PROOF, input);
-
-        Self(output.proof_id)
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ProofRef(self.0),
+            function: "clone".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 }
 
