@@ -43,10 +43,10 @@ impl<'a> SborValueRetriever<'a> {
         }
 
         match value {
-            Value::Struct(values)
-            | Value::Enum(_, values)
-            | Value::Array(_, values)
-            | Value::Vec(_, values) => self.get_from_vector(values),
+            Value::Struct { fields } | Value::Enum { fields, .. } => self.get_from_vector(fields),
+            Value::Array { elements, .. } | Value::Vec { elements, .. } => {
+                self.get_from_vector(elements)
+            }
             _ => Option::None,
         }
     }
