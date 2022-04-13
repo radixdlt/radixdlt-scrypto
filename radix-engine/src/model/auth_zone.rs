@@ -8,9 +8,7 @@ use scrypto::rust::string::ToString;
 use scrypto::values::ScryptoValue;
 use crate::engine::SystemApi;
 
-use crate::model::{
-    Proof, ProofError,
-};
+use crate::model::{Proof, ProofError, ResourceManager};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AuthZoneError {
@@ -20,6 +18,7 @@ pub enum AuthZoneError {
     MethodNotFound(String),
     InvalidRequestData(DecodeError),
     CouldNotGetProof,
+    CouldNotGetResource,
 }
 
 /// A transient resource container.
@@ -95,6 +94,15 @@ impl AuthZone {
 
                 self.push(proof);
                 Ok(ScryptoValue::from_value(&()))
+            }
+            "create_proof" => {
+                let resource_address = scrypto_decode(&args[0].raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+                let resource_manager: ResourceManager = system_api.borrow_global_mut_resource_manager(resource_address).map_err(|_| AuthZoneError::CouldNotGetResource)?;
+                let resource_type = resource_manager.resource_type();
+                system_api.return_borrowed_global_resource_manager(resource_address, resource_manager);
+                let proof = self.create_proof(resource_address, resource_type)?;
+                let proof_id = system_api.create_proof(proof).map_err(|_| AuthZoneError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
             }
             _ => Err(AuthZoneError::MethodNotFound(function.to_string())),
         }

@@ -1770,15 +1770,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_create_auth_zone_proof(
-        &mut self,
-        input: CreateAuthZoneProofInput,
-    ) -> Result<CreateAuthZoneProofOutput, RuntimeError> {
-        Ok(CreateAuthZoneProofOutput {
-            proof_id: self.create_auth_zone_proof(input.resource_address)?,
-        })
-    }
-
     fn handle_create_auth_zone_proof_by_amount(
         &mut self,
         input: CreateAuthZoneProofByAmountInput,
@@ -2034,9 +2025,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_create_vault_proof_by_ids)
                     }
 
-                    CREATE_AUTH_ZONE_PROOF => {
-                        self.handle(args, Self::handle_create_auth_zone_proof)
-                    }
                     CREATE_AUTH_ZONE_PROOF_BY_AMOUNT => {
                         self.handle(args, Self::handle_create_auth_zone_proof_by_amount)
                     }
