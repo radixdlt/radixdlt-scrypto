@@ -30,35 +30,43 @@ fn test_encode_as_json() {
     assert_json_eq(
         any,
         json!({
-            "Struct": [
-                "Unit",
+            "fields": [
                 {
-                    "U32": 1
+                    "type": "Unit"
                 },
                 {
-                    "Tuple": [
+                    "type": "U32",
+                    "value": 1
+                },
+                {
+                    "elements": [
                         {
-                            "U8": 2
+                            "type": "U8",
+                            "value": 2
                         },
                         {
-                            "Vec": [
-                                7,
-                                [
-                                    {
-                                        "U8": 3
-                                    },
-                                    {
-                                        "U8": 4
-                                    }
-                                ]
-                            ]
+                            "elementTypeId": 7,
+                            "elements": [
+                                {
+                                    "type": "U8",
+                                    "value": 3
+                                },
+                                {
+                                    "type": "U8",
+                                    "value": 4
+                                }
+                            ],
+                            "type": "Vec"
                         }
-                    ]
+                    ],
+                    "type": "Tuple"
                 },
                 {
-                    "String": "5"
+                    "type": "String",
+                    "value": "5"
                 }
-            ]
+            ],
+            "type": "Struct"
         }),
     );
 }

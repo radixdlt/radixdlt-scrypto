@@ -199,26 +199,26 @@ impl ScryptoValueFormatter {
         match value {
             // primitive types
             Value::Unit => "()".to_string(),
-            Value::Bool(v) => v.to_string(),
-            Value::I8(v) => format!("{}i8", v),
-            Value::I16(v) => format!("{}i16", v),
-            Value::I32(v) => format!("{}i32", v),
-            Value::I64(v) => format!("{}i64", v),
-            Value::I128(v) => format!("{}i128", v),
-            Value::U8(v) => format!("{}u8", v),
-            Value::U16(v) => format!("{}u16", v),
-            Value::U32(v) => format!("{}u32", v),
-            Value::U64(v) => format!("{}u64", v),
-            Value::U128(v) => format!("{}u128", v),
-            Value::String(v) => format!("\"{}\"", v),
+            Value::Bool { value } => value.to_string(),
+            Value::I8 { value } => format!("{}i8", value),
+            Value::I16 { value } => format!("{}i16", value),
+            Value::I32 { value } => format!("{}i32", value),
+            Value::I64 { value } => format!("{}i64", value),
+            Value::I128 { value } => format!("{}i128", value),
+            Value::U8 { value } => format!("{}u8", value),
+            Value::U16 { value } => format!("{}u16", value),
+            Value::U32 { value } => format!("{}u32", value),
+            Value::U64 { value } => format!("{}u64", value),
+            Value::U128 { value } => format!("{}u128", value),
+            Value::String { value } => format!("\"{}\"", value),
             // struct & enum
-            Value::Struct(fields) => {
+            Value::Struct { fields } => {
                 format!(
                     "Struct({})",
                     Self::format_elements(fields, bucket_ids, proof_ids)
                 )
             }
-            Value::Enum(index, fields) => {
+            Value::Enum { index, fields } => {
                 format!(
                     "Enum({}u8{}{})",
                     index,
@@ -227,30 +227,36 @@ impl ScryptoValueFormatter {
                 )
             }
             // rust types
-            Value::Option(v) => match v.borrow() {
+            Value::Option { value } => match value.borrow() {
                 Some(x) => format!("Some({})", Self::format_value(x, bucket_ids, proof_ids)),
                 None => "None".to_string(),
             },
-            Value::Array(kind, elements) => format!(
+            Value::Array {
+                element_type_id,
+                elements,
+            } => format!(
                 "Array<{}>({})",
-                Self::format_kind(*kind),
+                Self::format_type_id(*element_type_id),
                 Self::format_elements(elements, bucket_ids, proof_ids)
             ),
-            Value::Tuple(elements) => format!(
+            Value::Tuple { elements } => format!(
                 "Tuple({})",
                 Self::format_elements(elements, bucket_ids, proof_ids)
             ),
-            Value::Result(v) => match v.borrow() {
+            Value::Result { value } => match value.borrow() {
                 Ok(x) => format!("Ok({})", Self::format_value(x, bucket_ids, proof_ids)),
                 Err(x) => format!("Err({})", Self::format_value(x, bucket_ids, proof_ids)),
             },
             // collections
-            Value::Vec(kind, elements) => {
-                if *kind == TYPE_U8 {
+            Value::Vec {
+                element_type_id,
+                elements,
+            } => {
+                if *element_type_id == TYPE_U8 {
                     let bytes = elements
                         .iter()
                         .map(|e| match e {
-                            Value::U8(v) => *v,
+                            Value::U8 { value } => *value,
                             _ => panic!("Unexpected element value"),
                         })
                         .collect::<Vec<u8>>();
@@ -258,46 +264,60 @@ impl ScryptoValueFormatter {
                 } else {
                     format!(
                         "Vec<{}>({})",
-                        Self::format_kind(*kind),
+                        Self::format_type_id(*element_type_id),
                         Self::format_elements(elements, bucket_ids, proof_ids)
                     )
                 }
             }
-            Value::TreeSet(kind, elements) => format!(
+            Value::TreeSet {
+                element_type_id,
+                elements,
+            } => format!(
                 "TreeSet<{}>({})",
-                Self::format_kind(*kind),
+                Self::format_type_id(*element_type_id),
                 Self::format_elements(elements, bucket_ids, proof_ids)
             ),
-            Value::HashSet(kind, elements) => format!(
+            Value::HashSet {
+                element_type_id,
+                elements,
+            } => format!(
                 "HashSet<{}>({})",
-                Self::format_kind(*kind),
+                Self::format_type_id(*element_type_id),
                 Self::format_elements(elements, bucket_ids, proof_ids)
             ),
-            Value::TreeMap(key, value, elements) => format!(
+            Value::TreeMap {
+                key_type_id,
+                value_type_id,
+                elements,
+            } => format!(
                 "TreeMap<{}, {}>({})",
-                Self::format_kind(*key),
-                Self::format_kind(*value),
+                Self::format_type_id(*key_type_id),
+                Self::format_type_id(*value_type_id),
                 Self::format_elements(elements, bucket_ids, proof_ids)
             ),
-            Value::HashMap(key, value, elements) => format!(
+            Value::HashMap {
+                key_type_id,
+                value_type_id,
+                elements,
+            } => format!(
                 "HashMap<{}, {}>({})",
-                Self::format_kind(*key),
-                Self::format_kind(*value),
+                Self::format_type_id(*key_type_id),
+                Self::format_type_id(*value_type_id),
                 Self::format_elements(elements, bucket_ids, proof_ids)
             ),
             // custom types
-            Value::Custom(kind, data) => {
-                Self::from_custom_value(*kind, data, bucket_ids, proof_ids)
+            Value::Custom { type_id, bytes } => {
+                Self::from_custom_value(*type_id, bytes, bucket_ids, proof_ids)
             }
         }
     }
 
-    pub fn format_kind(kind: u8) -> String {
-        if let Some(ty) = ScryptoType::from_id(kind) {
+    pub fn format_type_id(type_id: u8) -> String {
+        if let Some(ty) = ScryptoType::from_id(type_id) {
             return ty.name();
         }
 
-        match kind {
+        match type_id {
             // primitive types
             TYPE_UNIT => "Unit",
             TYPE_BOOL => "Bool",
