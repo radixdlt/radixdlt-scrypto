@@ -466,15 +466,14 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         resource_address: ResourceAddress,
     ) -> Result<ResourceManager, RuntimeError> {
         let maybe_resource = self.resource_managers.remove(&resource_address);
-        if let Some(SubstateUpdate { value, prev_id }) = maybe_resource {
-            self.borrowed_resource_managers
-                .insert(resource_address, prev_id);
-            Ok(value)
-        } else if self
-            .borrowed_resource_managers
+        if self.borrowed_resource_managers
             .contains_key(&resource_address)
         {
             panic!("Invalid resource manager reentrancy");
+        } else if let Some(SubstateUpdate { value, prev_id }) = maybe_resource {
+            self.borrowed_resource_managers
+                .insert(resource_address, prev_id);
+            Ok(value)
         } else if let Some((resource_manager, phys_id)) =
             self.substate_store.get_decoded_substate(&resource_address)
         {
@@ -500,7 +499,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
                 },
             );
         } else {
-            panic!("Component was never borrowed");
+            panic!("Resource manager was never borrowed");
         }
     }
 
