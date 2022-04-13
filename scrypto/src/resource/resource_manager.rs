@@ -46,8 +46,7 @@ impl ResourceManager {
             }],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
-        bucket
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Mints non-fungible resources
@@ -61,8 +60,7 @@ impl ResourceManager {
             args: args![MintParams::NonFungible { entries }],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
-        bucket
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Burns a bucket of resources.
@@ -77,32 +75,35 @@ impl ResourceManager {
 
     /// Returns the resource type.
     pub fn resource_type(&self) -> ResourceType {
-        let input = GetResourceTypeInput {
-            resource_address: self.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "get_resource_type".to_string(),
+            args: args![],
         };
-        let output: GetResourceTypeOutput = call_engine(GET_RESOURCE_TYPE, input);
-
-        output.resource_type
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
-        let input = GetResourceMetadataInput {
-            resource_address: self.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "get_metadata".to_string(),
+            args: args![],
         };
-        let output: GetResourceMetadataOutput = call_engine(GET_RESOURCE_METADATA, input);
-
-        output.metadata
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the current supply of this resource.
     pub fn total_supply(&self) -> Decimal {
-        let input = GetResourceTotalSupplyInput {
-            resource_address: self.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "get_total_supply".to_string(),
+            args: args![],
         };
-        let output: GetResourceTotalSupplyOutput = call_engine(GET_RESOURCE_TOTAL_SUPPLY, input);
-
-        output.total_supply
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
@@ -110,12 +111,14 @@ impl ResourceManager {
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
-        let input = GetNonFungibleDataInput {
-            non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "get_non_fungible".to_string(),
+            args: args![id.clone()],
         };
-        let output: GetNonFungibleDataOutput = call_engine(GET_NON_FUNGIBLE_DATA, input);
-
-        T::decode(&output.immutable_data, &output.mutable_data).unwrap()
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let non_fungible: [Vec<u8>; 2] = scrypto_decode(&output.rtn).unwrap();
+        T::decode(&non_fungible[0], &non_fungible[1]).unwrap()
     }
 
     /// Updates the mutable part of a non-fungible unit.
@@ -134,12 +137,13 @@ impl ResourceManager {
     /// Checks if non-fungible unit, with certain key exists or not.
     ///
     pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
-        let input = NonFungibleExistsInput {
-            non_fungible_address: NonFungibleAddress::new(self.0, id.clone()),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "non_fungible_exists".to_string(),
+            args: args![id.clone()],
         };
-        let output: NonFungibleExistsOutput = call_engine(NON_FUNGIBLE_EXISTS, input);
-
-        output.non_fungible_exists
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Updates the resource metadata

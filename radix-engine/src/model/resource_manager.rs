@@ -98,6 +98,18 @@ impl ResourceManager {
             );
         }
 
+        for pub_method in ["get_metadata", "get_resource_type", "get_total_supply"] {
+            authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
+        }
+
+        if let ResourceType::NonFungible = resource_type {
+            authorization.insert(
+                "non_fungible_exists".to_string(),
+                MethodAuthorization::Public,
+            );
+            authorization.insert("get_non_fungible".to_string(), MethodAuthorization::Public);
+        }
+
         let resource_manager = Self {
             resource_type,
             metadata,
@@ -127,7 +139,21 @@ impl ResourceManager {
         self.total_supply
     }
 
-    pub fn mint(
+    fn mint<S: SystemApi>(
+        &mut self,
+        mint_params: MintParams,
+        self_address: ResourceAddress,
+        system_api: &mut S,
+    ) -> Result<ResourceContainer, ResourceManagerError> {
+        match mint_params {
+            MintParams::Fungible { amount } => self.mint_fungible(amount, self_address),
+            MintParams::NonFungible { entries } => {
+                self.mint_non_fungibles(entries, self_address, system_api)
+            }
+        }
+    }
+
+    pub fn mint_fungible(
         &mut self,
         amount: Decimal,
         self_address: ResourceAddress,
@@ -241,6 +267,49 @@ impl ResourceManager {
         }
     }
 
+    pub fn static_main<S: SystemApi>(
+        function: &str,
+        args: Vec<ScryptoValue>,
+        system_api: &mut S,
+    ) -> Result<ScryptoValue, ResourceManagerError> {
+        match function {
+            "create" => {
+                let resource_type = scrypto_decode(&args[0].raw)
+                    .map_err(ResourceManagerError::InvalidRequestData)?;
+                let metadata = scrypto_decode(&args[1].raw)
+                    .map_err(ResourceManagerError::InvalidRequestData)?;
+                let auth = scrypto_decode(&args[2].raw)
+                    .map_err(ResourceManagerError::InvalidRequestData)?;
+                let mint_params_maybe: Option<MintParams> = scrypto_decode(&args[3].raw)
+                    .map_err(ResourceManagerError::InvalidRequestData)?;
+                let resource_manager = ResourceManager::new(resource_type, metadata, auth)?;
+                let resource_address = system_api.create_resource(resource_manager);
+
+                let bucket_id = if let Some(mint_params) = mint_params_maybe {
+                    let mut resource_manager = system_api
+                        .borrow_global_mut_resource_manager(resource_address)
+                        .unwrap();
+                    let container =
+                        resource_manager.mint(mint_params, resource_address, system_api)?;
+                    system_api.return_borrowed_global_resource_manager(
+                        resource_address,
+                        resource_manager,
+                    );
+
+                    let bucket_id = system_api
+                        .create_bucket(container)
+                        .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                    Some(scrypto::resource::Bucket(bucket_id))
+                } else {
+                    None
+                };
+
+                Ok(ScryptoValue::from_value(&(resource_address, bucket_id)))
+            }
+            _ => Err(ResourceManagerError::MethodNotFound(function.to_string())),
+        }
+    }
+
     pub fn main<S: SystemApi>(
         &mut self,
         resource_address: ResourceAddress,
@@ -253,13 +322,7 @@ impl ResourceManager {
                 // TODO: cleanup
                 let mint_params: MintParams = scrypto_decode(&args[0].raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let container = match mint_params {
-                    MintParams::Fungible { amount } => self.mint(amount, resource_address.clone()),
-                    MintParams::NonFungible { entries } => {
-                        self.mint_non_fungibles(entries, resource_address.clone(), system_api)
-                    }
-                }?;
-
+                let container = self.mint(mint_params, resource_address, system_api)?;
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
@@ -267,6 +330,9 @@ impl ResourceManager {
                     bucket_id,
                 )))
             }
+            "get_metadata" => Ok(ScryptoValue::from_value(&self.metadata)),
+            "get_resource_type" => Ok(ScryptoValue::from_value(&self.resource_type)),
+            "get_total_supply" => Ok(ScryptoValue::from_value(&self.total_supply)),
             "update_metadata" => {
                 let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
@@ -289,6 +355,27 @@ impl ResourceManager {
                     ))?
                     .set_mutable_data(data.raw);
                 Ok(ScryptoValue::from_value(&()))
+            }
+            "non_fungible_exists" => {
+                let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let non_fungible_address =
+                    NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
+                let non_fungible = system_api.get_non_fungible(&non_fungible_address);
+                Ok(ScryptoValue::from_value(&non_fungible.is_some()))
+            }
+            "get_non_fungible" => {
+                let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let non_fungible_address =
+                    NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
+                let non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
+                    ResourceManagerError::NonFungibleNotFound(non_fungible_address),
+                )?;
+                Ok(ScryptoValue::from_value(&[
+                    non_fungible.immutable_data(),
+                    non_fungible.mutable_data(),
+                ]))
             }
             _ => Err(ResourceManagerError::MethodNotFound(function.to_string())),
         }
