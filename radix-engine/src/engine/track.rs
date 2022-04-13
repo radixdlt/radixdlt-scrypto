@@ -466,7 +466,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         resource_address: ResourceAddress,
     ) -> Result<ResourceManager, RuntimeError> {
         let maybe_resource = self.resource_managers.remove(&resource_address);
-        if self.borrowed_resource_managers
+        if self
+            .borrowed_resource_managers
             .contains_key(&resource_address)
         {
             panic!("Invalid resource manager reentrancy");

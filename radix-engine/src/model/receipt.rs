@@ -1,6 +1,8 @@
 use colored::*;
 use scrypto::engine::types::*;
+use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::fmt;
+use scrypto::rust::format;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
@@ -59,9 +61,12 @@ impl fmt::Debug for Receipt {
         for (i, inst) in self.validated_transaction.instructions.iter().enumerate() {
             write!(
                 f,
-                "\n{} {:?}",
+                "\n{} {}",
                 prefix!(i, self.validated_transaction.instructions),
-                inst
+                match inst {
+                    ValidatedInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
+                    i @ _ => format!("{:?}", i),
+                }
             )?;
         }
 
