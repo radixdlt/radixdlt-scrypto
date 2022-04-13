@@ -43,3 +43,5 @@ $resim new-badge-fixed 1 --name 'MintBadge' --manifest ./target/temp.rtm
 cat ./target/temp.rtm
 $resim publish ../examples/hello-world --manifest ./target/temp2.rtm
 $resim run ./target/temp2.rtm
+$resim new-account --manifest ./target/temp3.rtm
+$resim run ./target/temp3.rtm

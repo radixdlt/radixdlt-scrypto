@@ -143,6 +143,7 @@ pub enum Type {
     Bucket,
     Proof,
     NonFungibleId,
+    NonFungibleAddress,
 
     /* Bytes is a convenient way of producing `Vec<u8>` */
     Bytes,
@@ -184,6 +185,7 @@ pub enum Value {
     Bucket(Box<Value>),
     Proof(Box<Value>),
     NonFungibleId(Box<Value>),
+    NonFungibleAddress(Box<Value>),
 
     Bytes(Vec<u8>),
 }
@@ -223,6 +225,7 @@ impl Value {
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
             Value::NonFungibleId(_) => Type::NonFungibleId,
+            Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
             Value::Bytes(_) => Type::Vec,
         }
     }
