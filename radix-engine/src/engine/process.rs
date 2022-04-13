@@ -97,6 +97,7 @@ pub enum SNodeState {
     ResourceRef(ResourceAddress, ResourceManager),
     BucketRef(BucketId, Bucket),
     Bucket(Bucket),
+    ProofRef(ProofId, Proof),
     VaultRef(VaultId),
 }
 
@@ -805,6 +806,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::BucketRef(bucket_id, bucket) => bucket
                 .main(*bucket_id, function.as_str(), args, self)
                 .map_err(RuntimeError::BucketError),
+            SNodeState::ProofRef(proof_id, proof) => proof
+                .main(function.as_str(), args, self)
+                .map_err(RuntimeError::ProofError),
 
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
@@ -936,6 +940,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     method_auth.clone(),
                 ))
             }
+            SNodeRef::ProofRef(proof_id) => {
+                let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                Ok((SNodeState::ProofRef(proof_id.clone(), proof), MethodAuthorization::Public))
+            }
             SNodeRef::VaultRef(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
                 let method_auth = self
@@ -1035,6 +1043,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     SNodeState::BucketRef(bucket_id, bucket) => {
                         self.buckets.insert(bucket_id, bucket);
+                    }
+                    SNodeState::ProofRef(proof_id, proof) => {
+                        self.proofs.insert(proof_id, proof);
                     }
                     _ => {}
                 }

@@ -1,5 +1,5 @@
 use crate::core::ScryptoActor;
-use crate::engine::types::{BucketId, VaultId};
+use crate::engine::types::{BucketId, ProofId, VaultId};
 use crate::resource::ResourceAddress;
 use sbor::*;
 
@@ -11,5 +11,6 @@ pub enum SNodeRef {
     ResourceRef(ResourceAddress),
     Bucket(BucketId),
     BucketRef(BucketId),
+    ProofRef(ProofId),
     VaultRef(VaultId),
 }

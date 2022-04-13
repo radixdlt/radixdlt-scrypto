@@ -5,6 +5,8 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
+use scrypto::values::ScryptoValue;
+use crate::engine::SystemApi;
 
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -36,6 +38,7 @@ pub enum ProofError {
     NonFungibleOperationNotAllowed,
     /// Can't apply a fungible operation on non-fungible proofs.
     FungibleOperationNotAllowed,
+    MethodNotFound(String),
 }
 
 impl Proof {
@@ -317,5 +320,17 @@ impl Proof {
 
     pub fn is_restricted(&self) -> bool {
         self.restricted
+    }
+
+    pub fn main<S: SystemApi>(
+        &mut self,
+        function: &str,
+        args: Vec<ScryptoValue>,
+        system_api: &mut S,
+    ) -> Result<ScryptoValue, ProofError> {
+        match function {
+            "get_total_amount" => Ok(ScryptoValue::from_value(&self.total_amount())),
+            _ => Err(ProofError::MethodNotFound(function.to_string())),
+        }
     }
 }
