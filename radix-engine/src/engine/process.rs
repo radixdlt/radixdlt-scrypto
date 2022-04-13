@@ -55,9 +55,34 @@ macro_rules! re_warn {
     };
 }
 
+pub trait SystemApi {
+    fn get_non_fungible(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&NonFungible>;
+
+    fn get_non_fungible_mut(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&mut NonFungible>;
+
+    fn put_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+        non_fungible: NonFungible,
+    );
+
+    fn get_resource_manager_mut(
+        &mut self,
+        resource_address: &ResourceAddress,
+    ) -> Option<&mut ResourceManager>;
+
+    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
+}
+
 pub enum SNodeState {
     Scrypto(ScryptoActorInfo, Option<Component>),
-    Resource(ResourceAddress),
+    Resource(ResourceAddress, ResourceManager),
     Bucket(Bucket),
     Vault(VaultId),
 }
@@ -803,35 +828,25 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     })?
                     .ok_or(RuntimeError::NoReturnData)?;
                 match rtn {
-                    RuntimeValue::I32(ptr) => {
-                        let data = self.read_return_value(ptr as u32)?;
-                        self.process_return_data(&data)?;
-                        Ok(data)
-                    }
-                    _ => {
-                        return Err(RuntimeError::InvalidReturnType);
-                    }
+                    RuntimeValue::I32(ptr) => self.read_return_value(ptr as u32),
+                    _ => Err(RuntimeError::InvalidReturnType),
                 }
             }
-            SNodeState::Resource(resource_address) => {
-                let maybe_bucket = self.track.resource_manager_invoke(
-                    &resource_address,
-                    function.as_str(),
-                    args,
-                )?;
-                if let Some(bucket) = maybe_bucket {
-                    let bucket_id = self.new_bucket_id()?;
-                    self.buckets.insert(bucket_id, bucket);
-                    Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                        bucket_id,
-                    )))
-                } else {
-                    Ok(ScryptoValue::from_value(&()))
-                }
+            SNodeState::Resource(resource_address, mut resource_manager) => {
+                let return_value = resource_manager
+                    .main(resource_address, function.as_str(), args, self)
+                    .map_err(RuntimeError::ResourceManagerError)?;
+
+                self.track
+                    .return_borrowed_global_resource_manager(resource_address, resource_manager);
+
+                Ok(return_value)
             }
 
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
+
+        self.process_return_data(&output)?;
 
         #[cfg(not(feature = "alloc"))]
         re_info!(
@@ -924,12 +939,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeRef::Resource(resource_address) => {
-                let method_auth = self
+                let resource_manager: ResourceManager = self
                     .track
-                    .get_resource_method_auth(&resource_address, &function)?;
+                    .borrow_global_mut_resource_manager(resource_address.clone())?;
+                let method_auth = resource_manager.get_auth(&function).clone();
                 Ok((
-                    SNodeState::Resource(resource_address.clone()),
-                    method_auth.clone(),
+                    SNodeState::Resource(resource_address.clone(), resource_manager),
+                    method_auth,
                 ))
             }
             SNodeRef::Bucket(bucket_id) => {
@@ -940,14 +956,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let resource_address = bucket.resource_address();
                 let method_auth = self
                     .track
-                    .get_resource_method_auth(&resource_address, &function)?;
+                    .get_resource_manager(&resource_address)
+                    .unwrap()
+                    .get_auth(&function);
                 Ok((SNodeState::Bucket(bucket), method_auth.clone()))
             }
             SNodeRef::Vault(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
                 let method_auth = self
                     .track
-                    .get_resource_method_auth(&resource_address, &function)?;
+                    .get_resource_manager(&resource_address)
+                    .unwrap()
+                    .get_auth(&function);
                 Ok((SNodeState::Vault(vault_id.clone()), method_auth.clone()))
             }
         }?;
@@ -986,10 +1006,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeState::Bucket(bucket) => match function.as_str() {
-                "burn" => {
-                    bucket.drop(self.track);
-                    Ok(ScryptoValue::from_value(&()))
-                }
+                "burn" => bucket.drop(self),
                 _ => Err(RuntimeError::IllegalSystemCall),
             },
             _ => {
@@ -2148,6 +2165,44 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     //============================
     // SYSTEM CALL HANDLERS END
     //============================
+}
+
+impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
+    fn get_non_fungible_mut(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&mut NonFungible> {
+        self.track.get_non_fungible_mut(non_fungible_address)
+    }
+
+    fn get_non_fungible(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<&NonFungible> {
+        self.track.get_non_fungible(non_fungible_address)
+    }
+
+    fn put_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+        non_fungible: NonFungible,
+    ) {
+        self.track
+            .put_non_fungible(non_fungible_address, non_fungible)
+    }
+
+    fn get_resource_manager_mut(
+        &mut self,
+        resource_address: &ResourceAddress,
+    ) -> Option<&mut ResourceManager> {
+        self.track.get_resource_manager_mut(resource_address)
+    }
+
+    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
+        let bucket_id = self.new_bucket_id()?;
+        self.buckets.insert(bucket_id, Bucket::new(container));
+        Ok(bucket_id)
+    }
 }
 
 impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
