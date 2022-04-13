@@ -2,18 +2,18 @@ use colored::*;
 
 use sbor::*;
 use scrypto::buffer::*;
-use scrypto::core::{ScryptoActor,SNodeRef};
+use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
+use scrypto::rust::mem;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::rust::mem;
 use scrypto::values::*;
 use wasmi::*;
 
@@ -56,10 +56,7 @@ macro_rules! re_warn {
 }
 
 pub enum SNodeState {
-    Scrypto(
-        ScryptoActorInfo,
-        Option<Component>,
-    ),
+    Scrypto(ScryptoActorInfo, Option<Component>),
     Resource(ResourceAddress),
     Bucket(Bucket),
     Vault(VaultId),
@@ -73,7 +70,6 @@ pub struct Interpreter {
     module: ModuleRef,
     memory: MemoryRef,
 }
-
 
 /// Qualitative states for a WASM process
 #[derive(Debug)]
@@ -679,7 +675,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = self.call(
             SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             method.to_owned(),
-            vec![ScryptoValue::from_value(&to_deposit)]
+            vec![ScryptoValue::from_value(&to_deposit)],
         );
 
         re_debug!(
@@ -738,27 +734,26 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 let (module, memory) = package.load_module().unwrap();
 
-                let (interpreter_state, args) =
-                    if let Some(component) = component_state {
-                        let component_address = actor.component_address().unwrap().clone();
-                        let data = ScryptoValue::from_slice(component.state()).unwrap();
-                        let initial_loaded_object_refs = ComponentObjectRefs {
-                            vault_ids: data.vault_ids.into_iter().collect(),
-                            lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
-                        };
-                        let istate = InterpreterState::Component {
-                            component_address,
-                            component,
-                            initial_loaded_object_refs,
-                            additional_object_refs: ComponentObjectRefs::new(),
-                        };
-                        let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
-                        args_with_self.extend(args);
-
-                        (istate, args_with_self)
-                    } else {
-                        (InterpreterState::Blueprint, args)
+                let (interpreter_state, args) = if let Some(component) = component_state {
+                    let component_address = actor.component_address().unwrap().clone();
+                    let data = ScryptoValue::from_slice(component.state()).unwrap();
+                    let initial_loaded_object_refs = ComponentObjectRefs {
+                        vault_ids: data.vault_ids.into_iter().collect(),
+                        lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
                     };
+                    let istate = InterpreterState::Component {
+                        component_address,
+                        component,
+                        initial_loaded_object_refs,
+                        additional_object_refs: ComponentObjectRefs::new(),
+                    };
+                    let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
+                    args_with_self.extend(args);
+
+                    (istate, args_with_self)
+                } else {
+                    (InterpreterState::Blueprint, args)
+                };
 
                 self.wasm_process_state = Some(WasmProcess {
                     depth: self.depth,
@@ -778,10 +773,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let result = module.invoke_export(actor.export_name(), &[], self);
 
                 // TODO: Do this in a better way
-                if let Some(WasmProcess { ref mut interpreter_state, .. }) = &mut self.wasm_process_state {
-                    let interpreter_state = mem::replace(interpreter_state, InterpreterState::Blueprint);
-                    if let InterpreterState::Component { component_address, component, .. } = interpreter_state {
-                        self.track.return_borrowed_global_component(component_address, component);
+                if let Some(WasmProcess {
+                    ref mut interpreter_state,
+                    ..
+                }) = &mut self.wasm_process_state
+                {
+                    let interpreter_state =
+                        mem::replace(interpreter_state, InterpreterState::Blueprint);
+                    if let InterpreterState::Component {
+                        component_address,
+                        component,
+                        ..
+                    } = interpreter_state
+                    {
+                        self.track
+                            .return_borrowed_global_component(component_address, component);
                     }
                 }
 
@@ -884,7 +890,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
-                        let component = self.track.borrow_global_mut_component(component_address.clone())?;
+                        let component = self
+                            .track
+                            .borrow_global_mut_component(component_address.clone())?;
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
                         let export_name = format!("{}_main", blueprint_name);
@@ -899,8 +907,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .unwrap()
                             .clone();
 
-                        let (_, method_auth) =
-                            component.method_authorization(&schema, &function);
+                        let (_, method_auth) = component.method_authorization(&schema, &function);
                         Ok((
                             SNodeState::Scrypto(
                                 ScryptoActorInfo::component(
@@ -965,7 +972,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = match snode {
             SNodeState::Vault(vault_id) => {
                 let vault = self.get_local_vault(&vault_id)?;
-                let maybe_bucket = vault.main(function.as_str(), args)
+                let maybe_bucket = vault
+                    .main(function.as_str(), args)
                     .map_err(RuntimeError::VaultError)?;
                 if let Some(bucket) = maybe_bucket {
                     let bucket_id = self.new_bucket_id()?;
@@ -1024,7 +1032,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call function started");
-        let snode_ref = SNodeRef::Scrypto(ScryptoActor::Blueprint(package_address, blueprint_name.to_string()));
+        let snode_ref = SNodeRef::Scrypto(ScryptoActor::Blueprint(
+            package_address,
+            blueprint_name.to_string(),
+        ));
         let result = self.call(snode_ref, function.to_string(), args);
         re_debug!(self, "Call function ended");
         result
@@ -1598,7 +1609,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 SNodeRef::Resource(resource_address.clone()),
                 "mint".to_string(),
                 vec![ScryptoValue::from_value(&mint_params)],
-                true
+                true,
             )?;
             Some(result.bucket_ids[0])
         } else {
@@ -1772,9 +1783,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         let result = self.call(input.snode_ref, input.function, validated_args)?;
-        Ok(InvokeSNodeOutput {
-            rtn: result.raw
-        })
+        Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
     fn handle_get_non_fungible_ids_in_vault(

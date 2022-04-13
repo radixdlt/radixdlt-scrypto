@@ -41,14 +41,12 @@ impl Runtime {
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Scrypto(
-                ScryptoActor::Blueprint(
-                    package_address,
-                    blueprint_name.as_ref().to_owned()
-                )
-            ),
+            snode_ref: SNodeRef::Scrypto(ScryptoActor::Blueprint(
+                package_address,
+                blueprint_name.as_ref().to_owned(),
+            )),
             function: function.as_ref().to_owned(),
-            args
+            args,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
@@ -62,11 +60,9 @@ impl Runtime {
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Scrypto(
-                ScryptoActor::Component(component_address)
-            ),
+            snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             function: method.as_ref().to_owned(),
-            args
+            args,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 

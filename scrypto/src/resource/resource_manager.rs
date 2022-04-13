@@ -1,7 +1,7 @@
-use sbor::*;
 use crate::args;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
+use sbor::*;
 
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
@@ -41,7 +41,9 @@ impl ResourceManager {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Resource(self.0),
             function: "mint".to_string(),
-            args: args![MintParams::Fungible { amount: amount.into() }]
+            args: args![MintParams::Fungible {
+                amount: amount.into()
+            }],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
@@ -56,7 +58,7 @@ impl ResourceManager {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Resource(self.0),
             function: "mint".to_string(),
-            args: args![MintParams::NonFungible { entries }]
+            args: args![MintParams::NonFungible { entries }],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
@@ -68,7 +70,7 @@ impl ResourceManager {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Bucket(bucket.0),
             function: "burn".to_string(),
-            args: args![]
+            args: args![],
         };
         let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }
@@ -124,7 +126,7 @@ impl ResourceManager {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Resource(self.0),
             function: "update_non_fungible_mutable_data".to_string(),
-            args: args![id.clone(), new_data.mutable_data()]
+            args: args![id.clone(), new_data.mutable_data()],
         };
         let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }
@@ -145,7 +147,7 @@ impl ResourceManager {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Resource(self.0),
             function: "update_metadata".to_string(),
-            args: args![new_metadata]
+            args: args![new_metadata],
         };
         let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }

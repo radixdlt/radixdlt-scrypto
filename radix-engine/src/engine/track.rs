@@ -203,24 +203,40 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         package_address
     }
 
-    pub fn borrow_global_mut_component(&mut self, component_address: ComponentAddress) -> Result<Component, RuntimeError> {
+    pub fn borrow_global_mut_component(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<Component, RuntimeError> {
         let maybe_component = self.components.remove(&component_address);
         if let Some(SubstateUpdate { value, prev_id }) = maybe_component {
             self.borrowed_components.insert(component_address, prev_id);
             Ok(value)
         } else if self.borrowed_components.contains_key(&component_address) {
             Err(RuntimeError::ComponentReentrancy(component_address))
-        } else if let Some((component, phys_id)) = self.substate_store.get_decoded_substate(&component_address) {
-            self.borrowed_components.insert(component_address, Some(phys_id));
+        } else if let Some((component, phys_id)) =
+            self.substate_store.get_decoded_substate(&component_address)
+        {
+            self.borrowed_components
+                .insert(component_address, Some(phys_id));
             Ok(component)
         } else {
             Err(RuntimeError::ComponentNotFound(component_address))
         }
     }
 
-    pub fn return_borrowed_global_component(&mut self, component_address: ComponentAddress, component: Component) {
+    pub fn return_borrowed_global_component(
+        &mut self,
+        component_address: ComponentAddress,
+        component: Component,
+    ) {
         if let Some(prev_id) = self.borrowed_components.remove(&component_address) {
-            self.components.insert(component_address, SubstateUpdate { prev_id, value: component });
+            self.components.insert(
+                component_address,
+                SubstateUpdate {
+                    prev_id,
+                    value: component,
+                },
+            );
         } else {
             panic!("Component was never borrowed");
         }
