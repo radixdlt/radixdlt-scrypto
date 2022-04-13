@@ -38,6 +38,12 @@ impl NewAccount {
                 })
                 .build_with_no_nonce();
             let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
+            println!("A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!");
+            println!("Public key: {}", public_key.to_string().green());
+            println!(
+                "Private key: {}",
+                hex::encode(private_key.to_bytes()).green()
+            );
             return fs::write(path, manifest).map_err(Error::IOError);
         }
 
