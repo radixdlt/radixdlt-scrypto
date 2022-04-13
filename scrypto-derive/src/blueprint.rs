@@ -210,25 +210,6 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                     }
                 }
 
-                // auth
-                let i = m.sig.inputs.len();
-                if m.attrs
-                    .iter()
-                    .find(|a| {
-                        a.path.get_ident().map(ToString::to_string) == Some("auth".to_string())
-                    })
-                    .is_some()
-                {
-                    let stmt: Stmt = parse_quote! {
-                        let auth =
-                            ::scrypto::buffer::scrypto_decode::<::scrypto::resource::Proof>(&calldata.args[#i])
-                            .unwrap();
-                    };
-                    trace!("Generated stmt: {}", quote! { #stmt });
-                    args.push(parse_quote! { auth });
-                    stmts.push(stmt);
-                }
-
                 // load state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
@@ -302,18 +283,6 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<
                                 });
                             }
                         }
-                    }
-
-                    if m.attrs
-                        .iter()
-                        .find(|a| {
-                            a.path.get_ident().map(ToString::to_string) == Some("auth".to_string())
-                        })
-                        .is_some()
-                    {
-                        inputs.push(quote! {
-                            <::scrypto::resource::Proof>::describe()
-                        });
                     }
 
                     let output = match &m.sig.output {
@@ -401,15 +370,6 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                                 input_len += 1;
                             }
                         }
-                    }
-
-                    if let Some(auth) = m.attrs.iter().find(|a| {
-                        a.path.get_ident().map(ToString::to_string) == Some("auth".to_string())
-                    }) {
-                        input_args.push(Ident::new("auth", auth.span()));
-                        input_types.push(parse_quote! {
-                            ::scrypto::resource::Proof
-                        });
                     }
 
                     let output = match &m.sig.output {
@@ -518,7 +478,7 @@ mod tests {
     #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "struct Test {a: u32, admin: ResourceManager} impl Test { #[auth(admin)] pub fn x(&self) -> u32 { self.a } }",
+            "struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self) -> u32 { self.a } }",
         )
         .unwrap();
         let output = handle_blueprint(input).unwrap();
@@ -536,7 +496,6 @@ mod tests {
                     }
 
                     impl Test {
-                        #[auth(admin)]
                         pub fn x(&self) -> u32 {
                             self.a
                         }
@@ -567,11 +526,8 @@ mod tests {
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentAddress>(
                                     &calldata.args[0usize]
                                 ).unwrap();
-                            let auth =
-                                ::scrypto::buffer::scrypto_decode::<::scrypto::resource::Proof>(&calldata.args[1usize])
-                                .unwrap( );
                             let state: blueprint::Test = component!(arg0).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, auth));
+                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state));
                         }
                         _ => {
                             panic!("Function/method not fund")
@@ -590,9 +546,7 @@ mod tests {
                     let methods: Vec<Method> = vec![::scrypto::abi::Method {
                         name: "x".to_owned(),
                         mutability: ::scrypto::abi::Mutability::Immutable,
-                        inputs: vec![
-                            <::scrypto::resource::Proof>::describe()
-                        ],
+                        inputs: vec![],
                         output: <u32>::describe(),
                     }];
                     let schema: Type = blueprint::Test::describe();
@@ -605,8 +559,8 @@ mod tests {
                     component_address: ::scrypto::component::ComponentAddress,
                 }
                 impl Test {
-                    pub fn x(&self, auth: ::scrypto::resource::Proof) -> u32 {
-                        let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(auth));
+                    pub fn x(&self) -> u32 {
+                        let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!());
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }

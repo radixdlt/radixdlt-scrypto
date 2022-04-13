@@ -9,14 +9,11 @@ use crate::rust::string::String;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 
-// For enum, we use internally tagged representation for readability.
-// See: https://serde.rs/enum-representations.html
-
 /// Represents a SBOR type.
 #[cfg_attr(
     any(feature = "serde_std", feature = "serde_alloc"),
     derive(Serialize, Deserialize),
-    serde(tag = "type")
+    serde(tag = "type")  // For JSON readability, see https://serde.rs/enum-representations.html
 )]
 #[derive(Debug, Clone, PartialEq, Eq, TypeId, Decode, Encode)]
 pub enum Type {

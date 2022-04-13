@@ -144,8 +144,8 @@ pub enum Type {
     Proof,
     NonFungibleId,
 
-    /* Blob is a convenient way of producing `Vec<u8>` */
-    Blob,
+    /* Bytes is a convenient way of producing `Vec<u8>` */
+    Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -185,7 +185,7 @@ pub enum Value {
     Proof(Box<Value>),
     NonFungibleId(Box<Value>),
 
-    Blob(Vec<u8>),
+    Bytes(Vec<u8>),
 }
 
 impl Value {
@@ -223,7 +223,7 @@ impl Value {
             Value::Bucket(_) => Type::Bucket,
             Value::Proof(_) => Type::Proof,
             Value::NonFungibleId(_) => Type::NonFungibleId,
-            Value::Blob(_) => Type::Vec,
+            Value::Bytes(_) => Type::Vec,
         }
     }
 }
