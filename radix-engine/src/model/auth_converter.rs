@@ -23,12 +23,14 @@ fn soft_to_hard_decimal(schema: &Type, soft_decimal: &SoftDecimal, dom: &Value) 
                 return HardDecimal::SoftDecimalNotFound;
             }
             match sbor_path.unwrap().get_from_value(dom) {
-                Some(Value::Custom(ty, value)) => match ScryptoType::from_id(*ty).unwrap() {
-                    ScryptoType::Decimal => {
-                        HardDecimal::Amount(Decimal::try_from(value.as_slice()).unwrap())
+                Some(Value::Custom { type_id, bytes }) => {
+                    match ScryptoType::from_id(*type_id).unwrap() {
+                        ScryptoType::Decimal => {
+                            HardDecimal::Amount(Decimal::try_from(bytes.as_slice()).unwrap())
+                        }
+                        _ => HardDecimal::SoftDecimalNotFound,
                     }
-                    _ => HardDecimal::SoftDecimalNotFound,
-                },
+                }
                 _ => HardDecimal::SoftDecimalNotFound,
             }
         }
@@ -44,7 +46,7 @@ fn soft_to_hard_count(schema: &Type, soft_count: &SoftCount, dom: &Value) -> Har
                 return HardCount::SoftCountNotFound;
             }
             match sbor_path.unwrap().get_from_value(dom) {
-                Some(Value::U8(count)) => HardCount::Count(count.clone()),
+                Some(Value::U8 { value }) => HardCount::Count(value.clone()),
                 _ => HardCount::SoftCountNotFound,
             }
         }
@@ -72,37 +74,38 @@ fn soft_to_hard_resource_list(
             }
 
             match sbor_path.unwrap().get_from_value(dom) {
-                Some(Value::Vec(type_id, values)) => {
-                    match ScryptoType::from_id(*type_id).unwrap() {
-                        ScryptoType::ResourceAddress => HardProofRuleResourceList::List(
-                            values
-                                .iter()
-                                .map(|v| {
-                                    if let Value::Custom(_, bytes) = v {
-                                        return ResourceAddress::try_from(bytes.as_slice())
-                                            .unwrap()
-                                            .into();
-                                    }
-                                    panic!("Unexpected type");
-                                })
-                                .collect(),
-                        ),
-                        ScryptoType::NonFungibleAddress => HardProofRuleResourceList::List(
-                            values
-                                .iter()
-                                .map(|v| {
-                                    if let Value::Custom(_, bytes) = v {
-                                        return NonFungibleAddress::try_from(bytes.as_slice())
-                                            .unwrap()
-                                            .into();
-                                    }
-                                    panic!("Unexpected type");
-                                })
-                                .collect(),
-                        ),
-                        _ => HardProofRuleResourceList::SoftResourceListNotFound,
-                    }
-                }
+                Some(Value::Vec {
+                    element_type_id,
+                    elements,
+                }) => match ScryptoType::from_id(*element_type_id).unwrap() {
+                    ScryptoType::ResourceAddress => HardProofRuleResourceList::List(
+                        elements
+                            .iter()
+                            .map(|v| {
+                                if let Value::Custom { bytes, .. } = v {
+                                    return ResourceAddress::try_from(bytes.as_slice())
+                                        .unwrap()
+                                        .into();
+                                }
+                                panic!("Unexpected type");
+                            })
+                            .collect(),
+                    ),
+                    ScryptoType::NonFungibleAddress => HardProofRuleResourceList::List(
+                        elements
+                            .iter()
+                            .map(|v| {
+                                if let Value::Custom { bytes, .. } = v {
+                                    return NonFungibleAddress::try_from(bytes.as_slice())
+                                        .unwrap()
+                                        .into();
+                                }
+                                panic!("Unexpected type");
+                            })
+                            .collect(),
+                    ),
+                    _ => HardProofRuleResourceList::SoftResourceListNotFound,
+                },
                 _ => HardProofRuleResourceList::SoftResourceListNotFound,
             }
         }
@@ -121,7 +124,7 @@ fn soft_to_hard_resource(
                 return HardResourceOrNonFungible::SoftResourceNotFound;
             }
             match sbor_path.unwrap().get_from_value(dom) {
-                Some(Value::Custom(type_id, bytes)) => {
+                Some(Value::Custom { type_id, bytes }) => {
                     match ScryptoType::from_id(*type_id).unwrap() {
                         ScryptoType::ResourceAddress => {
                             ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
@@ -150,7 +153,7 @@ fn soft_to_hard_resource_or_non_fungible(
                 return HardResourceOrNonFungible::SoftResourceNotFound;
             }
             match sbor_path.unwrap().get_from_value(dom) {
-                Some(Value::Custom(type_id, bytes)) => {
+                Some(Value::Custom { type_id, bytes }) => {
                     match ScryptoType::from_id(*type_id).unwrap() {
                         ScryptoType::ResourceAddress => {
                             ResourceAddress::try_from(bytes.as_slice()).unwrap().into()
