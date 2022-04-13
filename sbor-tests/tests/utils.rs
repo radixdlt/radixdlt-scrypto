@@ -1,5 +1,3 @@
-#![cfg_attr(not(feature = "std"), no_std)]
-
 use serde::Serialize;
 use serde_json::{to_string, to_value, Value};
 
