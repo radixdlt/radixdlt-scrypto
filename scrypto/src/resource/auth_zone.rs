@@ -48,14 +48,13 @@ impl AuthZone {
     }
 
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-        let input = CreateAuthZoneProofByAmountInput {
-            resource_address,
-            amount,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::AuthZone,
+            function: "create_proof_by_amount".to_string(),
+            args: args![amount, resource_address],
         };
-        let output: CreateAuthZoneProofByAmountOutput =
-            call_engine(CREATE_AUTH_ZONE_PROOF_BY_AMOUNT, input);
-
-        Proof(output.proof_id.into())
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     pub fn create_proof_by_ids(

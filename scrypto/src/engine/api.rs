@@ -49,8 +49,6 @@ pub const CREATE_VAULT_PROOF: u32 = 0x63;
 pub const CREATE_VAULT_PROOF_BY_AMOUNT: u32 = 0x64;
 /// Create a vault proof by ids
 pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
-/// Create an auth zone proof by amount
-pub const CREATE_AUTH_ZONE_PROOF_BY_AMOUNT: u32 = 0x67;
 /// Create an auth zone proof by ids
 pub const CREATE_AUTH_ZONE_PROOF_BY_IDS: u32 = 0x68;
 /// Clone proof
@@ -267,17 +265,6 @@ pub struct CreateVaultProofByIdsInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateVaultProofByIdsOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateAuthZoneProofByAmountInput {
-    pub resource_address: ResourceAddress,
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateAuthZoneProofByAmountOutput {
     pub proof_id: ProofId,
 }
 
