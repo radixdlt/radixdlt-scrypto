@@ -59,11 +59,7 @@ impl ScryptoValue {
     }
 
     pub fn to_string(&self) -> String {
-        if self.raw.len() <= 1024 {
-            ScryptoValueFormatter::format_value(&self.dom, &HashMap::new(), &HashMap::new())
-        } else {
-            format!("LargeValue(length: {})", self.raw.len())
-        }
+        ScryptoValueFormatter::format_value(&self.dom, &HashMap::new(), &HashMap::new())
     }
 
     pub fn to_string_with_context(
@@ -71,11 +67,7 @@ impl ScryptoValue {
         bucket_ids: &HashMap<BucketId, String>,
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
-        if self.raw.len() <= 1024 {
-            ScryptoValueFormatter::format_value(&self.dom, bucket_ids, proof_ids)
-        } else {
-            format!("LargeValue(length: {})", self.raw.len())
-        }
+        ScryptoValueFormatter::format_value(&self.dom, bucket_ids, proof_ids)
     }
 }
 
@@ -254,11 +246,22 @@ impl ScryptoValueFormatter {
             },
             // collections
             Value::Vec(kind, elements) => {
-                format!(
-                    "Vec<{}>({})",
-                    Self::format_kind(*kind),
-                    Self::format_elements(elements, bucket_ids, proof_ids)
-                )
+                if *kind == TYPE_U8 {
+                    let bytes = elements
+                        .iter()
+                        .map(|e| match e {
+                            Value::U8(v) => *v,
+                            _ => panic!("Unexpected element value"),
+                        })
+                        .collect::<Vec<u8>>();
+                    format!("Blob(\"{}\")", base64::encode(bytes))
+                } else {
+                    format!(
+                        "Vec<{}>({})",
+                        Self::format_kind(*kind),
+                        Self::format_elements(elements, bucket_ids, proof_ids)
+                    )
+                }
             }
             Value::TreeSet(kind, elements) => format!(
                 "TreeSet<{}>({})",
