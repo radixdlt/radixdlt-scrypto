@@ -29,6 +29,7 @@ pub enum GeneratorError {
     InvalidLazyMapId(String),
     InvalidVaultId(String),
     InvalidNonFungibleId(String),
+    InvalidNonFungibleAddress(String),
     OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
     IdValidatorError(IdValidatorError),
@@ -526,6 +527,17 @@ fn generate_non_fungible_id(value: &ast::Value) -> Result<NonFungibleId, Generat
     }
 }
 
+fn generate_non_fungible_address(value: &ast::Value) -> Result<NonFungibleAddress, GeneratorError> {
+    match value {
+        ast::Value::NonFungibleAddress(inner) => match &**inner {
+            ast::Value::String(s) => NonFungibleAddress::from_str(s)
+                .map_err(|_| GeneratorError::InvalidNonFungibleAddress(s.into())),
+            v @ _ => invalid_type!(v, ast::Type::String),
+        },
+        v @ _ => invalid_type!(v, ast::Type::NonFungibleAddress),
+    }
+}
+
 fn generate_non_fungible_ids(
     value: &ast::Value,
 ) -> Result<BTreeSet<NonFungibleId>, GeneratorError> {
@@ -658,6 +670,12 @@ fn generate_value(
             type_id: ScryptoType::NonFungibleId.id(),
             bytes: v.to_vec(),
         }),
+        ast::Value::NonFungibleAddress(_) => {
+            generate_non_fungible_address(value).map(|v| Value::Custom {
+                type_id: ScryptoType::NonFungibleAddress.id(),
+                bytes: v.to_vec(),
+            })
+        }
         ast::Value::Bytes(_) => match value {
             ast::Value::Bytes(bytes) => {
                 let mut elements = Vec::new();
@@ -741,6 +759,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
         ast::Type::Bucket => ScryptoType::Bucket.id(),
         ast::Type::Proof => ScryptoType::Proof.id(),
         ast::Type::NonFungibleId => ScryptoType::NonFungibleId.id(),
+        ast::Type::NonFungibleAddress => ScryptoType::NonFungibleAddress.id(),
         ast::Type::Bytes => TYPE_VEC,
     }
 }
