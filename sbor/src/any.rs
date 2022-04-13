@@ -7,6 +7,10 @@ use crate::rust::vec::Vec;
 use crate::type_id::*;
 
 /// Represents a SBOR value.
+#[cfg_attr(
+    any(feature = "serde_std", feature = "serde_alloc"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
     Unit,
