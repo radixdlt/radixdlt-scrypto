@@ -63,8 +63,28 @@ impl FungibleResourceBuilder {
         self
     }
 
-    pub fn auth(&mut self, method: ResourceMethod, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(method, method_auth);
+    pub fn mintable(&mut self, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(Mint, method_auth);
+        self
+    }
+
+    pub fn burnable(&mut self, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(Burn, method_auth);
+        self
+    }
+
+    pub fn restrict_withdraw(&mut self, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(TakeFromVault, method_auth);
+        self
+    }
+
+    pub fn metadata_updateable(&mut self, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(UpdateMetadata, method_auth);
+        self
+    }
+
+    pub fn non_fungible_data_updateable(&mut self, method_auth: MethodAuth) -> &mut Self {
+        self.authorization.insert(UpdateNonFungibleData, method_auth);
         self
     }
 

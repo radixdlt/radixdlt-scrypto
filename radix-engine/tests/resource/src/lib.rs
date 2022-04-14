@@ -11,8 +11,8 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .auth(Mint, method_auth!(require(badge.resource_address())))
-                .auth(Burn, method_auth!(require(badge.resource_address())))
+                .mintable(method_auth!(require(badge.resource_address())))
+                .burnable(method_auth!(require(badge.resource_address())))
                 .no_initial_supply();
             (badge, token_address)
         }
@@ -27,8 +27,8 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(divisibility)
                 .metadata("name", "TestToken")
-                .auth(Mint, method_auth!(require(badge.resource_address())))
-                .auth(Burn, method_auth!(require(badge.resource_address())))
+                .mintable(method_auth!(require(badge.resource_address())))
+                .burnable(method_auth!(require(badge.resource_address())))
                 .no_initial_supply();
             let tokens = badge.authorize(|| resource_manager!(token_address).mint(amount));
             (badge, tokens, token_address)
@@ -58,8 +58,8 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .auth(Mint, method_auth!(require(badge.resource_address())))
-                .auth(Burn, method_auth!(require(badge.resource_address())))
+                .mintable(method_auth!(require(badge.resource_address())))
+                .burnable(method_auth!(require(badge.resource_address())))
                 .no_initial_supply();
             (badge, token_address)
         }
@@ -89,7 +89,7 @@ blueprint! {
                 .divisibility(DIVISIBILITY_NONE)
                 .initial_supply(1);
             let token_resource_manager = resource_manager!(ResourceBuilder::new_fungible()
-                .auth(UpdateMetadata, method_auth!(require(badge.resource_address())))
+                .metadata_updateable(method_auth!(require(badge.resource_address())))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .no_initial_supply());
