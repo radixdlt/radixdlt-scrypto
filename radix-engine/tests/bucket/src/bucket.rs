@@ -52,7 +52,7 @@ blueprint! {
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .auth(
                     TakeFromVault,
-                    auth!(require(auth_bucket.resource_address())),
+                    method_auth!(require(auth_bucket.resource_address())),
                 )
                 .initial_supply(5);
             let mut vault = Vault::with_bucket(bucket);
@@ -69,7 +69,7 @@ blueprint! {
                 .initial_supply(1);
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .auth(Burn, auth!(require(badge.resource_address())))
+                .auth(Burn, method_auth!(require(badge.resource_address())))
                 .initial_supply(5);
             badge.authorize(|| bucket.burn());
             vec![badge]
@@ -81,7 +81,7 @@ blueprint! {
                 .initial_supply(1);
             let mut bucket1 = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .auth(Burn, auth!(allow_all))
+                .auth(Burn, method_auth!(allow_all))
                 .initial_supply(5);
             let bucket2 = bucket1.take(2);
             badge.authorize(|| bucket1.burn());

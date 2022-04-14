@@ -1,4 +1,4 @@
-use crate::auth;
+use crate::method_auth;
 use crate::math::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
@@ -88,7 +88,7 @@ impl FungibleResourceBuilder {
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&TakeFromVault) {
-            authorization.insert(TakeFromVault, auth!(allow_all));
+            authorization.insert(TakeFromVault, method_auth!(allow_all));
         }
 
         resource_system().new_resource(
@@ -153,7 +153,7 @@ impl NonFungibleResourceBuilder {
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&TakeFromVault) {
-            authorization.insert(TakeFromVault, auth!(allow_all));
+            authorization.insert(TakeFromVault, method_auth!(allow_all));
         }
 
         resource_system().new_resource(

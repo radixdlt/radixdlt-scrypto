@@ -10,7 +10,7 @@ blueprint! {
             Self { players }
                 .instantiate()
                 .auth(component_authorization! {
-                    "make_move" => auth!(require("players/0"))
+                    "make_move" => method_auth!(require("players/0"))
                 })
                 .globalize()
         }

@@ -20,8 +20,8 @@ blueprint! {
                    "withdraw_by_amount" => withdraw_rule.clone(),
                    "create_proof_by_amount" => withdraw_rule.clone(),
                    "create_proof_by_ids" => withdraw_rule.clone(),
-                   "deposit" => auth!(allow_all),
-                   "deposit_batch" => auth!(allow_all),
+                   "deposit" => method_auth!(allow_all),
+                   "deposit_batch" => method_auth!(allow_all),
                 })
                 .globalize()
         }

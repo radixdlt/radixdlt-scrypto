@@ -16,7 +16,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth_id = NonFungibleId::from_u32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     let method_authorization = component_authorization! {
-        "get_component_state" => auth!(require(auth_address.clone()))
+        "get_component_state" => method_auth!(require(auth_address.clone()))
     };
 
     let package_address = test_runner.publish_package("component");
@@ -75,7 +75,7 @@ fn can_make_cross_component_call_with_authorization() {
     let auth_id = NonFungibleId::from_u32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
     let method_authorization = component_authorization! {
-        "get_component_state" => auth!(require(auth_address.clone()))
+        "get_component_state" => method_auth!(require(auth_address.clone()))
     };
 
     let package_address = test_runner.publish_package("component");

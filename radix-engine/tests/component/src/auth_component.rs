@@ -10,8 +10,8 @@ blueprint! {
             Self { some_non_fungible }
                 .instantiate()
                 .auth(component_authorization! {
-                  "get_secret" => auth!(require("some_non_fungible")),
-                  "update_auth" => auth!(allow_all)
+                  "get_secret" => method_auth!(require("some_non_fungible")),
+                  "update_auth" => method_auth!(allow_all)
                 })
                 .globalize()
         }

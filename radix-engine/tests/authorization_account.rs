@@ -45,8 +45,8 @@ fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
 
     let auths = [
-        auth!(require_any_of(vec![auth0.clone(), auth1.clone()])),
-        auth!(require(auth0) || require(auth1)),
+        method_auth!(require_any_of(vec![auth0.clone(), auth1.clone()])),
+        method_auth!(require(auth0) || require(auth1)),
     ];
 
     for auth in auths {
@@ -64,14 +64,14 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
     let auths = [
-        auth!(require_any_of(vec![
+        method_auth!(require_any_of(vec![
             auth0.clone(),
             auth1.clone(),
             auth2.clone()
         ])),
-        auth!(require(auth0.clone()) || require(auth1.clone()) || require(auth2.clone())),
-        auth!((require(auth0.clone()) || require(auth1.clone())) || require(auth2.clone())),
-        auth!(require(auth0.clone()) || (require(auth1.clone()) || require(auth2.clone()))),
+        method_auth!(require(auth0.clone()) || require(auth1.clone()) || require(auth2.clone())),
+        method_auth!((require(auth0.clone()) || require(auth1.clone())) || require(auth2.clone())),
+        method_auth!(require(auth0.clone()) || (require(auth1.clone()) || require(auth2.clone()))),
     ];
 
     for auth in auths {
@@ -88,7 +88,7 @@ fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
 
-    let auth = auth!(require_any_of(vec![auth0, auth1,]));
+    let auth = method_auth!(require_any_of(vec![auth0, auth1,]));
 
     test_auth_rule(&mut test_runner, &auth, &[pk0, pk1], &[&sk0, &sk1], true);
 }
@@ -101,7 +101,7 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (_, _, auth1) = test_runner.new_key_pair_with_pk_address();
 
-    let auth = auth!(require_all_of(vec![auth0, auth1]));
+    let auth = method_auth!(require_all_of(vec![auth0, auth1]));
     test_auth_rule(&mut test_runner, &auth, &[pk0], &[&sk0], false);
 }
 
@@ -112,7 +112,7 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     let (_, _, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
-    let auth_2_of_3 = auth!(require_n_of(2, vec![auth0, auth1, auth2]));
+    let auth_2_of_3 = method_auth!(require_n_of(2, vec![auth0, auth1, auth2]));
     test_auth_rule(
         &mut test_runner,
         &auth_2_of_3,
@@ -130,11 +130,11 @@ fn can_withdraw_from_my_complex_account() {
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
     let auths = [
-        auth!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
-        auth!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
-        auth!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
-        auth!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
-        auth!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
+        method_auth!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
+        method_auth!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
+        method_auth!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
+        method_auth!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
+        method_auth!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
     let signers_list = [
         (vec![pk2], vec![&sk2]),
@@ -157,11 +157,11 @@ fn cannot_withdraw_from_my_complex_account() {
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (_, _, auth2) = test_runner.new_key_pair_with_pk_address();
     let auths = [
-        auth!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
-        auth!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
-        auth!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
-        auth!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
-        auth!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
+        method_auth!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
+        method_auth!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
+        method_auth!((require(auth0.clone()) && (require(auth1.clone()))) || require(auth2.clone())),
+        method_auth!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
+        method_auth!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
     let signers_list = [(vec![pk0], vec![&sk0]), (vec![pk1], vec![&sk1])];
 
@@ -181,11 +181,11 @@ fn can_withdraw_from_my_complex_account_2() {
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
     let (pk3, sk3, auth3) = test_runner.new_key_pair_with_pk_address();
     let auths = [
-        auth!(
+        method_auth!(
             require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
                 || require(auth3.clone())
         ),
-        auth!(
+        method_auth!(
             (require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()))
                 || require(auth3.clone())
         ),
@@ -211,11 +211,11 @@ fn cannot_withdraw_from_my_complex_account_2() {
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
     let (_, _, auth3) = test_runner.new_key_pair_with_pk_address();
     let auths = [
-        auth!(
+        method_auth!(
             require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
                 || require(auth3.clone())
         ),
-        auth!(
+        method_auth!(
             (require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone()))
                 || require(auth3.clone())
         ),
@@ -240,7 +240,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth = auth!(require(RADIX_TOKEN));
+    let xrd_auth = method_auth!(require(RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 
@@ -271,7 +271,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth = auth!(require_amount(Decimal(1), RADIX_TOKEN));
+    let xrd_auth = method_auth!(require_amount(Decimal(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 
@@ -302,7 +302,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
-    let xrd_auth = auth!(require_amount(Decimal::from(1), RADIX_TOKEN));
+    let xrd_auth = method_auth!(require_amount(Decimal::from(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 

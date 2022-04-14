@@ -11,17 +11,6 @@ blueprint! {
                 vault: Vault::with_bucket(bucket),
             }
             .instantiate()
-            .auth(component_authorization! {
-                "create_clone_drop_vault_proof" => auth!(allow_all),
-                "create_clone_drop_vault_proof_by_amount" => auth!(allow_all),
-                "create_clone_drop_vault_proof_by_ids" => auth!(allow_all),
-                "use_vault_proof_for_auth" => auth!(allow_all),
-                "receive_proof" => auth!(allow_all),
-                "receive_proof_and_move_to_auth_zone" => auth!(allow_all),
-                "compose_vault_and_bucket_proof" => auth!(allow_all),
-                "compose_vault_and_bucket_proof_by_amount" => auth!(allow_all),
-                "compose_vault_and_bucket_proof_by_ids" => auth!(allow_all)
-            })
             .globalize()
         }
 

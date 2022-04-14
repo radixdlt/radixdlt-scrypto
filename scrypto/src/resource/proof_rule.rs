@@ -350,7 +350,7 @@ pub enum MethodAuth {
 }
 
 #[macro_export]
-macro_rules! auth {
+macro_rules! method_auth {
     (allow_all) => {{
         ::scrypto::resource::MethodAuth::AllowAll
     }};

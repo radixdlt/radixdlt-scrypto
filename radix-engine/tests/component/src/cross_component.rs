@@ -25,11 +25,6 @@ blueprint! {
                 auth_vault: None,
             }
             .instantiate()
-            .auth(component_authorization! {
-                "put_auth" => auth!(allow_all),
-                "cross_component_call" => auth!(allow_all),
-                "get_component_state" => auth!(allow_all)
-            })
             .globalize()
         }
 

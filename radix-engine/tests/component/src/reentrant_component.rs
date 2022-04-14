@@ -7,10 +7,6 @@ blueprint! {
         pub fn new() -> ComponentAddress {
             Self {}
                 .instantiate()
-                .auth(component_authorization! {
-                  "call_self" => auth!(allow_all),
-                  "func" => auth!(allow_all)
-                })
                 .globalize()
         }
 

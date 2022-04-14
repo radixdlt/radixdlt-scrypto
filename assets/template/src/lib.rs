@@ -22,9 +22,6 @@ blueprint! {
                 sample_vault: Vault::with_bucket(my_bucket)
             }
             .instantiate()
-            .auth(component_authorization! {
-                "free_token" => auth!(allow_all)
-            })
             .globalize()
         }
 
