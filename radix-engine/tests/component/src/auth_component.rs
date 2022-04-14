@@ -11,8 +11,8 @@ blueprint! {
                 .instantiate()
                 .auth(
                     Authorization::new()
-                        .method("get_secret", method_auth!(require("some_non_fungible")))
-                        .default(method_auth!(allow_all))
+                        .method("get_secret", auth!(require("some_non_fungible")))
+                        .default(auth!(allow_all))
                 )
                 .globalize()
         }

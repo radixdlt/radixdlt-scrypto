@@ -13,9 +13,9 @@ blueprint! {
             }
 
             let auth = Authorization::new()
-                .method("deposit", method_auth!(allow_all))
-                .method("deposit_batch", method_auth!(allow_all))
-                .default(withdraw_rule.clone());
+                .method("deposit", auth!(allow_all))
+                .method("deposit_batch", auth!(allow_all))
+                .default(withdraw_rule);
 
             Self { vaults }
                 .instantiate()

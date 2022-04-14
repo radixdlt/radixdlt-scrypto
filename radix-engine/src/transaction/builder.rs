@@ -437,9 +437,9 @@ impl TransactionBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(TakeFromVault, method_auth!(allow_all));
-        resource_auth.insert(Mint, method_auth!(require(minter_resource_address.clone())));
-        resource_auth.insert(Burn, method_auth!(require(minter_resource_address.clone())));
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+        resource_auth.insert(Mint, auth!(require(minter_resource_address.clone())));
+        resource_auth.insert(Burn, auth!(require(minter_resource_address.clone())));
 
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
@@ -462,7 +462,7 @@ impl TransactionBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(TakeFromVault, method_auth!(allow_all));
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
 
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
@@ -487,9 +487,9 @@ impl TransactionBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(TakeFromVault, method_auth!(allow_all));
-        resource_auth.insert(Mint, method_auth!(require(minter_resource_address.clone())));
-        resource_auth.insert(Burn, method_auth!(require(minter_resource_address.clone())));
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
+        resource_auth.insert(Mint, auth!(require(minter_resource_address.clone())));
+        resource_auth.insert(Burn, auth!(require(minter_resource_address.clone())));
 
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
@@ -512,7 +512,7 @@ impl TransactionBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(TakeFromVault, method_auth!(allow_all));
+        resource_auth.insert(TakeFromVault, auth!(allow_all));
 
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,

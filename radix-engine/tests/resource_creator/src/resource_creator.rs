@@ -14,21 +14,21 @@ blueprint! {
         pub fn create_restricted_transfer(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .auth(TakeFromVault, method_auth!(require(badge_resource_address)))
+                .auth(TakeFromVault, auth!(require(badge_resource_address)))
                 .initial_supply(5)
         }
 
         pub fn create_restricted_mint(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .auth(Mint, method_auth!(require(badge_resource_address)))
+                .auth(Mint, auth!(require(badge_resource_address)))
                 .initial_supply(5)
         }
 
         pub fn create_restricted_burn(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .auth(Burn, method_auth!(require(badge_resource_address)))
+                .auth(Burn, auth!(require(badge_resource_address)))
                 .initial_supply(5)
         }
 
