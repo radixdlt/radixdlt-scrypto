@@ -233,6 +233,6 @@ pub fn convert(schema: &Type, dom: &Value, method_auth: &MethodAuth) -> MethodAu
         MethodAuth::Protected(auth_rule) => {
             MethodAuthorization::Protected(soft_to_hard_auth_rule(schema, auth_rule, dom))
         }
-        MethodAuth::AllowAll => MethodAuthorization::Public,
+        MethodAuth::AllowAll => MethodAuthorization::AllowAll,
     }
 }

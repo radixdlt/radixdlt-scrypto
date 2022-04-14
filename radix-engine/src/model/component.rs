@@ -12,7 +12,7 @@ use crate::model::{convert, MethodAuthorization};
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,
-    method_auth: ComponentAuthorization,
+    auths: Vec<ComponentAuthorization>,
     state: Vec<u8>,
 }
 
@@ -20,13 +20,13 @@ impl Component {
     pub fn new(
         package_address: PackageAddress,
         blueprint_name: String,
-        method_auth: ComponentAuthorization,
+        method_auth: Vec<ComponentAuthorization>,
         state: Vec<u8>,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
-            method_auth,
+            auths: method_auth,
             state,
         }
     }
@@ -35,18 +35,23 @@ impl Component {
         &self,
         schema: &Type,
         method_name: &str,
-    ) -> (ScryptoValue, MethodAuthorization) {
+    ) -> (ScryptoValue, Vec<MethodAuthorization>) {
         let data = ScryptoValue::from_slice(&self.state).unwrap();
-        let authorization = match self.method_auth.get(method_name) {
-            Some(auth) => convert(schema, &data.dom, auth),
-            None => MethodAuthorization::Private,
-        };
 
-        (data, authorization)
+        let mut authorizations = Vec::new();
+        for auth in &self.auths {
+            let authorization = match auth.get(method_name) {
+                Some(auth) => convert(schema, &data.dom, auth),
+                None => MethodAuthorization::DenyAll,
+            };
+            authorizations.push(authorization);
+        }
+
+        (data, authorizations)
     }
 
-    pub fn authorization(&self) -> &ComponentAuthorization {
-        &self.method_auth
+    pub fn authorization(&self) -> &[ComponentAuthorization] {
+        &self.auths
     }
 
     pub fn package_address(&self) -> PackageAddress {

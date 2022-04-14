@@ -136,7 +136,7 @@ pub struct PublishPackageOutput {
 pub struct CreateComponentInput {
     pub blueprint_name: String,
     pub state: Vec<u8>,
-    pub authorization: ComponentAuthorization,
+    pub authorization: Vec<ComponentAuthorization>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

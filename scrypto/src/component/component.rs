@@ -16,7 +16,7 @@ use crate::types::*;
 pub struct LocalComponent {
     blueprint_name: String,
     state: Vec<u8>,
-    authorization: ComponentAuthorization,
+    authorization: Vec<ComponentAuthorization>,
 }
 
 impl LocalComponent {
@@ -24,16 +24,12 @@ impl LocalComponent {
         Self {
             blueprint_name,
             state,
-            authorization: ComponentAuthorization::new(),
+            authorization: Vec::new(),
         }
     }
 
     pub fn auth(mut self, authorization: ComponentAuthorization) -> Self {
-        if !self.authorization.is_empty() {
-            panic!("Attempting to override current auth");
-        }
-
-        self.authorization = authorization;
+        self.authorization.push(authorization);
         self
     }
 
