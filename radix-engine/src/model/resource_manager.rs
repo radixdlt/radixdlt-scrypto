@@ -48,11 +48,6 @@ impl ResourceManager {
     ) -> Result<Self, ResourceManagerError> {
         let mut authorization: HashMap<String, MethodAuthorization> = HashMap::new();
         if let Some(mint_auth) = auth.get(&Mint) {
-            // TODO: Check for other invalid mint permissions?
-            if let MethodAuth::AllowAll = mint_auth {
-                return Err(ResourceManagerError::InvalidMintPermission);
-            }
-
             authorization.insert(
                 "mint".to_string(),
                 convert(&Type::Unit, &Value::Unit, mint_auth),
