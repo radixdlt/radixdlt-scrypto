@@ -25,11 +25,9 @@ blueprint! {
         /// Mints fungible resource. TODO: Remove
         pub fn mint(
             amount: Decimal,
-            resource_address: ResourceAddress,
-            auth: Bucket,
-        ) -> (Bucket, Bucket) {
-            let minted = auth.authorize(|| resource_manager!(resource_address).mint(amount));
-            (minted, auth)
+            resource_address: ResourceAddress
+        ) -> Bucket {
+            resource_manager!(resource_address).mint(amount)
         }
 
         /// Burns bucket. TODO: Remove

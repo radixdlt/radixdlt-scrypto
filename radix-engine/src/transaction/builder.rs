@@ -535,21 +535,17 @@ impl TransactionBuilder {
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
-        minter_resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.take_from_worktop(minter_resource_address, |builder, bucket_id| {
-            builder.add_instruction(Instruction::CallFunction {
-                package_address: SYSTEM_PACKAGE,
-                blueprint_name: "System".to_owned(),
-                function: "mint".to_owned(),
-                args: vec![
-                    scrypto_encode(&amount),
-                    scrypto_encode(&resource_address),
-                    scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-                ],
-            });
-            builder
-        })
+        self.add_instruction(Instruction::CallFunction {
+            package_address: SYSTEM_PACKAGE,
+            blueprint_name: "System".to_owned(),
+            function: "mint".to_owned(),
+            args: vec![
+                scrypto_encode(&amount),
+                scrypto_encode(&resource_address),
+            ],
+        });
+        self
     }
 
     /// Burns a resource.
