@@ -62,8 +62,10 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore>(
             );
 
             println!("{}", "Authorization".green().bold());
-            for (last, (k, v)) in c.authorization().iter().identify_last() {
-                println!("{} {:?} => {:?}", list_item_prefix(last), k, v);
+            for (_, auth) in c.authorization().iter().identify_last() {
+                for (last, (k, v)) in auth.iter().identify_last() {
+                    println!("{} {:?} => {:?}", list_item_prefix(last), k, v);
+                }
             }
 
             let state = c.state();

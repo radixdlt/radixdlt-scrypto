@@ -99,15 +99,15 @@ impl ResourceManager {
         }
 
         for pub_method in ["get_metadata", "get_resource_type", "get_total_supply"] {
-            authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
+            authorization.insert(pub_method.to_string(), MethodAuthorization::AllowAll);
         }
 
         if let ResourceType::NonFungible = resource_type {
             authorization.insert(
                 "non_fungible_exists".to_string(),
-                MethodAuthorization::Public,
+                MethodAuthorization::AllowAll,
             );
-            authorization.insert("get_non_fungible".to_string(), MethodAuthorization::Public);
+            authorization.insert("get_non_fungible".to_string(), MethodAuthorization::AllowAll);
         }
 
         let resource_manager = Self {

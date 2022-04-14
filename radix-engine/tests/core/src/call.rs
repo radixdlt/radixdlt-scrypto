@@ -25,8 +25,6 @@ blueprint! {
             let bucket = Self::create_test_token(1000);
             let component_address = MoveTest { vaults: Vec::new() }
                 .instantiate()
-                .auth("receive_bucket", auth!(allow_all))
-                .auth("receive_proof", auth!(allow_all))
                 .globalize();
 
             Runtime::call_method(component_address, "receive_bucket", args!(bucket));
@@ -36,8 +34,6 @@ blueprint! {
             let bucket = Self::create_test_token(1000);
             let component_address = MoveTest { vaults: Vec::new() }
                 .instantiate()
-                .auth("receive_bucket", auth!(allow_all))
-                .auth("receive_proof", auth!(allow_all))
                 .globalize();
 
             Runtime::call_method(

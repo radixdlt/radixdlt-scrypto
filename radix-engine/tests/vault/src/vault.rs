@@ -39,11 +39,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -62,11 +57,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -85,11 +75,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -111,11 +96,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -141,11 +121,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -168,11 +143,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -187,11 +157,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -206,11 +171,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -225,11 +185,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
     }

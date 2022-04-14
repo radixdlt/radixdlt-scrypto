@@ -885,7 +885,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         // Authorization and state load
-        let (snode, method_auth) = match &snode_ref {
+        let (snode, method_auths) = match &snode_ref {
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -899,7 +899,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                                 ),
                                 None,
                             ),
-                            MethodAuthorization::Public,
+                            vec![],
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
@@ -920,7 +920,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .unwrap()
                             .clone();
 
-                        let (_, method_auth) = component.method_authorization(&schema, &function);
+                        let (_, method_auths) = component.method_authorization(&schema, &function);
                         Ok((
                             SNodeState::Scrypto(
                                 ScryptoActorInfo::component(
@@ -931,13 +931,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                                 ),
                                 Some(component),
                             ),
-                            method_auth,
+                            method_auths,
                         ))
                     }
                 }
             }
             SNodeRef::ResourceStatic => {
-                Ok((SNodeState::ResourceStatic, MethodAuthorization::Public))
+                Ok((SNodeState::ResourceStatic, vec![]))
             }
             SNodeRef::Resource(resource_address) => {
                 let resource_manager: ResourceManager = self
@@ -946,7 +946,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let method_auth = resource_manager.get_auth(&function).clone();
                 Ok((
                     SNodeState::Resource(resource_address.clone(), resource_manager),
-                    method_auth,
+                    vec![method_auth],
                 ))
             }
             SNodeRef::Bucket(bucket_id) => {
@@ -960,7 +960,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::Bucket(bucket), method_auth.clone()))
+                Ok((SNodeState::Bucket(bucket), vec![method_auth.clone()]))
             }
             SNodeRef::Vault(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
@@ -969,23 +969,27 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::Vault(vault_id.clone()), method_auth.clone()))
+                Ok((SNodeState::Vault(vault_id.clone()), vec![method_auth.clone()]))
             }
         }?;
 
         // Authorization check
-        let proofs_vector = match &snode {
-            // Resource auth check
-            SNodeState::Resource(_,_) | SNodeState::Vault(_) | SNodeState::Bucket(_) => {
-                vec![self.caller_auth_zone, &self.auth_zone]
-            }
-            // Extern call auth check
-            _ => vec![self.auth_zone.as_slice()],
-        };
+        if !method_auths.is_empty() {
+            let proofs_vector = match &snode {
+                // Same process auth check
+                SNodeState::Resource(_,_) | SNodeState::Vault(_) | SNodeState::Bucket(_) => {
+                    vec![self.caller_auth_zone, &self.auth_zone]
+                }
+                // Extern call auth check
+                _ => vec![self.auth_zone.as_slice()],
+            };
 
-        method_auth
-            .check(&proofs_vector)
-            .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
+            for method_auth in method_auths {
+                method_auth
+                    .check(&proofs_vector)
+                    .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
+            }
+        }
 
         // Execution
         let result = match snode {
