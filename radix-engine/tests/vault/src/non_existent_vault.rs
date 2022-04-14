@@ -13,9 +13,11 @@ blueprint! {
                 vaults: LazyMap::new(),
             }
             .instantiate()
-            .auth("create_non_existent_vault", auth!(allow_all))
-            .auth("create_lazy_map_with_non_existent_vault", auth!(allow_all))
-            .auth("create_non_existent_vault_in_lazy_map", auth!(allow_all))
+            .auth(component_authorization! {
+                "create_non_existent_vault" => auth!(allow_all),
+                "create_lazy_map_with_non_existent_vault" => auth!(allow_all),
+                "create_non_existent_vault_in_lazy_map" => auth!(allow_all)
+            })
             .globalize()
         }
 
@@ -25,9 +27,11 @@ blueprint! {
                 vaults: LazyMap::new(),
             }
             .instantiate()
-            .auth("create_non_existent_vault", auth!(allow_all))
-            .auth("create_lazy_map_with_non_existent_vault", auth!(allow_all))
-            .auth("create_non_existent_vault_in_lazy_map", auth!(allow_all))
+            .auth(component_authorization! {
+                "create_non_existent_vault" => auth!(allow_all),
+                "create_lazy_map_with_non_existent_vault" => auth!(allow_all),
+                "create_non_existent_vault_in_lazy_map" => auth!(allow_all)
+            })
             .globalize()
         }
 

@@ -26,9 +26,11 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
-            .auth("clear_vector", auth!(allow_all))
-            .auth("dangling_lazy_map", auth!(allow_all))
-            .auth("overwrite_lazy_map", auth!(allow_all))
+            .auth(component_authorization! {
+                "clear_vector" => auth!(allow_all),
+                "dangling_lazy_map" => auth!(allow_all),
+                "overwrite_lazy_map" => auth!(allow_all)
+            })
             .globalize()
         }
 
@@ -43,9 +45,11 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
-            .auth("clear_vector", auth!(allow_all))
-            .auth("dangling_lazy_map", auth!(allow_all))
-            .auth("overwrite_lazy_map", auth!(allow_all))
+            .auth(component_authorization! {
+                "clear_vector" => auth!(allow_all),
+                "dangling_lazy_map" => auth!(allow_all),
+                "overwrite_lazy_map" => auth!(allow_all)
+            })
             .globalize()
         }
 
@@ -61,9 +65,11 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
-            .auth("clear_vector", auth!(allow_all))
-            .auth("dangling_lazy_map", auth!(allow_all))
-            .auth("overwrite_lazy_map", auth!(allow_all))
+            .auth(component_authorization! {
+                "clear_vector" => auth!(allow_all),
+                "dangling_lazy_map" => auth!(allow_all),
+                "overwrite_lazy_map" => auth!(allow_all)
+            })
             .globalize()
         }
 
@@ -77,9 +83,11 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
-            .auth("clear_vector", auth!(allow_all))
-            .auth("dangling_lazy_map", auth!(allow_all))
-            .auth("overwrite_lazy_map", auth!(allow_all))
+            .auth(component_authorization! {
+                "clear_vector" => auth!(allow_all),
+                "dangling_lazy_map" => auth!(allow_all),
+                "overwrite_lazy_map" => auth!(allow_all)
+            })
             .globalize()
         }
 
@@ -93,9 +101,11 @@ blueprint! {
                 lazy_maps,
             }
             .instantiate()
-            .auth("clear_vector", auth!(allow_all))
-            .auth("dangling_lazy_map", auth!(allow_all))
-            .auth("overwrite_lazy_map", auth!(allow_all))
+            .auth(component_authorization! {
+                "clear_vector" => auth!(allow_all),
+                "dangling_lazy_map" => auth!(allow_all),
+                "overwrite_lazy_map" => auth!(allow_all)
+            })
             .globalize()
         }
 

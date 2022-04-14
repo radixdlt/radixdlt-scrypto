@@ -14,7 +14,7 @@ blueprint! {
         ) -> ComponentAddress {
             Self { count, auth }
                 .instantiate()
-                .set_auth_interface(authorization)
+                .auth(authorization)
                 .globalize()
         }
 
