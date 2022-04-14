@@ -38,7 +38,7 @@ impl ComponentAuthorization {
 }
 
 #[macro_export]
-macro_rules! component_authorization {
+macro_rules! auth {
   {$($k: expr => $v: expr),* $(,)?} => {
     {
       let mut authorization = ::scrypto::resource::ComponentAuthorization::new();

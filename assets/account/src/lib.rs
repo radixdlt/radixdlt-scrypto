@@ -14,7 +14,7 @@ blueprint! {
 
             Self { vaults }
                 .instantiate()
-                .auth(component_authorization! {
+                .auth(auth! {
                    "withdraw" => withdraw_rule.clone(),
                    "withdraw_by_ids" => withdraw_rule.clone(),
                    "withdraw_by_amount" => withdraw_rule.clone(),

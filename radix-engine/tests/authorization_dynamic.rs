@@ -105,7 +105,7 @@ fn test_dynamic_authlist(
         .iter()
         .map(|index| &key_and_addresses.get(*index).unwrap().1)
         .collect();
-    let authorization = component_authorization! {
+    let authorization = auth! {
         "get_secret" => auth_rule
     };
 
