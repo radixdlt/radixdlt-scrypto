@@ -10,19 +10,19 @@ use sbor::*;
 #[derive(Debug, Clone, PartialEq, Describe, TypeId, Encode, Decode)]
 pub struct Authorization {
     method_auth: HashMap<String, MethodAuth>,
-    default_auth: Option<MethodAuth>
+    default_auth: MethodAuth
 }
 
 impl Authorization {
     pub fn new() -> Self {
         Self {
             method_auth: HashMap::new(),
-            default_auth: Option::None
+            default_auth: MethodAuth::DenyAll,
         }
     }
 
-    pub fn get(&self, method_name: &str) -> Option<&MethodAuth> {
-        self.method_auth.get(method_name).or_else(|| self.default_auth.as_ref())
+    pub fn get(&self, method_name: &str) -> &MethodAuth {
+        self.method_auth.get(method_name).unwrap_or(&self.default_auth)
     }
 
     pub fn method(mut self, method_name: &str, method_auth: MethodAuth) -> Self {
@@ -31,7 +31,7 @@ impl Authorization {
     }
 
     pub fn default(mut self, method_auth: MethodAuth) -> Self {
-        self.default_auth = Some(method_auth);
+        self.default_auth = method_auth;
         self
     }
 

@@ -346,6 +346,7 @@ macro_rules! auth_rule_node {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum MethodAuth {
     AllowAll,
+    DenyAll,
     Protected(AuthRuleNode),
 }
 
@@ -353,6 +354,9 @@ pub enum MethodAuth {
 macro_rules! method_auth {
     (allow_all) => {{
         ::scrypto::resource::MethodAuth::AllowAll
+    }};
+    (deny_all) => {{
+        ::scrypto::resource::MethodAuth::DenyAll
     }};
     ($($tt:tt)+) => {{
         ::scrypto::resource::MethodAuth::Protected(auth_rule_node!($($tt)+))

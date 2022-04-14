@@ -40,10 +40,8 @@ impl Component {
 
         let mut authorizations = Vec::new();
         for auth in &self.auths {
-            let authorization = match auth.get(method_name) {
-                Some(auth) => convert(schema, &data.dom, auth),
-                None => MethodAuthorization::DenyAll,
-            };
+            let method_auth = auth.get(method_name);
+            let authorization = convert(schema, &data.dom, method_auth);
             authorizations.push(authorization);
         }
 
