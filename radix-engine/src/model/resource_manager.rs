@@ -233,10 +233,11 @@ impl ResourceManager {
 
             let immutable_data = Self::process_non_fungible_data(&data.0)?;
             let mutable_data = Self::process_non_fungible_data(&data.1)?;
+            let non_fungible = NonFungible::new(immutable_data.raw, mutable_data.raw);
 
-            system_api.put_non_fungible(
+            system_api.set_non_fungible(
                 non_fungible_address,
-                NonFungible::new(immutable_data.raw, mutable_data.raw),
+                Some(non_fungible),
             );
             ids.insert(id);
         }
@@ -348,12 +349,15 @@ impl ResourceManager {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
                 let data = Self::process_non_fungible_data(&new_mutable_data)?;
-                system_api
-                    .get_non_fungible_mut(&non_fungible_address)
+                let mut non_fungible = system_api
+                    .get_non_fungible(&non_fungible_address)
+                    .cloned()
                     .ok_or(ResourceManagerError::NonFungibleNotFound(
-                        non_fungible_address,
-                    ))?
-                    .set_mutable_data(data.raw);
+                        non_fungible_address.clone(),
+                    ))?;
+                non_fungible.set_mutable_data(data.raw);
+                system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
+
                 Ok(ScryptoValue::from_value(&()))
             }
             "non_fungible_exists" => {

@@ -59,7 +59,7 @@ pub struct Track<'s, S: SubstateStore> {
     borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
 
     vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
-    non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<NonFungible>>,
+    non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
 
     lazy_map_entries: HashMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
 }
@@ -287,7 +287,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return self
                 .non_fungibles
                 .get(non_fungible_address)
-                .map(|s| &s.value);
+                .map(|s| s.value.as_ref())
+                .unwrap_or(Option::None);
         }
 
         if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
@@ -303,53 +304,29 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             );
             self.non_fungibles
                 .get(non_fungible_address)
-                .map(|s| &s.value)
+                .map(|s| s.value.as_ref())
+                .unwrap()
         } else {
             None
         }
     }
 
-    /// Returns a mutable reference to a non-fungible, if exists.
-    pub fn get_non_fungible_mut(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<&mut NonFungible> {
-        if self.non_fungibles.contains_key(non_fungible_address) {
-            return self
-                .non_fungibles
-                .get_mut(non_fungible_address)
-                .map(|s| &mut s.value);
-        }
-
-        if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
-            &non_fungible_address.resource_address(),
-            &non_fungible_address.non_fungible_id(),
-        ) {
-            self.non_fungibles.insert(
-                non_fungible_address.clone(),
-                SubstateUpdate {
-                    prev_id: Some(phys_id),
-                    value: non_fungible,
-                },
-            );
-            self.non_fungibles
-                .get_mut(non_fungible_address)
-                .map(|s| &mut s.value)
-        } else {
-            None
-        }
-    }
-
-    /// Inserts a new non-fungible.
-    pub fn put_non_fungible(
+    /// Sets a non-fungible.
+    pub fn set_non_fungible(
         &mut self,
         non_fungible_address: NonFungibleAddress,
-        non_fungible: NonFungible,
+        non_fungible: Option<NonFungible>,
     ) {
+        let cur: Option<(Option<NonFungible>, (Hash, u32))> = self.substate_store.get_decoded_child_substate(
+            &non_fungible_address.resource_address(),
+            &non_fungible_address.non_fungible_id(),
+        );
+        let prev_id = cur.map(|(_, cur_id)| cur_id);
+
         self.non_fungibles.insert(
             non_fungible_address,
             SubstateUpdate {
-                prev_id: None,
+                prev_id,
                 value: non_fungible,
             },
         );
