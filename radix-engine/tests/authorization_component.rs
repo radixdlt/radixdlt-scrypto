@@ -15,9 +15,8 @@ fn cannot_make_cross_component_call_without_authorization() {
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
-    let method_authorization = auth! {
-        "get_component_state" => method_auth!(require(auth_address.clone()))
-    };
+    let authorization = Authorization::new()
+        .method("get_component_state", method_auth!(require(auth_address.clone())));
 
     let package_address = test_runner.publish_package("component");
     let transaction = test_runner
@@ -26,7 +25,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            vec![scrypto_encode(&method_authorization)],
+            vec![scrypto_encode(&authorization)],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -74,9 +73,8 @@ fn can_make_cross_component_call_with_authorization() {
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
-    let method_authorization = auth! {
-        "get_component_state" => method_auth!(require(auth_address.clone()))
-    };
+    let authorization = Authorization::new()
+        .method("get_component_state", method_auth!(require(auth_address.clone())));
 
     let package_address = test_runner.publish_package("component");
     let transaction = test_runner
@@ -85,7 +83,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            vec![scrypto_encode(&method_authorization)],
+            vec![scrypto_encode(&authorization)],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);

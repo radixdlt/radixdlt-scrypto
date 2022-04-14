@@ -12,17 +12,14 @@ blueprint! {
                 vaults.insert(b.resource_address(), Vault::with_bucket(b));
             }
 
+            let auth = Authorization::new()
+                .method("deposit", method_auth!(allow_all))
+                .method("deposit_batch", method_auth!(allow_all))
+                .default(withdraw_rule.clone());
+
             Self { vaults }
                 .instantiate()
-                .auth(auth! {
-                   "withdraw" => withdraw_rule.clone(),
-                   "withdraw_by_ids" => withdraw_rule.clone(),
-                   "withdraw_by_amount" => withdraw_rule.clone(),
-                   "create_proof_by_amount" => withdraw_rule.clone(),
-                   "create_proof_by_ids" => withdraw_rule.clone(),
-                   "deposit" => method_auth!(allow_all),
-                   "deposit_batch" => method_auth!(allow_all),
-                })
+                .auth(auth)
                 .globalize()
         }
 

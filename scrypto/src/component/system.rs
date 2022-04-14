@@ -1,7 +1,7 @@
 use crate::buffer::*;
 use crate::component::*;
 use crate::engine::{api::*, call_engine};
-use crate::prelude::ComponentAuthorization;
+use crate::prelude::Authorization;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
 use crate::rust::collections::*;
@@ -56,7 +56,7 @@ impl ComponentSystem {
     pub fn instantiate_component<T: ComponentState>(
         &mut self,
         blueprint_name: &str,
-        authorization: Vec<ComponentAuthorization>,
+        authorization: Vec<Authorization>,
         state: T,
     ) -> ComponentAddress {
         let input = CreateComponentInput {

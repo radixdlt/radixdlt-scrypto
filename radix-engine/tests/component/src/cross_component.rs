@@ -8,7 +8,7 @@ blueprint! {
 
     impl CrossComponent {
         pub fn create_component_with_auth(
-            auth: ComponentAuthorization,
+            auth: Authorization,
         ) -> ComponentAddress {
             Self {
                 secret: "Secret".to_owned(),
