@@ -89,7 +89,7 @@ blueprint! {
                 .divisibility(DIVISIBILITY_NONE)
                 .initial_supply(1);
             let token_resource_manager = resource_manager!(ResourceBuilder::new_fungible()
-                .metadata_updateable(auth!(require(badge.resource_address())))
+                .updateable_metadata(auth!(require(badge.resource_address())))
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .no_initial_supply());
