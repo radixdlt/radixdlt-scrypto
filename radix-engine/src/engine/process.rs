@@ -61,15 +61,10 @@ pub trait SystemApi {
         non_fungible_address: &NonFungibleAddress,
     ) -> Option<&NonFungible>;
 
-    fn get_non_fungible_mut(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<&mut NonFungible>;
-
-    fn put_non_fungible(
+    fn set_non_fungible(
         &mut self,
         non_fungible_address: NonFungibleAddress,
-        non_fungible: NonFungible,
+        non_fungible: Option<NonFungible>,
     );
 
     fn borrow_global_mut_resource_manager(
@@ -982,7 +977,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !method_auths.is_empty() {
             let proofs_vector = match &snode {
                 // Same process auth check
-                SNodeState::Vault(_) | SNodeState::Bucket(_) => {
+                SNodeState::Resource(_,_) | SNodeState::Vault(_) | SNodeState::Bucket(_) => {
                     vec![self.caller_auth_zone, &self.auth_zone]
                 }
                 // Extern call auth check
@@ -2070,13 +2065,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 }
 
 impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
-    fn get_non_fungible_mut(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<&mut NonFungible> {
-        self.track.get_non_fungible_mut(non_fungible_address)
-    }
-
     fn get_non_fungible(
         &mut self,
         non_fungible_address: &NonFungibleAddress,
@@ -2084,13 +2072,13 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         self.track.get_non_fungible(non_fungible_address)
     }
 
-    fn put_non_fungible(
+    fn set_non_fungible(
         &mut self,
         non_fungible_address: NonFungibleAddress,
-        non_fungible: NonFungible,
+        non_fungible: Option<NonFungible>,
     ) {
         self.track
-            .put_non_fungible(non_fungible_address, non_fungible)
+            .set_non_fungible(non_fungible_address, non_fungible)
     }
 
     fn borrow_global_mut_resource_manager(
