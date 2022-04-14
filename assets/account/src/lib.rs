@@ -17,6 +17,7 @@ blueprint! {
                 .auth("withdraw", withdraw_rule.clone())
                 .auth("withdraw_by_ids", withdraw_rule.clone())
                 .auth("withdraw_by_amount", withdraw_rule.clone())
+                .auth("create_proof", withdraw_rule.clone())
                 .auth("create_proof_by_amount", withdraw_rule.clone())
                 .auth("create_proof_by_ids", withdraw_rule.clone())
                 .auth("deposit", auth!(allow_all))

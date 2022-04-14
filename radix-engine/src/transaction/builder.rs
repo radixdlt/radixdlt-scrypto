@@ -535,21 +535,17 @@ impl TransactionBuilder {
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
-        minter_resource_address: ResourceAddress,
     ) -> &mut Self {
-        self.take_from_worktop(minter_resource_address, |builder, bucket_id| {
-            builder.add_instruction(Instruction::CallFunction {
-                package_address: SYSTEM_PACKAGE,
-                blueprint_name: "System".to_owned(),
-                function: "mint".to_owned(),
-                args: vec![
-                    scrypto_encode(&amount),
-                    scrypto_encode(&resource_address),
-                    scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-                ],
-            });
-            builder
-        })
+        self.add_instruction(Instruction::CallFunction {
+            package_address: SYSTEM_PACKAGE,
+            blueprint_name: "System".to_owned(),
+            function: "mint".to_owned(),
+            args: vec![
+                scrypto_encode(&amount),
+                scrypto_encode(&resource_address),
+            ],
+        });
+        self
     }
 
     /// Burns a resource.
@@ -557,48 +553,38 @@ impl TransactionBuilder {
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
-        burner_resource_address: ResourceAddress,
     ) -> &mut Self {
         self.take_from_worktop_by_amount(amount, resource_address, |builder, bucket_id| {
-            builder.take_from_worktop(burner_resource_address, |builder, auth_bucket_id| {
-                builder
-                    .add_instruction(Instruction::CallFunction {
-                        package_address: SYSTEM_PACKAGE,
-                        blueprint_name: "System".to_owned(),
-                        function: "burn".to_owned(),
-                        args: vec![
-                            scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-                            scrypto_encode(&scrypto::resource::Bucket(auth_bucket_id)),
-                        ],
-                    })
-                    .0
-            });
             builder
+                .add_instruction(Instruction::CallFunction {
+                    package_address: SYSTEM_PACKAGE,
+                    blueprint_name: "System".to_owned(),
+                    function: "burn".to_owned(),
+                    args: vec![
+                        scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
+                    ],
+                })
+                .0
         })
     }
 
     pub fn burn_non_fungible(
         &mut self,
         non_fungible_address: NonFungibleAddress,
-        burner_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut ids = BTreeSet::new();
         ids.insert(non_fungible_address.non_fungible_id());
         self.take_from_worktop_by_ids(&ids, non_fungible_address.resource_address(), |builder, bucket_id| {
-            builder.take_from_worktop(burner_resource_address, |builder, auth_bucket_id| {
-                builder
-                    .add_instruction(Instruction::CallFunction {
-                        package_address: SYSTEM_PACKAGE,
-                        blueprint_name: "System".to_owned(),
-                        function: "burn".to_owned(),
-                        args: vec![
-                            scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-                            scrypto_encode(&scrypto::resource::Bucket(auth_bucket_id)),
-                        ],
-                    })
-                    .0
-            });
             builder
+                .add_instruction(Instruction::CallFunction {
+                    package_address: SYSTEM_PACKAGE,
+                    blueprint_name: "System".to_owned(),
+                    function: "burn".to_owned(),
+                    args: vec![
+                        scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
+                    ],
+                })
+                .0
         })
     }
 

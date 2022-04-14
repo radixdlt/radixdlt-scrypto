@@ -975,8 +975,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Authorization check
         let proofs_vector = match &snode {
-            // Same process auth check
-            SNodeState::Vault(_) | SNodeState::Bucket(_) => {
+            // Resource auth check
+            SNodeState::Resource(_,_) | SNodeState::Vault(_) | SNodeState::Bucket(_) => {
                 vec![self.caller_auth_zone, &self.auth_zone]
             }
             // Extern call auth check
