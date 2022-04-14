@@ -16,12 +16,12 @@ pub struct ResourceBuilder;
 pub struct FungibleResourceBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethod, MethodAuth>,
+    authorization: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethod, MethodAuth>,
+    authorization: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
 }
 
 impl ResourceBuilder {
@@ -63,23 +63,23 @@ impl FungibleResourceBuilder {
         self
     }
 
-    pub fn mintable(&mut self, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(Mint, method_auth);
+    pub fn mintable(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(Mint, (method_auth, mutability));
         self
     }
 
-    pub fn burnable(&mut self, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(Burn, method_auth);
+    pub fn burnable(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(Burn, (method_auth, mutability));
         self
     }
 
-    pub fn restrict_withdraw(&mut self, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(TakeFromVault, method_auth);
+    pub fn restrict_withdraw(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(TakeFromVault, (method_auth, mutability));
         self
     }
 
-    pub fn updateable_metadata(&mut self, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(UpdateMetadata, method_auth);
+    pub fn updateable_metadata(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(UpdateMetadata, (method_auth, mutability));
         self
     }
 
@@ -103,7 +103,7 @@ impl FungibleResourceBuilder {
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&TakeFromVault) {
-            authorization.insert(TakeFromVault, auth!(allow_all));
+            authorization.insert(TakeFromVault, (auth!(allow_all), LOCKED));
         }
 
         resource_system().new_resource(
@@ -134,28 +134,28 @@ impl NonFungibleResourceBuilder {
         self
     }
 
-    pub fn mintable(&mut self, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(Mint, method_auth);
+    pub fn mintable(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(Mint, (method_auth, mutability));
         self
     }
 
-    pub fn burnable(&mut self, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(Burn, method_auth);
+    pub fn burnable(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(Burn, (method_auth, mutability));
         self
     }
 
-    pub fn restrict_withdraw(&mut self, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(TakeFromVault, method_auth);
+    pub fn restrict_withdraw(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(TakeFromVault, (method_auth, mutability));
         self
     }
 
-    pub fn updateable_metadata(&mut self, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(UpdateMetadata, method_auth);
+    pub fn updateable_metadata(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(UpdateMetadata, (method_auth, mutability));
         self
     }
 
-    pub fn updateable_non_fungible_data(&mut self, method_auth: MethodAuth) -> &mut Self {
-        self.authorization.insert(UpdateNonFungibleData, method_auth);
+    pub fn updateable_non_fungible_data(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
+        self.authorization.insert(UpdateNonFungibleData, (method_auth, mutability));
         self
     }
 
@@ -188,7 +188,7 @@ impl NonFungibleResourceBuilder {
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
         if !authorization.contains_key(&TakeFromVault) {
-            authorization.insert(TakeFromVault, auth!(allow_all));
+            authorization.insert(TakeFromVault, (auth!(allow_all), LOCKED));
         }
 
         resource_system().new_resource(

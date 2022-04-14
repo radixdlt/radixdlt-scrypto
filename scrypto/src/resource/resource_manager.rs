@@ -25,6 +25,12 @@ pub enum ResourceMethod {
     UpdateNonFungibleData,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
+pub enum Mutability {
+    LOCKED,
+    MUTABLE(MethodAuth),
+}
+
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ResourceAddress(pub [u8; 26]);

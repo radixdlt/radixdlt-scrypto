@@ -22,9 +22,9 @@ blueprint! {
             // Create non-fungible resource with mutable supply
             let resource_address = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .mintable(auth!(require(mint_badge.resource_address())))
-                .burnable(auth!(require(mint_badge.resource_address())))
-                .updateable_non_fungible_data(auth!(require(mint_badge.resource_address())))
+                .mintable(auth!(require(mint_badge.resource_address())), LOCKED)
+                .burnable(auth!(require(mint_badge.resource_address())), LOCKED)
+                .updateable_non_fungible_data(auth!(require(mint_badge.resource_address())), LOCKED)
                 .no_initial_supply();
 
             // Mint a non-fungible

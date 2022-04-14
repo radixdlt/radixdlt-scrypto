@@ -6,6 +6,7 @@ use scrypto::engine::types::*;
 use scrypto::prelude::ResourceMethod::TakeFromVault;
 use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
 use scrypto::resource::*;
+use scrypto::resource::Mutability::LOCKED;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -36,7 +37,7 @@ pub enum ResourceManagerError {
 pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    authorization: HashMap<String, MethodAuthorization>,
+    authorization: HashMap<String, (MethodAuthorization, Mutability)>,
     total_supply: Decimal,
 }
 
@@ -44,65 +45,61 @@ impl ResourceManager {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        auth: HashMap<ResourceMethod, MethodAuth>,
+        mut auth: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
-        let mut authorization: HashMap<String, MethodAuthorization> = HashMap::new();
-        if let Some(mint_auth) = auth.get(&Mint) {
-            authorization.insert(
-                "mint".to_string(),
-                convert(&Type::Unit, &Value::Unit, mint_auth),
-            );
+        let mut authorization: HashMap<String, (MethodAuthorization, Mutability)> = HashMap::new();
+        if let Some((mint_auth, mutability)) = auth.remove(&Mint) {
+            let converted_mint_auth = convert(&Type::Unit, &Value::Unit, &mint_auth);
+            authorization.insert("mint".to_string(), (converted_mint_auth, mutability));
         }
 
-        if let Some(burn_auth) = auth.get(&Burn) {
-            authorization.insert(
-                "burn".to_string(),
-                convert(&Type::Unit, &Value::Unit, burn_auth),
-            );
+        if let Some((burn_auth, mutability)) = auth.remove(&Burn) {
+            let converted_burn_auth = convert(&Type::Unit, &Value::Unit, &burn_auth);
+            authorization.insert("burn".to_string(), (converted_burn_auth, mutability));
         }
 
-        if let Some(take_auth) = auth.get(&TakeFromVault) {
-            authorization.insert(
-                "take_from_vault".to_string(),
-                convert(&Type::Unit, &Value::Unit, take_auth),
-            );
+        if let Some((take_auth, mutability)) = auth.remove(&TakeFromVault) {
+            let converted_take_auth = convert(&Type::Unit, &Value::Unit, &take_auth);
+            authorization.insert("take_from_vault".to_string(), (converted_take_auth.clone(), mutability.clone()));
 
             if let ResourceType::NonFungible = resource_type {
                 authorization.insert(
                     "take_non_fungibles_from_vault".to_string(),
-                    convert(&Type::Unit, &Value::Unit, take_auth),
+                    (converted_take_auth, mutability)
                 );
             }
         }
 
-        if let Some(update_metadata_auth) = auth.get(&UpdateMetadata) {
+        if let Some((update_metadata_auth, mutability)) = auth.remove(&UpdateMetadata) {
+            let converted_update_metadata_auth = convert(&Type::Unit, &Value::Unit, &update_metadata_auth);
             authorization.insert(
                 "update_metadata".to_string(),
-                convert(&Type::Unit, &Value::Unit, update_metadata_auth),
+                (converted_update_metadata_auth, mutability),
             );
         }
 
-        if let Some(update_non_fungible_mutable_data_auth) = auth.get(&UpdateNonFungibleData) {
+        if let Some((update_non_fungible_mutable_data_auth, mutability)) = auth.remove(&UpdateNonFungibleData) {
+            let converted_auth = convert(
+                &Type::Unit,
+                &Value::Unit,
+                &update_non_fungible_mutable_data_auth,
+            );
             authorization.insert(
                 "update_non_fungible_mutable_data".to_string(),
-                convert(
-                    &Type::Unit,
-                    &Value::Unit,
-                    update_non_fungible_mutable_data_auth,
-                ),
+                (converted_auth, mutability),
             );
         }
 
         for pub_method in ["get_metadata", "get_resource_type", "get_total_supply"] {
-            authorization.insert(pub_method.to_string(), MethodAuthorization::AllowAll);
+            authorization.insert(pub_method.to_string(), (MethodAuthorization::AllowAll, LOCKED));
         }
 
         if let ResourceType::NonFungible = resource_type {
             authorization.insert(
                 "non_fungible_exists".to_string(),
-                MethodAuthorization::AllowAll,
+                (MethodAuthorization::AllowAll, LOCKED),
             );
-            authorization.insert("get_non_fungible".to_string(), MethodAuthorization::AllowAll);
+            authorization.insert("get_non_fungible".to_string(), (MethodAuthorization::AllowAll, LOCKED));
         }
 
         let resource_manager = Self {
@@ -118,7 +115,7 @@ impl ResourceManager {
     pub fn get_auth(&self, method_name: &str) -> &MethodAuthorization {
         match self.authorization.get(method_name) {
             None => &MethodAuthorization::Unsupported,
-            Some(authorization) => authorization,
+            Some((authorization, _)) => authorization,
         }
     }
 
