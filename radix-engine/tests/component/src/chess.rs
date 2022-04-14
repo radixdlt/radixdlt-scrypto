@@ -8,7 +8,7 @@ blueprint! {
     impl Chess {
         pub fn create_game(players: [NonFungibleAddress; 2]) -> ComponentAddress {
             let auth = Authorization::new()
-                .method("make_move", method_auth!(require("players/0")));
+                .method("make_move", auth!(require("players/0")));
 
             Self { players }
                 .instantiate()
