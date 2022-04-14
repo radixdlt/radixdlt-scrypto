@@ -11,7 +11,6 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .auth(TakeFromVault, auth!(allow_all))
                 .initial_supply(amount)
         }
 

@@ -1,3 +1,4 @@
+use crate::auth;
 use crate::math::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
@@ -85,9 +86,9 @@ impl FungibleResourceBuilder {
     }
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
-        // TODO: Do we still need this check?
-        if !self.authorization.contains_key(&TakeFromVault) {
-            panic!("TakeFromVault authorization not defined.");
+        let mut authorization = self.authorization.clone();
+        if !authorization.contains_key(&TakeFromVault) {
+            authorization.insert(TakeFromVault, auth!(allow_all));
         }
 
         resource_system().new_resource(
@@ -95,7 +96,7 @@ impl FungibleResourceBuilder {
                 divisibility: self.divisibility,
             },
             self.metadata.clone(),
-            self.authorization.clone(),
+            authorization,
             mint_params,
         )
     }
@@ -150,10 +151,15 @@ impl NonFungibleResourceBuilder {
     }
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
+        let mut authorization = self.authorization.clone();
+        if !authorization.contains_key(&TakeFromVault) {
+            authorization.insert(TakeFromVault, auth!(allow_all));
+        }
+
         resource_system().new_resource(
             ResourceType::NonFungible,
             self.metadata.clone(),
-            self.authorization.clone(),
+            authorization,
             mint_params,
         )
     }
