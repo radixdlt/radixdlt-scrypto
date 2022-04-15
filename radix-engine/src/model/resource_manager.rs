@@ -124,6 +124,7 @@ impl ResourceManager {
         }
 
         for pub_method in [
+            "put_into_vault",
             "create_bucket",
             "create_bucket_proof",
             "get_metadata",
