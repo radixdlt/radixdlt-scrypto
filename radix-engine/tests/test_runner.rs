@@ -82,6 +82,32 @@ impl<'l> TestRunner<'l> {
         self.executor.get_nonce(intended_signers)
     }
 
+    pub fn set_mintable(
+        &mut self,
+        account: (&EcdsaPublicKey, &EcdsaPrivateKey, ComponentAddress),
+        auth: ResourceAddress,
+        token: ResourceAddress,
+        set_auth: ResourceAddress,
+    ) {
+        let package = self.publish_package("resource_creator");
+        let transaction = TransactionBuilder::new()
+            .create_proof_from_account(auth, account.2)
+            .call_function(
+                package,
+                "ResourceCreator",
+                "set_mintable",
+                vec![
+                    scrypto_encode(&token),
+                    scrypto_encode(&set_auth),
+                ],
+            )
+            .call_method_with_all_resources(account.2, "deposit_batch")
+            .build(self.executor.get_nonce([account.0.clone()]))
+            .sign([account.1]);
+        let result = self.executor.validate_and_execute(&transaction).unwrap().result;
+        result.expect("Should be okay");
+    }
+
     pub fn create_restricted_mint_token(
         &mut self,
         account: ComponentAddress,

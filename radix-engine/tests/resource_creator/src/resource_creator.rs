@@ -21,7 +21,7 @@ blueprint! {
         pub fn create_restricted_mint(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .mintable(auth!(require(badge_resource_address)), LOCKED)
+                .mintable(auth!(require(badge_resource_address)), MUTABLE(auth!(require(badge_resource_address))))
                 .initial_supply(5)
         }
 
@@ -30,6 +30,11 @@ blueprint! {
                 .divisibility(0)
                 .burnable(auth!(require(badge_resource_address)), LOCKED)
                 .initial_supply(5)
+        }
+
+        pub fn set_mintable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
+            resource_manager!(resource_address)
+                .set_mintable(auth!(require(auth_address)));
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {

@@ -55,6 +55,16 @@ impl ResourceManager {
         scrypto_decode(&output.rtn).unwrap()
     }
 
+    pub fn set_mintable(&self, mint_auth: MethodAuth) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "set_mintable".to_string(),
+            args: args![mint_auth],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
     /// Mints non-fungible resources
     pub fn mint_non_fungible<T: NonFungibleData>(&self, id: &NonFungibleId, data: T) -> Bucket {
         let mut entries = HashMap::new();
