@@ -943,7 +943,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let resource_manager: ResourceManager = self
                     .track
                     .borrow_global_mut_resource_manager(resource_address.clone())?;
-                let method_auth = resource_manager.get_auth(&function).clone();
+                let method_auth = resource_manager.get_auth(&function, &args).clone();
                 Ok((
                     SNodeState::Resource(resource_address.clone(), resource_manager),
                     vec![method_auth],
@@ -959,7 +959,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
-                    .get_auth(&function);
+                    .get_auth(&function, &args);
                 Ok((SNodeState::Bucket(bucket), vec![method_auth.clone()]))
             }
             SNodeRef::Vault(vault_id) => {
@@ -968,7 +968,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
-                    .get_auth(&function);
+                    .get_auth(&function, &args);
                 Ok((SNodeState::Vault(vault_id.clone()), vec![method_auth.clone()]))
             }
         }?;

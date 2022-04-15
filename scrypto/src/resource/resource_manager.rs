@@ -58,18 +58,18 @@ impl ResourceManager {
     pub fn set_mintable(&self, mint_auth: MethodAuth) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Resource(self.0),
-            function: "set_mintable".to_string(),
-            args: args![mint_auth],
+            function: "method_auth".to_string(),
+            args: args!["mint", "update", mint_auth],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
     }
 
-    pub fn lock_mintable(&self, mint_auth: MethodAuth) -> () {
+    pub fn lock_mintable(&self) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Resource(self.0),
-            function: "lock_mintable".to_string(),
-            args: args![],
+            function: "method_auth".to_string(),
+            args: args!["mint", "lock"],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

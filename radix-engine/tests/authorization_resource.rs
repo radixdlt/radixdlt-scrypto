@@ -21,7 +21,7 @@ fn test_mint_with_auth(action: Action, set_auth: Option<usize>, auth_index: usiz
     let auth_addresses = [auth_address0, auth_address1];
     if let Some(i) = set_auth {
         match &action {
-            Mint => test_runner.set_mintable((&pk, &sk, account), auth_address0, token_address, auth_addresses[i]),
+            Action::Mint => test_runner.set_mintable((&pk, &sk, account), auth_address0, token_address, auth_addresses[i]),
         }
     }
 
