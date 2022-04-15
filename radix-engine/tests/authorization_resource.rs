@@ -9,6 +9,7 @@ use scrypto::prelude::*;
 enum Action {
     Mint,
     Burn,
+    Withdraw,
 }
 
 
@@ -31,6 +32,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         let function = match action {
             Action::Mint => "set_mintable",
             Action::Burn => "set_burnable",
+            Action::Withdraw => "set_withdrawable",
         };
         test_runner.set_auth((&pk, &sk, account), function, admin_auth, token_address, updated_auth);
     }
@@ -41,6 +43,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         match action {
             Action::Mint => mint_auth,
             Action::Burn => burn_auth,
+            Action::Withdraw => withdraw_auth,
         }
     };
 
@@ -54,6 +57,8 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
             .burn(Decimal::from("1.0"), token_address),
+        Action::Withdraw => builder
+            .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
     };
 
     let transaction = builder.call_method_with_all_resources(account, "deposit_batch")
@@ -92,4 +97,16 @@ fn can_burn_with_auth() {
 fn cannot_burn_with_wrong_auth() {
     test_resource_auth(Action::Burn, false, true, true);
     test_resource_auth(Action::Burn, true, false, true);
+}
+
+#[test]
+fn can_withdraw_with_auth() {
+    test_resource_auth(Action::Withdraw, false, false, false);
+    test_resource_auth(Action::Withdraw, true, true, false);
+}
+
+#[test]
+fn cannot_withdraw_with_wrong_auth() {
+    test_resource_auth(Action::Withdraw, false, true, true);
+    test_resource_auth(Action::Withdraw, true, false, true);
 }
