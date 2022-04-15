@@ -128,7 +128,7 @@ impl ResourceManager {
         if let ResourceType::NonFungible = resource_type {
             method_table.insert("non_fungible_exists".to_string(), None);
             method_table.insert("get_non_fungible".to_string(), None);
-            method_table.insert("update_non_fungible_mutable_data".to_string(), None);
+            method_table.insert("update_non_fungible_mutable_data".to_string(), Some(UpdateNonFungibleData));
         }
 
         let mut authorization: HashMap<ResourceMethod, MethodEntry> = HashMap::new();
