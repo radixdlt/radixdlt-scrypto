@@ -14,6 +14,7 @@ use scrypto::rust::vec::*;
 use scrypto::values::ScryptoValue;
 
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
+use crate::model::MethodAuthorization::{AllowAll, DenyAll};
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
@@ -48,47 +49,57 @@ impl ResourceManager {
         mut auth: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
         let mut authorization: HashMap<String, (MethodAuthorization, Mutability)> = HashMap::new();
-        if let Some((mint_auth, mutability)) = auth.remove(&Mint) {
+
+        let mint_entry = if let Some((mint_auth, mutability)) = auth.remove(&Mint) {
             let converted_mint_auth = convert(&Type::Unit, &Value::Unit, &mint_auth);
-            authorization.insert("mint".to_string(), (converted_mint_auth, mutability));
-        }
+            (converted_mint_auth, mutability)
+        } else {
+            (DenyAll, LOCKED)
+        };
+        authorization.insert("mint".to_string(), mint_entry);
 
-        if let Some((burn_auth, mutability)) = auth.remove(&Burn) {
+        let burn_entry = if let Some((burn_auth, mutability)) = auth.remove(&Burn) {
             let converted_burn_auth = convert(&Type::Unit, &Value::Unit, &burn_auth);
-            authorization.insert("burn".to_string(), (converted_burn_auth, mutability));
-        }
+            (converted_burn_auth, mutability)
+        } else {
+            (DenyAll, LOCKED)
+        };
+        authorization.insert("burn".to_string(), burn_entry);
 
-        if let Some((take_auth, mutability)) = auth.remove(&TakeFromVault) {
+        let take_entry = if let Some((take_auth, mutability)) = auth.remove(&TakeFromVault) {
             let converted_take_auth = convert(&Type::Unit, &Value::Unit, &take_auth);
-            authorization.insert("take_from_vault".to_string(), (converted_take_auth.clone(), mutability.clone()));
+            (converted_take_auth, mutability)
+        } else {
+            (AllowAll, LOCKED)
+        };
+        authorization.insert("take_from_vault".to_string(), take_entry.clone());
 
-            if let ResourceType::NonFungible = resource_type {
-                authorization.insert(
-                    "take_non_fungibles_from_vault".to_string(),
-                    (converted_take_auth, mutability)
-                );
-            }
-        }
+        let take_fungibles_entry = if let ResourceType::NonFungible = resource_type {
+            take_entry
+        } else {
+            (DenyAll, LOCKED)
+        };
+        authorization.insert("take_non_fungibles_from_vault".to_string(), take_fungibles_entry);
 
-        if let Some((update_metadata_auth, mutability)) = auth.remove(&UpdateMetadata) {
+        let update_metadata_entry = if let Some((update_metadata_auth, mutability)) = auth.remove(&UpdateMetadata) {
             let converted_update_metadata_auth = convert(&Type::Unit, &Value::Unit, &update_metadata_auth);
-            authorization.insert(
-                "update_metadata".to_string(),
-                (converted_update_metadata_auth, mutability),
-            );
-        }
+            (converted_update_metadata_auth, mutability)
+        } else {
+            (DenyAll, LOCKED)
+        };
+        authorization.insert("update_metadata".to_string(), update_metadata_entry);
 
-        if let Some((update_non_fungible_mutable_data_auth, mutability)) = auth.remove(&UpdateNonFungibleData) {
+        let update_non_fungible_data_entry = if let Some((update_non_fungible_mutable_data_auth, mutability)) = auth.remove(&UpdateNonFungibleData) {
             let converted_auth = convert(
                 &Type::Unit,
                 &Value::Unit,
                 &update_non_fungible_mutable_data_auth,
             );
-            authorization.insert(
-                "update_non_fungible_mutable_data".to_string(),
-                (converted_auth, mutability),
-            );
-        }
+            (converted_auth, mutability)
+        } else {
+            (DenyAll, LOCKED)
+        };
+        authorization.insert("update_non_fungible_mutable_data".to_string(), update_non_fungible_data_entry);
 
         for pub_method in ["get_metadata", "get_resource_type", "get_total_supply"] {
             authorization.insert(pub_method.to_string(), (MethodAuthorization::AllowAll, LOCKED));
