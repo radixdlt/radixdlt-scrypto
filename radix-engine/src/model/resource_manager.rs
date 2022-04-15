@@ -99,7 +99,8 @@ impl MethodEntry {
 pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    authorization: HashMap<String, MethodEntry>,
+    method_table: HashMap<String, Option<ResourceMethod>>,
+    authorization: HashMap<ResourceMethod, MethodEntry>,
     total_supply: Decimal,
 }
 
@@ -109,46 +110,39 @@ impl ResourceManager {
         metadata: HashMap<String, String>,
         mut auth: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
-        let mut authorization: HashMap<String, MethodEntry> = HashMap::new();
-
-        let mint_entry = auth.remove(&Mint).unwrap_or((DenyAll, LOCKED));
-        authorization.insert("mint".to_string(), MethodEntry::new(mint_entry));
-
-        let burn_entry = auth.remove(&Burn).unwrap_or((DenyAll, LOCKED));
-        authorization.insert("burn".to_string(), MethodEntry::new(burn_entry));
-
-        let take_entry = auth.remove(&TakeFromVault).unwrap_or((AllowAll, LOCKED));
-        authorization.insert("take_from_vault".to_string(), MethodEntry::new(take_entry.clone()));
-
-        let take_fungibles_entry = if let ResourceType::NonFungible = resource_type {
-            take_entry
-        } else {
-            (DenyAll, LOCKED)
-        };
-        authorization.insert("take_non_fungibles_from_vault".to_string(), MethodEntry::new(take_fungibles_entry));
-
-        let update_metadata_entry = auth.remove(&UpdateMetadata).unwrap_or((DenyAll, LOCKED));
-        authorization.insert("update_metadata".to_string(), MethodEntry::new(update_metadata_entry));
-
-        let update_data_auth = auth.remove(&UpdateNonFungibleData).unwrap_or((DenyAll, LOCKED));
-        authorization.insert("update_non_fungible_mutable_data".to_string(), MethodEntry::new(update_data_auth));
-
-
-        for pub_method in ["get_metadata", "get_resource_type", "get_total_supply"] {
-            authorization.insert(pub_method.to_string(), MethodEntry::new((AllowAll, LOCKED)));
-        }
-
+        let mut method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
+        method_table.insert("mint".to_string(), Some(Mint));
+        method_table.insert("burn".to_string(), Some(Burn));
+        method_table.insert("take_from_vault".to_string(), Some(TakeFromVault));
         if let ResourceType::NonFungible = resource_type {
-            authorization.insert(
-                "non_fungible_exists".to_string(),
-                MethodEntry::new((AllowAll, LOCKED))
-            );
-            authorization.insert("get_non_fungible".to_string(), MethodEntry::new((AllowAll, LOCKED)));
+            method_table.insert("take_non_fungibles_from_vault".to_string(), Some(TakeFromVault));
         }
+        method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
+        for pub_method in ["get_metadata", "get_resource_type", "get_total_supply"] {
+            method_table.insert(pub_method.to_string(), None);
+        }
+        if let ResourceType::NonFungible = resource_type {
+            method_table.insert("non_fungible_exists".to_string(), None);
+            method_table.insert("get_non_fungible".to_string(), None);
+            method_table.insert("update_non_fungible_mutable_data".to_string(), None);
+        }
+
+        let mut authorization: HashMap<ResourceMethod, MethodEntry> = HashMap::new();
+        let mint_entry = auth.remove(&Mint).unwrap_or((DenyAll, LOCKED));
+        authorization.insert(Mint, MethodEntry::new(mint_entry));
+        let burn_entry = auth.remove(&Burn).unwrap_or((DenyAll, LOCKED));
+        authorization.insert(Burn, MethodEntry::new(burn_entry));
+        let take_entry = auth.remove(&TakeFromVault).unwrap_or((AllowAll, LOCKED));
+        authorization.insert(TakeFromVault, MethodEntry::new(take_entry.clone()));
+        let update_metadata_entry = auth.remove(&UpdateMetadata).unwrap_or((DenyAll, LOCKED));
+        authorization.insert(UpdateMetadata, MethodEntry::new(update_metadata_entry));
+        let update_data_auth = auth.remove(&UpdateNonFungibleData).unwrap_or((DenyAll, LOCKED));
+        authorization.insert(UpdateNonFungibleData, MethodEntry::new(update_data_auth));
 
         let resource_manager = Self {
             resource_type,
             metadata,
+            method_table,
             authorization,
             total_supply: 0.into(),
         };
@@ -158,8 +152,8 @@ impl ResourceManager {
 
     pub fn get_auth(&self, method_name: &str, args: &[ScryptoValue]) -> &MethodAuthorization {
         if method_name.eq("method_auth") {
-            let method: String = match scrypto_decode(&args[0].raw) {
-                Ok(str) => str,
+            let method: ResourceMethod = match scrypto_decode(&args[0].raw) {
+                Ok(r) => r,
                 Err(_) => return &MethodAuthorization::Unsupported
             };
 
@@ -171,9 +165,10 @@ impl ResourceManager {
                 },
             }
         } else {
-            match self.authorization.get(method_name) {
+            match self.method_table.get(method_name) {
                 None => &MethodAuthorization::Unsupported,
-                Some(entry) => entry.get_method_auth(),
+                Some(None) => &MethodAuthorization::AllowAll,
+                Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
             }
         }
     }
@@ -371,7 +366,7 @@ impl ResourceManager {
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
             "method_auth" => {
-                let method: String = scrypto_decode(&args.remove(0).raw)
+                let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let method_entry = self.authorization.get_mut(&method).unwrap();
                 let method_entry_method: String = scrypto_decode(&args.remove(0).raw)

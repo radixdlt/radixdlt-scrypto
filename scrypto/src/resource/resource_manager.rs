@@ -21,6 +21,7 @@ pub enum ResourceMethod {
     Mint,
     Burn,
     TakeFromVault,
+    TakeNonFungiblesFromVault,
     UpdateMetadata,
     UpdateNonFungibleData,
 }
@@ -59,7 +60,7 @@ impl ResourceManager {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Resource(self.0),
             function: "method_auth".to_string(),
-            args: args!["mint", "update", mint_auth],
+            args: args![Mint, "update", mint_auth],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -69,7 +70,7 @@ impl ResourceManager {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Resource(self.0),
             function: "method_auth".to_string(),
-            args: args!["mint", "lock"],
+            args: args![Mint, "lock"],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
