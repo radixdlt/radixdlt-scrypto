@@ -3,8 +3,8 @@ use crate::component::*;
 use crate::engine::{api::*, call_engine};
 use crate::prelude::Authorization;
 use crate::rust::borrow::ToOwned;
-use crate::rust::vec::Vec;
 use crate::rust::collections::*;
+use crate::rust::vec::Vec;
 
 /// Represents the Radix Engine component subsystem.
 ///

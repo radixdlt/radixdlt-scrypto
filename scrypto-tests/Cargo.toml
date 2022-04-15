@@ -11,5 +11,5 @@ serde_json = { version = "1.0", default-features = false }
 
 [features]
 default = ["std"]
-std = ["serde/std", "serde_json/std", "scrypto/std", "scrypto/serde_std", "sbor/std"]
-alloc = ["serde/alloc", "serde_json/alloc", "scrypto/alloc", "scrypto/serde_alloc", "sbor/alloc"]
+std = ["serde/std", "serde_json/std", "scrypto/std", "scrypto/serde", "sbor/std"]
+alloc = ["serde/alloc", "serde_json/alloc", "scrypto/alloc", "scrypto/serde", "sbor/alloc"]

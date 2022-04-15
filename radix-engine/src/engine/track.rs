@@ -317,10 +317,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         non_fungible_address: NonFungibleAddress,
         non_fungible: Option<NonFungible>,
     ) {
-        let cur: Option<(Option<NonFungible>, (Hash, u32))> = self.substate_store.get_decoded_child_substate(
-            &non_fungible_address.resource_address(),
-            &non_fungible_address.non_fungible_id(),
-        );
+        let cur: Option<(Option<NonFungible>, (Hash, u32))> =
+            self.substate_store.get_decoded_child_substate(
+                &non_fungible_address.resource_address(),
+                &non_fungible_address.non_fungible_id(),
+            );
         let prev_id = cur.map(|(_, cur_id)| cur_id);
 
         self.non_fungibles.insert(
