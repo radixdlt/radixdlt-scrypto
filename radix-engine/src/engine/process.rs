@@ -1,6 +1,7 @@
 use colored::*;
 
 use sbor::*;
+use scrypto::args;
 use scrypto::buffer::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::api::*;
@@ -9,7 +10,6 @@ use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
 use scrypto::rust::format;
-use scrypto::rust::mem;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
@@ -80,15 +80,20 @@ pub trait SystemApi {
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
 
+    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError>;
+
+    fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError>;
+
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 }
 
 pub enum SNodeState {
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
-    Resource(ResourceAddress, ResourceManager),
+    ResourceRef(ResourceAddress, ResourceManager),
+    BucketRef(BucketId, Bucket),
     Bucket(Bucket),
-    Vault(VaultId),
+    VaultRef(VaultId),
 }
 
 /// Represents an interpreter instance.
@@ -102,11 +107,11 @@ pub struct Interpreter {
 
 /// Qualitative states for a WASM process
 #[derive(Debug)]
-enum InterpreterState {
+enum InterpreterState<'a> {
     Blueprint,
     Component {
         component_address: ComponentAddress,
-        component: Component,
+        component: &'a mut Component,
         initial_loaded_object_refs: ComponentObjectRefs,
         additional_object_refs: ComponentObjectRefs,
     },
@@ -115,16 +120,16 @@ enum InterpreterState {
 /// Top level state machine for a process. Empty currently only
 /// refers to the initial process since it doesn't run on a wasm interpreter (yet)
 #[allow(dead_code)]
-struct WasmProcess {
+struct WasmProcess<'a> {
     /// The call depth
     depth: usize,
     trace: bool,
     vm: Interpreter,
-    interpreter_state: InterpreterState,
+    interpreter_state: InterpreterState<'a>,
     process_owned_objects: ComponentObjects,
 }
 
-impl WasmProcess {
+impl<'a> WasmProcess<'a> {
     fn check_resource(&self) -> bool {
         let mut success = true;
 
@@ -207,24 +212,29 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     buckets: HashMap<BucketId, Bucket>,
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
-
-    /// State for the given wasm process, empty only on the root process
-    /// (root process cannot create components nor is a component itself)
-    wasm_process_state: Option<WasmProcess>,
-
-    /// ID allocator for buckets and proofs created within transaction.
-    id_allocator: IdAllocator,
-    /// Resources collected from previous returns or self.
-    worktop: Worktop,
     /// Proofs collected from previous returns or self. Also used for system authorization.
     auth_zone: Vec<Proof>,
     /// The caller's auth zone
     caller_auth_zone: &'r [Proof],
+
+    /// State for the given wasm process, empty only on the root process
+    /// (root process cannot create components nor is a component itself)
+    wasm_process_state: Option<WasmProcess<'r>>,
+
+    /// ID allocator for buckets and proofs created within transaction.
+    id_allocator: Option<IdAllocator>,
+    /// Resources collected from previous returns or self.
+    worktop: Worktop,
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Create a new process, which is not started.
-    pub fn new(depth: usize, trace: bool, track: &'r mut Track<'l, L>) -> Self {
+    pub fn new(
+        depth: usize,
+        trace: bool,
+        track: &'r mut Track<'l, L>,
+        id_allocator: Option<IdAllocator>,
+    ) -> Self {
         Self {
             depth,
             trace,
@@ -232,7 +242,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             buckets: HashMap::new(),
             proofs: HashMap::new(),
             wasm_process_state: None,
-            id_allocator: IdAllocator::new(IdSpace::Transaction),
+            id_allocator,
             worktop: Worktop::new(),
             auth_zone: Vec::new(),
             caller_auth_zone: &[],
@@ -240,8 +250,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn new_bucket_id(&mut self) -> Result<BucketId, RuntimeError> {
-        if self.depth == 0 {
-            self.id_allocator
+        if let Some(id_allocator) = &mut self.id_allocator {
+            id_allocator
                 .new_bucket_id()
                 .map_err(RuntimeError::IdAllocatorError)
         } else {
@@ -250,8 +260,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn new_proof_id(&mut self) -> Result<ProofId, RuntimeError> {
-        if self.depth == 0 {
-            self.id_allocator
+        if let Some(id_allocator) = &mut self.id_allocator {
+            id_allocator
                 .new_proof_id()
                 .map_err(RuntimeError::IdAllocatorError)
         } else {
@@ -438,60 +448,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // Creates a bucket proof.
-    pub fn create_bucket_proof(&mut self, bucket_id: BucketId) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating proof: bucket_id = {}", bucket_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let bucket = self
-            .buckets
-            .get_mut(&bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-        let new_proof = bucket
-            .create_proof(ResourceContainerId::Bucket(bucket_id))
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
-    pub fn create_bucket_proof_by_amount(
+    pub fn txn_create_bucket_proof(
         &mut self,
         bucket_id: BucketId,
-        amount: Decimal,
     ) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Creating proof: bucket_id = {}", bucket_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let bucket = self
-            .buckets
-            .get_mut(&bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-        let new_proof = bucket
-            .create_proof_by_amount(amount, ResourceContainerId::Bucket(bucket_id))
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
-    pub fn create_bucket_proof_by_ids(
-        &mut self,
-        bucket_id: BucketId,
-        ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating bucket proof: bucket_id = {}", bucket_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let bucket = self
-            .buckets
-            .get_mut(&bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-        let new_proof = bucket
-            .create_proof_by_ids(ids, ResourceContainerId::Bucket(bucket_id))
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
+        let rtn = self.call(
+            SNodeRef::BucketRef(bucket_id),
+            "create_bucket_proof".to_string(),
+            args![],
+        )?;
+        let proof = self.proofs.remove(&rtn.proof_ids[0]).unwrap();
+        let proof_id = self.new_proof_id()?;
+        self.proofs.insert(proof_id, proof);
+        Ok(proof_id)
     }
 
     // Creates a vault proof.
@@ -730,7 +700,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         mut bucket: Bucket,
     ) -> Result<(), RuntimeError> {
         let proof = bucket
-            .create_proof(ResourceContainerId::Bucket(bucket_id))
+            .create_proof(bucket_id)
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(proof_id, proof);
         Ok(())
@@ -739,10 +709,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Runs the given export within this process.
     pub fn run(
         &mut self,
-        snode: SNodeState,
+        snode: &'r mut SNodeState,
         function: String,
         args: Vec<ScryptoValue>,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    ) -> Result<
+        (
+            ScryptoValue,
+            HashMap<BucketId, Bucket>,
+            HashMap<ProofId, Proof>,
+        ),
+        RuntimeError,
+    > {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
         re_info!(self, "Run started: function = {:?}", function);
@@ -801,25 +778,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Execution
                 let result = module.invoke_export(actor.export_name(), &[], self);
 
-                // TODO: Do this in a better way
-                if let Some(WasmProcess {
-                    ref mut interpreter_state,
-                    ..
-                }) = &mut self.wasm_process_state
-                {
-                    let interpreter_state =
-                        mem::replace(interpreter_state, InterpreterState::Blueprint);
-                    if let InterpreterState::Component {
-                        component_address,
-                        component,
-                        ..
-                    } = interpreter_state
-                    {
-                        self.track
-                            .return_borrowed_global_component(component_address, component);
-                    }
-                }
-
                 // Return value
                 re_debug!(self, "Invoke result: {:?}", result);
                 let rtn = result
@@ -840,21 +798,29 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 ResourceManager::static_main(function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)
             }
-            SNodeState::Resource(resource_address, mut resource_manager) => {
+            SNodeState::ResourceRef(resource_address, resource_manager) => {
                 let return_value = resource_manager
-                    .main(resource_address, function.as_str(), args, self)
+                    .main(*resource_address, function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
-
-                self.track
-                    .return_borrowed_global_resource_manager(resource_address, resource_manager);
 
                 Ok(return_value)
             }
+            SNodeState::BucketRef(bucket_id, bucket) => bucket
+                .main(*bucket_id, function.as_str(), args, self)
+                .map_err(RuntimeError::BucketError),
 
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
         self.process_return_data(&output)?;
+
+        // figure out what buckets and resources to return
+        let moving_buckets = self.send_buckets(&output.bucket_ids)?;
+        let moving_proofs = self.send_proofs(&output.proof_ids, MoveMethod::AsReturn)?;
+
+        // drop proofs and check resource leak
+        self.drop_all_proofs()?;
+        self.check_resource()?;
 
         #[cfg(not(feature = "alloc"))]
         re_info!(
@@ -865,7 +831,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         #[cfg(feature = "alloc")]
         re_info!(self, "Run ended");
 
-        Ok(output)
+        Ok((output, moving_buckets, moving_proofs))
     }
 
     /// Calls a function/method.
@@ -875,17 +841,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         function: String,
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        // figure out what buckets and proofs to move from this process
-        let mut moving_buckets = HashMap::new();
-        let mut moving_proofs = HashMap::new();
-        for arg in &args {
-            self.process_call_data(arg)?;
-            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
-            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
-        }
-
         // Authorization and state load
-        let (snode, method_auths) = match &snode_ref {
+        let (mut snode, method_auths) = match &snode_ref {
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -939,13 +896,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeRef::ResourceStatic => {
                 Ok((SNodeState::ResourceStatic, vec![]))
             }
-            SNodeRef::Resource(resource_address) => {
+            SNodeRef::ResourceRef(resource_address) => {
                 let resource_manager: ResourceManager = self
                     .track
                     .borrow_global_mut_resource_manager(resource_address.clone())?;
                 let method_auth = resource_manager.get_auth(&function).clone();
                 Ok((
-                    SNodeState::Resource(resource_address.clone(), resource_manager),
+                    SNodeState::ResourceRef(resource_address.clone(), resource_manager),
                     vec![method_auth],
                 ))
             }
@@ -962,14 +919,30 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_auth(&function);
                 Ok((SNodeState::Bucket(bucket), vec![method_auth.clone()]))
             }
-            SNodeRef::Vault(vault_id) => {
+            SNodeRef::BucketRef(bucket_id) => {
+                let bucket = self
+                    .buckets
+                    .remove(&bucket_id)
+                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let resource_address = bucket.resource_address();
+                let method_auth = self
+                    .track
+                    .get_resource_manager(&resource_address)
+                    .unwrap()
+                    .get_auth(&function);
+                Ok((
+                    SNodeState::BucketRef(bucket_id.clone(), bucket),
+                    vec![method_auth.clone()],
+                ))
+            }
+            SNodeRef::VaultRef(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
                 let method_auth = self
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::Vault(vault_id.clone()), vec![method_auth.clone()]))
+                Ok((SNodeState::VaultRef(vault_id.clone()), vec![method_auth.clone()]))
             }
         }?;
 
@@ -977,7 +950,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !method_auths.is_empty() {
             let proofs_vector = match &snode {
                 // Same process auth check
-                SNodeState::Resource(_,_) | SNodeState::Vault(_) | SNodeState::Bucket(_) => {
+                SNodeState::ResourceRef(_,_) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
                     vec![self.caller_auth_zone, &self.auth_zone]
                 }
                 // Extern call auth check
@@ -992,8 +965,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         // Execution
+
+        // Figure out what buckets and proofs to move from this process
+        let mut moving_buckets = HashMap::new();
+        let mut moving_proofs = HashMap::new();
+        for arg in &args {
+            self.process_call_data(arg)?;
+            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
+            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
+        }
+
         let result = match snode {
-            SNodeState::Vault(vault_id) => {
+            SNodeState::VaultRef(vault_id) => {
                 let vault = self.get_local_vault(&vault_id)?;
                 let maybe_bucket = vault
                     .main(function.as_str(), args)
@@ -1009,32 +992,47 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeState::Bucket(bucket) => match function.as_str() {
-                "burn" => bucket.drop(self),
+                "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
                 _ => Err(RuntimeError::IllegalSystemCall),
             },
             _ => {
                 // start a new process
-                let mut process = Process::new(self.depth + 1, self.trace, self.track);
+                let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
                 process.caller_auth_zone = &self.auth_zone;
 
                 // move buckets and proofs to the new process.
                 process.receive_buckets(moving_buckets)?;
-                process.receive_proofs(moving_proofs)?;
+                process.receive_proofs(moving_proofs);
 
                 // invoke the main function
-                let result = process.run(snode, function, args)?;
-
-                // figure out what buckets and resources to move from the new process
-                let moving_buckets = process.send_buckets(&result.bucket_ids)?;
-                let moving_proofs = process.send_proofs(&result.proof_ids, MoveMethod::AsReturn)?;
-
-                // drop proofs and check resource leak
-                process.drop_all_proofs()?;
-                process.check_resource()?;
+                let (result, moving_buckets, moving_proofs) =
+                    process.run(&mut snode, function, args)?;
 
                 // move buckets and proofs to this process.
                 self.receive_buckets(moving_buckets)?;
-                self.receive_proofs(moving_proofs)?;
+                self.receive_proofs(moving_proofs);
+
+                // Return borrowed snodes
+                match snode {
+                    SNodeState::Scrypto(actor, component_state) => {
+                        if let Some(component_address) = actor.component_address() {
+                            self.track.return_borrowed_global_component(
+                                component_address,
+                                component_state.unwrap(),
+                            );
+                        }
+                    }
+                    SNodeState::ResourceRef(resource_address, resource_manager) => {
+                        self.track.return_borrowed_global_resource_manager(
+                            resource_address,
+                            resource_manager,
+                        );
+                    }
+                    SNodeState::BucketRef(bucket_id, bucket) => {
+                        self.buckets.insert(bucket_id, bucket);
+                    }
+                    _ => {}
+                }
 
                 Ok(result)
             }
@@ -1044,7 +1042,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Calls a function.
-    pub fn call_function(
+    pub fn txn_call_function(
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
@@ -1056,13 +1054,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             package_address,
             blueprint_name.to_string(),
         ));
-        let result = self.call(snode_ref, function.to_string(), args);
+        let result = self.call(snode_ref, function.to_string(), args)?;
+
+        // Auto move into auth_zone
+        for proof_id in &result.proof_ids {
+            let proof = self.proofs.remove(proof_id).unwrap();
+            self.auth_zone.push(proof);
+        }
+
         re_debug!(self, "Call function ended");
-        result
+        Ok(result)
     }
 
     /// Calls a method.
-    pub fn call_method(
+    pub fn txn_call_method(
         &mut self,
         component_address: ComponentAddress,
         method: &str,
@@ -1070,9 +1075,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call method started");
         let snode_ref = SNodeRef::Scrypto(ScryptoActor::Component(component_address));
-        let result = self.call(snode_ref, method.to_string(), args);
+        let result = self.call(snode_ref, method.to_string(), args)?;
+
+        // Auto move into auth_zone
+        for proof_id in &result.proof_ids {
+            let proof = self.proofs.remove(proof_id).unwrap();
+            self.auth_zone.push(proof);
+        }
+
         re_debug!(self, "Call method ended");
-        result
+        Ok(result)
     }
 
     /// Calls the ABI generator of a blueprint.
@@ -1084,7 +1096,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call abi started");
 
-        let snode = SNodeState::Scrypto(
+        let mut snode = SNodeState::Scrypto(
             ScryptoActorInfo::blueprint(
                 package_address,
                 blueprint_name.to_string(),
@@ -1093,8 +1105,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
-        let mut process = Process::new(self.depth + 1, self.trace, self.track);
-        let result = process.run(snode, String::new(), Vec::new());
+        let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
+        let result = process
+            .run(&mut snode, String::new(), Vec::new())
+            .map(|(r, _, _)| r);
 
         re_debug!(self, "Call abi ended");
         result
@@ -1259,20 +1273,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Receives proofs from another component/blueprint, either as argument or return
-    fn receive_proofs(&mut self, proofs: HashMap<ProofId, Proof>) -> Result<(), RuntimeError> {
-        if self.depth == 0 {
-            // proofs are accumulated by auth worktop
-            for (_, proof) in proofs {
-                self.auth_zone.push(proof);
-            }
-        } else {
-            // for component, received buckets go to the "proofs" areas.
-            for (proof_id, proof) in proofs {
-                self.proofs.insert(proof_id, proof);
-            }
-        }
-
-        Ok(())
+    fn receive_proofs(&mut self, proofs: HashMap<ProofId, Proof>) {
+        self.proofs.extend(proofs)
     }
 
     /// Send a byte array to wasm instance.
@@ -1736,130 +1738,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_create_bucket(
-        &mut self,
-        input: CreateEmptyBucketInput,
-    ) -> Result<CreateEmptyBucketOutput, RuntimeError> {
-        let definition = self
-            .track
-            .get_resource_manager(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-
-        let new_bucket = Bucket::new(ResourceContainer::new_empty(
-            input.resource_address,
-            definition.resource_type(),
-        ));
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(CreateEmptyBucketOutput { bucket_id })
-    }
-
-    fn handle_put_into_bucket(
-        &mut self,
-        input: PutIntoBucketInput,
-    ) -> Result<PutIntoBucketOutput, RuntimeError> {
-        let other = self
-            .buckets
-            .remove(&input.other)
-            .ok_or(RuntimeError::BucketNotFound(input.other))?;
-
-        self.buckets
-            .get_mut(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .put(other)
-            .map_err(RuntimeError::BucketError)?;
-
-        Ok(PutIntoBucketOutput {})
-    }
-
-    fn handle_take_from_bucket(
-        &mut self,
-        input: TakeFromBucketInput,
-    ) -> Result<TakeFromBucketOutput, RuntimeError> {
-        let new_bucket = self
-            .buckets
-            .get_mut(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .take(input.amount)
-            .map_err(RuntimeError::BucketError)?;
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(TakeFromBucketOutput { bucket_id })
-    }
-
-    fn handle_get_bucket_amount(
-        &mut self,
-        input: GetBucketAmountInput,
-    ) -> Result<GetBucketAmountOutput, RuntimeError> {
-        let amount = self
-            .buckets
-            .get(&input.bucket_id)
-            .map(|b| b.total_amount())
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-
-        Ok(GetBucketAmountOutput { amount })
-    }
-
-    fn handle_get_bucket_resource_address(
-        &mut self,
-        input: GetBucketResourceAddressInput,
-    ) -> Result<GetBucketResourceAddressOutput, RuntimeError> {
-        let resource_address = self
-            .buckets
-            .get(&input.bucket_id)
-            .map(|b| b.resource_address())
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-
-        Ok(GetBucketResourceAddressOutput { resource_address })
-    }
-
-    fn handle_take_non_fungibles_from_bucket(
-        &mut self,
-        input: TakeNonFungiblesFromBucketInput,
-    ) -> Result<TakeNonFungiblesFromBucketOutput, RuntimeError> {
-        let new_bucket = self
-            .buckets
-            .get_mut(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?
-            .take_non_fungibles(&input.non_fungible_ids)
-            .map_err(RuntimeError::BucketError)?;
-        let bucket_id = self.new_bucket_id()?;
-        self.buckets.insert(bucket_id, new_bucket);
-
-        Ok(TakeNonFungiblesFromBucketOutput { bucket_id })
-    }
-
-    fn handle_get_non_fungible_ids_in_bucket(
-        &mut self,
-        input: GetNonFungibleIdsInBucketInput,
-    ) -> Result<GetNonFungibleIdsInBucketOutput, RuntimeError> {
-        let bucket = self
-            .buckets
-            .get(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-
-        Ok(GetNonFungibleIdsInBucketOutput {
-            non_fungible_ids: bucket
-                .total_ids()
-                .map_err(RuntimeError::BucketError)?
-                .into_iter()
-                .collect(),
-        })
-    }
-
-    fn handle_create_bucket_proof(
-        &mut self,
-        input: CreateBucketProofInput,
-    ) -> Result<CreateBucketProofOutput, RuntimeError> {
-        Ok(CreateBucketProofOutput {
-            proof_id: self.create_bucket_proof(input.bucket_id)?,
-        })
-    }
-
     fn handle_create_vault_proof(
         &mut self,
         input: CreateVaultProofInput,
@@ -2098,10 +1976,22 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
             .return_borrowed_global_resource_manager(resource_address, resource_manager)
     }
 
+    fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
+        let proof_id = self.new_proof_id()?;
+        self.proofs.insert(proof_id, proof);
+        Ok(proof_id)
+    }
+
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, Bucket::new(container));
         Ok(bucket_id)
+    }
+
+    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
+        self.buckets
+            .remove(&bucket_id)
+            .ok_or(RuntimeError::BucketNotFound(bucket_id))
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
@@ -2139,22 +2029,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_NON_FUNGIBLE_IDS_IN_VAULT => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
                     }
-
-                    CREATE_EMPTY_BUCKET => self.handle(args, Self::handle_create_bucket),
-                    PUT_INTO_BUCKET => self.handle(args, Self::handle_put_into_bucket),
-                    TAKE_FROM_BUCKET => self.handle(args, Self::handle_take_from_bucket),
-                    GET_BUCKET_AMOUNT => self.handle(args, Self::handle_get_bucket_amount),
-                    GET_BUCKET_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_bucket_resource_address)
-                    }
-                    TAKE_NON_FUNGIBLES_FROM_BUCKET => {
-                        self.handle(args, Self::handle_take_non_fungibles_from_bucket)
-                    }
-                    GET_NON_FUNGIBLE_IDS_IN_BUCKET => {
-                        self.handle(args, Self::handle_get_non_fungible_ids_in_bucket)
-                    }
-
-                    CREATE_BUCKET_PROOF => self.handle(args, Self::handle_create_bucket_proof),
                     CREATE_VAULT_PROOF => self.handle(args, Self::handle_create_vault_proof),
                     CREATE_VAULT_PROOF_BY_AMOUNT => {
                         self.handle(args, Self::handle_create_vault_proof_by_amount)
@@ -2162,6 +2036,7 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_VAULT_PROOF_BY_IDS => {
                         self.handle(args, Self::handle_create_vault_proof_by_ids)
                     }
+
                     CREATE_AUTH_ZONE_PROOF => {
                         self.handle(args, Self::handle_create_auth_zone_proof)
                     }

@@ -43,23 +43,6 @@ pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
 /// Get the IDs of all non-fungibles in this vault
 pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
-/// Create an empty bucket
-pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
-/// Put fungible resource into this bucket
-pub const PUT_INTO_BUCKET: u32 = 0x51;
-/// Take fungible resource from this bucket
-pub const TAKE_FROM_BUCKET: u32 = 0x52;
-/// Get bucket resource amount
-pub const GET_BUCKET_AMOUNT: u32 = 0x53;
-/// Get bucket resource address
-pub const GET_BUCKET_RESOURCE_ADDRESS: u32 = 0x54;
-/// Take a non-fungible from this bucket, by id
-pub const TAKE_NON_FUNGIBLES_FROM_BUCKET: u32 = 0x55;
-/// Get the IDs of all non-fungibles in this bucket
-pub const GET_NON_FUNGIBLE_IDS_IN_BUCKET: u32 = 0x56;
-
-/// Create a bucket proof
-pub const CREATE_BUCKET_PROOF: u32 = 0x60;
 /// Create a vault proof
 pub const CREATE_VAULT_PROOF: u32 = 0x63;
 /// Create a vault proof by amount
@@ -258,93 +241,8 @@ pub struct GetNonFungibleIdsInVaultOutput {
 }
 
 //==========
-// bucket
-//==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateEmptyBucketInput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateEmptyBucketOutput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoBucketInput {
-    pub bucket_id: BucketId,
-    pub other: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoBucketOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromBucketInput {
-    pub bucket_id: BucketId,
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromBucketOutput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketAmountInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketAmountOutput {
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceAddressInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceAddressOutput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromBucketInput {
-    pub bucket_id: BucketId,
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromBucketOutput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInBucketInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInBucketOutput {
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-//==========
 // proof
 //==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofOutput {
-    pub proof_id: ProofId,
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateVaultProofInput {
