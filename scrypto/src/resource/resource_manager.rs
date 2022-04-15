@@ -150,6 +150,46 @@ impl ResourceManager {
         scrypto_decode(&output.rtn).unwrap()
     }
 
+    pub fn set_updateable_metadata(&self, update_metadata_auth: MethodAuth) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "method_auth".to_string(),
+            args: args![UpdateMetadata, "update", update_metadata_auth],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    pub fn lock_updateable_metadata(&self) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "method_auth".to_string(),
+            args: args![UpdateMetadata, "lock"],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    pub fn set_updateable_non_fungible_data(&self, update_metadata_auth: MethodAuth) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "method_auth".to_string(),
+            args: args![UpdateNonFungibleData, "update", update_metadata_auth],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    pub fn lock_updateable_non_fungible_data(&self) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "method_auth".to_string(),
+            args: args![UpdateNonFungibleData, "lock"],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
     /// Returns the metadata associated with this resource.
     pub fn metadata(&self) -> HashMap<String, String> {
         let input = InvokeSNodeInput {
