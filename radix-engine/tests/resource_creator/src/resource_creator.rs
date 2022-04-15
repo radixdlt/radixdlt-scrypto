@@ -37,6 +37,11 @@ blueprint! {
                 .set_mintable(auth!(require(auth_address)));
         }
 
+        pub fn lock_mintable(resource_address: ResourceAddress) {
+            resource_manager!(resource_address)
+                .lock_mintable();
+        }
+
         pub fn create_non_fungible_fixed() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")

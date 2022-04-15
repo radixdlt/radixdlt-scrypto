@@ -343,6 +343,10 @@ impl ResourceManager {
                 self.authorization.insert("mint".to_string(), convert_auth!(mint_auth));
                 Ok(ScryptoValue::from_value(&()))
             }
+            "lock_mintable" => {
+                self.authorization.insert("set_mintable".to_string(), DenyAll);
+                Ok(ScryptoValue::from_value(&()))
+            }
             "get_metadata" => Ok(ScryptoValue::from_value(&self.metadata)),
             "get_resource_type" => Ok(ScryptoValue::from_value(&self.resource_type)),
             "get_total_supply" => Ok(ScryptoValue::from_value(&self.total_supply)),

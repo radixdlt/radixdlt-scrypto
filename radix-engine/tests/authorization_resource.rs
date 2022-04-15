@@ -6,8 +6,12 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 
+enum Action {
+    Mint,
+}
 
-fn test_mint_with_auth(set_auth: Option<usize>, auth_index: usize, expect_err: bool) {
+
+fn test_mint_with_auth(action: Action, set_auth: Option<usize>, auth_index: usize, expect_err: bool) {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
@@ -16,17 +20,16 @@ fn test_mint_with_auth(set_auth: Option<usize>, auth_index: usize, expect_err: b
     let (_, auth_address1) = test_runner.create_restricted_mint_token(account);
     let auth_addresses = [auth_address0, auth_address1];
     if let Some(i) = set_auth {
-        test_runner.set_mintable((&pk, &sk, account), auth_address0, token_address, auth_addresses[i]);
+        match &action {
+            Mint => test_runner.set_mintable((&pk, &sk, account), auth_address0, token_address, auth_addresses[i]),
+        }
     }
 
     // Act
     let transaction = test_runner
         .new_transaction_builder()
         .create_proof_from_account_by_amount(Decimal::one(), auth_addresses[auth_index], account)
-        .mint(
-            Decimal::from("1.0"),
-            token_address,
-        )
+        .mint(Decimal::from("1.0"), token_address)
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
@@ -43,14 +46,14 @@ fn test_mint_with_auth(set_auth: Option<usize>, auth_index: usize, expect_err: b
 
 #[test]
 fn can_mint_with_right_auth() {
-    test_mint_with_auth(None, 0, false);
-    test_mint_with_auth(Option::Some(1), 1,false);
+    test_mint_with_auth(Action::Mint, None, 0, false);
+    test_mint_with_auth(Action::Mint, Option::Some(1), 1,false);
 }
 
 #[test]
 fn cannot_mint_with_wrong_auth() {
-    test_mint_with_auth(None, 1, true);
-    test_mint_with_auth(Option::Some(1), 0,true);
+    test_mint_with_auth(Action::Mint, None, 1, true);
+    test_mint_with_auth(Action::Mint, Option::Some(1), 0,true);
 }
 
 #[test]
