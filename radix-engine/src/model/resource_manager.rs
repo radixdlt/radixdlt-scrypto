@@ -3,7 +3,9 @@ use crate::model::NonFungible;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::ResourceMethod::TakeFromVault;
+use scrypto::prelude::MethodAuth::{AllowAll, DenyAll};
+use scrypto::prelude::ResourceMethod::Withdraw;
+use scrypto::resource::Mutability::LOCKED;
 use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
 use scrypto::resource::*;
 use scrypto::rust::collections::*;
@@ -13,6 +15,12 @@ use scrypto::rust::vec::*;
 use scrypto::values::ScryptoValue;
 
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
+
+macro_rules! convert_auth {
+    ($auth:expr) => {
+        convert(&Type::Unit, &Value::Unit, &$auth)
+    };
+}
 
 /// Represents an error when accessing a bucket.
 #[derive(Debug, Clone, PartialEq)]
@@ -31,12 +39,72 @@ pub enum ResourceManagerError {
     CouldNotCreateBucket,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+struct MethodEntry {
+    auth: MethodAuthorization,
+    update_auth: MethodAuthorization,
+}
+
+impl MethodEntry {
+    pub fn new(entry: (MethodAuth, Mutability)) -> Self {
+        MethodEntry {
+            auth: convert_auth!(entry.0),
+            update_auth: match entry.1 {
+                Mutability::LOCKED => MethodAuthorization::DenyAll,
+                Mutability::MUTABLE(method_auth) => convert_auth!(method_auth),
+            },
+        }
+    }
+
+    pub fn get_method_auth(&self) -> &MethodAuthorization {
+        &self.auth
+    }
+
+    pub fn get_update_auth(&self, args: &[ScryptoValue]) -> &MethodAuthorization {
+        let method: String = match scrypto_decode(&args[0].raw) {
+            Ok(m) => m,
+            _ => return &MethodAuthorization::Unsupported,
+        };
+        match method.as_str() {
+            "lock" | "update" => &self.update_auth,
+            _ => &MethodAuthorization::Unsupported,
+        }
+    }
+
+    pub fn main(
+        &mut self,
+        method: &str,
+        args: Vec<ScryptoValue>,
+    ) -> Result<ScryptoValue, ResourceManagerError> {
+        match method {
+            "lock" => self.lock(),
+            "update" => {
+                let auth: MethodAuth = scrypto_decode(&args[0].raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                self.update(auth);
+            }
+            _ => return Err(ResourceManagerError::MethodNotFound(method.to_string())),
+        }
+
+        Ok(ScryptoValue::from_value(&()))
+    }
+
+    fn update(&mut self, method_auth: MethodAuth) {
+        self.auth = convert_auth!(method_auth)
+    }
+
+    fn lock(&mut self) {
+        self.update_auth = MethodAuthorization::DenyAll;
+    }
+}
+
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    authorization: HashMap<String, MethodAuthorization>,
+    method_table: HashMap<String, Option<ResourceMethod>>,
+    authorization: HashMap<ResourceMethod, MethodEntry>,
     total_supply: Decimal,
 }
 
@@ -44,58 +112,15 @@ impl ResourceManager {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        auth: HashMap<ResourceMethod, MethodAuth>,
+        mut auth: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
-        let mut authorization: HashMap<String, MethodAuthorization> = HashMap::new();
-        if let Some(mint_auth) = auth.get(&Mint) {
-            // TODO: Check for other invalid mint permissions?
-            if let MethodAuth::AllowAll = mint_auth {
-                return Err(ResourceManagerError::InvalidMintPermission);
-            }
-
-            authorization.insert(
-                "mint".to_string(),
-                convert(&Type::Unit, &Value::Unit, mint_auth),
-            );
-        }
-
-        if let Some(burn_auth) = auth.get(&Burn) {
-            authorization.insert(
-                "burn".to_string(),
-                convert(&Type::Unit, &Value::Unit, burn_auth),
-            );
-        }
-
-        if let Some(take_auth) = auth.get(&TakeFromVault) {
-            authorization.insert(
-                "take_from_vault".to_string(),
-                convert(&Type::Unit, &Value::Unit, take_auth),
-            );
-
-            if let ResourceType::NonFungible = resource_type {
-                authorization.insert(
-                    "take_non_fungibles_from_vault".to_string(),
-                    convert(&Type::Unit, &Value::Unit, take_auth),
-                );
-            }
-        }
-
-        if let Some(update_metadata_auth) = auth.get(&UpdateMetadata) {
-            authorization.insert(
-                "update_metadata".to_string(),
-                convert(&Type::Unit, &Value::Unit, update_metadata_auth),
-            );
-        }
-
-        if let Some(update_non_fungible_mutable_data_auth) = auth.get(&UpdateNonFungibleData) {
-            authorization.insert(
-                "update_non_fungible_mutable_data".to_string(),
-                convert(
-                    &Type::Unit,
-                    &Value::Unit,
-                    update_non_fungible_mutable_data_auth,
-                ),
-            );
+        let mut method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
+        method_table.insert("mint".to_string(), Some(Mint));
+        method_table.insert("burn".to_string(), Some(Burn));
+        method_table.insert("take_from_vault".to_string(), Some(Withdraw));
+        method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
+        if let ResourceType::NonFungible = resource_type {
+            method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
         }
 
         for pub_method in [
@@ -109,9 +134,8 @@ impl ResourceManager {
             "get_bucket_amount",
             "get_bucket_resource_address",
         ] {
-            authorization.insert(pub_method.to_string(), MethodAuthorization::AllowAll);
+            method_table.insert(pub_method.to_string(), None);
         }
-
         if let ResourceType::NonFungible = resource_type {
             for pub_method in [
                 "take_non_fungibles_from_bucket",
@@ -119,13 +143,29 @@ impl ResourceManager {
                 "get_non_fungible",
                 "get_non_fungible_ids_in_bucket",
             ] {
-                authorization.insert(pub_method.to_string(), MethodAuthorization::AllowAll);
+                method_table.insert(pub_method.to_string(), None);
             }
+            method_table.insert("update_non_fungible_mutable_data".to_string(), Some(UpdateNonFungibleData));
         }
+
+        let mut authorization: HashMap<ResourceMethod, MethodEntry> = HashMap::new();
+        let mint_entry = auth.remove(&Mint).unwrap_or((DenyAll, LOCKED));
+        authorization.insert(Mint, MethodEntry::new(mint_entry));
+        let burn_entry = auth.remove(&Burn).unwrap_or((DenyAll, LOCKED));
+        authorization.insert(Burn, MethodEntry::new(burn_entry));
+        let take_entry = auth.remove(&Withdraw).unwrap_or((AllowAll, LOCKED));
+        authorization.insert(Withdraw, MethodEntry::new(take_entry.clone()));
+        let update_metadata_entry = auth.remove(&UpdateMetadata).unwrap_or((DenyAll, LOCKED));
+        authorization.insert(UpdateMetadata, MethodEntry::new(update_metadata_entry));
+        let update_data_auth = auth
+            .remove(&UpdateNonFungibleData)
+            .unwrap_or((DenyAll, LOCKED));
+        authorization.insert(UpdateNonFungibleData, MethodEntry::new(update_data_auth));
 
         let resource_manager = Self {
             resource_type,
             metadata,
+            method_table,
             authorization,
             total_supply: 0.into(),
         };
@@ -133,10 +173,26 @@ impl ResourceManager {
         Ok(resource_manager)
     }
 
-    pub fn get_auth(&self, method_name: &str) -> &MethodAuthorization {
-        match self.authorization.get(method_name) {
-            None => &MethodAuthorization::Unsupported,
-            Some(authorization) => authorization,
+    pub fn get_auth(&self, method_name: &str, args: &[ScryptoValue]) -> &MethodAuthorization {
+        if method_name.eq("method_auth") {
+            let method: ResourceMethod = match scrypto_decode(&args[0].raw) {
+                Ok(r) => r,
+                Err(_) => return &MethodAuthorization::Unsupported,
+            };
+
+            match self.authorization.get(&method) {
+                None => &MethodAuthorization::Unsupported,
+                Some(entry) => {
+                    let auth_args = args.split_at(1).1;
+                    entry.get_update_auth(auth_args)
+                }
+            }
+        } else {
+            match self.method_table.get(method_name) {
+                None => &MethodAuthorization::Unsupported,
+                Some(None) => &MethodAuthorization::AllowAll,
+                Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+            }
         }
     }
 
@@ -325,7 +381,7 @@ impl ResourceManager {
         &mut self,
         resource_address: ResourceAddress,
         function: &str,
-        args: Vec<ScryptoValue>,
+        mut args: Vec<ScryptoValue>,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
@@ -338,6 +394,14 @@ impl ResourceManager {
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
+            }
+            "method_auth" => {
+                let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let method_entry = self.authorization.get_mut(&method).unwrap();
+                let method_entry_method: String = scrypto_decode(&args.remove(0).raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                method_entry.main(&method_entry_method, args)
             }
             "mint" => {
                 // TODO: cleanup

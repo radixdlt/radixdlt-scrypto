@@ -12,7 +12,7 @@ blueprint! {
                 .auth(
                     Authorization::new()
                         .method("get_secret", auth!(require("some_non_fungible")))
-                        .default(auth!(allow_all))
+                        .default(auth!(allow_all)),
                 )
                 .globalize()
         }
