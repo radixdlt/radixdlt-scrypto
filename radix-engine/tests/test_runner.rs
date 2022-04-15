@@ -82,9 +82,10 @@ impl<'l> TestRunner<'l> {
         self.executor.get_nonce(intended_signers)
     }
 
-    pub fn set_mintable(
+    pub fn set_auth(
         &mut self,
         account: (&EcdsaPublicKey, &EcdsaPrivateKey, ComponentAddress),
+        function: &str,
         auth: ResourceAddress,
         token: ResourceAddress,
         set_auth: ResourceAddress,
@@ -95,7 +96,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                "set_mintable",
+                function,
                 vec![
                     scrypto_encode(&token),
                     scrypto_encode(&set_auth),
@@ -108,7 +109,7 @@ impl<'l> TestRunner<'l> {
         result.expect("Should be okay");
     }
 
-    pub fn create_restricted_mint_token(
+    pub fn create_restricted_token(
         &mut self,
         account: ComponentAddress,
     ) -> (ResourceAddress, ResourceAddress) {
@@ -119,7 +120,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                "create_restricted_mint",
+                "create_restricted_token",
                 vec![scrypto_encode(&auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
