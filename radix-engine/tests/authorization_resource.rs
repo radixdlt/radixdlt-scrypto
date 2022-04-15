@@ -18,11 +18,10 @@ fn cannot_mint_with_wrong_auth() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account_by_amount(Decimal::one(), random_resource_address, account)
+        .create_proof_from_account_by_amount(Decimal::one(), random_resource_address, account)
         .mint(
             Decimal::from("1.0"),
             token_resource_address,
-            random_resource_address,
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
@@ -46,11 +45,10 @@ fn can_mint_with_right_auth() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account_by_amount(Decimal::one(), auth_token_resource_address, account)
+        .create_proof_from_account_by_amount(Decimal::one(), auth_token_resource_address, account)
         .mint(
             Decimal::from("1.0"),
             token_resource_address,
-            auth_token_resource_address,
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
@@ -72,10 +70,10 @@ fn cannot_burn_with_wrong_auth() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account_by_amount(Decimal::from(2), token_resource_address, account)
+        .withdraw_from_account_by_amount(Decimal::from(1), token_resource_address, account)
+        .create_proof_from_account_by_amount(Decimal::from(1), token_resource_address, account)
         .burn(
             Decimal::one(),
-            token_resource_address,
             token_resource_address,
         )
         .call_method_with_all_resources(account, "deposit_batch")
@@ -100,12 +98,11 @@ fn can_burn_with_auth() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .withdraw_from_account_by_amount(Decimal::one(), auth_token_resource_address, account)
+        .create_proof_from_account_by_amount(Decimal::one(), auth_token_resource_address, account)
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .burn(
             Decimal::one(),
             token_resource_address,
-            auth_token_resource_address,
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))

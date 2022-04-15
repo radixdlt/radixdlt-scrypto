@@ -62,7 +62,7 @@ fn can_burn_non_fungible() {
     let transaction = test_runner
         .new_transaction_builder()
         .withdraw_from_account(resource_address, account)
-        .burn_non_fungible(non_fungible_address.clone(), resource_address)
+        .burn_non_fungible(non_fungible_address.clone())
         .call_function(
             package,
             "NonFungibleTest",

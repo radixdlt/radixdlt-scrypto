@@ -8,46 +8,35 @@ use sbor::*;
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Describe, TypeId, Encode, Decode)]
-pub struct ComponentAuthorization(HashMap<String, MethodAuth>);
+pub struct Authorization {
+    method_auth: HashMap<String, MethodAuth>,
+    default_auth: MethodAuth
+}
 
-impl ComponentAuthorization {
+impl Authorization {
     pub fn new() -> Self {
-        ComponentAuthorization(HashMap::new())
+        Self {
+            method_auth: HashMap::new(),
+            default_auth: MethodAuth::DenyAll,
+        }
     }
 
-    pub fn get(&self, method_name: &str) -> Option<&MethodAuth> {
-        self.0.get(method_name)
+    pub fn get(&self, method_name: &str) -> &MethodAuth {
+        self.method_auth.get(method_name).unwrap_or(&self.default_auth)
     }
 
-    pub fn contains_method(&self, method_name: &str) -> bool {
-        self.0.contains_key(method_name)
+    pub fn method(mut self, method_name: &str, method_auth: MethodAuth) -> Self {
+        self.method_auth.insert(method_name.to_string(), method_auth);
+        self
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-
-    pub fn insert(&mut self, method_name: &str, method_auth: MethodAuth) {
-        self.0.insert(method_name.to_string(), method_auth);
+    pub fn default(mut self, method_auth: MethodAuth) -> Self {
+        self.default_auth = method_auth;
+        self
     }
 
     pub fn iter(&self) -> Iter<'_, String, MethodAuth> {
-        let l = self.0.iter();
+        let l = self.method_auth.iter();
         l
     }
-}
-
-#[macro_export]
-macro_rules! component_authorization {
-  {$($k: expr => $v: expr),* $(,)?} => {
-    {
-      let mut authorization = ::scrypto::resource::ComponentAuthorization::new();
-
-      $(
-        authorization.insert($k, $v);
-      )*
-
-      authorization
-    }
-  };
 }

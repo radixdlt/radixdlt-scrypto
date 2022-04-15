@@ -187,8 +187,8 @@ impl HardAuthRule {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum MethodAuthorization {
     Protected(HardAuthRule),
-    Public,
-    Private,
+    AllowAll,
+    DenyAll,
     Unsupported,
 }
 
@@ -196,8 +196,8 @@ impl MethodAuthorization {
     pub fn check(&self, proofs_vector: &[&[Proof]]) -> Result<(), MethodAuthorizationError> {
         match self {
             MethodAuthorization::Protected(rule) => rule.check(proofs_vector),
-            MethodAuthorization::Public => Ok(()),
-            MethodAuthorization::Private => Err(MethodAuthorizationError::NotAuthorized),
+            MethodAuthorization::AllowAll => Ok(()),
+            MethodAuthorization::DenyAll => Err(MethodAuthorizationError::NotAuthorized),
             MethodAuthorization::Unsupported => Err(MethodAuthorizationError::UnsupportedMethod),
         }
     }
