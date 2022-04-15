@@ -936,9 +936,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                 }
             }
-            SNodeRef::ResourceStatic => {
-                Ok((SNodeState::ResourceStatic, vec![]))
-            }
+            SNodeRef::ResourceStatic => Ok((SNodeState::ResourceStatic, vec![])),
             SNodeRef::Resource(resource_address) => {
                 let resource_manager: ResourceManager = self
                     .track
@@ -969,7 +967,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function, &args);
-                Ok((SNodeState::Vault(vault_id.clone()), vec![method_auth.clone()]))
+                Ok((
+                    SNodeState::Vault(vault_id.clone()),
+                    vec![method_auth.clone()],
+                ))
             }
         }?;
 
@@ -977,7 +978,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !method_auths.is_empty() {
             let proofs_vector = match &snode {
                 // Same process auth check
-                SNodeState::Resource(_,_) | SNodeState::Vault(_) | SNodeState::Bucket(_) => {
+                SNodeState::Resource(_, _) | SNodeState::Vault(_) | SNodeState::Bucket(_) => {
                     vec![self.caller_auth_zone, &self.auth_zone]
                 }
                 // Extern call auth check

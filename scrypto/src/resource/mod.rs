@@ -30,8 +30,8 @@ pub use proof_rule::{
     SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
-pub use resource_manager::ResourceMethod::*;
 pub use resource_manager::Mutability::*;
+pub use resource_manager::ResourceMethod::*;
 pub use resource_manager::{
     Mutability, ParseResourceAddressError, ResourceAddress, ResourceManager, ResourceMethod,
 };

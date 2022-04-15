@@ -26,9 +26,18 @@ blueprint! {
         ) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .mintable(auth!(require(mint_auth)), MUTABLE(auth!(require(admin_auth))))
-                .burnable(auth!(require(burn_auth)), MUTABLE(auth!(require(admin_auth))))
-                .restrict_withdraw(auth!(require(withdraw_auth)), MUTABLE(auth!(require(admin_auth))))
+                .mintable(
+                    auth!(require(mint_auth)),
+                    MUTABLE(auth!(require(admin_auth))),
+                )
+                .burnable(
+                    auth!(require(burn_auth)),
+                    MUTABLE(auth!(require(admin_auth))),
+                )
+                .restrict_withdraw(
+                    auth!(require(withdraw_auth)),
+                    MUTABLE(auth!(require(admin_auth))),
+                )
                 .initial_supply(5)
         }
 
@@ -40,23 +49,19 @@ blueprint! {
         }
 
         pub fn set_mintable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
-            resource_manager!(resource_address)
-                .set_mintable(auth!(require(auth_address)));
+            resource_manager!(resource_address).set_mintable(auth!(require(auth_address)));
         }
-        
+
         pub fn set_burnable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
-            resource_manager!(resource_address)
-                .set_burnable(auth!(require(auth_address)));
+            resource_manager!(resource_address).set_burnable(auth!(require(auth_address)));
         }
 
         pub fn set_withdrawable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
-            resource_manager!(resource_address)
-                .set_withdrawable(auth!(require(auth_address)));
+            resource_manager!(resource_address).set_withdrawable(auth!(require(auth_address)));
         }
 
         pub fn lock_mintable(resource_address: ResourceAddress) {
-            resource_manager!(resource_address)
-                .lock_mintable();
+            resource_manager!(resource_address).lock_mintable();
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {

@@ -97,22 +97,29 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 function,
-                vec![
-                    scrypto_encode(&token),
-                    scrypto_encode(&set_auth),
-                ],
+                vec![scrypto_encode(&token), scrypto_encode(&set_auth)],
             )
             .call_method_with_all_resources(account.2, "deposit_batch")
             .build(self.executor.get_nonce([account.0.clone()]))
             .sign([account.1]);
-        let result = self.executor.validate_and_execute(&transaction).unwrap().result;
+        let result = self
+            .executor
+            .validate_and_execute(&transaction)
+            .unwrap()
+            .result;
         result.expect("Should be okay");
     }
 
     pub fn create_restricted_token(
         &mut self,
         account: ComponentAddress,
-    ) -> (ResourceAddress, ResourceAddress, ResourceAddress, ResourceAddress, ResourceAddress) {
+    ) -> (
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+    ) {
         let mint_auth = self.create_non_fungible_resource(account);
         let burn_auth = self.create_non_fungible_resource(account);
         let withdraw_auth = self.create_non_fungible_resource(account);
@@ -135,7 +142,13 @@ impl<'l> TestRunner<'l> {
             .build(self.executor.get_nonce([]))
             .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
-        (receipt.new_resource_addresses[0], mint_auth, burn_auth, withdraw_auth, admin_auth)
+        (
+            receipt.new_resource_addresses[0],
+            mint_auth,
+            burn_auth,
+            withdraw_auth,
+            admin_auth,
+        )
     }
 
     pub fn create_restricted_burn_token(

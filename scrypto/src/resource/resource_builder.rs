@@ -73,13 +73,23 @@ impl FungibleResourceBuilder {
         self
     }
 
-    pub fn restrict_withdraw(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(Withdraw, (method_auth, mutability));
+    pub fn restrict_withdraw(
+        &mut self,
+        method_auth: MethodAuth,
+        mutability: Mutability,
+    ) -> &mut Self {
+        self.authorization
+            .insert(Withdraw, (method_auth, mutability));
         self
     }
 
-    pub fn updateable_metadata(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(UpdateMetadata, (method_auth, mutability));
+    pub fn updateable_metadata(
+        &mut self,
+        method_auth: MethodAuth,
+        mutability: Mutability,
+    ) -> &mut Self {
+        self.authorization
+            .insert(UpdateMetadata, (method_auth, mutability));
         self
     }
 
@@ -144,18 +154,33 @@ impl NonFungibleResourceBuilder {
         self
     }
 
-    pub fn restrict_withdraw(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(Withdraw, (method_auth, mutability));
+    pub fn restrict_withdraw(
+        &mut self,
+        method_auth: MethodAuth,
+        mutability: Mutability,
+    ) -> &mut Self {
+        self.authorization
+            .insert(Withdraw, (method_auth, mutability));
         self
     }
 
-    pub fn updateable_metadata(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(UpdateMetadata, (method_auth, mutability));
+    pub fn updateable_metadata(
+        &mut self,
+        method_auth: MethodAuth,
+        mutability: Mutability,
+    ) -> &mut Self {
+        self.authorization
+            .insert(UpdateMetadata, (method_auth, mutability));
         self
     }
 
-    pub fn updateable_non_fungible_data(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(UpdateNonFungibleData, (method_auth, mutability));
+    pub fn updateable_non_fungible_data(
+        &mut self,
+        method_auth: MethodAuth,
+        mutability: Mutability,
+    ) -> &mut Self {
+        self.authorization
+            .insert(UpdateNonFungibleData, (method_auth, mutability));
         self
     }
 

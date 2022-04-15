@@ -17,10 +17,7 @@ blueprint! {
                 .method("deposit_batch", auth!(allow_all))
                 .default(withdraw_rule);
 
-            Self { vaults }
-                .instantiate()
-                .auth(auth)
-                .globalize()
+            Self { vaults }.instantiate().auth(auth).globalize()
         }
 
         pub fn new(withdraw_rule: MethodAuth) -> ComponentAddress {

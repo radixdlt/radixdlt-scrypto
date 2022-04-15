@@ -12,19 +12,13 @@ enum Action {
     Withdraw,
 }
 
-
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (pk, sk, account) = test_runner.new_account();
-    let (
-        token_address,
-        mint_auth,
-        burn_auth,
-        withdraw_auth,
-        admin_auth
-    ) = test_runner.create_restricted_token(account);
+    let (token_address, mint_auth, burn_auth, withdraw_auth, admin_auth) =
+        test_runner.create_restricted_token(account);
 
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
@@ -34,7 +28,13 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Burn => "set_burnable",
             Action::Withdraw => "set_withdrawable",
         };
-        test_runner.set_auth((&pk, &sk, account), function, admin_auth, token_address, updated_auth);
+        test_runner.set_auth(
+            (&pk, &sk, account),
+            function,
+            admin_auth,
+            token_address,
+            updated_auth,
+        );
     }
 
     let auth_to_use = if use_other_auth {
@@ -57,11 +57,13 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
             .burn(Decimal::from("1.0"), token_address),
-        Action::Withdraw => builder
-            .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
+        Action::Withdraw => {
+            builder.withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
+        }
     };
 
-    let transaction = builder.call_method_with_all_resources(account, "deposit_batch")
+    let transaction = builder
+        .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);

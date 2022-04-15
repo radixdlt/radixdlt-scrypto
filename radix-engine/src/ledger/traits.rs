@@ -8,8 +8,8 @@ use scrypto::prelude::LOCKED;
 use scrypto::resource::ResourceMethod::Withdraw;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::rust::vec::Vec;
 use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 
 use crate::model::*;
 

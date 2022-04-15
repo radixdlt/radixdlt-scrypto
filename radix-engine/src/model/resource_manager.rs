@@ -5,9 +5,9 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::MethodAuth::{AllowAll, DenyAll};
 use scrypto::prelude::ResourceMethod::Withdraw;
+use scrypto::resource::Mutability::LOCKED;
 use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
 use scrypto::resource::*;
-use scrypto::resource::Mutability::LOCKED;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -52,7 +52,7 @@ impl MethodEntry {
             update_auth: match entry.1 {
                 Mutability::LOCKED => MethodAuthorization::DenyAll,
                 Mutability::MUTABLE(method_auth) => convert_auth!(method_auth),
-            }
+            },
         }
     }
 
@@ -63,15 +63,19 @@ impl MethodEntry {
     pub fn get_update_auth(&self, args: &[ScryptoValue]) -> &MethodAuthorization {
         let method: String = match scrypto_decode(&args[0].raw) {
             Ok(m) => m,
-            _ => return &MethodAuthorization::Unsupported
+            _ => return &MethodAuthorization::Unsupported,
         };
         match method.as_str() {
             "lock" | "update" => &self.update_auth,
-            _ => &MethodAuthorization::Unsupported
+            _ => &MethodAuthorization::Unsupported,
         }
     }
 
-    pub fn main(&mut self, method: &str, args: Vec<ScryptoValue>) -> Result<ScryptoValue, ResourceManagerError> {
+    pub fn main(
+        &mut self,
+        method: &str,
+        args: Vec<ScryptoValue>,
+    ) -> Result<ScryptoValue, ResourceManagerError> {
         match method {
             "lock" => self.lock(),
             "update" => {
@@ -79,7 +83,7 @@ impl MethodEntry {
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 self.update(auth);
             }
-            _ => return Err(ResourceManagerError::MethodNotFound(method.to_string()))
+            _ => return Err(ResourceManagerError::MethodNotFound(method.to_string())),
         }
 
         Ok(ScryptoValue::from_value(&()))
@@ -136,7 +140,9 @@ impl ResourceManager {
         authorization.insert(Withdraw, MethodEntry::new(take_entry.clone()));
         let update_metadata_entry = auth.remove(&UpdateMetadata).unwrap_or((DenyAll, LOCKED));
         authorization.insert(UpdateMetadata, MethodEntry::new(update_metadata_entry));
-        let update_data_auth = auth.remove(&UpdateNonFungibleData).unwrap_or((DenyAll, LOCKED));
+        let update_data_auth = auth
+            .remove(&UpdateNonFungibleData)
+            .unwrap_or((DenyAll, LOCKED));
         authorization.insert(UpdateNonFungibleData, MethodEntry::new(update_data_auth));
 
         let resource_manager = Self {
@@ -154,7 +160,7 @@ impl ResourceManager {
         if method_name.eq("method_auth") {
             let method: ResourceMethod = match scrypto_decode(&args[0].raw) {
                 Ok(r) => r,
-                Err(_) => return &MethodAuthorization::Unsupported
+                Err(_) => return &MethodAuthorization::Unsupported,
             };
 
             match self.authorization.get(&method) {
@@ -162,7 +168,7 @@ impl ResourceManager {
                 Some(entry) => {
                     let auth_args = args.split_at(1).1;
                     entry.get_update_auth(auth_args)
-                },
+                }
             }
         } else {
             match self.method_table.get(method_name) {
@@ -281,10 +287,7 @@ impl ResourceManager {
             let mutable_data = Self::process_non_fungible_data(&data.1)?;
             let non_fungible = NonFungible::new(immutable_data.raw, mutable_data.raw);
 
-            system_api.set_non_fungible(
-                non_fungible_address,
-                Some(non_fungible),
-            );
+            system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
             ids.insert(id);
         }
 
