@@ -112,8 +112,11 @@ impl<'l> TestRunner<'l> {
     pub fn create_restricted_token(
         &mut self,
         account: ComponentAddress,
-    ) -> (ResourceAddress, ResourceAddress) {
-        let auth_resource_address = self.create_non_fungible_resource(account);
+    ) -> (ResourceAddress, ResourceAddress, ResourceAddress, ResourceAddress, ResourceAddress) {
+        let mint_auth = self.create_non_fungible_resource(account);
+        let burn_auth = self.create_non_fungible_resource(account);
+        let withdraw_auth = self.create_non_fungible_resource(account);
+        let admin_auth = self.create_non_fungible_resource(account);
 
         let package = self.publish_package("resource_creator");
         let transaction = TransactionBuilder::new()
@@ -121,13 +124,18 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_token",
-                vec![scrypto_encode(&auth_resource_address)],
+                vec![
+                    scrypto_encode(&mint_auth),
+                    scrypto_encode(&burn_auth),
+                    scrypto_encode(&withdraw_auth),
+                    scrypto_encode(&admin_auth),
+                ],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
             .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
-        (auth_resource_address, receipt.new_resource_addresses[0])
+        (receipt.new_resource_addresses[0], mint_auth, burn_auth, withdraw_auth, admin_auth)
     }
 
     pub fn create_restricted_burn_token(

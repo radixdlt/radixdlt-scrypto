@@ -4,7 +4,7 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::MethodAuth::{AllowAll, DenyAll};
-use scrypto::prelude::ResourceMethod::TakeFromVault;
+use scrypto::prelude::ResourceMethod::Withdraw;
 use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
 use scrypto::resource::*;
 use scrypto::resource::Mutability::LOCKED;
@@ -113,9 +113,9 @@ impl ResourceManager {
         let mut method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
         method_table.insert("mint".to_string(), Some(Mint));
         method_table.insert("burn".to_string(), Some(Burn));
-        method_table.insert("take_from_vault".to_string(), Some(TakeFromVault));
+        method_table.insert("take_from_vault".to_string(), Some(Withdraw));
         if let ResourceType::NonFungible = resource_type {
-            method_table.insert("take_non_fungibles_from_vault".to_string(), Some(TakeFromVault));
+            method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
         }
         method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
         for pub_method in ["get_metadata", "get_resource_type", "get_total_supply"] {
@@ -132,8 +132,8 @@ impl ResourceManager {
         authorization.insert(Mint, MethodEntry::new(mint_entry));
         let burn_entry = auth.remove(&Burn).unwrap_or((DenyAll, LOCKED));
         authorization.insert(Burn, MethodEntry::new(burn_entry));
-        let take_entry = auth.remove(&TakeFromVault).unwrap_or((AllowAll, LOCKED));
-        authorization.insert(TakeFromVault, MethodEntry::new(take_entry.clone()));
+        let take_entry = auth.remove(&Withdraw).unwrap_or((AllowAll, LOCKED));
+        authorization.insert(Withdraw, MethodEntry::new(take_entry.clone()));
         let update_metadata_entry = auth.remove(&UpdateMetadata).unwrap_or((DenyAll, LOCKED));
         authorization.insert(UpdateMetadata, MethodEntry::new(update_metadata_entry));
         let update_data_auth = auth.remove(&UpdateNonFungibleData).unwrap_or((DenyAll, LOCKED));

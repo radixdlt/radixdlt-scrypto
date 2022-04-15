@@ -74,7 +74,7 @@ impl FungibleResourceBuilder {
     }
 
     pub fn restrict_withdraw(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(TakeFromVault, (method_auth, mutability));
+        self.authorization.insert(Withdraw, (method_auth, mutability));
         self
     }
 
@@ -102,8 +102,8 @@ impl FungibleResourceBuilder {
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&TakeFromVault) {
-            authorization.insert(TakeFromVault, (auth!(allow_all), LOCKED));
+        if !authorization.contains_key(&Withdraw) {
+            authorization.insert(Withdraw, (auth!(allow_all), LOCKED));
         }
 
         resource_system().new_resource(
@@ -145,7 +145,7 @@ impl NonFungibleResourceBuilder {
     }
 
     pub fn restrict_withdraw(&mut self, method_auth: MethodAuth, mutability: Mutability) -> &mut Self {
-        self.authorization.insert(TakeFromVault, (method_auth, mutability));
+        self.authorization.insert(Withdraw, (method_auth, mutability));
         self
     }
 
@@ -187,8 +187,8 @@ impl NonFungibleResourceBuilder {
 
     fn build(&self, mint_params: Option<MintParams>) -> (ResourceAddress, Option<Bucket>) {
         let mut authorization = self.authorization.clone();
-        if !authorization.contains_key(&TakeFromVault) {
-            authorization.insert(TakeFromVault, (auth!(allow_all), LOCKED));
+        if !authorization.contains_key(&Withdraw) {
+            authorization.insert(Withdraw, (auth!(allow_all), LOCKED));
         }
 
         resource_system().new_resource(

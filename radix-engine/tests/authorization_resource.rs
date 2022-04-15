@@ -12,29 +12,46 @@ enum Action {
 }
 
 
-fn test_resource_auth(action: Action, set_auth: Option<usize>, auth_index: usize, expect_err: bool) {
+fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut test_runner = TestRunner::new(&mut substate_store);
     let (pk, sk, account) = test_runner.new_account();
-    let (auth_address0, token_address) = test_runner.create_restricted_token(account);
-    let (_, auth_address1) = test_runner.create_restricted_token(account);
-    let auth_addresses = [auth_address0, auth_address1];
-    if let Some(i) = set_auth {
+    let (
+        token_address,
+        mint_auth,
+        burn_auth,
+        withdraw_auth,
+        admin_auth
+    ) = test_runner.create_restricted_token(account);
+
+    let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
+
+    if update_auth {
         let function = match action {
             Action::Mint => "set_mintable",
             Action::Burn => "set_burnable",
         };
-        test_runner.set_auth((&pk, &sk, account), function, auth_address0, token_address, auth_addresses[i])
+        test_runner.set_auth((&pk, &sk, account), function, admin_auth, token_address, updated_auth);
     }
+
+    let auth_to_use = if use_other_auth {
+        updated_auth
+    } else {
+        match action {
+            Action::Mint => mint_auth,
+            Action::Burn => burn_auth,
+        }
+    };
 
     // Act
     let mut builder = test_runner.new_transaction_builder();
-    builder.create_proof_from_account_by_amount(Decimal::one(), auth_addresses[auth_index], account);
+    builder.create_proof_from_account_by_amount(Decimal::one(), auth_to_use, account);
 
     match action {
         Action::Mint => builder.mint(Decimal::from("1.0"), token_address),
         Action::Burn => builder
+            .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
             .burn(Decimal::from("1.0"), token_address),
     };
@@ -55,24 +72,24 @@ fn test_resource_auth(action: Action, set_auth: Option<usize>, auth_index: usize
 
 #[test]
 fn can_mint_with_right_auth() {
-    test_resource_auth(Action::Mint, None, 0, false);
-    test_resource_auth(Action::Mint, Option::Some(1), 1, false);
+    test_resource_auth(Action::Mint, false, false, false);
+    test_resource_auth(Action::Mint, true, true, false);
 }
 
 #[test]
 fn cannot_mint_with_wrong_auth() {
-    test_resource_auth(Action::Mint, None, 1, true);
-    test_resource_auth(Action::Mint, Option::Some(1), 0, true);
+    test_resource_auth(Action::Mint, false, true, true);
+    test_resource_auth(Action::Mint, true, false, true);
 }
 
 #[test]
 fn can_burn_with_auth() {
-    test_resource_auth(Action::Burn, None, 0, false);
-    test_resource_auth(Action::Burn, Option::Some(1), 1, false);
+    test_resource_auth(Action::Burn, false, false, false);
+    test_resource_auth(Action::Burn, true, true, false);
 }
 
 #[test]
 fn cannot_burn_with_wrong_auth() {
-    test_resource_auth(Action::Burn, None, 1, true);
-    test_resource_auth(Action::Burn, Option::Some(1), 0, true);
+    test_resource_auth(Action::Burn, false, true, true);
+    test_resource_auth(Action::Burn, true, false, true);
 }

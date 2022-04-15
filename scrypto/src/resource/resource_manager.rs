@@ -20,8 +20,7 @@ use crate::types::*;
 pub enum ResourceMethod {
     Mint,
     Burn,
-    TakeFromVault,
-    TakeNonFungiblesFromVault,
+    Withdraw,
     UpdateMetadata,
     UpdateNonFungibleData,
 }
@@ -126,6 +125,26 @@ impl ResourceManager {
             snode_ref: SNodeRef::Resource(self.0),
             function: "get_resource_type".to_string(),
             args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    pub fn set_withdrawable(&self, burn_auth: MethodAuth) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "method_auth".to_string(),
+            args: args![Withdraw, "update", burn_auth],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    pub fn lock_withdrawable(&self) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Resource(self.0),
+            function: "method_auth".to_string(),
+            args: args![Withdraw, "lock"],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

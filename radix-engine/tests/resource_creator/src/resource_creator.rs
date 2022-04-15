@@ -18,11 +18,17 @@ blueprint! {
                 .initial_supply(5)
         }
 
-        pub fn create_restricted_token(badge_resource_address: ResourceAddress) -> Bucket {
+        pub fn create_restricted_token(
+            mint_auth: ResourceAddress,
+            burn_auth: ResourceAddress,
+            withdraw_auth: ResourceAddress,
+            admin_auth: ResourceAddress,
+        ) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .mintable(auth!(require(badge_resource_address)), MUTABLE(auth!(require(badge_resource_address))))
-                .burnable(auth!(require(badge_resource_address)), MUTABLE(auth!(require(badge_resource_address))))
+                .mintable(auth!(require(mint_auth)), MUTABLE(auth!(require(admin_auth))))
+                .burnable(auth!(require(burn_auth)), MUTABLE(auth!(require(admin_auth))))
+                .restrict_withdraw(auth!(require(withdraw_auth)), MUTABLE(auth!(require(admin_auth))))
                 .initial_supply(5)
         }
 
@@ -41,6 +47,11 @@ blueprint! {
         pub fn set_burnable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
             resource_manager!(resource_address)
                 .set_burnable(auth!(require(auth_address)));
+        }
+
+        pub fn set_withdrawable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
+            resource_manager!(resource_address)
+                .set_withdrawable(auth!(require(auth_address)));
         }
 
         pub fn lock_mintable(resource_address: ResourceAddress) {
