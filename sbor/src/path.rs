@@ -39,6 +39,11 @@ impl SborPath {
         let rel_path = SborValueRetriever(&self.0);
         rel_path.get_from(value)
     }
+
+    pub fn get_from_value_mut<'a>(&'a self, value: &'a mut Value) -> Option<&'a mut Value> {
+        let rel_path = SborValueRetriever(&self.0);
+        rel_path.get_from_mut(value)
+    }
 }
 
 /// Helper structure which helps in retrieving a value given a root value and sbor path
@@ -71,6 +76,27 @@ impl<'a> SborValueRetriever<'a> {
             Value::Struct { fields } | Value::Enum { fields, .. } => self.get_from_vector(fields),
             Value::Array { elements, .. } | Value::Vec { elements, .. } => {
                 self.get_from_vector(elements)
+            }
+            _ => Option::None,
+        }
+    }
+
+    fn get_from_vector_mut(&self, values: &'a mut [Value]) -> Option<&'a mut Value> {
+        let (index, next_path) = self.pop();
+        values
+            .get_mut(index)
+            .and_then(|value| next_path.get_from_mut(value))
+    }
+
+    fn get_from_mut(self, value: &'a mut Value) -> Option<&'a mut Value> {
+        if self.is_empty() {
+            return Option::Some(value);
+        }
+
+        match value {
+            Value::Struct { fields } | Value::Enum { fields, .. } => self.get_from_vector_mut(fields),
+            Value::Array { elements, .. } | Value::Vec { elements, .. } => {
+                self.get_from_vector_mut(elements)
             }
             _ => Option::None,
         }

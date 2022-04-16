@@ -25,6 +25,11 @@ pub enum ParseScryptoValueError {
     CustomValueCheckError(ScryptoCustomValueCheckError),
 }
 
+pub enum ScryptoValueReplaceError {
+    ProofIdNotFound(ProofId),
+    BucketIdNotFound(BucketId),
+}
+
 /// A Scrypto value is a SBOR value of which the custom types are the ones defined by `ScryptoType`.
 #[derive(Clone, PartialEq, Eq)]
 pub struct ScryptoValue {
@@ -54,6 +59,49 @@ impl ScryptoValue {
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
             lazy_map_ids: checker.lazy_maps.iter().map(|e| e.id).collect(),
         })
+    }
+
+    pub fn replace_ids(
+        &mut self,
+        proof_replacements: &HashMap<ProofId, ProofId>,
+        bucket_replacements: &HashMap<BucketId, BucketId>
+    ) -> Result<(), ScryptoValueReplaceError>{
+        let mut new_proof_ids = HashMap::new();
+        for (proof_id, path) in self.proof_ids.drain() {
+            let next_id = proof_replacements.get(&proof_id)
+                .ok_or(ScryptoValueReplaceError::ProofIdNotFound(proof_id))?;
+            let value = path.get_from_value_mut(&mut self.dom).unwrap();
+            if let Value::Custom { type_id: _, ref mut bytes} = value {
+                *bytes = scrypto::resource::Proof(*next_id).to_vec();
+            } else {
+                panic!("Proof Id should be custom type");
+            }
+
+            new_proof_ids.insert(*next_id, path);
+        }
+        self.proof_ids = new_proof_ids;
+
+        let mut new_bucket_ids = HashMap::new();
+        for (bucket_id, path) in self.bucket_ids.drain() {
+            let next_id = bucket_replacements.get(&bucket_id)
+                .ok_or(ScryptoValueReplaceError::BucketIdNotFound(bucket_id))?;
+            let value = path.get_from_value_mut(&mut self.dom).unwrap();
+            if let Value::Custom { type_id: _, ref mut bytes} = value {
+                *bytes = scrypto::resource::Bucket(*next_id).to_vec();
+            } else {
+                panic!("Bucket should be custom type");
+            }
+
+            new_bucket_ids.insert(*next_id, path);
+        }
+        self.bucket_ids = new_bucket_ids;
+
+        let mut bytes = Vec::new();
+        let mut enc = Encoder::with_type(&mut bytes);
+        encode_any(None, &self.dom, &mut enc);
+        self.raw = bytes;
+
+        Ok(())
     }
 
     pub fn from_value<T: Encode>(value: &T) -> Self {
