@@ -1,8 +1,33 @@
 use crate::any::Value;
 use crate::rust::vec::Vec;
+use crate::rust::vec;
 use sbor::*;
 
+#[derive(Eq, PartialEq, Clone)]
+pub struct MutableSborPath(Vec<usize>);
+
+impl MutableSborPath {
+    pub fn new() -> Self {
+        MutableSborPath(vec![])
+    }
+
+    pub fn push(&mut self, path: usize) {
+        self.0.push(path);
+    }
+
+    pub fn pop(&mut self) {
+        self.0.pop();
+    }
+}
+
+impl From<MutableSborPath> for SborPath {
+    fn from(mutable: MutableSborPath) -> Self {
+        SborPath::new(mutable.0)
+    }
+}
+
 /// A series of indexes which describes some value in the sbor tree
+#[derive(Eq, PartialEq, Clone)]
 pub struct SborPath(Vec<usize>);
 
 impl SborPath {

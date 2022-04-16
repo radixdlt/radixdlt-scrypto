@@ -121,10 +121,10 @@ impl IdValidator {
     }
 
     pub fn move_resources(&mut self, arg: &ScryptoValue) -> Result<(), IdValidatorError> {
-        for bucket_id in &arg.bucket_ids {
+        for (bucket_id, _) in &arg.bucket_ids {
             self.drop_bucket(*bucket_id)?;
         }
-        for proof_id in &arg.proof_ids {
+        for (proof_id, _) in &arg.proof_ids {
             self.drop_proof(*proof_id)?;
         }
         Ok(())

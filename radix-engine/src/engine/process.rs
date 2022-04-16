@@ -1,6 +1,7 @@
 use colored::*;
 
 use sbor::*;
+use sbor::path::SborPath;
 use scrypto::buffer::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::api::*;
@@ -1200,10 +1201,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
         &mut self,
-        bucket_ids: &HashSet<BucketId>,
+        bucket_ids: &HashMap<BucketId, SborPath>,
     ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
         let mut buckets = HashMap::new();
-        for bucket_id in bucket_ids {
+        for (bucket_id, _) in bucket_ids {
             let bucket = self
                 .buckets
                 .remove(bucket_id)
@@ -1237,11 +1238,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
         &mut self,
-        proof_ids: &HashSet<ProofId>,
+        proof_ids: &HashMap<ProofId, SborPath>,
         method: MoveMethod,
     ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
         let mut proofs = HashMap::new();
-        for proof_id in proof_ids {
+        for (proof_id, _) in proof_ids {
             let mut proof = self
                 .proofs
                 .remove(proof_id)
