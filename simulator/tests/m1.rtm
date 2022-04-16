@@ -1,5 +1,5 @@
 # Prepare - instantiate a `Hello` component
-CALL_FUNCTION PackageAddress("0131ee25a20db91f4383b04d4314de5825be90dd5d92c41fa2b83a") "Hello" "instantiate_hello";
+CALL_FUNCTION PackageAddress("<<<package>>>") "Hello" "instantiate_hello";
 
 # Clean up - deposit resources
-CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("02d4ca16f3a137bc109a16e752aae2bb64a65b318746c6c9199b0c") "deposit_batch";
+CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("<<<account>>>") "deposit_batch";

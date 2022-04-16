@@ -5,8 +5,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
-use crate::prelude::MethodAuth;
-use crate::resource::ComponentAuthorization;
+use crate::resource::Authorization;
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
@@ -17,7 +16,7 @@ use crate::types::*;
 pub struct LocalComponent {
     blueprint_name: String,
     state: Vec<u8>,
-    authorization: ComponentAuthorization,
+    authorization: Vec<Authorization>,
 }
 
 impl LocalComponent {
@@ -25,25 +24,12 @@ impl LocalComponent {
         Self {
             blueprint_name,
             state,
-            authorization: ComponentAuthorization::new(),
+            authorization: Vec::new(),
         }
     }
 
-    pub fn auth(mut self, method_name: &str, method_auth: MethodAuth) -> Self {
-        if self.authorization.contains_method(method_name) {
-            panic!("Cannot overwrite current auth for method");
-        }
-
-        self.authorization.insert(method_name, method_auth);
-        self
-    }
-
-    pub fn set_auth_interface(mut self, authorization: ComponentAuthorization) -> Self {
-        if !self.authorization.is_empty() {
-            panic!("Attempting to override current auth");
-        }
-
-        self.authorization = authorization;
+    pub fn auth(mut self, authorization: Authorization) -> Self {
+        self.authorization.push(authorization);
         self
     }
 
