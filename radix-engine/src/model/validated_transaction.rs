@@ -19,6 +19,21 @@ pub struct ValidatedTransaction {
 }
 
 impl ValidatedTransaction {
+    fn replace_ids(
+        mut values: Vec<ScryptoValue>,
+        proof_id_mapping: &mut HashMap<ProofId, ProofId>,
+        bucket_id_mapping: &mut HashMap<BucketId, BucketId>
+    ) -> Result<Vec<ScryptoValue>, RuntimeError> {
+        for value in values.iter_mut() {
+            value.replace_ids(proof_id_mapping, bucket_id_mapping)
+                .map_err(|e| match e {
+                    ScryptoValueReplaceError::BucketIdNotFound(bucket_id) => RuntimeError::BucketNotFound(bucket_id),
+                    ScryptoValueReplaceError::ProofIdNotFound(proof_id) => RuntimeError::ProofNotFound(proof_id),
+                })?;
+        }
+        Ok(values)
+    }
+
     pub fn main<L: SubstateStore>(&self, proc: &mut Process<L>) -> (Vec<ScryptoValue>, Option<RuntimeError>) {
         let mut proof_id_mapping: HashMap<ProofId, ProofId> = HashMap::new();
         let mut bucket_id_mapping: HashMap<BucketId, BucketId> = HashMap::new();
@@ -198,17 +213,27 @@ impl ValidatedTransaction {
                     blueprint_name,
                     function,
                     args,
-                } => proc.txn_call_function(
-                    *package_address,
-                    &blueprint_name,
-                    &function,
-                    args.clone(),
-                ),
+                } => {
+                    Self::replace_ids(args.clone(), &mut proof_id_mapping, &mut bucket_id_mapping)
+                        .and_then(|args| {
+                            proc.txn_call_function(
+                                *package_address,
+                                &blueprint_name,
+                                &function,
+                                args
+                            )
+                        })
+                },
                 ValidatedInstruction::CallMethod {
                     component_address,
                     method,
                     args,
-                } => proc.txn_call_method(*component_address, &method, args.clone()),
+                } => {
+                    Self::replace_ids(args.clone(), &mut proof_id_mapping, &mut bucket_id_mapping)
+                        .and_then(|args| {
+                            proc.txn_call_method(*component_address, &method, args)
+                        })
+                },
                 ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,

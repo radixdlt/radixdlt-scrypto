@@ -63,36 +63,36 @@ impl ScryptoValue {
 
     pub fn replace_ids(
         &mut self,
-        proof_replacements: &HashMap<ProofId, ProofId>,
-        bucket_replacements: &HashMap<BucketId, BucketId>
+        proof_replacements: &mut HashMap<ProofId, ProofId>,
+        bucket_replacements: &mut HashMap<BucketId, BucketId>
     ) -> Result<(), ScryptoValueReplaceError>{
         let mut new_proof_ids = HashMap::new();
         for (proof_id, path) in self.proof_ids.drain() {
-            let next_id = proof_replacements.get(&proof_id)
+            let next_id = proof_replacements.remove(&proof_id)
                 .ok_or(ScryptoValueReplaceError::ProofIdNotFound(proof_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let Value::Custom { type_id: _, ref mut bytes} = value {
-                *bytes = scrypto::resource::Proof(*next_id).to_vec();
+                *bytes = scrypto::resource::Proof(next_id).to_vec();
             } else {
                 panic!("Proof Id should be custom type");
             }
 
-            new_proof_ids.insert(*next_id, path);
+            new_proof_ids.insert(next_id, path);
         }
         self.proof_ids = new_proof_ids;
 
         let mut new_bucket_ids = HashMap::new();
         for (bucket_id, path) in self.bucket_ids.drain() {
-            let next_id = bucket_replacements.get(&bucket_id)
+            let next_id = bucket_replacements.remove(&bucket_id)
                 .ok_or(ScryptoValueReplaceError::BucketIdNotFound(bucket_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
             if let Value::Custom { type_id: _, ref mut bytes} = value {
-                *bytes = scrypto::resource::Bucket(*next_id).to_vec();
+                *bytes = scrypto::resource::Bucket(next_id).to_vec();
             } else {
                 panic!("Bucket should be custom type");
             }
 
-            new_bucket_ids.insert(*next_id, path);
+            new_bucket_ids.insert(next_id, path);
         }
         self.bucket_ids = new_bucket_ids;
 
