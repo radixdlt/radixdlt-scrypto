@@ -107,7 +107,10 @@ impl ResourceManager {
                 "non_fungible_exists".to_string(),
                 MethodAuthorization::AllowAll,
             );
-            authorization.insert("get_non_fungible".to_string(), MethodAuthorization::AllowAll);
+            authorization.insert(
+                "get_non_fungible".to_string(),
+                MethodAuthorization::AllowAll,
+            );
         }
 
         let resource_manager = Self {
@@ -235,10 +238,7 @@ impl ResourceManager {
             let mutable_data = Self::process_non_fungible_data(&data.1)?;
             let non_fungible = NonFungible::new(immutable_data.raw, mutable_data.raw);
 
-            system_api.set_non_fungible(
-                non_fungible_address,
-                Some(non_fungible),
-            );
+            system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
             ids.insert(id);
         }
 
