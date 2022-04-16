@@ -2,7 +2,6 @@ use colored::*;
 
 use sbor::*;
 use sbor::path::SborPath;
-use scrypto::args;
 use scrypto::buffer::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::api::*;
@@ -432,20 +431,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         self.auth_zone.push(proof);
         Ok(())
-    }
-
-    // Creates a bucket proof.
-    pub fn txn_create_bucket_proof(
-        &mut self,
-        bucket_id: BucketId,
-    ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating proof: bucket_id = {}", bucket_id);
-        let rtn = self.call(
-            SNodeRef::BucketRef(bucket_id),
-            "create_bucket_proof".to_string(),
-            args![],
-        )?;
-        Ok(*rtn.proof_ids.iter().next().unwrap().0)
     }
 
     // Creates a vault proof.

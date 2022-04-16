@@ -181,12 +181,15 @@ impl ValidatedTransaction {
                                 .ok_or(RuntimeError::BucketNotFound(new_id))
                         })
                         .and_then(|(new_id, real_bucket_id)| {
-                            proc
-                                .txn_create_bucket_proof(real_bucket_id)
-                                .map(|proof_id| {
-                                    proof_id_mapping.insert(new_id, proof_id);
-                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
-                                })
+                            proc.call(
+                                SNodeRef::BucketRef(real_bucket_id),
+                                "create_bucket_proof".to_string(),
+                                vec![],
+                            ).map(|rtn| {
+                                let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                proof_id_mapping.insert(new_id, proof_id);
+                                ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                            })
                         })
                 },
                 ValidatedInstruction::CloneProof { proof_id } =>
