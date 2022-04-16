@@ -538,7 +538,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(new_proof_id)
     }
 
-    pub fn create_auth_zone_proof_by_ids(
+    pub fn txn_create_auth_zone_proof_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
@@ -560,39 +560,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // Clone a proof.
-    pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Cloning proof: proof_id = {}", proof_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let proof = self
-            .proofs
-            .get(&proof_id)
-            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
-        let new_proof = proof.clone();
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
-    // Drop a proof.
-    pub fn drop_proof(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
-        re_debug!(self, "Dropping proof: proof_id = {}", proof_id);
-
-        let proof = self
-            .proofs
-            .remove(&proof_id)
-            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
-
-        proof.drop();
-
-        Ok(())
-    }
-
     pub fn drop_all_named_proofs(&mut self) -> Result<(), RuntimeError> {
-        let proof_ids: Vec<ProofId> = self.proofs.keys().cloned().collect();
-        for proof_id in proof_ids {
-            self.drop_proof(proof_id)?;
+        for (_, proof) in self.proofs.drain() {
+            proof.drop();
         }
+
         Ok(())
     }
 

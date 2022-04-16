@@ -1,7 +1,9 @@
+use scrypto::core::SNodeRef;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::{BTreeSet, HashMap};
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
@@ -164,7 +166,7 @@ impl ValidatedTransaction {
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
                             proc
-                                .create_auth_zone_proof_by_ids(ids, *resource_address)
+                                .txn_create_auth_zone_proof_by_ids(ids, *resource_address)
                                 .map(|proof_id| {
                                     proof_id_mapping.insert(new_id, proof_id);
                                     ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
@@ -196,20 +198,25 @@ impl ValidatedTransaction {
                                 .get(proof_id)
                                 .cloned()
                                 .map(|real_id| {
-                                    proc
-                                        .clone_proof(real_id)
-                                        .map(|proof_id| {
-                                            proof_id_mapping.insert(new_id, proof_id);
-                                            ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
-                                        })
+                                    proc.call(SNodeRef::ProofRef(real_id),
+                                        "clone".to_string(),
+                                        vec![]
+                                    ).map(|v| {
+                                        let cloned_proof_id = v.proof_ids.iter().next().unwrap().0;
+                                        proof_id_mapping.insert(new_id, *cloned_proof_id);
+                                        ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                                    })
                                 })
                                 .unwrap_or(Err(RuntimeError::ProofNotFound(*proof_id)))
                         }),
                 ValidatedInstruction::DropProof { proof_id } => {
                     proof_id_mapping.remove(proof_id)
                         .map(|real_id| {
-                            proc.drop_proof(real_id)
-                                .map(|_| ScryptoValue::from_value(&()))
+                            proc.call(
+                                SNodeRef::Proof(real_id),
+                                "drop".to_string(),
+                                vec![]
+                            )
                         })
                         .unwrap_or(Err(ProofNotFound(*proof_id)))
                 },
