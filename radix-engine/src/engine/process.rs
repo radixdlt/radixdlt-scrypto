@@ -658,8 +658,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 The reason is that the number of buckets to be created can't be determined statically, which
                 makes it hard to verify transaction if we use the transaction ID allocator.
                 */
-                let bucket_id = self.track.new_bucket_id();
-                self.buckets.insert(bucket_id, bucket);
+                if !bucket.is_empty() {
+                    let bucket_id = self.track.new_bucket_id();
+                    self.buckets.insert(bucket_id, bucket);
+                }
             }
         }
 

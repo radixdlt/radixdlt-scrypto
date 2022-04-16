@@ -118,13 +118,13 @@ impl ResourceManager {
         method_table.insert("mint".to_string(), Some(Mint));
         method_table.insert("burn".to_string(), Some(Burn));
         method_table.insert("take_from_vault".to_string(), Some(Withdraw));
+        method_table.insert("put_into_vault".to_string(), Some(Deposit));
         method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
         if let ResourceType::NonFungible = resource_type {
             method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
         }
 
         for pub_method in [
-            "put_into_vault",
             "create_bucket",
             "create_bucket_proof",
             "get_metadata",
@@ -156,6 +156,8 @@ impl ResourceManager {
         authorization.insert(Burn, MethodEntry::new(burn_entry));
         let take_entry = auth.remove(&Withdraw).unwrap_or((AllowAll, LOCKED));
         authorization.insert(Withdraw, MethodEntry::new(take_entry.clone()));
+        let deposit_entry = auth.remove(&Deposit).unwrap_or((AllowAll, LOCKED));
+        authorization.insert(Deposit, MethodEntry::new(deposit_entry.clone()));
         let update_metadata_entry = auth.remove(&UpdateMetadata).unwrap_or((DenyAll, LOCKED));
         authorization.insert(UpdateMetadata, MethodEntry::new(update_metadata_entry));
         let update_data_auth = auth
