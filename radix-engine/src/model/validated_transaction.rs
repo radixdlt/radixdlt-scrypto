@@ -107,12 +107,15 @@ impl ValidatedTransaction {
                     id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc
-                                .pop_from_auth_zone()
-                                .map(|proof_id| {
-                                    proof_id_mapping.insert(new_id, proof_id);
-                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
-                                })
+                            proc.call(
+                                SNodeRef::AuthZone,
+                                    "pop".to_string(),
+                                vec![]
+                            ).map(|rtn| {
+                                let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                proof_id_mapping.insert(new_id, proof_id);
+                                ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                            })
                         })
                 },
                 ValidatedInstruction::ClearAuthZone => {

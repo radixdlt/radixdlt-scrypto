@@ -407,15 +407,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
-    // Takes a proof from the auth zone.
-    pub fn pop_from_auth_zone(&mut self) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Popping from auth zone");
-        let new_proof_id = self.new_proof_id()?;
-        let proof = self.auth_zone.pop().map_err(RuntimeError::AuthZoneError)?;
-        self.proofs.insert(new_proof_id, proof);
-        Ok(new_proof_id)
-    }
-
     // Puts a proof onto the auth zone.
     pub fn push_to_auth_zone(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
         re_debug!(self, "Pushing onto auth zone: proof_id = {}", proof_id);
