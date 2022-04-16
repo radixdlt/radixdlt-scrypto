@@ -228,8 +228,6 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// (root process cannot create components nor is a component itself)
     wasm_process_state: Option<WasmProcess<'r>>,
 
-    /// ID allocator for buckets and proofs created within transaction.
-    id_allocator: Option<IdAllocator>,
     /// Resources collected from previous returns or self.
     worktop: Worktop,
 }
@@ -240,7 +238,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         depth: usize,
         trace: bool,
         track: &'r mut Track<'l, L>,
-        id_allocator: Option<IdAllocator>,
     ) -> Self {
         Self {
             depth,
@@ -249,7 +246,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             buckets: HashMap::new(),
             proofs: HashMap::new(),
             wasm_process_state: None,
-            id_allocator,
             worktop: Worktop::new(),
             auth_zone: AuthZone::new(),
             caller_auth_zone: None,
@@ -257,23 +253,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn new_bucket_id(&mut self) -> Result<BucketId, RuntimeError> {
-        if let Some(id_allocator) = &mut self.id_allocator {
-            id_allocator
-                .new_bucket_id()
-                .map_err(RuntimeError::IdAllocatorError)
-        } else {
-            Ok(self.track.new_bucket_id())
-        }
+        Ok(self.track.new_bucket_id())
     }
 
     fn new_proof_id(&mut self) -> Result<ProofId, RuntimeError> {
-        if let Some(id_allocator) = &mut self.id_allocator {
-            id_allocator
-                .new_proof_id()
-                .map_err(RuntimeError::IdAllocatorError)
-        } else {
-            Ok(self.track.new_proof_id())
-        }
+        Ok(self.track.new_proof_id())
     }
 
     // (Transaction ONLY) Takes resource by amount from worktop and returns a bucket.
@@ -1017,7 +1001,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             },
             _ => {
                 // start a new process
-                let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
+                let mut process = Process::new(self.depth + 1, self.trace, self.track);
                 process.caller_auth_zone = Option::Some(&self.auth_zone);
 
                 // move buckets and proofs to the new process.
@@ -1131,7 +1115,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
-        let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
+        let mut process = Process::new(self.depth + 1, self.trace, self.track);
         let result = process
             .run(&mut snode, String::new(), Vec::new())
             .map(|(r, _, _)| r);

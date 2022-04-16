@@ -7,7 +7,7 @@ use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 use crate::engine::{IdAllocator, IdSpace, Process};
 use crate::errors::RuntimeError;
-use crate::errors::RuntimeError::ProofNotFound;
+use crate::errors::RuntimeError::{ProofNotFound};
 use crate::ledger::SubstateStore;
 
 /// Represents a validated transaction
@@ -174,8 +174,13 @@ impl ValidatedTransaction {
                     id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
+                            bucket_id_mapping.get(bucket_id).cloned()
+                                .map(|real_bucket_id| (new_id, real_bucket_id))
+                                .ok_or(RuntimeError::BucketNotFound(new_id))
+                        })
+                        .and_then(|(new_id, real_bucket_id)| {
                             proc
-                                .txn_create_bucket_proof(*bucket_id)
+                                .txn_create_bucket_proof(real_bucket_id)
                                 .map(|proof_id| {
                                     proof_id_mapping.insert(new_id, proof_id);
                                     ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
