@@ -16,7 +16,7 @@ mod system;
 mod vault;
 
 pub use auth_zone::AuthZone;
-pub use authorization::ComponentAuthorization;
+pub use authorization::Authorization;
 pub use bucket::{Bucket, ParseBucketError};
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;

@@ -1,8 +1,9 @@
 use crate::buffer::*;
 use crate::component::*;
 use crate::engine::{api::*, call_engine};
-use crate::prelude::ComponentAuthorization;
+use crate::prelude::Authorization;
 use crate::rust::borrow::ToOwned;
+use crate::rust::vec::Vec;
 use crate::rust::collections::*;
 
 /// Represents the Radix Engine component subsystem.
@@ -55,7 +56,7 @@ impl ComponentSystem {
     pub fn instantiate_component<T: ComponentState>(
         &mut self,
         blueprint_name: &str,
-        authorization: ComponentAuthorization,
+        authorization: Vec<Authorization>,
         state: T,
     ) -> ComponentAddress {
         let input = CreateComponentInput {

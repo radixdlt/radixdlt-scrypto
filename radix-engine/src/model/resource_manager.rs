@@ -109,7 +109,7 @@ impl ResourceManager {
             "get_bucket_amount",
             "get_bucket_resource_address",
         ] {
-            authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
+            authorization.insert(pub_method.to_string(), MethodAuthorization::AllowAll);
         }
 
         if let ResourceType::NonFungible = resource_type {
@@ -119,7 +119,7 @@ impl ResourceManager {
                 "get_non_fungible",
                 "get_non_fungible_ids_in_bucket",
             ] {
-                authorization.insert(pub_method.to_string(), MethodAuthorization::Public);
+                authorization.insert(pub_method.to_string(), MethodAuthorization::AllowAll);
             }
         }
 
