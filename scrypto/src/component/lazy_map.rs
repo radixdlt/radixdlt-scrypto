@@ -14,7 +14,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// A scalable key-value map which loads entries on demand.
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct LazyMap<K: Encode + Decode, V: Encode + Decode> {
     pub id: LazyMapId,
     pub key: PhantomData<K>,

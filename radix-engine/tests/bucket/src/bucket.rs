@@ -9,7 +9,6 @@ blueprint! {
         fn create_test_token(amount: u32) -> Bucket {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "TestToken")
                 .initial_supply(amount);
             let proof1 = bucket.create_proof();
@@ -48,7 +47,6 @@ blueprint! {
         pub fn test_restricted_transfer() -> Vec<Bucket> {
             let auth_bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .auth(TakeFromVault, auth!(allow_all))
                 .initial_supply(1);
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
@@ -68,11 +66,9 @@ blueprint! {
         pub fn test_burn() -> Vec<Bucket> {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .auth(TakeFromVault, auth!(allow_all))
                 .initial_supply(1);
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .auth(TakeFromVault, auth!(allow_all))
                 .auth(Burn, auth!(require(badge.resource_address())))
                 .initial_supply(5);
             badge.authorize(|| bucket.burn());
@@ -82,11 +78,9 @@ blueprint! {
         pub fn test_burn_freely() -> Vec<Bucket> {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
-                .auth(TakeFromVault, auth!(allow_all))
                 .initial_supply(1);
             let mut bucket1 = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .auth(TakeFromVault, auth!(allow_all))
                 .auth(Burn, auth!(allow_all))
                 .initial_supply(5);
             let bucket2 = bucket1.take(2);

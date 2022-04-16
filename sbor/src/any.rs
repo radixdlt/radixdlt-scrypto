@@ -1,3 +1,4 @@
+use sbor::path::MutableSborPath;
 use crate::decode::*;
 use crate::encode::*;
 use crate::rust::borrow::Borrow;
@@ -531,7 +532,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
     }
 }
 
-pub fn traverse_any<V, E>(value: &Value, visitor: &mut V) -> Result<(), E>
+pub fn traverse_any<V, E>(path: &mut MutableSborPath, value: &Value, visitor: &mut V) -> Result<(), E>
 where
     V: CustomValueVisitor<Err = E>,
 {
@@ -552,30 +553,40 @@ where
         | Value::String { .. } => {}
         // struct & enum
         Value::Struct { fields } | Value::Enum { fields, .. } => {
-            for field in fields {
-                traverse_any(field, visitor)?;
+            for (i, field) in fields.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, field, visitor)?;
+                path.pop();
             }
         }
         // composite types
         Value::Option { value } => match value.borrow() {
             None => {}
             Some(x) => {
-                traverse_any(x, visitor)?;
+                path.push(0);
+                traverse_any(path, x, visitor)?;
+                path.pop();
             }
         },
         Value::Array { elements, .. } => {
-            for e in elements {
-                traverse_any(e, visitor)?;
+            for (i, e) in elements.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, e, visitor)?;
+                path.pop();
             }
         }
         Value::Tuple { elements } => {
-            for e in elements {
-                traverse_any(e, visitor)?;
+            for (i, e) in elements.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, e, visitor)?;
+                path.pop();
             }
         }
         Value::Result { value } => match value.borrow() {
             Ok(x) | Err(x) => {
-                traverse_any(x, visitor)?;
+                path.push(0);
+                traverse_any(path, x, visitor)?;
+                path.pop();
             }
         },
         // collections
@@ -584,13 +595,15 @@ where
         | Value::HashSet { elements, .. }
         | Value::TreeMap { elements, .. }
         | Value::HashMap { elements, .. } => {
-            for e in elements {
-                traverse_any(e, visitor)?;
+            for (i, e) in elements.iter().enumerate() {
+                path.push(i);
+                traverse_any(path, e, visitor)?;
+                path.pop();
             }
         }
         // custom types
         Value::Custom { type_id, bytes } => {
-            visitor.visit(*type_id, bytes)?;
+            visitor.visit(path, *type_id, bytes)?;
         }
     }
 
@@ -600,7 +613,7 @@ where
 pub trait CustomValueVisitor {
     type Err;
 
-    fn visit(&mut self, type_id: u8, data: &[u8]) -> Result<(), Self::Err>;
+    fn visit(&mut self, path: &mut MutableSborPath, type_id: u8, data: &[u8]) -> Result<(), Self::Err>;
 }
 
 #[cfg(test)]

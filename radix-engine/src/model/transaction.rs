@@ -363,12 +363,12 @@ impl SignedTransaction {
             id_validator
                 .move_resources(&validated_arg)
                 .map_err(TransactionValidationError::IdValidatorError)?;
-            if let Some(vault_id) = validated_arg.vault_ids.first() {
+            if let Some(vault_id) = validated_arg.vault_ids.iter().nth(0) {
                 return Err(TransactionValidationError::VaultNotAllowed(
                     vault_id.clone(),
                 ));
             }
-            if let Some(lazy_map_id) = validated_arg.lazy_map_ids.first() {
+            if let Some(lazy_map_id) = validated_arg.lazy_map_ids.iter().nth(0) {
                 return Err(TransactionValidationError::LazyMapNotAllowed(
                     lazy_map_id.clone(),
                 ));

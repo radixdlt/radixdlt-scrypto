@@ -1,6 +1,7 @@
 use colored::*;
 
 use sbor::*;
+use sbor::path::SborPath;
 use scrypto::args;
 use scrypto::buffer::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
@@ -460,7 +461,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             "create_bucket_proof".to_string(),
             args![],
         )?;
-        Ok(rtn.proof_ids[0])
+        Ok(*rtn.proof_ids.iter().next().unwrap().0)
     }
 
     // Creates a vault proof.
@@ -835,15 +836,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Calls a function/method.
     pub fn call(
         &mut self,
-        mut snode_ref: SNodeRef,
+        snode_ref: SNodeRef,
         function: String,
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         // Authorization and state load
-        let (mut snode, method_auth) = match &mut snode_ref {
+        let (mut snode, method_auths) = match &snode_ref {
             SNodeRef::AuthZone => {
                 let auth_zone = mem::replace(&mut self.auth_zone, AuthZone::new());
-                Ok((SNodeState::AuthZone(auth_zone), MethodAuthorization::Public))
+                Ok((SNodeState::AuthZone(auth_zone), vec![]))
             }
             SNodeRef::Scrypto(actor) => {
                 match actor {
@@ -858,7 +859,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                                 ),
                                 None,
                             ),
-                            MethodAuthorization::Public,
+                            vec![],
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
@@ -879,7 +880,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .unwrap()
                             .clone();
 
-                        let (_, method_auth) = component.method_authorization(&schema, &function);
+                        let (_, method_auths) = component.method_authorization(&schema, &function);
                         Ok((
                             SNodeState::Scrypto(
                                 ScryptoActorInfo::component(
@@ -890,13 +891,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                                 ),
                                 Some(component),
                             ),
-                            method_auth,
+                            method_auths,
                         ))
                     }
                 }
             }
             SNodeRef::ResourceStatic => {
-                Ok((SNodeState::ResourceStatic, MethodAuthorization::Public))
+                Ok((SNodeState::ResourceStatic, vec![]))
             }
             SNodeRef::ResourceRef(resource_address) => {
                 let resource_manager: ResourceManager = self
@@ -905,7 +906,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 let method_auth = resource_manager.get_auth(&function).clone();
                 Ok((
                     SNodeState::ResourceRef(resource_address.clone(), resource_manager),
-                    method_auth,
+                    vec![method_auth],
                 ))
             }
             SNodeRef::Bucket(bucket_id) => {
@@ -919,7 +920,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::Bucket(bucket), method_auth.clone()))
+                Ok((SNodeState::Bucket(bucket), vec![method_auth.clone()]))
             }
             SNodeRef::BucketRef(bucket_id) => {
                 let bucket = self
@@ -934,16 +935,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_auth(&function);
                 Ok((
                     SNodeState::BucketRef(bucket_id.clone(), bucket),
-                    method_auth.clone(),
+                    vec![method_auth.clone()],
                 ))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                Ok((SNodeState::ProofRef(proof_id.clone(), proof), MethodAuthorization::Public))
+                Ok((SNodeState::ProofRef(proof_id.clone(), proof), vec![]))
             }
             SNodeRef::Proof(proof_id) => {
                 let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                Ok((SNodeState::Proof(proof), MethodAuthorization::Public))
+                Ok((SNodeState::Proof(proof), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
@@ -952,28 +953,32 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::VaultRef(vault_id.clone()), method_auth.clone()))
+                Ok((SNodeState::VaultRef(vault_id.clone()), vec![method_auth.clone()]))
             }
         }?;
 
         // Authorization check
-        let proofs_vector = match &snode {
-            // Same process auth check
-            SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) => {
-                if let Some(auth_zone) = self.caller_auth_zone {
-                    vec![auth_zone, &self.auth_zone]
-                } else {
-                    vec![&self.auth_zone]
+        if !method_auths.is_empty() {
+            let proofs_vector = match &snode {
+                // Same process auth check
+                SNodeState::ResourceRef(_,_) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
+                    if let Some(auth_zone) = self.caller_auth_zone {
+                        vec![auth_zone, &self.auth_zone]
+                    } else {
+                        vec![&self.auth_zone]
+                    }
+
                 }
+                // Extern call auth check
+                _ => vec![&self.auth_zone],
+            };
 
+            for method_auth in method_auths {
+                method_auth
+                    .check(&proofs_vector)
+                    .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
             }
-            // Extern call auth check
-            _ => vec![&self.auth_zone],
-        };
-
-        method_auth
-            .check(&proofs_vector)
-            .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
+        }
 
         // Execution
 
@@ -1078,7 +1083,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = self.call(snode_ref, function.to_string(), args)?;
 
         // Auto move into auth_zone
-        for proof_id in &result.proof_ids {
+        for (proof_id, _) in &result.proof_ids {
             let proof = self.proofs.remove(proof_id).unwrap();
             self.auth_zone.push(proof);
         }
@@ -1099,7 +1104,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let result = self.call(snode_ref, method.to_string(), args)?;
 
         // Auto move into auth_zone
-        for proof_id in &result.proof_ids {
+        for (proof_id, _) in &result.proof_ids {
             let proof = self.proofs.remove(proof_id).unwrap();
             self.auth_zone.push(proof);
         }
@@ -1235,10 +1240,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
         &mut self,
-        bucket_ids: &[BucketId],
+        bucket_ids: &HashMap<BucketId, SborPath>,
     ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
         let mut buckets = HashMap::new();
-        for bucket_id in bucket_ids {
+        for (bucket_id, _) in bucket_ids {
             let bucket = self
                 .buckets
                 .remove(bucket_id)
@@ -1272,11 +1277,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
         &mut self,
-        proof_ids: &[ProofId],
+        proof_ids: &HashMap<ProofId, SborPath>,
         method: MoveMethod,
     ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
         let mut proofs = HashMap::new();
-        for proof_id in proof_ids {
+        for (proof_id, _) in proof_ids {
             let mut proof = self
                 .proofs
                 .remove(proof_id)

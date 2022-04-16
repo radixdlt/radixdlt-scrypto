@@ -15,7 +15,7 @@ use crate::rust::string::ToString;
 use crate::types::*;
 
 /// Represents a proof of owning some resource.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub ProofId);
 
 impl Clone for Proof {

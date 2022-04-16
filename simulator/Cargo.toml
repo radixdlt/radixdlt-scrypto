@@ -17,6 +17,7 @@ uuid = { version = "0.8", features = ["v4"] }
 hex = { version = "0.4" }
 cargo_toml = { version = "0.10" }
 rocksdb = { git = "https://github.com/rust-rocksdb/rust-rocksdb", tag = "v0.17.0" }
+rand = "*"
 
 [[bin]]
 name = "resim"

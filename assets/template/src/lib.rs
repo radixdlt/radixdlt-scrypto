@@ -15,7 +15,6 @@ blueprint! {
             let my_bucket: Bucket = ResourceBuilder::new_fungible()
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
-                .auth(TakeFromVault, auth!(allow_all))
                 .initial_supply(1000);
 
             // Instantiate a Hello component, populating its vault with our supply of 1000 HelloToken
@@ -23,7 +22,6 @@ blueprint! {
                 sample_vault: Vault::with_bucket(my_bucket)
             }
             .instantiate()
-            .auth("free_token", auth!(allow_all))
             .globalize()
         }
 

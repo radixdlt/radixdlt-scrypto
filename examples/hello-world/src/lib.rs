@@ -14,7 +14,6 @@ blueprint! {
             // Create a new token called "HelloToken," with a fixed supply of 1000, and put that supply into a bucket
             let my_bucket: Bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "HelloToken")
                 .metadata("symbol", "HT")
                 .initial_supply(1000);
@@ -24,7 +23,6 @@ blueprint! {
                 sample_vault: Vault::with_bucket(my_bucket),
             }
             .instantiate()
-            .auth("free_token", auth!(allow_all))
             .globalize()
         }
 

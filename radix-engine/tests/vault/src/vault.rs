@@ -14,7 +14,6 @@ blueprint! {
         pub fn dangling_vault() -> () {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "TestToken")
                 .initial_supply(1);
             let _vault = Vault::with_bucket(bucket);
@@ -23,7 +22,6 @@ blueprint! {
         fn new_fungible() -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
-                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "TestToken")
                 .initial_supply(1)
         }
@@ -41,11 +39,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -64,11 +57,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -87,11 +75,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -113,11 +96,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -143,17 +121,11 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
         fn create_non_fungible_vault() -> Vault {
             let bucket = ResourceBuilder::new_non_fungible()
-                .auth(TakeFromVault, auth!(allow_all))
                 .metadata("name", "TestToken")
                 .initial_supply([(NonFungibleId::from_u32(1), Data {})]);
             Vault::with_bucket(bucket)
@@ -171,11 +143,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -190,11 +157,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -209,11 +171,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
 
@@ -228,11 +185,6 @@ blueprint! {
                 vault_vector,
             }
             .instantiate()
-            .auth("overwrite_vault_in_map", auth!(allow_all))
-            .auth("clear_vector", auth!(allow_all))
-            .auth("push_vault_into_vector", auth!(allow_all))
-            .auth("new_vault_with_take", auth!(allow_all))
-            .auth("create_non_fungible_vault", auth!(allow_all))
             .globalize()
         }
     }

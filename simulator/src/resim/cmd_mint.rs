@@ -33,11 +33,10 @@ impl Mint {
         let (default_pk, default_sk) = get_default_signers()?;
 
         let transaction = TransactionBuilder::new()
-            .withdraw_from_account(self.minter_resource_address, default_account)
+            .create_proof_from_account(self.minter_resource_address, default_account)
             .mint(
                 self.amount,
                 self.resource_address,
-                self.minter_resource_address,
             )
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build(executor.get_nonce([default_pk]))

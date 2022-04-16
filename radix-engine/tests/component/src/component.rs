@@ -11,7 +11,6 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .auth(TakeFromVault, auth!(allow_all))
                 .initial_supply(amount)
         }
 
@@ -21,9 +20,6 @@ blueprint! {
                 secret: "Secret".to_owned(),
             }
             .instantiate()
-            .auth("get_component_info", auth!(allow_all))
-            .auth("get_component_state", auth!(allow_all))
-            .auth("put_component_state", auth!(allow_all))
             .globalize()
         }
 

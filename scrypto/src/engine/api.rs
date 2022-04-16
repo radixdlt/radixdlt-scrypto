@@ -1,6 +1,6 @@
 use crate::core::SNodeRef;
 use sbor::*;
-use scrypto::prelude::ComponentAuthorization;
+use scrypto::prelude::Authorization;
 
 use crate::engine::types::*;
 use crate::rust::collections::BTreeSet;
@@ -99,7 +99,7 @@ pub struct PublishPackageOutput {
 pub struct CreateComponentInput {
     pub blueprint_name: String,
     pub state: Vec<u8>,
-    pub authorization: ComponentAuthorization,
+    pub authorization: Vec<Authorization>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

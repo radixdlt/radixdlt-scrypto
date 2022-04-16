@@ -223,7 +223,7 @@ macro_rules! assert_auth_error {
                 ::radix_engine::model::MethodAuthorizationError::NotAuthorized
             )
         ) {
-            panic!("Not expected error {}", $error);
+            panic!("Expected auth error but got: {:?}", $error);
         }
     }};
 }
