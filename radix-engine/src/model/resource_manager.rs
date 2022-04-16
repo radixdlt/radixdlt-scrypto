@@ -98,16 +98,29 @@ impl ResourceManager {
             );
         }
 
-        for pub_method in ["get_metadata", "get_resource_type", "get_total_supply"] {
+        for pub_method in [
+            "create_bucket",
+            "create_bucket_proof",
+            "get_metadata",
+            "get_resource_type",
+            "get_total_supply",
+            "take_from_bucket",
+            "put_into_bucket",
+            "get_bucket_amount",
+            "get_bucket_resource_address",
+        ] {
             authorization.insert(pub_method.to_string(), MethodAuthorization::AllowAll);
         }
 
         if let ResourceType::NonFungible = resource_type {
-            authorization.insert(
-                "non_fungible_exists".to_string(),
-                MethodAuthorization::AllowAll,
-            );
-            authorization.insert("get_non_fungible".to_string(), MethodAuthorization::AllowAll);
+            for pub_method in [
+                "take_non_fungibles_from_bucket",
+                "non_fungible_exists",
+                "get_non_fungible",
+                "get_non_fungible_ids_in_bucket",
+            ] {
+                authorization.insert(pub_method.to_string(), MethodAuthorization::AllowAll);
+            }
         }
 
         let resource_manager = Self {
@@ -235,10 +248,7 @@ impl ResourceManager {
             let mutable_data = Self::process_non_fungible_data(&data.1)?;
             let non_fungible = NonFungible::new(immutable_data.raw, mutable_data.raw);
 
-            system_api.set_non_fungible(
-                non_fungible_address,
-                Some(non_fungible),
-            );
+            system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
             ids.insert(id);
         }
 
@@ -319,6 +329,16 @@ impl ResourceManager {
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
+            "create_empty_bucket" => {
+                let container =
+                    ResourceContainer::new_empty(resource_address, self.resource_type());
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
+            }
             "mint" => {
                 // TODO: cleanup
                 let mint_params: MintParams = scrypto_decode(&args[0].raw)

@@ -53,7 +53,7 @@ impl Vault {
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
         let amount: Decimal = amount.into();
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Vault(self.0),
+            snode_ref: SNodeRef::VaultRef(self.0),
             function: "take_from_vault".to_string(),
             args: args![amount],
         };
@@ -81,7 +81,7 @@ impl Vault {
     /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
     pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Vault(self.0),
+            snode_ref: SNodeRef::VaultRef(self.0),
             function: "take_non_fungibles_from_vault".to_string(),
             args: vec![scrypto_encode(non_fungible_ids)],
         };

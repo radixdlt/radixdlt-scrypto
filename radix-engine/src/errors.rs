@@ -177,7 +177,7 @@ pub enum RuntimeError {
     ResourceManagerError(ResourceManagerError),
 
     /// Bucket access error.
-    BucketError(ResourceContainerError),
+    BucketError(BucketError),
 
     /// Vault access error.
     VaultError(VaultError),
@@ -209,8 +209,8 @@ pub enum RuntimeError {
     /// Resource check failure.
     ResourceCheckFailure,
 
-    /// AuthZone is empty when trying to pop
-    EmptyAuthZone,
+    /// AuthZone error
+    AuthZoneError(AuthZoneError),
 
     /// System Authorization Failure
     AuthorizationError(String, MethodAuthorizationError),

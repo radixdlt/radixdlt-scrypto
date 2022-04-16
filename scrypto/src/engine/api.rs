@@ -43,49 +43,12 @@ pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
 /// Get the IDs of all non-fungibles in this vault
 pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
-/// Create an empty bucket
-pub const CREATE_EMPTY_BUCKET: u32 = 0x50;
-/// Put fungible resource into this bucket
-pub const PUT_INTO_BUCKET: u32 = 0x51;
-/// Take fungible resource from this bucket
-pub const TAKE_FROM_BUCKET: u32 = 0x52;
-/// Get bucket resource amount
-pub const GET_BUCKET_AMOUNT: u32 = 0x53;
-/// Get bucket resource address
-pub const GET_BUCKET_RESOURCE_ADDRESS: u32 = 0x54;
-/// Take a non-fungible from this bucket, by id
-pub const TAKE_NON_FUNGIBLES_FROM_BUCKET: u32 = 0x55;
-/// Get the IDs of all non-fungibles in this bucket
-pub const GET_NON_FUNGIBLE_IDS_IN_BUCKET: u32 = 0x56;
-
-/// Create a bucket proof
-pub const CREATE_BUCKET_PROOF: u32 = 0x60;
 /// Create a vault proof
 pub const CREATE_VAULT_PROOF: u32 = 0x63;
 /// Create a vault proof by amount
 pub const CREATE_VAULT_PROOF_BY_AMOUNT: u32 = 0x64;
 /// Create a vault proof by ids
 pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
-/// Create an auth zone proof
-pub const CREATE_AUTH_ZONE_PROOF: u32 = 0x66;
-/// Create an auth zone proof by amount
-pub const CREATE_AUTH_ZONE_PROOF_BY_AMOUNT: u32 = 0x67;
-/// Create an auth zone proof by ids
-pub const CREATE_AUTH_ZONE_PROOF_BY_IDS: u32 = 0x68;
-/// Clone proof
-pub const CLONE_PROOF: u32 = 0x69;
-/// Drop a proof
-pub const DROP_PROOF: u32 = 0x6A;
-/// Get the resource amount
-pub const GET_PROOF_AMOUNT: u32 = 0x6B;
-/// Get the resource address
-pub const GET_PROOF_RESOURCE_ADDRESS: u32 = 0x6C;
-/// Get the non-fungible ids
-pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
-/// Push a proof onto auth zone
-pub const PUSH_TO_AUTH_ZONE: u32 = 0x6E;
-/// Pop a proof from auth zone
-pub const POP_FROM_AUTH_ZONE: u32 = 0x6F;
 
 pub const INVOKE_SNODE: u32 = 0x70;
 
@@ -258,93 +221,8 @@ pub struct GetNonFungibleIdsInVaultOutput {
 }
 
 //==========
-// bucket
-//==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateEmptyBucketInput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateEmptyBucketOutput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoBucketInput {
-    pub bucket_id: BucketId,
-    pub other: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoBucketOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromBucketInput {
-    pub bucket_id: BucketId,
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeFromBucketOutput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketAmountInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketAmountOutput {
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceAddressInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetBucketResourceAddressOutput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromBucketInput {
-    pub bucket_id: BucketId,
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct TakeNonFungiblesFromBucketOutput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInBucketInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInBucketOutput {
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-//==========
 // proof
 //==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofInput {
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateBucketProofOutput {
-    pub proof_id: ProofId,
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateVaultProofInput {
@@ -375,102 +253,6 @@ pub struct CreateVaultProofByIdsInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateVaultProofByIdsOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateAuthZoneProofInput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateAuthZoneProofOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateAuthZoneProofByAmountInput {
-    pub resource_address: ResourceAddress,
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateAuthZoneProofByAmountOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateAuthZoneProofByIdsInput {
-    pub resource_address: ResourceAddress,
-    pub ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateAuthZoneProofByIdsOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct DropProofInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct DropProofOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofAmountInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofAmountOutput {
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofResourceAddressInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofResourceAddressOutput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInProofInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInProofOutput {
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CloneProofInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CloneProofOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushToAuthZoneInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PushToAuthZoneOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PopFromAuthZoneInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PopFromAuthZoneOutput {
     pub proof_id: ProofId,
 }
 
