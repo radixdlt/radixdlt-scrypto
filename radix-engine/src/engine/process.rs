@@ -460,10 +460,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             "create_bucket_proof".to_string(),
             args![],
         )?;
-        let proof = self.proofs.remove(&rtn.proof_ids[0]).unwrap();
-        let proof_id = self.new_proof_id()?;
-        self.proofs.insert(proof_id, proof);
-        Ok(proof_id)
+        Ok(rtn.proof_ids[0])
     }
 
     // Creates a vault proof.

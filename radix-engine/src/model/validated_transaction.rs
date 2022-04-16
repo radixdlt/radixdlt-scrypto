@@ -1,12 +1,13 @@
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::BTreeSet;
+use scrypto::rust::collections::{BTreeSet, HashMap};
 use scrypto::rust::string::String;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
-use crate::engine::Process;
+use crate::engine::{IdAllocator, IdSpace, Process};
 use crate::errors::RuntimeError;
+use crate::errors::RuntimeError::ProofNotFound;
 use crate::ledger::SubstateStore;
 
 /// Represents a validated transaction
@@ -19,34 +20,60 @@ pub struct ValidatedTransaction {
 
 impl ValidatedTransaction {
     pub fn main<L: SubstateStore>(&self, proc: &mut Process<L>) -> (Vec<ScryptoValue>, Option<RuntimeError>) {
+        let mut proof_id_mapping: HashMap<ProofId, ProofId> = HashMap::new();
+        let mut bucket_id_mapping: HashMap<BucketId, BucketId> = HashMap::new();
+        let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
         let mut error: Option<RuntimeError> = None;
         let mut outputs = vec![];
 
         for inst in &self.instructions {
             let result = match inst {
-                ValidatedInstruction::TakeFromWorktop { resource_address } => proc
-                    .take_all_from_worktop(*resource_address)
-                    .map(|bucket_id| {
-                        ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id))
-                    }),
+                ValidatedInstruction::TakeFromWorktop { resource_address } => {
+                    id_allocator.new_bucket_id()
+                        .map_err(RuntimeError::IdAllocatorError)
+                        .and_then(|new_id| {
+                            proc
+                                .take_all_from_worktop(*resource_address)
+                                .map(|bucket_id| {
+                                    bucket_id_mapping.insert(new_id, bucket_id);
+                                    ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
+                                })
+                        })
+                },
                 ValidatedInstruction::TakeFromWorktopByAmount {
                     amount,
                     resource_address,
-                } => proc
-                    .take_from_worktop(*amount, *resource_address)
-                    .map(|bucket_id| {
-                        ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id))
-                    }),
+                } =>
+                    id_allocator
+                        .new_bucket_id()
+                        .map_err(RuntimeError::IdAllocatorError)
+                        .and_then(|new_id| {
+                            proc
+                                .take_from_worktop(*amount, *resource_address)
+                                .map(|bucket_id| {
+                                    bucket_id_mapping.insert(new_id, bucket_id);
+                                    ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
+                                })
+                        }),
                 ValidatedInstruction::TakeFromWorktopByIds {
                     ids,
                     resource_address,
-                } => proc
-                    .take_non_fungibles_from_worktop(ids, *resource_address)
-                    .map(|bucket_id| {
-                        ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id))
-                    }),
+                } =>
+                    id_allocator
+                        .new_bucket_id()
+                        .map_err(RuntimeError::IdAllocatorError)
+                        .and_then(|new_id| {
+                            proc
+                                .take_non_fungibles_from_worktop(ids, *resource_address)
+                                .map(|bucket_id| {
+                                    bucket_id_mapping.insert(new_id, bucket_id);
+                                    ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
+                                })
+                        }),
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
-                    proc.return_to_worktop(*bucket_id)
+                    bucket_id_mapping.remove(bucket_id)
+                        .map(|real_id| proc.return_to_worktop(real_id))
+                        .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id)))
                 }
                 ValidatedInstruction::AssertWorktopContains { resource_address } => {
                     proc.assert_worktop_contains(*resource_address)
@@ -59,39 +86,113 @@ impl ValidatedTransaction {
                     ids,
                     resource_address,
                 } => proc.assert_worktop_contains_by_ids(&ids, *resource_address),
-                ValidatedInstruction::PopFromAuthZone {} => proc
-                    .pop_from_auth_zone()
-                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
-                ValidatedInstruction::ClearAuthZone => proc
-                    .drop_all_auth_zone_proofs()
-                    .map(|_| ScryptoValue::from_value(&())),
-                ValidatedInstruction::PushToAuthZone { proof_id } => proc
-                    .push_to_auth_zone(*proof_id)
-                    .map(|_| ScryptoValue::from_value(&())),
-                ValidatedInstruction::CreateProofFromAuthZone { resource_address } => proc
-                    .create_auth_zone_proof(*resource_address)
-                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
+                ValidatedInstruction::PopFromAuthZone {} => {
+                    id_allocator.new_proof_id()
+                        .map_err(RuntimeError::IdAllocatorError)
+                        .and_then(|new_id| {
+                            proc
+                                .pop_from_auth_zone()
+                                .map(|proof_id| {
+                                    proof_id_mapping.insert(new_id, proof_id);
+                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                                })
+                        })
+                },
+                ValidatedInstruction::ClearAuthZone => {
+                    proof_id_mapping.clear();
+                    proc
+                        .drop_all_auth_zone_proofs()
+                        .map(|_| ScryptoValue::from_value(&()))
+                },
+                ValidatedInstruction::PushToAuthZone { proof_id } => {
+                    match proof_id_mapping.remove(proof_id) {
+                        Some(mapped_id) => {
+                            proc
+                                .push_to_auth_zone(mapped_id)
+                                .map(|_| ScryptoValue::from_value(&()))
+                        },
+                        None => {
+                            Err(RuntimeError::ProofNotFound(*proof_id))
+                        }
+                    }
+                },
+                ValidatedInstruction::CreateProofFromAuthZone { resource_address } =>
+                    id_allocator.new_proof_id()
+                        .map_err(RuntimeError::IdAllocatorError)
+                        .and_then(|new_id| {
+                            proc
+                                .create_auth_zone_proof(*resource_address)
+                                .map(|proof_id| {
+                                    proof_id_mapping.insert(new_id, proof_id);
+                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                                })
+                        }),
                 ValidatedInstruction::CreateProofFromAuthZoneByAmount {
                     amount,
                     resource_address,
-                } => proc
-                    .create_auth_zone_proof_by_amount(*amount, *resource_address)
-                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
+                } =>
+                    id_allocator.new_proof_id()
+                        .map_err(RuntimeError::IdAllocatorError)
+                        .and_then(|new_id| {
+                            proc
+                                .create_auth_zone_proof_by_amount(*amount, *resource_address)
+                                .map(|proof_id| {
+                                    proof_id_mapping.insert(new_id, proof_id);
+                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                                })
+                        }),
                 ValidatedInstruction::CreateProofFromAuthZoneByIds {
                     ids,
                     resource_address,
-                } => proc
-                    .create_auth_zone_proof_by_ids(ids, *resource_address)
-                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
-                ValidatedInstruction::CreateProofFromBucket { bucket_id } => proc
-                    .txn_create_bucket_proof(*bucket_id)
-                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
-                ValidatedInstruction::CloneProof { proof_id } => proc
-                    .clone_proof(*proof_id)
-                    .map(|proof_id| ScryptoValue::from_value(&scrypto::resource::Proof(proof_id))),
-                ValidatedInstruction::DropProof { proof_id } => proc
-                    .drop_proof(*proof_id)
-                    .map(|_| ScryptoValue::from_value(&())),
+                } =>
+                    id_allocator.new_proof_id()
+                        .map_err(RuntimeError::IdAllocatorError)
+                        .and_then(|new_id| {
+                            proc
+                                .create_auth_zone_proof_by_ids(ids, *resource_address)
+                                .map(|proof_id| {
+                                    proof_id_mapping.insert(new_id, proof_id);
+                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                                })
+                        }),
+                ValidatedInstruction::CreateProofFromBucket { bucket_id } => {
+                    id_allocator.new_proof_id()
+                        .map_err(RuntimeError::IdAllocatorError)
+                        .and_then(|new_id| {
+                            proc
+                                .txn_create_bucket_proof(*bucket_id)
+                                .map(|proof_id| {
+                                    proof_id_mapping.insert(new_id, proof_id);
+                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                                })
+                        })
+                },
+                ValidatedInstruction::CloneProof { proof_id } =>
+                    id_allocator
+                        .new_proof_id()
+                        .map_err(RuntimeError::IdAllocatorError)
+                        .and_then(|new_id| {
+                            proof_id_mapping
+                                .get(proof_id)
+                                .cloned()
+                                .map(|real_id| {
+                                    proc
+                                        .clone_proof(real_id)
+                                        .map(|proof_id| {
+                                            proof_id_mapping.insert(new_id, proof_id);
+                                            ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                                        })
+                                })
+                                .unwrap_or(Err(RuntimeError::ProofNotFound(*proof_id)))
+                        }),
+                ValidatedInstruction::DropProof { proof_id } => {
+                    proof_id_mapping.remove(proof_id)
+                        .map(|real_id| {
+                            proc.drop_proof(real_id)
+                                .map(|_| ScryptoValue::from_value(&()))
+                        })
+                        .unwrap_or(Err(ProofNotFound(*proof_id)))
+                },
                 ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
