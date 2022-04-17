@@ -8,7 +8,7 @@ use crate::type_id::*;
 
 /// Represents a SBOR value.
 #[cfg_attr(
-    any(feature = "serde_std", feature = "serde_alloc"),
+    feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type") // For JSON readability, see https://serde.rs/enum-representations.html
 )]
@@ -64,10 +64,6 @@ pub enum Value {
         value: Box<Option<Value>>,
     },
     Array {
-        #[cfg_attr(
-            any(feature = "serde_std", feature = "serde_alloc"),
-            serde(rename = "elementTypeId")
-        )]
         element_type_id: u8,
         elements: Vec<Value>,
     },
@@ -79,61 +75,30 @@ pub enum Value {
     },
 
     Vec {
-        #[cfg_attr(
-            any(feature = "serde_std", feature = "serde_alloc"),
-            serde(rename = "elementTypeId")
-        )]
         element_type_id: u8,
         elements: Vec<Value>,
     },
     TreeSet {
-        #[cfg_attr(
-            any(feature = "serde_std", feature = "serde_alloc"),
-            serde(rename = "elementTypeId")
-        )]
         element_type_id: u8,
         elements: Vec<Value>,
     },
     TreeMap {
-        #[cfg_attr(
-            any(feature = "serde_std", feature = "serde_alloc"),
-            serde(rename = "keyTypeId")
-        )]
         key_type_id: u8,
-        #[cfg_attr(
-            any(feature = "serde_std", feature = "serde_alloc"),
-            serde(rename = "valueTypeId")
-        )]
         value_type_id: u8,
         elements: Vec<Value>,
     },
     HashSet {
-        #[cfg_attr(
-            any(feature = "serde_std", feature = "serde_alloc"),
-            serde(rename = "elementTypeId")
-        )]
         element_type_id: u8,
         elements: Vec<Value>,
     },
     HashMap {
-        #[cfg_attr(
-            any(feature = "serde_std", feature = "serde_alloc"),
-            serde(rename = "keyTypeId")
-        )]
         key_type_id: u8,
-        #[cfg_attr(
-            any(feature = "serde_std", feature = "serde_alloc"),
-            serde(rename = "valueTypeId")
-        )]
         value_type_id: u8,
         elements: Vec<Value>,
     },
     Custom {
-        #[cfg_attr(
-            any(feature = "serde_std", feature = "serde_alloc"),
-            serde(rename = "typeId")
-        )]
         type_id: u8,
+        #[cfg_attr(feature = "serde", serde(with = "hex::serde"))]
         bytes: Vec<u8>,
     },
 }

@@ -10,7 +10,7 @@ p256 = { git = "https://github.com/radix-scrypto/elliptic-curves", branch = "fea
 hex = { version = "0.4", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 num-bigint = { version = "0.4", default-features = false }
-hashbrown = { version = "0.11", optional = true } 
+hashbrown = { version = "0.12", optional = true } 
 cargo_toml = { version = "0.10", optional = true }
 sbor = { path = "../sbor", default-features = false }
 scrypto-abi = { path = "../scrypto-abi", default-features = false }
@@ -25,7 +25,5 @@ alloc = ["hashbrown", "hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-d
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]
 
-# Enable serde annotations by either `serde_std` or `serde_alloc`.
-# TODO: use weak depedency feature once it's stablized, https://github.com/rust-lang/cargo/issues/8832 
-serde_std = ["sbor/serde_std", "scrypto-abi/serde_std"]
-serde_alloc = ["sbor/serde_alloc", "scrypto-abi/serde_alloc"]
+# Enable serde derives
+serde = ["sbor/serde", "scrypto-abi/serde"]
