@@ -137,7 +137,9 @@ impl ResourceManager {
         ] {
             method_table.insert(pub_method.to_string(), None);
         }
+
         if let ResourceType::NonFungible = resource_type {
+            method_table.insert("update_non_fungible_mutable_data".to_string(), Some(UpdateNonFungibleData));
             for pub_method in [
                 "take_non_fungibles_from_bucket",
                 "non_fungible_exists",
@@ -146,7 +148,6 @@ impl ResourceManager {
             ] {
                 method_table.insert(pub_method.to_string(), None);
             }
-            method_table.insert("update_non_fungible_mutable_data".to_string(), Some(UpdateNonFungibleData));
         }
 
         let mut authorization: HashMap<ResourceMethod, MethodEntry> = HashMap::new();
@@ -388,6 +389,14 @@ impl ResourceManager {
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
+            "method_auth" => {
+                let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let method_entry = self.authorization.get_mut(&method).unwrap();
+                let method_entry_method: String = scrypto_decode(&args.remove(0).raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                method_entry.main(&method_entry_method, args)
+            }
             "create_empty_bucket" => {
                 let container =
                     ResourceContainer::new_empty(resource_address, self.resource_type());
@@ -397,14 +406,6 @@ impl ResourceManager {
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
-            }
-            "method_auth" => {
-                let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let method_entry = self.authorization.get_mut(&method).unwrap();
-                let method_entry_method: String = scrypto_decode(&args.remove(0).raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                method_entry.main(&method_entry_method, args)
             }
             "mint" => {
                 // TODO: cleanup
