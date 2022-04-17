@@ -326,45 +326,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    /// (Transaction ONLY) Calls a method.
-    pub fn txn_call_method_with_all_resources(
-        &mut self,
-        component_address: ComponentAddress,
-        method: &str,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Calling method with all resources started"
-        );
-
-        // 1. Drop all proofs to unlock the buckets
-        self.drop_all_named_proofs()?;
-        self.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
-
-        // 2. Move collected resource to temp buckets
-        self.call(SNodeRef::WorktopRef, "drain".to_string(), vec![])?;
-
-        // 3. Call the method with all buckets
-        let to_deposit: Vec<scrypto::resource::Bucket> = self
-            .buckets
-            .keys()
-            .cloned()
-            .map(|bucket_id| scrypto::resource::Bucket(bucket_id))
-            .collect();
-
-        let result = self.call(
-            SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
-            method.to_owned(),
-            vec![ScryptoValue::from_value(&to_deposit)],
-        );
-
-        re_debug!(
-            self,
-            "(Transaction) Calling method with all resources ended"
-        );
-        result
-    }
-
     pub fn publish_package(&mut self, code: Vec<u8>) -> Result<PackageAddress, RuntimeError> {
         re_debug!(self, "Publishing a package");
 

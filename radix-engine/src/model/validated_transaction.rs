@@ -358,7 +358,33 @@ impl ValidatedTransaction {
                 ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,
-                } => proc.txn_call_method_with_all_resources(*component_address, &method),
+                } => {
+                    proc.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])
+                        .and_then(|_| {
+                            for (_, real_id) in proof_id_mapping.drain() {
+                                proc.call(
+                                    SNodeRef::Proof(real_id),
+                                    "drop".to_string(),
+                                    vec![]
+                                ).unwrap();
+                            }
+                            proc.call(SNodeRef::WorktopRef, "drain".to_string(), vec![])
+                        })
+                        .and_then(|result| {
+                            let mut buckets = Vec::new();
+                            for (bucket_id, _) in result.bucket_ids {
+                                buckets.push(scrypto::resource::Bucket(bucket_id));
+                            }
+                            for (_, real_id) in bucket_id_mapping.drain() {
+                                buckets.push(scrypto::resource::Bucket(real_id));
+                            }
+                            proc.call(
+                                SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
+                                method.to_string(),
+                                vec![ScryptoValue::from_value(&buckets)],
+                            )
+                        })
+                },
                 ValidatedInstruction::PublishPackage { code } => proc
                     .publish_package(code.clone())
                     .map(|package_address| ScryptoValue::from_value(&package_address)),
