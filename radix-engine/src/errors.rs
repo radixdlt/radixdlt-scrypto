@@ -90,6 +90,8 @@ pub enum RuntimeError {
     /// Not a valid ABI.
     AbiValidationError(DecodeError),
 
+    AuthZoneDoesNotExist,
+
     /// Failed to allocate an ID.
     IdAllocatorError(IdAllocatorError),
 

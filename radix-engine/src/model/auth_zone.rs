@@ -46,7 +46,7 @@ impl AuthZone {
         self.proofs.push(proof);
     }
 
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         loop {
             if let Some(proof) = self.proofs.pop() {
                 proof.drop();

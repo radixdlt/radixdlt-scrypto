@@ -98,7 +98,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let mut process = Process::new(
             0,
             verbose,
-            self
+            self,
+            Some(AuthZone::new()),
         );
 
         // With the latest change, proof amount can't be zero, thus a virtual proof is created

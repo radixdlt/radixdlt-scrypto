@@ -14,7 +14,6 @@ use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::rust::mem;
 use scrypto::values::*;
 use wasmi::*;
 
@@ -219,7 +218,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
     /// Proofs collected from previous returns or self. Also used for system authorization.
-    auth_zone: AuthZone,
+    auth_zone: Option<AuthZone>,
     /// The caller's auth zone
     caller_auth_zone: Option<&'r AuthZone>,
 
@@ -237,6 +236,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         depth: usize,
         trace: bool,
         track: &'r mut Track<'l, L>,
+        auth_zone: Option<AuthZone>,
     ) -> Self {
         Self {
             depth,
@@ -246,7 +246,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             proofs: HashMap::new(),
             wasm_process_state: None,
             worktop: Worktop::new(),
-            auth_zone: AuthZone::new(),
+            auth_zone,
             caller_auth_zone: None,
         }
     }
@@ -420,7 +420,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::CantMoveRestrictedProof(proof_id));
         }
 
-        self.auth_zone.push(proof);
+        self.auth_zone.as_mut().unwrap().push(proof);
         Ok(())
     }
 
@@ -685,7 +685,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // drop proofs and check resource leak
         self.drop_all_named_proofs()?;
-        self.auth_zone.clear();
+        if let Some(_) = &mut self.auth_zone {
+            self.call(SNodeRef::AuthZone, "clear".to_string(), vec![])?;
+        }
         self.check_resource()?;
 
         #[cfg(not(feature = "alloc"))]
@@ -710,8 +712,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Authorization and state load
         let (mut snode, method_auths) = match &snode_ref {
             SNodeRef::AuthZone => {
-                let auth_zone = mem::replace(&mut self.auth_zone, AuthZone::new());
-                Ok((SNodeState::AuthZone(auth_zone), vec![]))
+                if let Some(auth_zone) = self.auth_zone.take() {
+                    Ok((SNodeState::AuthZone(auth_zone), vec![]))
+                } else {
+                    Err(RuntimeError::AuthZoneDoesNotExist)
+                }
             }
             SNodeRef::Scrypto(actor) => {
                 match actor {
@@ -763,9 +768,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                 }
             }
-            SNodeRef::ResourceStatic => {
-                Ok((SNodeState::ResourceStatic, vec![]))
-            }
+            SNodeRef::ResourceStatic => Ok((SNodeState::ResourceStatic, vec![])),
             SNodeRef::ResourceRef(resource_address) => {
                 let resource_manager: ResourceManager = self
                     .track
@@ -820,29 +823,34 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function);
-                Ok((SNodeState::VaultRef(vault_id.clone()), vec![method_auth.clone()]))
+                Ok((
+                    SNodeState::VaultRef(vault_id.clone()),
+                    vec![method_auth.clone()],
+                ))
             }
         }?;
 
         // Authorization check
         if !method_auths.is_empty() {
-            let proofs_vector = match &snode {
-                // Same process auth check
-                SNodeState::ResourceRef(_,_) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
-                    if let Some(auth_zone) = self.caller_auth_zone {
-                        vec![auth_zone, &self.auth_zone]
-                    } else {
-                        vec![&self.auth_zone]
-                    }
+            let mut auth_zones = Vec::new();
+            if let Some(self_auth_zone) = &self.auth_zone {
+                auth_zones.push(self_auth_zone);
+            }
 
+            match &snode {
+                // Resource auth check includes caller
+                SNodeState::ResourceRef(_, _) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
+                    if let Some(auth_zone) = self.caller_auth_zone {
+                        auth_zones.push(auth_zone);
+                    }
                 }
                 // Extern call auth check
-                _ => vec![&self.auth_zone],
+                _ => { }
             };
 
             for method_auth in method_auths {
                 method_auth
-                    .check(&proofs_vector)
+                    .check(&auth_zones)
                     .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
             }
         }
@@ -884,8 +892,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             },
             _ => {
                 // start a new process
-                let mut process = Process::new(self.depth + 1, self.trace, self.track);
-                process.caller_auth_zone = Option::Some(&self.auth_zone);
+                let process_auth_zone = if matches!(snode, SNodeState::Scrypto(_, _)) {
+                    Some(AuthZone::new())
+                } else {
+                    None
+                };
+                let mut process = Process::new(self.depth + 1, self.trace, self.track, process_auth_zone);
+                if let Some(auth_zone) = &self.auth_zone {
+                    process.caller_auth_zone = Option::Some(auth_zone);
+                }
 
                 // move buckets and proofs to the new process.
                 process.receive_buckets(moving_buckets)?;
@@ -902,7 +917,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Return borrowed snodes
                 match snode {
                     SNodeState::AuthZone(auth_zone) => {
-                        self.auth_zone = auth_zone;
+                        self.auth_zone = Some(auth_zone);
                     }
                     SNodeState::Scrypto(actor, component_state) => {
                         if let Some(component_address) = actor.component_address() {
@@ -952,7 +967,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
-        let mut process = Process::new(self.depth + 1, self.trace, self.track);
+        let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
         let result = process
             .run(&mut snode, String::new(), Vec::new())
             .map(|(r, _, _)| r);
