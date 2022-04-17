@@ -95,7 +95,12 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .into_iter()
             .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
             .collect();
-        let mut process = Process::new(0, verbose, self);
+        let mut process = Process::new(
+            0,
+            verbose,
+            self,
+            Option::Some(IdAllocator::new(IdSpace::Transaction)),
+        );
 
         // With the latest change, proof amount can't be zero, thus a virtual proof is created
         // only if there are signers.

@@ -7,7 +7,8 @@ use sbor::*;
 pub enum SNodeRef {
     Scrypto(ScryptoActor),
     ResourceStatic,
-    Resource(ResourceAddress),
+    ResourceRef(ResourceAddress),
     Bucket(BucketId),
-    Vault(VaultId),
+    BucketRef(BucketId),
+    VaultRef(VaultId),
 }

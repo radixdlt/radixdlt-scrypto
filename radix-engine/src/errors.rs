@@ -177,7 +177,7 @@ pub enum RuntimeError {
     ResourceManagerError(ResourceManagerError),
 
     /// Bucket access error.
-    BucketError(ResourceContainerError),
+    BucketError(BucketError),
 
     /// Vault access error.
     VaultError(VaultError),
