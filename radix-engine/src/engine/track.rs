@@ -101,6 +101,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             self,
             Some(AuthZone::new()),
             Some(Worktop::new()),
+            HashMap::new(),
+            HashMap::new(),
         );
 
         // With the latest change, proof amount can't be zero, thus a virtual proof is created

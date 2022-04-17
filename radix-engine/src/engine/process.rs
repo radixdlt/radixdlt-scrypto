@@ -239,13 +239,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         track: &'r mut Track<'l, L>,
         auth_zone: Option<AuthZone>,
         worktop: Option<Worktop>,
+        buckets: HashMap<BucketId, Bucket>,
+        proofs: HashMap<ProofId, Proof>,
     ) -> Self {
         Self {
             depth,
             trace,
             track,
-            buckets: HashMap::new(),
-            proofs: HashMap::new(),
+            buckets,
+            proofs,
             wasm_process_state: None,
             worktop,
             auth_zone,
@@ -793,22 +795,27 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 } else {
                     None
                 };
-                let mut process = Process::new(self.depth + 1, self.trace, self.track, process_auth_zone, None);
+
+                let mut process = Process::new(
+                    self.depth + 1,
+                    self.trace,
+                    self.track,
+                    process_auth_zone,
+                    None,
+                    moving_buckets,
+                    moving_proofs,
+                );
                 if let Some(auth_zone) = &self.auth_zone {
                     process.caller_auth_zone = Option::Some(auth_zone);
                 }
 
-                // move buckets and proofs to the new process.
-                process.receive_buckets(moving_buckets)?;
-                process.receive_proofs(moving_proofs);
-
                 // invoke the main function
-                let (result, moving_buckets, moving_proofs) =
+                let (result, received_buckets, received_proofs) =
                     process.run(&mut snode, function, args)?;
 
                 // move buckets and proofs to this process.
-                self.receive_buckets(moving_buckets)?;
-                self.receive_proofs(moving_proofs);
+                self.buckets.extend(received_buckets);
+                self.proofs.extend(received_proofs);
 
                 // Return borrowed snodes
                 match snode {
@@ -866,7 +873,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
-        let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None);
+        let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None, HashMap::new(), HashMap::new());
         let result = process
             .run(&mut snode, String::new(), Vec::new())
             .map(|(r, _, _)| r);
@@ -995,23 +1002,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(buckets)
     }
 
-    /// Receives buckets from another component/blueprint, either as argument or return
-    fn receive_buckets(&mut self, buckets: HashMap<BucketId, Bucket>) -> Result<(), RuntimeError> {
-        if let Some(worktop) = &mut self.worktop {
-            // buckets are aggregated by worktop
-            for (_, bucket) in buckets {
-                worktop
-                    .put(bucket)
-                    .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?;
-            }
-        } else {
-            // for component, received buckets go to the "buckets" areas.
-            self.buckets.extend(buckets);
-        }
-
-        Ok(())
-    }
-
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
         &mut self,
@@ -1034,11 +1024,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             proofs.insert(*proof_id, proof);
         }
         Ok(proofs)
-    }
-
-    /// Receives proofs from another component/blueprint, either as argument or return
-    fn receive_proofs(&mut self, proofs: HashMap<ProofId, Proof>) {
-        self.proofs.extend(proofs)
     }
 
     /// Send a byte array to wasm instance.

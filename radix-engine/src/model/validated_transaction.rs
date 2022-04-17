@@ -285,7 +285,15 @@ impl ValidatedTransaction {
                                     SNodeRef::AuthZoneRef,
                                     "push".to_string(),
                                     vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
-                                ).unwrap();
+                                ).unwrap(); // TODO: Remove unwrap
+                            }
+                            // Auto move into worktop
+                            for (bucket_id, _) in &result.bucket_ids {
+                                proc.call(
+                                    SNodeRef::WorktopRef,
+                                    "put".to_string(),
+                                    vec![ScryptoValue::from_value(&scrypto::resource::Bucket(*bucket_id))]
+                                ).unwrap(); // TODO: Remove unwrap
                             }
                             Ok(result)
                         })
@@ -311,6 +319,14 @@ impl ValidatedTransaction {
                                     "push".to_string(),
                                     vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
                                 ).unwrap();
+                            }
+                            // Auto move into worktop
+                            for (bucket_id, _) in &result.bucket_ids {
+                                proc.call(
+                                    SNodeRef::WorktopRef,
+                                    "put".to_string(),
+                                    vec![ScryptoValue::from_value(&scrypto::resource::Bucket(*bucket_id))]
+                                ).unwrap(); // TODO: Remove unwrap
                             }
                             Ok(result)
                         })
