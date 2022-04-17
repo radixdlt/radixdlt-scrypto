@@ -78,12 +78,12 @@ impl Worktop {
         }
     }
 
-    pub fn take_all(
+    fn take_all(
         &mut self,
         resource_address: ResourceAddress,
-    ) -> Result<Option<Bucket>, ResourceContainerError> {
+    ) -> Result<Option<ResourceContainer>, ResourceContainerError> {
         if let Some(mut container) = self.borrow_container_mut(resource_address) {
-            Ok(Some(Bucket::new(container.take_all_liquid()?)))
+            Ok(Some(container.take_all_liquid()?))
         } else {
             Ok(None)
         }
@@ -192,6 +192,36 @@ impl Worktop {
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
+            }
+            "take_all" => {
+                let resource_address: ResourceAddress =
+                    scrypto_decode(&args[0].raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+
+                let maybe_container = self.take_all(resource_address)
+                    .map_err(WorktopError::ResourceContainerError)?;
+                let resource_container = if let Some(container) = maybe_container {
+                    container
+                } else {
+                    let resource_manager: ResourceManager = system_api.borrow_global_mut_resource_manager(resource_address)
+                        .map_err(|_| WorktopError::ResourceDoesNotExist(resource_address))?;
+                    let resource_type = resource_manager.resource_type();
+                    system_api.return_borrowed_global_resource_manager(resource_address, resource_manager);
+                    ResourceContainer::new_empty(resource_address, resource_type)
+                };
+
+                let bucket_id = system_api.create_bucket(resource_container).map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
+            }
+            "drain" => {
+                let mut buckets = Vec::new();
+                for (_, container) in self.containers.drain() {
+                    let container = container.borrow_mut().take_all_liquid().map_err(WorktopError::ResourceContainerError)?;
+                    let bucket_id = system_api.create_bucket(container).map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                    buckets.push(scrypto::resource::Bucket(bucket_id));
+                }
+                Ok(ScryptoValue::from_value(&buckets))
             }
             _ => Err(WorktopError::MethodNotFound(function.to_string()))
         }

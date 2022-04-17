@@ -50,12 +50,17 @@ impl ValidatedTransaction {
                     id_allocator.new_bucket_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc
-                                .txn_take_all_from_worktop(*resource_address)
-                                .map(|bucket_id| {
-                                    bucket_id_mapping.insert(new_id, bucket_id);
-                                    ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
-                                })
+                            proc.call(
+                                SNodeRef::WorktopRef,
+                                "take_all".to_string(),
+                                vec![
+                                    ScryptoValue::from_value(resource_address),
+                                ]
+                            ).map(|rtn| {
+                                let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
+                                bucket_id_mapping.insert(new_id, bucket_id);
+                                ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
+                            })
                         })
                 },
                 ValidatedInstruction::TakeFromWorktopByAmount {
@@ -67,7 +72,7 @@ impl ValidatedTransaction {
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
                             proc.call(
-                                SNodeRef::Worktop,
+                                SNodeRef::WorktopRef,
                                 "take_amount".to_string(),
                                 vec![
                                     ScryptoValue::from_value(amount),
@@ -115,8 +120,8 @@ impl ValidatedTransaction {
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
                             proc.call(
-                                SNodeRef::AuthZone,
-                                    "pop".to_string(),
+                                SNodeRef::AuthZoneRef,
+                                "pop".to_string(),
                                 vec![]
                             ).map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
@@ -127,14 +132,14 @@ impl ValidatedTransaction {
                 },
                 ValidatedInstruction::ClearAuthZone => {
                     proof_id_mapping.clear();
-                    proc.call(SNodeRef::AuthZone, "clear".to_string(), vec![])
+                    proc.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])
                 },
                 ValidatedInstruction::PushToAuthZone { proof_id } => {
                     proof_id_mapping.remove(proof_id)
                         .ok_or(RuntimeError::ProofNotFound(*proof_id))
                         .and_then(|real_id|
                             proc.call(
-                                SNodeRef::AuthZone,
+                                SNodeRef::AuthZoneRef,
                                 "push".to_string(),
                                 vec![ScryptoValue::from_value(&scrypto::resource::Proof(real_id))]
                             )
@@ -145,7 +150,7 @@ impl ValidatedTransaction {
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
                             proc.call(
-                                SNodeRef::AuthZone,
+                                SNodeRef::AuthZoneRef,
                                 "create_proof".to_string(),
                                 vec![ScryptoValue::from_value(resource_address)]
                             ).map(|rtn| {
@@ -162,7 +167,7 @@ impl ValidatedTransaction {
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
                             proc.call(
-                                SNodeRef::AuthZone,
+                                SNodeRef::AuthZoneRef,
                                 "create_proof_by_amount".to_string(),
                                 vec![
                                     ScryptoValue::from_value(amount),
@@ -182,7 +187,7 @@ impl ValidatedTransaction {
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
                             proc.call(
-                                SNodeRef::AuthZone,
+                                SNodeRef::AuthZoneRef,
                                 "create_proof_by_ids".to_string(),
                                 vec![
                                     ScryptoValue::from_value(ids),
@@ -263,7 +268,7 @@ impl ValidatedTransaction {
                             // Auto move into auth_zone
                             for (proof_id, _) in &result.proof_ids {
                                 proc.call(
-                                    SNodeRef::AuthZone,
+                                    SNodeRef::AuthZoneRef,
                                     "push".to_string(),
                                     vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
                                 ).unwrap();
@@ -288,7 +293,7 @@ impl ValidatedTransaction {
                             // Auto move into auth_zone
                             for (proof_id, _) in &result.proof_ids {
                                 proc.call(
-                                    SNodeRef::AuthZone,
+                                    SNodeRef::AuthZoneRef,
                                     "push".to_string(),
                                     vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
                                 ).unwrap();

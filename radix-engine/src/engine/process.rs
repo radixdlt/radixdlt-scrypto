@@ -288,31 +288,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(new_bucket_id)
     }
 
-    // (Transaction ONLY) Takes resource by resource address from worktop and returns a bucket.
-    pub fn txn_take_all_from_worktop(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<BucketId, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Taking from worktop: ALL, {}",
-            resource_address
-        );
-        let new_bucket_id = self.new_bucket_id()?;
-        let new_bucket = match self
-            .worktop
-            .as_mut()
-            .unwrap()
-            .take_all(resource_address)
-            .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?
-        {
-            Some(bucket) => bucket,
-            None => self.new_empty_bucket(resource_address)?,
-        };
-        self.buckets.insert(new_bucket_id, new_bucket);
-        Ok(new_bucket_id)
-    }
-
     fn new_empty_bucket(
         &mut self,
         resource_address: ResourceAddress,
@@ -469,7 +444,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Drops all proofs owned by this process.
     pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
         self.drop_all_named_proofs()?;
-        self.call(SNodeRef::AuthZone, "clear".to_string(), vec![])?;
+        self.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
         Ok(())
     }
 
@@ -486,27 +461,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // 1. Drop all proofs to unlock the buckets
         self.drop_all_named_proofs()?;
-        self.call(SNodeRef::AuthZone, "clear".to_string(), vec![])?;
+        self.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
 
         // 2. Move collected resource to temp buckets
-        for id in self.worktop.as_mut().unwrap().resource_addresses() {
-            if let Some(bucket) = self
-                .worktop
-                .as_mut()
-                .unwrap()
-                .take_all(id)
-                .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?
-            {
-                /*
-                This is the only place that we don't follow the convention for bucket/proof ID generation.
-
-                The reason is that the number of buckets to be created can't be determined statically, which
-                makes it hard to verify transaction if we use the transaction ID allocator.
-                */
-                let bucket_id = self.track.new_bucket_id();
-                self.buckets.insert(bucket_id, bucket);
-            }
-        }
+        self.call(SNodeRef::WorktopRef, "drain".to_string(), vec![])?;
 
         // 3. Call the method with all buckets
         let to_deposit: Vec<scrypto::resource::Bucket> = self
@@ -678,7 +636,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // drop proofs and check resource leak
         self.drop_all_named_proofs()?;
         if let Some(_) = &mut self.auth_zone {
-            self.call(SNodeRef::AuthZone, "clear".to_string(), vec![])?;
+            self.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
         }
         self.check_resource()?;
 
@@ -703,14 +661,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         // Authorization and state load
         let (mut snode, method_auths) = match &snode_ref {
-            SNodeRef::AuthZone => {
+            SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = self.auth_zone.take() {
                     Ok((SNodeState::AuthZone(auth_zone), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
-            SNodeRef::Worktop => {
+            SNodeRef::WorktopRef => {
                 if let Some(worktop) = self.worktop.take() {
                     Ok((SNodeState::Worktop(worktop), vec![]))
                 } else {
