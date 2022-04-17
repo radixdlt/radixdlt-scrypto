@@ -6,6 +6,7 @@ use sbor::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum SNodeRef {
     AuthZone,
+    Worktop,
     Scrypto(ScryptoActor),
     ResourceStatic,
     ResourceRef(ResourceAddress),

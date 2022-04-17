@@ -66,12 +66,18 @@ impl ValidatedTransaction {
                         .new_bucket_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc
-                                .txn_take_from_worktop(*amount, *resource_address)
-                                .map(|bucket_id| {
-                                    bucket_id_mapping.insert(new_id, bucket_id);
-                                    ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
-                                })
+                            proc.call(
+                                SNodeRef::Worktop,
+                                "take_amount".to_string(),
+                                vec![
+                                    ScryptoValue::from_value(amount),
+                                    ScryptoValue::from_value(resource_address),
+                                ]
+                            ).map(|rtn| {
+                                let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
+                                bucket_id_mapping.insert(new_id, bucket_id);
+                                ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
+                            })
                         }),
                 ValidatedInstruction::TakeFromWorktopByIds {
                     ids,

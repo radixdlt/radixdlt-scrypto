@@ -91,6 +91,7 @@ pub enum RuntimeError {
     AbiValidationError(DecodeError),
 
     AuthZoneDoesNotExist,
+    WorktopDoesNotExist,
 
     /// Failed to allocate an ID.
     IdAllocatorError(IdAllocatorError),
@@ -185,7 +186,7 @@ pub enum RuntimeError {
     VaultError(VaultError),
 
     /// Worktop access error.
-    WorktopError(ResourceContainerError),
+    WorktopError(WorktopError),
 
     /// Error when generating or accessing proof.
     ProofError(ProofError),

@@ -22,6 +22,7 @@ use crate::engine::*;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
+use crate::model::WorktopError::ResourceContainerError;
 
 macro_rules! re_trace {
     ($proc:expr, $($args: expr),+) => {
@@ -91,6 +92,7 @@ pub trait SystemApi {
 
 pub enum SNodeState {
     AuthZone(AuthZone),
+    Worktop(Worktop),
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
     ResourceRef(ResourceAddress, ResourceManager),
@@ -259,33 +261,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(self.track.new_proof_id())
     }
 
-    // (Transaction ONLY) Takes resource by amount from worktop and returns a bucket.
-    pub fn txn_take_from_worktop(
-        &mut self,
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> Result<BucketId, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Taking from worktop: {}, {}",
-            amount,
-            resource_address
-        );
-        let new_bucket_id = self.new_bucket_id()?;
-        let new_bucket = match self
-            .worktop
-            .as_mut()
-            .unwrap()
-            .take(amount, resource_address)
-            .map_err(RuntimeError::WorktopError)?
-        {
-            Some(bucket) => bucket,
-            None => self.new_empty_bucket(resource_address)?,
-        };
-        self.buckets.insert(new_bucket_id, new_bucket);
-        Ok(new_bucket_id)
-    }
-
     // (Transaction ONLY) Takes resource by non-fungible IDs from worktop and returns a bucket.
     pub fn txn_take_non_fungibles_from_worktop(
         &mut self,
@@ -304,7 +279,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .unwrap()
             .take_non_fungibles(ids, resource_address)
-            .map_err(RuntimeError::WorktopError)?
+            .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?
         {
             Some(bucket) => bucket,
             None => self.new_empty_bucket(resource_address)?,
@@ -329,7 +304,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .unwrap()
             .take_all(resource_address)
-            .map_err(RuntimeError::WorktopError)?
+            .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?
         {
             Some(bucket) => bucket,
             None => self.new_empty_bucket(resource_address)?,
@@ -368,7 +343,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .unwrap()
             .put(bucket)
-            .map_err(RuntimeError::WorktopError)?;
+            .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?;
         Ok(ScryptoValue::from_value(&()))
     }
 
@@ -408,7 +383,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .unwrap()
             .total_ids(resource_address)
-            .map_err(RuntimeError::WorktopError)?
+            .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?
             .is_superset(ids)
         {
             Err(RuntimeError::AssertionFailed)
@@ -520,7 +495,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 .as_mut()
                 .unwrap()
                 .take_all(id)
-                .map_err(RuntimeError::WorktopError)?
+                .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?
             {
                 /*
                 This is the only place that we don't follow the convention for bucket/proof ID generation.
@@ -600,6 +575,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 auth_zone
                     .main(function.as_str(), args, self)
                     .map_err(RuntimeError::AuthZoneError)
+            }
+            SNodeState::Worktop(worktop) => {
+                worktop
+                    .main(function.as_str(), args, self)
+                    .map_err(RuntimeError::WorktopError)
             }
             SNodeState::Scrypto(actor, component_state) => {
                 let package = self.track.get_package(actor.package_address()).ok_or(
@@ -728,6 +708,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Ok((SNodeState::AuthZone(auth_zone), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
+                }
+            }
+            SNodeRef::Worktop => {
+                if let Some(worktop) = self.worktop.take() {
+                    Ok((SNodeState::Worktop(worktop), vec![]))
+                } else {
+                    Err(RuntimeError::WorktopDoesNotExist)
                 }
             }
             SNodeRef::Scrypto(actor) => {
@@ -931,6 +918,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     SNodeState::AuthZone(auth_zone) => {
                         self.auth_zone = Some(auth_zone);
                     }
+                    SNodeState::Worktop(worktop) => {
+                        self.worktop = Some(worktop);
+                    }
                     SNodeState::Scrypto(actor, component_state) => {
                         if let Some(component_address) = actor.component_address() {
                             self.track.return_borrowed_global_component(
@@ -1115,7 +1105,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             for (_, bucket) in buckets {
                 worktop
                     .put(bucket)
-                    .map_err(RuntimeError::WorktopError)?;
+                    .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?;
             }
         } else {
             // for component, received buckets go to the "buckets" areas.
