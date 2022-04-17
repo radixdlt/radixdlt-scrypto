@@ -157,11 +157,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         signed: &SignedTransaction,
     ) -> Result<Receipt, TransactionValidationError> {
         let validated = signed.validate()?;
-        let receipt = self.execute(&validated);
+        let receipt = self.execute(validated);
         Ok(receipt)
     }
 
-    pub fn execute(&mut self, validated: &ValidatedTransaction) -> Receipt {
+    pub fn execute(&mut self, validated: ValidatedTransaction) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -171,7 +171,9 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             validated.signers.clone(),
         );
         let mut proc = track.start_process(self.trace);
-        let (outputs, error) = validated.main(&mut proc);
+
+        let mut transaction_executor = TransactionProcess::new(validated.clone());
+        let (outputs, error) = transaction_executor.main(&mut proc);
 
         // prepare data for receipts
         let new_package_addresses = track.new_package_addresses();
@@ -187,6 +189,8 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         } else {
             None
         };
+
+
 
         #[cfg(feature = "alloc")]
         let execution_time = None;
