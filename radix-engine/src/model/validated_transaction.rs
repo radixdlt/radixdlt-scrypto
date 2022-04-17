@@ -143,7 +143,16 @@ impl ValidatedTransaction {
                 ValidatedInstruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
-                } => proc.txn_assert_worktop_contains_by_ids(&ids, *resource_address),
+                } => {
+                    proc.call(
+                        SNodeRef::WorktopRef,
+                        "assert_contains_amount".to_string(),
+                        vec![
+                            ScryptoValue::from_value(ids),
+                            ScryptoValue::from_value(resource_address),
+                        ]
+                    )
+                },
                 ValidatedInstruction::PopFromAuthZone {} => {
                     id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)

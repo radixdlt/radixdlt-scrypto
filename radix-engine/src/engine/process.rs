@@ -22,7 +22,6 @@ use crate::engine::*;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
-use crate::model::WorktopError::ResourceContainerError;
 
 macro_rules! re_trace {
     ($proc:expr, $($args: expr),+) => {
@@ -261,26 +260,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn new_proof_id(&mut self) -> Result<ProofId, RuntimeError> {
         Ok(self.track.new_proof_id())
-    }
-
-    // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn txn_assert_worktop_contains_by_ids(
-        &mut self,
-        ids: &BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        if !self
-            .worktop
-            .as_mut()
-            .unwrap()
-            .total_ids(resource_address)
-            .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?
-            .is_superset(ids)
-        {
-            Err(RuntimeError::AssertionFailed)
-        } else {
-            Ok(ScryptoValue::from_value(&()))
-        }
     }
 
     // Creates a vault proof.

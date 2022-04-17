@@ -269,6 +269,22 @@ impl Worktop {
                     Ok(ScryptoValue::from_value(&()))
                 }
             }
+            "assert_contains_non_fungibles" => {
+                let ids =
+                    scrypto_decode(&args[0].raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+                let resource_address =
+                    scrypto_decode(&args[1].raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+
+                if !self
+                    .total_ids(resource_address)
+                    .map_err(WorktopError::ResourceContainerError)?
+                    .is_superset(&ids)
+                {
+                    Err(WorktopError::AssertionFailed)
+                } else {
+                    Ok(ScryptoValue::from_value(&()))
+                }
+            }
             "drain" => {
                 let mut buckets = Vec::new();
                 for (_, container) in self.containers.drain() {
