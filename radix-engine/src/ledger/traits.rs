@@ -7,8 +7,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::ResourceMethod::TakeFromVault;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::rust::vec::Vec;
 use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 
 use crate::model::*;
 

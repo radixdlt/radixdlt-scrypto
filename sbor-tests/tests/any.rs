@@ -48,7 +48,7 @@ fn test_encode_as_json() {
                             "value": 2
                         },
                         {
-                            "elementTypeId": 7,
+                            "element_type_id": 7,
                             "elements": [
                                 {
                                     "type": "U8",
