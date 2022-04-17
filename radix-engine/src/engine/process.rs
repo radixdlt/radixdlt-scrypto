@@ -264,19 +264,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn txn_assert_worktop_contains_by_amount(
-        &mut self,
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        if self.worktop.as_mut().unwrap().total_amount(resource_address) < amount {
-            Err(RuntimeError::AssertionFailed)
-        } else {
-            Ok(ScryptoValue::from_value(&()))
-        }
-    }
-
-    // (Transaction ONLY) Assert worktop contains at least this amount.
     pub fn txn_assert_worktop_contains_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,

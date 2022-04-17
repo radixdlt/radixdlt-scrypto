@@ -257,6 +257,18 @@ impl Worktop {
                     Ok(ScryptoValue::from_value(&()))
                 }
             }
+            "assert_contains_amount" => {
+                let amount: Decimal =
+                    scrypto_decode(&args[0].raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+                let resource_address =
+                    scrypto_decode(&args[1].raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+
+                if self.total_amount(resource_address) < amount {
+                    Err(WorktopError::AssertionFailed)
+                } else {
+                    Ok(ScryptoValue::from_value(&()))
+                }
+            }
             "drain" => {
                 let mut buckets = Vec::new();
                 for (_, container) in self.containers.drain() {

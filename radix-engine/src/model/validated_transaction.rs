@@ -130,7 +130,16 @@ impl ValidatedTransaction {
                 ValidatedInstruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
-                } => proc.txn_assert_worktop_contains_by_amount(*amount, *resource_address),
+                } => {
+                    proc.call(
+                        SNodeRef::WorktopRef,
+                        "assert_contains_amount".to_string(),
+                        vec![
+                            ScryptoValue::from_value(amount),
+                            ScryptoValue::from_value(resource_address),
+                        ]
+                    )
+                },
                 ValidatedInstruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
