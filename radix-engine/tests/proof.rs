@@ -287,7 +287,7 @@ fn cant_move_restricted_proof() {
     // Assert
     assert_eq!(
         receipt.result,
-        Err(RuntimeError::CantMoveRestrictedProof(512))
+        Err(RuntimeError::CantMoveRestrictedProof(1025))
     );
 }
 
@@ -327,7 +327,7 @@ fn can_compose_bucket_and_vault_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]

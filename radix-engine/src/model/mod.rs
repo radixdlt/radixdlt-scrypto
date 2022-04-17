@@ -1,4 +1,5 @@
 mod auth_converter;
+mod auth_zone;
 mod bucket;
 mod component;
 mod method_authorization;
@@ -9,9 +10,11 @@ mod receipt;
 mod resource;
 mod resource_manager;
 mod transaction;
+mod validated_transaction;
 mod vault;
 mod worktop;
 
+pub use auth_zone::{AuthZone, AuthZoneError};
 pub use auth_converter::convert;
 pub use bucket::{Bucket, BucketError};
 pub use component::Component;
@@ -25,7 +28,8 @@ pub use receipt::Receipt;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
 pub use transaction::{
-    Instruction, SignedTransaction, Transaction, ValidatedInstruction, ValidatedTransaction,
+    Instruction, SignedTransaction, Transaction,
 };
+pub use validated_transaction::{ValidatedTransaction, ValidatedInstruction};
 pub use vault::{Vault, VaultError};
-pub use worktop::Worktop;
+pub use worktop::{Worktop, WorktopError};

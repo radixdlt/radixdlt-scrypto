@@ -87,7 +87,6 @@ impl Bucket {
         Proof::new(
             self.resource_address(),
             self.resource_type(),
-            false,
             locked_amount_or_ids,
             evidence,
         )
@@ -113,7 +112,6 @@ impl Bucket {
         Proof::new(
             self.resource_address(),
             self.resource_type(),
-            false,
             locked_amount_or_ids,
             evidence,
         )

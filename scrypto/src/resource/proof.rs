@@ -1,4 +1,7 @@
 use sbor::*;
+use crate::args;
+use crate::buffer::scrypto_decode;
+use crate::core::SNodeRef;
 
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
@@ -8,18 +11,22 @@ use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
 use crate::rust::vec::Vec;
+use crate::rust::string::ToString;
 use crate::types::*;
 
 /// Represents a proof of owning some resource.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
     fn clone(&self) -> Self {
-        let input = CloneProofInput { proof_id: self.0 };
-        let output: CloneProofOutput = call_engine(CLONE_PROOF, input);
-
-        Self(output.proof_id)
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ProofRef(self.0),
+            function: "clone".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 }
 
@@ -47,18 +54,24 @@ impl Proof {
 
     /// Returns the resource amount within the bucket.
     pub fn amount(&self) -> Decimal {
-        let input = GetProofAmountInput { proof_id: self.0 };
-        let output: GetProofAmountOutput = call_engine(GET_PROOF_AMOUNT, input);
-
-        output.amount
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ProofRef(self.0),
+            function: "get_total_amount".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the resource address
     pub fn resource_address(&self) -> ResourceAddress {
-        let input = GetProofResourceAddressInput { proof_id: self.0 };
-        let output: GetProofResourceAddressOutput = call_engine(GET_PROOF_RESOURCE_ADDRESS, input);
-
-        output.resource_address
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ProofRef(self.0),
+            function: "get_resource_address".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the ids of all non-fungibles in this bucket.
@@ -66,17 +79,24 @@ impl Proof {
     /// # Panics
     /// If the bucket is not a non-fungible bucket.
     pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = GetNonFungibleIdsInProofInput { proof_id: self.0 };
-        let output: GetNonFungibleIdsInProofOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_PROOF, input);
-
-        output.non_fungible_ids
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ProofRef(self.0),
+            function: "get_non_fungible_ids".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Destroys this proof.
     pub fn drop(self) {
-        let input = DropProofInput { proof_id: self.0 };
-        let _: DropProofOutput = call_engine(DROP_PROOF, input);
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::Proof(self.0),
+            function: "drop".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Checks if the referenced bucket is empty.
