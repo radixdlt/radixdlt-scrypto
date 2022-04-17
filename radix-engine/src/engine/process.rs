@@ -934,52 +934,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(result)
     }
 
-    /// Calls a function.
-    pub fn txn_call_function(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-        function: &str,
-        args: Vec<ScryptoValue>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        re_debug!(self, "Call function started");
-        let snode_ref = SNodeRef::Scrypto(ScryptoActor::Blueprint(
-            package_address,
-            blueprint_name.to_string(),
-        ));
-        let result = self.call(snode_ref, function.to_string(), args)?;
-
-        // Auto move into auth_zone
-        for (proof_id, _) in &result.proof_ids {
-            let proof = self.proofs.remove(proof_id).unwrap();
-            self.auth_zone.push(proof);
-        }
-
-        re_debug!(self, "Call function ended");
-        Ok(result)
-    }
-
-    /// Calls a method.
-    pub fn txn_call_method(
-        &mut self,
-        component_address: ComponentAddress,
-        method: &str,
-        args: Vec<ScryptoValue>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        re_debug!(self, "Call method started");
-        let snode_ref = SNodeRef::Scrypto(ScryptoActor::Component(component_address));
-        let result = self.call(snode_ref, method.to_string(), args)?;
-
-        // Auto move into auth_zone
-        for (proof_id, _) in &result.proof_ids {
-            let proof = self.proofs.remove(proof_id).unwrap();
-            self.auth_zone.push(proof);
-        }
-
-        re_debug!(self, "Call method ended");
-        Ok(result)
-    }
-
     /// Calls the ABI generator of a blueprint.
     // TODO: Remove
     pub fn call_abi(

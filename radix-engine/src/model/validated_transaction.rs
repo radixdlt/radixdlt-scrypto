@@ -1,6 +1,7 @@
 use scrypto::core::SNodeRef;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::ScryptoActor;
 use scrypto::rust::collections::{BTreeSet, HashMap};
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -245,13 +246,23 @@ impl ValidatedTransaction {
                     args,
                 } => {
                     Self::replace_ids(args.clone(), &mut proof_id_mapping, &mut bucket_id_mapping)
-                        .and_then(|args| {
-                            proc.txn_call_function(
-                                *package_address,
-                                &blueprint_name,
-                                &function,
+                        .and_then(|args|
+                            proc.call(
+                                SNodeRef::Scrypto(ScryptoActor::Blueprint(*package_address, blueprint_name.to_string())),
+                                function.to_string(),
                                 args
                             )
+                        )
+                        .and_then(|result| {
+                            // Auto move into auth_zone
+                            for (proof_id, _) in &result.proof_ids {
+                                proc.call(
+                                    SNodeRef::AuthZone,
+                                    "push".to_string(),
+                                    vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
+                                ).unwrap();
+                            }
+                            Ok(result)
                         })
                 },
                 ValidatedInstruction::CallMethod {
@@ -260,8 +271,23 @@ impl ValidatedTransaction {
                     args,
                 } => {
                     Self::replace_ids(args.clone(), &mut proof_id_mapping, &mut bucket_id_mapping)
-                        .and_then(|args| {
-                            proc.txn_call_method(*component_address, &method, args)
+                        .and_then(|args|
+                            proc.call(
+                                SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
+                                method.to_string(),
+                                args
+                            )
+                        )
+                        .and_then(|result| {
+                            // Auto move into auth_zone
+                            for (proof_id, _) in &result.proof_ids {
+                                proc.call(
+                                    SNodeRef::AuthZone,
+                                    "push".to_string(),
+                                    vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
+                                ).unwrap();
+                            }
+                            Ok(result)
                         })
                 },
                 ValidatedInstruction::CallMethodWithAllResources {
