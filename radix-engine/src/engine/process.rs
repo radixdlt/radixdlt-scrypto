@@ -261,47 +261,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(self.track.new_proof_id())
     }
 
-    // (Transaction ONLY) Takes resource by non-fungible IDs from worktop and returns a bucket.
-    pub fn txn_take_non_fungibles_from_worktop(
-        &mut self,
-        ids: &BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    ) -> Result<BucketId, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Taking from worktop: {:?}, {}",
-            ids,
-            resource_address
-        );
-        let new_bucket_id = self.new_bucket_id()?;
-        let new_bucket = match self
-            .worktop
-            .as_mut()
-            .unwrap()
-            .take_non_fungibles(ids, resource_address)
-            .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?
-        {
-            Some(bucket) => bucket,
-            None => self.new_empty_bucket(resource_address)?,
-        };
-        self.buckets.insert(new_bucket_id, new_bucket);
-        Ok(new_bucket_id)
-    }
-
-    fn new_empty_bucket(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<Bucket, RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-        Ok(Bucket::new(ResourceContainer::new_empty(
-            resource_address,
-            resource_manager.resource_type(),
-        )))
-    }
-
     // (Transaction ONLY) Returns resource back to worktop.
     pub fn txn_return_to_worktop(&mut self, bucket_id: BucketId) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(
