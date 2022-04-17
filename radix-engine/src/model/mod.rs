@@ -10,7 +10,7 @@ mod receipt;
 mod resource;
 mod resource_manager;
 mod transaction;
-mod transaction_executor;
+mod transaction_process;
 mod validated_transaction;
 mod vault;
 mod worktop;
@@ -28,7 +28,7 @@ pub use proof::*;
 pub use receipt::Receipt;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
-pub use transaction_executor::TransactionProcess;
+pub use transaction_process::{TransactionProcess, TransactionError};
 pub use transaction::{
     Instruction, SignedTransaction, Transaction,
 };

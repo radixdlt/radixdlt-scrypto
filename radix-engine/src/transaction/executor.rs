@@ -4,6 +4,7 @@ use scrypto::resource::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::{abi, auth, auth_rule_node};
+use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
 use crate::errors::*;
@@ -172,8 +173,12 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         );
         let mut proc = track.start_process(self.trace);
 
-        let mut transaction_executor = TransactionProcess::new(validated.clone());
-        let (outputs, error) = transaction_executor.main(&mut proc);
+        let transaction_executor = TransactionProcess::new(validated.clone());
+        let (outputs, error) = match transaction_executor.main(&mut proc) {
+            Ok(outputs) => (outputs, None),
+            Err(TransactionError::Error { error, outputs }) => (outputs, Some(error)),
+        };
+        let outputs = outputs.into_iter().map(|b| ScryptoValue::from_slice(&b).unwrap()).collect();
 
         // prepare data for receipts
         let new_package_addresses = track.new_package_addresses();

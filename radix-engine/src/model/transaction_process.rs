@@ -19,6 +19,13 @@ pub struct TransactionProcess {
     id_allocator: IdAllocator,
 }
 
+pub enum TransactionError {
+    Error {
+        error: RuntimeError,
+        outputs: Vec<Vec<u8>>,
+    }
+}
+
 impl TransactionProcess {
     pub fn new(transaction: ValidatedTransaction) -> Self {
         Self {
@@ -43,9 +50,8 @@ impl TransactionProcess {
         Ok(values)
     }
 
-    pub fn main<L: SubstateStore>(&mut self, proc: &mut Process<L>) -> (Vec<ScryptoValue>, Option<RuntimeError>) {
+    pub fn main<L: SubstateStore>(mut self, proc: &mut Process<L>) -> Result<Vec<Vec<u8>>, TransactionError> {
 
-        let mut error: Option<RuntimeError> = None;
         let mut outputs = vec![];
 
         for inst in &self.transaction.instructions.clone() {
@@ -399,27 +405,17 @@ impl TransactionProcess {
             };
             match result {
                 Ok(data) => {
-                    outputs.push(data);
+                    outputs.push(data.raw);
                 }
                 Err(e) => {
-                    error = Some(e);
-                    break;
+                    return Err(TransactionError::Error { error: e, outputs });
                 }
             }
         }
 
-        // drop all dangling proofs
-        error = error.or_else(|| match proc.drop_all_proofs() {
-            Ok(_) => None,
-            Err(e) => Some(e),
-        });
+        proc.drop_all_proofs().map_err(|e| TransactionError::Error { error: e, outputs: outputs.clone() })?;
+        proc.check_resource().map_err(|e| TransactionError::Error { error: e, outputs: outputs.clone() })?;
 
-        // check resource
-        error = error.or_else(|| match proc.check_resource() {
-            Ok(_) => None,
-            Err(e) => Some(e),
-        });
-
-        (outputs, error)
+        Ok(outputs)
     }
 }
