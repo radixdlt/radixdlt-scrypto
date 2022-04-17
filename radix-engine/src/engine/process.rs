@@ -261,26 +261,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(self.track.new_proof_id())
     }
 
-    // (Transaction ONLY) Returns resource back to worktop.
-    pub fn txn_return_to_worktop(&mut self, bucket_id: BucketId) -> Result<ScryptoValue, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Returning to worktop: bucket_id = {}",
-            bucket_id
-        );
-
-        let bucket = self
-            .buckets
-            .remove(&bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-        self.worktop
-            .as_mut()
-            .unwrap()
-            .put(bucket)
-            .map_err(|e| RuntimeError::WorktopError(ResourceContainerError(e)))?;
-        Ok(ScryptoValue::from_value(&()))
-    }
-
     // (Transaction ONLY) Assert worktop contains at least this amount.
     pub fn txn_assert_worktop_contains(
         &mut self,

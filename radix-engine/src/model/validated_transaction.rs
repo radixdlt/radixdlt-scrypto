@@ -107,7 +107,15 @@ impl ValidatedTransaction {
                         }),
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     bucket_id_mapping.remove(bucket_id)
-                        .map(|real_id| proc.txn_return_to_worktop(real_id))
+                        .map(|real_id| {
+                            proc.call(
+                                SNodeRef::WorktopRef,
+                                "put".to_string(),
+                                vec![
+                                    ScryptoValue::from_value(&scrypto::resource::Bucket(real_id)),
+                                ]
+                            )
+                        })
                         .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id)))
                 }
                 ValidatedInstruction::AssertWorktopContains { resource_address } => {

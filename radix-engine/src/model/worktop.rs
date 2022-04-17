@@ -26,6 +26,7 @@ pub enum WorktopError {
     ResourceContainerError(ResourceContainerError),
     ResourceDoesNotExist(ResourceAddress),
     CouldNotCreateBucket,
+    CouldNotTakeBucket,
 }
 
 impl Worktop {
@@ -169,6 +170,16 @@ impl Worktop {
         system_api: &mut S,
     ) -> Result<ScryptoValue, WorktopError> {
         match function {
+            "put" => {
+                let bucket_id: scrypto::resource::Bucket =
+                    scrypto_decode(&args[0].raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+                let bucket = system_api
+                    .take_bucket(bucket_id.0)
+                    .map_err(|_| WorktopError::CouldNotTakeBucket)?;
+                self.put(bucket)
+                    .map_err(WorktopError::ResourceContainerError)?;
+                Ok(ScryptoValue::from_value(&()))
+            }
             "take_amount" => {
                 let amount: Decimal =
                     scrypto_decode(&args[0].raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
