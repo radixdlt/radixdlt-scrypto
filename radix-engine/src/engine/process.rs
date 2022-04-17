@@ -14,7 +14,6 @@ use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::rust::mem;
 use scrypto::values::*;
 use wasmi::*;
 
@@ -217,7 +216,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
     /// Proofs collected from previous returns or self. Also used for system authorization.
-    auth_zone: AuthZone,
+    auth_zone: Option<AuthZone>,
     /// The caller's auth zone
     caller_auth_zone: Option<&'r AuthZone>,
 
@@ -237,6 +236,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         depth: usize,
         trace: bool,
         track: &'r mut Track<'l, L>,
+        auth_zone: Option<AuthZone>,
         id_allocator: Option<IdAllocator>,
     ) -> Self {
         Self {
@@ -248,7 +248,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             wasm_process_state: None,
             id_allocator,
             worktop: Worktop::new(),
-            auth_zone: AuthZone::new(),
+            auth_zone,
             caller_auth_zone: None,
         }
     }
@@ -425,7 +425,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn pop_from_auth_zone(&mut self) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Popping from auth zone");
         let new_proof_id = self.new_proof_id()?;
-        let proof = self.auth_zone.pop().map_err(RuntimeError::AuthZoneError)?;
+        let proof = self.auth_zone.as_mut().unwrap().pop().map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, proof);
         Ok(new_proof_id)
     }
@@ -443,7 +443,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::CantMoveRestrictedProof(proof_id));
         }
 
-        self.auth_zone.push(proof);
+        self.auth_zone.as_mut().unwrap().push(proof);
         Ok(())
     }
 
@@ -526,7 +526,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof = self.auth_zone.create_proof(resource_address, resource_type)
+        let new_proof = self.auth_zone.as_mut().unwrap().create_proof(resource_address, resource_type)
             .map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -547,7 +547,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof = self.auth_zone.create_proof_by_amount(amount, resource_address, resource_type)
+        let new_proof = self.auth_zone.as_mut().unwrap().create_proof_by_amount(amount, resource_address, resource_type)
             .map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -568,7 +568,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof = self.auth_zone.create_proof_by_ids(ids, resource_address, resource_type)
+        let new_proof = self.auth_zone.as_mut().unwrap().create_proof_by_ids(ids, resource_address, resource_type)
             .map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -613,7 +613,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     pub fn drop_all_auth_zone_proofs(&mut self) -> Result<(), RuntimeError> {
-        self.auth_zone.clear();
+        if let Some(auth_zone) = self.auth_zone.as_mut() {
+            auth_zone.clear();
+        }
+
         Ok(())
     }
 
@@ -841,8 +844,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Authorization and state load
         let (mut snode, method_auths) = match &snode_ref {
             SNodeRef::AuthZone => {
-                let auth_zone = mem::replace(&mut self.auth_zone, AuthZone::new());
-                Ok((SNodeState::AuthZone(auth_zone), vec![]))
+                if let Some(auth_zone) = self.auth_zone.take() {
+                    Ok((SNodeState::AuthZone(auth_zone), vec![]))
+                } else {
+                    Err(RuntimeError::AuthZoneDoesNotExist)
+                }
             }
             SNodeRef::Scrypto(actor) => {
                 match actor {
@@ -950,22 +956,25 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Authorization check
         if !method_auths.is_empty() {
-            let proofs_vector = match &snode {
-                // Same process auth check
+            let mut auth_zones = Vec::new();
+            if let Some(self_auth_zone) = &self.auth_zone {
+                auth_zones.push(self_auth_zone);
+            }
+
+            match &snode {
+                // Resource auth check includes caller
                 SNodeState::ResourceRef(_, _) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
-                        vec![auth_zone, &self.auth_zone]
-                    } else {
-                        vec![&self.auth_zone]
+                        auth_zones.push(auth_zone);
                     }
                 }
                 // Extern call auth check
-                _ => vec![&self.auth_zone],
+                _ => { }
             };
 
             for method_auth in method_auths {
                 method_auth
-                    .check(&proofs_vector)
+                    .check(&auth_zones)
                     .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
             }
         }
@@ -1003,8 +1012,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             },
             _ => {
                 // start a new process
-                let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
-                process.caller_auth_zone = Option::Some(&self.auth_zone);
+                let process_auth_zone = if matches!(snode, SNodeState::Scrypto(_, _)) {
+                    Some(AuthZone::new())
+                } else {
+                    None
+                };
+                let mut process = Process::new(self.depth + 1, self.trace, self.track, process_auth_zone, None);
+                if let Some(auth_zone) = &self.auth_zone {
+                    process.caller_auth_zone = Option::Some(auth_zone);
+                }
 
                 // move buckets and proofs to the new process.
                 process.receive_buckets(moving_buckets)?;
@@ -1021,7 +1037,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // Return borrowed snodes
                 match snode {
                     SNodeState::AuthZone(auth_zone) => {
-                        self.auth_zone = auth_zone;
+                        self.auth_zone = Some(auth_zone);
                     }
                     SNodeState::Scrypto(actor, component_state) => {
                         if let Some(component_address) = actor.component_address() {
@@ -1068,7 +1084,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Auto move into auth_zone
         for proof_id in &result.proof_ids {
             let proof = self.proofs.remove(proof_id).unwrap();
-            self.auth_zone.push(proof);
+            self.auth_zone.as_mut().unwrap().push(proof);
         }
 
         re_debug!(self, "Call function ended");
@@ -1089,7 +1105,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Auto move into auth_zone
         for proof_id in &result.proof_ids {
             let proof = self.proofs.remove(proof_id).unwrap();
-            self.auth_zone.push(proof);
+            self.auth_zone.as_mut().unwrap().push(proof);
         }
 
         re_debug!(self, "Call method ended");
@@ -1114,7 +1130,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
-        let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
+        let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None);
         let result = process
             .run(&mut snode, String::new(), Vec::new())
             .map(|(r, _, _)| r);
