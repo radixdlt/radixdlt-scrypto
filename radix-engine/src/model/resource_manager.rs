@@ -122,13 +122,31 @@ impl ResourceManager {
             method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
         }
         method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
-        for pub_method in ["get_metadata", "get_resource_type", "get_total_supply"] {
+
+        for pub_method in [
+            "create_bucket",
+            "create_bucket_proof",
+            "get_metadata",
+            "get_resource_type",
+            "get_total_supply",
+            "take_from_bucket",
+            "put_into_bucket",
+            "get_bucket_amount",
+            "get_bucket_resource_address",
+        ] {
             method_table.insert(pub_method.to_string(), None);
         }
+
         if let ResourceType::NonFungible = resource_type {
-            method_table.insert("non_fungible_exists".to_string(), None);
-            method_table.insert("get_non_fungible".to_string(), None);
             method_table.insert("update_non_fungible_mutable_data".to_string(), Some(UpdateNonFungibleData));
+            for pub_method in [
+                "take_non_fungibles_from_bucket",
+                "non_fungible_exists",
+                "get_non_fungible",
+                "get_non_fungible_ids_in_bucket",
+            ] {
+                method_table.insert(pub_method.to_string(), None);
+            }
         }
 
         let mut authorization: HashMap<ResourceMethod, MethodEntry> = HashMap::new();
@@ -375,6 +393,16 @@ impl ResourceManager {
                 let method_entry_method: String = scrypto_decode(&args.remove(0).raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 method_entry.main(&method_entry_method, args)
+            }
+            "create_empty_bucket" => {
+                let container =
+                    ResourceContainer::new_empty(resource_address, self.resource_type());
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
             }
             "mint" => {
                 // TODO: cleanup
