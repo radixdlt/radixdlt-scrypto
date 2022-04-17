@@ -27,6 +27,7 @@ pub enum WorktopError {
     ResourceDoesNotExist(ResourceAddress),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
+    AssertionFailed,
 }
 
 impl Worktop {
@@ -246,6 +247,15 @@ impl Worktop {
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
+            }
+            "assert_contains" => {
+                let resource_address: ResourceAddress =
+                    scrypto_decode(&args[0].raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+                if self.total_amount(resource_address).is_zero() {
+                    Err(WorktopError::AssertionFailed)
+                } else {
+                    Ok(ScryptoValue::from_value(&()))
+                }
             }
             "drain" => {
                 let mut buckets = Vec::new();

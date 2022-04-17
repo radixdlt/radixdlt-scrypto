@@ -119,7 +119,13 @@ impl ValidatedTransaction {
                         .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id)))
                 }
                 ValidatedInstruction::AssertWorktopContains { resource_address } => {
-                    proc.txn_assert_worktop_contains(*resource_address)
+                    proc.call(
+                        SNodeRef::WorktopRef,
+                        "assert_contains".to_string(),
+                        vec![
+                            ScryptoValue::from_value(resource_address),
+                        ]
+                    )
                 }
                 ValidatedInstruction::AssertWorktopContainsByAmount {
                     amount,
