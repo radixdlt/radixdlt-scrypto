@@ -81,9 +81,6 @@ pub enum RuntimeError {
     /// Assertion check failed.
     AssertionFailed,
 
-    /// The data is not a valid WASM module.
-    WasmValidationError(WasmValidationError),
-
     /// The data is not a valid SBOR value.
     ParseScryptoValueError(ParseScryptoValueError),
 

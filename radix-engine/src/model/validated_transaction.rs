@@ -385,9 +385,13 @@ impl ValidatedTransaction {
                             )
                         })
                 },
-                ValidatedInstruction::PublishPackage { code } => proc
-                    .publish_package(code.clone())
-                    .map(|package_address| ScryptoValue::from_value(&package_address)),
+                ValidatedInstruction::PublishPackage { code } => {
+                    proc.call(
+                        SNodeRef::PackageStatic,
+                        "publish".to_string(),
+                        vec![ScryptoValue::from_value(code)],
+                    )
+                },
             };
             match result {
                 Ok(data) => {
