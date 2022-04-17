@@ -51,7 +51,7 @@ impl ValidatedTransaction {
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
                             proc
-                                .take_all_from_worktop(*resource_address)
+                                .txn_take_all_from_worktop(*resource_address)
                                 .map(|bucket_id| {
                                     bucket_id_mapping.insert(new_id, bucket_id);
                                     ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
@@ -67,7 +67,7 @@ impl ValidatedTransaction {
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
                             proc
-                                .take_from_worktop(*amount, *resource_address)
+                                .txn_take_from_worktop(*amount, *resource_address)
                                 .map(|bucket_id| {
                                     bucket_id_mapping.insert(new_id, bucket_id);
                                     ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
@@ -82,7 +82,7 @@ impl ValidatedTransaction {
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
                             proc
-                                .take_non_fungibles_from_worktop(ids, *resource_address)
+                                .txn_take_non_fungibles_from_worktop(ids, *resource_address)
                                 .map(|bucket_id| {
                                     bucket_id_mapping.insert(new_id, bucket_id);
                                     ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
@@ -90,20 +90,20 @@ impl ValidatedTransaction {
                         }),
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     bucket_id_mapping.remove(bucket_id)
-                        .map(|real_id| proc.return_to_worktop(real_id))
+                        .map(|real_id| proc.txn_return_to_worktop(real_id))
                         .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id)))
                 }
                 ValidatedInstruction::AssertWorktopContains { resource_address } => {
-                    proc.assert_worktop_contains(*resource_address)
+                    proc.txn_assert_worktop_contains(*resource_address)
                 }
                 ValidatedInstruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
-                } => proc.assert_worktop_contains_by_amount(*amount, *resource_address),
+                } => proc.txn_assert_worktop_contains_by_amount(*amount, *resource_address),
                 ValidatedInstruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
-                } => proc.assert_worktop_contains_by_ids(&ids, *resource_address),
+                } => proc.txn_assert_worktop_contains_by_ids(&ids, *resource_address),
                 ValidatedInstruction::PopFromAuthZone {} => {
                     id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
@@ -293,7 +293,7 @@ impl ValidatedTransaction {
                 ValidatedInstruction::CallMethodWithAllResources {
                     component_address,
                     method,
-                } => proc.call_method_with_all_resources(*component_address, &method),
+                } => proc.txn_call_method_with_all_resources(*component_address, &method),
                 ValidatedInstruction::PublishPackage { code } => proc
                     .publish_package(code.clone())
                     .map(|package_address| ScryptoValue::from_value(&package_address)),

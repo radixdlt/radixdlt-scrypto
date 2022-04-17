@@ -217,6 +217,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     buckets: HashMap<BucketId, Bucket>,
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
+    /// Resources collected from previous returns or self.
+    worktop: Option<Worktop>,
     /// Proofs collected from previous returns or self. Also used for system authorization.
     auth_zone: Option<AuthZone>,
     /// The caller's auth zone
@@ -225,9 +227,6 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
     wasm_process_state: Option<WasmProcess<'r>>,
-
-    /// Resources collected from previous returns or self.
-    worktop: Worktop,
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -237,6 +236,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         trace: bool,
         track: &'r mut Track<'l, L>,
         auth_zone: Option<AuthZone>,
+        worktop: Option<Worktop>,
     ) -> Self {
         Self {
             depth,
@@ -245,7 +245,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             buckets: HashMap::new(),
             proofs: HashMap::new(),
             wasm_process_state: None,
-            worktop: Worktop::new(),
+            worktop,
             auth_zone,
             caller_auth_zone: None,
         }
@@ -260,7 +260,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Takes resource by amount from worktop and returns a bucket.
-    pub fn take_from_worktop(
+    pub fn txn_take_from_worktop(
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
@@ -274,6 +274,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_bucket_id = self.new_bucket_id()?;
         let new_bucket = match self
             .worktop
+            .as_mut()
+            .unwrap()
             .take(amount, resource_address)
             .map_err(RuntimeError::WorktopError)?
         {
@@ -285,7 +287,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Takes resource by non-fungible IDs from worktop and returns a bucket.
-    pub fn take_non_fungibles_from_worktop(
+    pub fn txn_take_non_fungibles_from_worktop(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
@@ -299,6 +301,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_bucket_id = self.new_bucket_id()?;
         let new_bucket = match self
             .worktop
+            .as_mut()
+            .unwrap()
             .take_non_fungibles(ids, resource_address)
             .map_err(RuntimeError::WorktopError)?
         {
@@ -310,7 +314,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Takes resource by resource address from worktop and returns a bucket.
-    pub fn take_all_from_worktop(
+    pub fn txn_take_all_from_worktop(
         &mut self,
         resource_address: ResourceAddress,
     ) -> Result<BucketId, RuntimeError> {
@@ -322,6 +326,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_bucket_id = self.new_bucket_id()?;
         let new_bucket = match self
             .worktop
+            .as_mut()
+            .unwrap()
             .take_all(resource_address)
             .map_err(RuntimeError::WorktopError)?
         {
@@ -347,7 +353,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Returns resource back to worktop.
-    pub fn return_to_worktop(&mut self, bucket_id: BucketId) -> Result<ScryptoValue, RuntimeError> {
+    pub fn txn_return_to_worktop(&mut self, bucket_id: BucketId) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(
             self,
             "(Transaction) Returning to worktop: bucket_id = {}",
@@ -359,17 +365,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&bucket_id)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
         self.worktop
+            .as_mut()
+            .unwrap()
             .put(bucket)
             .map_err(RuntimeError::WorktopError)?;
         Ok(ScryptoValue::from_value(&()))
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop_contains(
+    pub fn txn_assert_worktop_contains(
         &mut self,
         resource_address: ResourceAddress,
     ) -> Result<ScryptoValue, RuntimeError> {
-        if self.worktop.total_amount(resource_address).is_zero() {
+        if self.worktop.as_mut().unwrap().total_amount(resource_address).is_zero() {
             Err(RuntimeError::AssertionFailed)
         } else {
             Ok(ScryptoValue::from_value(&()))
@@ -377,12 +385,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop_contains_by_amount(
+    pub fn txn_assert_worktop_contains_by_amount(
         &mut self,
         amount: Decimal,
         resource_address: ResourceAddress,
     ) -> Result<ScryptoValue, RuntimeError> {
-        if self.worktop.total_amount(resource_address) < amount {
+        if self.worktop.as_mut().unwrap().total_amount(resource_address) < amount {
             Err(RuntimeError::AssertionFailed)
         } else {
             Ok(ScryptoValue::from_value(&()))
@@ -390,13 +398,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop_contains_by_ids(
+    pub fn txn_assert_worktop_contains_by_ids(
         &mut self,
         ids: &BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
     ) -> Result<ScryptoValue, RuntimeError> {
         if !self
             .worktop
+            .as_mut()
+            .unwrap()
             .total_ids(resource_address)
             .map_err(RuntimeError::WorktopError)?
             .is_superset(ids)
@@ -489,7 +499,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// (Transaction ONLY) Calls a method.
-    pub fn call_method_with_all_resources(
+    pub fn txn_call_method_with_all_resources(
         &mut self,
         component_address: ComponentAddress,
         method: &str,
@@ -504,9 +514,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         self.call(SNodeRef::AuthZone, "clear".to_string(), vec![])?;
 
         // 2. Move collected resource to temp buckets
-        for id in self.worktop.resource_addresses() {
+        for id in self.worktop.as_mut().unwrap().resource_addresses() {
             if let Some(bucket) = self
                 .worktop
+                .as_mut()
+                .unwrap()
                 .take_all(id)
                 .map_err(RuntimeError::WorktopError)?
             {
@@ -897,7 +909,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 } else {
                     None
                 };
-                let mut process = Process::new(self.depth + 1, self.trace, self.track, process_auth_zone);
+                let mut process = Process::new(self.depth + 1, self.trace, self.track, process_auth_zone, None);
                 if let Some(auth_zone) = &self.auth_zone {
                     process.caller_auth_zone = Option::Some(auth_zone);
                 }
@@ -967,7 +979,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
-        let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
+        let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None);
         let result = process
             .run(&mut snode, String::new(), Vec::new())
             .map(|(r, _, _)| r);
@@ -985,10 +997,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
             success = false;
         }
-        if !self.worktop.is_empty() {
-            re_warn!(self, "Resource worktop is not empty");
-            success = false;
+        if let Some(worktop) = &self.worktop {
+            if !worktop.is_empty() {
+                re_warn!(self, "Resource worktop is not empty");
+                success = false;
+            }
         }
+
         if let Some(wasm_process) = &self.wasm_process_state {
             if !wasm_process.check_resource() {
                 success = false;
@@ -1095,10 +1110,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     /// Receives buckets from another component/blueprint, either as argument or return
     fn receive_buckets(&mut self, buckets: HashMap<BucketId, Bucket>) -> Result<(), RuntimeError> {
-        if self.depth == 0 {
+        if let Some(worktop) = &mut self.worktop {
             // buckets are aggregated by worktop
             for (_, bucket) in buckets {
-                self.worktop
+                worktop
                     .put(bucket)
                     .map_err(RuntimeError::WorktopError)?;
             }
