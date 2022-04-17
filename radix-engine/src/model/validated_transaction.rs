@@ -125,16 +125,15 @@ impl ValidatedTransaction {
                         .map(|_| ScryptoValue::from_value(&()))
                 },
                 ValidatedInstruction::PushToAuthZone { proof_id } => {
-                    match proof_id_mapping.remove(proof_id) {
-                        Some(mapped_id) => {
-                            proc
-                                .push_to_auth_zone(mapped_id)
-                                .map(|_| ScryptoValue::from_value(&()))
-                        },
-                        None => {
-                            Err(RuntimeError::ProofNotFound(*proof_id))
-                        }
-                    }
+                    proof_id_mapping.remove(proof_id)
+                        .ok_or(RuntimeError::ProofNotFound(*proof_id))
+                        .and_then(|real_id|
+                            proc.call(
+                                SNodeRef::AuthZone,
+                                "push".to_string(),
+                                vec![ScryptoValue::from_value(&scrypto::resource::Proof(real_id))]
+                            )
+                        )
                 },
                 ValidatedInstruction::CreateProofFromAuthZone { resource_address } =>
                     id_allocator.new_proof_id()
