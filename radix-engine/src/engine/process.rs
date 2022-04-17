@@ -472,69 +472,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(new_proof_id)
     }
 
-    // Creates a auth zone proof for all of the specified resource.
-    pub fn create_auth_zone_proof(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating auth zone proof: ALL, {}", resource_address);
-
-        let resource_manager = self
-            .track
-            .get_resource_manager(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-        let resource_type = resource_manager.resource_type();
-
-        let new_proof_id = self.new_proof_id()?;
-        let new_proof = self.auth_zone.create_proof(resource_address, resource_type)
-            .map_err(RuntimeError::AuthZoneError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
-    pub fn create_auth_zone_proof_by_amount(
-        &mut self,
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating proof: {}, {}", amount, resource_address);
-
-        let resource_manager = self
-            .track
-            .get_resource_manager(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-        let resource_type = resource_manager.resource_type();
-
-        let new_proof_id = self.new_proof_id()?;
-        let new_proof = self.auth_zone.create_proof_by_amount(amount, resource_address, resource_type)
-            .map_err(RuntimeError::AuthZoneError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
-    pub fn txn_create_auth_zone_proof_by_ids(
-        &mut self,
-        ids: &BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating proof: {:?}, {}", ids, resource_address);
-
-        let resource_manager = self
-            .track
-            .get_resource_manager(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-        let resource_type = resource_manager.resource_type();
-
-        let new_proof_id = self.new_proof_id()?;
-        let new_proof = self.auth_zone.create_proof_by_ids(ids, resource_address, resource_type)
-            .map_err(RuntimeError::AuthZoneError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
     // Clone a proof.
     pub fn drop_all_named_proofs(&mut self) -> Result<(), RuntimeError> {
         for (_, proof) in self.proofs.drain() {
@@ -544,15 +481,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    pub fn drop_all_auth_zone_proofs(&mut self) -> Result<(), RuntimeError> {
-        self.auth_zone.clear();
-        Ok(())
-    }
-
     /// Drops all proofs owned by this process.
     pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
         self.drop_all_named_proofs()?;
-        self.drop_all_auth_zone_proofs()
+        self.call(SNodeRef::AuthZone, "clear".to_string(), vec![])?;
+        Ok(())
     }
 
     /// (Transaction ONLY) Calls a method.
@@ -567,7 +500,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         );
 
         // 1. Drop all proofs to unlock the buckets
-        self.drop_all_proofs()?;
+        self.drop_all_named_proofs()?;
+        self.call(SNodeRef::AuthZone, "clear".to_string(), vec![])?;
 
         // 2. Move collected resource to temp buckets
         for id in self.worktop.resource_addresses() {
@@ -750,7 +684,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let moving_proofs = self.send_proofs(&output.proof_ids, MoveMethod::AsReturn)?;
 
         // drop proofs and check resource leak
-        self.drop_all_proofs()?;
+        self.drop_all_named_proofs()?;
+        self.auth_zone.clear();
         self.check_resource()?;
 
         #[cfg(not(feature = "alloc"))]

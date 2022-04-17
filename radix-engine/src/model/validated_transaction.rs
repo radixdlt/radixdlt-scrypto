@@ -120,9 +120,7 @@ impl ValidatedTransaction {
                 },
                 ValidatedInstruction::ClearAuthZone => {
                     proof_id_mapping.clear();
-                    proc
-                        .drop_all_auth_zone_proofs()
-                        .map(|_| ScryptoValue::from_value(&()))
+                    proc.call(SNodeRef::AuthZone, "clear".to_string(), vec![])
                 },
                 ValidatedInstruction::PushToAuthZone { proof_id } => {
                     proof_id_mapping.remove(proof_id)
@@ -139,12 +137,15 @@ impl ValidatedTransaction {
                     id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc
-                                .create_auth_zone_proof(*resource_address)
-                                .map(|proof_id| {
-                                    proof_id_mapping.insert(new_id, proof_id);
-                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
-                                })
+                            proc.call(
+                                SNodeRef::AuthZone,
+                                "create_proof".to_string(),
+                                vec![ScryptoValue::from_value(resource_address)]
+                            ).map(|rtn| {
+                                let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                proof_id_mapping.insert(new_id, proof_id);
+                                ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                            })
                         }),
                 ValidatedInstruction::CreateProofFromAuthZoneByAmount {
                     amount,
@@ -153,12 +154,18 @@ impl ValidatedTransaction {
                     id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc
-                                .create_auth_zone_proof_by_amount(*amount, *resource_address)
-                                .map(|proof_id| {
-                                    proof_id_mapping.insert(new_id, proof_id);
-                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
-                                })
+                            proc.call(
+                                SNodeRef::AuthZone,
+                                "create_proof_by_amount".to_string(),
+                                vec![
+                                    ScryptoValue::from_value(amount),
+                                     ScryptoValue::from_value(resource_address)
+                                ]
+                            ).map(|rtn| {
+                                let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                proof_id_mapping.insert(new_id, proof_id);
+                                ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                            })
                         }),
                 ValidatedInstruction::CreateProofFromAuthZoneByIds {
                     ids,
@@ -167,12 +174,18 @@ impl ValidatedTransaction {
                     id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc
-                                .txn_create_auth_zone_proof_by_ids(ids, *resource_address)
-                                .map(|proof_id| {
-                                    proof_id_mapping.insert(new_id, proof_id);
-                                    ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
-                                })
+                            proc.call(
+                                SNodeRef::AuthZone,
+                                "create_proof_by_ids".to_string(),
+                                vec![
+                                    ScryptoValue::from_value(ids),
+                                    ScryptoValue::from_value(resource_address)
+                                ]
+                            ).map(|rtn| {
+                                let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
+                                proof_id_mapping.insert(new_id, proof_id);
+                                ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
+                            })
                         }),
                 ValidatedInstruction::CreateProofFromBucket { bucket_id } => {
                     id_allocator.new_proof_id()
