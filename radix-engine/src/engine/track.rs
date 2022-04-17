@@ -95,15 +95,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .into_iter()
             .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
             .collect();
-        let mut process = Process::new(
-            0,
-            verbose,
-            self,
-            Some(AuthZone::new()),
-            Some(Worktop::new()),
-            HashMap::new(),
-            HashMap::new(),
-        );
+
 
         // With the latest change, proof amount can't be zero, thus a virtual proof is created
         // only if there are signers.
@@ -112,17 +104,24 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         // but will fail at runtime, if there are no signers.
         //
         // TODO: possible to update static check to reject them early?
+        let mut initial_auth_zone_proofs = Vec::new();
         if !signers.is_empty() {
             // Proofs can't be zero amount
-            let ecdsa_bucket =
+            let mut ecdsa_bucket =
                 Bucket::new(ResourceContainer::new_non_fungible(ECDSA_TOKEN, signers));
-            process
-                .create_virtual_proof(ECDSA_TOKEN_BUCKET_ID, ECDSA_TOKEN_PROOF_ID, ecdsa_bucket)
-                .unwrap();
-            process.push_to_auth_zone(ECDSA_TOKEN_PROOF_ID).unwrap();
+            let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
+            initial_auth_zone_proofs.push(ecdsa_proof);
         }
 
-        process
+        Process::new(
+            0,
+            verbose,
+            self,
+            Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
+            Some(Worktop::new()),
+            HashMap::new(),
+            HashMap::new(),
+        )
     }
 
     /// Returns the transaction hash.

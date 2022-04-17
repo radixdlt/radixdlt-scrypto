@@ -308,23 +308,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
     }
 
-    // Puts a proof onto the auth zone.
-    pub fn push_to_auth_zone(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
-        re_debug!(self, "Pushing onto auth zone: proof_id = {}", proof_id);
-
-        let proof = self
-            .proofs
-            .remove(&proof_id)
-            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
-
-        if proof.is_restricted() {
-            return Err(RuntimeError::CantMoveRestrictedProof(proof_id));
-        }
-
-        self.auth_zone.as_mut().unwrap().push(proof);
-        Ok(())
-    }
-
     // Creates a vault proof.
     pub fn create_vault_proof(&mut self, vault_id: VaultId) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
@@ -434,20 +417,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let package = Package::new(code).map_err(RuntimeError::WasmValidationError)?;
         let package_address = self.track.create_package(package);
         Ok(package_address)
-    }
-
-    /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
-    pub fn create_virtual_proof(
-        &mut self,
-        bucket_id: BucketId,
-        proof_id: ProofId,
-        mut bucket: Bucket,
-    ) -> Result<(), RuntimeError> {
-        let proof = bucket
-            .create_proof(bucket_id)
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(proof_id, proof);
-        Ok(())
     }
 
     /// Runs the given export within this process.

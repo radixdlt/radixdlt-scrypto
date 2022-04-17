@@ -3,7 +3,6 @@ use scrypto::engine::types::*;
 use scrypto::rust::ops::Range;
 
 pub const ECDSA_TOKEN_BUCKET_ID: BucketId = 0;
-pub const ECDSA_TOKEN_PROOF_ID: ProofId = 1;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdSpace {

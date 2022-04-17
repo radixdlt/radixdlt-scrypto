@@ -28,6 +28,12 @@ pub struct AuthZone {
 }
 
 impl AuthZone {
+    pub fn new_with_proofs(proofs: Vec<Proof>) -> Self {
+        Self {
+            proofs
+        }
+    }
+
     pub fn new() -> Self {
         Self {
             proofs: Vec::new()
