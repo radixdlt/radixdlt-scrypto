@@ -64,7 +64,7 @@ impl UnclaimedLazyMap {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ComponentObjectRefs {
     pub lazy_map_ids: HashSet<LazyMapId>,
     pub vault_ids: HashSet<VaultId>,
