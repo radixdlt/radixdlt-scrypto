@@ -30,9 +30,10 @@ pub use proof_rule::{
     SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
+pub use resource_manager::Mutability::*;
 pub use resource_manager::ResourceMethod::*;
 pub use resource_manager::{
-    ParseResourceAddressError, ResourceAddress, ResourceManager, ResourceMethod,
+    Mutability, ParseResourceAddressError, ResourceAddress, ResourceManager, ResourceMethod,
 };
 pub use resource_type::ResourceType;
 pub use schema_path::SchemaPath;
