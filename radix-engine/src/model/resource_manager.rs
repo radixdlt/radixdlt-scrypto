@@ -140,7 +140,10 @@ impl ResourceManager {
         }
 
         if let ResourceType::NonFungible = resource_type {
-            method_table.insert("update_non_fungible_mutable_data".to_string(), Some(UpdateNonFungibleData));
+            method_table.insert(
+                "update_non_fungible_mutable_data".to_string(),
+                Some(UpdateNonFungibleData),
+            );
             for pub_method in [
                 "take_non_fungibles_from_bucket",
                 "non_fungible_exists",

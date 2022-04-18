@@ -151,6 +151,18 @@ impl Bucket {
             .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()
     }
+
+    /// Returns a singleton non-fungible.
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton bucket
+    pub fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
+        let non_fungibles = self.non_fungibles();
+        if non_fungibles.len() != 1 {
+            panic!("Expecting singleton NFT bucket");
+        }
+        non_fungibles.into_iter().next().unwrap()
+    }
 }
 
 //========
