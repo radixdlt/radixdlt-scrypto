@@ -15,7 +15,7 @@ use crate::types::*;
 use crate::{args, resource_manager};
 
 /// Represents a transient resource container.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Bucket(pub BucketId);
 
 impl Bucket {
