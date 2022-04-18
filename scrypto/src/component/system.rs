@@ -1,9 +1,12 @@
+use crate::args;
 use crate::buffer::*;
 use crate::component::*;
+use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::prelude::Authorization;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::*;
+use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 
 /// Represents the Radix Engine component subsystem.
@@ -44,12 +47,13 @@ impl ComponentSystem {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> PackageAddress {
-        let input = PublishPackageInput {
-            code: code.to_vec(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::PackageStatic,
+            function: "publish".to_string(),
+            args: args![code.to_vec()],
         };
-        let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
-
-        output.package_address
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Instantiates a component.
