@@ -73,6 +73,31 @@ impl Proof {
         output.non_fungible_ids
     }
 
+    /// Returns all the non-fungible units contained.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible proof.
+    pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
+        let resource_address = self.resource_address();
+        self.non_fungible_ids()
+            .iter()
+            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
+            .collect()
+    }
+
+    /// Returns a singleton non-fungible.
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton proof
+    pub fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
+        let resource_address = self.resource_address();
+        let non_fungibles = self.non_fungibles();
+        if non_fungibles.len() != 1 {
+            panic!("Expecting singleton NFT proof");
+        }
+        non_fungibles[0]
+    }
+
     /// Destroys this proof.
     pub fn drop(self) {
         let input = DropProofInput { proof_id: self.0 };
