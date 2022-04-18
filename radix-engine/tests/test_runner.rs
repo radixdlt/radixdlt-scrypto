@@ -82,25 +82,73 @@ impl<'l> TestRunner<'l> {
         self.executor.get_nonce(intended_signers)
     }
 
-    pub fn create_restricted_mint_token(
+    pub fn set_auth(
+        &mut self,
+        account: (&EcdsaPublicKey, &EcdsaPrivateKey, ComponentAddress),
+        function: &str,
+        auth: ResourceAddress,
+        token: ResourceAddress,
+        set_auth: ResourceAddress,
+    ) {
+        let package = self.publish_package("resource_creator");
+        let transaction = TransactionBuilder::new()
+            .create_proof_from_account(auth, account.2)
+            .call_function(
+                package,
+                "ResourceCreator",
+                function,
+                vec![scrypto_encode(&token), scrypto_encode(&set_auth)],
+            )
+            .call_method_with_all_resources(account.2, "deposit_batch")
+            .build(self.executor.get_nonce([account.0.clone()]))
+            .sign([account.1]);
+        let result = self
+            .executor
+            .validate_and_execute(&transaction)
+            .unwrap()
+            .result;
+        result.expect("Should be okay");
+    }
+
+    pub fn create_restricted_token(
         &mut self,
         account: ComponentAddress,
-    ) -> (ResourceAddress, ResourceAddress) {
-        let auth_resource_address = self.create_non_fungible_resource(account);
+    ) -> (
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+        ResourceAddress,
+    ) {
+        let mint_auth = self.create_non_fungible_resource(account);
+        let burn_auth = self.create_non_fungible_resource(account);
+        let withdraw_auth = self.create_non_fungible_resource(account);
+        let admin_auth = self.create_non_fungible_resource(account);
 
         let package = self.publish_package("resource_creator");
         let transaction = TransactionBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
-                "create_restricted_mint",
-                vec![scrypto_encode(&auth_resource_address)],
+                "create_restricted_token",
+                vec![
+                    scrypto_encode(&mint_auth),
+                    scrypto_encode(&burn_auth),
+                    scrypto_encode(&withdraw_auth),
+                    scrypto_encode(&admin_auth),
+                ],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
             .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
-        (auth_resource_address, receipt.new_resource_addresses[0])
+        (
+            receipt.new_resource_addresses[0],
+            mint_auth,
+            burn_auth,
+            withdraw_auth,
+            admin_auth,
+        )
     }
 
     pub fn create_restricted_burn_token(
