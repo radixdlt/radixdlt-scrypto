@@ -90,12 +90,11 @@ impl Proof {
     /// # Panics
     /// Panics if this is not a singleton proof
     pub fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
-        let resource_address = self.resource_address();
         let non_fungibles = self.non_fungibles();
         if non_fungibles.len() != 1 {
             panic!("Expecting singleton NFT proof");
         }
-        non_fungibles[0]
+        non_fungibles.into_iter().next().unwrap()
     }
 
     /// Destroys this proof.

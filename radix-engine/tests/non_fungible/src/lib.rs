@@ -187,5 +187,26 @@ blueprint! {
 
             non_fungible_bucket
         }
+
+        pub fn singleton_non_fungible() {
+            let mut bucket = Self::create_non_fungible_fixed();
+            assert_eq!(bucket.amount(), 3.into());
+
+            // read singleton bucket
+            let singleton = bucket.take(1);
+            let _: Sandwich = singleton.non_fungible().data();
+
+            // read singleton vault
+            let mut vault = Vault::with_bucket(singleton);
+            let _: Sandwich = vault.non_fungible().data();
+
+            // read singleton proof
+            let proof = vault.create_proof();
+            let _: Sandwich = proof.non_fungible().data();
+
+            // clean up
+            vault.put(bucket);
+            NonFungibleTest { vault }.instantiate().globalize();
+        }
     }
 }
