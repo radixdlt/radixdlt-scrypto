@@ -174,6 +174,16 @@ impl NonFungibleResourceBuilder {
         self
     }
 
+    pub fn restrict_deposit(
+        &mut self,
+        method_auth: MethodAuth,
+        mutability: Mutability,
+    ) -> &mut Self {
+        self.authorization
+            .insert(Deposit, (method_auth, mutability));
+        self
+    }
+
     pub fn updateable_metadata(
         &mut self,
         method_auth: MethodAuth,
