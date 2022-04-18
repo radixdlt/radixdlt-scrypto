@@ -14,22 +14,54 @@ blueprint! {
         pub fn create_restricted_transfer(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .auth(TakeFromVault, auth!(require(badge_resource_address)))
+                .restrict_withdraw(auth!(require(badge_resource_address)), LOCKED)
                 .initial_supply(5)
         }
 
-        pub fn create_restricted_mint(badge_resource_address: ResourceAddress) -> Bucket {
+        pub fn create_restricted_token(
+            mint_auth: ResourceAddress,
+            burn_auth: ResourceAddress,
+            withdraw_auth: ResourceAddress,
+            admin_auth: ResourceAddress,
+        ) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .auth(Mint, auth!(require(badge_resource_address)))
+                .mintable(
+                    auth!(require(mint_auth)),
+                    MUTABLE(auth!(require(admin_auth))),
+                )
+                .burnable(
+                    auth!(require(burn_auth)),
+                    MUTABLE(auth!(require(admin_auth))),
+                )
+                .restrict_withdraw(
+                    auth!(require(withdraw_auth)),
+                    MUTABLE(auth!(require(admin_auth))),
+                )
                 .initial_supply(5)
         }
 
         pub fn create_restricted_burn(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .auth(Burn, auth!(require(badge_resource_address)))
+                .burnable(auth!(require(badge_resource_address)), LOCKED)
                 .initial_supply(5)
+        }
+
+        pub fn set_mintable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
+            resource_manager!(resource_address).set_mintable(auth!(require(auth_address)));
+        }
+
+        pub fn set_burnable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
+            resource_manager!(resource_address).set_burnable(auth!(require(auth_address)));
+        }
+
+        pub fn set_withdrawable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
+            resource_manager!(resource_address).set_withdrawable(auth!(require(auth_address)));
+        }
+
+        pub fn lock_mintable(resource_address: ResourceAddress) {
+            resource_manager!(resource_address).lock_mintable();
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
