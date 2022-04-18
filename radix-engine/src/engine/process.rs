@@ -458,7 +458,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             "create_bucket_proof".to_string(),
             args![],
         )?;
-        let proof = self.proofs.remove(&rtn.proof_ids[0]).unwrap();
+        let proof = self.proofs.remove(&rtn.proof_ids.iter().nth(0).unwrap()).unwrap();
         let proof_id = self.new_proof_id()?;
         self.proofs.insert(proof_id, proof);
         Ok(proof_id)
@@ -972,9 +972,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::VaultRef(vault_id) => {
                 // FIXME: Super hack for now in order to get deposit auth to work
                 let bucket_input = if !args[0].bucket_ids.is_empty() {
-                    let bucket_id = args[0].bucket_ids[0];
-                    let bucket = self.buckets.remove(&bucket_id)
-                        .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
+                    let bucket_id = args[0].bucket_ids.iter().nth(0).unwrap();
+                    let bucket = self.buckets.remove(bucket_id)
+                        .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
                     Option::Some(bucket)
                 } else {
                     Option::None
@@ -1226,7 +1226,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
         &mut self,
-        bucket_ids: &[BucketId],
+        bucket_ids: &HashSet<BucketId>,
     ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
         let mut buckets = HashMap::new();
         for bucket_id in bucket_ids {
@@ -1263,7 +1263,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
         &mut self,
-        proof_ids: &[ProofId],
+        proof_ids: &HashSet<ProofId>,
         method: MoveMethod,
     ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
         let mut proofs = HashMap::new();

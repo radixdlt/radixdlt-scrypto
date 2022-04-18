@@ -13,6 +13,7 @@ use crate::rust::fmt;
 use crate::rust::format;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
+use crate::rust::collections::HashSet;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
@@ -28,10 +29,10 @@ pub enum ParseScryptoValueError {
 pub struct ScryptoValue {
     pub raw: Vec<u8>,
     pub dom: Value,
-    pub bucket_ids: Vec<BucketId>,
-    pub proof_ids: Vec<ProofId>,
-    pub vault_ids: Vec<VaultId>,
-    pub lazy_map_ids: Vec<LazyMapId>,
+    pub bucket_ids: HashSet<BucketId>,
+    pub proof_ids: HashSet<ProofId>,
+    pub vault_ids: HashSet<VaultId>,
+    pub lazy_map_ids: HashSet<LazyMapId>,
 }
 
 impl ScryptoValue {
@@ -85,10 +86,10 @@ impl fmt::Display for ScryptoValue {
 
 /// A checker the check a Scrypto-specific value.
 pub struct ScryptoCustomValueChecker {
-    pub buckets: Vec<Bucket>,
-    pub proofs: Vec<Proof>,
-    pub vaults: Vec<Vault>,
-    pub lazy_maps: Vec<LazyMap<(), ()>>,
+    pub buckets: HashSet<Bucket>,
+    pub proofs: HashSet<Proof>,
+    pub vaults: HashSet<Vault>,
+    pub lazy_maps: HashSet<LazyMap<(), ()>>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -109,15 +110,16 @@ pub enum ScryptoCustomValueCheckError {
     InvalidVault(ParseVaultError),
     InvalidNonFungibleId(ParseNonFungibleIdError),
     InvalidNonFungibleAddress(ParseNonFungibleAddressError),
+    DuplicateIds,
 }
 
 impl ScryptoCustomValueChecker {
     pub fn new() -> Self {
         Self {
-            buckets: Vec::new(),
-            proofs: Vec::new(),
-            vaults: Vec::new(),
-            lazy_maps: Vec::new(),
+            buckets: HashSet::new(),
+            proofs: HashSet::new(),
+            vaults: HashSet::new(),
+            lazy_maps: HashSet::new(),
         }
     }
 }
@@ -136,10 +138,10 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
             }
             ScryptoType::LazyMap => {
-                self.lazy_maps.push(
-                    LazyMap::try_from(data)
-                        .map_err(ScryptoCustomValueCheckError::InvalidLazyMap)?,
-                );
+                let map = LazyMap::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidLazyMap)?;
+                if !self.lazy_maps.insert(map) {
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds)
+                }
             }
             ScryptoType::Hash => {
                 Hash::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidHash)?;
@@ -156,19 +158,22 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 Decimal::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
             }
             ScryptoType::Bucket => {
-                self.buckets.push(
-                    Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?,
-                );
+                let bucket = Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
+                if !self.buckets.insert(bucket) {
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds)
+                }
             }
             ScryptoType::Proof => {
-                self.proofs.push(
-                    Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?,
-                );
+                let proof = Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
+                if !self.proofs.insert(proof) {
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds)
+                }
             }
             ScryptoType::Vault => {
-                self.vaults.push(
-                    Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?,
-                );
+                let vault = Vault::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidVault)?;
+                if !self.vaults.insert(vault) {
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds)
+                }
             }
             ScryptoType::NonFungibleId => {
                 NonFungibleId::try_from(data)
@@ -432,5 +437,20 @@ impl ScryptoValueFormatter {
                 ResourceAddress::try_from(data).unwrap()
             ),
         }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    use super::rust::vec;
+
+    #[test]
+    fn should_reject_duplicate_ids() {
+        let buckets = scrypto_encode(&vec![scrypto::resource::Bucket(0), scrypto::resource::Bucket(0)]);
+        let error = ScryptoValue::from_slice(&buckets).expect_err("Should be an error");
+        assert_eq!(error, ParseScryptoValueError::CustomValueCheckError(ScryptoCustomValueCheckError::DuplicateIds));
     }
 }
