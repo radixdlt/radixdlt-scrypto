@@ -953,11 +953,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if !method_auths.is_empty() {
             let proofs_vector = match &snode {
                 // Same process auth check
-<<<<<<< HEAD
-                SNodeState::ResourceRef(_,_) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
-=======
                 SNodeState::ResourceRef(_, _) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
->>>>>>> refactor-resource-auth
                     vec![self.caller_auth_zone, &self.auth_zone]
                 }
                 // Extern call auth check

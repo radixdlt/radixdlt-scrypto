@@ -16,6 +16,8 @@ use scrypto::values::ScryptoValue;
 
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
 
+/// Converts soft authorization rule to a hard authorization rule.
+/// Currently required as all auth is defined by soft authorization rules.
 macro_rules! convert_auth {
     ($auth:expr) => {
         convert(&Type::Unit, &Value::Unit, &$auth)
@@ -151,20 +153,17 @@ impl ResourceManager {
         }
 
         let mut authorization: HashMap<ResourceMethod, MethodEntry> = HashMap::new();
-        let mint_entry = auth.remove(&Mint).unwrap_or((DenyAll, LOCKED));
-        authorization.insert(Mint, MethodEntry::new(mint_entry));
-        let burn_entry = auth.remove(&Burn).unwrap_or((DenyAll, LOCKED));
-        authorization.insert(Burn, MethodEntry::new(burn_entry));
-        let take_entry = auth.remove(&Withdraw).unwrap_or((AllowAll, LOCKED));
-        authorization.insert(Withdraw, MethodEntry::new(take_entry.clone()));
-        let deposit_entry = auth.remove(&Deposit).unwrap_or((AllowAll, LOCKED));
-        authorization.insert(Deposit, MethodEntry::new(deposit_entry.clone()));
-        let update_metadata_entry = auth.remove(&UpdateMetadata).unwrap_or((DenyAll, LOCKED));
-        authorization.insert(UpdateMetadata, MethodEntry::new(update_metadata_entry));
-        let update_data_auth = auth
-            .remove(&UpdateNonFungibleData)
-            .unwrap_or((DenyAll, LOCKED));
-        authorization.insert(UpdateNonFungibleData, MethodEntry::new(update_data_auth));
+        for (auth_entry_key, default) in [
+            (Mint, (DenyAll, LOCKED)),
+            (Burn, (DenyAll, LOCKED)),
+            (Withdraw, (AllowAll, LOCKED)),
+            (Deposit, (AllowAll, LOCKED)),
+            (UpdateMetadata, (DenyAll, LOCKED)),
+            (UpdateNonFungibleData, (DenyAll, LOCKED)),
+        ] {
+            let entry = auth.remove(&auth_entry_key).unwrap_or(default);
+            authorization.insert(auth_entry_key, MethodEntry::new(entry));
+        }
 
         let resource_manager = Self {
             resource_type,
