@@ -13,9 +13,6 @@ extern "C" {
     pub fn radix_engine(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
 }
 
-/// Publish a code package
-pub const PUBLISH_PACKAGE: u32 = 0x00;
-
 /// Create a component
 pub const CREATE_COMPONENT: u32 = 0x10;
 /// Retrieve component information
@@ -93,20 +90,6 @@ pub struct InvokeSNodeInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct InvokeSNodeOutput {
     pub rtn: Vec<u8>,
-}
-
-//==========
-// blueprint
-//==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PublishPackageInput {
-    pub code: Vec<u8>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PublishPackageOutput {
-    pub package_address: PackageAddress,
 }
 
 //==========
