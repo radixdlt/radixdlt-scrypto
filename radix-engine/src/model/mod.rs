@@ -28,7 +28,7 @@ pub use proof::*;
 pub use receipt::Receipt;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
-pub use transaction_process::{TransactionProcess, TransactionError};
+pub use transaction_process::{TransactionProcess};
 pub use transaction::{
     Instruction, SignedTransaction, Transaction,
 };

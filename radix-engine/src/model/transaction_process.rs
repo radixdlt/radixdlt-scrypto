@@ -6,24 +6,17 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
-use crate::engine::{IdAllocator, IdSpace, Process};
+use crate::engine::{IdAllocator, IdSpace, SystemApi};
 use crate::errors::RuntimeError::{ProofNotFound};
 use crate::errors::RuntimeError;
-use crate::ledger::SubstateStore;
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
 
 pub struct TransactionProcess {
     transaction: ValidatedTransaction,
     proof_id_mapping: HashMap<ProofId, ProofId>,
     bucket_id_mapping: HashMap<BucketId, BucketId>,
+    outputs: Vec<ScryptoValue>,
     id_allocator: IdAllocator,
-}
-
-pub enum TransactionError {
-    Error {
-        error: RuntimeError,
-        outputs: Vec<Vec<u8>>,
-    }
 }
 
 impl TransactionProcess {
@@ -32,6 +25,7 @@ impl TransactionProcess {
             transaction,
             proof_id_mapping: HashMap::new(),
             bucket_id_mapping: HashMap::new(),
+            outputs: Vec::new(),
             id_allocator: IdAllocator::new(IdSpace::Transaction),
         }
     }
@@ -50,17 +44,18 @@ impl TransactionProcess {
         Ok(values)
     }
 
-    pub fn main<L: SubstateStore>(mut self, proc: &mut Process<L>) -> Result<Vec<Vec<u8>>, TransactionError> {
+    pub fn outputs(&self) -> &[ScryptoValue] {
+        &self.outputs
+    }
 
-        let mut outputs = vec![];
-
+    pub fn main<S: SystemApi>(&mut self, system_api: &mut S) -> Result<ScryptoValue, RuntimeError> {
         for inst in &self.transaction.instructions.clone() {
             let result = match inst {
                 ValidatedInstruction::TakeFromWorktop { resource_address } => {
                     self.id_allocator.new_bucket_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
                                 "take_all".to_string(),
                                 vec![
@@ -81,7 +76,7 @@ impl TransactionProcess {
                         .new_bucket_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
                                 "take_amount".to_string(),
                                 vec![
@@ -102,7 +97,7 @@ impl TransactionProcess {
                         .new_bucket_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
                                 "take_non_fungibles".to_string(),
                                 vec![
@@ -118,7 +113,7 @@ impl TransactionProcess {
                 ValidatedInstruction::ReturnToWorktop { bucket_id } => {
                     self.bucket_id_mapping.remove(bucket_id)
                         .map(|real_id| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
                                 "put".to_string(),
                                 vec![
@@ -129,7 +124,7 @@ impl TransactionProcess {
                         .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id)))
                 }
                 ValidatedInstruction::AssertWorktopContains { resource_address } => {
-                    proc.call(
+                    system_api.invoke_snode(
                         SNodeRef::WorktopRef,
                         "assert_contains".to_string(),
                         vec![
@@ -141,7 +136,7 @@ impl TransactionProcess {
                     amount,
                     resource_address,
                 } => {
-                    proc.call(
+                    system_api.invoke_snode(
                         SNodeRef::WorktopRef,
                         "assert_contains_amount".to_string(),
                         vec![
@@ -154,7 +149,7 @@ impl TransactionProcess {
                     ids,
                     resource_address,
                 } => {
-                    proc.call(
+                    system_api.invoke_snode(
                         SNodeRef::WorktopRef,
                         "assert_contains_amount".to_string(),
                         vec![
@@ -167,7 +162,7 @@ impl TransactionProcess {
                     self.id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
                                 "pop".to_string(),
                                 vec![]
@@ -180,13 +175,13 @@ impl TransactionProcess {
                 },
                 ValidatedInstruction::ClearAuthZone => {
                     self.proof_id_mapping.clear();
-                    proc.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])
+                    system_api.invoke_snode(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])
                 },
                 ValidatedInstruction::PushToAuthZone { proof_id } => {
                     self.proof_id_mapping.remove(proof_id)
                         .ok_or(RuntimeError::ProofNotFound(*proof_id))
                         .and_then(|real_id|
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
                                 "push".to_string(),
                                 vec![ScryptoValue::from_value(&scrypto::resource::Proof(real_id))]
@@ -197,7 +192,7 @@ impl TransactionProcess {
                     self.id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
                                 "create_proof".to_string(),
                                 vec![ScryptoValue::from_value(resource_address)]
@@ -214,7 +209,7 @@ impl TransactionProcess {
                     self.id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
                                 "create_proof_by_amount".to_string(),
                                 vec![
@@ -234,7 +229,7 @@ impl TransactionProcess {
                     self.id_allocator.new_proof_id()
                         .map_err(RuntimeError::IdAllocatorError)
                         .and_then(|new_id| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
                                 "create_proof_by_ids".to_string(),
                                 vec![
@@ -256,7 +251,7 @@ impl TransactionProcess {
                                 .ok_or(RuntimeError::BucketNotFound(new_id))
                         })
                         .and_then(|(new_id, real_bucket_id)| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::BucketRef(real_bucket_id),
                                 "create_bucket_proof".to_string(),
                                 vec![],
@@ -276,9 +271,9 @@ impl TransactionProcess {
                                 .get(proof_id)
                                 .cloned()
                                 .map(|real_id| {
-                                    proc.call(SNodeRef::ProofRef(real_id),
-                                              "clone".to_string(),
-                                              vec![]
+                                    system_api.invoke_snode(SNodeRef::ProofRef(real_id),
+                                                            "clone".to_string(),
+                                                            vec![]
                                     ).map(|v| {
                                         let cloned_proof_id = v.proof_ids.iter().next().unwrap().0;
                                         self.proof_id_mapping.insert(new_id, *cloned_proof_id);
@@ -290,7 +285,7 @@ impl TransactionProcess {
                 ValidatedInstruction::DropProof { proof_id } => {
                     self.proof_id_mapping.remove(proof_id)
                         .map(|real_id| {
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::Proof(real_id),
                                 "drop".to_string(),
                                 vec![]
@@ -306,7 +301,7 @@ impl TransactionProcess {
                 } => {
                     self.replace_ids(args.clone())
                         .and_then(|args|
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Blueprint(*package_address, blueprint_name.to_string())),
                                 function.to_string(),
                                 args
@@ -315,7 +310,7 @@ impl TransactionProcess {
                         .and_then(|result| {
                             // Auto move into auth_zone
                             for (proof_id, _) in &result.proof_ids {
-                                proc.call(
+                                system_api.invoke_snode(
                                     SNodeRef::AuthZoneRef,
                                     "push".to_string(),
                                     vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
@@ -323,7 +318,7 @@ impl TransactionProcess {
                             }
                             // Auto move into worktop
                             for (bucket_id, _) in &result.bucket_ids {
-                                proc.call(
+                                system_api.invoke_snode(
                                     SNodeRef::WorktopRef,
                                     "put".to_string(),
                                     vec![ScryptoValue::from_value(&scrypto::resource::Bucket(*bucket_id))]
@@ -339,7 +334,7 @@ impl TransactionProcess {
                 } => {
                     self.replace_ids(args.clone())
                         .and_then(|args|
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
                                 method.to_string(),
                                 args
@@ -348,7 +343,7 @@ impl TransactionProcess {
                         .and_then(|result| {
                             // Auto move into auth_zone
                             for (proof_id, _) in &result.proof_ids {
-                                proc.call(
+                                system_api.invoke_snode(
                                     SNodeRef::AuthZoneRef,
                                     "push".to_string(),
                                     vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
@@ -356,7 +351,7 @@ impl TransactionProcess {
                             }
                             // Auto move into worktop
                             for (bucket_id, _) in &result.bucket_ids {
-                                proc.call(
+                                system_api.invoke_snode(
                                     SNodeRef::WorktopRef,
                                     "put".to_string(),
                                     vec![ScryptoValue::from_value(&scrypto::resource::Bucket(*bucket_id))]
@@ -369,16 +364,16 @@ impl TransactionProcess {
                     component_address,
                     method,
                 } => {
-                    proc.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])
+                    system_api.invoke_snode(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])
                         .and_then(|_| {
                             for (_, real_id) in self.proof_id_mapping.drain() {
-                                proc.call(
+                                system_api.invoke_snode(
                                     SNodeRef::Proof(real_id),
                                     "drop".to_string(),
                                     vec![]
                                 ).unwrap();
                             }
-                            proc.call(SNodeRef::WorktopRef, "drain".to_string(), vec![])
+                            system_api.invoke_snode(SNodeRef::WorktopRef, "drain".to_string(), vec![])
                         })
                         .and_then(|result| {
                             let mut buckets = Vec::new();
@@ -388,7 +383,7 @@ impl TransactionProcess {
                             for (_, real_id) in self.bucket_id_mapping.drain() {
                                 buckets.push(scrypto::resource::Bucket(real_id));
                             }
-                            proc.call(
+                            system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
                                 method.to_string(),
                                 vec![ScryptoValue::from_value(&buckets)],
@@ -396,26 +391,16 @@ impl TransactionProcess {
                         })
                 },
                 ValidatedInstruction::PublishPackage { code } => {
-                    proc.call(
+                    system_api.invoke_snode(
                         SNodeRef::PackageStatic,
                         "publish".to_string(),
                         vec![ScryptoValue::from_value(code)],
                     )
                 },
-            };
-            match result {
-                Ok(data) => {
-                    outputs.push(data.raw);
-                }
-                Err(e) => {
-                    return Err(TransactionError::Error { error: e, outputs });
-                }
-            }
+            }?;
+            self.outputs.push(result);
         }
 
-        proc.drop_all_proofs().map_err(|e| TransactionError::Error { error: e, outputs: outputs.clone() })?;
-        proc.check_resource().map_err(|e| TransactionError::Error { error: e, outputs: outputs.clone() })?;
-
-        Ok(outputs)
+        Ok(ScryptoValue::from_value(&()))
     }
 }

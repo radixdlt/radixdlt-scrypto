@@ -228,6 +228,7 @@ pub enum RuntimeError {
 
     /// Can't move restricted proof.
     CantMoveRestrictedProof(ProofId),
+
 }
 
 impl fmt::Display for RuntimeError {

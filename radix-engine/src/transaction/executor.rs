@@ -3,8 +3,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::string::ToString;
 use scrypto::{abi, auth, auth_rule_node};
-use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
 use crate::errors::*;
@@ -173,12 +173,17 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         );
         let mut proc = track.start_process(self.trace);
 
-        let transaction_executor = TransactionProcess::new(validated.clone());
-        let (outputs, error) = match transaction_executor.main(&mut proc) {
-            Ok(outputs) => (outputs, None),
-            Err(TransactionError::Error { error, outputs }) => (outputs, Some(error)),
+        let txn_process = TransactionProcess::new(validated.clone());
+        let mut txn_snode = SNodeState::Transaction(txn_process);
+        let error = match proc.run(&mut txn_snode, "execute".to_string(), vec![]) {
+            Ok(_) => None,
+            Err(e) => Some(e),
         };
-        let outputs = outputs.into_iter().map(|b| ScryptoValue::from_slice(&b).unwrap()).collect();
+        let outputs = if let SNodeState::Transaction(txn_process) = txn_snode {
+            txn_process.outputs().to_vec()
+        } else {
+            panic!("Should not get here");
+        };
 
         // prepare data for receipts
         let new_package_addresses = track.new_package_addresses();
