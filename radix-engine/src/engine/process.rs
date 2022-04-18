@@ -978,7 +978,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Execution
         let result = match snode {
             SNodeState::VaultRef(vault_id) => {
-                // FIXME: Super hack for now in order to get deposit auth to work
+                // TODO Post v0.4 - The passing of a bucket here is a temporary (slightly ugly) workaround
+                // to support deposit auth until we have support for handling vault references properly
                 let bucket_input = if !args[0].bucket_ids.is_empty() {
                     let bucket_id = args[0].bucket_ids.iter().nth(0).unwrap();
                     let bucket = self.buckets.remove(bucket_id)
