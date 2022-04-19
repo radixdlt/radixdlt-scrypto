@@ -185,13 +185,13 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can have at most 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = component!(#arg).get_state();
+                                let #mutability state: blueprint::#bp_ident = borrow_component!(#arg).get_state();
                             });
 
                             // Generate a `Stmt` for writing back component state
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
-                                    ::scrypto::component!(#arg).put_state(state);
+                                    ::scrypto::borrow_component!(#arg).put_state(state);
                                 });
                             }
                         }
@@ -526,7 +526,7 @@ mod tests {
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentAddress>(
                                     &calldata.args[0usize]
                                 ).unwrap();
-                            let state: blueprint::Test = component!(arg0).get_state();
+                            let state: blueprint::Test = borrow_component!(arg0).get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state));
                         }
                         _ => {

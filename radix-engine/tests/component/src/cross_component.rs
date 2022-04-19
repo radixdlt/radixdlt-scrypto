@@ -31,7 +31,7 @@ blueprint! {
         }
 
         pub fn cross_component_call(&mut self, component_address: ComponentAddress) -> String {
-            let other_component = component!(component_address);
+            let other_component = borrow_component!(component_address);
             match &mut self.auth_vault {
                 Some(vault) => {
                     let auth_bucket = vault.take_all();

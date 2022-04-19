@@ -1,9 +1,9 @@
+use indexmap::IndexMap;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use indexmap::IndexMap;
 
 use crate::engine::*;
 use crate::errors::RuntimeError;

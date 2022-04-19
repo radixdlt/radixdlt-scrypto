@@ -7,9 +7,9 @@ pub use crate::math::*;
 pub use crate::misc::*;
 pub use crate::resource::*;
 pub use crate::{
-    args, auth, auth_and_or, auth_rule_node, blueprint, compile_package, component, debug, dec,
-    error, import, include_package, info, package, resource_list, resource_manager, trace, warn,
-    Decode, Describe, Encode, NonFungibleData, TypeId,
+    args, auth, auth_and_or, auth_rule_node, blueprint, borrow_component, borrow_package,
+    borrow_resource_manager, compile_package, debug, dec, error, import, include_package, info,
+    resource_list, trace, warn, Decode, Describe, Encode, NonFungibleData, TypeId,
 };
 
 pub use crate::rust::borrow::ToOwned;

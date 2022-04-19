@@ -49,19 +49,20 @@ blueprint! {
         }
 
         pub fn set_mintable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
-            resource_manager!(resource_address).set_mintable(auth!(require(auth_address)));
+            borrow_resource_manager!(resource_address).set_mintable(auth!(require(auth_address)));
         }
 
         pub fn set_burnable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
-            resource_manager!(resource_address).set_burnable(auth!(require(auth_address)));
+            borrow_resource_manager!(resource_address).set_burnable(auth!(require(auth_address)));
         }
 
         pub fn set_withdrawable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
-            resource_manager!(resource_address).set_withdrawable(auth!(require(auth_address)));
+            borrow_resource_manager!(resource_address)
+                .set_withdrawable(auth!(require(auth_address)));
         }
 
         pub fn lock_mintable(resource_address: ResourceAddress) {
-            resource_manager!(resource_address).lock_mintable();
+            borrow_resource_manager!(resource_address).lock_mintable();
         }
 
         pub fn create_non_fungible_fixed() -> Bucket {
