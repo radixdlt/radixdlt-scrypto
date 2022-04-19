@@ -191,15 +191,15 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Transactional state updates
     track: &'r mut Track<'l, L>,
 
-    /// Owned Snodes
+    /// Process Owned Snodes
     buckets: HashMap<BucketId, Bucket>,
     proofs: HashMap<ProofId, Proof>,
     owned_snodes: ComponentObjects,
 
     /// Referenced Snodes
+    snode_refs: ComponentObjectRefs,
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
-    snode_refs: ComponentObjectRefs,
 
     /// The caller's auth zone
     caller_auth_zone: Option<&'r AuthZone>,
@@ -250,6 +250,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let new_proof_id = self.new_proof_id()?;
         let new_proof = self.get_local_vault(&vault_id, |vault| vault.create_proof(ResourceContainerId::Vault(vault_id)))?
             .map_err(RuntimeError::ProofError)?;
+
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -1202,8 +1203,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     fn get_local_vault<R, F: FnOnce(&mut Vault) -> R>(&mut self, vault_id: &VaultId, func: F) -> Result<R, RuntimeError> {
-        if let Some(vault) = self.owned_snodes.get_vault_mut(vault_id) {
-            return Ok(func(vault));
+        if let Some(mut vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
+            let result = func(&mut vault);
+            self.owned_snodes.return_borrowed_vault_mut(vault);
+            return Ok(result);
         }
 
         if !self.snode_refs.vault_ids.contains(vault_id) {
