@@ -15,7 +15,7 @@ mod schema_path;
 mod system;
 mod vault;
 
-pub use auth_zone::AuthZone;
+pub use auth_zone::{AuthZone, AuthZoneMethod};
 pub use authorization::Authorization;
 pub use bucket::{Bucket, ParseBucketError};
 pub use mint_params::MintParams;

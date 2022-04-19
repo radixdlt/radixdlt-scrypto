@@ -1,4 +1,5 @@
 use crate::args;
+use sbor::*;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
@@ -6,6 +7,17 @@ use crate::math::Decimal;
 use crate::resource::*;
 use crate::rust::collections::BTreeSet;
 use crate::rust::string::ToString;
+
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum AuthZoneMethod {
+    Push(Proof),
+    Pop(),
+    Clear(),
+    CreateProof(ResourceAddress),
+    CreateProofByAmount(Decimal, ResourceAddress),
+    CreateProofByIds(BTreeSet<NonFungibleId>, ResourceAddress),
+}
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
@@ -19,8 +31,8 @@ impl AuthZone {
     pub fn push(proof: Proof) {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::AuthZoneRef,
-            function: "push".to_string(),
-            args: args![proof],
+            function: "main".to_string(),
+            args: args![AuthZoneMethod::Push(proof)],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -30,8 +42,8 @@ impl AuthZone {
     pub fn pop() -> Proof {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::AuthZoneRef,
-            function: "pop".to_string(),
-            args: args![],
+            function: "main".to_string(),
+            args: args![AuthZoneMethod::Pop()],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -40,8 +52,8 @@ impl AuthZone {
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::AuthZoneRef,
-            function: "create_proof".to_string(),
-            args: args![resource_address],
+            function: "main".to_string(),
+            args: args![AuthZoneMethod::CreateProof(resource_address)],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -50,8 +62,8 @@ impl AuthZone {
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::AuthZoneRef,
-            function: "create_proof_by_amount".to_string(),
-            args: args![amount, resource_address],
+            function: "main".to_string(),
+            args: args![AuthZoneMethod::CreateProofByAmount(amount, resource_address)],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -63,8 +75,8 @@ impl AuthZone {
     ) -> Proof {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::AuthZoneRef,
-            function: "create_proof_by_ids".to_string(),
-            args: args![ids.clone(), resource_address],
+            function: "main".to_string(),
+            args: args![AuthZoneMethod::CreateProofByIds(ids.clone(), resource_address)],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

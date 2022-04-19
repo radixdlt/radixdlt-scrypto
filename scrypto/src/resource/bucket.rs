@@ -18,6 +18,7 @@ use crate::{args, resource_manager};
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Bucket(pub BucketId);
 
+
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {

@@ -1,6 +1,7 @@
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
 use scrypto::prelude::ScryptoActor;
+use scrypto::resource::AuthZoneMethod;
 use scrypto::rust::collections::{HashMap};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
@@ -164,8 +165,8 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "pop".to_string(),
-                                vec![]
+                                "main".to_string(),
+                                vec![ScryptoValue::from_value(&AuthZoneMethod::Pop())]
                             ).map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                 self.proof_id_mapping.insert(new_id, proof_id);
@@ -175,7 +176,9 @@ impl TransactionProcess {
                 },
                 ValidatedInstruction::ClearAuthZone => {
                     self.proof_id_mapping.clear();
-                    system_api.invoke_snode(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])
+                    system_api.invoke_snode(SNodeRef::AuthZoneRef, "main".to_string(), vec![
+                        ScryptoValue::from_value(&AuthZoneMethod::Clear())
+                    ])
                 },
                 ValidatedInstruction::PushToAuthZone { proof_id } => {
                     self.proof_id_mapping.remove(proof_id)
@@ -183,8 +186,8 @@ impl TransactionProcess {
                         .and_then(|real_id|
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "push".to_string(),
-                                vec![ScryptoValue::from_value(&scrypto::resource::Proof(real_id))]
+                                "main".to_string(),
+                                vec![ScryptoValue::from_value(&AuthZoneMethod::Push(scrypto::resource::Proof(real_id)))]
                             )
                         )
                 },
@@ -194,8 +197,8 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "create_proof".to_string(),
-                                vec![ScryptoValue::from_value(resource_address)]
+                                "main".to_string(),
+                                vec![ScryptoValue::from_value(&AuthZoneMethod::CreateProof(*resource_address))]
                             ).map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                 self.proof_id_mapping.insert(new_id, proof_id);
@@ -211,11 +214,11 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "create_proof_by_amount".to_string(),
-                                vec![
-                                    ScryptoValue::from_value(amount),
-                                    ScryptoValue::from_value(resource_address)
-                                ]
+                                "main".to_string(),
+                                vec![ScryptoValue::from_value(&AuthZoneMethod::CreateProofByAmount(
+                                    *amount,
+                                    *resource_address
+                                ))]
                             ).map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                 self.proof_id_mapping.insert(new_id, proof_id);
@@ -231,11 +234,11 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "create_proof_by_ids".to_string(),
-                                vec![
-                                    ScryptoValue::from_value(ids),
-                                    ScryptoValue::from_value(resource_address)
-                                ]
+                                "main".to_string(),
+                                vec![ScryptoValue::from_value(&AuthZoneMethod::CreateProofByIds(
+                                    ids.clone(),
+                                    *resource_address
+                                ))]
                             ).map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                 self.proof_id_mapping.insert(new_id, proof_id);
@@ -312,8 +315,8 @@ impl TransactionProcess {
                             for (proof_id, _) in &result.proof_ids {
                                 system_api.invoke_snode(
                                     SNodeRef::AuthZoneRef,
-                                    "push".to_string(),
-                                    vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
+                                    "main".to_string(),
+                                    vec![ScryptoValue::from_value(&AuthZoneMethod::Push(scrypto::resource::Proof(*proof_id)))]
                                 ).unwrap(); // TODO: Remove unwrap
                             }
                             // Auto move into worktop
@@ -345,8 +348,8 @@ impl TransactionProcess {
                             for (proof_id, _) in &result.proof_ids {
                                 system_api.invoke_snode(
                                     SNodeRef::AuthZoneRef,
-                                    "push".to_string(),
-                                    vec![ScryptoValue::from_value(&scrypto::resource::Proof(*proof_id))]
+                                    "main".to_string(),
+                                    vec![ScryptoValue::from_value(&AuthZoneMethod::Push(scrypto::resource::Proof(*proof_id)))]
                                 ).unwrap();
                             }
                             // Auto move into worktop
@@ -364,7 +367,9 @@ impl TransactionProcess {
                     component_address,
                     method,
                 } => {
-                    system_api.invoke_snode(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])
+                    system_api.invoke_snode(SNodeRef::AuthZoneRef, "main".to_string(), vec![
+                        ScryptoValue::from_value(&AuthZoneMethod::Clear())
+                    ])
                         .and_then(|_| {
                             for (_, real_id) in self.proof_id_mapping.drain() {
                                 system_api.invoke_snode(

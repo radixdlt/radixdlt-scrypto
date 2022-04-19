@@ -6,6 +6,7 @@ use scrypto::buffer::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
+use scrypto::resource::AuthZoneMethod;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -371,8 +372,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Package::static_main(&function, args, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
                 auth_zone
-                    .main(function.as_str(), args, self)
+                    .main(arg, self)
                     .map_err(RuntimeError::AuthZoneError)
             }
             SNodeState::Worktop(worktop) => {
@@ -492,7 +498,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         if let Some(_) = &mut self.auth_zone {
-            self.invoke_snode(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
+            self.invoke_snode(SNodeRef::AuthZoneRef, "main".to_string(), vec![
+                ScryptoValue::from_value(&AuthZoneMethod::Clear())
+            ])?;
         }
         self.check_resource()?;
 
