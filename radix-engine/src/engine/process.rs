@@ -19,8 +19,7 @@ use wasmi::*;
 
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::*;
-use crate::engine::process::BorrowedSNodeState::PackageStatic;
-use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed};
+use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
@@ -106,20 +105,94 @@ pub enum ConsumedSNodeState {
 }
 
 pub enum BorrowedSNodeState {
-    PackageStatic,
-    AuthZoneRef(AuthZone),
+    AuthZone(AuthZone),
     Worktop(Worktop),
     Scrypto(ScryptoActorInfo, Option<Component>),
-    ResourceStatic,
-    ResourceRef(ResourceAddress, ResourceManager),
-    BucketRef(BucketId, Bucket),
-    ProofRef(ProofId, Proof),
-    VaultRef(VaultId, Option<ComponentAddress>, Vault),
+    Resource(ResourceAddress, ResourceManager),
+    Bucket(BucketId, Bucket),
+    Proof(ProofId, Proof),
+    Vault(VaultId, Option<ComponentAddress>, Vault),
+}
+
+impl BorrowedSNodeState {
+    fn return_borrowed_state<'r, 'l, L:SubstateStore>(self, process: &mut Process<'r, 'l, L>) {
+        match self {
+            BorrowedSNodeState::AuthZone(auth_zone) => {
+                process.auth_zone = Some(auth_zone);
+            }
+            BorrowedSNodeState::Worktop(worktop) => {
+                process.worktop = Some(worktop);
+            }
+            BorrowedSNodeState::Scrypto(actor, component_state) => {
+                if let Some(component_address) = actor.component_address() {
+                    process.track.return_borrowed_global_component(
+                        component_address,
+                        component_state.unwrap(),
+                    );
+                }
+            }
+            BorrowedSNodeState::Resource(resource_address, resource_manager) => {
+                process.track.return_borrowed_global_resource_manager(
+                    resource_address,
+                    resource_manager,
+                );
+            }
+            BorrowedSNodeState::Bucket(bucket_id, bucket) => {
+                process.buckets.insert(bucket_id, bucket);
+            }
+            BorrowedSNodeState::Proof(proof_id, proof) => {
+                process.proofs.insert(proof_id, proof);
+            }
+            BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
+                if let Some(component_address) = maybe_component_address {
+                    process.track.return_borrowed_vault(&component_address, &vault_id, vault);
+                } else {
+                    process.owned_snodes.return_borrowed_vault_mut(vault);
+                }
+            }
+        }
+    }
+}
+
+pub enum StaticSNodeState {
+    Package,
+    Resource,
 }
 
 pub enum LoadedSNodeState {
-    Consumed(ConsumedSNodeState),
+    Static(StaticSNodeState),
+    Consumed(Option<ConsumedSNodeState>),
     Borrowed(BorrowedSNodeState),
+}
+
+impl LoadedSNodeState {
+    fn to_snode_state(&mut self) -> SNodeState {
+        match self {
+            Static(static_state) => {
+                match static_state {
+                    StaticSNodeState::Package => SNodeState::PackageStatic,
+                    StaticSNodeState::Resource => SNodeState::ResourceStatic,
+                }
+            }
+            Consumed(ref mut to_consume) => {
+                match to_consume.take().unwrap() {
+                    ConsumedSNodeState::Proof(proof) => SNodeState::Proof(proof),
+                    ConsumedSNodeState::Bucket(bucket) => SNodeState::Bucket(bucket),
+                }
+            }
+            Borrowed(ref mut borrowed) => {
+                match borrowed {
+                    BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
+                    BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
+                    BorrowedSNodeState::Scrypto(info, s) => SNodeState::Scrypto(info.clone(), s.as_mut()),
+                    BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
+                    BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
+                    BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
+                    BorrowedSNodeState::Vault(id, addr, s) => SNodeState::VaultRef(*id, addr.clone(), s),
+                }
+            }
+        }
+    }
 }
 
 pub enum SNodeState<'a> {
@@ -383,14 +456,23 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::BucketRef(bucket_id, bucket) => bucket
                 .main(bucket_id, function.as_str(), args, self)
                 .map_err(RuntimeError::BucketError),
+            SNodeState::Bucket(bucket) => {
+                match function.as_str() {
+                    "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
+                    _ => Err(RuntimeError::IllegalSystemCall),
+                }
+            },
             SNodeState::ProofRef(_, proof) => proof
                 .main(function.as_str(), args, self)
                 .map_err(RuntimeError::ProofError),
+            SNodeState::Proof(proof) => {
+                proof.main_consume(function.as_str())
+                    .map_err(RuntimeError::ProofError)
+            }
             SNodeState::VaultRef(vault_id, _, vault) =>
                 vault
                     .main(vault_id, function.as_str(), args, self)
                     .map_err(RuntimeError::VaultError),
-            _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
         self.process_return_data(&output)?;
@@ -429,11 +511,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         // Authorization and state load
-        let (loaded_snode, method_auths) = match &snode_ref {
-            SNodeRef::PackageStatic => Ok((Borrowed(PackageStatic), vec![])),
+        let (mut loaded_snode, method_auths) = match &snode_ref {
+            SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = self.auth_zone.take() {
-                    Ok((Borrowed(BorrowedSNodeState::AuthZoneRef(auth_zone)), vec![]))
+                    Ok((Borrowed(BorrowedSNodeState::AuthZone(auth_zone)), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -495,14 +577,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                 }
             }
-            SNodeRef::ResourceStatic => Ok((Borrowed(BorrowedSNodeState::ResourceStatic), vec![])),
+            SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::ResourceRef(resource_address) => {
                 let resource_manager: ResourceManager = self
                     .track
                     .borrow_global_mut_resource_manager(resource_address.clone())?;
                 let method_auth = resource_manager.get_auth(&function, &args).clone();
                 Ok((
-                    Borrowed(BorrowedSNodeState::ResourceRef(resource_address.clone(), resource_manager)),
+                    Borrowed(BorrowedSNodeState::Resource(resource_address.clone(), resource_manager)),
                     vec![method_auth],
                 ))
             }
@@ -517,7 +599,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function, &args);
-                Ok((Consumed(ConsumedSNodeState::Bucket(bucket)), vec![method_auth.clone()]))
+                Ok((Consumed(Some(ConsumedSNodeState::Bucket(bucket))), vec![method_auth.clone()]))
             }
             SNodeRef::BucketRef(bucket_id) => {
                 let bucket = self
@@ -531,17 +613,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .unwrap()
                     .get_auth(&function, &args);
                 Ok((
-                    Borrowed(BorrowedSNodeState::BucketRef(bucket_id.clone(), bucket)),
+                    Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
                     vec![method_auth.clone()],
                 ))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                Ok((Borrowed(BorrowedSNodeState::ProofRef(proof_id.clone(), proof)), vec![]))
+                Ok((Borrowed(BorrowedSNodeState::Proof(proof_id.clone(), proof)), vec![]))
             }
             SNodeRef::Proof(proof_id) => {
                 let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                Ok((Consumed(ConsumedSNodeState::Proof(proof)), vec![]))
+                Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (component, vault) = if let Some(vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
@@ -562,7 +644,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .unwrap()
                     .get_auth(&function, &args);
                 Ok((
-                    Borrowed(BorrowedSNodeState::VaultRef(vault_id.clone(), component, vault)),
+                    Borrowed(BorrowedSNodeState::Vault(vault_id.clone(), component, vault)),
                     vec![method_auth.clone()],
                 ))
             }
@@ -577,8 +659,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                Borrowed(BorrowedSNodeState::ResourceRef(_, _)) | Borrowed(BorrowedSNodeState::VaultRef(_, _, _))
-                | Borrowed(BorrowedSNodeState::BucketRef(_, _)) | Consumed(ConsumedSNodeState::Bucket(_)) => {
+                Borrowed(BorrowedSNodeState::Resource(_, _)) | Borrowed(BorrowedSNodeState::Vault(_, _, _))
+                | Borrowed(BorrowedSNodeState::Bucket(_, _)) | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone);
                     }
@@ -599,115 +681,50 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         // Execution
-        let result = match loaded_snode {
-            Consumed(consumed) => {
-                match consumed {
-                    ConsumedSNodeState::Proof(proof) => {
-                        proof.main_consume(function.as_str())
-                            .map_err(RuntimeError::ProofError)
-                    },
-                    ConsumedSNodeState::Bucket(bucket) => {
-                        match function.as_str() {
-                            "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
-                            _ => Err(RuntimeError::IllegalSystemCall),
-                        }
-                    }
-                }
-            }
-            Borrowed(mut borrowed) => {
-                // Figure out what buckets and proofs to move from this process
-                let mut moving_buckets = HashMap::new();
-                let mut moving_proofs = HashMap::new();
-                for arg in &args {
-                    self.process_call_data(arg)?;
-                    moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
-                    moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
-                }
 
-                // start a new process
-                let process_auth_zone = if matches!(borrowed, BorrowedSNodeState::Scrypto(_, _)) {
-                    Some(AuthZone::new())
-                } else {
-                    None
-                };
+        // Figure out what buckets and proofs to move from this process
+        let mut moving_buckets = HashMap::new();
+        let mut moving_proofs = HashMap::new();
+        for arg in &args {
+            self.process_call_data(arg)?;
+            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
+            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
+        }
 
-                let snode = match &mut borrowed {
-                    BorrowedSNodeState::PackageStatic => SNodeState::PackageStatic,
-                    BorrowedSNodeState::AuthZoneRef(s) => SNodeState::AuthZoneRef(s),
-                    BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                    BorrowedSNodeState::Scrypto(info, s) => SNodeState::Scrypto(info.clone(), s.as_mut()),
-                    BorrowedSNodeState::ResourceStatic => SNodeState::ResourceStatic,
-                    BorrowedSNodeState::ResourceRef(addr, s) => SNodeState::ResourceRef(*addr, s),
-                    BorrowedSNodeState::BucketRef(id, s) => SNodeState::BucketRef(*id, s),
-                    BorrowedSNodeState::ProofRef(id, s) => SNodeState::ProofRef(*id, s),
-                    BorrowedSNodeState::VaultRef(id, addr, s) => SNodeState::VaultRef(*id, addr.clone(), s),
-                };
+        let process_auth_zone = if matches!(loaded_snode, Borrowed(BorrowedSNodeState::Scrypto(_, _))) {
+            Some(AuthZone::new())
+        } else {
+            None
+        };
 
-                let mut process = Process::new(
-                    self.depth + 1,
-                    self.trace,
-                    self.track,
-                    process_auth_zone,
-                    None,
-                    moving_buckets,
-                    moving_proofs,
-                );
-                if let Some(auth_zone) = &self.auth_zone {
-                    process.caller_auth_zone = Option::Some(auth_zone);
-                }
+        let snode = loaded_snode.to_snode_state();
 
-                // invoke the main function
-                let (result, received_buckets, received_proofs) =
-                    process.run(snode, function, args)?;
+        // start a new process
+        let mut process = Process::new(
+            self.depth + 1,
+            self.trace,
+            self.track,
+            process_auth_zone,
+            None,
+            moving_buckets,
+            moving_proofs,
+        );
+        if let Some(auth_zone) = &self.auth_zone {
+            process.caller_auth_zone = Option::Some(auth_zone);
+        }
 
-                // move buckets and proofs to this process.
-                self.buckets.extend(received_buckets);
-                self.proofs.extend(received_proofs);
+        // invoke the main function
+        let (result, received_buckets, received_proofs) =
+            process.run(snode, function, args)?;
 
-                // Return borrowed snodes
-                match borrowed {
-                    BorrowedSNodeState::AuthZoneRef(auth_zone) => {
-                        self.auth_zone = Some(auth_zone);
-                    }
-                    BorrowedSNodeState::Worktop(worktop) => {
-                        self.worktop = Some(worktop);
-                    }
-                    BorrowedSNodeState::Scrypto(actor, component_state) => {
-                        if let Some(component_address) = actor.component_address() {
-                            self.track.return_borrowed_global_component(
-                                component_address,
-                                component_state.unwrap(),
-                            );
-                        }
-                    }
-                    BorrowedSNodeState::ResourceRef(resource_address, resource_manager) => {
-                        self.track.return_borrowed_global_resource_manager(
-                            resource_address,
-                            resource_manager,
-                        );
-                    }
-                    BorrowedSNodeState::BucketRef(bucket_id, bucket) => {
-                        self.buckets.insert(bucket_id, bucket);
-                    }
-                    BorrowedSNodeState::ProofRef(proof_id, proof) => {
-                        self.proofs.insert(proof_id, proof);
-                    }
-                    BorrowedSNodeState::VaultRef(vault_id, maybe_component_address, vault) => {
-                        if let Some(component_address) = maybe_component_address {
-                            self.track.return_borrowed_vault(&component_address, &vault_id, vault);
-                        } else {
-                            self.owned_snodes.return_borrowed_vault_mut(vault);
-                        }
-                    }
-                    BorrowedSNodeState::PackageStatic => {
-                    }
-                    BorrowedSNodeState::ResourceStatic => {
-                    }
-                }
+        // move buckets and proofs to this process.
+        self.buckets.extend(received_buckets);
+        self.proofs.extend(received_proofs);
 
-                Ok(result)
-            }
-        }?;
+        // Return borrowed snodes
+        if let Borrowed(borrowed) = loaded_snode {
+            borrowed.return_borrowed_state(self);
+        }
 
         Ok(result)
     }
