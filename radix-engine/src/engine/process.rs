@@ -110,7 +110,7 @@ pub enum SNodeState {
     Bucket(Bucket),
     ProofRef(ProofId, Proof),
     Proof(Proof),
-    VaultRef(VaultId),
+    VaultRef(VaultId, Option<ComponentAddress>, Vault),
 }
 
 /// Represents an interpreter instance.
@@ -405,6 +405,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::ProofRef(_, proof) => proof
                 .main(function.as_str(), args, self)
                 .map_err(RuntimeError::ProofError),
+            SNodeState::VaultRef(_, _, vault) =>
+                vault
+                    .main(function.as_str(), args, self)
+                    .map_err(RuntimeError::VaultError),
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
@@ -559,14 +563,25 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Ok((SNodeState::Proof(proof), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
-                let resource_address = self.get_local_vault(&vault_id, |vault| vault.resource_address())?;
+                let (component, vault) = if let Some(vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
+                    (None, vault)
+                } else if !self.snode_refs.vault_ids.contains(vault_id) {
+                    return Err(RuntimeError::VaultNotFound(*vault_id));
+                } else if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
+                    let vault = self.track.borrow_vault_mut(component_address, vault_id);
+                    (Some(*component_address), vault)
+                } else {
+                    panic!("Should never get here");
+                };
+
+                let resource_address = vault.resource_address();
                 let method_auth = self
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function, &args);
                 Ok((
-                    SNodeState::VaultRef(vault_id.clone()),
+                    SNodeState::VaultRef(vault_id.clone(), component, vault),
                     vec![method_auth.clone()],
                 ))
             }
@@ -581,7 +596,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
             match &snode {
                 // Resource auth check includes caller
-                SNodeState::ResourceRef(_, _) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
+                SNodeState::ResourceRef(_, _) | SNodeState::VaultRef(_, _, _) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone);
                     }
@@ -609,20 +624,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         let result = match snode {
-            SNodeState::VaultRef(vault_id) => {
-                let maybe_bucket = self.get_local_vault(&vault_id, |vault| vault
-                    .main(function.as_str(), args))?
-                    .map_err(RuntimeError::VaultError)?;
-                if let Some(bucket) = maybe_bucket {
-                    let bucket_id = self.new_bucket_id()?;
-                    self.buckets.insert(bucket_id, bucket);
-                    Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                        bucket_id,
-                    )))
-                } else {
-                    Ok(ScryptoValue::from_value(&()))
-                }
-            }
             SNodeState::Proof(proof) => {
                 proof.main_consume(function.as_str())
                     .map_err(RuntimeError::ProofError)
@@ -687,6 +688,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     SNodeState::ProofRef(proof_id, proof) => {
                         self.proofs.insert(proof_id, proof);
+                    }
+                    SNodeState::VaultRef(vault_id, maybe_component_address, vault) => {
+                        if let Some(component_address) = maybe_component_address {
+                            self.track.return_borrowed_vault(&component_address, &vault_id, vault);
+                        } else {
+                            self.owned_snodes.return_borrowed_vault_mut(vault);
+                        }
                     }
                     _ => {}
                 }
