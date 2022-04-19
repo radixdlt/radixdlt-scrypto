@@ -13,7 +13,7 @@ pub struct Run {
 
     /// The private keys used for signing, separated by comma
     #[clap(short, long)]
-    signing_keys: Option<Vec<String>>,
+    signing_keys: Option<String>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -23,7 +23,8 @@ pub struct Run {
 impl Run {
     pub fn run(&self) -> Result<(), Error> {
         let private_keys = if let Some(keys) = &self.signing_keys {
-            keys.iter()
+            keys.split(",")
+                .map(str::trim)
                 .map(|key| {
                     hex::decode(key)
                         .map_err(|_| Error::InvalidPrivateKey)
