@@ -178,6 +178,10 @@ impl Vault {
                 let bucket_id = system_api.create_bucket(container).map_err(|_| VaultError::CouldNotCreateBucket)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
             }
+            "get_vault_amount" => {
+                let amount = self.total_amount();
+                Ok(ScryptoValue::from_value(&amount))
+            }
             _ => Err(VaultError::MethodNotFound(function.to_string())),
         }
     }

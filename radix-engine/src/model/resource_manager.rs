@@ -136,6 +136,7 @@ impl ResourceManager {
             "put_into_bucket",
             "get_bucket_amount",
             "get_bucket_resource_address",
+            "get_vault_amount"
         ] {
             method_table.insert(pub_method.to_string(), None);
         }

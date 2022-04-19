@@ -133,10 +133,13 @@ impl Vault {
 
     /// Returns the amount of resources within this vault.
     pub fn amount(&self) -> Decimal {
-        let input = GetVaultAmountInput { vault_id: self.0 };
-        let output: GetVaultAmountOutput = call_engine(GET_VAULT_AMOUNT, input);
-
-        output.amount
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "get_vault_amount".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the resource address.

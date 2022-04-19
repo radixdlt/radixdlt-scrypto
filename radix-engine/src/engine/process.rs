@@ -1265,15 +1265,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetNonFungibleIdsInVaultOutput { non_fungible_ids })
     }
 
-    fn handle_get_vault_amount(
-        &mut self,
-        input: GetVaultAmountInput,
-    ) -> Result<GetVaultAmountOutput, RuntimeError> {
-        let amount = self.get_local_vault(&input.vault_id, |vault| vault.total_amount())?;
-
-        Ok(GetVaultAmountOutput { amount })
-    }
-
     fn handle_get_vault_resource_address(
         &mut self,
         input: GetVaultResourceAddressInput,
@@ -1477,7 +1468,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
-                    GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)
                     }
