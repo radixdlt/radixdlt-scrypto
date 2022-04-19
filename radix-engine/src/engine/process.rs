@@ -248,9 +248,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
 
         let new_proof_id = self.new_proof_id()?;
-        let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = vault
-            .create_proof(ResourceContainerId::Vault(vault_id))
+        let new_proof = self.get_local_vault(&vault_id, |vault| vault.create_proof(ResourceContainerId::Vault(vault_id)))?
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -265,9 +263,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
 
         let new_proof_id = self.new_proof_id()?;
-        let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = vault
-            .create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id))
+        let new_proof = self.get_local_vault(&vault_id, |vault| vault.create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id)))?
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -282,9 +278,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
 
         let new_proof_id = self.new_proof_id()?;
-        let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = vault
-            .create_proof_by_ids(ids, ResourceContainerId::Vault(vault_id))
+        let new_proof = self.get_local_vault(&vault_id, |vault| vault.create_proof_by_ids(ids, ResourceContainerId::Vault(vault_id)))?
             .map_err(RuntimeError::ProofError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
@@ -564,7 +558,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Ok((SNodeState::Proof(proof), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
-                let resource_address = self.get_local_vault(&vault_id)?.resource_address();
+                let resource_address = self.get_local_vault(&vault_id, |vault| vault.resource_address())?;
                 let method_auth = self
                     .track
                     .get_resource_manager(&resource_address)
@@ -615,9 +609,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let result = match snode {
             SNodeState::VaultRef(vault_id) => {
-                let vault = self.get_local_vault(&vault_id)?;
-                let maybe_bucket = vault
-                    .main(function.as_str(), args)
+                let maybe_bucket = self.get_local_vault(&vault_id, |vault| vault
+                    .main(function.as_str(), args))?
                     .map_err(RuntimeError::VaultError)?;
                 if let Some(bucket) = maybe_bucket {
                     let bucket_id = self.new_bucket_id()?;
@@ -1208,9 +1201,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateEmptyVaultOutput { vault_id })
     }
 
-    fn get_local_vault(&mut self, vault_id: &VaultId) -> Result<&mut Vault, RuntimeError> {
+    fn get_local_vault<R, F: FnOnce(&mut Vault) -> R>(&mut self, vault_id: &VaultId, func: F) -> Result<R, RuntimeError> {
         if let Some(vault) = self.owned_snodes.get_vault_mut(vault_id) {
-            return Ok(vault);
+            return Ok(func(vault));
         }
 
         if !self.snode_refs.vault_ids.contains(vault_id) {
@@ -1218,8 +1211,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
-            let vault = self.track.get_vault_mut(component_address, vault_id);
-            return Ok(vault);
+            let mut vault = self.track.borrow_vault_mut(component_address, vault_id);
+            let result = func(&mut vault);
+            self.track.return_borrowed_vault(component_address, vault_id, vault);
+            return Ok(result);
         }
 
         panic!("Should not get here.");
@@ -1236,8 +1231,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .remove(&input.bucket_id)
             .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
 
-        self.get_local_vault(&input.vault_id)?
-            .put(bucket)
+        self.get_local_vault(&input.vault_id, |v| v.put(bucket))?
             .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?;
 
         Ok(PutIntoVaultOutput {})
@@ -1262,12 +1256,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetNonFungibleIdsInVaultInput,
     ) -> Result<GetNonFungibleIdsInVaultOutput, RuntimeError> {
-        let vault = self.get_local_vault(&input.vault_id)?;
-        let non_fungible_ids = vault
-            .total_ids()
-            .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?
-            .into_iter()
-            .collect();
+        let non_fungible_ids = self.get_local_vault(&input.vault_id, |vault| {
+            let ids: BTreeSet<NonFungibleId> = vault
+                .total_ids()
+                .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?
+                .into_iter()
+                .collect();
+            Ok(ids)
+        })??;
 
         Ok(GetNonFungibleIdsInVaultOutput { non_fungible_ids })
     }
@@ -1276,22 +1272,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetVaultAmountInput,
     ) -> Result<GetVaultAmountOutput, RuntimeError> {
-        let vault = self.get_local_vault(&input.vault_id)?;
+        let amount = self.get_local_vault(&input.vault_id, |vault| vault.total_amount())?;
 
-        Ok(GetVaultAmountOutput {
-            amount: vault.total_amount(),
-        })
+        Ok(GetVaultAmountOutput { amount })
     }
 
     fn handle_get_vault_resource_address(
         &mut self,
         input: GetVaultResourceAddressInput,
     ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
-        let vault = self.get_local_vault(&input.vault_id)?;
+        let resource_address = self.get_local_vault(&input.vault_id, |vault| vault.resource_address())?;
 
-        Ok(GetVaultResourceAddressOutput {
-            resource_address: vault.resource_address(),
-        })
+        Ok(GetVaultResourceAddressOutput { resource_address })
     }
 
     fn handle_create_vault_proof(
