@@ -144,10 +144,13 @@ impl Vault {
 
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
-        let input = GetVaultResourceAddressInput { vault_id: self.0 };
-        let output: GetVaultResourceAddressOutput = call_engine(GET_VAULT_RESOURCE_ADDRESS, input);
-
-        output.resource_address
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "get_vault_resource_address".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Checks if this vault is empty.

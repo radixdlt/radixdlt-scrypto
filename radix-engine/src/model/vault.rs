@@ -182,6 +182,10 @@ impl Vault {
                 let amount = self.total_amount();
                 Ok(ScryptoValue::from_value(&amount))
             }
+            "get_vault_resource_address" => {
+                let resource_address = self.resource_address();
+                Ok(ScryptoValue::from_value(&resource_address))
+            }
             _ => Err(VaultError::MethodNotFound(function.to_string())),
         }
     }

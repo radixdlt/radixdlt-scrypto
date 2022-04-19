@@ -1265,15 +1265,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(GetNonFungibleIdsInVaultOutput { non_fungible_ids })
     }
 
-    fn handle_get_vault_resource_address(
-        &mut self,
-        input: GetVaultResourceAddressInput,
-    ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
-        let resource_address = self.get_local_vault(&input.vault_id, |vault| vault.resource_address())?;
-
-        Ok(GetVaultResourceAddressOutput { resource_address })
-    }
-
     fn handle_create_vault_proof(
         &mut self,
         input: CreateVaultProofInput,
@@ -1468,9 +1459,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
-                    GET_VAULT_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_vault_resource_address)
-                    }
                     GET_NON_FUNGIBLE_IDS_IN_VAULT => {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
                     }

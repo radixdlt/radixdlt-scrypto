@@ -31,8 +31,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
-/// Get vault resource address
-pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
 /// Get the IDs of all non-fungibles in this vault
 pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
@@ -158,16 +156,6 @@ pub struct CreateEmptyVaultInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultOutput {
     pub vault_id: VaultId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultResourceAddressInput {
-    pub vault_id: VaultId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultResourceAddressOutput {
-    pub resource_address: ResourceAddress,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
