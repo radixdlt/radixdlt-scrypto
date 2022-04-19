@@ -19,6 +19,7 @@ pub enum VaultError {
     InvalidRequestData(DecodeError),
     ResourceContainerError(ResourceContainerError),
     MethodNotFound(String),
+    CouldNotTakeBucket,
 }
 
 /// A persistent resource container.
@@ -151,8 +152,13 @@ impl Vault {
         &mut self,
         function: &str,
         args: Vec<ScryptoValue>,
+        bucket: Option<Bucket>, // FIXME: Hack in order to get deposit auth to work
     ) -> Result<Option<Bucket>, VaultError> {
         match function {
+            "put_into_vault" => {
+                self.put(bucket.unwrap()).map_err(VaultError::ResourceContainerError)?;
+                Ok(None)
+            }
             "take_from_vault" => {
                 let amount: Decimal =
                     scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;

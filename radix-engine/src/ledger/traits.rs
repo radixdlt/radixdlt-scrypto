@@ -4,7 +4,8 @@ use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::resource::ResourceMethod::TakeFromVault;
+use scrypto::prelude::LOCKED;
+use scrypto::resource::ResourceMethod::Withdraw;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec;
@@ -169,7 +170,7 @@ pub trait SubstateStore {
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
             let mut resource_auth = HashMap::new();
-            resource_auth.insert(TakeFromVault, auth!(allow_all));
+            resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
 
             let mut xrd = ResourceManager::new(
                 ResourceType::Fungible { divisibility: 18 },
@@ -183,7 +184,7 @@ pub trait SubstateStore {
                 .unwrap();
 
             let mut ecdsa_resource_auth = HashMap::new();
-            ecdsa_resource_auth.insert(TakeFromVault, auth!(allow_all));
+            ecdsa_resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
             let ecdsa_token = ResourceManager::new(
                 ResourceType::NonFungible,
                 HashMap::new(),

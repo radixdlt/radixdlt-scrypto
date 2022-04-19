@@ -12,12 +12,12 @@ blueprint! {
                 vaults.insert(b.resource_address(), Vault::with_bucket(b));
             }
 
-            let auth = Authorization::new()
+            let access_rules = AccessRules::new()
                 .method("deposit", auth!(allow_all))
                 .method("deposit_batch", auth!(allow_all))
                 .default(withdraw_rule);
 
-            Self { vaults }.instantiate().auth(auth).globalize()
+            Self { vaults }.instantiate().add_access_check(access_rules).globalize()
         }
 
         pub fn new(withdraw_rule: MethodAuth) -> ComponentAddress {
