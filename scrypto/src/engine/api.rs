@@ -1,6 +1,6 @@
 use crate::core::SNodeRef;
 use sbor::*;
-use scrypto::prelude::Authorization;
+use scrypto::prelude::AccessRules;
 
 use crate::engine::types::*;
 use crate::rust::collections::BTreeSet;
@@ -100,7 +100,7 @@ pub struct InvokeSNodeOutput {
 pub struct CreateComponentInput {
     pub blueprint_name: String,
     pub state: Vec<u8>,
-    pub authorization: Vec<Authorization>,
+    pub access_rules_list: Vec<AccessRules>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
