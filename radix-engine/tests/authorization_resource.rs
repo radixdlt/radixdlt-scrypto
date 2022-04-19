@@ -1,3 +1,5 @@
+extern crate core;
+
 #[rustfmt::skip]
 pub mod test_runner;
 
@@ -10,6 +12,7 @@ enum Action {
     Mint,
     Burn,
     Withdraw,
+    Deposit,
 }
 
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
@@ -27,6 +30,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Mint => "set_mintable",
             Action::Burn => "set_burnable",
             Action::Withdraw => "set_withdrawable",
+            Action::Deposit => "set_depositable",
         };
         test_runner.set_auth(
             (&pk, &sk, account),
@@ -44,6 +48,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Mint => mint_auth,
             Action::Burn => burn_auth,
             Action::Withdraw => withdraw_auth,
+            Action::Deposit => mint_auth, // Any bad auth
         }
     };
 
@@ -52,18 +57,27 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     builder.create_proof_from_account_by_amount(Decimal::one(), auth_to_use, account);
 
     match action {
-        Action::Mint => builder.mint(Decimal::from("1.0"), token_address),
+        Action::Mint => builder
+            .mint(Decimal::from("1.0"), token_address)
+            .call_method_with_all_resources(account, "deposit_batch"),
         Action::Burn => builder
             .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
-            .burn(Decimal::from("1.0"), token_address),
-        Action::Withdraw => {
-            builder.withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
-        }
+            .burn(Decimal::from("1.0"), token_address)
+            .call_method_with_all_resources(account, "deposit_batch"),
+        Action::Withdraw => builder
+            .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
+            .call_method_with_all_resources(account, "deposit_batch"),
+        Action::Deposit => builder
+            .create_proof_from_account(withdraw_auth, account)
+            .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
+            .take_from_worktop(token_address, |builder, bucket_id|
+                builder.call_method(account, "deposit", args![scrypto::resource::Bucket(bucket_id)])
+            )
+            .call_method_with_all_resources(account, "deposit_batch"),
     };
 
     let transaction = builder
-        .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -111,4 +125,14 @@ fn can_withdraw_with_auth() {
 fn cannot_withdraw_with_wrong_auth() {
     test_resource_auth(Action::Withdraw, false, true, true);
     test_resource_auth(Action::Withdraw, true, false, true);
+}
+
+#[test]
+fn cannot_deposit_with_wrong_auth() {
+    test_resource_auth(Action::Deposit, true, false, true);
+}
+
+#[test]
+fn can_deposit_with_right_auth() {
+    test_resource_auth(Action::Deposit, true, true, false);
 }

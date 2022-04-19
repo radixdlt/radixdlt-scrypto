@@ -120,10 +120,11 @@ impl ResourceManager {
         method_table.insert("mint".to_string(), Some(Mint));
         method_table.insert("burn".to_string(), Some(Burn));
         method_table.insert("take_from_vault".to_string(), Some(Withdraw));
+        method_table.insert("put_into_vault".to_string(), Some(Deposit));
+        method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
         if let ResourceType::NonFungible = resource_type {
             method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
         }
-        method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
 
         for pub_method in [
             "create_bucket",
@@ -156,6 +157,7 @@ impl ResourceManager {
             (Mint, (DenyAll, LOCKED)),
             (Burn, (DenyAll, LOCKED)),
             (Withdraw, (AllowAll, LOCKED)),
+            (Deposit, (AllowAll, LOCKED)),
             (UpdateMetadata, (DenyAll, LOCKED)),
             (UpdateNonFungibleData, (DenyAll, LOCKED)),
         ] {

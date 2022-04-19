@@ -31,8 +31,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
-/// Put fungible resource into this vault
-pub const PUT_INTO_VAULT: u32 = 0x41;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource address
@@ -163,15 +161,6 @@ pub struct CreateEmptyVaultInput {
 pub struct CreateEmptyVaultOutput {
     pub vault_id: VaultId,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoVaultInput {
-    pub vault_id: VaultId,
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoVaultOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetVaultAmountInput {

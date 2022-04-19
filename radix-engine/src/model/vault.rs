@@ -21,6 +21,7 @@ pub enum VaultError {
     ResourceContainerError(ResourceContainerError),
     MethodNotFound(String),
     CouldNotCreateBucket,
+    CouldNotTakeBucket,
 }
 
 /// A persistent resource container.
@@ -156,6 +157,13 @@ impl Vault {
         system_api: &mut S
     ) -> Result<ScryptoValue, VaultError> {
         match function {
+            "put_into_vault" => {
+                let bucket: scrypto::resource::Bucket =
+                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let bucket = system_api.take_bucket(bucket.0).map_err(|_| VaultError::CouldNotTakeBucket)?;
+                self.put(bucket).map_err(VaultError::ResourceContainerError)?;
+                Ok(ScryptoValue::from_value(&()))
+            }
             "take_from_vault" => {
                 let amount: Decimal =
                     scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;

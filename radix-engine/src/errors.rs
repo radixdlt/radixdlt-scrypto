@@ -215,7 +215,11 @@ pub enum RuntimeError {
     AuthZoneError(AuthZoneError),
 
     /// System Authorization Failure
-    AuthorizationError(String, MethodAuthorizationError),
+    AuthorizationError {
+        function: String,
+        authorization: MethodAuthorization,
+        error: MethodAuthorizationError,
+    },
 
     /// Index out of bounds.
     IndexOutOfBounds {

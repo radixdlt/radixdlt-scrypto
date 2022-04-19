@@ -608,21 +608,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             for method_auth in method_auths {
                 method_auth
                     .check(&auth_zones)
-                    .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
+                    .map_err(|error| RuntimeError::AuthorizationError {
+                        function: function.clone(),
+                        authorization: method_auth,
+                        error
+                    })?;
             }
         }
 
         // Execution
-
-        // Figure out what buckets and proofs to move from this process
-        let mut moving_buckets = HashMap::new();
-        let mut moving_proofs = HashMap::new();
-        for arg in &args {
-            self.process_call_data(arg)?;
-            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
-            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
-        }
-
         let result = match snode {
             SNodeState::Proof(proof) => {
                 proof.main_consume(function.as_str())
@@ -633,6 +627,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 _ => Err(RuntimeError::IllegalSystemCall),
             },
             _ => {
+                // Figure out what buckets and proofs to move from this process
+                let mut moving_buckets = HashMap::new();
+                let mut moving_proofs = HashMap::new();
+                for arg in &args {
+                    self.process_call_data(arg)?;
+                    moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
+                    moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
+                }
+
                 // start a new process
                 let process_auth_zone = if matches!(snode, SNodeState::Scrypto(_, _)) {
                     Some(AuthZone::new())
@@ -1231,23 +1234,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         panic!("Should not get here.");
     }
 
-    fn handle_put_into_vault(
-        &mut self,
-        input: PutIntoVaultInput,
-    ) -> Result<PutIntoVaultOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let bucket = self
-            .buckets
-            .remove(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-
-        self.get_local_vault(&input.vault_id, |v| v.put(bucket))?
-            .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?;
-
-        Ok(PutIntoVaultOutput {})
-    }
-
     fn handle_invoke_snode(
         &mut self,
         input: InvokeSNodeInput,
@@ -1491,7 +1477,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
-                    PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)
