@@ -42,7 +42,7 @@ impl ResourceSystem {
         &mut self,
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        authorization: HashMap<ResourceMethod, MethodAuth>,
+        authorization: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
         let input = InvokeSNodeInput {
@@ -70,7 +70,7 @@ pub fn resource_system() -> &'static mut ResourceSystem {
 /// This macro creates a `&ResourceManager` from a `ResourceAddress` via the
 /// Radix Engine resource subsystem.
 #[macro_export]
-macro_rules! resource_manager {
+macro_rules! borrow_resource_manager {
     ($id:expr) => {
         resource_system().get_resource_manager($id)
     };
@@ -83,9 +83,9 @@ mod tests {
     fn test_resource_manager_macro() {
         init_resource_system(ResourceSystem::new());
 
-        let resource_manager = resource_manager!(ResourceAddress([0u8; 26]));
-        let resource_manager_same_id = resource_manager!(ResourceAddress([0u8; 26]));
-        let resource_manager_different_id = resource_manager!(ResourceAddress([1u8; 26]));
+        let resource_manager = borrow_resource_manager!(ResourceAddress([0u8; 26]));
+        let resource_manager_same_id = borrow_resource_manager!(ResourceAddress([0u8; 26]));
+        let resource_manager_different_id = borrow_resource_manager!(ResourceAddress([1u8; 26]));
 
         assert_eq!(ResourceAddress([0u8; 26]), resource_manager.0);
         assert_eq!(ResourceAddress([0u8; 26]), resource_manager_same_id.0);

@@ -1,6 +1,6 @@
 use crate::core::SNodeRef;
 use sbor::*;
-use scrypto::prelude::Authorization;
+use scrypto::prelude::AccessRules;
 
 use crate::engine::types::*;
 use crate::rust::collections::BTreeSet;
@@ -12,9 +12,6 @@ extern "C" {
     /// Entrance to Radix Engine.
     pub fn radix_engine(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
 }
-
-/// Publish a code package
-pub const PUBLISH_PACKAGE: u32 = 0x00;
 
 /// Create a component
 pub const CREATE_COMPONENT: u32 = 0x10;
@@ -34,8 +31,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
-/// Put fungible resource into this vault
-pub const PUT_INTO_VAULT: u32 = 0x41;
 /// Get vault resource amount
 pub const GET_VAULT_AMOUNT: u32 = 0x43;
 /// Get vault resource address
@@ -78,20 +73,6 @@ pub struct InvokeSNodeOutput {
 }
 
 //==========
-// blueprint
-//==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PublishPackageInput {
-    pub code: Vec<u8>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PublishPackageOutput {
-    pub package_address: PackageAddress,
-}
-
-//==========
 // component
 //==========
 
@@ -99,7 +80,7 @@ pub struct PublishPackageOutput {
 pub struct CreateComponentInput {
     pub blueprint_name: String,
     pub state: Vec<u8>,
-    pub authorization: Vec<Authorization>,
+    pub access_rules_list: Vec<AccessRules>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -180,15 +161,6 @@ pub struct CreateEmptyVaultInput {
 pub struct CreateEmptyVaultOutput {
     pub vault_id: VaultId,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoVaultInput {
-    pub vault_id: VaultId,
-    pub bucket_id: BucketId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct PutIntoVaultOutput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetVaultAmountInput {

@@ -1,9 +1,12 @@
+use crate::args;
 use crate::buffer::*;
 use crate::component::*;
+use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
-use crate::prelude::Authorization;
+use crate::prelude::AccessRules;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::*;
+use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 
 /// Represents the Radix Engine component subsystem.
@@ -44,25 +47,26 @@ impl ComponentSystem {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> PackageAddress {
-        let input = PublishPackageInput {
-            code: code.to_vec(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::PackageStatic,
+            function: "publish".to_string(),
+            args: args![code.to_vec()],
         };
-        let output: PublishPackageOutput = call_engine(PUBLISH_PACKAGE, input);
-
-        output.package_address
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Instantiates a component.
     pub fn instantiate_component<T: ComponentState>(
         &mut self,
         blueprint_name: &str,
-        authorization: Vec<Authorization>,
+        authorization: Vec<AccessRules>,
         state: T,
     ) -> ComponentAddress {
         let input = CreateComponentInput {
             blueprint_name: blueprint_name.to_owned(),
             state: scrypto_encode(&state),
-            authorization,
+            access_rules_list: authorization,
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 
@@ -94,7 +98,7 @@ pub fn component_system() -> &'static mut ComponentSystem {
 /// This macro creates a `&Package` from a `PackageAddress` via the
 /// Radix Engine component subsystem.
 #[macro_export]
-macro_rules! package {
+macro_rules! borrow_package {
     ($id:expr) => {
         component_system().get_package($id)
     };
@@ -103,7 +107,7 @@ macro_rules! package {
 /// This macro converts a `ComponentAddress` into a `&Component` via the
 /// Radix Engine component subsystem.
 #[macro_export]
-macro_rules! component {
+macro_rules! borrow_component {
     ($id:expr) => {
         component_system().get_component($id)
     };
@@ -117,9 +121,9 @@ mod tests {
     fn test_component_macro() {
         init_component_system(ComponentSystem::new());
 
-        let component = component!(ComponentAddress([0u8; 26]));
-        let component_same_id = component!(ComponentAddress([0u8; 26]));
-        let component_different_id = component!(ComponentAddress([1u8; 26]));
+        let component = borrow_component!(ComponentAddress([0u8; 26]));
+        let component_same_id = borrow_component!(ComponentAddress([0u8; 26]));
+        let component_different_id = borrow_component!(ComponentAddress([1u8; 26]));
 
         assert_eq!(ComponentAddress([0u8; 26]), component.0);
         assert_eq!(ComponentAddress([0u8; 26]), component_same_id.0);
@@ -130,9 +134,9 @@ mod tests {
     fn test_package_macro() {
         init_component_system(ComponentSystem::new());
 
-        let package = package!(PackageAddress([0u8; 26]));
-        let package_same_id = package!(PackageAddress([0u8; 26]));
-        let package_different_id = package!(PackageAddress([1u8; 26]));
+        let package = borrow_package!(PackageAddress([0u8; 26]));
+        let package_same_id = borrow_package!(PackageAddress([0u8; 26]));
+        let package_different_id = borrow_package!(PackageAddress([1u8; 26]));
 
         assert_eq!(PackageAddress([0u8; 26]), package.0);
         assert_eq!(PackageAddress([0u8; 26]), package_same_id.0);

@@ -1,5 +1,5 @@
+use crate::borrow_resource_manager;
 use crate::resource::*;
-use crate::resource_manager;
 use crate::rust::marker::PhantomData;
 
 /// Represents a non-fungible unit.
@@ -36,11 +36,12 @@ impl<T: NonFungibleData> NonFungible<T> {
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        resource_manager!(self.resource_address()).get_non_fungible_data(&self.id())
+        borrow_resource_manager!(self.resource_address()).get_non_fungible_data(&self.id())
     }
 
     /// Updates the associated data of this unit.
     pub fn update_data(&self, new_data: T) {
-        resource_manager!(self.resource_address()).update_non_fungible_data(&self.id(), new_data);
+        borrow_resource_manager!(self.resource_address())
+            .update_non_fungible_data(&self.id(), new_data);
     }
 }
