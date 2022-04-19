@@ -847,27 +847,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::ProofNotAllowed);
         }
 
-        let mut lazy_map_ids = HashSet::new();
-        for lazy_map_id in validated.lazy_map_ids {
-            if lazy_map_ids.contains(&lazy_map_id) {
-                return Err(RuntimeError::DuplicateLazyMap(lazy_map_id));
-            }
-            lazy_map_ids.insert(lazy_map_id);
-        }
-
-        let mut vault_ids = HashSet::new();
-        for vault_id in validated.vault_ids {
-            if vault_ids.contains(&vault_id) {
-                return Err(RuntimeError::DuplicateVault(vault_id));
-            }
-            vault_ids.insert(vault_id);
-        }
-
         // lazy map allowed
         // vaults allowed
         Ok(ComponentObjectRefs {
-            lazy_map_ids,
-            vault_ids,
+            lazy_map_ids: validated.lazy_map_ids,
+            vault_ids: validated.vault_ids,
         })
     }
 
