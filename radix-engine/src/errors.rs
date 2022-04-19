@@ -90,6 +90,8 @@ pub enum RuntimeError {
     /// Not a valid ABI.
     AbiValidationError(DecodeError),
 
+    AuthZoneDoesNotExist,
+
     /// Failed to allocate an ID.
     IdAllocatorError(IdAllocatorError),
 
@@ -211,8 +213,8 @@ pub enum RuntimeError {
     /// Resource check failure.
     ResourceCheckFailure,
 
-    /// AuthZone is empty when trying to pop
-    EmptyAuthZone,
+    /// AuthZone error
+    AuthZoneError(AuthZoneError),
 
     /// System Authorization Failure
     AuthorizationError(String, MethodAuthorizationError),

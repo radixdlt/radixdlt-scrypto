@@ -84,12 +84,15 @@ pub trait SystemApi {
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError>;
 
+    fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError>;
+
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
     fn create_package(&mut self, package: Package) -> PackageAddress;
 }
 
 pub enum SNodeState {
+    AuthZone(AuthZone),
     PackageStatic,
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
@@ -216,9 +219,9 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
     /// Proofs collected from previous returns or self. Also used for system authorization.
-    auth_zone: Vec<Proof>,
+    auth_zone: Option<AuthZone>,
     /// The caller's auth zone
-    caller_auth_zone: &'r [Proof],
+    caller_auth_zone: Option<&'r AuthZone>,
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
@@ -236,6 +239,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         depth: usize,
         trace: bool,
         track: &'r mut Track<'l, L>,
+        auth_zone: Option<AuthZone>,
         id_allocator: Option<IdAllocator>,
     ) -> Self {
         Self {
@@ -247,8 +251,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             wasm_process_state: None,
             id_allocator,
             worktop: Worktop::new(),
-            auth_zone: Vec::new(),
-            caller_auth_zone: &[],
+            auth_zone,
+            caller_auth_zone: None,
         }
     }
 
@@ -423,12 +427,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // Takes a proof from the auth zone.
     pub fn pop_from_auth_zone(&mut self) -> Result<ProofId, RuntimeError> {
         re_debug!(self, "Popping from auth zone");
-        if self.auth_zone.is_empty() {
-            return Err(RuntimeError::EmptyAuthZone);
-        }
-
         let new_proof_id = self.new_proof_id()?;
-        let proof = self.auth_zone.remove(self.auth_zone.len() - 1);
+        let proof = self.auth_zone.as_mut().unwrap().pop().map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, proof);
         Ok(new_proof_id)
     }
@@ -446,7 +446,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::CantMoveRestrictedProof(proof_id));
         }
 
-        self.auth_zone.push(proof);
+        self.auth_zone.as_mut().unwrap().push(proof);
         Ok(())
     }
 
@@ -530,8 +530,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof = Proof::compose(&self.auth_zone, resource_address, resource_type)
-            .map_err(RuntimeError::ProofError)?;
+        let new_proof = self.auth_zone.as_mut().unwrap().create_proof(resource_address, resource_type)
+            .map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -551,9 +551,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof =
-            Proof::compose_by_amount(&self.auth_zone, amount, resource_address, resource_type)
-                .map_err(RuntimeError::ProofError)?;
+        let new_proof = self.auth_zone.as_mut().unwrap().create_proof_by_amount(amount, resource_address, resource_type)
+            .map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -573,9 +572,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let resource_type = resource_manager.resource_type();
 
         let new_proof_id = self.new_proof_id()?;
-        let new_proof =
-            Proof::compose_by_ids(&self.auth_zone, ids, resource_address, resource_type)
-                .map_err(RuntimeError::ProofError)?;
+        let new_proof = self.auth_zone.as_mut().unwrap().create_proof_by_ids(ids, resource_address, resource_type)
+            .map_err(RuntimeError::AuthZoneError)?;
         self.proofs.insert(new_proof_id, new_proof);
 
         Ok(new_proof_id)
@@ -619,13 +617,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     pub fn drop_all_auth_zone_proofs(&mut self) -> Result<(), RuntimeError> {
-        loop {
-            if let Some(proof) = self.auth_zone.pop() {
-                proof.drop();
-            } else {
-                break;
-            }
+        if let Some(auth_zone) = self.auth_zone.as_mut() {
+            auth_zone.clear();
         }
+
         Ok(())
     }
 
@@ -732,6 +727,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Execution
         let output = match snode {
+            SNodeState::AuthZone(auth_zone) => {
+                auth_zone
+                    .main(function.as_str(), args, self)
+                    .map_err(RuntimeError::AuthZoneError)
+            }
             SNodeState::PackageStatic => {
                 Package::static_main(&function, args, self).map_err(RuntimeError::PackageError)
             }
@@ -852,6 +852,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         // Authorization and state load
         let (mut snode, method_auths) = match &snode_ref {
+            SNodeRef::AuthZone => {
+                if let Some(auth_zone) = self.auth_zone.take() {
+                    Ok((SNodeState::AuthZone(auth_zone), vec![]))
+                } else {
+                    Err(RuntimeError::AuthZoneDoesNotExist)
+                }
+            }
             SNodeRef::PackageStatic => Ok((SNodeState::PackageStatic, vec![])),
             SNodeRef::Scrypto(actor) => {
                 match actor {
@@ -959,18 +966,25 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Authorization check
         if !method_auths.is_empty() {
-            let proofs_vector = match &snode {
-                // Same process auth check
+            let mut auth_zones = Vec::new();
+            if let Some(self_auth_zone) = &self.auth_zone {
+                auth_zones.push(self_auth_zone);
+            }
+
+            match &snode {
+                // Resource auth check includes caller
                 SNodeState::ResourceRef(_, _) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
-                    vec![self.caller_auth_zone, &self.auth_zone]
+                    if let Some(auth_zone) = self.caller_auth_zone {
+                        auth_zones.push(auth_zone);
+                    }
                 }
                 // Extern call auth check
-                _ => vec![self.auth_zone.as_slice()],
+                _ => { }
             };
 
             for method_auth in method_auths {
                 method_auth
-                    .check(&proofs_vector)
+                    .check(&auth_zones)
                     .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
             }
         }
@@ -1018,8 +1032,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
 
                 // start a new process
-                let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
-                process.caller_auth_zone = &self.auth_zone;
+                let process_auth_zone = if matches!(snode, SNodeState::Scrypto(_, _)) {
+                    Some(AuthZone::new())
+                } else {
+                    None
+                };
+                let mut process = Process::new(self.depth + 1, self.trace, self.track, process_auth_zone, None);
+                if let Some(auth_zone) = &self.auth_zone {
+                    process.caller_auth_zone = Option::Some(auth_zone);
+                }
 
                 // move buckets and proofs to the new process.
                 process.receive_buckets(moving_buckets)?;
@@ -1035,6 +1056,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 // Return borrowed snodes
                 match snode {
+                    SNodeState::AuthZone(auth_zone) => {
+                        self.auth_zone = Some(auth_zone);
+                    }
                     SNodeState::Scrypto(actor, component_state) => {
                         if let Some(component_address) = actor.component_address() {
                             self.track.return_borrowed_global_component(
@@ -1080,7 +1104,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Auto move into auth_zone
         for proof_id in &result.proof_ids {
             let proof = self.proofs.remove(proof_id).unwrap();
-            self.auth_zone.push(proof);
+            self.auth_zone.as_mut().unwrap().push(proof);
         }
 
         re_debug!(self, "Call function ended");
@@ -1101,7 +1125,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Auto move into auth_zone
         for proof_id in &result.proof_ids {
             let proof = self.proofs.remove(proof_id).unwrap();
-            self.auth_zone.push(proof);
+            self.auth_zone.as_mut().unwrap().push(proof);
         }
 
         re_debug!(self, "Call method ended");
@@ -1126,7 +1150,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
-        let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
+        let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None);
         let result = process
             .run(&mut snode, String::new(), Vec::new())
             .map(|(r, _, _)| r);
@@ -1760,34 +1784,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_create_auth_zone_proof(
-        &mut self,
-        input: CreateAuthZoneProofInput,
-    ) -> Result<CreateAuthZoneProofOutput, RuntimeError> {
-        Ok(CreateAuthZoneProofOutput {
-            proof_id: self.create_auth_zone_proof(input.resource_address)?,
-        })
-    }
-
-    fn handle_create_auth_zone_proof_by_amount(
-        &mut self,
-        input: CreateAuthZoneProofByAmountInput,
-    ) -> Result<CreateAuthZoneProofByAmountOutput, RuntimeError> {
-        Ok(CreateAuthZoneProofByAmountOutput {
-            proof_id: self
-                .create_auth_zone_proof_by_amount(input.amount, input.resource_address)?,
-        })
-    }
-
-    fn handle_create_auth_zone_proof_by_ids(
-        &mut self,
-        input: CreateAuthZoneProofByIdsInput,
-    ) -> Result<CreateAuthZoneProofByIdsOutput, RuntimeError> {
-        Ok(CreateAuthZoneProofByIdsOutput {
-            proof_id: self.create_auth_zone_proof_by_ids(&input.ids, input.resource_address)?,
-        })
-    }
-
     fn handle_drop_proof(
         &mut self,
         input: DropProofInput,
@@ -1850,22 +1846,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CloneProofOutput {
             proof_id: self.clone_proof(input.proof_id)?,
         })
-    }
-
-    fn handle_push_to_auth_zone(
-        &mut self,
-        input: PushToAuthZoneInput,
-    ) -> Result<PushToAuthZoneOutput, RuntimeError> {
-        self.push_to_auth_zone(input.proof_id)
-            .map(|_| PushToAuthZoneOutput {})
-    }
-
-    fn handle_pop_from_auth_zone(
-        &mut self,
-        _input: PopFromAuthZoneInput,
-    ) -> Result<PopFromAuthZoneOutput, RuntimeError> {
-        self.pop_from_auth_zone()
-            .map(|proof_id| PopFromAuthZoneOutput { proof_id })
     }
 
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
@@ -1977,6 +1957,14 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         Ok(proof_id)
     }
 
+    fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
+        let proof = self.proofs
+            .remove(&proof_id)
+            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
+
+        Ok(proof)
+    }
+
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.new_bucket_id()?;
         self.buckets.insert(bucket_id, Bucket::new(container));
@@ -2033,15 +2021,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_create_vault_proof_by_ids)
                     }
 
-                    CREATE_AUTH_ZONE_PROOF => {
-                        self.handle(args, Self::handle_create_auth_zone_proof)
-                    }
-                    CREATE_AUTH_ZONE_PROOF_BY_AMOUNT => {
-                        self.handle(args, Self::handle_create_auth_zone_proof_by_amount)
-                    }
-                    CREATE_AUTH_ZONE_PROOF_BY_IDS => {
-                        self.handle(args, Self::handle_create_auth_zone_proof_by_ids)
-                    }
                     DROP_PROOF => self.handle(args, Self::handle_drop_proof),
                     GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),
                     GET_PROOF_RESOURCE_ADDRESS => {
@@ -2051,8 +2030,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                         self.handle(args, Self::handle_get_non_fungible_ids_in_proof)
                     }
                     CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
-                    PUSH_TO_AUTH_ZONE => self.handle(args, Self::handle_push_to_auth_zone),
-                    POP_FROM_AUTH_ZONE => self.handle(args, Self::handle_pop_from_auth_zone),
 
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 
