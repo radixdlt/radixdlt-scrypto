@@ -100,7 +100,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             0,
             verbose,
             self,
-            Option::Some(IdAllocator::new(IdSpace::Transaction)),
+            Some(AuthZone::new()),
+            Some(IdAllocator::new(IdSpace::Transaction)),
         );
 
         // With the latest change, proof amount can't be zero, thus a virtual proof is created

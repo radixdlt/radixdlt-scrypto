@@ -42,7 +42,6 @@ impl Proof {
     pub fn new(
         resource_address: ResourceAddress,
         resource_type: ResourceType,
-        restricted: bool,
         total_locked: LockedAmountOrIds,
         evidence: HashMap<ResourceContainerId, (Rc<RefCell<ResourceContainer>>, LockedAmountOrIds)>,
     ) -> Result<Proof, ProofError> {
@@ -53,7 +52,7 @@ impl Proof {
         Ok(Self {
             resource_address,
             resource_type,
-            restricted,
+            restricted: false,
             total_locked,
             evidence,
         })
@@ -184,7 +183,6 @@ impl Proof {
                 Proof::new(
                     resource_address,
                     resource_type,
-                    false,
                     LockedAmountOrIds::Amount(amount),
                     evidence,
                 )
@@ -250,7 +248,6 @@ impl Proof {
                 Proof::new(
                     resource_address,
                     resource_type,
-                    false,
                     LockedAmountOrIds::Ids(ids.clone()),
                     evidence,
                 )
@@ -292,6 +289,12 @@ impl Proof {
         for (_, (container, locked_amount_or_ids)) in self.evidence {
             container.borrow_mut().unlock(locked_amount_or_ids);
         }
+    }
+
+    // FIXME: this is a hack for now until we can get snode_state into process
+    // FIXME: and be able to determine which snode the proof is going into
+    pub fn change_to_unrestricted(&mut self) {
+        self.restricted = false;
     }
 
     pub fn change_to_restricted(&mut self) {
