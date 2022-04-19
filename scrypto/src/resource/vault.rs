@@ -163,10 +163,13 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault.
     pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
-        let output: GetNonFungibleIdsInVaultOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
-        output.non_fungible_ids
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "get_non_fungible_ids_in_vault".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns all the non-fungible units contained.
@@ -174,12 +177,9 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault.
     pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
-        let output: GetNonFungibleIdsInVaultOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
         let resource_address = self.resource_address();
-        output
-            .non_fungible_ids
+        self
+            .non_fungible_ids()
             .iter()
             .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()

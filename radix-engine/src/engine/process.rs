@@ -1249,22 +1249,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
-    fn handle_get_non_fungible_ids_in_vault(
-        &mut self,
-        input: GetNonFungibleIdsInVaultInput,
-    ) -> Result<GetNonFungibleIdsInVaultOutput, RuntimeError> {
-        let non_fungible_ids = self.get_local_vault(&input.vault_id, |vault| {
-            let ids: BTreeSet<NonFungibleId> = vault
-                .total_ids()
-                .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?
-                .into_iter()
-                .collect();
-            Ok(ids)
-        })??;
-
-        Ok(GetNonFungibleIdsInVaultOutput { non_fungible_ids })
-    }
-
     fn handle_create_vault_proof(
         &mut self,
         input: CreateVaultProofInput,
@@ -1459,9 +1443,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
-                    GET_NON_FUNGIBLE_IDS_IN_VAULT => {
-                        self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
-                    }
                     CREATE_VAULT_PROOF => self.handle(args, Self::handle_create_vault_proof),
                     CREATE_VAULT_PROOF_BY_AMOUNT => {
                         self.handle(args, Self::handle_create_vault_proof_by_amount)

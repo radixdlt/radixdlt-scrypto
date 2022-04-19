@@ -186,6 +186,10 @@ impl Vault {
                 let resource_address = self.resource_address();
                 Ok(ScryptoValue::from_value(&resource_address))
             }
+            "get_non_fungible_ids_in_vault" => {
+                let ids = self.total_ids().map_err(VaultError::ResourceContainerError)?;
+                Ok(ScryptoValue::from_value(&ids))
+            }
             _ => Err(VaultError::MethodNotFound(function.to_string())),
         }
     }

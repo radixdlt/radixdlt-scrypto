@@ -149,6 +149,7 @@ impl ResourceManager {
                 "non_fungible_exists",
                 "get_non_fungible",
                 "get_non_fungible_ids_in_bucket",
+                "get_non_fungible_ids_in_vault",
             ] {
                 method_table.insert(pub_method.to_string(), None);
             }

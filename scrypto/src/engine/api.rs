@@ -31,8 +31,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
-/// Get the IDs of all non-fungibles in this vault
-pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
 
 /// Create a vault proof
 pub const CREATE_VAULT_PROOF: u32 = 0x63;
@@ -156,16 +154,6 @@ pub struct CreateEmptyVaultInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultOutput {
     pub vault_id: VaultId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInVaultInput {
-    pub vault_id: VaultId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInVaultOutput {
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
 //==========
