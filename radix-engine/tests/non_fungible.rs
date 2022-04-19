@@ -122,3 +122,22 @@ fn test_non_fungible() {
     println!("{:?}", receipt);
     assert!(receipt.result.is_ok());
 }
+
+#[test]
+fn test_singleton_non_fungible() {
+    let mut ledger = InMemorySubstateStore::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut ledger, true);
+    let (pk, sk, account) = executor.new_account();
+    let package = executor
+        .publish_package(&compile_package!(format!("./tests/{}", "non_fungible")))
+        .unwrap();
+
+    let transaction = TransactionBuilder::new()
+        .call_function(package, "NonFungibleTest", "singleton_non_fungible", vec![])
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build(executor.get_nonce([pk]))
+        .sign([&sk]);
+    let receipt = executor.validate_and_execute(&transaction).unwrap();
+    println!("{:?}", receipt);
+    assert!(receipt.result.is_ok());
+}
