@@ -11,6 +11,7 @@ colored = { version = "2.0", default-features = false }
 lru = { version = "0.7" }
 bencher = { version = "0.1.5" }
 hex = { version = "0.4", default-features = false }
+indexmap = { git = "https://github.com/bluss/indexmap", tag = "1.8.1" }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }

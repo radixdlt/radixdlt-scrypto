@@ -87,10 +87,13 @@ pub trait SystemApi {
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError>;
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
+
+    fn create_package(&mut self, package: Package) -> PackageAddress;
 }
 
 pub enum SNodeState {
     AuthZone(AuthZone),
+    PackageStatic,
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
     ResourceRef(ResourceAddress, ResourceManager),
@@ -458,7 +461,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             "create_bucket_proof".to_string(),
             args![],
         )?;
-        let proof = self.proofs.remove(&rtn.proof_ids[0]).unwrap();
+        let proof_id = rtn.proof_ids.iter().nth(0).unwrap();
+        let proof = self.proofs.remove(proof_id).unwrap();
         let proof_id = self.new_proof_id()?;
         self.proofs.insert(proof_id, proof);
         Ok(proof_id)
@@ -726,6 +730,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .main(function.as_str(), args, self)
                     .map_err(RuntimeError::AuthZoneError)
             }
+            SNodeState::PackageStatic => {
+                Package::static_main(&function, args, self).map_err(RuntimeError::PackageError)
+            }
             SNodeState::Scrypto(actor, component_state) => {
                 let package = self.track.get_package(actor.package_address()).ok_or(
                     RuntimeError::PackageNotFound(actor.package_address().clone()),
@@ -850,6 +857,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
+            SNodeRef::PackageStatic => Ok((SNodeState::PackageStatic, vec![])),
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1389,14 +1397,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     //============================
     // SYSTEM CALL HANDLERS START
     //============================
-
-    fn handle_publish(
-        &mut self,
-        input: PublishPackageInput,
-    ) -> Result<PublishPackageOutput, RuntimeError> {
-        let package_address = self.publish_package(input.code)?;
-        Ok(PublishPackageOutput { package_address })
-    }
 
     fn handle_create_component(
         &mut self,
@@ -1986,6 +1986,10 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
         self.track.create_resource_manager(resource_manager)
     }
+
+    fn create_package(&mut self, package: Package) -> PackageAddress {
+        self.track.create_package(package)
+    }
 }
 
 impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
@@ -1998,8 +2002,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
             ENGINE_FUNCTION_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    PUBLISH_PACKAGE => self.handle(args, Self::handle_publish),
-
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
                     GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),

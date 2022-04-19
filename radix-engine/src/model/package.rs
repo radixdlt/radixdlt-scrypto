@@ -6,12 +6,13 @@ use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::values::ScryptoValue;
 use wasmi::{
     ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals,
     RuntimeValue,
 };
 
-use crate::engine::EnvModuleResolver;
+use crate::engine::{EnvModuleResolver, SystemApi};
 use crate::errors::WasmValidationError;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -21,9 +22,12 @@ pub struct Package {
     blueprints: HashMap<String, Type>,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PackageError {
+    InvalidRequestData(DecodeError),
     BlueprintNotFound,
+    WasmValidationError(WasmValidationError),
+    MethodNotFound(String),
 }
 
 impl Package {
@@ -142,6 +146,22 @@ impl Package {
             Ok((instance, memory))
         } else {
             Err(WasmValidationError::NoValidMemoryExport)
+        }
+    }
+
+    pub fn static_main<S: SystemApi>(
+        function: &str,
+        args: Vec<ScryptoValue>,
+        system_api: &mut S,
+    ) -> Result<ScryptoValue, PackageError> {
+        match function {
+            "publish" => {
+                let bytes = scrypto_decode(&args[0].raw).map_err(PackageError::InvalidRequestData)?;
+                let package = Package::new(bytes).map_err(PackageError::WasmValidationError)?;
+                let package_address = system_api.create_package(package);
+                Ok(ScryptoValue::from_value(&package_address))
+            }
+            _ => Err(PackageError::MethodNotFound(function.to_string())),
         }
     }
 }
