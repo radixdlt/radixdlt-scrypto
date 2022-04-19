@@ -88,16 +88,18 @@ impl Vault {
             args: vec![scrypto_encode(non_fungible_ids)],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
-        bucket
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Creates an ownership proof of this vault.
     pub fn create_proof(&self) -> Proof {
-        let input = CreateVaultProofInput { vault_id: self.0 };
-        let output: CreateVaultProofOutput = call_engine(CREATE_VAULT_PROOF, input);
-
-        Proof(output.proof_id)
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "create_vault_proof".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Creates an ownership proof of this vault, by amount.

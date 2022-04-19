@@ -22,6 +22,8 @@ pub enum VaultError {
     MethodNotFound(String),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
+    ProofError(ProofError),
+    CouldNotCreateProof,
 }
 
 /// A persistent resource container.
@@ -152,6 +154,7 @@ impl Vault {
 
     pub fn main<S: SystemApi>(
         &mut self,
+        vault_id: VaultId,
         function: &str,
         args: Vec<ScryptoValue>,
         system_api: &mut S
@@ -189,6 +192,11 @@ impl Vault {
             "get_non_fungible_ids_in_vault" => {
                 let ids = self.total_ids().map_err(VaultError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&ids))
+            }
+            "create_vault_proof" => {
+                let proof = self.create_proof(ResourceContainerId::Vault(vault_id)).map_err(VaultError::ProofError)?;
+                let proof_id = system_api.create_proof(proof).map_err(|_| VaultError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
             }
             _ => Err(VaultError::MethodNotFound(function.to_string())),
         }

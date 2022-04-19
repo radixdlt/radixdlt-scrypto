@@ -243,19 +243,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(self.track.new_proof_id())
     }
 
-    // Creates a vault proof.
-    pub fn create_vault_proof(&mut self, vault_id: VaultId) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let new_proof = self.get_local_vault(&vault_id, |vault| vault.create_proof(ResourceContainerId::Vault(vault_id)))?
-            .map_err(RuntimeError::ProofError)?;
-
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
     pub fn create_vault_proof_by_amount(
         &mut self,
         vault_id: VaultId,
@@ -405,9 +392,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::ProofRef(_, proof) => proof
                 .main(function.as_str(), args, self)
                 .map_err(RuntimeError::ProofError),
-            SNodeState::VaultRef(_, _, vault) =>
+            SNodeState::VaultRef(vault_id, _, vault) =>
                 vault
-                    .main(function.as_str(), args, self)
+                    .main(*vault_id, function.as_str(), args, self)
                     .map_err(RuntimeError::VaultError),
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
@@ -1249,15 +1236,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
-    fn handle_create_vault_proof(
-        &mut self,
-        input: CreateVaultProofInput,
-    ) -> Result<CreateVaultProofOutput, RuntimeError> {
-        Ok(CreateVaultProofOutput {
-            proof_id: self.create_vault_proof(input.vault_id)?,
-        })
-    }
-
     fn handle_create_vault_proof_by_amount(
         &mut self,
         input: CreateVaultProofByAmountInput,
@@ -1443,7 +1421,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
-                    CREATE_VAULT_PROOF => self.handle(args, Self::handle_create_vault_proof),
                     CREATE_VAULT_PROOF_BY_AMOUNT => {
                         self.handle(args, Self::handle_create_vault_proof_by_amount)
                     }
