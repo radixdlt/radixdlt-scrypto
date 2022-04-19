@@ -289,8 +289,10 @@ impl Worktop {
                 let mut buckets = Vec::new();
                 for (_, container) in self.containers.drain() {
                     let container = container.borrow_mut().take_all_liquid().map_err(WorktopError::ResourceContainerError)?;
-                    let bucket_id = system_api.create_bucket(container).map_err(|_| WorktopError::CouldNotCreateBucket)?;
-                    buckets.push(scrypto::resource::Bucket(bucket_id));
+                    if !container.is_empty() {
+                        let bucket_id = system_api.create_bucket(container).map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                        buckets.push(scrypto::resource::Bucket(bucket_id));
+                    }
                 }
                 Ok(ScryptoValue::from_value(&buckets))
             }
