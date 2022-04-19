@@ -198,6 +198,13 @@ impl Vault {
                 let proof_id = system_api.create_proof(proof).map_err(|_| VaultError::CouldNotCreateProof)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
             }
+            "create_vault_proof_by_amount" => {
+                let amount: Decimal =
+                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let proof = self.create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id)).map_err(VaultError::ProofError)?;
+                let proof_id = system_api.create_proof(proof).map_err(|_| VaultError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
+            }
             _ => Err(VaultError::MethodNotFound(function.to_string())),
         }
     }

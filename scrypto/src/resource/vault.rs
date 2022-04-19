@@ -104,14 +104,13 @@ impl Vault {
 
     /// Creates an ownership proof of this vault, by amount.
     pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-        let input = CreateVaultProofByAmountInput {
-            vault_id: self.0,
-            amount,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "create_vault_proof_by_amount".to_string(),
+            args: vec![scrypto_encode(&amount)],
         };
-        let output: CreateVaultProofByAmountOutput =
-            call_engine(CREATE_VAULT_PROOF_BY_AMOUNT, input);
-
-        Proof(output.proof_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Creates an ownership proof of this vault, by non-fungible ID set.

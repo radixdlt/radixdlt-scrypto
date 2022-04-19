@@ -243,21 +243,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(self.track.new_proof_id())
     }
 
-    pub fn create_vault_proof_by_amount(
-        &mut self,
-        vault_id: VaultId,
-        amount: Decimal,
-    ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let new_proof = self.get_local_vault(&vault_id, |vault| vault.create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id)))?
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
     pub fn create_vault_proof_by_ids(
         &mut self,
         vault_id: VaultId,
@@ -1236,15 +1221,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
-    fn handle_create_vault_proof_by_amount(
-        &mut self,
-        input: CreateVaultProofByAmountInput,
-    ) -> Result<CreateVaultProofByAmountOutput, RuntimeError> {
-        Ok(CreateVaultProofByAmountOutput {
-            proof_id: self.create_vault_proof_by_amount(input.vault_id, input.amount)?,
-        })
-    }
-
     fn handle_create_vault_proof_by_ids(
         &mut self,
         input: CreateVaultProofByIdsInput,
@@ -1421,9 +1397,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
-                    CREATE_VAULT_PROOF_BY_AMOUNT => {
-                        self.handle(args, Self::handle_create_vault_proof_by_amount)
-                    }
                     CREATE_VAULT_PROOF_BY_IDS => {
                         self.handle(args, Self::handle_create_vault_proof_by_ids)
                     }

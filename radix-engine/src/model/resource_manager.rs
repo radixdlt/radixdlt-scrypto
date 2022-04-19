@@ -138,7 +138,8 @@ impl ResourceManager {
             "get_bucket_resource_address",
             "get_vault_amount",
             "get_vault_resource_address",
-            "create_vault_proof"
+            "create_vault_proof",
+            "create_vault_proof_by_amount",
         ] {
             method_table.insert(pub_method.to_string(), None);
         }

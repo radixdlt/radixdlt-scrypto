@@ -31,8 +31,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
-/// Create a vault proof by amount
-pub const CREATE_VAULT_PROOF_BY_AMOUNT: u32 = 0x64;
 /// Create a vault proof by ids
 pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
 
@@ -156,17 +154,6 @@ pub struct CreateEmptyVaultOutput {
 //==========
 // proof
 //==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofByAmountInput {
-    pub vault_id: VaultId,
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofByAmountOutput {
-    pub proof_id: ProofId,
-}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateVaultProofByIdsInput {
