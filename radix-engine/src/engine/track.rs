@@ -1,3 +1,4 @@
+use indexmap::IndexMap;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
@@ -50,12 +51,12 @@ pub struct Track<'s, S: SubstateStore> {
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
 
-    packages: HashMap<PackageAddress, SubstateUpdate<Package>>,
+    packages: IndexMap<PackageAddress, SubstateUpdate<Package>>,
 
-    components: HashMap<ComponentAddress, SubstateUpdate<Component>>,
+    components: IndexMap<ComponentAddress, SubstateUpdate<Component>>,
     borrowed_components: HashMap<ComponentAddress, Option<(Hash, u32)>>,
 
-    resource_managers: HashMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
+    resource_managers: IndexMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
     borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
 
     vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
@@ -76,10 +77,10 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
-            packages: HashMap::new(),
-            components: HashMap::new(),
+            packages: IndexMap::new(),
+            components: IndexMap::new(),
             borrowed_components: HashMap::new(),
-            resource_managers: HashMap::new(),
+            resource_managers: IndexMap::new(),
             borrowed_resource_managers: HashMap::new(),
             lazy_map_entries: HashMap::new(),
             vaults: HashMap::new(),
@@ -98,7 +99,8 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         let mut process = Process::new(
             0,
             verbose,
-            self
+            self,
+            Some(AuthZone::new()),
         );
 
         // With the latest change, proof amount can't be zero, thus a virtual proof is created

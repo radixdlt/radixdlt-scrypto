@@ -9,10 +9,10 @@ blueprint! {
         pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentAddress {
             Self { some_non_fungible }
                 .instantiate()
-                .auth(
-                    Authorization::new()
+                .add_access_check(
+                    AccessRules::new()
                         .method("get_secret", auth!(require("some_non_fungible")))
-                        .default(auth!(allow_all))
+                        .default(auth!(allow_all)),
                 )
                 .globalize()
         }

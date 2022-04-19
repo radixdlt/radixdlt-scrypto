@@ -5,7 +5,7 @@ use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
-use crate::resource::Authorization;
+use crate::resource::AccessRules;
 use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
@@ -16,7 +16,7 @@ use crate::types::*;
 pub struct LocalComponent {
     blueprint_name: String,
     state: Vec<u8>,
-    authorization: Vec<Authorization>,
+    access_rules_list: Vec<AccessRules>,
 }
 
 impl LocalComponent {
@@ -24,12 +24,12 @@ impl LocalComponent {
         Self {
             blueprint_name,
             state,
-            authorization: Vec::new(),
+            access_rules_list: Vec::new(),
         }
     }
 
-    pub fn auth(mut self, authorization: Authorization) -> Self {
-        self.authorization.push(authorization);
+    pub fn add_access_check(mut self, authorization: AccessRules) -> Self {
+        self.access_rules_list.push(authorization);
         self
     }
 
@@ -37,7 +37,7 @@ impl LocalComponent {
         let input = CreateComponentInput {
             blueprint_name: self.blueprint_name,
             state: self.state,
-            authorization: self.authorization,
+            access_rules_list: self.access_rules_list,
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
         output.component_address

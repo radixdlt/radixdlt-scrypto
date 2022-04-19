@@ -8,12 +8,12 @@ use sbor::*;
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Describe, TypeId, Encode, Decode)]
-pub struct Authorization {
+pub struct AccessRules {
     method_auth: HashMap<String, MethodAuth>,
-    default_auth: MethodAuth
+    default_auth: MethodAuth,
 }
 
-impl Authorization {
+impl AccessRules {
     pub fn new() -> Self {
         Self {
             method_auth: HashMap::new(),
@@ -22,11 +22,14 @@ impl Authorization {
     }
 
     pub fn get(&self, method_name: &str) -> &MethodAuth {
-        self.method_auth.get(method_name).unwrap_or(&self.default_auth)
+        self.method_auth
+            .get(method_name)
+            .unwrap_or(&self.default_auth)
     }
 
     pub fn method(mut self, method_name: &str, method_auth: MethodAuth) -> Self {
-        self.method_auth.insert(method_name.to_string(), method_auth);
+        self.method_auth
+            .insert(method_name.to_string(), method_auth);
         self
     }
 

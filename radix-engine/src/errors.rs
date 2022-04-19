@@ -90,6 +90,8 @@ pub enum RuntimeError {
     /// Not a valid ABI.
     AbiValidationError(DecodeError),
 
+    AuthZoneDoesNotExist,
+
     /// Failed to allocate an ID.
     IdAllocatorError(IdAllocatorError),
 
@@ -119,6 +121,8 @@ pub enum RuntimeError {
 
     /// Package does not exist.
     PackageNotFound(PackageAddress),
+
+    PackageError(PackageError),
 
     /// Blueprint does not exist.
     BlueprintNotFound(PackageAddress, String),
