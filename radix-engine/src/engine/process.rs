@@ -243,21 +243,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(self.track.new_proof_id())
     }
 
-    pub fn create_vault_proof_by_ids(
-        &mut self,
-        vault_id: VaultId,
-        ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let new_proof = self.get_local_vault(&vault_id, |vault| vault.create_proof_by_ids(ids, ResourceContainerId::Vault(vault_id)))?
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
     /// Runs the given export within this process.
     pub fn run(
         &mut self,
@@ -1185,27 +1170,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(CreateEmptyVaultOutput { vault_id })
     }
 
-    fn get_local_vault<R, F: FnOnce(&mut Vault) -> R>(&mut self, vault_id: &VaultId, func: F) -> Result<R, RuntimeError> {
-        if let Some(mut vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
-            let result = func(&mut vault);
-            self.owned_snodes.return_borrowed_vault_mut(vault);
-            return Ok(result);
-        }
-
-        if !self.snode_refs.vault_ids.contains(vault_id) {
-            return Err(RuntimeError::VaultNotFound(*vault_id));
-        }
-
-        if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
-            let mut vault = self.track.borrow_vault_mut(component_address, vault_id);
-            let result = func(&mut vault);
-            self.track.return_borrowed_vault(component_address, vault_id, vault);
-            return Ok(result);
-        }
-
-        panic!("Should not get here.");
-    }
-
     fn handle_invoke_snode(
         &mut self,
         input: InvokeSNodeInput,
@@ -1219,15 +1183,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let result = self.invoke_snode(input.snode_ref, input.function, validated_args)?;
         Ok(InvokeSNodeOutput { rtn: result.raw })
-    }
-
-    fn handle_create_vault_proof_by_ids(
-        &mut self,
-        input: CreateVaultProofByIdsInput,
-    ) -> Result<CreateVaultProofByIdsOutput, RuntimeError> {
-        Ok(CreateVaultProofByIdsOutput {
-            proof_id: self.create_vault_proof_by_ids(input.vault_id, &input.ids)?,
-        })
     }
 
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
@@ -1397,9 +1352,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
-                    CREATE_VAULT_PROOF_BY_IDS => {
-                        self.handle(args, Self::handle_create_vault_proof_by_ids)
-                    }
 
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 

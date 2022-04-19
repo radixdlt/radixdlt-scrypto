@@ -140,6 +140,7 @@ impl ResourceManager {
             "get_vault_resource_address",
             "create_vault_proof",
             "create_vault_proof_by_amount",
+            "create_vault_proof_by_ids",
         ] {
             method_table.insert(pub_method.to_string(), None);
         }

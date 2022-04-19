@@ -115,13 +115,13 @@ impl Vault {
 
     /// Creates an ownership proof of this vault, by non-fungible ID set.
     pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-        let input = CreateVaultProofByIdsInput {
-            vault_id: self.0,
-            ids: ids.clone(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "create_vault_proof_by_ids".to_string(),
+            args: vec![scrypto_encode(ids)],
         };
-        let output: CreateVaultProofByIdsOutput = call_engine(CREATE_VAULT_PROOF_BY_IDS, input);
-
-        Proof(output.proof_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Uses resources in this vault as authorization for an operation.

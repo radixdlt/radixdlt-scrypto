@@ -3,7 +3,6 @@ use sbor::*;
 use scrypto::prelude::Authorization;
 
 use crate::engine::types::*;
-use crate::rust::collections::BTreeSet;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
@@ -31,8 +30,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
-/// Create a vault proof by ids
-pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
 
 pub const INVOKE_SNODE: u32 = 0x70;
 
@@ -149,21 +146,6 @@ pub struct CreateEmptyVaultInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultOutput {
     pub vault_id: VaultId,
-}
-
-//==========
-// proof
-//==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofByIdsInput {
-    pub vault_id: VaultId,
-    pub ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofByIdsOutput {
-    pub proof_id: ProofId,
 }
 
 //=======
