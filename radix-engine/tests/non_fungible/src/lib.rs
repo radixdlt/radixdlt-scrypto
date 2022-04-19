@@ -22,17 +22,14 @@ blueprint! {
             // Create non-fungible resource with mutable supply
             let resource_address = ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .auth(Mint, auth!(require(mint_badge.resource_address())))
-                .auth(Burn, auth!(allow_all))
-                .auth(
-                    UpdateNonFungibleData,
-                    auth!(require(mint_badge.resource_address())),
-                )
+                .mintable(auth!(require(mint_badge.resource_address())), LOCKED)
+                .burnable(auth!(allow_all), LOCKED)
+                .updateable_non_fungible_data(auth!(require(mint_badge.resource_address())), LOCKED)
                 .no_initial_supply();
 
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
-                resource_manager!(resource_address).mint_non_fungible(
+                borrow_resource_manager!(resource_address).mint_non_fungible(
                     &NonFungibleId::from_u32(0),
                     Sandwich {
                         name: "Test".to_owned(),
@@ -47,8 +44,7 @@ blueprint! {
         pub fn create_burnable_non_fungible() -> Bucket {
             ResourceBuilder::new_non_fungible()
                 .metadata("name", "Katz's Sandwiches")
-                .auth(TakeFromVault, auth!(allow_all))
-                .auth(Burn, auth!(allow_all))
+                .burnable(auth!(allow_all), LOCKED)
                 .initial_supply([
                     (
                         NonFungibleId::from_u32(0),
@@ -97,7 +93,7 @@ blueprint! {
 
         pub fn verify_does_not_exist(address: NonFungibleAddress) {
             assert_eq!(
-                resource_manager!(address.resource_address())
+                borrow_resource_manager!(address.resource_address())
                     .non_fungible_exists(&address.non_fungible_id()),
                 false
             );
@@ -105,17 +101,17 @@ blueprint! {
 
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
-            let mut data: Sandwich = resource_manager!(resource_address)
+            let mut data: Sandwich = borrow_resource_manager!(resource_address)
                 .get_non_fungible_data(&NonFungibleId::from_u32(0));
             assert_eq!(data.available, false);
 
             data.available = true;
             mint_badge.authorize(|| {
-                resource_manager!(resource_address)
+                borrow_resource_manager!(resource_address)
                     .update_non_fungible_data(&NonFungibleId::from_u32(0), data);
             });
 
-            let data: Sandwich = resource_manager!(resource_address)
+            let data: Sandwich = borrow_resource_manager!(resource_address)
                 .get_non_fungible_data(&NonFungibleId::from_u32(0));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
@@ -124,12 +120,12 @@ blueprint! {
         pub fn non_fungible_exists() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             assert_eq!(
-                resource_manager!(resource_address)
+                borrow_resource_manager!(resource_address)
                     .non_fungible_exists(&NonFungibleId::from_u32(0)),
                 true
             );
             assert_eq!(
-                resource_manager!(resource_address)
+                borrow_resource_manager!(resource_address)
                     .non_fungible_exists(&NonFungibleId::from_u32(1)),
                 false
             );
@@ -190,6 +186,27 @@ blueprint! {
             NonFungibleTest { vault }.instantiate().globalize();
 
             non_fungible_bucket
+        }
+
+        pub fn singleton_non_fungible() {
+            let mut bucket = Self::create_non_fungible_fixed();
+            assert_eq!(bucket.amount(), 3.into());
+
+            // read singleton bucket
+            let singleton = bucket.take(1);
+            let _: Sandwich = singleton.non_fungible().data();
+
+            // read singleton vault
+            let mut vault = Vault::with_bucket(singleton);
+            let _: Sandwich = vault.non_fungible().data();
+
+            // read singleton proof
+            let proof = vault.create_proof();
+            let _: Sandwich = proof.non_fungible().data();
+
+            // clean up
+            vault.put(bucket);
+            NonFungibleTest { vault }.instantiate().globalize();
         }
     }
 }

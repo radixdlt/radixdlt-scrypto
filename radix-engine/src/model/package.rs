@@ -156,7 +156,8 @@ impl Package {
     ) -> Result<ScryptoValue, PackageError> {
         match function {
             "publish" => {
-                let bytes = scrypto_decode(&args[0].raw).map_err(PackageError::InvalidRequestData)?;
+                let bytes =
+                    scrypto_decode(&args[0].raw).map_err(PackageError::InvalidRequestData)?;
                 let package = Package::new(bytes).map_err(PackageError::WasmValidationError)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
