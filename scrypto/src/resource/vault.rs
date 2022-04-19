@@ -42,11 +42,13 @@ impl Vault {
 
     /// Puts a bucket of resources into this vault.
     pub fn put(&mut self, bucket: Bucket) {
-        let input = PutIntoVaultInput {
-            vault_id: self.0,
-            bucket_id: bucket.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "put_into_vault".to_string(),
+            args: args![bucket],
         };
-        let _: PutIntoVaultOutput = call_engine(PUT_INTO_VAULT, input);
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Takes some amount of resource from this vault into a bucket.

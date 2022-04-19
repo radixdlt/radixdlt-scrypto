@@ -657,8 +657,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 The reason is that the number of buckets to be created can't be determined statically, which
                 makes it hard to verify transaction if we use the transaction ID allocator.
                 */
-                let bucket_id = self.track.new_bucket_id();
-                self.buckets.insert(bucket_id, bucket);
+                if !bucket.is_empty() {
+                    let bucket_id = self.track.new_bucket_id();
+                    self.buckets.insert(bucket_id, bucket);
+                }
             }
         }
 
@@ -988,21 +990,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         // Execution
-
-        // Figure out what buckets and proofs to move from this process
-        let mut moving_buckets = HashMap::new();
-        let mut moving_proofs = HashMap::new();
-        for arg in &args {
-            self.process_call_data(arg)?;
-            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
-            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
-        }
-
         let result = match snode {
             SNodeState::VaultRef(vault_id) => {
+                // TODO Post v0.4 - The passing of a bucket here is a temporary (slightly ugly) workaround
+                // to support deposit auth until we have support for handling vault references properly
+                let bucket_input = if !args[0].bucket_ids.is_empty() {
+                    let bucket_id = args[0].bucket_ids.iter().nth(0).unwrap();
+                    let bucket = self.buckets.remove(bucket_id)
+                        .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
+                    Option::Some(bucket)
+                } else {
+                    Option::None
+                };
+
                 let vault = self.get_local_vault(&vault_id)?;
                 let maybe_bucket = vault
-                    .main(function.as_str(), args)
+                    .main(function.as_str(), args, bucket_input)
                     .map_err(RuntimeError::VaultError)?;
                 if let Some(bucket) = maybe_bucket {
                     let bucket_id = self.new_bucket_id()?;
@@ -1019,6 +1022,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 _ => Err(RuntimeError::IllegalSystemCall),
             },
             _ => {
+                // Figure out what buckets and proofs to move from this process
+                let mut moving_buckets = HashMap::new();
+                let mut moving_proofs = HashMap::new();
+                for arg in &args {
+                    self.process_call_data(arg)?;
+                    moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
+                    moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
+                }
+
                 // start a new process
                 let process_auth_zone = if matches!(snode, SNodeState::Scrypto(_, _)) {
                     Some(AuthZone::new())
@@ -1413,7 +1425,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let component = Component::new(
             package_address,
             input.blueprint_name,
-            input.authorization,
+            input.access_rules_list,
             input.state,
         );
         let component_address = self.track.create_component(component);
@@ -1692,24 +1704,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 _ => Err(RuntimeError::VaultNotFound(*vault_id)),
             },
         }
-    }
-
-    fn handle_put_into_vault(
-        &mut self,
-        input: PutIntoVaultInput,
-    ) -> Result<PutIntoVaultOutput, RuntimeError> {
-        // TODO: restrict access
-
-        let bucket = self
-            .buckets
-            .remove(&input.bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(input.bucket_id))?;
-
-        self.get_local_vault(&input.vault_id)?
-            .put(bucket)
-            .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?;
-
-        Ok(PutIntoVaultOutput {})
     }
 
     fn handle_invoke_snode(
@@ -2012,7 +2006,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
-                    PUT_INTO_VAULT => self.handle(args, Self::handle_put_into_vault),
                     GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
                     GET_VAULT_RESOURCE_ADDRESS => {
                         self.handle(args, Self::handle_get_vault_resource_address)

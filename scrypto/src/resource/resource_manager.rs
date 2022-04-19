@@ -21,6 +21,7 @@ pub enum ResourceMethod {
     Mint,
     Burn,
     Withdraw,
+    Deposit,
     UpdateMetadata,
     UpdateNonFungibleData,
 }
@@ -130,11 +131,11 @@ impl ResourceManager {
         scrypto_decode(&output.rtn).unwrap()
     }
 
-    pub fn set_withdrawable(&self, burn_auth: MethodAuth) -> () {
+    pub fn set_withdrawable(&self, withdraw_auth: MethodAuth) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
             function: "method_auth".to_string(),
-            args: args![Withdraw, "update", burn_auth],
+            args: args![Withdraw, "update", withdraw_auth],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -145,6 +146,26 @@ impl ResourceManager {
             snode_ref: SNodeRef::ResourceRef(self.0),
             function: "method_auth".to_string(),
             args: args![Withdraw, "lock"],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    pub fn set_depositable(&self, deposit_auth: MethodAuth) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ResourceRef(self.0),
+            function: "method_auth".to_string(),
+            args: args![Deposit, "update", deposit_auth],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    pub fn lock_depositable(&self) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ResourceRef(self.0),
+            function: "method_auth".to_string(),
+            args: args![Deposit, "lock"],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

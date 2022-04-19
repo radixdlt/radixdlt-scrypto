@@ -3,7 +3,7 @@ use crate::buffer::*;
 use crate::component::*;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
-use crate::prelude::Authorization;
+use crate::prelude::AccessRules;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::*;
 use crate::rust::string::ToString;
@@ -60,13 +60,13 @@ impl ComponentSystem {
     pub fn instantiate_component<T: ComponentState>(
         &mut self,
         blueprint_name: &str,
-        authorization: Vec<Authorization>,
+        authorization: Vec<AccessRules>,
         state: T,
     ) -> ComponentAddress {
         let input = CreateComponentInput {
             blueprint_name: blueprint_name.to_owned(),
             state: scrypto_encode(&state),
-            authorization,
+            access_rules_list: authorization,
         };
         let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
 

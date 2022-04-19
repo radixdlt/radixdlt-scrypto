@@ -38,6 +38,10 @@ blueprint! {
                     auth!(require(withdraw_auth)),
                     MUTABLE(auth!(require(admin_auth))),
                 )
+                .restrict_deposit(
+                    auth!(allow_all),
+                    MUTABLE(auth!(require(admin_auth))),
+                )
                 .initial_supply(5)
         }
 
@@ -60,6 +64,11 @@ blueprint! {
             borrow_resource_manager!(resource_address)
                 .set_withdrawable(auth!(require(auth_address)));
         }
+
+        pub fn set_depositable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
+            borrow_resource_manager!(resource_address).set_depositable(auth!(require(auth_address)));
+        }
+
 
         pub fn lock_mintable(resource_address: ResourceAddress) {
             borrow_resource_manager!(resource_address).lock_mintable();
