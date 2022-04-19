@@ -343,6 +343,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Runs the given export within this process.
     pub fn run(
         &mut self,
+        snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'r>,
         function: String,
         args: Vec<ScryptoValue>,
@@ -715,7 +716,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // invoke the main function
         let (result, received_buckets, received_proofs) =
-            process.run(snode, function, args)?;
+            process.run(Some(snode_ref), snode, function, args)?;
 
         // move buckets and proofs to this process.
         self.buckets.extend(received_buckets);
@@ -749,7 +750,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None, HashMap::new(), HashMap::new());
         let result = process
-            .run(snode, String::new(), Vec::new())
+            .run(None, snode, String::new(), Vec::new())
             .map(|(r, _, _)| r);
 
         re_debug!(self, "Call abi ended");
