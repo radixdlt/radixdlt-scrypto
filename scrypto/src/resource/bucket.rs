@@ -12,7 +12,7 @@ use crate::rust::fmt;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
-use crate::{args, resource_manager};
+use crate::{args, borrow_resource_manager};
 
 /// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -77,7 +77,7 @@ impl Bucket {
 
     /// Burns resource within this bucket.
     pub fn burn(self) {
-        resource_manager!(self.resource_address()).burn(self);
+        borrow_resource_manager!(self.resource_address()).burn(self);
     }
 
     /// Creates an ownership proof of this bucket.
