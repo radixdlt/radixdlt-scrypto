@@ -28,9 +28,6 @@ pub const GET_LAZY_MAP_ENTRY: u32 = 0x21;
 /// Insert a key-value pair into a lazy map
 pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
-/// Create an empty vault
-pub const CREATE_EMPTY_VAULT: u32 = 0x40;
-
 pub const INVOKE_SNODE: u32 = 0x70;
 
 /// Log a message
@@ -133,20 +130,6 @@ pub struct PutLazyMapEntryInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PutLazyMapEntryOutput {}
-
-//==========
-// vault
-//==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateEmptyVaultInput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateEmptyVaultOutput {
-    pub vault_id: VaultId,
-}
 
 //=======
 // others

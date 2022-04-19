@@ -90,6 +90,8 @@ pub trait SystemApi {
 
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError>;
 
+    fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError>;
+
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError>;
 
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError>;
@@ -352,6 +354,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             ScryptoValue,
             HashMap<BucketId, Bucket>,
             HashMap<ProofId, Proof>,
+            HashMap<VaultId, Vault>,
         ),
         RuntimeError,
     > {
@@ -476,11 +479,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .map_err(RuntimeError::VaultError),
         }?;
 
-        self.process_return_data(&output)?;
+        self.process_return_data(snode_ref, &output)?;
 
         // figure out what buckets and resources to return
         let moving_buckets = self.send_buckets(&output.bucket_ids)?;
         let moving_proofs = self.send_proofs(&output.proof_ids, MoveMethod::AsReturn)?;
+        let moving_vaults = self.send_vaults(&output.vault_ids)?;
 
         // drop proofs and check resource leak
         for (_, proof) in self.proofs.drain() {
@@ -501,7 +505,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         #[cfg(feature = "alloc")]
         re_info!(self, "Run ended");
 
-        Ok((output, moving_buckets, moving_proofs))
+        Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
 
     /// Calls a function/method.
@@ -715,12 +719,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         // invoke the main function
-        let (result, received_buckets, received_proofs) =
+        let (result, received_buckets, received_proofs, received_vaults) =
             process.run(Some(snode_ref), snode, function, args)?;
 
         // move buckets and proofs to this process.
         self.buckets.extend(received_buckets);
         self.proofs.extend(received_proofs);
+        self.owned_snodes.vaults.extend(received_vaults);
 
         // Return borrowed snodes
         if let Borrowed(borrowed) = loaded_snode {
@@ -751,7 +756,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None, HashMap::new(), HashMap::new());
         let result = process
             .run(None, snode, String::new(), Vec::new())
-            .map(|(r, _, _)| r);
+            .map(|(r, _, _, _)| r);
 
         re_debug!(self, "Call abi ended");
         result
@@ -815,13 +820,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    fn process_return_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
+    fn process_return_data(&mut self, from: Option<SNodeRef>, validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
         }
-        if !validated.vault_ids.is_empty() {
-            return Err(RuntimeError::VaultNotAllowed);
+
+        // Allow vaults to be returned from ResourceStatic
+        // TODO: Should we allow vaults to be returned by any component?
+        if !matches!(from, Some(SNodeRef::ResourceRef(_))) {
+            if !validated.vault_ids.is_empty() {
+                return Err(RuntimeError::VaultNotAllowed);
+            }
         }
+
         Ok(())
     }
 
@@ -878,6 +889,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             buckets.insert(*bucket_id, bucket);
         }
         Ok(buckets)
+    }
+
+    /// Sends proofs to another component/blueprint, either as argument or return
+    fn send_vaults(
+        &mut self,
+        vault_ids: &HashSet<VaultId>,
+    ) -> Result<HashMap<VaultId, Vault>, RuntimeError> {
+        let mut vaults = HashMap::new();
+        for vault_id in vault_ids {
+            let vault = self.owned_snodes.vaults
+                .remove(vault_id)
+                .ok_or(RuntimeError::VaultNotFound(*vault_id))?;
+            vaults.insert(*vault_id, vault);
+        }
+        Ok(vaults)
     }
 
     /// Sends proofs to another component/blueprint, either as argument or return
@@ -1210,30 +1236,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutLazyMapEntryOutput {})
     }
 
-    fn handle_create_vault(
-        &mut self,
-        input: CreateEmptyVaultInput,
-    ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
-        let definition = self
-            .track
-            .get_resource_manager(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-
-        let new_vault = Vault::new(ResourceContainer::new_empty(
-            input.resource_address,
-            definition.resource_type(),
-        ));
-        let vault_id = self.track.new_vault_id();
-        self
-            .owned_snodes
-            .vaults
-            .insert(vault_id, new_vault);
-
-        Ok(CreateEmptyVaultOutput { vault_id })
-    }
-
     fn handle_invoke_snode(
         &mut self,
         input: InvokeSNodeInput,
@@ -1381,6 +1383,15 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         Ok(bucket_id)
     }
 
+    fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
+        let vault_id = self.track.new_vault_id();
+        self
+            .owned_snodes
+            .vaults
+            .insert(vault_id, Vault::new(container));
+        Ok(vault_id)
+    }
+
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
         self.buckets
             .remove(&bucket_id)
@@ -1414,8 +1425,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
-
-                    CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
 
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 
