@@ -1017,7 +1017,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let component = Component::new(
             package_address,
             input.blueprint_name,
-            input.authorization,
+            input.access_rules_list,
             input.state,
         );
         let component_address = self.track.create_component(component);

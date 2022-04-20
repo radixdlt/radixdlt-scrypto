@@ -10,11 +10,11 @@ blueprint! {
         pub fn create_component(
             count: u8,
             auth: Vec<NonFungibleAddress>,
-            authorization: Authorization,
+            access_rules: AccessRules,
         ) -> ComponentAddress {
             Self { count, auth }
                 .instantiate()
-                .auth(authorization)
+                .add_access_check(access_rules)
                 .globalize()
         }
 

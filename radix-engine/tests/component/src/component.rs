@@ -25,8 +25,8 @@ blueprint! {
 
         pub fn get_component_info(component_address: ComponentAddress) -> (PackageAddress, String) {
             (
-                component!(component_address).package_address(),
-                component!(component_address).blueprint_name(),
+                borrow_component!(component_address).package_address(),
+                borrow_component!(component_address).blueprint_name(),
             )
         }
 

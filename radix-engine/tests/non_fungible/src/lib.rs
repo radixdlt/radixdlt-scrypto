@@ -29,7 +29,7 @@ blueprint! {
 
             // Mint a non-fungible
             let non_fungible = mint_badge.authorize(|| {
-                resource_manager!(resource_address).mint_non_fungible(
+                borrow_resource_manager!(resource_address).mint_non_fungible(
                     &NonFungibleId::from_u32(0),
                     Sandwich {
                         name: "Test".to_owned(),
@@ -93,7 +93,7 @@ blueprint! {
 
         pub fn verify_does_not_exist(address: NonFungibleAddress) {
             assert_eq!(
-                resource_manager!(address.resource_address())
+                borrow_resource_manager!(address.resource_address())
                     .non_fungible_exists(&address.non_fungible_id()),
                 false
             );
@@ -101,17 +101,17 @@ blueprint! {
 
         pub fn update_and_get_non_fungible() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
-            let mut data: Sandwich = resource_manager!(resource_address)
+            let mut data: Sandwich = borrow_resource_manager!(resource_address)
                 .get_non_fungible_data(&NonFungibleId::from_u32(0));
             assert_eq!(data.available, false);
 
             data.available = true;
             mint_badge.authorize(|| {
-                resource_manager!(resource_address)
+                borrow_resource_manager!(resource_address)
                     .update_non_fungible_data(&NonFungibleId::from_u32(0), data);
             });
 
-            let data: Sandwich = resource_manager!(resource_address)
+            let data: Sandwich = borrow_resource_manager!(resource_address)
                 .get_non_fungible_data(&NonFungibleId::from_u32(0));
             assert_eq!(data.available, true);
             (mint_badge, bucket)
@@ -120,12 +120,12 @@ blueprint! {
         pub fn non_fungible_exists() -> (Bucket, Bucket) {
             let (mint_badge, resource_address, bucket) = Self::create_non_fungible_mutable();
             assert_eq!(
-                resource_manager!(resource_address)
+                borrow_resource_manager!(resource_address)
                     .non_fungible_exists(&NonFungibleId::from_u32(0)),
                 true
             );
             assert_eq!(
-                resource_manager!(resource_address)
+                borrow_resource_manager!(resource_address)
                     .non_fungible_exists(&NonFungibleId::from_u32(1)),
                 false
             );
