@@ -24,7 +24,7 @@ blueprint! {
 
         /// Mints fungible resource. TODO: Remove
         pub fn mint(amount: Decimal, resource_address: ResourceAddress) -> Bucket {
-            resource_manager!(resource_address).mint(amount)
+            borrow_resource_manager!(resource_address).mint(amount)
         }
 
         /// Burns bucket. TODO: Remove

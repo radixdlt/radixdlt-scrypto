@@ -1,9 +1,9 @@
+use indexmap::IndexMap;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use indexmap::IndexMap;
 
 use crate::engine::*;
 use crate::errors::RuntimeError;
@@ -99,7 +99,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             .into_iter()
             .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
             .collect();
-
 
         // With the latest change, proof amount can't be zero, thus a virtual proof is created
         // only if there are signers.

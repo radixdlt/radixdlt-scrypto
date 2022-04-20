@@ -1,5 +1,5 @@
 mod auth_zone;
-mod authorization;
+mod access_rules;
 mod bucket;
 mod mint_params;
 mod non_fungible;
@@ -16,7 +16,7 @@ mod system;
 mod vault;
 
 pub use auth_zone::{AuthZone, AuthZoneMethod};
-pub use authorization::Authorization;
+pub use access_rules::AccessRules;
 pub use bucket::{Bucket, ParseBucketError};
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;

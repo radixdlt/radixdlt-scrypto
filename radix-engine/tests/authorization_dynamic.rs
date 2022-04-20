@@ -105,7 +105,7 @@ fn test_dynamic_authlist(
         .iter()
         .map(|index| &key_and_addresses.get(*index).unwrap().1)
         .collect();
-    let authorization = Authorization::new().method("get_secret", auth_rule);
+    let authorization = AccessRules::new().method("get_secret", auth_rule);
 
     // Arrange
     let package = test_runner.publish_package("component");
