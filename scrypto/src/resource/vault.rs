@@ -42,11 +42,13 @@ impl Vault {
 
     /// Puts a bucket of resources into this vault.
     pub fn put(&mut self, bucket: Bucket) {
-        let input = PutIntoVaultInput {
-            vault_id: self.0,
-            bucket_id: bucket.0,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "put_into_vault".to_string(),
+            args: args![bucket],
         };
-        let _: PutIntoVaultOutput = call_engine(PUT_INTO_VAULT, input);
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Takes some amount of resource from this vault into a bucket.
@@ -166,15 +168,23 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault.
     pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
-        let output: GetNonFungibleIdsInVaultOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
         let resource_address = self.resource_address();
-        output
-            .non_fungible_ids
+        self.non_fungible_ids()
             .iter()
             .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()
+    }
+
+    /// Returns a singleton non-fungible.
+    ///
+    /// # Panics
+    /// Panics if this is not a singleton bucket
+    pub fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
+        let non_fungibles = self.non_fungibles();
+        if non_fungibles.len() != 1 {
+            panic!("Expecting singleton NFT vault");
+        }
+        non_fungibles.into_iter().next().unwrap()
     }
 }
 
