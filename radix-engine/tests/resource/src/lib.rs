@@ -30,7 +30,7 @@ blueprint! {
                 .mintable(auth!(require(badge.resource_address())), LOCKED)
                 .burnable(auth!(require(badge.resource_address())), LOCKED)
                 .no_initial_supply();
-            let tokens = badge.authorize(|| resource_manager!(token_address).mint(amount));
+            let tokens = badge.authorize(|| borrow_resource_manager!(token_address).mint(amount));
             (badge, tokens, token_address)
         }
 
@@ -66,7 +66,7 @@ blueprint! {
 
         pub fn query() -> (Bucket, HashMap<String, String>, Decimal) {
             let (badge, resource_address) = Self::create_fungible();
-            let resource_manager = resource_manager!(resource_address);
+            let resource_manager = borrow_resource_manager!(resource_address);
             (
                 badge,
                 resource_manager.metadata(),
@@ -76,7 +76,7 @@ blueprint! {
 
         pub fn burn() -> Bucket {
             let (badge, resource_address) = Self::create_fungible();
-            let resource_manager = resource_manager!(resource_address);
+            let resource_manager = borrow_resource_manager!(resource_address);
             badge.authorize(|| {
                 let bucket: Bucket = resource_manager.mint(1);
                 resource_manager.burn(bucket)
@@ -88,7 +88,7 @@ blueprint! {
             let badge = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_NONE)
                 .initial_supply(1);
-            let token_resource_manager = resource_manager!(ResourceBuilder::new_fungible()
+            let token_resource_manager = borrow_resource_manager!(ResourceBuilder::new_fungible()
                 .updateable_metadata(auth!(require(badge.resource_address())), LOCKED)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")

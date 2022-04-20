@@ -1,6 +1,6 @@
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::resource::Authorization;
+use scrypto::resource::AccessRules;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
@@ -12,7 +12,7 @@ use crate::model::{convert, MethodAuthorization};
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,
-    auths: Vec<Authorization>,
+    auths: Vec<AccessRules>,
     state: Vec<u8>,
 }
 
@@ -20,7 +20,7 @@ impl Component {
     pub fn new(
         package_address: PackageAddress,
         blueprint_name: String,
-        method_auth: Vec<Authorization>,
+        method_auth: Vec<AccessRules>,
         state: Vec<u8>,
     ) -> Self {
         Self {
@@ -48,7 +48,7 @@ impl Component {
         (data, authorizations)
     }
 
-    pub fn authorization(&self) -> &[Authorization] {
+    pub fn authorization(&self) -> &[AccessRules] {
         &self.auths
     }
 
