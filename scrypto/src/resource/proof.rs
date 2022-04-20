@@ -14,7 +14,10 @@ use crate::rust::vec::Vec;
 use crate::rust::string::ToString;
 use crate::types::*;
 
-
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum ConsumingProofMethod {
+    Drop(),
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ProofMethod {
@@ -45,17 +48,11 @@ impl Proof {
         }
     }
 
-    /// Destroys this proof.
-    pub fn drop(self) {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Proof(self.0),
-            function: "drop".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+    invocations! {
+        SNodeRef::Proof(self.0) => {
+            pub fn drop(self) -> () { ConsumingProofMethod::Drop() }
+        }
     }
-
 
     /// Whether this proof includes an ownership proof of any of the given resource.
     pub fn contains(&self, resource_address: ResourceAddress) -> bool {

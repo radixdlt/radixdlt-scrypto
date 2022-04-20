@@ -1,6 +1,6 @@
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ProofMethod, ScryptoActor};
+use scrypto::prelude::{ConsumingProofMethod, ProofMethod, ScryptoActor};
 use scrypto::resource::AuthZoneMethod;
 use scrypto::rust::collections::{HashMap};
 use scrypto::rust::string::ToString;
@@ -292,8 +292,8 @@ impl TransactionProcess {
                         .map(|real_id| {
                             system_api.invoke_snode(
                                 SNodeRef::Proof(real_id),
-                                "drop".to_string(),
-                                vec![]
+                                "main".to_string(),
+                                vec![ScryptoValue::from_value(&ConsumingProofMethod::Drop())]
                             )
                         })
                         .unwrap_or(Err(ProofNotFound(*proof_id)))
@@ -376,8 +376,8 @@ impl TransactionProcess {
                             for (_, real_id) in self.proof_id_mapping.drain() {
                                 system_api.invoke_snode(
                                     SNodeRef::Proof(real_id),
-                                    "drop".to_string(),
-                                    vec![]
+                                    "main".to_string(),
+                                    vec![ScryptoValue::from_value(&ConsumingProofMethod::Drop())]
                                 ).unwrap();
                             }
                             system_api.invoke_snode(SNodeRef::WorktopRef, "drain".to_string(), vec![])

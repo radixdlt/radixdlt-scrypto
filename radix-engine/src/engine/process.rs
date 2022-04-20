@@ -483,8 +483,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .map_err(RuntimeError::ProofError)
             },
             SNodeState::Proof(proof) => {
-                proof.main_consume(function.as_str())
-                    .map_err(RuntimeError::ProofError)
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                proof.main_consume(arg).map_err(RuntimeError::ProofError)
             }
             SNodeState::VaultRef(vault_id, _, vault) =>
                 vault

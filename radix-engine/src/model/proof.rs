@@ -2,6 +2,7 @@ use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::ProofMethod;
+use scrypto::resource::ConsumingProofMethod;
 use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
@@ -348,12 +349,14 @@ impl Proof {
         }
     }
 
-    pub fn main_consume(self, function: &str) -> Result<ScryptoValue, ProofError> {
-        match function {
-            _ => {
+    pub fn main_consume(self, arg: ScryptoValue) -> Result<ScryptoValue, ProofError> {
+        let method: ConsumingProofMethod = scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+
+        match method {
+            ConsumingProofMethod::Drop() => {
                 self.drop();
                 Ok(ScryptoValue::from_value(&()))
-            },
+            }
         }
     }
 }
