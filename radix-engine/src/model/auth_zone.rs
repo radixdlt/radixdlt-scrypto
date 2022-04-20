@@ -39,7 +39,7 @@ impl AuthZone {
         }
     }
 
-    pub fn pop(&mut self) -> Result<Proof, AuthZoneError> {
+    fn pop(&mut self) -> Result<Proof, AuthZoneError> {
         if self.proofs.is_empty() {
             return Err(AuthZoneError::EmptyAuthZone);
         }
@@ -47,7 +47,7 @@ impl AuthZone {
         Ok(self.proofs.remove(self.proofs.len() - 1))
     }
 
-    pub fn push(&mut self, proof: Proof) {
+    fn push(&mut self, proof: Proof) {
         self.proofs.push(proof);
     }
 

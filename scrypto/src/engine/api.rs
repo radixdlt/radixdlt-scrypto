@@ -43,6 +43,36 @@ pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Retrieve the running entity
 pub const GET_ACTOR: u32 = 0xf5;
 
+#[macro_export]
+macro_rules! invocations {
+    ($snode_ref:expr => { $($fn:ident $method_name:ident $s:tt -> $rtn:ty { $method_enum:expr })* } ) => {
+        $(
+            $fn $method_name $s -> $rtn {
+                let input = InvokeSNodeInput {
+                    snode_ref: $snode_ref,
+                    function: "main".to_string(),
+                    args: args![$method_enum],
+                };
+                let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+                scrypto_decode(&output.rtn).unwrap()
+            }
+        )+
+    };
+    ($snode_ref:expr => { $($vis:ident $fn:ident $method_name:ident $s:tt -> $rtn:ty { $method_enum:expr })* } ) => {
+        $(
+            $vis $fn $method_name $s -> $rtn {
+                let input = InvokeSNodeInput {
+                    snode_ref: $snode_ref,
+                    function: "main".to_string(),
+                    args: args![$method_enum],
+                };
+                let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+                scrypto_decode(&output.rtn).unwrap()
+            }
+        )+
+    };
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct InvokeSNodeInput {
     pub snode_ref: SNodeRef,

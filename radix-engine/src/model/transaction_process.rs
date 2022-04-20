@@ -1,6 +1,6 @@
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
-use scrypto::prelude::ScryptoActor;
+use scrypto::prelude::{ProofMethod, ScryptoActor};
 use scrypto::resource::AuthZoneMethod;
 use scrypto::rust::collections::{HashMap};
 use scrypto::rust::string::ToString;
@@ -275,8 +275,10 @@ impl TransactionProcess {
                                 .cloned()
                                 .map(|real_id| {
                                     system_api.invoke_snode(SNodeRef::ProofRef(real_id),
-                                                            "clone".to_string(),
-                                                            vec![]
+                                                            "main".to_string(),
+                                                            vec![
+                                                                ScryptoValue::from_value(&ProofMethod::Clone())
+                                                            ]
                                     ).map(|v| {
                                         let cloned_proof_id = v.proof_ids.iter().next().unwrap().0;
                                         self.proof_id_mapping.insert(new_id, *cloned_proof_id);

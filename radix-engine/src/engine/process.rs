@@ -361,7 +361,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     > {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(self, "Run started: function = {:?}", function);
+        re_info!(self, "Run started: snode_ref = {:?} function = {:?}", snode_ref, function);
 
         // Execution
         let output = match snode {
@@ -472,9 +472,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     _ => Err(RuntimeError::IllegalSystemCall),
                 }
             },
-            SNodeState::ProofRef(_, proof) => proof
-                .main(function.as_str(), args, self)
-                .map_err(RuntimeError::ProofError),
+            SNodeState::ProofRef(_, proof) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                proof
+                    .main(arg, self)
+                    .map_err(RuntimeError::ProofError)
+            },
             SNodeState::Proof(proof) => {
                 proof.main_consume(function.as_str())
                     .map_err(RuntimeError::ProofError)

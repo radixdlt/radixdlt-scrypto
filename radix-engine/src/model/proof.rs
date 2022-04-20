@@ -1,11 +1,13 @@
+use sbor::DecodeError;
+use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
+use scrypto::prelude::ProofMethod;
 use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
-use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::string::ToString;
 use scrypto::values::ScryptoValue;
 use crate::engine::SystemApi;
 
@@ -40,7 +42,7 @@ pub enum ProofError {
     /// Can't apply a fungible operation on non-fungible proofs.
     FungibleOperationNotAllowed,
     CouldNotCreateProof,
-    MethodNotFound(String),
+    InvalidRequestData(DecodeError),
 }
 
 impl Proof {
@@ -326,33 +328,32 @@ impl Proof {
 
     pub fn main<S: SystemApi>(
         &mut self,
-        function: &str,
-        _: Vec<ScryptoValue>,
+        arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
-        match function {
-            "get_total_amount" => Ok(ScryptoValue::from_value(&self.total_amount())),
-            "get_non_fungible_ids" => {
+        let method: ProofMethod = scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+
+        match method {
+            ProofMethod::Amount() => Ok(ScryptoValue::from_value(&self.total_amount())),
+            ProofMethod::NonFungibleIds() => {
                 let ids = self.total_ids()?;
                 Ok(ScryptoValue::from_value(&ids))
-            },
-            "get_resource_address" => Ok(ScryptoValue::from_value(&self.resource_address())),
-            "clone" => {
+            }
+            ProofMethod::ResourceAddress() => Ok(ScryptoValue::from_value(&self.resource_address())),
+            ProofMethod::Clone() => {
                 let cloned_proof = self.clone();
                 let proof_id = system_api.create_proof(cloned_proof).map_err(|_| ProofError::CouldNotCreateProof)?;
                 Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
             },
-            _ => Err(ProofError::MethodNotFound(function.to_string())),
         }
     }
 
     pub fn main_consume(self, function: &str) -> Result<ScryptoValue, ProofError> {
         match function {
-            "drop" => {
+            _ => {
                 self.drop();
                 Ok(ScryptoValue::from_value(&()))
             },
-            _ => Err(ProofError::MethodNotFound(function.to_string())),
         }
     }
 }
