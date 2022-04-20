@@ -6,7 +6,6 @@ mod method_authorization;
 mod non_fungible;
 mod package;
 mod proof;
-mod receipt;
 mod resource;
 mod resource_manager;
 mod transaction;
@@ -25,14 +24,14 @@ pub use method_authorization::{
 pub use non_fungible::NonFungible;
 pub use package::{Package, PackageError};
 pub use proof::*;
-pub use receipt::Receipt;
+pub use crate::engine::receipt::Receipt;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
-pub use transaction_process::{TransactionProcess};
+pub use transaction_process::TransactionProcess;
 pub use transaction::{
     Instruction, SignedTransaction, Transaction,
 };
-pub use validated_transaction::{ValidatedTransaction, ValidatedInstruction};
+pub use validated_transaction::{ValidatedInstruction, ValidatedTransaction};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
 
