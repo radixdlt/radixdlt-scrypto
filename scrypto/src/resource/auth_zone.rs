@@ -12,9 +12,9 @@ use crate::rust::string::ToString;
 ///
 /// 1. Call methods on another component;
 /// 2. Access resource system.
-pub struct AuthZone {}
+pub struct ComponentAuthZone {}
 
-impl AuthZone {
+impl ComponentAuthZone {
     /// Pushes a proof to the auth zone.
     pub fn push(proof: Proof) {
         let input = InvokeSNodeInput {
