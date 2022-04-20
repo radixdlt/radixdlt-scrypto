@@ -99,6 +99,8 @@ pub enum SNodeState {
     ResourceRef(ResourceAddress, ResourceManager),
     BucketRef(BucketId, Bucket),
     Bucket(Bucket),
+    ProofRef(ProofId, Proof),
+    Proof(Proof),
     VaultRef(VaultId),
 }
 
@@ -817,7 +819,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::BucketRef(bucket_id, bucket) => bucket
                 .main(*bucket_id, function.as_str(), args, self)
                 .map_err(RuntimeError::BucketError),
-
+            SNodeState::ProofRef(_, proof) => proof
+                .main(function.as_str(), args, self)
+                .map_err(RuntimeError::ProofError),
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
@@ -950,6 +954,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     vec![method_auth.clone()],
                 ))
             }
+            SNodeRef::ProofRef(proof_id) => {
+                let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                Ok((SNodeState::ProofRef(proof_id.clone(), proof), vec![]))
+            }
+            SNodeRef::Proof(proof_id) => {
+                let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                Ok((SNodeState::Proof(proof), vec![]))
+            }
             SNodeRef::VaultRef(vault_id) => {
                 let resource_address = self.get_local_vault(&vault_id)?.resource_address();
                 let method_auth = self
@@ -1017,6 +1029,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Ok(ScryptoValue::from_value(&()))
                 }
             }
+            SNodeState::Proof(proof) => {
+                proof.main_consume(function.as_str())
+                    .map_err(RuntimeError::ProofError)
+            },
             SNodeState::Bucket(bucket) => match function.as_str() {
                 "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
                 _ => Err(RuntimeError::IllegalSystemCall),
@@ -1075,6 +1091,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     }
                     SNodeState::BucketRef(bucket_id, bucket) => {
                         self.buckets.insert(bucket_id, bucket);
+                    }
+                    SNodeState::ProofRef(proof_id, proof) => {
+                        self.proofs.insert(proof_id, proof);
                     }
                     _ => {}
                 }
@@ -1784,70 +1803,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_drop_proof(
-        &mut self,
-        input: DropProofInput,
-    ) -> Result<DropProofOutput, RuntimeError> {
-        self.drop_proof(input.proof_id)?;
-
-        Ok(DropProofOutput {})
-    }
-
-    fn handle_get_proof_amount(
-        &mut self,
-        input: GetProofAmountInput,
-    ) -> Result<GetProofAmountOutput, RuntimeError> {
-        let proof = self
-            .proofs
-            .get(&input.proof_id)
-            .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
-
-        Ok(GetProofAmountOutput {
-            amount: proof.total_amount(),
-        })
-    }
-
-    fn handle_get_proof_resource_address(
-        &mut self,
-        input: GetProofResourceAddressInput,
-    ) -> Result<GetProofResourceAddressOutput, RuntimeError> {
-        let proof = self
-            .proofs
-            .get(&input.proof_id)
-            .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
-
-        Ok(GetProofResourceAddressOutput {
-            resource_address: proof.resource_address(),
-        })
-    }
-
-    fn handle_get_non_fungible_ids_in_proof(
-        &mut self,
-        input: GetNonFungibleIdsInProofInput,
-    ) -> Result<GetNonFungibleIdsInProofOutput, RuntimeError> {
-        let proof = self
-            .proofs
-            .get(&input.proof_id)
-            .ok_or(RuntimeError::ProofNotFound(input.proof_id))?;
-
-        Ok(GetNonFungibleIdsInProofOutput {
-            non_fungible_ids: proof
-                .total_ids()
-                .map_err(RuntimeError::ProofError)?
-                .into_iter()
-                .collect(),
-        })
-    }
-
-    fn handle_clone_proof(
-        &mut self,
-        input: CloneProofInput,
-    ) -> Result<CloneProofOutput, RuntimeError> {
-        Ok(CloneProofOutput {
-            proof_id: self.clone_proof(input.proof_id)?,
-        })
-    }
-
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
@@ -2020,16 +1975,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_VAULT_PROOF_BY_IDS => {
                         self.handle(args, Self::handle_create_vault_proof_by_ids)
                     }
-
-                    DROP_PROOF => self.handle(args, Self::handle_drop_proof),
-                    GET_PROOF_AMOUNT => self.handle(args, Self::handle_get_proof_amount),
-                    GET_PROOF_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_proof_resource_address)
-                    }
-                    GET_NON_FUNGIBLE_IDS_IN_PROOF => {
-                        self.handle(args, Self::handle_get_non_fungible_ids_in_proof)
-                    }
-                    CLONE_PROOF => self.handle(args, Self::handle_clone_proof),
 
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 

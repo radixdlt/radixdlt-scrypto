@@ -44,16 +44,6 @@ pub const CREATE_VAULT_PROOF: u32 = 0x63;
 pub const CREATE_VAULT_PROOF_BY_AMOUNT: u32 = 0x64;
 /// Create a vault proof by ids
 pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
-/// Clone proof
-pub const CLONE_PROOF: u32 = 0x69;
-/// Drop a proof
-pub const DROP_PROOF: u32 = 0x6A;
-/// Get the resource amount
-pub const GET_PROOF_AMOUNT: u32 = 0x6B;
-/// Get the resource address
-pub const GET_PROOF_RESOURCE_ADDRESS: u32 = 0x6C;
-/// Get the non-fungible ids
-pub const GET_NON_FUNGIBLE_IDS_IN_PROOF: u32 = 0x6D;
 
 pub const INVOKE_SNODE: u32 = 0x70;
 
@@ -235,54 +225,6 @@ pub struct CreateVaultProofByIdsInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateVaultProofByIdsOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct DropProofInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct DropProofOutput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofAmountInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofAmountOutput {
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofResourceAddressInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetProofResourceAddressOutput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInProofInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInProofOutput {
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CloneProofInput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CloneProofOutput {
     pub proof_id: ProofId,
 }
 
