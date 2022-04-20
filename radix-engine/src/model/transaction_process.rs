@@ -11,6 +11,7 @@ use crate::engine::{IdAllocator, IdSpace, SystemApi};
 use crate::errors::RuntimeError::{ProofNotFound};
 use crate::errors::RuntimeError;
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
+use crate::model::worktop::WorktopMethod;
 
 pub struct TransactionProcess {
     transaction: ValidatedTransaction,
@@ -58,9 +59,9 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
-                                "take_all".to_string(),
+                                "main".to_string(),
                                 vec![
-                                    ScryptoValue::from_value(resource_address),
+                                    ScryptoValue::from_value(&WorktopMethod::TakeAll(*resource_address)),
                                 ]
                             ).map(|rtn| {
                                 let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
@@ -81,8 +82,7 @@ impl TransactionProcess {
                                 SNodeRef::WorktopRef,
                                 "take_amount".to_string(),
                                 vec![
-                                    ScryptoValue::from_value(amount),
-                                    ScryptoValue::from_value(resource_address),
+                                    ScryptoValue::from_value(&WorktopMethod::TakeAmount(*amount, *resource_address)),
                                 ]
                             ).map(|rtn| {
                                 let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
@@ -102,8 +102,7 @@ impl TransactionProcess {
                                 SNodeRef::WorktopRef,
                                 "take_non_fungibles".to_string(),
                                 vec![
-                                    ScryptoValue::from_value(ids),
-                                    ScryptoValue::from_value(resource_address),
+                                    ScryptoValue::from_value(&WorktopMethod::TakeNonFungibles(ids.clone(), *resource_address)),
                                 ]
                             ).map(|rtn| {
                                 let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
@@ -118,7 +117,7 @@ impl TransactionProcess {
                                 SNodeRef::WorktopRef,
                                 "put".to_string(),
                                 vec![
-                                    ScryptoValue::from_value(&scrypto::resource::Bucket(real_id)),
+                                    ScryptoValue::from_value(&WorktopMethod::Put(scrypto::resource::Bucket(real_id))),
                                 ]
                             )
                         })
@@ -129,7 +128,7 @@ impl TransactionProcess {
                         SNodeRef::WorktopRef,
                         "assert_contains".to_string(),
                         vec![
-                            ScryptoValue::from_value(resource_address),
+                            ScryptoValue::from_value(&WorktopMethod::AssertContains(*resource_address)),
                         ]
                     )
                 }
@@ -141,8 +140,7 @@ impl TransactionProcess {
                         SNodeRef::WorktopRef,
                         "assert_contains_amount".to_string(),
                         vec![
-                            ScryptoValue::from_value(amount),
-                            ScryptoValue::from_value(resource_address),
+                            ScryptoValue::from_value(&WorktopMethod::AssertContainsAmount(*amount, *resource_address)),
                         ]
                     )
                 },
@@ -152,10 +150,9 @@ impl TransactionProcess {
                 } => {
                     system_api.invoke_snode(
                         SNodeRef::WorktopRef,
-                        "assert_contains_amount".to_string(),
+                        "assert_contains_ids".to_string(),
                         vec![
-                            ScryptoValue::from_value(ids),
-                            ScryptoValue::from_value(resource_address),
+                            ScryptoValue::from_value(&WorktopMethod::AssertContainsNonFungibles(ids.clone(), *resource_address)),
                         ]
                     )
                 },
@@ -326,7 +323,7 @@ impl TransactionProcess {
                                 system_api.invoke_snode(
                                     SNodeRef::WorktopRef,
                                     "put".to_string(),
-                                    vec![ScryptoValue::from_value(&scrypto::resource::Bucket(*bucket_id))]
+                                    vec![ScryptoValue::from_value(&WorktopMethod::Put(scrypto::resource::Bucket(*bucket_id)))]
                                 ).unwrap(); // TODO: Remove unwrap
                             }
                             Ok(result)
@@ -359,7 +356,7 @@ impl TransactionProcess {
                                 system_api.invoke_snode(
                                     SNodeRef::WorktopRef,
                                     "put".to_string(),
-                                    vec![ScryptoValue::from_value(&scrypto::resource::Bucket(*bucket_id))]
+                                    vec![ScryptoValue::from_value(&WorktopMethod::Put(scrypto::resource::Bucket(*bucket_id)))]
                                 ).unwrap(); // TODO: Remove unwrap
                             }
                             Ok(result)
@@ -380,7 +377,11 @@ impl TransactionProcess {
                                     vec![ScryptoValue::from_value(&ConsumingProofMethod::Drop())]
                                 ).unwrap();
                             }
-                            system_api.invoke_snode(SNodeRef::WorktopRef, "drain".to_string(), vec![])
+                            system_api.invoke_snode(
+                                SNodeRef::WorktopRef,
+                                "drain".to_string(),
+                                vec![ScryptoValue::from_value(&WorktopMethod::Drain())]
+                            )
                         })
                         .and_then(|result| {
                             let mut buckets = Vec::new();

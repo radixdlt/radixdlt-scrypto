@@ -382,8 +382,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .map_err(RuntimeError::AuthZoneError)
             }
             SNodeState::Worktop(worktop) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
                 worktop
-                    .main(function.as_str(), args, self)
+                    .main(arg, self)
                     .map_err(RuntimeError::WorktopError)
             }
             SNodeState::Scrypto(actor, component_state) => {
