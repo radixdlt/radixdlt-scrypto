@@ -12,12 +12,23 @@ use crate::rust::fmt;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
-use crate::{args, borrow_resource_manager};
+use crate::{args, borrow_resource_manager, invocations};
+
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum BucketMethod {
+    Take(Decimal),
+    TakeNonFungibles(BTreeSet<NonFungibleId>),
+    Put(scrypto::resource::Bucket),
+    GetNonFungibleIds(),
+    GetAmount(),
+    GetResourceAddress(),
+    CreateProof(),
+}
 
 /// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Bucket(pub BucketId);
-
 
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
@@ -31,27 +42,35 @@ impl Bucket {
         scrypto_decode(&output.rtn).unwrap()
     }
 
-    /// Puts resources from another bucket into this bucket.
-    pub fn put(&mut self, other: Self) {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::BucketRef(self.0),
-            function: "put_into_bucket".to_string(),
-            args: args![other],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+    invocations! {
+        SNodeRef::BucketRef(self.0) => {
+            pub fn put(&mut self, other: Self) -> () {
+                BucketMethod::Put(other)
+            }
+            fn take_internal(&mut self, amount: Decimal) -> Self {
+                BucketMethod::Take(amount)
+            }
+            pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
+                BucketMethod::TakeNonFungibles(non_fungible_ids.clone())
+            }
+            pub fn create_proof(&self) -> scrypto::resource::Proof {
+                BucketMethod::CreateProof()
+            }
+            pub fn amount(&self) -> Decimal {
+                BucketMethod::GetAmount()
+            }
+            pub fn resource_address(&self) -> ResourceAddress {
+                BucketMethod::GetResourceAddress()
+            }
+            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                BucketMethod::GetNonFungibleIds()
+            }
+        }
     }
 
     /// Takes some amount of resources from this bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Self {
-        let amount: Decimal = amount.into();
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::BucketRef(self.0),
-            function: "take_from_bucket".to_string(),
-            args: args![amount],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+        self.take_internal(amount.into())
     }
 
     /// Takes a specific non-fungible from this bucket.
@@ -62,34 +81,9 @@ impl Bucket {
         self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
     }
 
-    /// Takes non-fungibles from this bucket.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
-    pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::BucketRef(self.0),
-            function: "take_non_fungibles_from_bucket".to_string(),
-            args: args![non_fungible_ids.clone()],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
     /// Burns resource within this bucket.
     pub fn burn(self) {
         borrow_resource_manager!(self.resource_address()).burn(self);
-    }
-
-    /// Creates an ownership proof of this bucket.
-    pub fn create_proof(&self) -> Proof {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::BucketRef(self.0),
-            function: "create_bucket_proof".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Uses resources in this bucket as authorization for an operation.
@@ -100,45 +94,9 @@ impl Bucket {
         output
     }
 
-    /// Returns the amount of resources in this bucket.
-    pub fn amount(&self) -> Decimal {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::BucketRef(self.0),
-            function: "get_bucket_amount".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    /// Returns the resource address.
-    pub fn resource_address(&self) -> ResourceAddress {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::BucketRef(self.0),
-            function: "get_bucket_resource_address".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
     /// Checks if this bucket is empty.
     pub fn is_empty(&self) -> bool {
         self.amount() == 0.into()
-    }
-
-    /// Returns all the non-fungible ids contained.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible bucket.
-    pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::BucketRef(self.0),
-            function: "get_non_fungible_ids_in_bucket".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns all the non-fungible units contained.

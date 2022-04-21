@@ -468,9 +468,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 Ok(return_value)
             }
-            SNodeState::BucketRef(bucket_id, bucket) => bucket
-                .main(bucket_id, function.as_str(), args, self)
-                .map_err(RuntimeError::BucketError),
+            SNodeState::BucketRef(bucket_id, bucket) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                bucket
+                    .main(bucket_id, arg, self)
+                    .map_err(RuntimeError::BucketError)
+            },
             SNodeState::Bucket(bucket) => {
                 match function.as_str() {
                     "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
@@ -635,16 +642,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .buckets
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
-                let resource_address = bucket.resource_address();
-                let method_auth = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .unwrap()
-                    .get_auth(&function, &args);
-                Ok((
-                    Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
-                    vec![method_auth.clone()],
-                ))
+                Ok((Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;

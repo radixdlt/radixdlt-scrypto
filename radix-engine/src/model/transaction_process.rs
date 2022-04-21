@@ -1,7 +1,7 @@
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
 use scrypto::prelude::{ConsumingProofMethod, ProofMethod, ScryptoActor};
-use scrypto::resource::AuthZoneMethod;
+use scrypto::resource::{AuthZoneMethod, BucketMethod};
 use scrypto::rust::collections::{HashMap};
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
@@ -253,8 +253,8 @@ impl TransactionProcess {
                         .and_then(|(new_id, real_bucket_id)| {
                             system_api.invoke_snode(
                                 SNodeRef::BucketRef(real_bucket_id),
-                                "create_bucket_proof".to_string(),
-                                vec![],
+                                "main".to_string(),
+                                vec![ScryptoValue::from_value(&BucketMethod::CreateProof())],
                             ).map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                 self.proof_id_mapping.insert(new_id, proof_id);

@@ -129,14 +129,9 @@ impl ResourceManager {
 
         for pub_method in [
             "create_bucket",
-            "create_bucket_proof",
             "get_metadata",
             "get_resource_type",
             "get_total_supply",
-            "take_from_bucket",
-            "put_into_bucket",
-            "get_bucket_amount",
-            "get_bucket_resource_address",
             "create_vault",
             "get_vault_amount",
             "get_vault_resource_address",
@@ -152,10 +147,8 @@ impl ResourceManager {
                 Some(UpdateNonFungibleData),
             );
             for pub_method in [
-                "take_non_fungibles_from_bucket",
                 "non_fungible_exists",
                 "get_non_fungible",
-                "get_non_fungible_ids_in_bucket",
                 "get_non_fungible_ids_in_vault",
                 "create_vault_proof_by_ids",
             ] {
