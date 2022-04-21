@@ -103,6 +103,7 @@ pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
     method_table: HashMap<String, Option<ResourceMethod>>,
+    vault_method_table: HashMap<String, Option<ResourceMethod>>,
     authorization: HashMap<ResourceMethod, MethodAccessRule>,
     total_supply: Decimal,
 }
@@ -113,26 +114,34 @@ impl ResourceManager {
         metadata: HashMap<String, String>,
         mut auth: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
+        let mut vault_method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
+        vault_method_table.insert("take_from_vault".to_string(), Some(Withdraw));
+        vault_method_table.insert("put_into_vault".to_string(), Some(Deposit));
+        if let ResourceType::NonFungible = resource_type {
+            vault_method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
+        }
+        for pub_method in [
+            "get_vault_amount",
+            "get_vault_resource_address",
+            "get_non_fungible_ids_in_vault",
+            "create_vault_proof",
+            "create_vault_proof_by_amount",
+            "create_vault_proof_by_ids",
+        ] {
+            vault_method_table.insert(pub_method.to_string(), None);
+        }
+
+
         let mut method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
         method_table.insert("mint".to_string(), Some(Mint));
         method_table.insert("burn".to_string(), Some(Burn));
-        method_table.insert("take_from_vault".to_string(), Some(Withdraw));
-        method_table.insert("put_into_vault".to_string(), Some(Deposit));
         method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
-        if let ResourceType::NonFungible = resource_type {
-            method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
-        }
-
         for pub_method in [
             "create_bucket",
             "get_metadata",
             "get_resource_type",
             "get_total_supply",
             "create_vault",
-            "get_vault_amount",
-            "get_vault_resource_address",
-            "create_vault_proof",
-            "create_vault_proof_by_amount",
         ] {
             method_table.insert(pub_method.to_string(), None);
         }
@@ -145,8 +154,6 @@ impl ResourceManager {
             for pub_method in [
                 "non_fungible_exists",
                 "get_non_fungible",
-                "get_non_fungible_ids_in_vault",
-                "create_vault_proof_by_ids",
             ] {
                 method_table.insert(pub_method.to_string(), None);
             }
@@ -169,11 +176,20 @@ impl ResourceManager {
             resource_type,
             metadata,
             method_table,
+            vault_method_table,
             authorization,
             total_supply: 0.into(),
         };
 
         Ok(resource_manager)
+    }
+
+    pub fn get_vault_auth(&self, method_name: &str) -> &MethodAuthorization {
+        match self.vault_method_table.get(method_name) {
+            None => &MethodAuthorization::Unsupported,
+            Some(None) => &MethodAuthorization::AllowAll,
+            Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+        }
     }
 
     pub fn get_consuming_bucket_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {

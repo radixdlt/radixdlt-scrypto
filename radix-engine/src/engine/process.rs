@@ -677,7 +677,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
-                    .get_auth(&function, &args);
+                    .get_vault_auth(&function);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(vault_id.clone(), component, vault)),
                     vec![method_auth.clone()],
