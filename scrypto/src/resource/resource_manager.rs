@@ -59,8 +59,8 @@ impl ResourceManager {
     pub fn set_mintable(&self, mint_auth: MethodAuth) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Mint, "update", mint_auth],
+            function: "update_auth".to_string(),
+            args: args![Mint, mint_auth],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -69,8 +69,8 @@ impl ResourceManager {
     pub fn lock_mintable(&self) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Mint, "lock"],
+            function: "lock_auth".to_string(),
+            args: args![Mint],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -98,8 +98,8 @@ impl ResourceManager {
     pub fn set_burnable(&self, burn_auth: MethodAuth) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Burn, "update", burn_auth],
+            function: "update_auth".to_string(),
+            args: args![Burn, burn_auth],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -108,8 +108,8 @@ impl ResourceManager {
     pub fn lock_burnable(&self) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Burn, "lock"],
+            function: "lock_auth".to_string(),
+            args: args![Burn],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -129,8 +129,8 @@ impl ResourceManager {
     pub fn set_withdrawable(&self, withdraw_auth: MethodAuth) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Withdraw, "update", withdraw_auth],
+            function: "update_auth".to_string(),
+            args: args![Withdraw, withdraw_auth],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -139,8 +139,8 @@ impl ResourceManager {
     pub fn lock_withdrawable(&self) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Withdraw, "lock"],
+            function: "lock_auth".to_string(),
+            args: args![Withdraw],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -149,8 +149,8 @@ impl ResourceManager {
     pub fn set_depositable(&self, deposit_auth: MethodAuth) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Deposit, "update", deposit_auth],
+            function: "update_auth".to_string(),
+            args: args![Deposit, deposit_auth],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -159,8 +159,8 @@ impl ResourceManager {
     pub fn lock_depositable(&self) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Deposit, "lock"],
+            function: "lock_auth".to_string(),
+            args: args![Deposit],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -169,8 +169,8 @@ impl ResourceManager {
     pub fn set_updateable_metadata(&self, update_metadata_auth: MethodAuth) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![UpdateMetadata, "update", update_metadata_auth],
+            function: "update_auth".to_string(),
+            args: args![UpdateMetadata, update_metadata_auth],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -179,8 +179,8 @@ impl ResourceManager {
     pub fn lock_updateable_metadata(&self) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![UpdateMetadata, "lock"],
+            function: "lock_auth".to_string(),
+            args: args![UpdateMetadata],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -189,8 +189,8 @@ impl ResourceManager {
     pub fn set_updateable_non_fungible_data(&self, update_metadata_auth: MethodAuth) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![UpdateNonFungibleData, "update", update_metadata_auth],
+            function: "update_auth".to_string(),
+            args: args![UpdateNonFungibleData, update_metadata_auth],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -199,8 +199,8 @@ impl ResourceManager {
     pub fn lock_updateable_non_fungible_data(&self) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![UpdateNonFungibleData, "lock"],
+            function: "lock_auth".to_string(),
+            args: args![UpdateNonFungibleData],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

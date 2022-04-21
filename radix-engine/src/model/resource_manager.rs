@@ -63,12 +63,8 @@ impl MethodEntry {
         &self.auth
     }
 
-    pub fn get_update_auth(&self, args: &[ScryptoValue]) -> &MethodAuthorization {
-        let method: String = match scrypto_decode(&args[0].raw) {
-            Ok(m) => m,
-            _ => return &MethodAuthorization::Unsupported,
-        };
-        match method.as_str() {
+    pub fn get_update_auth(&self, method: &str) -> &MethodAuthorization {
+        match method {
             "lock" | "update" => &self.update_auth,
             _ => &MethodAuthorization::Unsupported,
         }
@@ -195,24 +191,39 @@ impl ResourceManager {
     }
 
     pub fn get_auth(&self, method_name: &str, args: &[ScryptoValue]) -> &MethodAuthorization {
-        if method_name.eq("method_auth") {
-            let method: ResourceMethod = match scrypto_decode(&args[0].raw) {
-                Ok(r) => r,
-                Err(_) => return &MethodAuthorization::Unsupported,
-            };
+        match method_name {
+            "update_auth" => {
+                let method: ResourceMethod = match scrypto_decode(&args[0].raw) {
+                    Ok(r) => r,
+                    Err(_) => return &MethodAuthorization::Unsupported,
+                };
 
-            match self.authorization.get(&method) {
-                None => &MethodAuthorization::Unsupported,
-                Some(entry) => {
-                    let auth_args = args.split_at(1).1;
-                    entry.get_update_auth(auth_args)
+                match self.authorization.get(&method) {
+                    None => &MethodAuthorization::Unsupported,
+                    Some(entry) => {
+                        entry.get_update_auth("update")
+                    }
                 }
             }
-        } else {
-            match self.method_table.get(method_name) {
-                None => &MethodAuthorization::Unsupported,
-                Some(None) => &MethodAuthorization::AllowAll,
-                Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+            "lock_auth" => {
+                let method: ResourceMethod = match scrypto_decode(&args[0].raw) {
+                    Ok(r) => r,
+                    Err(_) => return &MethodAuthorization::Unsupported,
+                };
+
+                match self.authorization.get(&method) {
+                    None => &MethodAuthorization::Unsupported,
+                    Some(entry) => {
+                        entry.get_update_auth("lock")
+                    }
+                }
+            }
+            _ => {
+                match self.method_table.get(method_name) {
+                    None => &MethodAuthorization::Unsupported,
+                    Some(None) => &MethodAuthorization::AllowAll,
+                    Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+                }
             }
         }
     }
@@ -406,13 +417,17 @@ impl ResourceManager {
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
-            "method_auth" => {
+            "update_auth" => {
                 let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let method_entry = self.authorization.get_mut(&method).unwrap();
-                let method_entry_method: String = scrypto_decode(&args.remove(0).raw)
+                method_entry.main("update", args)
+            }
+            "lock_auth" => {
+                let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                method_entry.main(&method_entry_method, args)
+                let method_entry = self.authorization.get_mut(&method).unwrap();
+                method_entry.main("lock", args)
             }
             "create_vault" => {
                 let container =
