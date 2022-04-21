@@ -42,15 +42,20 @@ pub enum ResourceManagerError {
     CouldNotCreateVault,
 }
 
+enum MethodAccessRuleMethod {
+    Lock(),
+    Update(MethodAuth),
+}
+
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-struct MethodEntry {
+struct MethodAccessRule {
     auth: MethodAuthorization,
     update_auth: MethodAuthorization,
 }
 
-impl MethodEntry {
+impl MethodAccessRule {
     pub fn new(entry: (MethodAuth, Mutability)) -> Self {
-        MethodEntry {
+        MethodAccessRule {
             auth: convert_auth!(entry.0),
             update_auth: match entry.1 {
                 Mutability::LOCKED => MethodAuthorization::DenyAll,
@@ -63,26 +68,21 @@ impl MethodEntry {
         &self.auth
     }
 
-    pub fn get_update_auth(&self, method: &str) -> &MethodAuthorization {
+    pub fn get_update_auth(&self, method: MethodAccessRuleMethod) -> &MethodAuthorization {
         match method {
-            "lock" | "update" => &self.update_auth,
-            _ => &MethodAuthorization::Unsupported,
+            MethodAccessRuleMethod::Lock() | MethodAccessRuleMethod::Update(_) => &self.update_auth
         }
     }
 
     pub fn main(
         &mut self,
-        method: &str,
-        args: Vec<ScryptoValue>,
+        method: MethodAccessRuleMethod
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match method {
-            "lock" => self.lock(),
-            "update" => {
-                let auth: MethodAuth = scrypto_decode(&args[0].raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                self.update(auth);
+            MethodAccessRuleMethod::Lock() => self.lock(),
+            MethodAccessRuleMethod::Update(method_auth) => {
+                self.update(method_auth);
             }
-            _ => return Err(ResourceManagerError::MethodNotFound(method.to_string())),
         }
 
         Ok(ScryptoValue::from_value(&()))
@@ -103,7 +103,7 @@ pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
     method_table: HashMap<String, Option<ResourceMethod>>,
-    authorization: HashMap<ResourceMethod, MethodEntry>,
+    authorization: HashMap<ResourceMethod, MethodAccessRule>,
     total_supply: Decimal,
 }
 
@@ -152,7 +152,7 @@ impl ResourceManager {
             }
         }
 
-        let mut authorization: HashMap<ResourceMethod, MethodEntry> = HashMap::new();
+        let mut authorization: HashMap<ResourceMethod, MethodAccessRule> = HashMap::new();
         for (auth_entry_key, default) in [
             (Mint, (DenyAll, LOCKED)),
             (Burn, (DenyAll, LOCKED)),
@@ -162,7 +162,7 @@ impl ResourceManager {
             (UpdateNonFungibleData, (DenyAll, LOCKED)),
         ] {
             let entry = auth.remove(&auth_entry_key).unwrap_or(default);
-            authorization.insert(auth_entry_key, MethodEntry::new(entry));
+            authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
         }
 
         let resource_manager = Self {
@@ -197,11 +197,15 @@ impl ResourceManager {
                     Ok(r) => r,
                     Err(_) => return &MethodAuthorization::Unsupported,
                 };
+                let method_auth: MethodAuth = match scrypto_decode(&args[1].raw) {
+                    Ok(r) => r,
+                    Err(_) => return &MethodAuthorization::Unsupported,
+                };
 
                 match self.authorization.get(&method) {
                     None => &MethodAuthorization::Unsupported,
                     Some(entry) => {
-                        entry.get_update_auth("update")
+                        entry.get_update_auth(MethodAccessRuleMethod::Update(method_auth))
                     }
                 }
             }
@@ -214,7 +218,7 @@ impl ResourceManager {
                 match self.authorization.get(&method) {
                     None => &MethodAuthorization::Unsupported,
                     Some(entry) => {
-                        entry.get_update_auth("lock")
+                        entry.get_update_auth(MethodAccessRuleMethod::Lock())
                     }
                 }
             }
@@ -418,16 +422,18 @@ impl ResourceManager {
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
             "update_auth" => {
-                let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
+                let method: ResourceMethod = scrypto_decode(&args[0].raw)
+                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let method_auth: MethodAuth = scrypto_decode(&args[1].raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let method_entry = self.authorization.get_mut(&method).unwrap();
-                method_entry.main("update", args)
+                method_entry.main(MethodAccessRuleMethod::Update(method_auth))
             }
             "lock_auth" => {
                 let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let method_entry = self.authorization.get_mut(&method).unwrap();
-                method_entry.main("lock", args)
+                method_entry.main(MethodAccessRuleMethod::Lock())
             }
             "create_vault" => {
                 let container =
