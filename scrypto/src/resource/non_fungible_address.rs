@@ -2,8 +2,10 @@ use sbor::*;
 
 use crate::misc::*;
 use crate::resource::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
