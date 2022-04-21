@@ -1,8 +1,8 @@
+use sbor::*;
+
 use crate::args;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
-use sbor::*;
-
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
