@@ -92,12 +92,7 @@ impl ResourceManager {
 
     /// Burns a bucket of resources.
     pub fn burn(&self, bucket: Bucket) {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Bucket(bucket.0),
-            function: "burn".to_string(),
-            args: args![],
-        };
-        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        bucket.burn()
     }
 
     pub fn set_burnable(&self, burn_auth: MethodAuth) -> () {

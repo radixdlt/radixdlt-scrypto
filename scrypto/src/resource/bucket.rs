@@ -12,8 +12,12 @@ use crate::rust::fmt;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
-use crate::{args, borrow_resource_manager, invocations};
+use crate::{args, invocations};
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum ConsumingBucketMethod {
+    Burn(),
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum BucketMethod {
@@ -40,6 +44,15 @@ impl Bucket {
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
+    }
+
+
+    invocations! {
+        SNodeRef::Bucket(self.0) => {
+           pub fn burn(self) -> () {
+                ConsumingBucketMethod::Burn()
+            }
+        }
     }
 
     invocations! {
@@ -79,11 +92,6 @@ impl Bucket {
     /// Panics if this is not a non-fungible bucket or the specified non-fungible resource is not found.
     pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
         self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
-    }
-
-    /// Burns resource within this bucket.
-    pub fn burn(self) {
-        borrow_resource_manager!(self.resource_address()).burn(self);
     }
 
     /// Uses resources in this bucket as authorization for an operation.

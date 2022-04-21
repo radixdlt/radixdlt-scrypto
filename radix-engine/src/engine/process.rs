@@ -479,10 +479,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .map_err(RuntimeError::BucketError)
             },
             SNodeState::Bucket(bucket) => {
-                match function.as_str() {
-                    "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
-                    _ => Err(RuntimeError::IllegalSystemCall),
-                }
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                bucket.consuming_main(arg, self).map_err(RuntimeError::BucketError)
             },
             SNodeState::ProofRef(_, proof) => {
                 let arg = if args.len() > 1 {
@@ -625,6 +627,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 ))
             }
             SNodeRef::Bucket(bucket_id) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+
                 let bucket = self
                     .buckets
                     .remove(&bucket_id)
@@ -634,7 +642,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
-                    .get_auth(&function, &args);
+                    .get_consuming_bucket_auth(arg);
                 Ok((Consumed(Some(ConsumedSNodeState::Bucket(bucket))), vec![method_auth.clone()]))
             }
             SNodeRef::BucketRef(bucket_id) => {

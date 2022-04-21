@@ -180,6 +180,20 @@ impl ResourceManager {
         Ok(resource_manager)
     }
 
+    pub fn get_consuming_bucket_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
+        let method = scrypto_decode(&arg.raw);
+        match method {
+            Err(_) => &MethodAuthorization::Unsupported,
+            Ok(ConsumingBucketMethod::Burn()) => {
+                match self.method_table.get("burn") {
+                    None => &MethodAuthorization::Unsupported,
+                    Some(None) => &MethodAuthorization::AllowAll,
+                    Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+                }
+            }
+        }
+    }
+
     pub fn get_auth(&self, method_name: &str, args: &[ScryptoValue]) -> &MethodAuthorization {
         if method_name.eq("method_auth") {
             let method: ResourceMethod = match scrypto_decode(&args[0].raw) {

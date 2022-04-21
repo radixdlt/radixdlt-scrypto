@@ -2,7 +2,7 @@ use crate::engine::SystemApi;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::resource::BucketMethod;
+use scrypto::resource::{BucketMethod, ConsumingBucketMethod};
 use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
@@ -213,21 +213,30 @@ impl Bucket {
         }
     }
 
-    pub fn drop<'s, S: SystemApi>(self, system_api: &mut S) -> Result<ScryptoValue, BucketError> {
-        // Notify resource manager, TODO: Should not need to notify manually
-        let resource_address = self.resource_address();
-        let mut resource_manager = system_api
-            .borrow_global_mut_resource_manager(resource_address)
-            .unwrap();
-        resource_manager.burn(self.total_amount());
-        if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
-            for id in self.total_ids().unwrap() {
-                let non_fungible_address = NonFungibleAddress::new(resource_address, id);
-                system_api.set_non_fungible(non_fungible_address, Option::None);
+    pub fn consuming_main<S: SystemApi>(
+        self,
+        arg: ScryptoValue,
+        system_api: &mut S,
+    ) -> Result<ScryptoValue, BucketError> {
+        let method: ConsumingBucketMethod = scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+        match method {
+            ConsumingBucketMethod::Burn() => {
+                // Notify resource manager, TODO: Should not need to notify manually
+                let resource_address = self.resource_address();
+                let mut resource_manager = system_api
+                    .borrow_global_mut_resource_manager(resource_address)
+                    .unwrap();
+                resource_manager.burn(self.total_amount());
+                if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
+                    for id in self.total_ids().unwrap() {
+                        let non_fungible_address = NonFungibleAddress::new(resource_address, id);
+                        system_api.set_non_fungible(non_fungible_address, Option::None);
+                    }
+                }
+                system_api.return_borrowed_global_resource_manager(resource_address, resource_manager);
+
+                Ok(ScryptoValue::from_value(&()))
             }
         }
-        system_api.return_borrowed_global_resource_manager(resource_address, resource_manager);
-
-        Ok(ScryptoValue::from_value(&()))
     }
 }
