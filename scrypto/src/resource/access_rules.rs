@@ -27,6 +27,10 @@ impl AccessRules {
             .unwrap_or(&self.default_auth)
     }
 
+    pub fn get_default(&self) -> &MethodAuth {
+        &self.default_auth
+    }
+
     pub fn method(mut self, method_name: &str, method_auth: MethodAuth) -> Self {
         self.method_auth
             .insert(method_name.to_string(), method_auth);
