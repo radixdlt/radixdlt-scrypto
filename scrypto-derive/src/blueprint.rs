@@ -413,7 +413,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     }
 
     let output = quote! {
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub struct #bp_ident {
             component_address: ::scrypto::component::ComponentAddress,
         }
@@ -554,7 +554,7 @@ mod tests {
                     let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
                     ::scrypto::buffer::scrypto_wrap(output_bytes)
                 }
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Test {
                     component_address: ::scrypto::component::ComponentAddress,
                 }
