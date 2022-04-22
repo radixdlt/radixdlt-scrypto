@@ -115,18 +115,18 @@ impl ResourceManager {
         mut auth: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
         let mut vault_method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
-        vault_method_table.insert("take_from_vault".to_string(), Some(Withdraw));
-        vault_method_table.insert("put_into_vault".to_string(), Some(Deposit));
+        vault_method_table.insert("take".to_string(), Some(Withdraw));
+        vault_method_table.insert("put".to_string(), Some(Deposit));
         if let ResourceType::NonFungible = resource_type {
-            vault_method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
+            vault_method_table.insert("take_non_fungibles".to_string(), Some(Withdraw));
         }
         for pub_method in [
-            "get_vault_amount",
-            "get_vault_resource_address",
-            "get_non_fungible_ids_in_vault",
-            "create_vault_proof",
-            "create_vault_proof_by_amount",
-            "create_vault_proof_by_ids",
+            "get_amount",
+            "get_resource_address",
+            "get_non_fungible_ids",
+            "create_proof",
+            "create_proof_by_amount",
+            "create_proof_by_ids",
         ] {
             vault_method_table.insert(pub_method.to_string(), None);
         }
@@ -184,8 +184,13 @@ impl ResourceManager {
         Ok(resource_manager)
     }
 
-    pub fn get_vault_auth(&self, method_name: &str) -> &MethodAuthorization {
-        match self.vault_method_table.get(method_name) {
+    pub fn get_vault_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
+        let method: VaultMethod = match scrypto_decode(&arg.raw) {
+            Ok(m) => m,
+            Err(_) => return &MethodAuthorization::Unsupported,
+        };
+
+        match self.vault_method_table.get(method.name()) {
             None => &MethodAuthorization::Unsupported,
             Some(None) => &MethodAuthorization::AllowAll,
             Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),

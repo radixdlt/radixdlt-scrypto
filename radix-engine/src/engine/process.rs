@@ -510,10 +510,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }?;
                 proof.main_consume(arg).map_err(RuntimeError::ProofError)
             }
-            SNodeState::VaultRef(vault_id, _, vault) =>
+            SNodeState::VaultRef(vault_id, _, vault) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
                 vault
-                    .main(vault_id, function.as_str(), args, self)
-                    .map_err(RuntimeError::VaultError),
+                    .main(vault_id, arg, self)
+                    .map_err(RuntimeError::VaultError)
+            }
         }?;
 
         self.process_return_data(snode_ref, &output)?;
@@ -683,12 +689,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     panic!("Should never get here");
                 };
 
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+
                 let resource_address = vault.resource_address();
                 let method_auth = self
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
-                    .get_vault_auth(&function);
+                    .get_vault_auth(arg);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(vault_id.clone(), component, vault)),
                     vec![method_auth.clone()],
