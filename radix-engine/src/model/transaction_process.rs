@@ -1,3 +1,4 @@
+use scrypto::component::PackageFunction;
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
 use scrypto::prelude::{ConsumingProofMethod, ProofMethod, ScryptoActor};
@@ -401,8 +402,8 @@ impl TransactionProcess {
                 ValidatedInstruction::PublishPackage { code } => {
                     system_api.invoke_snode(
                         SNodeRef::PackageStatic,
-                        "publish".to_string(),
-                        vec![ScryptoValue::from_value(code)],
+                        "main".to_string(),
+                        vec![ScryptoValue::from_value(&PackageFunction::Publish(code.to_vec()))],
                     )
                 },
             }?;

@@ -369,7 +369,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 transaction_process.main(self)
             }
             SNodeState::PackageStatic => {
-                Package::static_main(&function, args, self).map_err(RuntimeError::PackageError)
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                Package::static_main(arg, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => {
                 let arg = if args.len() > 1 {
