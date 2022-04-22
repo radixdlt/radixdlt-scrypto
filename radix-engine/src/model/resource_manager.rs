@@ -383,20 +383,13 @@ impl ResourceManager {
     }
 
     pub fn static_main<S: SystemApi>(
-        function: &str,
-        args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
+        let function: ResourceManagerFunction = scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+
         match function {
-            "create" => {
-                let resource_type = scrypto_decode(&args[0].raw)
-                    .map_err(ResourceManagerError::InvalidRequestData)?;
-                let metadata = scrypto_decode(&args[1].raw)
-                    .map_err(ResourceManagerError::InvalidRequestData)?;
-                let auth = scrypto_decode(&args[2].raw)
-                    .map_err(ResourceManagerError::InvalidRequestData)?;
-                let mint_params_maybe: Option<MintParams> = scrypto_decode(&args[3].raw)
-                    .map_err(ResourceManagerError::InvalidRequestData)?;
+            ResourceManagerFunction::Create(resource_type, metadata, auth, mint_params_maybe) => {
                 let resource_manager = ResourceManager::new(resource_type, metadata, auth)?;
                 let resource_address = system_api.create_resource(resource_manager);
 
@@ -421,7 +414,6 @@ impl ResourceManager {
 
                 Ok(ScryptoValue::from_value(&(resource_address, bucket_id)))
             }
-            _ => Err(ResourceManagerError::MethodNotFound(function.to_string())),
         }
     }
 

@@ -45,10 +45,11 @@ impl ResourceSystem {
         authorization: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
+
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceStatic,
-            function: "create".to_string(),
-            args: args![resource_type, metadata, authorization, mint_params],
+            function: "main".to_string(),
+            args: args![ResourceManagerFunction::Create(resource_type, metadata, authorization, mint_params)],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

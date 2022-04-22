@@ -463,7 +463,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeState::ResourceStatic => {
-                ResourceManager::static_main(function.as_str(), args, self)
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                ResourceManager::static_main(arg, self)
                     .map_err(RuntimeError::ResourceManagerError)
             }
             SNodeState::ResourceRef(resource_address, resource_manager) => {
