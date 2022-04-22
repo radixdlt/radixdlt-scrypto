@@ -56,18 +56,18 @@ impl AuthZone {
         }
     }
 
-    pub fn create_proof(&self, resource_address: ResourceAddress, resource_type: ResourceType) -> Result<Proof, AuthZoneError> {
+    fn create_proof(&self, resource_address: ResourceAddress, resource_type: ResourceType) -> Result<Proof, AuthZoneError> {
         Proof::compose(&self.proofs, resource_address, resource_type)
             .map_err(AuthZoneError::ProofError)
     }
 
-    pub fn create_proof_by_amount(&self, amount:Decimal, resource_address: ResourceAddress, resource_type: ResourceType) -> Result<Proof, AuthZoneError> {
+    fn create_proof_by_amount(&self, amount:Decimal, resource_address: ResourceAddress, resource_type: ResourceType) -> Result<Proof, AuthZoneError> {
         Proof::compose_by_amount(&self.proofs, amount, resource_address, resource_type)
             .map_err(AuthZoneError::ProofError)
     }
 
 
-    pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress, resource_type: ResourceType) -> Result<Proof, AuthZoneError> {
+    fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress, resource_type: ResourceType) -> Result<Proof, AuthZoneError> {
         Proof::compose_by_ids(&self.proofs, ids, resource_address, resource_type)
             .map_err(AuthZoneError::ProofError)
     }
@@ -79,6 +79,10 @@ impl AuthZone {
         system_api: &mut S,
     ) -> Result<ScryptoValue, AuthZoneError> {
         match function {
+            "clear" => {
+                self.clear();
+                Ok(ScryptoValue::from_value(&()))
+            }
             "pop" => {
                 let proof = self.pop()?;
                 let proof_id = system_api.create_proof(proof).map_err(|_| AuthZoneError::CouldNotCreateProof)?;

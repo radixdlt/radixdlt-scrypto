@@ -64,5 +64,5 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("Should be okay.");
 }

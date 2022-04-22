@@ -287,7 +287,7 @@ fn cant_move_restricted_proof() {
     // Assert
     assert_eq!(
         receipt.result,
-        Err(RuntimeError::CantMoveRestrictedProof(512))
+        Err(RuntimeError::CantMoveRestrictedProof(1025))
     );
 }
 
