@@ -29,7 +29,7 @@ impl ResourceSystem {
     }
 
     /// Returns a reference to a resource manager.
-    pub fn get_resource_manager(&mut self, resource_address: ResourceAddress) -> &ResourceManager {
+    pub fn get_resource_manager(&mut self, resource_address: ResourceAddress) -> &mut ResourceManager {
         self.resource_managers
             .entry(resource_address)
             .or_insert(ResourceManager(resource_address))

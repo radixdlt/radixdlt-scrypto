@@ -462,8 +462,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .map_err(RuntimeError::ResourceManagerError)
             }
             SNodeState::ResourceRef(resource_address, resource_manager) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+
                 let return_value = resource_manager
-                    .main(resource_address, function.as_str(), args, self)
+                    .main(resource_address, arg, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
 
                 Ok(return_value)
@@ -617,10 +623,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
             SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::ResourceRef(resource_address) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
                 let resource_manager: ResourceManager = self
                     .track
                     .borrow_global_mut_resource_manager(resource_address.clone())?;
-                let method_auth = resource_manager.get_auth(&function, &args).clone();
+                let method_auth = resource_manager.get_auth(arg).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(resource_address.clone(), resource_manager)),
                     vec![method_auth],
