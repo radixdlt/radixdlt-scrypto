@@ -28,6 +28,13 @@ blueprint! {
             Self::internal_new(withdraw_rule, Option::Some(bucket))
         }
 
+        pub fn balance(&self, resource_address: ResourceAddress) -> Decimal {
+            self.vaults
+                .get(&resource_address)
+                .map(|v| v.amount())
+                .unwrap_or_default()
+        }
+
         /// Deposits resource into this account.
         pub fn deposit(&mut self, bucket: Bucket) {
             let resource_address = bucket.resource_address();
