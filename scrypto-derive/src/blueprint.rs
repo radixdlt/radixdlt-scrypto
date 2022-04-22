@@ -64,10 +64,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_mod });
+    let method_enum = generate_method_enum(bp_ident, bp_items);
 
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
     let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items)?;
     let output_dispatcher = quote! {
+        #[allow(non_camel_case_types)]
+        #method_enum
+
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident() -> *mut u8 {
             // Set up panic hook
@@ -143,6 +147,29 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     crate::utils::print_generated_code("blueprint!", &output);
 
     Ok(output)
+}
+
+fn generate_method_enum(blueprint_id: &Ident, items: &[ImplItem]) -> ItemEnum {
+    let method_enum_ident = format_ident!("{}Method", blueprint_id);
+    let mut variants = Vec::new();
+
+    for item in items {
+        if let ImplItem::Method(method) = item {
+            if let Visibility::Public(_) = &method.vis {
+                let method_ident = method.sig.ident.clone();
+                let variant: Variant = parse_quote! {
+                    #method_ident
+                };
+                variants.push(variant);
+            }
+        }
+    }
+
+    parse_quote! {
+        enum #method_enum_ident {
+            #(#variants),*,
+        }
+    }
 }
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
@@ -510,6 +537,12 @@ mod tests {
                         }
                     }
                 }
+
+                #[allow(non_camel_case_types)]
+                enum TestMethod {
+                    x,
+                }
+
                 #[no_mangle]
                 pub extern "C" fn Test_main() -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
