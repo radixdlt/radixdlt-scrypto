@@ -18,7 +18,7 @@ impl ComponentAuthZone {
     /// Pushes a proof to the auth zone.
     pub fn push(proof: Proof) {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZone,
+            snode_ref: SNodeRef::AuthZoneRef,
             function: "push".to_string(),
             args: args![proof],
         };
@@ -29,7 +29,7 @@ impl ComponentAuthZone {
     /// Pops the most recently added proof from the auth zone.
     pub fn pop() -> Proof {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZone,
+            snode_ref: SNodeRef::AuthZoneRef,
             function: "pop".to_string(),
             args: args![],
         };
@@ -39,7 +39,7 @@ impl ComponentAuthZone {
 
     pub fn create_proof(resource_address: ResourceAddress) -> Proof {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZone,
+            snode_ref: SNodeRef::AuthZoneRef,
             function: "create_proof".to_string(),
             args: args![resource_address],
         };
@@ -49,7 +49,7 @@ impl ComponentAuthZone {
 
     pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZone,
+            snode_ref: SNodeRef::AuthZoneRef,
             function: "create_proof_by_amount".to_string(),
             args: args![amount, resource_address],
         };
@@ -62,7 +62,7 @@ impl ComponentAuthZone {
         resource_address: ResourceAddress,
     ) -> Proof {
         let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZone,
+            snode_ref: SNodeRef::AuthZoneRef,
             function: "create_proof_by_ids".to_string(),
             args: args![ids.clone(), resource_address],
         };

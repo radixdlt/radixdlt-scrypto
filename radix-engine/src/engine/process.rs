@@ -93,6 +93,7 @@ pub trait SystemApi {
 
 pub enum SNodeState {
     AuthZone(AuthZone),
+    Worktop(Worktop),
     PackageStatic,
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
@@ -220,6 +221,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     buckets: HashMap<BucketId, Bucket>,
     /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
+    /// Resources collected from previous returns or self.
+    worktop: Option<Worktop>,
     /// Proofs collected from previous returns or self. Also used for system authorization.
     auth_zone: Option<AuthZone>,
     /// The caller's auth zone
@@ -228,9 +231,6 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
     wasm_process_state: Option<WasmProcess<'r>>,
-
-    /// Resources collected from previous returns or self.
-    worktop: Worktop,
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -240,15 +240,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         trace: bool,
         track: &'r mut Track<'l, L>,
         auth_zone: Option<AuthZone>,
+        worktop: Option<Worktop>,
+        buckets: HashMap<BucketId, Bucket>,
+        proofs: HashMap<ProofId, Proof>,
     ) -> Self {
         Self {
             depth,
             trace,
             track,
-            buckets: HashMap::new(),
-            proofs: HashMap::new(),
+            buckets,
+            proofs,
             wasm_process_state: None,
-            worktop: Worktop::new(),
+            worktop,
             auth_zone,
             caller_auth_zone: None,
         }
@@ -260,171 +263,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn new_proof_id(&mut self) -> Result<ProofId, RuntimeError> {
         Ok(self.track.new_proof_id())
-    }
-
-    // (Transaction ONLY) Takes resource by amount from worktop and returns a bucket.
-    pub fn take_from_worktop(
-        &mut self,
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> Result<BucketId, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Taking from worktop: {}, {}",
-            amount,
-            resource_address
-        );
-        let new_bucket_id = self.new_bucket_id()?;
-        let new_bucket = match self
-            .worktop
-            .take(amount, resource_address)
-            .map_err(RuntimeError::WorktopError)?
-        {
-            Some(bucket) => bucket,
-            None => self.new_empty_bucket(resource_address)?,
-        };
-        self.buckets.insert(new_bucket_id, new_bucket);
-        Ok(new_bucket_id)
-    }
-
-    // (Transaction ONLY) Takes resource by non-fungible IDs from worktop and returns a bucket.
-    pub fn take_non_fungibles_from_worktop(
-        &mut self,
-        ids: &BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    ) -> Result<BucketId, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Taking from worktop: {:?}, {}",
-            ids,
-            resource_address
-        );
-        let new_bucket_id = self.new_bucket_id()?;
-        let new_bucket = match self
-            .worktop
-            .take_non_fungibles(ids, resource_address)
-            .map_err(RuntimeError::WorktopError)?
-        {
-            Some(bucket) => bucket,
-            None => self.new_empty_bucket(resource_address)?,
-        };
-        self.buckets.insert(new_bucket_id, new_bucket);
-        Ok(new_bucket_id)
-    }
-
-    // (Transaction ONLY) Takes resource by resource address from worktop and returns a bucket.
-    pub fn take_all_from_worktop(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<BucketId, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Taking from worktop: ALL, {}",
-            resource_address
-        );
-        let new_bucket_id = self.new_bucket_id()?;
-        let new_bucket = match self
-            .worktop
-            .take_all(resource_address)
-            .map_err(RuntimeError::WorktopError)?
-        {
-            Some(bucket) => bucket,
-            None => self.new_empty_bucket(resource_address)?,
-        };
-        self.buckets.insert(new_bucket_id, new_bucket);
-        Ok(new_bucket_id)
-    }
-
-    fn new_empty_bucket(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<Bucket, RuntimeError> {
-        let resource_manager = self
-            .track
-            .get_resource_manager(&resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address))?;
-        Ok(Bucket::new(ResourceContainer::new_empty(
-            resource_address,
-            resource_manager.resource_type(),
-        )))
-    }
-
-    // (Transaction ONLY) Returns resource back to worktop.
-    pub fn return_to_worktop(&mut self, bucket_id: BucketId) -> Result<ScryptoValue, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Returning to worktop: bucket_id = {}",
-            bucket_id
-        );
-
-        let bucket = self
-            .buckets
-            .remove(&bucket_id)
-            .ok_or(RuntimeError::BucketNotFound(bucket_id))?;
-        self.worktop
-            .put(bucket)
-            .map_err(RuntimeError::WorktopError)?;
-        Ok(ScryptoValue::from_value(&()))
-    }
-
-    // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop_contains(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        if self.worktop.total_amount(resource_address).is_zero() {
-            Err(RuntimeError::AssertionFailed)
-        } else {
-            Ok(ScryptoValue::from_value(&()))
-        }
-    }
-
-    // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop_contains_by_amount(
-        &mut self,
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        if self.worktop.total_amount(resource_address) < amount {
-            Err(RuntimeError::AssertionFailed)
-        } else {
-            Ok(ScryptoValue::from_value(&()))
-        }
-    }
-
-    // (Transaction ONLY) Assert worktop contains at least this amount.
-    pub fn assert_worktop_contains_by_ids(
-        &mut self,
-        ids: &BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        if !self
-            .worktop
-            .total_ids(resource_address)
-            .map_err(RuntimeError::WorktopError)?
-            .is_superset(ids)
-        {
-            Err(RuntimeError::AssertionFailed)
-        } else {
-            Ok(ScryptoValue::from_value(&()))
-        }
-    }
-
-    // Puts a proof onto the auth zone.
-    pub fn push_to_auth_zone(&mut self, proof_id: ProofId) -> Result<(), RuntimeError> {
-        re_debug!(self, "Pushing onto auth zone: proof_id = {}", proof_id);
-
-        let proof = self
-            .proofs
-            .remove(&proof_id)
-            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
-
-        if proof.is_restricted() {
-            return Err(RuntimeError::CantMoveRestrictedProof(proof_id));
-        }
-
-        self.auth_zone.as_mut().unwrap().push(proof);
-        Ok(())
     }
 
     // Creates a vault proof.
@@ -487,64 +325,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Drops all proofs owned by this process.
     pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
         self.drop_all_named_proofs()?;
-        self.call(SNodeRef::AuthZone, "clear".to_string(), vec![])?;
+        self.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
         Ok(())
-    }
-
-    /// (Transaction ONLY) Calls a method.
-    pub fn call_method_with_all_resources(
-        &mut self,
-        component_address: ComponentAddress,
-        method: &str,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        re_debug!(
-            self,
-            "(Transaction) Calling method with all resources started"
-        );
-
-        // 1. Drop all proofs to unlock the buckets
-        self.drop_all_named_proofs()?;
-        self.call(SNodeRef::AuthZone, "clear".to_string(), vec![])?;
-
-        // 2. Move collected resource to temp buckets
-        for id in self.worktop.resource_addresses() {
-            if let Some(bucket) = self
-                .worktop
-                .take_all(id)
-                .map_err(RuntimeError::WorktopError)?
-            {
-                /*
-                This is the only place that we don't follow the convention for bucket/proof ID generation.
-
-                The reason is that the number of buckets to be created can't be determined statically, which
-                makes it hard to verify transaction if we use the transaction ID allocator.
-                */
-                if !bucket.is_empty() {
-                    let bucket_id = self.track.new_bucket_id();
-                    self.buckets.insert(bucket_id, bucket);
-                }
-            }
-        }
-
-        // 3. Call the method with all buckets
-        let to_deposit: Vec<scrypto::resource::Bucket> = self
-            .buckets
-            .keys()
-            .cloned()
-            .map(|bucket_id| scrypto::resource::Bucket(bucket_id))
-            .collect();
-
-        let result = self.call(
-            SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
-            method.to_owned(),
-            vec![ScryptoValue::from_value(&to_deposit)],
-        );
-
-        re_debug!(
-            self,
-            "(Transaction) Calling method with all resources ended"
-        );
-        result
     }
 
     pub fn publish_package(&mut self, code: Vec<u8>) -> Result<PackageAddress, RuntimeError> {
@@ -553,20 +335,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let package = Package::new(code).map_err(RuntimeError::WasmValidationError)?;
         let package_address = self.track.create_package(package);
         Ok(package_address)
-    }
-
-    /// (SYSTEM ONLY)  Creates a proof which references a virtual bucket
-    pub fn create_virtual_proof(
-        &mut self,
-        bucket_id: BucketId,
-        proof_id: ProofId,
-        mut bucket: Bucket,
-    ) -> Result<(), RuntimeError> {
-        let proof = bucket
-            .create_proof(bucket_id)
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(proof_id, proof);
-        Ok(())
     }
 
     /// Runs the given export within this process.
@@ -593,6 +361,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 auth_zone
                     .main(function.as_str(), args, self)
                     .map_err(RuntimeError::AuthZoneError)
+            }
+            SNodeState::Worktop(worktop) => {
+                worktop
+                    .main(function.as_str(), args, self)
+                    .map_err(RuntimeError::WorktopError)
             }
             SNodeState::PackageStatic => {
                 Package::static_main(&function, args, self).map_err(RuntimeError::PackageError)
@@ -693,8 +466,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // drop proofs and check resource leak
         self.drop_all_named_proofs()?;
-        if let Some(auth_zone) = &mut self.auth_zone {
-            auth_zone.clear();
+        if let Some(_) = &mut self.auth_zone {
+            self.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
         }
         self.check_resource()?;
 
@@ -719,11 +492,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         // Authorization and state load
         let (mut snode, method_auths) = match &snode_ref {
-            SNodeRef::AuthZone => {
+            SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = self.auth_zone.take() {
                     Ok((SNodeState::AuthZone(auth_zone), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
+                }
+            }
+            SNodeRef::WorktopRef => {
+                if let Some(worktop) = self.worktop.take() {
+                    Ok((SNodeState::Worktop(worktop), vec![]))
+                } else {
+                    Err(RuntimeError::WorktopDoesNotExist)
                 }
             }
             SNodeRef::PackageStatic => Ok((SNodeState::PackageStatic, vec![])),
@@ -916,27 +696,35 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 } else {
                     None
                 };
-                let mut process = Process::new(self.depth + 1, self.trace, self.track, process_auth_zone);
+
+                let mut process = Process::new(
+                    self.depth + 1,
+                    self.trace,
+                    self.track,
+                    process_auth_zone,
+                    None,
+                    moving_buckets,
+                    moving_proofs,
+                );
                 if let Some(auth_zone) = &self.auth_zone {
                     process.caller_auth_zone = Option::Some(auth_zone);
                 }
 
-                // move buckets and proofs to the new process.
-                process.receive_buckets(moving_buckets)?;
-                process.receive_proofs(moving_proofs);
-
                 // invoke the main function
-                let (result, moving_buckets, moving_proofs) =
+                let (result, received_buckets, received_proofs) =
                     process.run(&mut snode, function, args)?;
 
                 // move buckets and proofs to this process.
-                self.receive_buckets(moving_buckets)?;
-                self.receive_proofs(moving_proofs);
+                self.buckets.extend(received_buckets);
+                self.proofs.extend(received_proofs);
 
                 // Return borrowed snodes
                 match snode {
                     SNodeState::AuthZone(auth_zone) => {
                         self.auth_zone = Some(auth_zone);
+                    }
+                    SNodeState::Worktop(worktop) => {
+                        self.worktop = Some(worktop);
                     }
                     SNodeState::Scrypto(actor, component_state) => {
                         if let Some(component_address) = actor.component_address() {
@@ -986,7 +774,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
-        let mut process = Process::new(self.depth + 1, self.trace, self.track, None);
+        let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None, HashMap::new(), HashMap::new());
         let result = process
             .run(&mut snode, String::new(), Vec::new())
             .map(|(r, _, _)| r);
@@ -1004,10 +792,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
             success = false;
         }
-        if !self.worktop.is_empty() {
-            re_warn!(self, "Resource worktop is not empty");
-            success = false;
+        if let Some(worktop) = &self.worktop {
+            if !worktop.is_empty() {
+                re_warn!(self, "Resource worktop is not empty");
+                success = false;
+            }
         }
+
         if let Some(wasm_process) = &self.wasm_process_state {
             if !wasm_process.check_resource() {
                 success = false;
@@ -1112,23 +903,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(buckets)
     }
 
-    /// Receives buckets from another component/blueprint, either as argument or return
-    fn receive_buckets(&mut self, buckets: HashMap<BucketId, Bucket>) -> Result<(), RuntimeError> {
-        if self.depth == 0 {
-            // buckets are aggregated by worktop
-            for (_, bucket) in buckets {
-                self.worktop
-                    .put(bucket)
-                    .map_err(RuntimeError::WorktopError)?;
-            }
-        } else {
-            // for component, received buckets go to the "buckets" areas.
-            self.buckets.extend(buckets);
-        }
-
-        Ok(())
-    }
-
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
         &mut self,
@@ -1151,11 +925,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             proofs.insert(*proof_id, proof);
         }
         Ok(proofs)
-    }
-
-    /// Receives proofs from another component/blueprint, either as argument or return
-    fn receive_proofs(&mut self, proofs: HashMap<ProofId, Proof>) {
-        self.proofs.extend(proofs)
     }
 
     /// Send a byte array to wasm instance.

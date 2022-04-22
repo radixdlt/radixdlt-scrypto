@@ -28,6 +28,12 @@ pub struct AuthZone {
 }
 
 impl AuthZone {
+    pub fn new_with_proofs(proofs: Vec<Proof>) -> Self {
+        Self {
+            proofs
+        }
+    }
+
     pub fn new() -> Self {
         Self {
             proofs: Vec::new()
@@ -46,7 +52,7 @@ impl AuthZone {
         self.proofs.push(proof);
     }
 
-    pub fn clear(&mut self) {
+    fn clear(&mut self) {
         loop {
             if let Some(proof) = self.proofs.pop() {
                 proof.drop();
