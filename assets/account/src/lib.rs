@@ -13,8 +13,8 @@ blueprint! {
             }
 
             let access_rules = AccessRules::new()
-                .method("deposit", auth!(allow_all))
-                .method("deposit_batch", auth!(allow_all))
+                .method("deposit", rule!(allow_all))
+                .method("deposit_batch", rule!(allow_all))
                 .default(withdraw_rule);
 
             Self { vaults }.instantiate().add_access_check(access_rules).globalize()

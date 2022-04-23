@@ -437,14 +437,14 @@ impl TransactionBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
             Mint,
-            (auth!(require(minter_resource_address.clone())), LOCKED),
+            (rule!(require(minter_resource_address.clone())), LOCKED),
         );
         resource_auth.insert(
             Burn,
-            (auth!(require(minter_resource_address.clone())), LOCKED),
+            (rule!(require(minter_resource_address.clone())), LOCKED),
         );
 
         self.add_instruction(Instruction::CallFunction {
@@ -468,7 +468,7 @@ impl TransactionBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
@@ -493,14 +493,14 @@ impl TransactionBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
             Mint,
-            (auth!(require(minter_resource_address.clone())), LOCKED),
+            (rule!(require(minter_resource_address.clone())), LOCKED),
         );
         resource_auth.insert(
             Burn,
-            (auth!(require(minter_resource_address.clone())), LOCKED),
+            (rule!(require(minter_resource_address.clone())), LOCKED),
         );
 
         self.add_instruction(Instruction::CallFunction {
@@ -524,7 +524,7 @@ impl TransactionBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
