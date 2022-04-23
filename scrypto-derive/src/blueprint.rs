@@ -64,12 +64,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_mod });
-    let method_enum = generate_method_enum(bp_ident, bp_items);
+    let method_enum_ident = format_ident!("{}Method", bp_ident);
+    let method_enum = generate_method_enum(&method_enum_ident, bp_items);
 
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
-    let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items)?;
+    let (arm_guards, arm_bodies) = generate_dispatcher(&method_enum_ident, bp_ident, bp_items)?;
     let output_dispatcher = quote! {
-        #[allow(non_camel_case_types)]
         #method_enum
 
         #[no_mangle]
@@ -87,13 +87,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 ::scrypto::engine::api::GetCallDataInput {},
             );
 
+            let method = ::scrypto::buffer::scrypto_decode::<#method_enum_ident>(&calldata.args[0]).unwrap();
+
             // Dispatch the call
             let rtn;
-            match calldata.function.as_str() {
+            match method {
                 #( #arm_guards => #arm_bodies )*
-                _ => {
-                    panic!("Function/method not fund")
-                }
             }
 
             // Return
@@ -149,8 +148,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     Ok(output)
 }
 
-fn generate_method_enum(blueprint_id: &Ident, items: &[ImplItem]) -> ItemEnum {
-    let method_enum_ident = format_ident!("{}Method", blueprint_id);
+fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEnum {
     let mut variants = Vec::new();
 
     for item in items {
@@ -180,6 +178,8 @@ fn generate_method_enum(blueprint_id: &Ident, items: &[ImplItem]) -> ItemEnum {
     }
 
     parse_quote! {
+        #[allow(non_camel_case_types)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         enum #method_enum_ident {
             #(#variants),*,
         }
@@ -188,7 +188,7 @@ fn generate_method_enum(blueprint_id: &Ident, items: &[ImplItem]) -> ItemEnum {
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>)> {
+fn generate_dispatcher(method_enum_ident: &Ident, bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>)> {
     let mut arm_guards = Vec::<Expr>::new();
     let mut arm_bodies = Vec::<Expr>::new();
 
@@ -197,10 +197,10 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
 
         if let ImplItem::Method(ref m) = item {
             if let Visibility::Public(_) = &m.vis {
-                let fn_name = &m.sig.ident.to_string();
                 let fn_ident = &m.sig.ident;
 
                 let mut args: Vec<Expr> = vec![];
+                let mut non_self_args: Vec<Expr> = vec![];
                 let mut stmts: Vec<Stmt> = vec![];
                 let mut get_state: Option<Stmt> = None;
                 let mut put_state: Option<Stmt> = None;
@@ -234,7 +234,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                                 });
                             }
                         }
-                        FnArg::Typed(ref t) => {
+                        FnArg::Typed(_) => {
                             let arg_index = if get_state.is_some() {
                                 i - 1
                             } else {
@@ -243,15 +243,9 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                             let arg = format_ident!("arg{}", arg_index);
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                            let ty = &t.ty;
-                            let stmt: Stmt = parse_quote! {
-                                let #arg =
-                                    ::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#arg_index])
-                                    .unwrap();
-                            };
                             trace!("Generated stmt: {}", quote! { #stmt });
                             args.push(parse_quote! { #arg });
-                            stmts.push(stmt);
+                            non_self_args.push(parse_quote! { #arg });
                         }
                     }
                 }
@@ -275,7 +269,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                     stmts.push(stmt);
                 }
 
-                arm_guards.push(parse_quote! { #fn_name });
+                arm_guards.push(parse_quote! { #method_enum_ident::#fn_ident(#(#non_self_args),*) });
                 arm_bodies.push(Expr::Block(ExprBlock {
                     attrs: vec![],
                     label: None,
@@ -558,6 +552,7 @@ mod tests {
                 }
 
                 #[allow(non_camel_case_types)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 enum TestMethod {
                     x(u32),
                 }
@@ -571,19 +566,15 @@ mod tests {
                         ::scrypto::engine::api::GET_CALL_DATA,
                         ::scrypto::engine::api::GetCallDataInput {},
                     );
+
+                    let method = ::scrypto::buffer::scrypto_decode::<TestMethod>(&calldata.args[0]).unwrap();
+
                     let rtn;
-                    match calldata.function.as_str() {
-                        "x" => {
+                    match method {
+                        TestMethod::x(arg0) => {
                             let component_address = calldata.component.unwrap();
-                            let arg0 =
-                                ::scrypto::buffer::scrypto_decode::<u32>(
-                                    &calldata.args[0usize]
-                                ).unwrap();
                             let state: blueprint::Test = borrow_component!(component_address).get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, arg0));
-                        }
-                        _ => {
-                            panic!("Function/method not fund")
                         }
                     }
                     ::scrypto::buffer::scrypto_wrap(rtn)

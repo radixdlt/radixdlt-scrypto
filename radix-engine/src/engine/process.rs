@@ -410,7 +410,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                 let (module, memory) = package.load_module().unwrap();
 
-                let (interpreter_state, args) = if let Some(component) = component_state {
+
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                let interpreter_state = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();
                     let data = ScryptoValue::from_slice(component.state()).unwrap();
                     let initial_loaded_object_refs = ComponentObjectRefs {
@@ -423,9 +429,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         initial_loaded_object_refs,
                     };
 
-                    (istate, args)
+                    istate
                 } else {
-                    (InterpreterState::Blueprint, args)
+                    InterpreterState::Blueprint
                 };
 
                 self.wasm_process_state = Some(WasmProcess {
@@ -433,7 +439,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     trace: self.trace,
                     vm: Interpreter {
                         function,
-                        args,
+                        args: vec![arg],
                         actor: actor.clone(),
                         module: module.clone(),
                         memory,
