@@ -20,6 +20,54 @@ macro_rules! args {
     };
 }
 
+#[macro_export]
+macro_rules! args_untyped {
+    ($name:ident($($args: expr),*)) => {
+        {
+            let mut fields = Vec::new();
+            $(
+                let encoded = ::scrypto::prelude::scrypto_encode(&$args);
+                fields.push(::sbor::decode_any(&encoded).unwrap());
+            )*
+            let variant = ::sbor::Value::Enum {
+                name: stringify!($name).to_string(),
+                fields
+            };
+            let mut bytes = Vec::new();
+            let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+            ::sbor::encode_any(None, &variant, &mut enc);
+
+            let mut args = ::scrypto::rust::vec::Vec::new();
+            args.push(bytes);
+            args
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! args_untyped2 {
+    ($name:expr, $($args: expr),*) => {
+        {
+            let mut fields = Vec::new();
+            $(
+                let encoded = ::scrypto::prelude::scrypto_encode(&$args);
+                fields.push(::sbor::decode_any(&encoded).unwrap());
+            )*
+            let variant = ::sbor::Value::Enum {
+                name: $name,
+                fields
+            };
+            let mut bytes = Vec::new();
+            let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+            ::sbor::encode_any(None, &variant, &mut enc);
+
+            let mut args = ::scrypto::rust::vec::Vec::new();
+            args.push(bytes);
+            args
+        }
+    };
+}
+
 /// Logs an `ERROR` message.
 ///
 /// # Example

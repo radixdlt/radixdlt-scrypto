@@ -548,7 +548,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "mint".to_owned(),
-            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
+            args: args_untyped!(mint(amount, resource_address)),
         });
         self
     }
@@ -561,7 +561,7 @@ impl TransactionBuilder {
                     package_address: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
                     function: "burn".to_owned(),
-                    args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
+                    args: args_untyped!(burn(scrypto::resource::Bucket(bucket_id))),
                 })
                 .0
         })
@@ -579,7 +579,7 @@ impl TransactionBuilder {
                         package_address: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
                         function: "burn".to_owned(),
-                        args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
+                        args: args_untyped!(burn(scrypto::resource::Bucket(bucket_id))),
                     })
                     .0
             },
@@ -592,7 +592,7 @@ impl TransactionBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new".to_owned(),
-            args: vec![scrypto_encode(withdraw_auth)],
+            args: args_untyped!(new(withdraw_auth.clone())),
         })
         .0
     }
@@ -607,10 +607,7 @@ impl TransactionBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new_with_resource".to_owned(),
-            args: vec![
-                scrypto_encode(withdraw_auth),
-                scrypto_encode(&scrypto::resource::Bucket(bucket_id)),
-            ],
+            args: args_untyped!(new_with_resource(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)))
         })
         .0
     }
@@ -624,7 +621,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "withdraw".to_owned(),
-            args: vec![scrypto_encode(&resource_address)],
+            args: args_untyped!(withdraw(resource_address)),
         })
         .0
     }
@@ -638,8 +635,8 @@ impl TransactionBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            method: "withdraw_by_amount".to_owned(),
-            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
+            method: "withdraw".to_owned(),
+            args: args_untyped!(withdraw_by_amount(amount, resource_address)),
         })
         .0
     }
@@ -654,7 +651,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "withdraw_by_ids".to_owned(),
-            args: vec![scrypto_encode(ids), scrypto_encode(&resource_address)],
+            args: args_untyped!(withdraw_by_ids(ids.clone(), resource_address)),
         })
         .0
     }
@@ -668,7 +665,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "create_proof".to_owned(),
-            args: vec![scrypto_encode(&resource_address)],
+            args: args_untyped!(create_proof(resource_address)),
         })
         .0
     }
@@ -683,7 +680,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "create_proof_by_amount".to_owned(),
-            args: vec![scrypto_encode(&amount), scrypto_encode(&resource_address)],
+            args: args_untyped!(create_proof_by_amount(amount, resource_address)),
         })
         .0
     }
@@ -698,7 +695,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "create_proof_by_ids".to_owned(),
-            args: vec![scrypto_encode(ids), scrypto_encode(&resource_address)],
+            args: args_untyped!(create_proof_by_ids(ids.clone(), resource_address)),
         })
         .0
     }

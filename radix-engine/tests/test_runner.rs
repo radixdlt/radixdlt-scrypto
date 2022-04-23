@@ -1,7 +1,7 @@
 use radix_engine::ledger::*;
 use radix_engine::model::{Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
-use scrypto::abi;
+use scrypto::{abi, args_untyped};
 use scrypto::prelude::*;
 
 pub struct TestRunner<'l> {
@@ -182,8 +182,8 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                "create_restricted_transfer",
-                vec![scrypto_encode(&auth_resource_address)],
+                "main",
+                args_untyped![create_restricted_transfer(auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -198,8 +198,8 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                "create_non_fungible_fixed",
-                vec![],
+                "main",
+                args_untyped!(create_non_fungible_fixed()),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))

@@ -34,7 +34,7 @@ impl NewAccount {
             let transaction = TransactionBuilder::new()
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
                 .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                    builder.new_account_with_resource(&withdraw_auth, bucket_id)
+                    builder.new_account_with_resource(withdraw_auth, bucket_id)
                 })
                 .build_with_no_nonce();
             let manifest = decompile(&transaction).map_err(Error::DecompileError)?;

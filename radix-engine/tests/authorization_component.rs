@@ -1,6 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use scrypto::args_untyped;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
@@ -25,7 +26,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            vec![scrypto_encode(&authorization)],
+            args_untyped!(create_component_with_auth(authorization)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -39,7 +40,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            vec![],
+            args_untyped!(create_component()),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -53,7 +54,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            vec![scrypto_encode(&secured_component)],
+            args_untyped!(cross_component_call(secured_component)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -83,7 +84,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            vec![scrypto_encode(&authorization)],
+            args_untyped!(create_component_with_auth(authorization)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -97,7 +98,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            vec![],
+            args_untyped!(create_component()),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -120,7 +121,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            vec![scrypto_encode(&secured_component)],
+            args_untyped!(cross_component_call(secured_component)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);

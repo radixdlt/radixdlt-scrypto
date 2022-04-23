@@ -4,7 +4,7 @@ use scrypto::resource::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::rust::string::ToString;
-use scrypto::{abi, auth, auth_rule_node};
+use scrypto::{abi, args_untyped, auth, auth_rule_node};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -94,7 +94,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+                    .call_method(SYSTEM_COMPONENT, "main", args_untyped!(free_xrd()))
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })
