@@ -422,10 +422,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         component,
                         initial_loaded_object_refs,
                     };
-                    let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
-                    args_with_self.extend(args);
 
-                    (istate, args_with_self)
+                    (istate, args)
                 } else {
                     (InterpreterState::Blueprint, args)
                 };
@@ -1312,8 +1310,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)?;
+        let component = match wasm_process.interpreter_state {
+            InterpreterState::Component { component_address, .. } => Some(component_address.clone()),
+            InterpreterState::Blueprint  => None,
+        };
         Ok(GetCallDataOutput {
             function: wasm_process.vm.function.clone(),
+            component,
             args: wasm_process
                 .vm
                 .args
