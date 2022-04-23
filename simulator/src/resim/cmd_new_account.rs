@@ -30,7 +30,7 @@ impl NewAccount {
                 ECDSA_TOKEN,
                 NonFungibleId::from_bytes(public_key.to_vec()),
             );
-            let withdraw_auth = auth!(require(auth_address));
+            let withdraw_auth = rule!(require(auth_address));
             let transaction = TransactionBuilder::new()
                 .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
                 .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
