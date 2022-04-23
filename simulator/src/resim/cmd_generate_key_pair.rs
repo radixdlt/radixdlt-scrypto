@@ -1,3 +1,4 @@
+#![allow(unused_must_use)]
 use clap::Parser;
 use colored::*;
 use rand::Rng;
@@ -10,12 +11,13 @@ use crate::resim::*;
 pub struct GenerateKeyPair {}
 
 impl GenerateKeyPair {
-    pub fn run(&self) -> Result<(), Error> {
+
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
         let private_key = EcdsaPrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();
-        println!("Public key: {}", public_key.to_string().green());
-        println!(
+        writeln!(out, "Public key: {}", public_key.to_string().green());
+        writeln!(out,
             "Private key: {}",
             hex::encode(private_key.to_bytes()).green()
         );

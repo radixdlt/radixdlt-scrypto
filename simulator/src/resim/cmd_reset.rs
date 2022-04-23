@@ -1,3 +1,4 @@
+#![allow(unused_must_use)]
 use clap::Parser;
 use std::fs::remove_dir_all;
 
@@ -8,10 +9,10 @@ use crate::resim::*;
 pub struct Reset {}
 
 impl Reset {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let dir = get_data_dir()?;
         remove_dir_all(dir).map_err(Error::IOError)?;
-        println!("Data directory cleared.");
+        writeln!(out, "Data directory cleared.");
         Ok(())
     }
 }

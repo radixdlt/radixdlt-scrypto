@@ -1,3 +1,5 @@
+#![allow(unused_must_use)]
+
 use clap::Parser;
 use colored::*;
 use rand::Rng;
@@ -18,7 +20,8 @@ pub struct NewAccount {
 }
 
 impl NewAccount {
-    pub fn run(&self) -> Result<(), Error> {
+
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
 
@@ -38,9 +41,9 @@ impl NewAccount {
                 })
                 .build_with_no_nonce();
             let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
-            println!("A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!");
-            println!("Public key: {}", public_key.to_string().green());
-            println!(
+            writeln!(out, "A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!");
+            writeln!(out, "Public key: {}", public_key.to_string().green());
+            writeln!(out, 
                 "Private key: {}",
                 hex::encode(private_key.to_bytes()).green()
             );
@@ -48,15 +51,15 @@ impl NewAccount {
         }
 
         let (public_key, private_key, account) = executor.new_account();
-        println!("A new account has been created!");
-        println!("Account component address: {}", account.to_string().green());
-        println!("Public key: {}", public_key.to_string().green());
-        println!(
+        writeln!(out, "A new account has been created!");
+        writeln!(out, "Account component address: {}", account.to_string().green());
+        writeln!(out, "Public key: {}", public_key.to_string().green());
+        writeln!(out, 
             "Private key: {}",
             hex::encode(private_key.to_bytes()).green()
         );
         if get_configs()?.is_none() {
-            println!("No configuration found on system. will use the above account as default.");
+            writeln!(out, "No configuration found on system. will use the above account as default.");
             set_configs(&Configs {
                 default_account: account,
                 default_public_key: public_key,

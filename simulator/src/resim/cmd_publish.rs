@@ -1,3 +1,4 @@
+#![allow(unused_must_use)]
 use clap::Parser;
 use colored::*;
 use radix_engine::transaction::*;
@@ -30,7 +31,7 @@ pub struct Publish {
 }
 
 impl Publish {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
         let code = fs::read(if self.path.extension() != Some(OsStr::new("wasm")) {
             build_package(&self.path, false).map_err(Error::CargoError)?
@@ -55,12 +56,12 @@ impl Publish {
             executor
                 .overwrite_package(package_address, code)
                 .map_err(|e| Error::PackageValidationError(e))?;
-            println!("Package updated!");
+            writeln!(out, "Package updated!");
             Ok(())
         } else {
             match executor.publish_package(&code) {
                 Ok(package_address) => {
-                    println!(
+                    writeln!(out,
                         "Success! New Package: {}",
                         package_address.to_string().green()
                     );
