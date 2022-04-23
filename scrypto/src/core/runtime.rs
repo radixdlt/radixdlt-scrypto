@@ -4,6 +4,7 @@ use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
+use crate::rust::vec;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -40,13 +41,25 @@ impl Runtime {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
+        let mut fields = Vec::new();
+        for arg in args {
+            fields.push(::sbor::decode_any(&arg).unwrap());
+        }
+        let variant = ::sbor::Value::Enum {
+            name: function.as_ref().to_owned(),
+            fields
+        };
+        let mut bytes = Vec::new();
+        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+        ::sbor::encode_any(None, &variant, &mut enc);
+
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Blueprint(
                 package_address,
                 blueprint_name.as_ref().to_owned(),
             )),
             function: function.as_ref().to_owned(),
-            args,
+            args: vec![bytes],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
@@ -59,10 +72,22 @@ impl Runtime {
         method: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
+        let mut fields = Vec::new();
+        for arg in args {
+            fields.push(::sbor::decode_any(&arg).unwrap());
+        }
+        let variant = ::sbor::Value::Enum {
+            name: method.as_ref().to_owned(),
+            fields
+        };
+        let mut bytes = Vec::new();
+        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+        ::sbor::encode_any(None, &variant, &mut enc);
+
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             function: method.as_ref().to_owned(),
-            args,
+            args: vec![bytes],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 

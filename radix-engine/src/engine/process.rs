@@ -820,9 +820,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             None,
         );
 
+        // TODO: Remove
+        let mock = ScryptoValue {
+            raw: vec![],
+            dom: Value::Unit,
+            bucket_ids: HashMap::new(),
+            proof_ids: HashMap::new(),
+            vault_ids: HashSet::new(),
+            lazy_map_ids: HashSet::new(),
+        };
+
         let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None, HashMap::new(), HashMap::new());
         let result = process
-            .run(None, snode, String::new(), Vec::new())
+            .run(None, snode, String::new(), vec![mock])
             .map(|(r, _, _, _)| r);
 
         re_debug!(self, "Call abi ended");

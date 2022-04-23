@@ -329,12 +329,24 @@ impl TransactionBuilder {
             .parse_args(&abi.inputs, args, account)
             .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
 
+        let mut fields = Vec::new();
+        for arg in arguments {
+            fields.push(::sbor::decode_any(&arg).unwrap());
+        }
+        let variant = ::sbor::Value::Enum {
+            name: function.to_owned(),
+            fields
+        };
+        let mut bytes = Vec::new();
+        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+        ::sbor::encode_any(None, &variant, &mut enc);
+
         Ok(self
             .add_instruction(Instruction::CallFunction {
                 package_address,
                 blueprint_name: blueprint_name.to_owned(),
                 function: function.to_owned(),
-                args: arguments,
+                args: vec![bytes],
             })
             .0)
     }
@@ -380,11 +392,23 @@ impl TransactionBuilder {
             .parse_args(&abi.inputs, args, account)
             .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
 
+        let mut fields = Vec::new();
+        for arg in arguments {
+            fields.push(::sbor::decode_any(&arg).unwrap());
+        }
+        let variant = ::sbor::Value::Enum {
+            name: method.to_owned(),
+            fields
+        };
+        let mut bytes = Vec::new();
+        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+        ::sbor::encode_any(None, &variant, &mut enc);
+
         Ok(self
             .add_instruction(Instruction::CallMethod {
                 component_address,
                 method: method.to_owned(),
-                args: arguments,
+                args: vec![bytes],
             })
             .0)
     }
@@ -447,16 +471,20 @@ impl TransactionBuilder {
             (auth!(require(minter_resource_address.clone())), LOCKED),
         );
 
+        let mint_params: Option<MintParams> = Option::None;
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: vec![
-                scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
-                scrypto_encode(&metadata),
-                scrypto_encode(&resource_auth),
-                scrypto_encode::<Option<MintParams>>(&None),
-            ],
+            args: args_untyped!(
+                new_resource(
+                    ResourceType::Fungible { divisibility: 18 },
+                    metadata,
+                    resource_auth,
+                    mint_params
+                )
+            ),
         })
         .0
     }
@@ -474,14 +502,16 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: vec![
-                scrypto_encode(&ResourceType::Fungible { divisibility: 18 }),
-                scrypto_encode(&metadata),
-                scrypto_encode(&resource_auth),
-                scrypto_encode(&Some(MintParams::Fungible {
-                    amount: initial_supply.into(),
-                })),
-            ],
+            args: args_untyped!(
+                new_resource(
+                    ResourceType::Fungible { divisibility: 18 },
+                    metadata,
+                    resource_auth,
+                    Option::Some(MintParams::Fungible {
+                        amount: initial_supply.into(),
+                    })
+                )
+            ),
         })
         .0
     }
@@ -503,16 +533,20 @@ impl TransactionBuilder {
             (auth!(require(minter_resource_address.clone())), LOCKED),
         );
 
+        let mint_params: Option<MintParams> = Option::None;
+
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: vec![
-                scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
-                scrypto_encode(&metadata),
-                scrypto_encode(&resource_auth),
-                scrypto_encode::<Option<MintParams>>(&None),
-            ],
+            args: args_untyped!(
+                new_resource(
+                    ResourceType::Fungible { divisibility: 0 },
+                    metadata,
+                    resource_auth,
+                    mint_params
+                )
+            ),
         })
         .0
     }
@@ -530,14 +564,16 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: vec![
-                scrypto_encode(&ResourceType::Fungible { divisibility: 0 }),
-                scrypto_encode(&metadata),
-                scrypto_encode(&resource_auth),
-                scrypto_encode(&Some(MintParams::Fungible {
-                    amount: initial_supply.into(),
-                })),
-            ],
+            args: args_untyped!(
+                new_resource(
+                    ResourceType::Fungible { divisibility: 0 },
+                    metadata,
+                    resource_auth,
+                    Option::Some(MintParams::Fungible {
+                        amount: initial_supply.into(),
+                    })
+                )
+            ),
         })
         .0
     }

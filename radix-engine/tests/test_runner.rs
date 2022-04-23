@@ -1,7 +1,7 @@
 use radix_engine::ledger::*;
 use radix_engine::model::{Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
-use scrypto::{abi, args_untyped};
+use scrypto::{abi, args_untyped, args_untyped2};
 use scrypto::prelude::*;
 
 pub struct TestRunner<'l> {
@@ -97,7 +97,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 function,
-                vec![scrypto_encode(&token), scrypto_encode(&set_auth)],
+                args_untyped2!(function.to_string(), token, set_auth),
             )
             .call_method_with_all_resources(account.2, "deposit_batch")
             .build(self.executor.get_nonce([account.0.clone()]))
@@ -131,12 +131,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_token",
-                vec![
-                    scrypto_encode(&mint_auth),
-                    scrypto_encode(&burn_auth),
-                    scrypto_encode(&withdraw_auth),
-                    scrypto_encode(&admin_auth),
-                ],
+                args_untyped!(create_restricted_token(mint_auth, burn_auth, withdraw_auth, admin_auth)),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -162,7 +157,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_burn",
-                vec![scrypto_encode(&auth_resource_address)],
+                args_untyped!(create_restricted_burn(auth_resource_address)),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -220,7 +215,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_fungible_fixed",
-                args![amount, divisibility],
+                args_untyped!(create_fungible_fixed(amount, divisibility)),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))

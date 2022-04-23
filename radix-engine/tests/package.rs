@@ -1,6 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use scrypto::args_untyped;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::errors::WasmValidationError::NoValidMemoryExport;
@@ -50,7 +51,7 @@ fn large_return_len_should_cause_memory_access_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "LargeReturnSize", "something", args![])
+        .call_function(package, "LargeReturnSize", "something", args_untyped!(something()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -70,7 +71,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "MaxReturnSize", "something", args![])
+        .call_function(package, "MaxReturnSize", "something", args_untyped!(something()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -90,7 +91,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "ZeroReturnSize", "something", args![])
+        .call_function(package, "ZeroReturnSize", "something", args_untyped!(something()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);

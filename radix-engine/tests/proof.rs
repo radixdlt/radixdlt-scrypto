@@ -1,6 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use scrypto::args_untyped;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
@@ -61,7 +62,7 @@ fn can_create_clone_and_drop_vault_proof() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
-            vec![scrypto_encode(&Decimal::one())],
+            args_untyped!(create_clone_drop_vault_proof(Decimal::one())),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -141,7 +142,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
-            args![total_ids, proof_ids],
+            args_untyped!(create_clone_drop_vault_proof_by_ids(total_ids, proof_ids)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -318,7 +319,7 @@ fn can_compose_bucket_and_vault_proof() {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof",
-                args![Bucket(bucket_id)],
+                args_untyped!(compose_vault_and_bucket_proof(Bucket(bucket_id))),
             )
         })
         .build(test_runner.get_nonce([pk]))
@@ -357,7 +358,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof_by_amount",
-                args![Bucket(bucket_id), Decimal::from(2)],
+                args_untyped!(compose_vault_and_bucket_proof_by_amount(Bucket(bucket_id), Decimal::from(2))),
             )
         })
         .build(test_runner.get_nonce([pk]))
@@ -402,10 +403,12 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
                 builder.call_method(
                     component_address,
                     "compose_vault_and_bucket_proof_by_ids",
-                    args![
-                        Bucket(bucket_id),
-                        BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2),])
-                    ],
+                    args_untyped!(
+                        compose_vault_and_bucket_proof_by_ids(
+                            Bucket(bucket_id),
+                            BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2),])
+                        )
+                    ),
                 )
             },
         )
@@ -442,7 +445,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_amount",
-            args![Decimal::from(3), Decimal::from(1)],
+            args_untyped![create_clone_drop_vault_proof_by_amount(Decimal::from(3), Decimal::from(1))],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -483,10 +486,12 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                     package_address,
                     "Receiver",
                     "assert_ids",
-                    args!(
-                        Proof(proof_id),
-                        BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
-                        resource_address
+                    args_untyped!(
+                        assert_ids(
+                            Proof(proof_id),
+                            BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
+                            resource_address
+                        )
                     ),
                 )
             },

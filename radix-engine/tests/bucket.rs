@@ -1,6 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use scrypto::args_untyped;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::*;
 use radix_engine::ledger::*;
@@ -18,13 +19,13 @@ fn test_bucket() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "BucketTest", "combine", args![])
-        .call_function(package, "BucketTest", "split", args![])
-        .call_function(package, "BucketTest", "borrow", args![])
-        .call_function(package, "BucketTest", "query", args![])
-        .call_function(package, "BucketTest", "test_restricted_transfer", args![])
-        .call_function(package, "BucketTest", "test_burn", args![])
-        .call_function(package, "BucketTest", "test_burn_freely", args![])
+        .call_function(package, "BucketTest", "combine", args_untyped!(combine()))
+        .call_function(package, "BucketTest", "split", args_untyped!(split()))
+        .call_function(package, "BucketTest", "borrow", args_untyped!(borrow()))
+        .call_function(package, "BucketTest", "query", args_untyped!(query()))
+        .call_function(package, "BucketTest", "test_restricted_transfer", args_untyped!(test_restricted_transfer()))
+        .call_function(package, "BucketTest", "test_burn", args_untyped!(test_burn()))
+        .call_function(package, "BucketTest", "test_burn_freely", args_untyped!(test_burn_freely()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);
@@ -42,10 +43,10 @@ fn test_bucket_of_badges() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "BadgeTest", "combine", args![])
-        .call_function(package, "BadgeTest", "split", args![])
-        .call_function(package, "BadgeTest", "borrow", args![])
-        .call_function(package, "BadgeTest", "query", args![])
+        .call_function(package, "BadgeTest", "combine", args_untyped!(combine()))
+        .call_function(package, "BadgeTest", "split", args_untyped!(split()))
+        .call_function(package, "BadgeTest", "borrow", args_untyped!(borrow()))
+        .call_function(package, "BadgeTest", "query", args_untyped!(query()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);

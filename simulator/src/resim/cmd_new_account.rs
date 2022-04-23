@@ -1,6 +1,7 @@
 use clap::Parser;
 use colored::*;
 use rand::Rng;
+use scrypto::args_untyped;
 use scrypto::prelude::*;
 
 use crate::resim::*;
@@ -32,9 +33,9 @@ impl NewAccount {
             );
             let withdraw_auth = auth!(require(auth_address));
             let transaction = TransactionBuilder::new()
-                .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+                .call_method(SYSTEM_COMPONENT, "free_xrd", args_untyped!(free_xrd()))
                 .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                    builder.new_account_with_resource(withdraw_auth, bucket_id)
+                    builder.new_account_with_resource(&withdraw_auth, bucket_id)
                 })
                 .build_with_no_nonce();
             let manifest = decompile(&transaction).map_err(Error::DecompileError)?;

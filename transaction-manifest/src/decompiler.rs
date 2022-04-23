@@ -1,3 +1,4 @@
+use sbor::{encode_any, Value};
 use radix_engine::engine::*;
 use radix_engine::model::*;
 use scrypto::engine::types::*;
@@ -211,42 +212,62 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::CallFunction {
                 package_address,
                 blueprint_name,
-                function,
+                function: _,
                 args,
             } => {
-                buf.push_str(&format!(
-                    "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                    package_address, blueprint_name, function
-                ));
-                for arg in args {
-                    let validated_arg = ScryptoValue::from_slice(&arg)
-                        .map_err(DecompileError::ParseScryptoValueError)?;
-                    id_validator
-                        .move_resources(&validated_arg)
-                        .map_err(DecompileError::IdValidatorError)?;
-                    buf.push(' ');
-                    buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                let validated_arg = ScryptoValue::from_slice(&args[0])
+                    .map_err(DecompileError::ParseScryptoValueError)?;
+                if let Value::Enum { name, fields } = validated_arg.dom {
+                    buf.push_str(&format!(
+                        "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
+                        package_address, blueprint_name, name
+                    ));
+                    for field in fields {
+                        let mut bytes = Vec::new();
+                        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+                        encode_any(None, &field, &mut enc);
+                        let validated_arg = ScryptoValue::from_slice(&bytes).map_err(DecompileError::ParseScryptoValueError)?;
+                        id_validator
+                            .move_resources(&validated_arg)
+                            .map_err(DecompileError::IdValidatorError)?;
+
+                        buf.push(' ');
+                        buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                    }
+                } else {
+                    panic!("Should not get here.");
                 }
                 buf.push_str(";\n");
             }
             Instruction::CallMethod {
                 component_address,
-                method,
+                method: _,
                 args,
             } => {
-                buf.push_str(&format!(
-                    "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                    component_address, method
-                ));
-                for arg in args {
-                    let validated_arg = ScryptoValue::from_slice(&arg)
-                        .map_err(DecompileError::ParseScryptoValueError)?;
-                    id_validator
-                        .move_resources(&validated_arg)
-                        .map_err(DecompileError::IdValidatorError)?;
-                    buf.push(' ');
-                    buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                let validated_arg = ScryptoValue::from_slice(&args[0])
+                    .map_err(DecompileError::ParseScryptoValueError)?;
+                if let Value::Enum { name, fields } = validated_arg.dom {
+                    buf.push_str(&format!(
+                        "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
+                        component_address, name
+                    ));
+
+                    for field in fields {
+                        let mut bytes = Vec::new();
+                        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+                        encode_any(None, &field, &mut enc);
+                        let validated_arg = ScryptoValue::from_slice(&bytes).map_err(DecompileError::ParseScryptoValueError)?;
+                        id_validator
+                            .move_resources(&validated_arg)
+                            .map_err(DecompileError::IdValidatorError)?;
+
+                        buf.push(' ');
+                        buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
+                    }
+                } else {
+                    panic!("Should not get here.");
                 }
+
                 buf.push_str(";\n");
             }
             Instruction::CallMethodWithAllResources {
