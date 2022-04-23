@@ -57,7 +57,7 @@ pub enum Value {
         fields: Vec<Value>,
     },
     Enum {
-        index: u8,
+        name: String,
         fields: Vec<Value>,
     },
 
@@ -131,11 +131,11 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 encode_any(None, field, enc);
             }
         }
-        Value::Enum { index, fields } => {
+        Value::Enum { name, fields } => {
             if ty_ctx.is_none() {
                 enc.write_type(TYPE_ENUM);
             }
-            enc.write_u8(*index);
+            name.encode_value(enc);
             enc.write_len(fields.len());
             for field in fields {
                 encode_any(None, field, enc);
@@ -348,8 +348,8 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             Ok(Value::Struct { fields })
         }
         TYPE_ENUM => {
-            // index
-            let index = dec.read_u8()?;
+            // name
+            let name = <String>::decode_value(dec)?;
             // number of fields
             let len = dec.read_len()?;
             // fields
@@ -357,7 +357,7 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
             for _ in 0..len {
                 fields.push(decode_next(None, dec)?);
             }
-            Ok(Value::Enum { index, fields })
+            Ok(Value::Enum { name, fields })
         }
         // composite types
         TYPE_OPTION => {
@@ -586,6 +586,7 @@ mod tests {
     use crate::rust::boxed::Box;
     use crate::rust::collections::*;
     use crate::rust::string::String;
+    use crate::rust::string::ToString;
     use crate::rust::vec;
     use crate::rust::vec::Vec;
     use crate::*;
@@ -710,15 +711,15 @@ mod tests {
                         fields: vec![Value::U32 { value: 1 }]
                     },
                     Value::Enum {
-                        index: 0,
+                        name: "A".to_string(),
                         fields: vec![Value::U32 { value: 1 }]
                     },
                     Value::Enum {
-                        index: 1,
+                        name: "B".to_string(),
                         fields: vec![Value::U32 { value: 2 }]
                     },
                     Value::Enum {
-                        index: 2,
+                        name: "C".to_string(),
                         fields: vec![]
                     },
                     Value::Vec {
