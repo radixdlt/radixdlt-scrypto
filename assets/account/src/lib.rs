@@ -6,7 +6,7 @@ blueprint! {
     }
 
     impl Account {
-        fn internal_new(withdraw_rule: MethodAuth, bucket: Option<Bucket>) -> ComponentAddress {
+        fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {
             let vaults = LazyMap::new();
             if let Some(b) = bucket {
                 vaults.insert(b.resource_address(), Vault::with_bucket(b));
@@ -20,11 +20,11 @@ blueprint! {
             Self { vaults }.instantiate().add_access_check(access_rules).globalize()
         }
 
-        pub fn new(withdraw_rule: MethodAuth) -> ComponentAddress {
+        pub fn new(withdraw_rule: AccessRule) -> ComponentAddress {
             Self::internal_new(withdraw_rule, Option::None)
         }
 
-        pub fn new_with_resource(withdraw_rule: MethodAuth, bucket: Bucket) -> ComponentAddress {
+        pub fn new_with_resource(withdraw_rule: AccessRule, bucket: Bucket) -> ComponentAddress {
             Self::internal_new(withdraw_rule, Option::Some(bucket))
         }
 

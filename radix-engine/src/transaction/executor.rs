@@ -3,7 +3,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::{abi, rule, auth_rule_node};
+use scrypto::{abi, rule, access_rule_node};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -89,7 +89,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &MethodAuth) -> ComponentAddress {
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
