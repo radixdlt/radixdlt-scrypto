@@ -22,6 +22,8 @@ pub enum DecodeError {
 
     InvalidIndex(u8),
 
+    InvalidEnum(String),
+
     InvalidBool(u8),
 
     InvalidUtf8,

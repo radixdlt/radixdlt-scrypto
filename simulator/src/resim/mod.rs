@@ -1,6 +1,7 @@
 mod cmd_call_function;
 mod cmd_call_method;
 mod cmd_export_abi;
+mod cmd_generate_key_pair;
 mod cmd_mint;
 mod cmd_new_account;
 mod cmd_new_badge_fixed;
@@ -22,6 +23,7 @@ mod error;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
 pub use cmd_export_abi::*;
+pub use cmd_generate_key_pair::*;
 pub use cmd_mint::*;
 pub use cmd_new_account::*;
 pub use cmd_new_badge_fixed::*;
@@ -63,6 +65,7 @@ pub enum Command {
     CallFunction(CallFunction),
     CallMethod(CallMethod),
     ExportAbi(ExportAbi),
+    GenerateKeyPair(GenerateKeyPair),
     Mint(Mint),
     NewAccount(NewAccount),
     NewBadgeFixed(NewBadgeFixed),
@@ -87,6 +90,7 @@ pub fn run() -> Result<(), Error> {
         Command::CallFunction(cmd) => cmd.run(),
         Command::CallMethod(cmd) => cmd.run(),
         Command::ExportAbi(cmd) => cmd.run(),
+        Command::GenerateKeyPair(cmd) => cmd.run(),
         Command::Mint(cmd) => cmd.run(),
         Command::NewAccount(cmd) => cmd.run(),
         Command::NewBadgeFixed(cmd) => cmd.run(),
