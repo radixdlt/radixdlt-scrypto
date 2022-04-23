@@ -155,13 +155,27 @@ fn generate_method_enum(blueprint_id: &Ident, items: &[ImplItem]) -> ItemEnum {
 
     for item in items {
         if let ImplItem::Method(method) = item {
-            if let Visibility::Public(_) = &method.vis {
-                let method_ident = method.sig.ident.clone();
-                let variant: Variant = parse_quote! {
-                    #method_ident
-                };
-                variants.push(variant);
+            if !matches!(method.vis, Visibility::Public(_)) {
+                continue;
             }
+
+            let mut fields = Vec::new();
+            for input in (&method.sig.inputs).into_iter() {
+                match input {
+                    FnArg::Typed(ref t) => {
+                        // Generate an `Arg` and a loading `Stmt` for the i-th argument
+                        let ty = &t.ty;
+                        fields.push(ty);
+                    }
+                    _ => {}
+                }
+            }
+
+            let method_ident = method.sig.ident.clone();
+            let variant: Variant = parse_quote! {
+                #method_ident(#(#fields),*)
+            };
+            variants.push(variant);
         }
     }
 
@@ -505,7 +519,7 @@ mod tests {
     #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self) -> u32 { self.a } }",
+            "struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } }",
         )
         .unwrap();
         let output = handle_blueprint(input).unwrap();
@@ -523,8 +537,8 @@ mod tests {
                     }
 
                     impl Test {
-                        pub fn x(&self) -> u32 {
-                            self.a
+                        pub fn x(&self, i: u32) -> u32 {
+                            i + self.a
                         }
                     }
 
@@ -540,7 +554,7 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 enum TestMethod {
-                    x,
+                    x(u32),
                 }
 
                 #[no_mangle]
@@ -559,8 +573,12 @@ mod tests {
                                 ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentAddress>(
                                     &calldata.args[0usize]
                                 ).unwrap();
+                            let arg1 =
+                                ::scrypto::buffer::scrypto_decode::<u32>(
+                                    &calldata.args[1usize]
+                                ).unwrap();
                             let state: blueprint::Test = borrow_component!(arg0).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state));
+                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, arg1));
                         }
                         _ => {
                             panic!("Function/method not fund")
@@ -579,7 +597,7 @@ mod tests {
                     let methods: Vec<Method> = vec![::scrypto::abi::Method {
                         name: "x".to_owned(),
                         mutability: ::scrypto::abi::Mutability::Immutable,
-                        inputs: vec![],
+                        inputs: vec![<u32>::describe()],
                         output: <u32>::describe(),
                     }];
                     let schema: Type = blueprint::Test::describe();
@@ -592,8 +610,8 @@ mod tests {
                     component_address: ::scrypto::component::ComponentAddress,
                 }
                 impl Test {
-                    pub fn x(&self) -> u32 {
-                        let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!());
+                    pub fn x(&self, arg0: u32) -> u32 {
+                        let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0));
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }
