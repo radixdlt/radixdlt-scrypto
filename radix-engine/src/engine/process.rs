@@ -220,15 +220,11 @@ pub struct Interpreter {
     memory: MemoryRef,
 }
 
-/// Qualitative states for a WASM process
 #[derive(Debug)]
-enum InterpreterState<'a> {
-    Blueprint,
-    Component {
-        component_address: ComponentAddress,
-        component: &'a mut Component,
-        initial_loaded_object_refs: ComponentObjectRefs,
-    },
+struct ComponentState<'a> {
+    component_address: ComponentAddress,
+    component: &'a mut Component,
+    initial_loaded_object_refs: ComponentObjectRefs,
 }
 
 /// Top level state machine for a process. Empty currently only
@@ -239,7 +235,7 @@ struct WasmProcess<'a> {
     depth: usize,
     trace: bool,
     vm: Interpreter,
-    interpreter_state: InterpreterState<'a>,
+    component: Option<ComponentState<'a>>,
 }
 
 ///TODO: Remove
@@ -391,22 +387,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
 
                 let (module, memory) = package.load_module().unwrap();
-                let interpreter_state = if let Some(component) = component_state {
+
+                let component_state = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();
                     let data = ScryptoValue::from_slice(component.state()).unwrap();
                     let initial_loaded_object_refs = ComponentObjectRefs {
                         vault_ids: data.vault_ids.into_iter().collect(),
                         lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
                     };
-                    let istate = InterpreterState::Component {
+                    Some(ComponentState {
                         component_address,
                         component,
                         initial_loaded_object_refs,
-                    };
-
-                    istate
+                    })
                 } else {
-                    InterpreterState::Blueprint
+                    None
                 };
 
                 self.wasm_process_state = Some(WasmProcess {
@@ -418,7 +413,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         module: module.clone(),
                         memory,
                     },
-                    interpreter_state,
+                    component: component_state,
                 });
 
                 // Execution
@@ -630,7 +625,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     (None, vault)
                 } else if !self.snode_refs.vault_ids.contains(vault_id) {
                     return Err(RuntimeError::VaultNotFound(*vault_id));
-                } else if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
+                } else if let Some(WasmProcess { component: Some(ComponentState { component_address, .. }), .. }) = &self.wasm_process_state {
                     let vault = self.track.borrow_vault_mut(component_address, vault_id);
                     (Some(*component_address), vault)
                 } else {
@@ -1053,8 +1048,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
-        let component_state = match &wasm_process.interpreter_state {
-            InterpreterState::Component { component, initial_loaded_object_refs, .. } => {
+        let component_state = match &wasm_process.component {
+            Some(ComponentState { component, initial_loaded_object_refs, .. }) => {
                 self.snode_refs.extend(initial_loaded_object_refs.clone());
                 Ok(component.state())
             },
@@ -1072,13 +1067,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
-        let (component, new_set, component_address) = match &mut wasm_process.interpreter_state {
-            InterpreterState::Component {
+        let (component, new_set, component_address) = match &mut wasm_process.component {
+            Some(ComponentState {
                 ref mut component,
                 component_address,
                 initial_loaded_object_refs,
                 ..
-            } => {
+            }) => {
                 let mut new_set = Self::process_entry_data(&input.state)?;
                 new_set.remove(&initial_loaded_object_refs)?;
                 Ok((component, new_set, component_address))
@@ -1122,7 +1117,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
         }
 
-        if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
+        if let Some(WasmProcess { component: Some(ComponentState { component_address, .. }), .. }) = &self.wasm_process_state {
             let value = self.track.get_lazy_map_entry(
                 *component_address,
                 &input.lazy_map_id,
@@ -1152,11 +1147,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .owned_snodes
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
         {
-            None => match &wasm_process.interpreter_state {
-                InterpreterState::Component {
+            None => match &wasm_process.component {
+                Some(ComponentState {
                     component_address,
                     ..
-                } => {
+                }) => {
                     if !self.snode_refs
                             .lazy_map_ids
                             .contains(&input.lazy_map_id)
@@ -1247,9 +1242,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)?;
-        let component = match wasm_process.interpreter_state {
-            InterpreterState::Component { component_address, .. } => Some(component_address.clone()),
-            InterpreterState::Blueprint  => None,
+        let component = match wasm_process.component {
+            Some(ComponentState { component_address, .. }) => Some(component_address.clone()),
+            None => None,
         };
         Ok(GetCallDataOutput {
             component,
