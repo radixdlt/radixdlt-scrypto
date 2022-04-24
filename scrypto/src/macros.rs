@@ -21,28 +21,7 @@ macro_rules! args {
 }
 
 #[macro_export]
-macro_rules! args_untyped {
-    ($name:ident($($args: expr),*)) => {
-        {
-            let mut fields = Vec::new();
-            $(
-                let encoded = ::scrypto::prelude::scrypto_encode(&$args);
-                fields.push(::sbor::decode_any(&encoded).unwrap());
-            )*
-            let variant = ::sbor::Value::Enum {
-                name: stringify!($name).to_string(),
-                fields
-            };
-            let mut bytes = Vec::new();
-            let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-            ::sbor::encode_any(None, &variant, &mut enc);
-            bytes
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! args_untyped2 {
+macro_rules! invocation {
     ($name:expr, $($args: expr),*) => {
         {
             let mut fields = Vec::new();
@@ -52,6 +31,23 @@ macro_rules! args_untyped2 {
             )*
             let variant = ::sbor::Value::Enum {
                 name: $name,
+                fields
+            };
+            let mut bytes = Vec::new();
+            let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+            ::sbor::encode_any(None, &variant, &mut enc);
+            bytes
+        }
+    };
+    ($name:ident($($args: expr),*)) => {
+        {
+            let mut fields = Vec::new();
+            $(
+                let encoded = ::scrypto::prelude::scrypto_encode(&$args);
+                fields.push(::sbor::decode_any(&encoded).unwrap());
+            )*
+            let variant = ::sbor::Value::Enum {
+                name: stringify!($name).to_string(),
                 fields
             };
             let mut bytes = Vec::new();

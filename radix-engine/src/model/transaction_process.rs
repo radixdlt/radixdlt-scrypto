@@ -1,7 +1,7 @@
-use scrypto::args_untyped2;
 use scrypto::component::PackageFunction;
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
+use scrypto::invocation;
 use scrypto::prelude::{ConsumingProofMethod, ProofMethod, ScryptoActor};
 use scrypto::resource::{AuthZoneMethod, BucketMethod};
 use scrypto::rust::collections::{HashMap};
@@ -351,7 +351,7 @@ impl TransactionProcess {
                             for (_, real_id) in self.bucket_id_mapping.drain() {
                                 buckets.push(scrypto::resource::Bucket(real_id));
                             }
-                            let encoded = args_untyped2!(method.to_string(), buckets);
+                            let encoded = invocation!(method.to_string(), buckets);
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
                                 ScryptoValue::from_slice(&encoded).unwrap(),

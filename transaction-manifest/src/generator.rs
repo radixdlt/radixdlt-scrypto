@@ -786,7 +786,7 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::args_untyped;
+    use scrypto::invocation;
     use super::*;
     use crate::lexer::tokenize;
     use crate::parser::Parser;
@@ -1016,7 +1016,7 @@ mod tests {
                 )
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
-                arg: args_untyped!(new(500u32, HashMap::from([("key", 1u8),])))
+                arg: invocation!(new(500u32, HashMap::from([("key", 1u8),])))
             }
         );
         generate_instruction_ok!(
@@ -1026,7 +1026,7 @@ mod tests {
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
-                arg: args_untyped!(refill())
+                arg: invocation!(refill())
             }
         );
         generate_instruction_ok!(
@@ -1070,7 +1070,7 @@ mod tests {
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
-                        arg: args_untyped!(withdraw_by_amount(
+                        arg: invocation!(withdraw_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
                                     "030000000000000000000000000000000000000000000000000004"
@@ -1090,7 +1090,7 @@ mod tests {
                             "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                         )
                         .unwrap(),
-                        arg: args_untyped!(buy_gumball(scrypto::resource::Bucket(512)))
+                        arg: invocation!(buy_gumball(scrypto::resource::Bucket(512)))
                     },
                     Instruction::AssertWorktopContainsByAmount {
                         amount: Decimal::from(3),
@@ -1120,7 +1120,7 @@ mod tests {
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
-                        arg: args_untyped!(create_proof_by_amount(
+                        arg: invocation!(create_proof_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
                                     "030000000000000000000000000000000000000000000000000004"
