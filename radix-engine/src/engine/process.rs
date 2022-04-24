@@ -61,7 +61,6 @@ pub trait SystemApi {
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        function: String,
         arg: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
@@ -347,7 +346,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'r>,
-        function: String,
         arg: ScryptoValue,
     ) -> Result<
         (
@@ -360,7 +358,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     > {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(self, "Run started: snode_ref = {:?} function = {:?}", snode_ref, function);
+        re_info!(self, "Run started: snode_ref = {:?}", snode_ref);
 
         // Execution
         let output = match snode {
@@ -491,7 +489,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if let Some(_) = &mut self.auth_zone {
             self.invoke_snode(
                 SNodeRef::AuthZoneRef,
-                "main".to_string(),
                 ScryptoValue::from_value(&AuthZoneMethod::Clear())
             )?;
         }
@@ -513,9 +510,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     pub fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        function: String,
         arg: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+
+        let function = if let Value::Enum {name, ..} = &arg.dom {
+            name.clone()
+        } else {
+            return Err(RuntimeError::InvalidInvocation);
+        };
+
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
@@ -710,7 +713,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // invoke the main function
         let (result, received_buckets, received_proofs, received_vaults) =
-            process.run(Some(snode_ref), snode, function, arg)?;
+            process.run(Some(snode_ref), snode, arg)?;
 
         // move buckets and proofs to this process.
         self.buckets.extend(received_buckets);
@@ -755,7 +758,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None, HashMap::new(), HashMap::new());
         let result = process
-            .run(None, snode, String::new(), mock)
+            .run(None, snode, mock)
             .map(|(r, _, _, _)| r);
 
         re_debug!(self, "Call abi ended");
@@ -1224,8 +1227,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: InvokeSNodeInput,
     ) -> Result<InvokeSNodeOutput, RuntimeError> {
-        let arg = ScryptoValue::from_slice(&input.arg).map_err(RuntimeError::ParseScryptoValueError)?;
-        let result = self.invoke_snode(input.snode_ref, input.function, arg)?;
+        let arg = ScryptoValue::from_slice(&input.arg)
+            .map_err(RuntimeError::ParseScryptoValueError)?;
+        let result = self.invoke_snode(input.snode_ref, arg)?;
         Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
@@ -1300,10 +1304,9 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        function: String,
         arg: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_snode(snode_ref, function, arg)
+        self.invoke_snode(snode_ref, arg)
     }
 
     fn get_non_fungible(

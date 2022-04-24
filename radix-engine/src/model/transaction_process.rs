@@ -58,7 +58,6 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
-                                "main".to_string(),
                                 ScryptoValue::from_value(&WorktopMethod::TakeAll(*resource_address)),
                             ).map(|rtn| {
                                 let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
@@ -77,7 +76,6 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
-                                "take_amount".to_string(),
                                 ScryptoValue::from_value(&WorktopMethod::TakeAmount(*amount, *resource_address)),
                             ).map(|rtn| {
                                 let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
@@ -95,7 +93,6 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
-                                "take_non_fungibles".to_string(),
                                 ScryptoValue::from_value(&WorktopMethod::TakeNonFungibles(ids.clone(), *resource_address)),
                             ).map(|rtn| {
                                 let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
@@ -108,7 +105,6 @@ impl TransactionProcess {
                         .map(|real_id| {
                             system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
-                                "put".to_string(),
                                 ScryptoValue::from_value(&WorktopMethod::Put(scrypto::resource::Bucket(real_id))),
                             )
                         })
@@ -117,7 +113,6 @@ impl TransactionProcess {
                 ValidatedInstruction::AssertWorktopContains { resource_address } => {
                     system_api.invoke_snode(
                         SNodeRef::WorktopRef,
-                        "assert_contains".to_string(),
                         ScryptoValue::from_value(&WorktopMethod::AssertContains(*resource_address)),
                     )
                 }
@@ -127,7 +122,6 @@ impl TransactionProcess {
                 } => {
                     system_api.invoke_snode(
                         SNodeRef::WorktopRef,
-                        "assert_contains_amount".to_string(),
                         ScryptoValue::from_value(&WorktopMethod::AssertContainsAmount(*amount, *resource_address)),
                     )
                 },
@@ -137,7 +131,6 @@ impl TransactionProcess {
                 } => {
                     system_api.invoke_snode(
                         SNodeRef::WorktopRef,
-                        "assert_contains_ids".to_string(),
                         ScryptoValue::from_value(&WorktopMethod::AssertContainsNonFungibles(ids.clone(), *resource_address)),
                     )
                 },
@@ -147,7 +140,6 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "main".to_string(),
                                 ScryptoValue::from_value(&AuthZoneMethod::Pop())
                             ).map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
@@ -160,7 +152,6 @@ impl TransactionProcess {
                     self.proof_id_mapping.clear();
                     system_api.invoke_snode(
                         SNodeRef::AuthZoneRef,
-                        "main".to_string(),
                         ScryptoValue::from_value(&AuthZoneMethod::Clear())
                     )
                 },
@@ -170,7 +161,6 @@ impl TransactionProcess {
                         .and_then(|real_id|
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "main".to_string(),
                                 ScryptoValue::from_value(&AuthZoneMethod::Push(scrypto::resource::Proof(real_id)))
                             )
                         )
@@ -181,7 +171,6 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "main".to_string(),
                                 ScryptoValue::from_value(&AuthZoneMethod::CreateProof(*resource_address))
                             ).map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
@@ -198,7 +187,6 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "main".to_string(),
                                 ScryptoValue::from_value(&AuthZoneMethod::CreateProofByAmount(
                                     *amount,
                                     *resource_address
@@ -218,7 +206,6 @@ impl TransactionProcess {
                         .and_then(|new_id| {
                             system_api.invoke_snode(
                                 SNodeRef::AuthZoneRef,
-                                "main".to_string(),
                                 ScryptoValue::from_value(&AuthZoneMethod::CreateProofByIds(
                                     ids.clone(),
                                     *resource_address
@@ -240,7 +227,6 @@ impl TransactionProcess {
                         .and_then(|(new_id, real_bucket_id)| {
                             system_api.invoke_snode(
                                 SNodeRef::BucketRef(real_bucket_id),
-                                "main".to_string(),
                                 ScryptoValue::from_value(&BucketMethod::CreateProof()),
                             ).map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
@@ -259,7 +245,6 @@ impl TransactionProcess {
                                 .cloned()
                                 .map(|real_id| {
                                     system_api.invoke_snode(SNodeRef::ProofRef(real_id),
-                                                            "main".to_string(),
                                                             ScryptoValue::from_value(&ProofMethod::Clone())
                                     ).map(|v| {
                                         let cloned_proof_id = v.proof_ids.iter().next().unwrap().0;
@@ -274,7 +259,6 @@ impl TransactionProcess {
                         .map(|real_id| {
                             system_api.invoke_snode(
                                 SNodeRef::Proof(real_id),
-                                "main".to_string(),
                                 ScryptoValue::from_value(&ConsumingProofMethod::Drop())
                             )
                         })
@@ -283,14 +267,13 @@ impl TransactionProcess {
                 ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    function,
+                    function: _,
                     arg,
                 } => {
                     self.replace_ids(arg.clone())
                         .and_then(|arg|
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Blueprint(*package_address, blueprint_name.to_string())),
-                                function.to_string(),
                                 arg
                             )
                         )
@@ -299,7 +282,6 @@ impl TransactionProcess {
                             for (proof_id, _) in &result.proof_ids {
                                 system_api.invoke_snode(
                                     SNodeRef::AuthZoneRef,
-                                    "main".to_string(),
                                     ScryptoValue::from_value(&AuthZoneMethod::Push(scrypto::resource::Proof(*proof_id)))
                                 ).unwrap(); // TODO: Remove unwrap
                             }
@@ -307,7 +289,6 @@ impl TransactionProcess {
                             for (bucket_id, _) in &result.bucket_ids {
                                 system_api.invoke_snode(
                                     SNodeRef::WorktopRef,
-                                    "put".to_string(),
                                     ScryptoValue::from_value(&WorktopMethod::Put(scrypto::resource::Bucket(*bucket_id)))
                                 ).unwrap(); // TODO: Remove unwrap
                             }
@@ -316,14 +297,13 @@ impl TransactionProcess {
                 },
                 ValidatedInstruction::CallMethod {
                     component_address,
-                    method,
+                    method: _,
                     arg,
                 } => {
                     self.replace_ids(arg.clone())
                         .and_then(|arg|
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
-                                method.to_string(),
                                 arg
                             )
                         )
@@ -332,7 +312,6 @@ impl TransactionProcess {
                             for (proof_id, _) in &result.proof_ids {
                                 system_api.invoke_snode(
                                     SNodeRef::AuthZoneRef,
-                                    "main".to_string(),
                                     ScryptoValue::from_value(&AuthZoneMethod::Push(scrypto::resource::Proof(*proof_id)))
                                 ).unwrap();
                             }
@@ -340,7 +319,6 @@ impl TransactionProcess {
                             for (bucket_id, _) in &result.bucket_ids {
                                 system_api.invoke_snode(
                                     SNodeRef::WorktopRef,
-                                    "put".to_string(),
                                     ScryptoValue::from_value(&WorktopMethod::Put(scrypto::resource::Bucket(*bucket_id)))
                                 ).unwrap(); // TODO: Remove unwrap
                             }
@@ -353,20 +331,17 @@ impl TransactionProcess {
                 } => {
                     system_api.invoke_snode(
                         SNodeRef::AuthZoneRef,
-                        "main".to_string(),
                         ScryptoValue::from_value(&AuthZoneMethod::Clear())
                     )
                         .and_then(|_| {
                             for (_, real_id) in self.proof_id_mapping.drain() {
                                 system_api.invoke_snode(
                                     SNodeRef::Proof(real_id),
-                                    "main".to_string(),
                                     ScryptoValue::from_value(&ConsumingProofMethod::Drop())
                                 ).unwrap();
                             }
                             system_api.invoke_snode(
                                 SNodeRef::WorktopRef,
-                                "drain".to_string(),
                                 ScryptoValue::from_value(&WorktopMethod::Drain())
                             )
                         })
@@ -381,7 +356,6 @@ impl TransactionProcess {
                             let encoded = args_untyped2!(method.to_string(), buckets);
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
-                                method.to_string(),
                                 ScryptoValue::from_slice(&encoded).unwrap(),
                             )
                         })
@@ -389,7 +363,6 @@ impl TransactionProcess {
                 ValidatedInstruction::PublishPackage { code } => {
                     system_api.invoke_snode(
                         SNodeRef::PackageStatic,
-                        "main".to_string(),
                         ScryptoValue::from_value(&PackageFunction::Publish(code.to_vec())),
                     )
                 },

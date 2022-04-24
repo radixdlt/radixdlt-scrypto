@@ -4,7 +4,6 @@ use crate::engine::{api::*, call_engine};
 use crate::resource::*;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
-use crate::rust::string::ToString;
 
 /// Represents the Radix Engine resource subsystem.
 ///
@@ -47,7 +46,6 @@ impl ResourceSystem {
 
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceStatic,
-            function: "main".to_string(),
             arg: scrypto_encode(&ResourceManagerFunction::Create(
                 resource_type,
                 metadata,

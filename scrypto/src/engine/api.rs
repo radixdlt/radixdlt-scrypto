@@ -50,7 +50,6 @@ macro_rules! invocations {
             $vis $fn $method_name $s -> $rtn {
                 let input = InvokeSNodeInput {
                     snode_ref: $snode_ref,
-                    function: "main".to_string(),
                     arg: scrypto::buffer::scrypto_encode(&$method_enum),
                 };
                 let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
@@ -63,7 +62,6 @@ macro_rules! invocations {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct InvokeSNodeInput {
     pub snode_ref: SNodeRef,
-    pub function: String,
     pub arg: Vec<u8>,
 }
 

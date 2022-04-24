@@ -5,7 +5,6 @@ use crate::engine::{api::*, call_engine};
 use crate::prelude::AccessRules;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::*;
-use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 
 
@@ -49,7 +48,6 @@ impl ComponentSystem {
     pub fn publish_package(&mut self, code: &[u8]) -> PackageAddress {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::PackageStatic,
-            function: "main".to_string(),
             arg: scrypto_encode(&PackageFunction::Publish(code.to_vec())),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);

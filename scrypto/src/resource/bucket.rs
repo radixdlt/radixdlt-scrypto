@@ -39,7 +39,6 @@ impl Bucket {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(resource_address),
-            function: "create_empty_bucket".to_string(),
             arg: scrypto_encode(&()),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);

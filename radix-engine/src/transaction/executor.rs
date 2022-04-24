@@ -175,7 +175,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
         let mut txn_process = TransactionProcess::new(validated.clone());
         let txn_snode = SNodeState::Transaction(&mut txn_process);
-        let error = match proc.run(None, txn_snode, "execute".to_string(), ScryptoValue::from_value(&())) {
+        let error = match proc.run(None, txn_snode, ScryptoValue::from_value(&())) {
             Ok(_) => None,
             Err(e) => Some(e),
         };
