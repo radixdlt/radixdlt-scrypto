@@ -88,7 +88,7 @@ fn account_to_bucket_to_account() {
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
                     method: "deposit".to_owned(),
-                    args: args_untyped!(deposit(scrypto::resource::Bucket(bucket_id))),
+                    arg: args_untyped!(deposit(scrypto::resource::Bucket(bucket_id))),
                 })
                 .0
         })

@@ -12,7 +12,6 @@ use scrypto::rust::fmt;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
-use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::types::*;
 use scrypto::values::*;
@@ -92,11 +91,9 @@ impl TransactionBuilder {
             Instruction::DropProof { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
-            Instruction::CallFunction { args, .. } | Instruction::CallMethod { args, .. } => {
-                for arg in &args {
-                    let validated_arg = ScryptoValue::from_slice(arg).unwrap();
-                    self.id_validator.move_resources(&validated_arg).unwrap();
-                }
+            Instruction::CallFunction { arg, .. } | Instruction::CallMethod { arg, .. } => {
+                let scrypt_value = ScryptoValue::from_slice(&arg).unwrap();
+                self.id_validator.move_resources(&scrypt_value).unwrap();
             }
             Instruction::CallMethodWithAllResources { .. } => {
                 self.id_validator.move_all_resources().unwrap();
@@ -291,13 +288,13 @@ impl TransactionBuilder {
         package_address: PackageAddress,
         blueprint_name: &str,
         function: &str,
-        args: Vec<Vec<u8>>,
+        arg: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address,
             blueprint_name: blueprint_name.to_owned(),
             function: function.to_owned(),
-            args,
+            arg,
         });
         self
     }
@@ -346,7 +343,7 @@ impl TransactionBuilder {
                 package_address,
                 blueprint_name: blueprint_name.to_owned(),
                 function: function.to_owned(),
-                args: vec![bytes],
+                arg: bytes,
             })
             .0)
     }
@@ -356,12 +353,12 @@ impl TransactionBuilder {
         &mut self,
         component_address: ComponentAddress,
         method: &str,
-        args: Vec<Vec<u8>>,
+        arg: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address,
             method: method.to_owned(),
-            args,
+            arg,
         });
         self
     }
@@ -408,7 +405,7 @@ impl TransactionBuilder {
             .add_instruction(Instruction::CallMethod {
                 component_address,
                 method: method.to_owned(),
-                args: vec![bytes],
+                arg: bytes,
             })
             .0)
     }
@@ -477,7 +474,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: args_untyped!(
+            arg: args_untyped!(
                 new_resource(
                     ResourceType::Fungible { divisibility: 18 },
                     metadata,
@@ -502,7 +499,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: args_untyped!(
+            arg: args_untyped!(
                 new_resource(
                     ResourceType::Fungible { divisibility: 18 },
                     metadata,
@@ -539,7 +536,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: args_untyped!(
+            arg: args_untyped!(
                 new_resource(
                     ResourceType::Fungible { divisibility: 0 },
                     metadata,
@@ -564,7 +561,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "new_resource".to_owned(),
-            args: args_untyped!(
+            arg: args_untyped!(
                 new_resource(
                     ResourceType::Fungible { divisibility: 0 },
                     metadata,
@@ -584,7 +581,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             function: "mint".to_owned(),
-            args: args_untyped!(mint(amount, resource_address)),
+            arg: args_untyped!(mint(amount, resource_address)),
         });
         self
     }
@@ -597,7 +594,7 @@ impl TransactionBuilder {
                     package_address: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
                     function: "burn".to_owned(),
-                    args: args_untyped!(burn(scrypto::resource::Bucket(bucket_id))),
+                    arg: args_untyped!(burn(scrypto::resource::Bucket(bucket_id))),
                 })
                 .0
         })
@@ -615,7 +612,7 @@ impl TransactionBuilder {
                         package_address: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
                         function: "burn".to_owned(),
-                        args: args_untyped!(burn(scrypto::resource::Bucket(bucket_id))),
+                        arg: args_untyped!(burn(scrypto::resource::Bucket(bucket_id))),
                     })
                     .0
             },
@@ -628,7 +625,7 @@ impl TransactionBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new".to_owned(),
-            args: args_untyped!(new(withdraw_auth.clone())),
+            arg: args_untyped!(new(withdraw_auth.clone())),
         })
         .0
     }
@@ -643,7 +640,7 @@ impl TransactionBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             function: "new_with_resource".to_owned(),
-            args: args_untyped!(new_with_resource(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)))
+            arg: args_untyped!(new_with_resource(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)))
         })
         .0
     }
@@ -657,7 +654,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "withdraw".to_owned(),
-            args: args_untyped!(withdraw(resource_address)),
+            arg: args_untyped!(withdraw(resource_address)),
         })
         .0
     }
@@ -672,7 +669,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "withdraw".to_owned(),
-            args: args_untyped!(withdraw_by_amount(amount, resource_address)),
+            arg: args_untyped!(withdraw_by_amount(amount, resource_address)),
         })
         .0
     }
@@ -687,7 +684,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "withdraw_by_ids".to_owned(),
-            args: args_untyped!(withdraw_by_ids(ids.clone(), resource_address)),
+            arg: args_untyped!(withdraw_by_ids(ids.clone(), resource_address)),
         })
         .0
     }
@@ -701,7 +698,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "create_proof".to_owned(),
-            args: args_untyped!(create_proof(resource_address)),
+            arg: args_untyped!(create_proof(resource_address)),
         })
         .0
     }
@@ -716,7 +713,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "create_proof_by_amount".to_owned(),
-            args: args_untyped!(create_proof_by_amount(amount, resource_address)),
+            arg: args_untyped!(create_proof_by_amount(amount, resource_address)),
         })
         .0
     }
@@ -731,7 +728,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method: "create_proof_by_ids".to_owned(),
-            args: args_untyped!(create_proof_by_ids(ids.clone(), resource_address)),
+            arg: args_untyped!(create_proof_by_ids(ids.clone(), resource_address)),
         })
         .0
     }

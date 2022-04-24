@@ -303,7 +303,7 @@ pub fn generate_instruction(
                 package_address: generate_package_address(package_address)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 function: generate_string(function)?,
-                args: vec![bytes],
+                arg: bytes,
             }
         }
         ast::Instruction::CallMethod {
@@ -332,7 +332,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address)?,
                 method: generate_string(method)?,
-                args: vec![bytes],
+                arg: bytes,
             }
         }
         ast::Instruction::CallMethodWithAllResources {
@@ -792,7 +792,6 @@ mod tests {
     use super::*;
     use crate::lexer::tokenize;
     use crate::parser::Parser;
-    use scrypto::buffer::*;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1020,7 +1019,7 @@ mod tests {
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
                 function: "new".into(),
-                args: args_untyped!(new(500u32, HashMap::from([("key", 1u8),])))
+                arg: args_untyped!(new(500u32, HashMap::from([("key", 1u8),])))
             }
         );
         generate_instruction_ok!(
@@ -1031,7 +1030,7 @@ mod tests {
                 )
                 .unwrap(),
                 method: "refill".into(),
-                args: args_untyped!(refill())
+                arg: args_untyped!(refill())
             }
         );
         generate_instruction_ok!(
@@ -1076,7 +1075,7 @@ mod tests {
                         )
                         .unwrap(),
                         method: "withdraw_by_amount".into(),
-                        args: args_untyped!(withdraw_by_amount(
+                        arg: args_untyped!(withdraw_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
                                     "030000000000000000000000000000000000000000000000000004"
@@ -1097,7 +1096,7 @@ mod tests {
                         )
                         .unwrap(),
                         method: "buy_gumball".into(),
-                        args: args_untyped!(buy_gumball(scrypto::resource::Bucket(512)))
+                        arg: args_untyped!(buy_gumball(scrypto::resource::Bucket(512)))
                     },
                     Instruction::AssertWorktopContainsByAmount {
                         amount: Decimal::from(3),
@@ -1128,7 +1127,7 @@ mod tests {
                         )
                         .unwrap(),
                         method: "create_proof_by_amount".into(),
-                        args: args_untyped!(create_proof_by_amount(
+                        arg: args_untyped!(create_proof_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
                                     "030000000000000000000000000000000000000000000000000004"

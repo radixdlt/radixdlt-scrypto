@@ -213,9 +213,9 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                 package_address,
                 blueprint_name,
                 function: _,
-                args,
+                arg,
             } => {
-                let validated_arg = ScryptoValue::from_slice(&args[0])
+                let validated_arg = ScryptoValue::from_slice(&arg)
                     .map_err(DecompileError::ParseScryptoValueError)?;
                 if let Value::Enum { name, fields } = validated_arg.dom {
                     buf.push_str(&format!(
@@ -242,9 +242,9 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::CallMethod {
                 component_address,
                 method: _,
-                args,
+                arg,
             } => {
-                let validated_arg = ScryptoValue::from_slice(&args[0])
+                let validated_arg = ScryptoValue::from_slice(&arg)
                     .map_err(DecompileError::ParseScryptoValueError)?;
                 if let Value::Enum { name, fields } = validated_arg.dom {
                     buf.push_str(&format!(

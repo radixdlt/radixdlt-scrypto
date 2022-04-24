@@ -36,10 +36,7 @@ macro_rules! args_untyped {
             let mut bytes = Vec::new();
             let mut enc = ::sbor::Encoder::with_type(&mut bytes);
             ::sbor::encode_any(None, &variant, &mut enc);
-
-            let mut args = ::scrypto::rust::vec::Vec::new();
-            args.push(bytes);
-            args
+            bytes
         }
     };
 }
@@ -60,10 +57,7 @@ macro_rules! args_untyped2 {
             let mut bytes = Vec::new();
             let mut enc = ::sbor::Encoder::with_type(&mut bytes);
             ::sbor::encode_any(None, &variant, &mut enc);
-
-            let mut args = ::scrypto::rust::vec::Vec::new();
-            args.push(bytes);
-            args
+            bytes
         }
     };
 }

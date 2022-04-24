@@ -35,16 +35,14 @@ impl TransactionProcess {
 
     fn replace_ids(
         &mut self,
-        mut values: Vec<ScryptoValue>,
-    ) -> Result<Vec<ScryptoValue>, RuntimeError> {
-        for value in values.iter_mut() {
-            value.replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
-                .map_err(|e| match e {
-                    ScryptoValueReplaceError::BucketIdNotFound(bucket_id) => RuntimeError::BucketNotFound(bucket_id),
-                    ScryptoValueReplaceError::ProofIdNotFound(proof_id) => RuntimeError::ProofNotFound(proof_id),
-                })?;
-        }
-        Ok(values)
+        mut value: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        value.replace_ids(&mut self.proof_id_mapping, &mut self.bucket_id_mapping)
+            .map_err(|e| match e {
+                ScryptoValueReplaceError::BucketIdNotFound(bucket_id) => RuntimeError::BucketNotFound(bucket_id),
+                ScryptoValueReplaceError::ProofIdNotFound(proof_id) => RuntimeError::ProofNotFound(proof_id),
+            })?;
+        Ok(value)
     }
 
     pub fn outputs(&self) -> &[ScryptoValue] {
@@ -286,14 +284,14 @@ impl TransactionProcess {
                     package_address,
                     blueprint_name,
                     function,
-                    args,
+                    arg,
                 } => {
-                    self.replace_ids(args.clone())
-                        .and_then(|mut args|
+                    self.replace_ids(arg.clone())
+                        .and_then(|arg|
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Blueprint(*package_address, blueprint_name.to_string())),
                                 function.to_string(),
-                                args.remove(0)
+                                arg
                             )
                         )
                         .and_then(|result| {
@@ -319,14 +317,14 @@ impl TransactionProcess {
                 ValidatedInstruction::CallMethod {
                     component_address,
                     method,
-                    args,
+                    arg,
                 } => {
-                    self.replace_ids(args.clone())
-                        .and_then(|mut args|
+                    self.replace_ids(arg.clone())
+                        .and_then(|arg|
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
                                 method.to_string(),
-                                args.remove(0)
+                                arg
                             )
                         )
                         .and_then(|result| {
@@ -384,7 +382,7 @@ impl TransactionProcess {
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
                                 method.to_string(),
-                                ScryptoValue::from_slice(&encoded[0]).unwrap(),
+                                ScryptoValue::from_slice(&encoded).unwrap(),
                             )
                         })
                 },
