@@ -1,7 +1,7 @@
 use crate::core::SNodeRef;
 use sbor::*;
 
-use crate::buffer::scrypto_decode;
+use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
@@ -12,7 +12,7 @@ use crate::rust::fmt;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
-use crate::{args, invocations};
+use crate::{invocations};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ConsumingBucketMethod {
@@ -40,7 +40,7 @@ impl Bucket {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(resource_address),
             function: "create_empty_bucket".to_string(),
-            args: args![],
+            arg: scrypto_encode(&()),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

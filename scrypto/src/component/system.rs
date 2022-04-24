@@ -1,4 +1,3 @@
-use crate::args;
 use crate::buffer::*;
 use crate::component::*;
 use crate::core::SNodeRef;
@@ -51,7 +50,7 @@ impl ComponentSystem {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::PackageStatic,
             function: "main".to_string(),
-            args: args![PackageFunction::Publish(code.to_vec())],
+            arg: scrypto_encode(&PackageFunction::Publish(code.to_vec())),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

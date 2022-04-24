@@ -4,7 +4,6 @@ use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
-use crate::rust::vec;
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -59,7 +58,7 @@ impl Runtime {
                 blueprint_name.as_ref().to_owned(),
             )),
             function: function.as_ref().to_owned(),
-            args: vec![bytes],
+            arg: bytes,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
@@ -87,7 +86,7 @@ impl Runtime {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             function: method.as_ref().to_owned(),
-            args: vec![bytes],
+            arg: bytes,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
