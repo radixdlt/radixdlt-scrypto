@@ -1,4 +1,4 @@
-use crate::{invocations};
+use crate::{sfunctions};
 use sbor::*;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
@@ -87,7 +87,7 @@ impl ResourceAddress {}
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
-    invocations! {
+    sfunctions! {
         SNodeRef::ResourceRef(self.0) => {
             fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
                 ResourceManagerMethod::Mint(mint_params)

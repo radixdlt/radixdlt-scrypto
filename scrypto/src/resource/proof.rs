@@ -1,5 +1,5 @@
 use sbor::*;
-use crate::{invocations};
+use crate::{sfunctions};
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 
@@ -32,7 +32,7 @@ pub enum ProofMethod {
 pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
-    invocations! {
+    sfunctions! {
         SNodeRef::ProofRef(self.0) => {
             fn clone(&self) -> Self { ProofMethod::Clone() }
         }
@@ -40,7 +40,7 @@ impl Clone for Proof {
 }
 
 impl Proof {
-    invocations! {
+    sfunctions! {
         SNodeRef::ProofRef(self.0) => {
             pub fn amount(&self) -> Decimal { ProofMethod::Amount() }
             pub fn resource_address(&self) -> ResourceAddress { ProofMethod::ResourceAddress() }
@@ -48,7 +48,7 @@ impl Proof {
         }
     }
 
-    invocations! {
+    sfunctions! {
         SNodeRef::Proof(self.0) => {
             pub fn drop(self) -> () { ConsumingProofMethod::Drop() }
         }

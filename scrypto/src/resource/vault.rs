@@ -1,4 +1,4 @@
-use crate::{invocations};
+use crate::{sfunctions};
 use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
 use sbor::*;
@@ -68,7 +68,7 @@ impl Vault {
         vault
     }
 
-    invocations! {
+    sfunctions! {
         SNodeRef::VaultRef(self.0) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultMethod::Put(bucket)

@@ -1,4 +1,4 @@
-use crate::{invocations};
+use crate::{sfunctions};
 use sbor::*;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
@@ -27,7 +27,7 @@ pub enum AuthZoneMethod {
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    invocations! {
+    sfunctions! {
         SNodeRef::AuthZoneRef => {
             pub fn push(proof: Proof) -> () {
                 AuthZoneMethod::Push(proof)

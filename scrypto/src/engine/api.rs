@@ -44,7 +44,7 @@ pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 pub const GET_ACTOR: u32 = 0xf5;
 
 #[macro_export]
-macro_rules! invocations {
+macro_rules! sfunctions {
     ($snode_ref:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $method_enum:expr })* } ) => {
         $(
             $vis $fn $method_name $s -> $rtn {

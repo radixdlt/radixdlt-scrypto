@@ -12,7 +12,7 @@ use crate::rust::fmt;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
-use crate::{invocations};
+use crate::{sfunctions};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ConsumingBucketMethod {
@@ -46,7 +46,7 @@ impl Bucket {
     }
 
 
-    invocations! {
+    sfunctions! {
         SNodeRef::Bucket(self.0) => {
            pub fn burn(self) -> () {
                 ConsumingBucketMethod::Burn()
@@ -54,7 +54,7 @@ impl Bucket {
         }
     }
 
-    invocations! {
+    sfunctions! {
         SNodeRef::BucketRef(self.0) => {
             pub fn put(&mut self, other: Self) -> () {
                 BucketMethod::Put(other)
