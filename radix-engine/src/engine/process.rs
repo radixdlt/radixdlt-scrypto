@@ -99,6 +99,8 @@ pub trait SystemApi {
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
     fn create_package(&mut self, package: Package) -> PackageAddress;
+
+    fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
 }
 
 pub enum ConsumedSNodeState {
@@ -232,8 +234,6 @@ struct ComponentState<'a> {
 #[allow(dead_code)]
 struct WasmProcess<'a> {
     /// The call depth
-    depth: usize,
-    trace: bool,
     vm: Interpreter,
     component: Option<ComponentState<'a>>,
 }
@@ -386,8 +386,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     ));
                 }
 
-                let (module, memory) = package.load_module().unwrap();
-
                 let component_state = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();
                     let data = ScryptoValue::from_slice(component.state()).unwrap();
@@ -404,9 +402,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     None
                 };
 
+                let (module, memory) = package.load_module().unwrap();
                 self.wasm_process_state = Some(WasmProcess {
-                    depth: self.depth,
-                    trace: self.trace,
                     vm: Interpreter {
                         arg,
                         actor: actor.clone(),
@@ -1004,9 +1001,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateComponentInput,
     ) -> Result<CreateComponentOutput, RuntimeError> {
-        let data = Self::process_entry_data(&input.state)?;
-        let new_objects = self.owned_snodes.take(data)?;
-
         let wasm_process = self
             .wasm_process_state
             .as_mut()
@@ -1018,10 +1012,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             input.access_rules_list,
             input.state,
         );
-        let component_address = self.track.create_component(component);
-        self.track
-            .insert_objects_into_component(new_objects, component_address);
 
+        let component_address = self.create_component(component)?;
         Ok(CreateComponentOutput { component_address })
     }
 
@@ -1378,6 +1370,14 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
 
     fn create_package(&mut self, package: Package) -> PackageAddress {
         self.track.create_package(package)
+    }
+
+    fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
+        let data = Self::process_entry_data(component.state())?;
+        let new_objects = self.owned_snodes.take(data)?;
+        let component_address = self.track.create_component(component);
+        self.track.insert_objects_into_component(new_objects, component_address);
+        Ok(component_address)
     }
 }
 
