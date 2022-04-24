@@ -216,7 +216,7 @@ pub enum SNodeState<'a> {
 /// Represents an interpreter instance.
 pub struct Interpreter {
     actor: ScryptoActorInfo,
-    args: Vec<ScryptoValue>,
+    arg: ScryptoValue,
     module: ModuleRef,
     memory: MemoryRef,
 }
@@ -415,7 +415,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     depth: self.depth,
                     trace: self.trace,
                     vm: Interpreter {
-                        args: vec![arg],
+                        arg,
                         actor: actor.clone(),
                         module: module.clone(),
                         memory,
@@ -1249,13 +1249,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         };
         Ok(GetCallDataOutput {
             component,
-            args: wasm_process
-                .vm
-                .args
-                .iter()
-                .cloned()
-                .map(|v| v.raw)
-                .collect(),
+            arg: wasm_process.vm.arg.raw.clone(),
         })
     }
 

@@ -167,7 +167,7 @@ pub struct GetCallDataInput {}
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetCallDataOutput {
     pub component: Option<ComponentAddress>,
-    pub args: Vec<Vec<u8>>,
+    pub arg: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

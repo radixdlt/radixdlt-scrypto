@@ -87,7 +87,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 ::scrypto::engine::api::GetCallDataInput {},
             );
 
-            let method = ::scrypto::buffer::scrypto_decode::<#method_enum_ident>(&calldata.args[0]).unwrap();
+            let method = ::scrypto::buffer::scrypto_decode::<#method_enum_ident>(&calldata.arg).unwrap();
 
             // Dispatch the call
             let rtn;
@@ -567,7 +567,7 @@ mod tests {
                         ::scrypto::engine::api::GetCallDataInput {},
                     );
 
-                    let method = ::scrypto::buffer::scrypto_decode::<TestMethod>(&calldata.args[0]).unwrap();
+                    let method = ::scrypto::buffer::scrypto_decode::<TestMethod>(&calldata.arg).unwrap();
 
                     let rtn;
                     match method {
