@@ -62,7 +62,7 @@ pub trait SystemApi {
         &mut self,
         snode_ref: SNodeRef,
         function: String,
-        args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
     fn get_non_fungible(
@@ -349,7 +349,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'r>,
         function: String,
-        args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
     ) -> Result<
         (
             ScryptoValue,
@@ -369,29 +369,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 transaction_process.main(self)
             }
             SNodeState::PackageStatic => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 Package::static_main(arg, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 auth_zone
                     .main(arg, self)
                     .map_err(RuntimeError::AuthZoneError)
             }
             SNodeState::Worktop(worktop) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 worktop
                     .main(arg, self)
                     .map_err(RuntimeError::WorktopError)
@@ -409,13 +394,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
 
                 let (module, memory) = package.load_module().unwrap();
-
-
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 let interpreter_state = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();
                     let data = ScryptoValue::from_slice(component.state()).unwrap();
@@ -467,21 +445,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeState::ResourceStatic => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 ResourceManager::static_main(arg, self)
                     .map_err(RuntimeError::ResourceManagerError)
             }
             SNodeState::ResourceRef(resource_address, resource_manager) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
-
                 let return_value = resource_manager
                     .main(resource_address, arg, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
@@ -489,47 +456,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Ok(return_value)
             }
             SNodeState::BucketRef(bucket_id, bucket) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 bucket
                     .main(bucket_id, arg, self)
                     .map_err(RuntimeError::BucketError)
             },
             SNodeState::Bucket(bucket) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 bucket.consuming_main(arg, self).map_err(RuntimeError::BucketError)
             },
             SNodeState::ProofRef(_, proof) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 proof
                     .main(arg, self)
                     .map_err(RuntimeError::ProofError)
             },
             SNodeState::Proof(proof) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 proof.main_consume(arg).map_err(RuntimeError::ProofError)
             }
             SNodeState::VaultRef(vault_id, _, vault) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 vault
                     .main(vault_id, arg, self)
                     .map_err(RuntimeError::VaultError)
@@ -549,9 +491,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         if let Some(_) = &mut self.auth_zone {
-            self.invoke_snode(SNodeRef::AuthZoneRef, "main".to_string(), vec![
+            self.invoke_snode(
+                SNodeRef::AuthZoneRef,
+                "main".to_string(),
                 ScryptoValue::from_value(&AuthZoneMethod::Clear())
-            ])?;
+            )?;
         }
         self.check_resource()?;
 
@@ -572,7 +516,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         snode_ref: SNodeRef,
         function: String,
-        args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
@@ -643,27 +587,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
             SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::ResourceRef(resource_address) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 let resource_manager: ResourceManager = self
                     .track
                     .borrow_global_mut_resource_manager(resource_address.clone())?;
-                let method_auth = resource_manager.get_auth(arg).clone();
+                let method_auth = resource_manager.get_auth(&arg).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(resource_address.clone(), resource_manager)),
                     vec![method_auth],
                 ))
             }
             SNodeRef::Bucket(bucket_id) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
-
                 let bucket = self
                     .buckets
                     .remove(&bucket_id)
@@ -673,7 +606,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
-                    .get_consuming_bucket_auth(arg);
+                    .get_consuming_bucket_auth(&arg);
                 Ok((Consumed(Some(ConsumedSNodeState::Bucket(bucket))), vec![method_auth.clone()]))
             }
             SNodeRef::BucketRef(bucket_id) => {
@@ -703,18 +636,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     panic!("Should never get here");
                 };
 
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
-
                 let resource_address = vault.resource_address();
                 let method_auth = self
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
-                    .get_vault_auth(arg);
+                    .get_vault_auth(&arg);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(vault_id.clone(), component, vault)),
                     vec![method_auth.clone()],
@@ -757,11 +684,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
-        for arg in &args {
-            self.process_call_data(arg)?;
-            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
-            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
-        }
+        self.process_call_data(&arg)?;
+        moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
+        moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
 
         let process_auth_zone = if matches!(loaded_snode, Borrowed(BorrowedSNodeState::Scrypto(_, _))) {
             Some(AuthZone::new())
@@ -787,7 +712,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // invoke the main function
         let (result, received_buckets, received_proofs, received_vaults) =
-            process.run(Some(snode_ref), snode, function, args)?;
+            process.run(Some(snode_ref), snode, function, arg)?;
 
         // move buckets and proofs to this process.
         self.buckets.extend(received_buckets);
@@ -832,7 +757,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None, HashMap::new(), HashMap::new());
         let result = process
-            .run(None, snode, String::new(), vec![mock])
+            .run(None, snode, String::new(), mock)
             .map(|(r, _, _, _)| r);
 
         re_debug!(self, "Call abi ended");
@@ -1301,14 +1226,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: InvokeSNodeInput,
     ) -> Result<InvokeSNodeOutput, RuntimeError> {
-        let mut validated_args = Vec::new();
-        for arg in input.args {
-            validated_args.push(
-                ScryptoValue::from_slice(&arg).map_err(RuntimeError::ParseScryptoValueError)?,
-            );
-        }
-
-        let result = self.invoke_snode(input.snode_ref, input.function, validated_args)?;
+        let arg = ScryptoValue::from_slice(&input.args[0]).map_err(RuntimeError::ParseScryptoValueError)?;
+        let result = self.invoke_snode(input.snode_ref, input.function, arg)?;
         Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
@@ -1391,9 +1310,9 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         &mut self,
         snode_ref: SNodeRef,
         function: String,
-        args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_snode(snode_ref, function, args)
+        self.invoke_snode(snode_ref, function, arg)
     }
 
     fn get_non_fungible(

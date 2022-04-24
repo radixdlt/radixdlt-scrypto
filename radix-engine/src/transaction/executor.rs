@@ -1,10 +1,10 @@
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
-use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::rust::string::ToString;
 use scrypto::{abi, args_untyped, auth, auth_rule_node};
+use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
 use crate::errors::*;
@@ -175,7 +175,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
         let mut txn_process = TransactionProcess::new(validated.clone());
         let txn_snode = SNodeState::Transaction(&mut txn_process);
-        let error = match proc.run(None, txn_snode, "execute".to_string(), vec![]) {
+        let error = match proc.run(None, txn_snode, "execute".to_string(), ScryptoValue::from_value(&())) {
             Ok(_) => None,
             Err(e) => Some(e),
         };
