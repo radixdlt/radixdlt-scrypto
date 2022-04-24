@@ -36,8 +36,6 @@ pub const EMIT_LOG: u32 = 0xf0;
 pub const GENERATE_UUID: u32 = 0xf1;
 /// Retrieve call data
 pub const GET_CALL_DATA: u32 = 0xf2;
-/// Retrieve transaction hash
-pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Retrieve the running entity
 pub const GET_ACTOR: u32 = 0xf5;
 
@@ -165,17 +163,6 @@ pub struct GetCallDataOutput {
     pub component: Option<ComponentAddress>,
     pub arg: Vec<u8>,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetTransactionHashInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetTransactionHashOutput {
-    pub transaction_hash: Hash,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetTransactionSignersInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GenerateUuidInput {}

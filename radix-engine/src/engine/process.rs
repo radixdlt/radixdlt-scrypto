@@ -101,6 +101,8 @@ pub trait SystemApi {
     fn create_package(&mut self, package: Package) -> PackageAddress;
 
     fn get_epoch(&mut self) -> u64;
+
+    fn get_transaction_hash(&mut self) -> Hash;
 }
 
 pub enum ConsumedSNodeState {
@@ -1266,15 +1268,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_transaction_hash(
-        &mut self,
-        _input: GetTransactionHashInput,
-    ) -> Result<GetTransactionHashOutput, RuntimeError> {
-        Ok(GetTransactionHashOutput {
-            transaction_hash: self.track.transaction_hash(),
-        })
-    }
-
     fn handle_generate_uuid(
         &mut self,
         _input: GenerateUuidInput,
@@ -1388,6 +1381,10 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
     fn get_epoch(&mut self) -> u64 {
         self.track.current_epoch()
     }
+
+    fn get_transaction_hash(&mut self) -> Hash {
+        self.track.transaction_hash()
+    }
 }
 
 impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
@@ -1414,8 +1411,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
-
-                    GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }

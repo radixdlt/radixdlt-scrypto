@@ -9,7 +9,8 @@ use crate::rust::vec::Vec;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum SystemFunction {
-    GetEpoch()
+    GetEpoch(),
+    GetTransactionHash(),
 }
 
 /// The transaction runtime.
@@ -100,9 +101,12 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = GetTransactionHashInput {};
-        let output: GetTransactionHashOutput = call_engine(GET_TRANSACTION_HASH, input);
-        output.transaction_hash
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::SystemStatic,
+            arg: scrypto_encode(&SystemFunction::GetTransactionHash()),
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the current epoch number.
