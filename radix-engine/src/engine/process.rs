@@ -418,7 +418,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         arg,
                         actor: actor.clone(),
                         module: module.clone(),
-                        memory,
+                        memory: memory.clone(),
                     },
                     component: component_state,
                 });
@@ -438,7 +438,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     })?
                     .ok_or(RuntimeError::NoReturnData)?;
                 match rtn {
-                    RuntimeValue::I32(ptr) => self.read_return_value(ptr as u32),
+                    RuntimeValue::I32(ptr) => Self::read_return_value(memory, ptr as u32),
                     _ => Err(RuntimeError::InvalidReturnType),
                 }
             }
@@ -938,12 +938,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Err(RuntimeError::MemoryAllocError)
     }
 
-    fn read_return_value(&mut self, ptr: u32) -> Result<ScryptoValue, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_ref().unwrap();
+    fn read_return_value(memory: MemoryRef, ptr: u32) -> Result<ScryptoValue, RuntimeError> {
         // read length
-        let len: u32 = wasm_process
-            .vm
-            .memory
+        let len: u32 = memory
             .get_value(ptr)
             .map_err(|_| RuntimeError::MemoryAccessError)?;
 
@@ -952,7 +949,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .checked_add(len)
             .ok_or(RuntimeError::MemoryAccessError)?;
         let range = start as usize..end as usize;
-        let direct = wasm_process.vm.memory.direct_access();
+        let direct = memory.direct_access();
         let buffer = direct.as_ref();
 
         if end > buffer.len().try_into().unwrap() {
