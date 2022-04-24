@@ -89,32 +89,33 @@ pub fn run() -> Result<(), Error> {
     let mut out = std::io::stdout() ;
 
     match cli.command {
-        Command::CallFunction(cmd) => cmd.run(),
-        Command::CallMethod(cmd) => cmd.run(),
+        Command::CallFunction(cmd) => cmd.run(&mut out),
+        Command::CallMethod(cmd) => cmd.run(&mut out),
         Command::ExportAbi(cmd) => cmd.run(&mut out),
         Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
-        Command::Mint(cmd) => cmd.run(),
+        Command::Mint(cmd) => cmd.run(&mut out),
         Command::NewAccount(cmd) => cmd.run(&mut out),
-        Command::NewBadgeFixed(cmd) => cmd.run(),
-        Command::NewBadgeMutable(cmd) => cmd.run(),
-        Command::NewTokenFixed(cmd) => cmd.run(),
-        Command::NewTokenMutable(cmd) => cmd.run(),
+        Command::NewBadgeFixed(cmd) => cmd.run(&mut out),
+        Command::NewBadgeMutable(cmd) => cmd.run(&mut out),
+        Command::NewTokenFixed(cmd) => cmd.run(&mut out),
+        Command::NewTokenMutable(cmd) => cmd.run(&mut out),
         Command::Publish(cmd) => cmd.run(&mut out),
         Command::Reset(cmd) => cmd.run(&mut out),
-        Command::Run(cmd) => cmd.run(),
+        Command::Run(cmd) => cmd.run(&mut out),
         Command::SetCurrentEpoch(cmd) => cmd.run(&mut out),
         Command::SetDefaultAccount(cmd) => cmd.run(&mut out),
         Command::ShowConfigs(cmd) => cmd.run(&mut out),
         Command::ShowLedger(cmd) => cmd.run(&mut out),
         Command::Show(cmd) => cmd.run(&mut out),
-        Command::Transfer(cmd) => cmd.run(),
+        Command::Transfer(cmd) => cmd.run(&mut out),
     }
 }
 
-pub fn process_transaction<L: SubstateStore>(
+pub fn process_transaction<L: SubstateStore,O: std::io::Write >(
     signed: SignedTransaction,
     executor: &mut TransactionExecutor<L>,
     manifest: &Option<PathBuf>,
+    out: &mut O
 ) -> Result<(), Error> {
     match manifest {
         Some(path) => {
@@ -125,7 +126,7 @@ pub fn process_transaction<L: SubstateStore>(
             let receipt = executor
                 .validate_and_execute(&signed)
                 .map_err(Error::TransactionValidationError)?;
-            println!("{:?}", receipt);
+            writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             receipt.result.map_err(Error::TransactionExecutionError)
         }
     }
