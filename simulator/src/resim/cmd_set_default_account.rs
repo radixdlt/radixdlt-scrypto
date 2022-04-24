@@ -1,4 +1,3 @@
-#![allow(unused_must_use)]
 use clap::Parser;
 use scrypto::engine::types::*;
 
@@ -26,7 +25,7 @@ impl SetDefaultAccount {
             default_private_key: hex::decode(&self.private_key).unwrap(),
         })?;
 
-        writeln!(out, "Default account updated!");
+        writeln!(out, "Default account updated!").map_err(Error::IOError)?;
         Ok(())
     }
 }

@@ -1,4 +1,3 @@
-#![allow(unused_must_use)]
 use clap::Parser;
 use colored::*;
 use radix_engine::transaction::*;
@@ -56,7 +55,7 @@ impl Publish {
             executor
                 .overwrite_package(package_address, code)
                 .map_err(|e| Error::PackageValidationError(e))?;
-            writeln!(out, "Package updated!");
+            writeln!(out, "Package updated!").map_err(Error::IOError)?;
             Ok(())
         } else {
             match executor.publish_package(&code) {
@@ -64,7 +63,7 @@ impl Publish {
                     writeln!(out,
                         "Success! New Package: {}",
                         package_address.to_string().green()
-                    );
+                    ).map_err(Error::IOError)?;
                     Ok(())
                 }
                 Err(error) => Err(Error::TransactionExecutionError(error)),

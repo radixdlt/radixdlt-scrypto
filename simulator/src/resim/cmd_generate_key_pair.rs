@@ -1,4 +1,3 @@
-#![allow(unused_must_use)]
 use clap::Parser;
 use colored::*;
 use rand::Rng;
@@ -16,11 +15,11 @@ impl GenerateKeyPair {
         let secret = rand::thread_rng().gen::<[u8; 32]>();
         let private_key = EcdsaPrivateKey::from_bytes(&secret).unwrap();
         let public_key = private_key.public_key();
-        writeln!(out, "Public key: {}", public_key.to_string().green());
+        writeln!(out, "Public key: {}", public_key.to_string().green()).map_err(Error::IOError)?;
         writeln!(out,
             "Private key: {}",
             hex::encode(private_key.to_bytes()).green()
-        );
+        ).map_err(Error::IOError)?;
         Ok(())
     }
 }

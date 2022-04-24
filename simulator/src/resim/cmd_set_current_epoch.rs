@@ -1,4 +1,3 @@
-#![allow(unused_must_use)]
 use clap::Parser;
 use radix_engine::ledger::SubstateStore;
 
@@ -16,7 +15,7 @@ impl SetCurrentEpoch {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         ledger.set_epoch(self.epoch);
 
-        writeln!(out, "Current epoch set!");
+        writeln!(out, "Current epoch set!").map_err(Error::IOError)?;
         Ok(())
     }
 }

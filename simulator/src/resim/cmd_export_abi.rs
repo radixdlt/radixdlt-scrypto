@@ -1,4 +1,3 @@
-#![allow(unused_must_use)]
 
 use clap::Parser;
 use radix_engine::transaction::*;
@@ -30,7 +29,7 @@ impl ExportAbi {
                 writeln!(out,
                     "{}",
                     serde_json::to_string_pretty(&a).map_err(Error::JSONError)?
-                );
+                ).map_err(Error::IOError)?;
                 Ok(())
             }
             Err(e) => Err(Error::AbiExportError(e)),

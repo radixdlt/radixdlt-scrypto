@@ -1,4 +1,3 @@
-#![allow(unused_must_use)]
 use clap::Parser;
 use scrypto::engine::types::*;
 use std::str::FromStr;

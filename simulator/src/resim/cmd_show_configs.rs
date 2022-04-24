@@ -1,4 +1,3 @@
-#![allow(unused_must_use)]
 use clap::Parser;
 use colored::*;
 
@@ -16,19 +15,19 @@ impl ShowConfigs {
                 "{}: {}",
                 "Default Account".green().bold(),
                 configs.default_account
-            );
+            ).map_err(Error::IOError)?;
             writeln!(out,
                 "{}: {}",
                 "Default Public Key".green().bold(),
                 configs.default_public_key
-            );
+            ).map_err(Error::IOError)?;
             writeln!(out,
                 "{}: {}",
                 "Default Private Key".green().bold(),
                 hex::encode(configs.default_private_key)
-            );
+            ).map_err(Error::IOError)?;
         } else {
-            writeln!(out,"No configuration found");
+            writeln!(out,"No configuration found").map_err(Error::IOError)?;
         }
         Ok(())
     }
