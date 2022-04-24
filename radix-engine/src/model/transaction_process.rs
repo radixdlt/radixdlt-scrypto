@@ -267,7 +267,6 @@ impl TransactionProcess {
                 ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    function: _,
                     arg,
                 } => {
                     self.replace_ids(arg.clone())
@@ -297,7 +296,6 @@ impl TransactionProcess {
                 },
                 ValidatedInstruction::CallMethod {
                     component_address,
-                    method: _,
                     arg,
                 } => {
                     self.replace_ids(arg.clone())

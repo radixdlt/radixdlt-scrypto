@@ -61,7 +61,6 @@ fn can_create_clone_and_drop_vault_proof() {
         .new_transaction_builder()
         .call_method(
             component_address,
-            "create_clone_drop_vault_proof",
             args_untyped!(create_clone_drop_vault_proof(Decimal::one())),
         )
         .build(test_runner.get_nonce([]))
@@ -141,7 +140,6 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         .new_transaction_builder()
         .call_method(
             component_address,
-            "create_clone_drop_vault_proof_by_ids",
             args_untyped!(create_clone_drop_vault_proof_by_ids(total_ids, proof_ids)),
         )
         .build(test_runner.get_nonce([]))
@@ -318,7 +316,6 @@ fn can_compose_bucket_and_vault_proof() {
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
-                "compose_vault_and_bucket_proof",
                 args_untyped!(compose_vault_and_bucket_proof(Bucket(bucket_id))),
             )
         })
@@ -357,7 +354,6 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
-                "compose_vault_and_bucket_proof_by_amount",
                 args_untyped!(compose_vault_and_bucket_proof_by_amount(Bucket(bucket_id), Decimal::from(2))),
             )
         })
@@ -402,7 +398,6 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             |builder, bucket_id| {
                 builder.call_method(
                     component_address,
-                    "compose_vault_and_bucket_proof_by_ids",
                     args_untyped!(
                         compose_vault_and_bucket_proof_by_ids(
                             Bucket(bucket_id),
@@ -444,7 +439,6 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         .new_transaction_builder()
         .call_method(
             component_address,
-            "create_clone_drop_vault_proof_by_amount",
             args_untyped![create_clone_drop_vault_proof_by_amount(Decimal::from(3), Decimal::from(1))],
         )
         .build(test_runner.get_nonce([]))
@@ -485,7 +479,6 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 builder.call_function(
                     package_address,
                     "Receiver",
-                    "assert_ids",
                     args_untyped!(
                         assert_ids(
                             Proof(proof_id),

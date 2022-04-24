@@ -103,7 +103,6 @@ pub enum Instruction {
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
-        function: String,
         arg: Vec<u8>,
     },
 
@@ -112,7 +111,6 @@ pub enum Instruction {
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
         component_address: ComponentAddress,
-        method: String,
         arg: Vec<u8>,
     },
 
@@ -303,24 +301,20 @@ impl SignedTransaction {
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    function,
                     arg,
                 } => {
                     instructions.push(ValidatedInstruction::CallFunction {
                         package_address,
                         blueprint_name,
-                        function,
                         arg: Self::validate_arg(arg, &mut id_validator)?,
                     });
                 }
                 Instruction::CallMethod {
                     component_address,
-                    method,
                     arg,
                 } => {
                     instructions.push(ValidatedInstruction::CallMethod {
                         component_address,
-                        method,
                         arg: Self::validate_arg(arg, &mut id_validator)?,
                     });
                 }
@@ -380,7 +374,6 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use scrypto::engine::types::ComponentAddress;
-    use scrypto::rust::borrow::ToOwned;
     use scrypto::rust::marker::PhantomData;
 
     #[test]
@@ -390,7 +383,6 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        method: "test".to_owned(),
                         arg: scrypto_encode(&scrypto::resource::Vault((
                             Hash([2u8; 32]),
                             0,
@@ -414,7 +406,6 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        method: "test".to_owned(),
                         arg: scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
                             id: (Hash([2u8; 32]), 0,),
                             key: PhantomData,

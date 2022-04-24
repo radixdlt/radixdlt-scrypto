@@ -51,7 +51,7 @@ fn large_return_len_should_cause_memory_access_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "LargeReturnSize", "something", args_untyped!(something()))
+        .call_function(package, "LargeReturnSize", args_untyped!(something()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -71,7 +71,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "MaxReturnSize", "something", args_untyped!(something()))
+        .call_function(package, "MaxReturnSize", args_untyped!(something()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -91,7 +91,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "ZeroReturnSize", "something", args_untyped!(something()))
+        .call_function(package, "ZeroReturnSize", args_untyped!(something()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);

@@ -17,7 +17,7 @@ fn test_say_hello() {
 
     // Test the `say_hello` function.
     let transaction1 = TransactionBuilder::new()
-        .call_function(package, "NoStd", "say_hello", args_untyped!(say_hello()))
+        .call_function(package, "NoStd", args_untyped!(say_hello()))
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();

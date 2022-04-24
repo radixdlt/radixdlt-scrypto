@@ -25,7 +25,6 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            "create_component_with_auth",
             args_untyped!(create_component_with_auth(authorization)),
         )
         .build(test_runner.get_nonce([]))
@@ -39,7 +38,6 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            "create_component",
             args_untyped!(create_component()),
         )
         .build(test_runner.get_nonce([]))
@@ -53,7 +51,6 @@ fn cannot_make_cross_component_call_without_authorization() {
         .new_transaction_builder()
         .call_method(
             my_component,
-            "cross_component_call",
             args_untyped!(cross_component_call(secured_component)),
         )
         .build(test_runner.get_nonce([]))
@@ -83,7 +80,6 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            "create_component_with_auth",
             args_untyped!(create_component_with_auth(authorization)),
         )
         .build(test_runner.get_nonce([]))
@@ -97,7 +93,6 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            "create_component",
             args_untyped!(create_component()),
         )
         .build(test_runner.get_nonce([]))
@@ -120,7 +115,6 @@ fn can_make_cross_component_call_with_authorization() {
         .new_transaction_builder()
         .call_method(
             my_component,
-            "cross_component_call",
             args_untyped!(cross_component_call(secured_component)),
         )
         .build(test_runner.get_nonce([]))

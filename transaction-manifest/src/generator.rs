@@ -302,7 +302,6 @@ pub fn generate_instruction(
             Instruction::CallFunction {
                 package_address: generate_package_address(package_address)?,
                 blueprint_name: generate_string(blueprint_name)?,
-                function: generate_string(function)?,
                 arg: bytes,
             }
         }
@@ -331,7 +330,6 @@ pub fn generate_instruction(
 
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address)?,
-                method: generate_string(method)?,
                 arg: bytes,
             }
         }
@@ -1018,7 +1016,6 @@ mod tests {
                 )
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
-                function: "new".into(),
                 arg: args_untyped!(new(500u32, HashMap::from([("key", 1u8),])))
             }
         );
@@ -1029,7 +1026,6 @@ mod tests {
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
-                method: "refill".into(),
                 arg: args_untyped!(refill())
             }
         );
@@ -1074,7 +1070,6 @@ mod tests {
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
-                        method: "withdraw_by_amount".into(),
                         arg: args_untyped!(withdraw_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
@@ -1095,7 +1090,6 @@ mod tests {
                             "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                         )
                         .unwrap(),
-                        method: "buy_gumball".into(),
                         arg: args_untyped!(buy_gumball(scrypto::resource::Bucket(512)))
                     },
                     Instruction::AssertWorktopContainsByAmount {
@@ -1126,7 +1120,6 @@ mod tests {
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
-                        method: "create_proof_by_amount".into(),
                         arg: args_untyped!(create_proof_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(

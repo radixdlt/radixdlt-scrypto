@@ -12,7 +12,7 @@ fn test_process_and_transaction() {
         .unwrap();
 
     let transaction1 = TransactionBuilder::new()
-        .call_function(package, "CoreTest", "query", args_untyped![query()])
+        .call_function(package, "CoreTest", args_untyped![query()])
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
@@ -29,8 +29,8 @@ fn test_call() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "MoveTest", "move_bucket", args_untyped![move_bucket()])
-        .call_function(package, "MoveTest", "move_proof", args_untyped![move_proof()])
+        .call_function(package, "MoveTest", args_untyped![move_bucket()])
+        .call_function(package, "MoveTest", args_untyped![move_proof()])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);

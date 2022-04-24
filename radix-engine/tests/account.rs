@@ -87,7 +87,6 @@ fn account_to_bucket_to_account() {
             builder
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
-                    method: "deposit".to_owned(),
                     arg: args_untyped!(deposit(scrypto::resource::Bucket(bucket_id))),
                 })
                 .0
@@ -110,7 +109,7 @@ fn test_account_balance() {
     let (pk, sk, account) = test_runner.new_account();
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(account, "balance", args_untyped![balance(RADIX_TOKEN)])
+        .call_method(account, args_untyped![balance(RADIX_TOKEN)])
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
 

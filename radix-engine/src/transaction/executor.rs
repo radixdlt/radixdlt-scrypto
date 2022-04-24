@@ -94,7 +94,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .call_method(SYSTEM_COMPONENT, "main", args_untyped!(free_xrd()))
+                    .call_method(SYSTEM_COMPONENT, args_untyped!(free_xrd()))
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })

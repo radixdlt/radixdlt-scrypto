@@ -21,7 +21,6 @@ fn create_non_fungible_mutable() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_non_fungible_mutable",
             args_untyped!(create_non_fungible_mutable()),
         )
         .call_method_with_all_resources(account, "deposit_batch")
@@ -45,7 +44,6 @@ fn can_burn_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_burnable_non_fungible",
             args_untyped!(create_burnable_non_fungible()),
         )
         .call_method_with_all_resources(account, "deposit_batch")
@@ -67,7 +65,6 @@ fn can_burn_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
-            "verify_does_not_exist",
             args_untyped![verify_does_not_exist(non_fungible_address)],
         )
         .call_method_with_all_resources(account, "deposit_batch")
@@ -92,28 +89,24 @@ fn test_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_non_fungible_fixed",
             args_untyped!(create_non_fungible_fixed()),
         )
         .call_function(
             package,
             "NonFungibleTest",
-            "update_and_get_non_fungible",
             args_untyped!(update_and_get_non_fungible()),
         )
-        .call_function(package, "NonFungibleTest", "non_fungible_exists", args_untyped!(non_fungible_exists()))
-        .call_function(package, "NonFungibleTest", "take_and_put_bucket", args_untyped!(take_and_put_bucket()))
-        .call_function(package, "NonFungibleTest", "take_and_put_vault", args_untyped!(take_and_put_vault()))
+        .call_function(package, "NonFungibleTest", args_untyped!(non_fungible_exists()))
+        .call_function(package, "NonFungibleTest", args_untyped!(take_and_put_bucket()))
+        .call_function(package, "NonFungibleTest", args_untyped!(take_and_put_vault()))
         .call_function(
             package,
             "NonFungibleTest",
-            "get_non_fungible_ids_bucket",
             args_untyped!(get_non_fungible_ids_bucket()),
         )
         .call_function(
             package,
             "NonFungibleTest",
-            "get_non_fungible_ids_vault",
             args_untyped!(get_non_fungible_ids_vault()),
         )
         .call_method_with_all_resources(account, "deposit_batch")
@@ -134,7 +127,7 @@ fn test_singleton_non_fungible() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "NonFungibleTest", "singleton_non_fungible", args_untyped!(singleton_non_fungible()))
+        .call_function(package, "NonFungibleTest", args_untyped!(singleton_non_fungible()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
         .sign([&sk]);
