@@ -121,6 +121,7 @@ pub enum RuntimeError {
     PackageNotFound(PackageAddress),
 
     PackageError(PackageError),
+    SystemError(SystemError),
 
     /// Blueprint does not exist.
     BlueprintNotFound(PackageAddress, String),
