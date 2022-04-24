@@ -2,6 +2,7 @@ mod auth_converter;
 mod auth_zone;
 mod bucket;
 mod component;
+mod system;
 mod method_authorization;
 mod non_fungible;
 mod package;
@@ -18,6 +19,7 @@ pub use auth_zone::{AuthZone, AuthZoneError};
 pub use auth_converter::convert;
 pub use bucket::{Bucket, BucketError};
 pub use component::Component;
+pub use system::{System, SystemError};
 pub use method_authorization::{
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization, MethodAuthorizationError,
 };

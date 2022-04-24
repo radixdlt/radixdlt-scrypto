@@ -101,6 +101,10 @@ pub trait SystemApi {
     fn create_package(&mut self, package: Package) -> PackageAddress;
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
+
+    fn get_epoch(&mut self) -> u64;
+
+    fn get_transaction_hash(&mut self) -> Hash;
 }
 
 pub enum ConsumedSNodeState {
@@ -161,6 +165,7 @@ impl BorrowedSNodeState {
 pub enum StaticSNodeState {
     Package,
     Resource,
+    System,
 }
 
 pub enum LoadedSNodeState {
@@ -176,6 +181,7 @@ impl LoadedSNodeState {
                 match static_state {
                     StaticSNodeState::Package => SNodeState::PackageStatic,
                     StaticSNodeState::Resource => SNodeState::ResourceStatic,
+                    StaticSNodeState::System => SNodeState::SystemStatic,
                 }
             }
             Consumed(ref mut to_consume) => {
@@ -200,6 +206,7 @@ impl LoadedSNodeState {
 }
 
 pub enum SNodeState<'a> {
+    SystemStatic,
     Transaction(&'a mut TransactionProcess),
     PackageStatic,
     AuthZoneRef(&'a mut AuthZone),
@@ -358,6 +365,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Execution
         let output = match snode {
+            SNodeState::SystemStatic => {
+                System::static_main(arg, self).map_err(RuntimeError::SystemError)
+            }
             SNodeState::Transaction(transaction_process) => {
                 transaction_process.main(self)
             }
@@ -514,6 +524,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
+            SNodeRef::SystemStatic => Ok((Static(StaticSNodeState::System), vec![])),
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = self.auth_zone.take() {
                     Ok((Borrowed(BorrowedSNodeState::AuthZone(auth_zone)), vec![]))
@@ -1244,24 +1255,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         })
     }
 
-    fn handle_get_transaction_hash(
-        &mut self,
-        _input: GetTransactionHashInput,
-    ) -> Result<GetTransactionHashOutput, RuntimeError> {
-        Ok(GetTransactionHashOutput {
-            transaction_hash: self.track.transaction_hash(),
-        })
-    }
-
-    fn handle_get_current_epoch(
-        &mut self,
-        _input: GetCurrentEpochInput,
-    ) -> Result<GetCurrentEpochOutput, RuntimeError> {
-        Ok(GetCurrentEpochOutput {
-            current_epoch: self.track.current_epoch(),
-        })
-    }
-
     fn handle_generate_uuid(
         &mut self,
         _input: GenerateUuidInput,
@@ -1379,6 +1372,14 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         self.track.insert_objects_into_component(new_objects, component_address);
         Ok(component_address)
     }
+
+    fn get_epoch(&mut self) -> u64 {
+        self.track.current_epoch()
+    }
+
+    fn get_transaction_hash(&mut self) -> Hash {
+        self.track.transaction_hash()
+    }
 }
 
 impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
@@ -1395,7 +1396,9 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
-
+                    GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
+                    GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
+                    GET_ACTOR => self.handle(args, Self::handle_get_actor),
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
@@ -1403,11 +1406,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
-                    GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
-                    GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
-                    GET_CURRENT_EPOCH => self.handle(args, Self::handle_get_current_epoch),
-                    GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
-                    GET_ACTOR => self.handle(args, Self::handle_get_actor),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }
