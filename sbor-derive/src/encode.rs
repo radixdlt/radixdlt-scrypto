@@ -63,9 +63,11 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().enumerate().map(|(i, v)| {
-                let v_ith = Index::from(i);
+            let match_arms = variants.iter().map(| v| {
                 let v_id = &v.ident;
+                let name_string = v_id.to_string();
+                let name: Expr = parse_quote! { #name_string };
+
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
                         let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
@@ -74,7 +76,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns.len());
                         quote! {
                             Self::#v_id {#(#ns_ids,)* ..} => {
-                                encoder.write_u8(#v_ith);
+                                #name.to_string().encode_value(encoder);
                                 encoder.write_len(#ns_len);
                                 #(#ns_ids2.encode(encoder);)*
                             }
@@ -91,7 +93,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                         let ns_len = Index::from(ns_args.len());
                         quote! {
                             Self::#v_id (#(#args),*) => {
-                                encoder.write_u8(#v_ith);
+                                #name.to_string().encode_value(encoder);
                                 encoder.write_len(#ns_len);
                                 #(#ns_args.encode(encoder);)*
                             }
@@ -100,7 +102,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     syn::Fields::Unit => {
                         quote! {
                             Self::#v_id => {
-                                encoder.write_u8(#v_ith);
+                                #name.to_string().encode_value(encoder);
                                 encoder.write_len(0);
                             }
                         }
@@ -175,16 +177,16 @@ mod tests {
                         use ::sbor::{self, Encode};
                         match self {
                             Self::A => {
-                                encoder.write_u8(0);
+                                "A".to_string().encode_value(encoder);
                                 encoder.write_len(0);
                             }
                             Self::B(a0) => {
-                                encoder.write_u8(1);
+                                "B".to_string().encode_value(encoder);
                                 encoder.write_len(1);
                                 a0.encode(encoder);
                             }
                             Self::C { x, .. } => {
-                                encoder.write_u8(2);
+                                "C".to_string().encode_value(encoder);
                                 encoder.write_len(1);
                                 x.encode(encoder);
                             }

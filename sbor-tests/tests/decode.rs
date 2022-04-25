@@ -1,6 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use sbor::rust::vec;
+use sbor::rust::string::String;
 use sbor::Decode;
 use sbor::Decoder;
 use sbor::TypeId;
@@ -54,18 +55,21 @@ fn test_decode_enum() {
     #[rustfmt::skip]
     let bytes = vec![
         17, // enum type
-        0, // enum index 
+        1, 0, 0, 0, // string size
+        65, // "A"
         2, 0, 0, 0,  // number of fields
         9, 2, 0, 0, 0, // field value
         9, 3, 0, 0, 0,  // field value
 
         17, // enum type
-        1,  // enum index 
+        1, 0, 0, 0, // string size
+        66, // "B"
         1, 0, 0, 0, // number of fields
         9, 1, 0, 0, 0, // field value
         
         17, // enum type
-        2,  // enum index
+        1, 0, 0, 0, // string size
+        67, // "C"
         0, 0, 0, 0,  // number of fields
     ];
 
