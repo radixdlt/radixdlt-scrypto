@@ -326,6 +326,14 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         Ok(GetComponentInfoOutput { package_address, blueprint_name })
     }
 
+    fn handle_create_lazy_map(
+        &mut self,
+        _input: CreateLazyMapInput,
+    ) -> Result<CreateLazyMapOutput, RuntimeError> {
+        let lazy_map_id = self.externals.create_lazy_map();
+        Ok(CreateLazyMapOutput { lazy_map_id })
+    }
+
     fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
         return Ok(GetActorOutput {
             actor: self.actor_info.clone(),
@@ -387,6 +395,7 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
                     GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
+                    CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_ACTOR => self.handle(args, Self::handle_get_actor),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),

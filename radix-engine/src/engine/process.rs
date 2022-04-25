@@ -104,6 +104,8 @@ pub trait SystemApi {
 
     fn get_component_info(&mut self, component_address: ComponentAddress) -> Result<(PackageAddress, String), RuntimeError>;
 
+    fn create_lazy_map(&mut self) -> LazyMapId;
+
     fn get_epoch(&mut self) -> u64;
 
     fn get_transaction_hash(&mut self) -> Hash;
@@ -990,18 +992,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutComponentStateOutput {})
     }
 
-    fn handle_create_lazy_map(
-        &mut self,
-        _input: CreateLazyMapInput,
-    ) -> Result<CreateLazyMapOutput, RuntimeError> {
-        let lazy_map_id = self.track.new_lazy_map_id();
-        self
-            .owned_snodes
-            .lazy_maps
-            .insert(lazy_map_id, UnclaimedLazyMap::new());
-        Ok(CreateLazyMapOutput { lazy_map_id })
-    }
-
     fn handle_get_lazy_map_entry(
         &mut self,
         input: GetLazyMapEntryInput,
@@ -1225,6 +1215,15 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         Ok((component.package_address(), component.blueprint_name().to_owned()))
     }
 
+    fn create_lazy_map(&mut self) -> LazyMapId {
+        let lazy_map_id = self.track.new_lazy_map_id();
+        self
+            .owned_snodes
+            .lazy_maps
+            .insert(lazy_map_id, UnclaimedLazyMap::new());
+        lazy_map_id
+    }
+
     fn get_epoch(&mut self) -> u64 {
         self.track.current_epoch()
     }
@@ -1254,7 +1253,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                 match operation {
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
-                    CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
