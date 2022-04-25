@@ -75,7 +75,7 @@ scrypto test
 | Create a badge with fixed supply   | ``` resim new-badge-fixed <amount> ```                                                               |
 | Create a badge with mutable supply | ``` resim new-badge-mutable <minter_resource_address> ```                                            |
 | Mint resource                      | ``` resim mint <amount> <resource_address> <minter_resource_address>```                              |
-| Transfer resource                  | ``` resim transfer <amount_or_non_fungible_ids>,<resource_address> <recipient_component_address> ``` |
+| Transfer resource                  | ``` resim transfer <amount> <resource_address> <recipient_component_address> ```                     |
 | Publish a package                  | ``` resim publish <path_to_package_dir> ```                                                          |
 | Call a function                    | ``` resim call-function <package_address> <blueprint_name> <function> <args> ```                     |
 | Call a method                      | ``` resim call-method <component_address> <method> <args> ```                                        |
