@@ -8,7 +8,7 @@ pub enum ParserError {
     InvalidNumberOfValues { actual: usize, expected: usize },
     InvalidNumberOfTypes { actual: usize, expected: usize },
     InvalidHex(String),
-    MissingEnumIndex,
+    MissingEnumName,
 }
 
 pub struct Parser {
@@ -224,16 +224,16 @@ impl Parser {
 
     pub fn parse_enum(&mut self) -> Result<Value, ParserError> {
         advance_match!(self, TokenKind::Enum);
-        let mut index_and_fields =
+        let mut name_and_fields =
             self.parse_values_any(TokenKind::OpenParenthesis, TokenKind::CloseParenthesis)?;
-        let index = match index_and_fields.get(0) {
-            Some(Value::U8(index)) => *index,
+        let name = match name_and_fields.get(0) {
+            Some(Value::String(name)) => name.clone(),
             _ => {
-                return Err(ParserError::MissingEnumIndex);
+                return Err(ParserError::MissingEnumName);
             }
         };
-        index_and_fields.remove(0);
-        Ok(Value::Enum(index, index_and_fields))
+        name_and_fields.remove(0);
+        Ok(Value::Enum(name, name_and_fields))
     }
 
     pub fn parse_option(&mut self) -> Result<Value, ParserError> {
@@ -516,10 +516,10 @@ mod tests {
     #[test]
     fn test_enum() {
         parse_value_ok!(
-            r#"Enum(0u8, "Hello", 123u8)"#,
-            Value::Enum(0, vec![Value::String("Hello".into()), Value::U8(123)],)
+            r#"Enum("Variant", "Hello", 123u8)"#,
+            Value::Enum("Variant".to_string(), vec![Value::String("Hello".into()), Value::U8(123)],)
         );
-        parse_value_ok!(r#"Enum(0u8)"#, Value::Enum(0, vec![]));
+        parse_value_ok!(r#"Enum("Variant")"#, Value::Enum("Variant".to_string(), vec![]));
     }
 
     #[test]

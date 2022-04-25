@@ -3,6 +3,7 @@ use crate::sbor::{Decode, Encode, TypeId};
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
 use crate::rust::string::String;
+use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 

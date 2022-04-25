@@ -76,9 +76,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().enumerate().map(|(i, v)| {
+            let match_arms = variants.iter().map(| v| {
                 let v_id = &v.ident;
-                let v_ith = i as u8;
+                let name_string = v_id.to_string();
+                let name: Expr = parse_quote! { #name_string };
+
                 match &v.fields {
                     syn::Fields::Named(FieldsNamed { named, .. }) => {
                         let ns: Vec<&Field> = named.iter().filter(|f| !is_skipped(f)).collect();
@@ -89,7 +91,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let s_ids = s.iter().map(|f| &f.ident);
                         let s_types = s.iter().map(|f| &f.ty);
                         quote! {
-                            #v_ith => {
+                            #name => {
                                 decoder.check_len(#ns_len)?;
                                 Ok(Self::#v_id {
                                     #(#ns_ids: <#ns_types>::decode(decoder)?,)*
@@ -110,7 +112,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         }
                         let ns_len = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                         quote! {
-                            #v_ith => {
+                            #name => {
                                 decoder.check_len(#ns_len)?;
                                 Ok(Self::#v_id (
                                     #(#fields),*
@@ -120,7 +122,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     }
                     syn::Fields::Unit => {
                         quote! {
-                            #v_ith => {
+                            #name => {
                                 decoder.check_len(0)?;
                                 Ok(Self::#v_id)
                             }
@@ -135,10 +137,10 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
 
-                        let index = decoder.read_u8()?;
-                        match index {
+                        let name = <String>::decode_value(decoder)?;
+                        match name.as_str() {
                             #(#match_arms,)*
-                            _ => Err(::sbor::DecodeError::InvalidIndex(index))
+                            _ => Err(::sbor::DecodeError::InvalidEnum(name))
                         }
                     }
                 }
@@ -200,23 +202,23 @@ mod tests {
                     #[inline]
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
-                        let index = decoder.read_u8()?;
-                        match index {
-                            0u8 => {
+                        let name = <String>::decode_value(decoder)?;
+                        match name.as_str() {
+                            "A" => {
                                 decoder.check_len(0)?;
                                 Ok(Self::A)
                             },
-                            1u8 => {
+                            "B" => {
                                 decoder.check_len(1)?;
                                 Ok(Self::B(<u32>::decode(decoder)?))
                             },
-                            2u8 => {
+                            "C" => {
                                 decoder.check_len(1)?;
                                 Ok(Self::C {
                                     x: <u8>::decode(decoder)?,
                                 })
                             },
-                            _ => Err(::sbor::DecodeError::InvalidIndex(index))
+                            _ => Err(::sbor::DecodeError::InvalidEnum(name))
                         }
                     }
                 }
