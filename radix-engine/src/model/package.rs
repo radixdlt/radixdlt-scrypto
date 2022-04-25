@@ -302,6 +302,14 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         Ok(CreateComponentOutput { component_address })
     }
 
+    fn handle_get_component_info(
+        &mut self,
+        input: GetComponentInfoInput,
+    ) -> Result<GetComponentInfoOutput, RuntimeError> {
+        let (package_address, blueprint_name) = self.externals.get_component_info(input.component_address)?;
+        Ok(GetComponentInfoOutput { package_address, blueprint_name })
+    }
+
     fn handle_invoke_snode(
         &mut self,
         input: InvokeSNodeInput,
@@ -342,6 +350,7 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                 match operation {
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
+                    GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
                     _ => self.externals.invoke_index(index, args)
                 }
             }

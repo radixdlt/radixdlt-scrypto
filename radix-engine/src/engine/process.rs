@@ -102,6 +102,8 @@ pub trait SystemApi {
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
 
+    fn get_component_info(&mut self, component_address: ComponentAddress) -> Result<(PackageAddress, String), RuntimeError>;
+
     fn get_epoch(&mut self) -> u64;
 
     fn get_transaction_hash(&mut self) -> Hash;
@@ -930,20 +932,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // SYSTEM CALL HANDLERS START
     //============================
 
-    fn handle_get_component_info(
-        &mut self,
-        input: GetComponentInfoInput,
-    ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        let component = self
-            .track
-            .get_component(input.component_address)
-            .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
 
-        Ok(GetComponentInfoOutput {
-            package_address: component.package_address(),
-            blueprint_name: component.blueprint_name().to_owned(),
-        })
-    }
 
     fn handle_get_component_state(
         &mut self,
@@ -1265,6 +1254,15 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         Ok(component_address)
     }
 
+    fn get_component_info(&mut self, component_address: ComponentAddress) -> Result<(PackageAddress, String), RuntimeError> {
+        let component = self
+            .track
+            .get_component(component_address)
+            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
+
+        Ok((component.package_address(), component.blueprint_name().to_owned()))
+    }
+
     fn get_epoch(&mut self) -> u64 {
         self.track.current_epoch()
     }
@@ -1284,7 +1282,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
             ENGINE_FUNCTION_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
