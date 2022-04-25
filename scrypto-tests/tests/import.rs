@@ -4,6 +4,7 @@ use scrypto::component::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::{blueprint, import};
 

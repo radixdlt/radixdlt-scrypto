@@ -2,6 +2,7 @@
 
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use sbor::rust::string::ToString;
 use sbor::Encode;
 use sbor::Encoder;
 use sbor::TypeId;
@@ -70,18 +71,21 @@ fn test_encode_enum() {
     assert_eq!(
         vec![
             17, // enum type
-            0, // enum index 
+            1, 0, 0, 0, // string size
+            65, // "A"
             2, 0, 0, 0,  // number of fields
             9, 2, 0, 0, 0, // field value
             9, 3, 0, 0, 0,  // field value
 
             17, // enum type
-            1,  // enum index 
+            1, 0, 0, 0,  // string size
+            66, // "B"
             1, 0, 0, 0, // number of fields
             9, 1, 0, 0, 0, // field value
             
             17, // enum type
-            2,  // enum index
+            1, 0, 0, 0,  // string size
+            67, // "C"
             0, 0, 0, 0,  // number of fields
         ],
         bytes

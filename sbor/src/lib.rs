@@ -25,6 +25,8 @@ pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::{Describe, Type};
 pub use encode::{Encode, Encoder};
 pub use type_id::TypeId;
+pub use crate::rust::string::String;
+pub use crate::rust::string::ToString;
 
 use crate::rust::vec::Vec;
 
