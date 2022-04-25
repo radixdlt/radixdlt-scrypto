@@ -105,6 +105,7 @@ pub struct GetComponentStateOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PutComponentStateInput {
+    pub component_address: ComponentAddress,
     pub state: Vec<u8>,
 }
 

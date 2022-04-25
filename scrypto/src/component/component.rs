@@ -81,6 +81,7 @@ impl Component {
     /// Updates the state of this component.
     pub fn put_state<T: ComponentState>(&self, state: T) {
         let input = PutComponentStateInput {
+            component_address: self.0,
             state: scrypto_encode(&state),
         };
         let _: PutComponentStateOutput = call_engine(PUT_COMPONENT_STATE, input);
