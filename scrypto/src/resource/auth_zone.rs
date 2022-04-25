@@ -24,9 +24,9 @@ pub enum AuthZoneMethod {
 ///
 /// 1. Call methods on another component;
 /// 2. Access resource system.
-pub struct AuthZone {}
+pub struct ComponentAuthZone {}
 
-impl AuthZone {
+impl ComponentAuthZone {
     invocations! {
         SNodeRef::AuthZoneRef => {
             pub fn push(proof: Proof) -> () {

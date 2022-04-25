@@ -1,5 +1,5 @@
 use sbor::*;
-use scrypto::auth;
+use scrypto::rule;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
@@ -170,7 +170,7 @@ pub trait SubstateStore {
             metadata.insert("url".to_owned(), XRD_URL.to_owned());
 
             let mut resource_auth = HashMap::new();
-            resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+            resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
             let mut xrd = ResourceManager::new(
                 ResourceType::Fungible { divisibility: 18 },
@@ -184,7 +184,7 @@ pub trait SubstateStore {
                 .unwrap();
 
             let mut ecdsa_resource_auth = HashMap::new();
-            ecdsa_resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+            ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
             let ecdsa_token = ResourceManager::new(
                 ResourceType::NonFungible,
                 HashMap::new(),

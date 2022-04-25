@@ -1,8 +1,7 @@
 use crate::{args, invocations};
+use sbor::*;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
-use sbor::*;
-
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
@@ -29,7 +28,7 @@ pub enum ResourceMethod {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
 pub enum Mutability {
     LOCKED,
-    MUTABLE(MethodAuth),
+    MUTABLE(AccessRule),
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -37,7 +36,7 @@ pub enum ResourceManagerFunction {
     Create(
         ResourceType,
         HashMap<String, String>,
-        HashMap<ResourceMethod, (MethodAuth, Mutability)>,
+        HashMap<ResourceMethod, (AccessRule, Mutability)>,
         Option<MintParams>,
     )
 }
@@ -45,7 +44,7 @@ pub enum ResourceManagerFunction {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ResourceManagerMethod {
     Mint(MintParams),
-    UpdateAuth(ResourceMethod, MethodAuth),
+    UpdateAuth(ResourceMethod, AccessRule),
     LockAuth(ResourceMethod),
     GetResourceType(),
     GetMetadata(),
@@ -93,37 +92,37 @@ impl ResourceManager {
             fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
                 ResourceManagerMethod::Mint(mint_params)
             }
-            pub fn set_mintable(&mut self, mint_auth: MethodAuth) -> () {
+            pub fn set_mintable(&mut self, mint_auth: AccessRule) -> () {
                 ResourceManagerMethod::UpdateAuth(ResourceMethod::Mint, mint_auth)
             }
             pub fn lock_mintable(&mut self) -> () {
                 ResourceManagerMethod::LockAuth(ResourceMethod::Mint)
             }
-            pub fn set_burnable(&mut self, burn_auth: MethodAuth) -> () {
+            pub fn set_burnable(&mut self, burn_auth: AccessRule) -> () {
                 ResourceManagerMethod::UpdateAuth(ResourceMethod::Burn, burn_auth)
             }
             pub fn lock_burnable(&mut self) -> () {
                 ResourceManagerMethod::LockAuth(ResourceMethod::Burn)
             }
-            pub fn set_withdrawable(&mut self, withdraw_auth: MethodAuth) -> () {
+            pub fn set_withdrawable(&mut self, withdraw_auth: AccessRule) -> () {
                 ResourceManagerMethod::UpdateAuth(ResourceMethod::Withdraw, withdraw_auth)
             }
             pub fn lock_withdrawable(&mut self) -> () {
                 ResourceManagerMethod::LockAuth(ResourceMethod::Withdraw)
             }
-            pub fn set_depositable(&mut self, deposit_auth: MethodAuth) -> () {
+            pub fn set_depositable(&mut self, deposit_auth: AccessRule) -> () {
                 ResourceManagerMethod::UpdateAuth(ResourceMethod::Deposit, deposit_auth)
             }
             pub fn lock_depositable(&mut self) -> () {
                 ResourceManagerMethod::LockAuth(ResourceMethod::Deposit)
             }
-            pub fn set_updateable_metadata(&self, update_metadata_auth: MethodAuth) -> () {
+            pub fn set_updateable_metadata(&self, update_metadata_auth: AccessRule) -> () {
                 ResourceManagerMethod::UpdateAuth(ResourceMethod::UpdateMetadata, update_metadata_auth)
             }
             pub fn lock_updateable_metadata(&mut self) -> () {
                 ResourceManagerMethod::LockAuth(ResourceMethod::UpdateMetadata)
             }
-            pub fn set_updateable_non_fungible_data(&self, update_non_fungible_data_auth: MethodAuth) -> () {
+            pub fn set_updateable_non_fungible_data(&self, update_non_fungible_data_auth: AccessRule) -> () {
                 ResourceManagerMethod::UpdateAuth(ResourceMethod::UpdateNonFungibleData, update_non_fungible_data_auth)
             }
             pub fn lock_updateable_non_fungible_data(&mut self) -> () {

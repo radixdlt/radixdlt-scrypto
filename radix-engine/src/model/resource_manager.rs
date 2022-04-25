@@ -3,7 +3,7 @@ use crate::model::NonFungible;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::MethodAuth::{AllowAll, DenyAll};
+use scrypto::prelude::AccessRule::{AllowAll, DenyAll};
 use scrypto::prelude::ResourceMethod::Withdraw;
 use scrypto::resource::Mutability::LOCKED;
 use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
@@ -44,7 +44,7 @@ pub enum ResourceManagerError {
 
 enum MethodAccessRuleMethod {
     Lock(),
-    Update(MethodAuth),
+    Update(AccessRule),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -54,7 +54,7 @@ struct MethodAccessRule {
 }
 
 impl MethodAccessRule {
-    pub fn new(entry: (MethodAuth, Mutability)) -> Self {
+    pub fn new(entry: (AccessRule, Mutability)) -> Self {
         MethodAccessRule {
             auth: convert_auth!(entry.0),
             update_auth: match entry.1 {
@@ -88,7 +88,7 @@ impl MethodAccessRule {
         Ok(ScryptoValue::from_value(&()))
     }
 
-    fn update(&mut self, method_auth: MethodAuth) {
+    fn update(&mut self, method_auth: AccessRule) {
         self.auth = convert_auth!(method_auth)
     }
 
@@ -112,7 +112,7 @@ impl ResourceManager {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        mut auth: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
+        mut auth: HashMap<ResourceMethod, (AccessRule, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
         let mut vault_method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
         vault_method_table.insert("take".to_string(), Some(Withdraw));
