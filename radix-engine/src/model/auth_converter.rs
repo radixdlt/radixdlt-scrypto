@@ -6,7 +6,7 @@ use crate::model::MethodAuthorization;
 use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRuleNode, MethodAuth, SoftResource};
+use scrypto::prelude::{AccessRuleNode, AccessRule, SoftResource};
 use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
     SoftResourceOrNonFungibleList,
@@ -206,19 +206,19 @@ fn soft_to_hard_proof_rule(schema: &Type, proof_rule: &ProofRule, dom: &Value) -
     }
 }
 
-fn soft_to_hard_auth_rule(schema: &Type, auth_rule: &AuthRuleNode, dom: &Value) -> HardAuthRule {
+fn soft_to_hard_auth_rule(schema: &Type, auth_rule: &AccessRuleNode, dom: &Value) -> HardAuthRule {
     match auth_rule {
-        AuthRuleNode::ProofRule(proof_rule) => {
+        AccessRuleNode::ProofRule(proof_rule) => {
             HardAuthRule::ProofRule(soft_to_hard_proof_rule(schema, proof_rule, dom))
         }
-        AuthRuleNode::AnyOf(rules) => {
+        AccessRuleNode::AnyOf(rules) => {
             let hard_rules = rules
                 .iter()
                 .map(|r| soft_to_hard_auth_rule(schema, r, dom))
                 .collect();
             HardAuthRule::AnyOf(hard_rules)
         }
-        AuthRuleNode::AllOf(rules) => {
+        AccessRuleNode::AllOf(rules) => {
             let hard_rules = rules
                 .iter()
                 .map(|r| soft_to_hard_auth_rule(schema, r, dom))
@@ -228,12 +228,12 @@ fn soft_to_hard_auth_rule(schema: &Type, auth_rule: &AuthRuleNode, dom: &Value) 
     }
 }
 
-pub fn convert(schema: &Type, dom: &Value, method_auth: &MethodAuth) -> MethodAuthorization {
+pub fn convert(schema: &Type, dom: &Value, method_auth: &AccessRule) -> MethodAuthorization {
     match method_auth {
-        MethodAuth::Protected(auth_rule) => {
+        AccessRule::Protected(auth_rule) => {
             MethodAuthorization::Protected(soft_to_hard_auth_rule(schema, auth_rule, dom))
         }
-        MethodAuth::AllowAll => MethodAuthorization::AllowAll,
-        MethodAuth::DenyAll => MethodAuthorization::DenyAll,
+        AccessRule::AllowAll => MethodAuthorization::AllowAll,
+        AccessRule::DenyAll => MethodAuthorization::DenyAll,
     }
 }

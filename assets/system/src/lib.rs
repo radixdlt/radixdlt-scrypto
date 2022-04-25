@@ -16,10 +16,10 @@ blueprint! {
         pub fn new_resource(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            authorization: HashMap<ResourceMethod, (MethodAuth, Mutability)>,
+            access_rules: HashMap<ResourceMethod, (AccessRule, Mutability)>,
             initial_supply: Option<MintParams>,
         ) -> (ResourceAddress, Option<Bucket>) {
-            resource_system().new_resource(resource_type, metadata, authorization, initial_supply)
+            resource_system().new_resource(resource_type, metadata, access_rules, initial_supply)
         }
 
         /// Mints fungible resource. TODO: Remove

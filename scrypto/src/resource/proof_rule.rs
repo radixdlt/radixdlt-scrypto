@@ -1,4 +1,4 @@
-use crate::resource::AuthRuleNode::{AllOf, AnyOf};
+use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec;
@@ -188,26 +188,26 @@ macro_rules! resource_list {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
-pub enum AuthRuleNode {
+pub enum AccessRuleNode {
     ProofRule(ProofRule),
-    AnyOf(Vec<AuthRuleNode>),
-    AllOf(Vec<AuthRuleNode>),
+    AnyOf(Vec<AccessRuleNode>),
+    AllOf(Vec<AccessRuleNode>),
 }
 
 // FIXME: describe types with cycles
-impl Describe for AuthRuleNode {
+impl Describe for AccessRuleNode {
     fn describe() -> sbor::describe::Type {
         sbor::describe::Type::Custom {
-            name: "AuthRuleNode".to_owned(),
+            name: "AccessRuleNode".to_owned(),
             generics: vec![],
         }
     }
 }
 
-impl AuthRuleNode {
-    pub fn or(self, other: AuthRuleNode) -> Self {
+impl AccessRuleNode {
+    pub fn or(self, other: AccessRuleNode) -> Self {
         match self {
-            AuthRuleNode::AnyOf(mut rules) => {
+            AccessRuleNode::AnyOf(mut rules) => {
                 rules.push(other);
                 AnyOf(rules)
             }
@@ -215,9 +215,9 @@ impl AuthRuleNode {
         }
     }
 
-    pub fn and(self, other: AuthRuleNode) -> Self {
+    pub fn and(self, other: AccessRuleNode) -> Self {
         match self {
-            AuthRuleNode::AllOf(mut rules) => {
+            AccessRuleNode::AllOf(mut rules) => {
                 rules.push(other);
                 AllOf(rules)
             }
@@ -265,101 +265,101 @@ where
 
 // TODO: Move this logic into preprocessor. It probably needs to be implemented as a procedural macro.
 #[macro_export]
-macro_rules! auth_and_or {
+macro_rules! access_and_or {
     (|| $tt:tt) => {{
-        let next = auth_rule_node!($tt);
-        move |e: AuthRuleNode| e.or(next)
+        let next = access_rule_node!($tt);
+        move |e: AccessRuleNode| e.or(next)
     }};
     (|| $right1:ident $right2:tt) => {{
-        let next = auth_rule_node!($right1 $right2);
-        move |e: AuthRuleNode| e.or(next)
+        let next = access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| e.or(next)
     }};
     (|| $right:tt && $($rest:tt)+) => {{
-        let f = auth_and_or!(&& $($rest)+);
-        let next = auth_rule_node!($right);
-        move |e: AuthRuleNode| e.or(f(next))
+        let f = access_and_or!(&& $($rest)+);
+        let next = access_rule_node!($right);
+        move |e: AccessRuleNode| e.or(f(next))
     }};
     (|| $right:tt || $($rest:tt)+) => {{
-        let f = auth_and_or!(|| $($rest)+);
-        let next = auth_rule_node!($right);
-        move |e: AuthRuleNode| f(e.or(next))
+        let f = access_and_or!(|| $($rest)+);
+        let next = access_rule_node!($right);
+        move |e: AccessRuleNode| f(e.or(next))
     }};
     (|| $right1:ident $right2:tt && $($rest:tt)+) => {{
-        let f = auth_and_or!(&& $($rest)+);
-        let next = auth_rule_node!($right1 $right2);
-        move |e: AuthRuleNode| e.or(f(next))
+        let f = access_and_or!(&& $($rest)+);
+        let next = access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| e.or(f(next))
     }};
     (|| $right1:ident $right2:tt || $($rest:tt)+) => {{
-        let f = auth_and_or!(|| $($rest)+);
-        let next = auth_rule_node!($right1 $right2);
-        move |e: AuthRuleNode| f(e.or(next))
+        let f = access_and_or!(|| $($rest)+);
+        let next = access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| f(e.or(next))
     }};
 
     (&& $tt:tt) => {{
-        let next = auth_rule_node!($tt);
-        move |e: AuthRuleNode| e.and(next)
+        let next = access_rule_node!($tt);
+        move |e: AccessRuleNode| e.and(next)
     }};
     (&& $right1:ident $right2:tt) => {{
-        let next = auth_rule_node!($right1 $right2);
-        move |e: AuthRuleNode| e.and(next)
+        let next = access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| e.and(next)
     }};
     (&& $right:tt && $($rest:tt)+) => {{
-        let f = auth_and_or!(&& $($rest)+);
-        let next = auth_rule_node!($right);
-        move |e: AuthRuleNode| f(e.and(next))
+        let f = access_and_or!(&& $($rest)+);
+        let next = access_rule_node!($right);
+        move |e: AccessRuleNode| f(e.and(next))
     }};
     (&& $right:tt || $($rest:tt)+) => {{
-        let f = auth_and_or!(|| $($rest)+);
-        let next = auth_rule_node!($right);
-        move |e: AuthRuleNode| f(e.and(next))
+        let f = access_and_or!(|| $($rest)+);
+        let next = access_rule_node!($right);
+        move |e: AccessRuleNode| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt && $($rest:tt)+) => {{
-        let f = auth_and_or!(&& $($rest)+);
-        let next = auth_rule_node!($right1 $right2);
-        move |e: AuthRuleNode| f(e.and(next))
+        let f = access_and_or!(&& $($rest)+);
+        let next = access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| f(e.and(next))
     }};
     (&& $right1:ident $right2:tt || $($rest:tt)+) => {{
-        let f = auth_and_or!(|| $($rest)+);
-        let next = auth_rule_node!($right1 $right2);
-        move |e: AuthRuleNode| f(e.and(next))
+        let f = access_and_or!(|| $($rest)+);
+        let next = access_rule_node!($right1 $right2);
+        move |e: AccessRuleNode| f(e.and(next))
     }};
 }
 
 #[macro_export]
-macro_rules! auth_rule_node {
+macro_rules! access_rule_node {
     // Handle leaves
-    ($rule:ident $args:tt) => {{ ::scrypto::resource::AuthRuleNode::ProofRule($rule $args) }};
+    ($rule:ident $args:tt) => {{ ::scrypto::resource::AccessRuleNode::ProofRule($rule $args) }};
 
     // Handle group
-    (($($tt:tt)+)) => {{ auth_rule_node!($($tt)+) }};
+    (($($tt:tt)+)) => {{ access_rule_node!($($tt)+) }};
 
     // Handle and/or logic
     ($left1:ident $left2:tt $($right:tt)+) => {{
-        let f = auth_and_or!($($right)+);
-        f(auth_rule_node!($left1 $left2))
+        let f = access_and_or!($($right)+);
+        f(access_rule_node!($left1 $left2))
     }};
     ($left:tt $($right:tt)+) => {{
-        let f = auth_and_or!($($right)+);
-        f(auth_rule_node!($left))
+        let f = access_and_or!($($right)+);
+        f(access_rule_node!($left))
     }};
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
-pub enum MethodAuth {
+pub enum AccessRule {
     AllowAll,
     DenyAll,
-    Protected(AuthRuleNode),
+    Protected(AccessRuleNode),
 }
 
 #[macro_export]
-macro_rules! auth {
+macro_rules! rule {
     (allow_all) => {{
-        ::scrypto::resource::MethodAuth::AllowAll
+        ::scrypto::resource::AccessRule::AllowAll
     }};
     (deny_all) => {{
-        ::scrypto::resource::MethodAuth::DenyAll
+        ::scrypto::resource::AccessRule::DenyAll
     }};
     ($($tt:tt)+) => {{
-        ::scrypto::resource::MethodAuth::Protected(auth_rule_node!($($tt)+))
+        ::scrypto::resource::AccessRule::Protected(access_rule_node!($($tt)+))
     }};
 }
