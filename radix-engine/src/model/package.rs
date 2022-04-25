@@ -1,7 +1,7 @@
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::prelude::PackageFunction;
+use scrypto::prelude::{PackageAddress, PackageFunction};
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -15,6 +15,7 @@ use wasmi::{Externals, ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInsta
 use crate::engine::*;
 use crate::engine::{EnvModuleResolver, SystemApi};
 use crate::errors::{RuntimeError, WasmValidationError};
+use crate::model::Component;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -210,12 +211,18 @@ impl Package {
     }
 
     pub fn run<'a, E: Externals + SystemApi>(
+        package_address: PackageAddress,
         func_name: &str,
         module: ModuleRef,
         memory: MemoryRef,
         externals: &'a mut E,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let mut wasm_process = WasmProcess::new(module.clone(), memory.clone(), externals);
+        let mut wasm_process = WasmProcess::new(
+            package_address,
+            module.clone(),
+            memory.clone(),
+            externals,
+        );
 
         let result = module.invoke_export(func_name, &[], &mut wasm_process);
 
@@ -240,14 +247,21 @@ struct WasmProcess<'a, E: Externals + SystemApi> {
     externals: &'a mut E,
     module: ModuleRef,
     memory: MemoryRef,
+    package_address: PackageAddress,
 }
 
 impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
-    pub fn new(module: ModuleRef, memory: MemoryRef, externals: &'a mut E) -> Self {
+    pub fn new(
+        package_address: PackageAddress,
+        module: ModuleRef,
+        memory: MemoryRef,
+        externals: &'a mut E
+    ) -> Self {
         WasmProcess {
             module,
             memory,
             externals,
+            package_address,
         }
     }
 
@@ -272,6 +286,20 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
 
         Ok(Some(RuntimeValue::I32(output_ptr)))
+    }
+
+    fn handle_create_component(
+        &mut self,
+        input: CreateComponentInput,
+    ) -> Result<CreateComponentOutput, RuntimeError> {
+        let component = Component::new(
+            self.package_address.clone(),
+            input.blueprint_name,
+            input.access_rules_list,
+            input.state,
+        );
+        let component_address = self.externals.create_component(component)?;
+        Ok(CreateComponentOutput { component_address })
     }
 
     fn handle_invoke_snode(
@@ -313,6 +341,7 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
+                    CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
                     _ => self.externals.invoke_index(index, args)
                 }
             }

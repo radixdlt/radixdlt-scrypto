@@ -423,7 +423,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     component: component_state,
                 });
 
-                Package::run(actor.export_name(), module, memory, self)
+                Package::run(*actor.package_address(), actor.export_name(), module, memory, self)
             }
             SNodeState::ResourceStatic => {
                 ResourceManager::static_main(arg, self)
@@ -930,26 +930,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // SYSTEM CALL HANDLERS START
     //============================
 
-    fn handle_create_component(
-        &mut self,
-        input: CreateComponentInput,
-    ) -> Result<CreateComponentOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
-        let package_address = wasm_process.vm.actor.package_address().clone();
-        let component = Component::new(
-            package_address,
-            input.blueprint_name,
-            input.access_rules_list,
-            input.state,
-        );
-
-        let component_address = self.create_component(component)?;
-        Ok(CreateComponentOutput { component_address })
-    }
-
     fn handle_get_component_info(
         &mut self,
         input: GetComponentInfoInput,
@@ -1304,7 +1284,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
             ENGINE_FUNCTION_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
                     GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
