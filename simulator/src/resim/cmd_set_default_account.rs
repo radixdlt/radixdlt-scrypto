@@ -17,14 +17,15 @@ pub struct SetDefaultAccount {
 }
 
 impl SetDefaultAccount {
-    pub fn run(&self) -> Result<(), Error> {
+
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         set_configs(&Configs {
             default_account: self.component_address,
             default_public_key: self.public_key,
             default_private_key: hex::decode(&self.private_key).unwrap(),
         })?;
 
-        println!("Default account updated!");
+        writeln!(out, "Default account updated!").map_err(Error::IOError)?;
         Ok(())
     }
 }

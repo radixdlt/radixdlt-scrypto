@@ -41,4 +41,6 @@ pub enum Error {
     DecompileError(transaction_manifest::DecompileError),
 
     InvalidId(String),
+
+    InvalidPrivateKey,
 }

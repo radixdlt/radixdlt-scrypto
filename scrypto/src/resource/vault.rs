@@ -126,9 +126,9 @@ impl Vault {
 
     /// Uses resources in this vault as authorization for an operation.
     pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
-        AuthZone::push(self.create_proof());
+        ComponentAuthZone::push(self.create_proof());
         let output = f();
-        AuthZone::pop().drop();
+        ComponentAuthZone::pop().drop();
         output
     }
 

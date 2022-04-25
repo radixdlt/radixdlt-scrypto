@@ -1,8 +1,8 @@
+use sbor::*;
+
 use crate::args;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
-use sbor::*;
-
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
@@ -29,7 +29,7 @@ pub enum ResourceMethod {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
 pub enum Mutability {
     LOCKED,
-    MUTABLE(MethodAuth),
+    MUTABLE(AccessRule),
 }
 
 /// Represents a resource address.
@@ -56,7 +56,7 @@ impl ResourceManager {
         scrypto_decode(&output.rtn).unwrap()
     }
 
-    pub fn set_mintable(&self, mint_auth: MethodAuth) -> () {
+    pub fn set_mintable(&self, mint_auth: AccessRule) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
             function: "method_auth".to_string(),
@@ -100,7 +100,7 @@ impl ResourceManager {
         let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
     }
 
-    pub fn set_burnable(&self, burn_auth: MethodAuth) -> () {
+    pub fn set_burnable(&self, burn_auth: AccessRule) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
             function: "method_auth".to_string(),
@@ -131,7 +131,7 @@ impl ResourceManager {
         scrypto_decode(&output.rtn).unwrap()
     }
 
-    pub fn set_withdrawable(&self, withdraw_auth: MethodAuth) -> () {
+    pub fn set_withdrawable(&self, withdraw_auth: AccessRule) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
             function: "method_auth".to_string(),
@@ -151,7 +151,7 @@ impl ResourceManager {
         scrypto_decode(&output.rtn).unwrap()
     }
 
-    pub fn set_depositable(&self, deposit_auth: MethodAuth) -> () {
+    pub fn set_depositable(&self, deposit_auth: AccessRule) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
             function: "method_auth".to_string(),
@@ -171,7 +171,7 @@ impl ResourceManager {
         scrypto_decode(&output.rtn).unwrap()
     }
 
-    pub fn set_updateable_metadata(&self, update_metadata_auth: MethodAuth) -> () {
+    pub fn set_updateable_metadata(&self, update_metadata_auth: AccessRule) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
             function: "method_auth".to_string(),
@@ -191,7 +191,7 @@ impl ResourceManager {
         scrypto_decode(&output.rtn).unwrap()
     }
 
-    pub fn set_updateable_non_fungible_data(&self, update_metadata_auth: MethodAuth) -> () {
+    pub fn set_updateable_non_fungible_data(&self, update_metadata_auth: AccessRule) -> () {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(self.0),
             function: "method_auth".to_string(),

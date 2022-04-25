@@ -34,7 +34,7 @@ impl<'l> TestRunner<'l> {
         )
     }
 
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &MethodAuth) -> ComponentAddress {
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         self.executor.new_account_with_auth_rule(withdraw_auth)
     }
 

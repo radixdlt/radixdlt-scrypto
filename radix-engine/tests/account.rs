@@ -6,6 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::*;
 use scrypto::prelude::*;
+use scrypto::values::ScryptoValue;
 
 #[test]
 fn can_withdraw_from_my_account() {
@@ -98,4 +99,26 @@ fn account_to_bucket_to_account() {
 
     // Assert
     assert!(receipt.result.is_ok());
+}
+
+#[test]
+fn test_account_balance() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (pk, sk, account) = test_runner.new_account();
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_method(account, "balance", args![RADIX_TOKEN])
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
+
+    // Act
+    let receipt = test_runner.validate_and_execute(&transaction);
+
+    // Assert
+    assert_eq!(
+        receipt.outputs[0],
+        ScryptoValue::from_value(&Decimal::from(1000000))
+    );
 }
