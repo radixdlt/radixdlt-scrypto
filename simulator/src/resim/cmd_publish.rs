@@ -39,7 +39,7 @@ impl Publish {
         self.store_package(out, &code)
     }
 
-    fn store_package<O: std::io::Write>(&self, out: &mut O, code: &[u8]) -> Result<(), Error> {
+    pub fn store_package<O: std::io::Write>(&self, out: &mut O, code: &[u8]) -> Result<(), Error> {
 
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
