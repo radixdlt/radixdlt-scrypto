@@ -14,7 +14,7 @@ blueprint! {
         pub fn create_restricted_transfer(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .restrict_withdraw(auth!(require(badge_resource_address)), LOCKED)
+                .restrict_withdraw(rule!(require(badge_resource_address)), LOCKED)
                 .initial_supply(5)
         }
 
@@ -27,20 +27,20 @@ blueprint! {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
                 .mintable(
-                    auth!(require(mint_auth)),
-                    MUTABLE(auth!(require(admin_auth))),
+                    rule!(require(mint_auth)),
+                    MUTABLE(rule!(require(admin_auth))),
                 )
                 .burnable(
-                    auth!(require(burn_auth)),
-                    MUTABLE(auth!(require(admin_auth))),
+                    rule!(require(burn_auth)),
+                    MUTABLE(rule!(require(admin_auth))),
                 )
                 .restrict_withdraw(
-                    auth!(require(withdraw_auth)),
-                    MUTABLE(auth!(require(admin_auth))),
+                    rule!(require(withdraw_auth)),
+                    MUTABLE(rule!(require(admin_auth))),
                 )
                 .restrict_deposit(
-                    auth!(allow_all),
-                    MUTABLE(auth!(require(admin_auth))),
+                    rule!(allow_all),
+                    MUTABLE(rule!(require(admin_auth))),
                 )
                 .initial_supply(5)
         }
@@ -48,25 +48,25 @@ blueprint! {
         pub fn create_restricted_burn(badge_resource_address: ResourceAddress) -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(0)
-                .burnable(auth!(require(badge_resource_address)), LOCKED)
+                .burnable(rule!(require(badge_resource_address)), LOCKED)
                 .initial_supply(5)
         }
 
         pub fn set_mintable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
-            borrow_resource_manager!(resource_address).set_mintable(auth!(require(auth_address)));
+            borrow_resource_manager!(resource_address).set_mintable(rule!(require(auth_address)));
         }
 
         pub fn set_burnable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
-            borrow_resource_manager!(resource_address).set_burnable(auth!(require(auth_address)));
+            borrow_resource_manager!(resource_address).set_burnable(rule!(require(auth_address)));
         }
 
         pub fn set_withdrawable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
             borrow_resource_manager!(resource_address)
-                .set_withdrawable(auth!(require(auth_address)));
+                .set_withdrawable(rule!(require(auth_address)));
         }
 
         pub fn set_depositable(resource_address: ResourceAddress, auth_address: ResourceAddress) {
-            borrow_resource_manager!(resource_address).set_depositable(auth!(require(auth_address)));
+            borrow_resource_manager!(resource_address).set_depositable(rule!(require(auth_address)));
         }
 
 

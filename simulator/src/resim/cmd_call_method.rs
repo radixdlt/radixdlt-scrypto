@@ -1,3 +1,5 @@
+#![allow(unused_must_use)]
+
 use clap::Parser;
 use radix_engine::transaction::*;
 use scrypto::engine::types::*;

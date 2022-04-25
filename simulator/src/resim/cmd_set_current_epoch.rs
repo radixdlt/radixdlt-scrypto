@@ -11,11 +11,11 @@ pub struct SetCurrentEpoch {
 }
 
 impl SetCurrentEpoch {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         ledger.set_epoch(self.epoch);
 
-        println!("Current epoch set!");
+        writeln!(out, "Current epoch set!").map_err(Error::IOError)?;
         Ok(())
     }
 }

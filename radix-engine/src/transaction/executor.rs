@@ -3,7 +3,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::{abi, auth, auth_rule_node};
+use scrypto::rust::string::ToString;
+use scrypto::{abi, rule, access_rule_node};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -89,7 +90,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Creates an account with 1,000,000 XRD in balance.
-    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &MethodAuth) -> ComponentAddress {
+    pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
@@ -111,7 +112,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let (public_key, private_key) = self.new_key_pair();
         let id = NonFungibleId::from_bytes(public_key.to_vec());
         let auth_address = NonFungibleAddress::new(ECDSA_TOKEN, id);
-        let withdraw_auth = auth!(require(auth_address));
+        let withdraw_auth = rule!(require(auth_address));
         let account = self.new_account_with_auth_rule(&withdraw_auth);
         (public_key, private_key, account)
     }
@@ -157,11 +158,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         signed: &SignedTransaction,
     ) -> Result<Receipt, TransactionValidationError> {
         let validated = signed.validate()?;
-        let receipt = self.execute(&validated);
+        let receipt = self.execute(validated);
         Ok(receipt)
     }
 
-    pub fn execute(&mut self, validated: &ValidatedTransaction) -> Receipt {
+    pub fn execute(&mut self, validated: ValidatedTransaction) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -171,7 +172,18 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             validated.signers.clone(),
         );
         let mut proc = track.start_process(self.trace);
-        let (outputs, error) = validated.main(&mut proc);
+
+        let txn_process = TransactionProcess::new(validated.clone());
+        let mut txn_snode = SNodeState::Transaction(txn_process);
+        let error = match proc.run(&mut txn_snode, "execute".to_string(), vec![]) {
+            Ok(_) => None,
+            Err(e) => Some(e),
+        };
+        let outputs = if let SNodeState::Transaction(txn_process) = txn_snode {
+            txn_process.outputs().to_vec()
+        } else {
+            panic!("Should not get here");
+        };
 
         // prepare data for receipts
         let new_package_addresses = track.new_package_addresses();
@@ -187,6 +199,8 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         } else {
             None
         };
+
+
 
         #[cfg(feature = "alloc")]
         let execution_time = None;

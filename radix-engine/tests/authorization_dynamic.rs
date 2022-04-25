@@ -83,7 +83,7 @@ fn test_dynamic_auth(
 
 fn test_dynamic_authlist(
     list_size: usize,
-    auth_rule: MethodAuth,
+    auth_rule: AccessRule,
     signers: &[usize],
     should_succeed: bool,
 ) {
@@ -162,19 +162,19 @@ fn dynamic_auth_should_allow_me_to_call_method_when_change_auth() {
 
 #[test]
 fn dynamic_require_should_fail_on_dynamic_list() {
-    test_dynamic_authlist(3, auth!(require("auth")), &[0, 1, 2], false);
+    test_dynamic_authlist(3, rule!(require("auth")), &[0, 1, 2], false);
 }
 
 #[test]
 fn dynamic_all_of_should_fail_on_nonexistent_resource() {
-    test_dynamic_authlist(3, auth!(require("does_not_exist")), &[0, 1, 2], false);
+    test_dynamic_authlist(3, rule!(require("does_not_exist")), &[0, 1, 2], false);
 }
 
 #[test]
 fn dynamic_min_n_of_should_allow_me_to_call_method() {
     let auths = [
-        auth!(require_n_of(2, "auth")),
-        auth!(require_n_of("count", "auth")),
+        rule!(require_n_of(2, "auth")),
+        rule!(require_n_of("count", "auth")),
     ];
 
     for auth in auths {
@@ -185,8 +185,8 @@ fn dynamic_min_n_of_should_allow_me_to_call_method() {
 #[test]
 fn dynamic_min_n_of_should_fail_if_not_signed_enough() {
     let auths = [
-        auth!(require_n_of(2, "auth")),
-        auth!(require_n_of("count", "auth")),
+        rule!(require_n_of(2, "auth")),
+        rule!(require_n_of("count", "auth")),
     ];
 
     for auth in auths {
@@ -196,32 +196,32 @@ fn dynamic_min_n_of_should_fail_if_not_signed_enough() {
 
 #[test]
 fn dynamic_min_n_of_should_fail_if_path_does_not_exist() {
-    test_dynamic_authlist(3, auth!(require_n_of(1, "does_not_exist")), &[0, 1], false);
+    test_dynamic_authlist(3, rule!(require_n_of(1, "does_not_exist")), &[0, 1], false);
 }
 
 #[test]
 fn dynamic_all_of_should_allow_me_to_call_method() {
-    test_dynamic_authlist(3, auth!(require_all_of("auth")), &[0, 1, 2], true);
+    test_dynamic_authlist(3, rule!(require_all_of("auth")), &[0, 1, 2], true);
 }
 
 #[test]
 fn dynamic_all_of_should_fail_if_not_signed_enough() {
-    test_dynamic_authlist(3, auth!(require_all_of("auth")), &[0, 1], false);
+    test_dynamic_authlist(3, rule!(require_all_of("auth")), &[0, 1], false);
 }
 
 #[test]
 fn dynamic_all_of_should_fail_if_path_does_not_exist() {
-    test_dynamic_authlist(3, auth!(require_all_of("does_not_exist")), &[0, 1], false);
+    test_dynamic_authlist(3, rule!(require_all_of("does_not_exist")), &[0, 1], false);
 }
 
 #[test]
 fn dynamic_any_of_should_allow_me_to_call_method() {
-    test_dynamic_authlist(3, auth!(require_any_of("auth")), &[1], true);
+    test_dynamic_authlist(3, rule!(require_any_of("auth")), &[1], true);
 }
 
 #[test]
 fn dynamic_any_of_should_fail_if_path_does_not_exist() {
-    test_dynamic_authlist(3, auth!(require_any_of("does_not_exist")), &[0, 1], false);
+    test_dynamic_authlist(3, rule!(require_any_of("does_not_exist")), &[0, 1], false);
 }
 
 #[test]
