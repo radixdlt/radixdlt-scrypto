@@ -162,22 +162,24 @@ fn dump_resources<T: SubstateStore, O: std::io::Write>(
         if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
             let ids = vault.total_ids().unwrap();
             for (inner_last, id) in ids.iter().identify_last() {
-                let non_fungible: NonFungible = substate_store
+                let non_fungible: Option<NonFungible> = substate_store
                     .get_decoded_child_substate(&resource_address, id)
                     .unwrap()
                     .0;
 
-                let immutable_data =
-                    ScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
-                let mutable_data = ScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
-                writeln!(output,
-                    "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
-                    if last { " " } else { "│" },
-                    list_item_prefix(inner_last),
-                    id,
-                    immutable_data,
-                    mutable_data
-                );
+                if let Some(non_fungible) = non_fungible {
+                    let immutable_data =
+                        ScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
+                    let mutable_data = ScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
+                    writeln!(output,
+                        "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                        if last { " " } else { "│" },
+                        list_item_prefix(inner_last),
+                        id,
+                        immutable_data,
+                        mutable_data
+                    );
+                }
             }
         }
     }
