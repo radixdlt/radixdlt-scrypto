@@ -1,16 +1,18 @@
 use sbor::*;
 use scrypto::abi::{Function, Method};
-use scrypto::buffer::scrypto_decode;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::prelude::PackageFunction;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
+use scrypto::rust::fmt;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::rust::format;
 use scrypto::values::ScryptoValue;
+use scrypto::engine::api::*;
 use wasmi::{Externals, ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals, RuntimeArgs, RuntimeValue, Trap};
-
+use crate::engine::*;
 use crate::engine::{EnvModuleResolver, SystemApi};
 use crate::errors::{RuntimeError, WasmValidationError};
 
@@ -207,13 +209,13 @@ impl Package {
         ScryptoValue::from_slice(&buffer[range]).map_err(RuntimeError::ParseScryptoValueError)
     }
 
-    pub fn run<'a, E: Externals>(
+    pub fn run<'a, E: Externals + SystemApi>(
         func_name: &str,
         module: ModuleRef,
         memory: MemoryRef,
         externals: &'a mut E,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let mut wasm_process = WasmProcess::new(externals);
+        let mut wasm_process = WasmProcess::new(module.clone(), memory.clone(), externals);
 
         let result = module.invoke_export(func_name, &[], &mut wasm_process);
 
@@ -234,24 +236,87 @@ impl Package {
     }
 }
 
-struct WasmProcess<'a, E: Externals> {
-    externals: &'a mut E
+struct WasmProcess<'a, E: Externals + SystemApi> {
+    externals: &'a mut E,
+    module: ModuleRef,
+    memory: MemoryRef,
 }
 
-impl<'a, E: Externals> WasmProcess<'a, E> {
-    pub fn new(externals: &'a mut E) -> Self {
+impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
+    pub fn new(module: ModuleRef, memory: MemoryRef, externals: &'a mut E) -> Self {
         WasmProcess {
-            externals
+            module,
+            memory,
+            externals,
         }
+    }
+
+    /// Handles a system call.
+    fn handle<I: Decode + fmt::Debug, O: Encode + fmt::Debug>(
+        &mut self,
+        args: RuntimeArgs,
+        handler: fn(&mut Self, input: I) -> Result<O, RuntimeError>,
+    ) -> Result<Option<RuntimeValue>, Trap> {
+        let input_ptr: u32 = args.nth_checked(1)?;
+        let input_len: u32 = args.nth_checked(2)?;
+        // SECURITY: bill before allocating memory
+        let mut input_bytes = vec![0u8; input_len as usize];
+        self.memory
+            .get_into(input_ptr, &mut input_bytes)
+            .map_err(|_| Trap::from(RuntimeError::MemoryAccessError))?;
+        let input: I = scrypto_decode(&input_bytes)
+            .map_err(|e| Trap::from(RuntimeError::InvalidRequestData(e)))?;
+
+        let output: O = handler(self, input).map_err(Trap::from)?;
+        let output_bytes = scrypto_encode(&output);
+        let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
+
+        Ok(Some(RuntimeValue::I32(output_ptr)))
+    }
+
+    fn handle_invoke_snode(
+        &mut self,
+        input: InvokeSNodeInput,
+    ) -> Result<InvokeSNodeOutput, RuntimeError> {
+        let arg = ScryptoValue::from_slice(&input.arg)
+            .map_err(RuntimeError::ParseScryptoValueError)?;
+        let result = self.externals.invoke_snode(input.snode_ref, arg)?;
+        Ok(InvokeSNodeOutput { rtn: result.raw })
+    }
+
+    /// Send a byte array to wasm instance.
+    fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, RuntimeError> {
+        let result = self.module.invoke_export(
+            "scrypto_alloc",
+            &[RuntimeValue::I32((bytes.len()) as i32)],
+            &mut NopExternals,
+        );
+
+        if let Ok(Some(RuntimeValue::I32(ptr))) = result {
+            if self.memory.set((ptr + 4) as u32, bytes).is_ok() {
+                return Ok(ptr);
+            }
+        }
+
+        Err(RuntimeError::MemoryAllocError)
     }
 }
 
-impl<'a, E:Externals> Externals for WasmProcess<'a, E> {
+impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
     fn invoke_index(
         &mut self,
         index: usize,
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
-        self.externals.invoke_index(index, args)
+        match index {
+            ENGINE_FUNCTION_INDEX => {
+                let operation: u32 = args.nth_checked(0)?;
+                match operation {
+                    INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
+                    _ => self.externals.invoke_index(index, args)
+                }
+            }
+            _ => Err(RuntimeError::HostFunctionNotFound(index).into()),
+        }
     }
 }

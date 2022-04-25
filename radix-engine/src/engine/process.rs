@@ -1143,16 +1143,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutLazyMapEntryOutput {})
     }
 
-    fn handle_invoke_snode(
-        &mut self,
-        input: InvokeSNodeInput,
-    ) -> Result<InvokeSNodeOutput, RuntimeError> {
-        let arg = ScryptoValue::from_slice(&input.arg)
-            .map_err(RuntimeError::ParseScryptoValueError)?;
-        let result = self.invoke_snode(input.snode_ref, arg)?;
-        Ok(InvokeSNodeOutput { rtn: result.raw })
-    }
-
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
         self.track.add_log(input.level, input.message);
 
@@ -1324,8 +1314,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
-
-                    INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
 
