@@ -9,7 +9,7 @@ use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::rust::format;
 use scrypto::values::ScryptoValue;
-use wasmi::{Externals, ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals, RuntimeValue};
+use wasmi::{Externals, ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals, RuntimeArgs, RuntimeValue, Trap};
 
 use crate::engine::{EnvModuleResolver, SystemApi};
 use crate::errors::{RuntimeError, WasmValidationError};
@@ -207,13 +207,15 @@ impl Package {
         ScryptoValue::from_slice(&buffer[range]).map_err(RuntimeError::ParseScryptoValueError)
     }
 
-    pub fn run<E: Externals>(
+    pub fn run<'a, E: Externals>(
         func_name: &str,
         module: ModuleRef,
         memory: MemoryRef,
-        externals: &mut E,
+        externals: &'a mut E,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let result = module.invoke_export(func_name, &[], externals);
+        let mut wasm_process = WasmProcess::new(externals);
+
+        let result = module.invoke_export(func_name, &[], &mut wasm_process);
 
         // Return value
         let rtn = result
@@ -229,5 +231,27 @@ impl Package {
             RuntimeValue::I32(ptr) => Self::read_return_value(memory, ptr as u32),
             _ => Err(RuntimeError::InvalidReturnType),
         }
+    }
+}
+
+struct WasmProcess<'a, E: Externals> {
+    externals: &'a mut E
+}
+
+impl<'a, E: Externals> WasmProcess<'a, E> {
+    pub fn new(externals: &'a mut E) -> Self {
+        WasmProcess {
+            externals
+        }
+    }
+}
+
+impl<'a, E:Externals> Externals for WasmProcess<'a, E> {
+    fn invoke_index(
+        &mut self,
+        index: usize,
+        args: RuntimeArgs,
+    ) -> Result<Option<RuntimeValue>, Trap> {
+        self.externals.invoke_index(index, args)
     }
 }
