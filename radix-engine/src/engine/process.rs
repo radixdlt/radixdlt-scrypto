@@ -245,10 +245,9 @@ struct ComponentState<'a> {
 /// Top level state machine for a process. Empty currently only
 /// refers to the initial process since it doesn't run on a wasm interpreter (yet)
 #[allow(dead_code)]
-struct WasmProcess<'a> {
+struct WasmProcess {
     /// The call depth
     vm: Interpreter,
-    component: Option<ComponentState<'a>>,
 }
 
 ///TODO: Remove
@@ -304,6 +303,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     owned_snodes: ComponentObjects,
 
     /// Referenced Snodes
+    component: Option<ComponentState<'r>>,
     snode_refs: ComponentObjectRefs,
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
@@ -313,7 +313,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
-    wasm_process_state: Option<WasmProcess<'r>>,
+    wasm_process_state: Option<WasmProcess>,
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -339,6 +339,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             snode_refs: ComponentObjectRefs::new(),
             caller_auth_zone: None,
             wasm_process_state: None,
+            component: None,
         }
     }
 
@@ -418,12 +419,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     None
                 };
                 let (module, memory) = package.load_module().unwrap();
+                self.component = component_state;
                 self.wasm_process_state = Some(WasmProcess {
                     vm: Interpreter {
                         module: module.clone(),
                         memory: memory.clone(),
                     },
-                    component: component_state,
                 });
 
                 Package::run(
@@ -625,7 +626,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     (None, vault)
                 } else if !self.snode_refs.vault_ids.contains(vault_id) {
                     return Err(RuntimeError::VaultNotFound(*vault_id));
-                } else if let Some(WasmProcess { component: Some(ComponentState { component_address, .. }), .. }) = &self.wasm_process_state {
+                } else if let Some(ComponentState { component_address, .. }) = &self.component {
                     let vault = self.track.borrow_vault_mut(component_address, vault_id);
                     (Some(*component_address), vault)
                 } else {
@@ -945,11 +946,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
-        let component_state = match &wasm_process.component {
+        let component_state = match &self.component {
             Some(ComponentState { component, initial_loaded_object_refs, .. }) => {
                 self.snode_refs.extend(initial_loaded_object_refs.clone());
                 Ok(component.state())
@@ -964,13 +961,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
-        let (component, new_set, component_address) = match &mut wasm_process.component {
+        let (component, new_set, component_address) = match &mut self.component {
             Some(ComponentState {
-                ref mut component,
+                component,
                 component_address,
                 initial_loaded_object_refs,
                 ..
@@ -1006,7 +999,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
         }
 
-        if let Some(WasmProcess { component: Some(ComponentState { component_address, .. }), .. }) = &self.wasm_process_state {
+        if let Some(ComponentState { component_address, .. }) = &self.component {
             let value = self.track.get_lazy_map_entry(
                 *component_address,
                 &input.lazy_map_id,
@@ -1028,15 +1021,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
         let (old_value, lazy_map_state) = match self
             .owned_snodes
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
         {
-            None => match &wasm_process.component {
+            None => match &self.component {
                 Some(ComponentState {
                     component_address,
                     ..
