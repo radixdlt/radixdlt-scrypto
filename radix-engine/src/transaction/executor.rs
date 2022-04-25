@@ -191,16 +191,20 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         };
 
         // prepare data for receipts
-        let new_package_addresses = track.new_package_addresses();
-        let new_component_addresses = track.new_component_addresses();
-        let new_resource_addresses = track.new_resource_addresses();
-        let logs = track.logs().clone();
+        let hash = track.transaction_hash();
+        let (receipt, borrowed, logs) = track.to_receipt();
+        let new_package_addresses = receipt.new_package_addresses();
+        let new_component_addresses = receipt.new_component_addresses();
+        let new_resource_addresses = receipt.new_resource_addresses();
 
         // commit state updates
         let commit_receipt = if error.is_none() {
-            let receipt = track.commit();
+            if !borrowed.is_empty() {
+                panic!("There should be nothing borrowed by end of transaction.");
+            }
+            let commit_receipt = receipt.commit(hash, self.substate_store);
             self.substate_store.increase_nonce();
-            Some(receipt)
+            Some(commit_receipt)
         } else {
             None
         };

@@ -10,31 +10,23 @@ use crate::errors::RuntimeError;
 use crate::ledger::*;
 use crate::model::*;
 
-pub struct CommitReceipt {
-    pub down_substates: HashSet<(Hash, u32)>,
-    pub up_substates: Vec<(Hash, u32)>,
+pub struct BorrowedSNodes {
+    borrowed_components: HashMap<ComponentAddress, Option<(Hash, u32)>>,
+    borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
+    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<(Hash, u32)>>,
 }
 
-impl CommitReceipt {
-    fn new() -> Self {
-        CommitReceipt {
-            down_substates: HashSet::new(),
-            up_substates: Vec::new(),
-        }
-    }
-
-    fn down(&mut self, id: (Hash, u32)) {
-        self.down_substates.insert(id);
-    }
-
-    fn up(&mut self, id: (Hash, u32)) {
-        self.up_substates.push(id);
+impl BorrowedSNodes {
+    pub fn is_empty(&self) -> bool {
+        self.borrowed_components.is_empty() &&
+        self.borrowed_resource_managers.is_empty() &&
+        self.borrowed_vaults.is_empty()
     }
 }
 
-struct SubstateUpdate<T> {
-    prev_id: Option<(Hash, u32)>,
-    value: T,
+pub struct SubstateUpdate<T> {
+    pub prev_id: Option<(Hash, u32)>,
+    pub value: T,
 }
 
 /// An abstraction of transaction execution state.
@@ -44,7 +36,7 @@ struct SubstateUpdate<T> {
 ///
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
-pub struct Track<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
+pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
     transaction_hash: Hash,
     transaction_signers: Vec<EcdsaPublicKey>,
@@ -67,7 +59,7 @@ pub struct Track<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     lazy_map_entries: HashMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
 }
 
-impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> Track<'s, S> {
+impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn new(
         substate_store: &'s mut S,
         transaction_hash: Hash,
@@ -137,43 +129,6 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> Track<'s, S> {
         self.substate_store.get_epoch()
     }
 
-    /// Returns the logs collected so far.
-    pub fn logs(&self) -> &Vec<(Level, String)> {
-        &self.logs
-    }
-
-    /// Returns new packages created so far.
-    pub fn new_package_addresses(&self) -> Vec<PackageAddress> {
-        let mut package_addresses = Vec::new();
-        for (package_address, update) in self.packages.iter() {
-            if let None = update.prev_id {
-                package_addresses.push(package_address.clone());
-            }
-        }
-        package_addresses
-    }
-
-    /// Returns new components created so far.
-    pub fn new_component_addresses(&self) -> Vec<ComponentAddress> {
-        let mut component_addresses = Vec::new();
-        for (component_address, update) in self.components.iter() {
-            if let None = update.prev_id {
-                component_addresses.push(component_address.clone());
-            }
-        }
-        component_addresses
-    }
-
-    /// Returns new resource addresses created so far.
-    pub fn new_resource_addresses(&self) -> Vec<ResourceAddress> {
-        let mut resource_addresses = Vec::new();
-        for (resource_address, update) in self.resource_managers.iter() {
-            if let None = update.prev_id {
-                resource_addresses.push(resource_address.clone());
-            }
-        }
-        resource_addresses
-    }
 
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
@@ -624,123 +579,20 @@ impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> Track<'s, S> {
 
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
-    pub fn commit(&mut self) -> CommitReceipt {
-        // Sanity check
-        if !self.borrowed_components.is_empty() {
-            panic!("Borrowed components should be empty by end of transaction.");
-        }
-        if !self.borrowed_resource_managers.is_empty() {
-            panic!("Borrowed resource managers should be empty by end of transaction.");
-        }
-        if !self.borrowed_vaults.is_empty() {
-            panic!("Borrowed vaults should be empty by end of transaction.");
-        }
-
-        let mut receipt = CommitReceipt::new();
-        let mut id_gen = SubstateIdGenerator::new(self.transaction_hash());
-
-        let package_addresses: Vec<PackageAddress> = self.packages.keys().cloned().collect();
-        for package_address in package_addresses {
-            let package = self.packages.remove(&package_address).unwrap();
-
-            if let Some(prev_id) = package.prev_id {
-                receipt.down(prev_id);
-            }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            self.substate_store
-                .put_encoded_substate(&package_address, &package.value, phys_id);
-        }
-
-        let component_addresses: Vec<ComponentAddress> = self.components.keys().cloned().collect();
-        for component_address in component_addresses {
-            let component = self.components.remove(&component_address).unwrap();
-
-            if let Some(prev_id) = component.prev_id {
-                receipt.down(prev_id);
-            }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            self.substate_store
-                .put_encoded_substate(&component_address, &component.value, phys_id);
-        }
-
-        let resource_addresses: Vec<ResourceAddress> =
-            self.resource_managers.keys().cloned().collect();
-        for resource_address in resource_addresses {
-            let resource_manager = self.resource_managers.remove(&resource_address).unwrap();
-
-            if let Some(prev_id) = resource_manager.prev_id {
-                receipt.down(prev_id);
-            }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            self.substate_store.put_encoded_substate(
-                &resource_address,
-                &resource_manager.value,
-                phys_id,
-            );
-        }
-
-        let entry_ids: Vec<(ComponentAddress, LazyMapId, Vec<u8>)> =
-            self.lazy_map_entries.keys().cloned().collect();
-        for entry_id in entry_ids {
-            let entry = self.lazy_map_entries.remove(&entry_id).unwrap();
-            if let Some(prev_id) = entry.prev_id {
-                receipt.down(prev_id);
-            }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            let (component_address, lazy_map_id, key) = entry_id;
-            self.substate_store.put_encoded_grand_child_substate(
-                &component_address,
-                &lazy_map_id,
-                &key,
-                &entry.value,
-                phys_id,
-            );
-        }
-
-        let vault_ids: Vec<(ComponentAddress, VaultId)> = self.vaults.keys().cloned().collect();
-        for vault_id in vault_ids {
-            let vault = self.vaults.remove(&vault_id).unwrap();
-            if let Some(prev_id) = vault.prev_id {
-                receipt.down(prev_id);
-            }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            let (component_address, vault_id) = vault_id;
-            self.substate_store.put_encoded_child_substate(
-                &component_address,
-                &vault_id,
-                &vault.value,
-                phys_id,
-            );
-        }
-
-        let non_fungible_addresses: Vec<NonFungibleAddress> =
-            self.non_fungibles.keys().cloned().collect();
-        for non_fungible_address in non_fungible_addresses {
-            let non_fungible = self.non_fungibles.remove(&non_fungible_address).unwrap();
-            if let Some(prev_id) = non_fungible.prev_id {
-                receipt.down(prev_id);
-            }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            self.substate_store.put_encoded_child_substate(
-                &non_fungible_address.resource_address(),
-                &non_fungible_address.non_fungible_id(),
-                &non_fungible.value,
-                phys_id,
-            );
-        }
-
-        receipt
+    pub fn to_receipt(self) -> (SubstateReceipt, BorrowedSNodes, Vec<(Level, String)>) {
+        let substate_receipt = SubstateReceipt {
+            packages: self.packages,
+            components: self.components,
+            resource_managers: self.resource_managers,
+            vaults: self.vaults,
+            non_fungibles: self.non_fungibles,
+            lazy_map_entries: self.lazy_map_entries,
+        };
+        let borrowed = BorrowedSNodes {
+            borrowed_components: self.borrowed_components,
+            borrowed_vaults: self.borrowed_vaults,
+            borrowed_resource_managers: self.borrowed_resource_managers,
+        };
+        (substate_receipt, borrowed, self.logs)
     }
 }
