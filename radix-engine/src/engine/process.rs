@@ -424,24 +424,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     component: component_state,
                 });
 
-                // Execution
-                let result = module.invoke_export(actor.export_name(), &[], self);
-
-                // Return value
-                re_debug!(self, "Invoke result: {:?}", result);
-                let rtn = result
-                    .map_err(|e| {
-                        match e.into_host_error() {
-                            // Pass-through runtime errors
-                            Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
-                            None => RuntimeError::InvokeError,
-                        }
-                    })?
-                    .ok_or(RuntimeError::NoReturnData)?;
-                match rtn {
-                    RuntimeValue::I32(ptr) => Self::read_return_value(memory, ptr as u32),
-                    _ => Err(RuntimeError::InvalidReturnType),
-                }
+                Package::run(actor.export_name(), module, memory, self)
             }
             SNodeState::ResourceStatic => {
                 ResourceManager::static_main(arg, self)

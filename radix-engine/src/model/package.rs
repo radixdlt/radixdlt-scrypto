@@ -8,13 +8,10 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
-use wasmi::{
-    ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals,
-    RuntimeValue,
-};
+use wasmi::{Externals, ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals, RuntimeValue};
 
 use crate::engine::{EnvModuleResolver, SystemApi};
-use crate::errors::WasmValidationError;
+use crate::errors::{RuntimeError, WasmValidationError};
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -161,6 +158,51 @@ impl Package {
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
             }
+        }
+    }
+
+    fn read_return_value(memory: MemoryRef, ptr: u32) -> Result<ScryptoValue, RuntimeError> {
+        // read length
+        let len: u32 = memory
+            .get_value(ptr)
+            .map_err(|_| RuntimeError::MemoryAccessError)?;
+
+        let start = ptr.checked_add(4).ok_or(RuntimeError::MemoryAccessError)?;
+        let end = start
+            .checked_add(len)
+            .ok_or(RuntimeError::MemoryAccessError)?;
+        let range = start as usize..end as usize;
+        let direct = memory.direct_access();
+        let buffer = direct.as_ref();
+
+        if end > buffer.len().try_into().unwrap() {
+            return Err(RuntimeError::MemoryAccessError);
+        }
+
+        ScryptoValue::from_slice(&buffer[range]).map_err(RuntimeError::ParseScryptoValueError)
+    }
+
+    pub fn run<E: Externals>(
+        func_name: &str,
+        module: ModuleRef,
+        memory: MemoryRef,
+        externals: &mut E,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let result = module.invoke_export(func_name, &[], externals);
+
+        // Return value
+        let rtn = result
+            .map_err(|e| {
+                match e.into_host_error() {
+                    // Pass-through runtime errors
+                    Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
+                    None => RuntimeError::InvokeError,
+                }
+            })?
+            .ok_or(RuntimeError::NoReturnData)?;
+        match rtn {
+            RuntimeValue::I32(ptr) => Self::read_return_value(memory, ptr as u32),
+            _ => Err(RuntimeError::InvalidReturnType),
         }
     }
 }
