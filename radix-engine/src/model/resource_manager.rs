@@ -136,6 +136,11 @@ impl ResourceManager {
             "put_into_bucket",
             "get_bucket_amount",
             "get_bucket_resource_address",
+            "get_vault_amount",
+            "get_vault_resource_address",
+            "create_vault_proof",
+            "create_vault_proof_by_amount",
+            "create_vault_proof_by_ids",
         ] {
             method_table.insert(pub_method.to_string(), None);
         }
@@ -150,6 +155,7 @@ impl ResourceManager {
                 "non_fungible_exists",
                 "get_non_fungible",
                 "get_non_fungible_ids_in_bucket",
+                "get_non_fungible_ids_in_vault",
             ] {
                 method_table.insert(pub_method.to_string(), None);
             }

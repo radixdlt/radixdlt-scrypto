@@ -60,6 +60,8 @@ pub struct Track<'s, S: SubstateStore> {
     borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
 
     vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
+    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<(Hash, u32)>>,
+
     non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
 
     lazy_map_entries: HashMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
@@ -84,6 +86,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             borrowed_resource_managers: HashMap::new(),
             lazy_map_entries: HashMap::new(),
             vaults: HashMap::new(),
+            borrowed_vaults: HashMap::new(),
             non_fungibles: HashMap::new(),
         }
     }
@@ -505,37 +508,44 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         resource_address
     }
 
-    /// Returns a mutable reference to a vault, if exists.
-    pub fn get_vault_mut(
+    pub fn borrow_vault_mut(&mut self, component_address: &ComponentAddress, vid: &VaultId) -> Vault {
+        let canonical_id = (component_address.clone(), vid.clone());
+        if self.borrowed_vaults.contains_key(&canonical_id) {
+            panic!("Invalid vault reentrancy");
+        }
+
+        if let Some(SubstateUpdate { value, prev_id }) = self.vaults.remove(&canonical_id) {
+            self.borrowed_vaults.insert(canonical_id, prev_id);
+            return value;
+        }
+
+        if let Some((vault, phys_id)) = self.substate_store.get_decoded_child_substate(component_address, vid) {
+            self.borrowed_vaults
+                .insert(canonical_id, Some(phys_id));
+            return vault;
+        }
+
+        panic!("Should not get here");
+    }
+
+    pub fn return_borrowed_vault(
         &mut self,
         component_address: &ComponentAddress,
         vid: &VaultId,
-    ) -> &mut Vault {
+        vault: Vault,
+    ) {
         let canonical_id = (component_address.clone(), vid.clone());
-
-        if self.vaults.contains_key(&canonical_id) {
-            return self
-                .vaults
-                .get_mut(&canonical_id)
-                .map(|r| &mut r.value)
-                .unwrap();
+        if let Some(prev_id) = self.borrowed_vaults.remove(&canonical_id) {
+            self.vaults.insert(
+                canonical_id,
+                SubstateUpdate {
+                    prev_id,
+                    value: vault,
+                },
+            );
+        } else {
+            panic!("Vault was never borrowed");
         }
-
-        let (vault, phys_id) = self
-            .substate_store
-            .get_decoded_child_substate(component_address, vid)
-            .unwrap();
-        self.vaults.insert(
-            canonical_id,
-            SubstateUpdate {
-                prev_id: Some(phys_id),
-                value: vault,
-            },
-        );
-        self.vaults
-            .get_mut(&canonical_id)
-            .map(|r| &mut r.value)
-            .unwrap()
     }
 
     /// Inserts a new vault.
@@ -621,6 +631,9 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
         if !self.borrowed_resource_managers.is_empty() {
             panic!("Borrowed resource managers should be empty by end of transaction.");
+        }
+        if !self.borrowed_vaults.is_empty() {
+            panic!("Borrowed vaults should be empty by end of transaction.");
         }
 
         let mut receipt = CommitReceipt::new();

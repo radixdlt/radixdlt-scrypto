@@ -88,39 +88,40 @@ impl Vault {
             args: vec![scrypto_encode(non_fungible_ids)],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
-        bucket
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Creates an ownership proof of this vault.
     pub fn create_proof(&self) -> Proof {
-        let input = CreateVaultProofInput { vault_id: self.0 };
-        let output: CreateVaultProofOutput = call_engine(CREATE_VAULT_PROOF, input);
-
-        Proof(output.proof_id)
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "create_vault_proof".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Creates an ownership proof of this vault, by amount.
     pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-        let input = CreateVaultProofByAmountInput {
-            vault_id: self.0,
-            amount,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "create_vault_proof_by_amount".to_string(),
+            args: vec![scrypto_encode(&amount)],
         };
-        let output: CreateVaultProofByAmountOutput =
-            call_engine(CREATE_VAULT_PROOF_BY_AMOUNT, input);
-
-        Proof(output.proof_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Creates an ownership proof of this vault, by non-fungible ID set.
     pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-        let input = CreateVaultProofByIdsInput {
-            vault_id: self.0,
-            ids: ids.clone(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "create_vault_proof_by_ids".to_string(),
+            args: vec![scrypto_encode(ids)],
         };
-        let output: CreateVaultProofByIdsOutput = call_engine(CREATE_VAULT_PROOF_BY_IDS, input);
-
-        Proof(output.proof_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Uses resources in this vault as authorization for an operation.
@@ -133,18 +134,24 @@ impl Vault {
 
     /// Returns the amount of resources within this vault.
     pub fn amount(&self) -> Decimal {
-        let input = GetVaultAmountInput { vault_id: self.0 };
-        let output: GetVaultAmountOutput = call_engine(GET_VAULT_AMOUNT, input);
-
-        output.amount
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "get_vault_amount".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the resource address.
     pub fn resource_address(&self) -> ResourceAddress {
-        let input = GetVaultResourceAddressInput { vault_id: self.0 };
-        let output: GetVaultResourceAddressOutput = call_engine(GET_VAULT_RESOURCE_ADDRESS, input);
-
-        output.resource_address
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "get_vault_resource_address".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Checks if this vault is empty.
@@ -157,10 +164,13 @@ impl Vault {
     /// # Panics
     /// Panics if this is not a non-fungible vault.
     pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = GetNonFungibleIdsInVaultInput { vault_id: self.0 };
-        let output: GetNonFungibleIdsInVaultOutput =
-            call_engine(GET_NON_FUNGIBLE_IDS_IN_VAULT, input);
-        output.non_fungible_ids
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "get_non_fungible_ids_in_vault".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns all the non-fungible units contained.

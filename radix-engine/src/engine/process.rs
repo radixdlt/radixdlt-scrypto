@@ -110,7 +110,7 @@ pub enum SNodeState {
     Bucket(Bucket),
     ProofRef(ProofId, Proof),
     Proof(Proof),
-    VaultRef(VaultId),
+    VaultRef(VaultId, Option<ComponentAddress>, Vault),
 }
 
 /// Represents an interpreter instance.
@@ -130,7 +130,6 @@ enum InterpreterState<'a> {
         component_address: ComponentAddress,
         component: &'a mut Component,
         initial_loaded_object_refs: ComponentObjectRefs,
-        additional_object_refs: ComponentObjectRefs,
     },
 }
 
@@ -143,39 +142,6 @@ struct WasmProcess<'a> {
     trace: bool,
     vm: Interpreter,
     interpreter_state: InterpreterState<'a>,
-    process_owned_objects: ComponentObjects,
-}
-
-impl<'a> WasmProcess<'a> {
-    fn check_resource(&self) -> bool {
-        let mut success = true;
-
-        for (vault_id, vault) in &self.process_owned_objects.vaults {
-            re_warn!(self, "Dangling vault: {:?}, {:?}", vault_id, vault);
-            success = false;
-        }
-        for (lazy_map_id, lazy_map) in &self.process_owned_objects.lazy_maps {
-            re_warn!(self, "Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map);
-            success = false;
-        }
-
-        return success;
-    }
-
-    /// Logs a message to the console.
-    #[allow(unused_variables)]
-    pub fn log(&self, level: Level, msg: String) {
-        let (l, m) = match level {
-            Level::Error => ("ERROR".red(), msg.red()),
-            Level::Warn => ("WARN".yellow(), msg.yellow()),
-            Level::Info => ("INFO".green(), msg.green()),
-            Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-            Level::Trace => ("TRACE".normal(), msg.normal()),
-        };
-
-        #[cfg(not(feature = "alloc"))]
-        println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
-    }
 }
 
 ///TODO: Remove
@@ -225,14 +191,16 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     /// Transactional state updates
     track: &'r mut Track<'l, L>,
 
-    /// Buckets owned by this process
+    /// Process Owned Snodes
     buckets: HashMap<BucketId, Bucket>,
-    /// Bucket proofs
     proofs: HashMap<ProofId, Proof>,
-    /// Resources collected from previous returns or self.
+    owned_snodes: ComponentObjects,
+
+    /// Referenced Snodes
+    snode_refs: ComponentObjectRefs,
     worktop: Option<Worktop>,
-    /// Proofs collected from previous returns or self. Also used for system authorization.
     auth_zone: Option<AuthZone>,
+
     /// The caller's auth zone
     caller_auth_zone: Option<&'r AuthZone>,
 
@@ -258,10 +226,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             track,
             buckets,
             proofs,
-            wasm_process_state: None,
+            owned_snodes: ComponentObjects::new(),
             worktop,
             auth_zone,
+            snode_refs: ComponentObjectRefs::new(),
             caller_auth_zone: None,
+            wasm_process_state: None,
         }
     }
 
@@ -271,54 +241,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
     fn new_proof_id(&mut self) -> Result<ProofId, RuntimeError> {
         Ok(self.track.new_proof_id())
-    }
-
-    // Creates a vault proof.
-    pub fn create_vault_proof(&mut self, vault_id: VaultId) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = vault
-            .create_proof(ResourceContainerId::Vault(vault_id))
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
-    pub fn create_vault_proof_by_amount(
-        &mut self,
-        vault_id: VaultId,
-        amount: Decimal,
-    ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = vault
-            .create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id))
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
-    }
-
-    pub fn create_vault_proof_by_ids(
-        &mut self,
-        vault_id: VaultId,
-        ids: &BTreeSet<NonFungibleId>,
-    ) -> Result<ProofId, RuntimeError> {
-        re_debug!(self, "Creating vault proof: vault_id = {:?}", vault_id);
-
-        let new_proof_id = self.new_proof_id()?;
-        let vault = self.get_local_vault(&vault_id)?;
-        let new_proof = vault
-            .create_proof_by_ids(ids, ResourceContainerId::Vault(vault_id))
-            .map_err(RuntimeError::ProofError)?;
-        self.proofs.insert(new_proof_id, new_proof);
-
-        Ok(new_proof_id)
     }
 
     /// Runs the given export within this process.
@@ -382,7 +304,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         component_address,
                         component,
                         initial_loaded_object_refs,
-                        additional_object_refs: ComponentObjectRefs::new(),
                     };
                     let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
                     args_with_self.extend(args);
@@ -403,7 +324,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         memory,
                     },
                     interpreter_state,
-                    process_owned_objects: ComponentObjects::new(),
                 });
 
                 // Execution
@@ -442,6 +362,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::ProofRef(_, proof) => proof
                 .main(function.as_str(), args, self)
                 .map_err(RuntimeError::ProofError),
+            SNodeState::VaultRef(vault_id, _, vault) =>
+                vault
+                    .main(*vault_id, function.as_str(), args, self)
+                    .map_err(RuntimeError::VaultError),
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
@@ -596,14 +520,25 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 Ok((SNodeState::Proof(proof), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
-                let resource_address = self.get_local_vault(&vault_id)?.resource_address();
+                let (component, vault) = if let Some(vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
+                    (None, vault)
+                } else if !self.snode_refs.vault_ids.contains(vault_id) {
+                    return Err(RuntimeError::VaultNotFound(*vault_id));
+                } else if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
+                    let vault = self.track.borrow_vault_mut(component_address, vault_id);
+                    (Some(*component_address), vault)
+                } else {
+                    panic!("Should never get here");
+                };
+
+                let resource_address = vault.resource_address();
                 let method_auth = self
                     .track
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function, &args);
                 Ok((
-                    SNodeState::VaultRef(vault_id.clone()),
+                    SNodeState::VaultRef(vault_id.clone(), component, vault),
                     vec![method_auth.clone()],
                 ))
             }
@@ -618,7 +553,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
             match &snode {
                 // Resource auth check includes caller
-                SNodeState::ResourceRef(_, _) | SNodeState::VaultRef(_) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
+                SNodeState::ResourceRef(_, _) | SNodeState::VaultRef(_, _, _) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone);
                     }
@@ -630,38 +565,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             for method_auth in method_auths {
                 method_auth
                     .check(&auth_zones)
-                    .map_err(|e| RuntimeError::AuthorizationError(function.clone(), e))?;
+                    .map_err(|error| RuntimeError::AuthorizationError {
+                        function: function.clone(),
+                        authorization: method_auth,
+                        error
+                    })?;
             }
         }
 
         // Execution
         let result = match snode {
-            SNodeState::VaultRef(vault_id) => {
-                // TODO Post v0.4 - The passing of a bucket here is a temporary (slightly ugly) workaround
-                // to support deposit auth until we have support for handling vault references properly
-                let bucket_input = if !args[0].bucket_ids.is_empty() {
-                    let (bucket_id, _) = args[0].bucket_ids.iter().nth(0).unwrap();
-                    let bucket = self.buckets.remove(bucket_id)
-                        .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
-                    Option::Some(bucket)
-                } else {
-                    Option::None
-                };
-
-                let vault = self.get_local_vault(&vault_id)?;
-                let maybe_bucket = vault
-                    .main(function.as_str(), args, bucket_input)
-                    .map_err(RuntimeError::VaultError)?;
-                if let Some(bucket) = maybe_bucket {
-                    let bucket_id = self.new_bucket_id()?;
-                    self.buckets.insert(bucket_id, bucket);
-                    Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                        bucket_id,
-                    )))
-                } else {
-                    Ok(ScryptoValue::from_value(&()))
-                }
-            }
             SNodeState::Proof(proof) => {
                 proof.main_consume(function.as_str())
                     .map_err(RuntimeError::ProofError)
@@ -736,6 +649,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     SNodeState::ProofRef(proof_id, proof) => {
                         self.proofs.insert(proof_id, proof);
                     }
+                    SNodeState::VaultRef(vault_id, maybe_component_address, vault) => {
+                        if let Some(component_address) = maybe_component_address {
+                            self.track.return_borrowed_vault(&component_address, &vault_id, vault);
+                        } else {
+                            self.owned_snodes.return_borrowed_vault_mut(vault);
+                        }
+                    }
                     _ => {}
                 }
 
@@ -782,15 +702,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
             success = false;
         }
+        for (vault_id, vault) in &self.owned_snodes.vaults {
+            re_warn!(self, "Dangling vault: {:?}, {:?}", vault_id, vault);
+            success = false;
+        }
+        for (lazy_map_id, lazy_map) in &self.owned_snodes.lazy_maps {
+            re_warn!(self, "Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map);
+            success = false;
+        }
+
         if let Some(worktop) = &self.worktop {
             if !worktop.is_empty() {
                 re_warn!(self, "Resource worktop is not empty");
-                success = false;
-            }
-        }
-
-        if let Some(wasm_process) = &self.wasm_process_state {
-            if !wasm_process.check_resource() {
                 success = false;
             }
         }
@@ -1009,13 +932,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateComponentInput,
     ) -> Result<CreateComponentOutput, RuntimeError> {
+        let data = Self::process_entry_data(&input.state)?;
+        let new_objects = self.owned_snodes.take(data)?;
+
         let wasm_process = self
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
-
-        let data = Self::process_entry_data(&input.state)?;
-        let new_objects = wasm_process.process_owned_objects.take(data)?;
         let package_address = wasm_process.vm.actor.package_address().clone();
         let component = Component::new(
             package_address,
@@ -1054,7 +977,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
         let component_state = match &wasm_process.interpreter_state {
-            InterpreterState::Component { component, .. } => Ok(component.state()),
+            InterpreterState::Component { component, initial_loaded_object_refs, .. } => {
+                self.snode_refs.extend(initial_loaded_object_refs.clone());
+                Ok(component.state())
+            },
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
         let state = component_state.to_vec();
@@ -1069,7 +995,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
-        match &mut wasm_process.interpreter_state {
+        let (component, new_set, component_address) = match &mut wasm_process.interpreter_state {
             InterpreterState::Component {
                 ref mut component,
                 component_address,
@@ -1078,17 +1004,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             } => {
                 let mut new_set = Self::process_entry_data(&input.state)?;
                 new_set.remove(&initial_loaded_object_refs)?;
-                let new_objects = wasm_process.process_owned_objects.take(new_set)?;
-                self.track
-                    .insert_objects_into_component(new_objects, *component_address);
-
-                // TODO: Verify that process_owned_objects is empty
-
-                component.set_state(input.state);
-                Ok(())
+                Ok((component, new_set, component_address))
             }
             _ => Err(RuntimeError::IllegalSystemCall),
         }?;
+
+        let new_objects = self.owned_snodes.take(new_set)?;
+        self.track.insert_objects_into_component(new_objects, *component_address);
+
+        // TODO: Verify that process_owned_objects is empty
+
+        component.set_state(input.state);
 
         Ok(PutComponentStateOutput {})
     }
@@ -1097,13 +1023,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         _input: CreateLazyMapInput,
     ) -> Result<CreateLazyMapOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
         let lazy_map_id = self.track.new_lazy_map_id();
-        wasm_process
-            .process_owned_objects
+        self
+            .owned_snodes
             .lazy_maps
             .insert(lazy_map_id, UnclaimedLazyMap::new());
         Ok(CreateLazyMapOutput { lazy_map_id })
@@ -1113,49 +1035,32 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
-        let entry = match wasm_process
-            .process_owned_objects
-            .get_lazy_map_entry(&input.lazy_map_id, &input.key)
-        {
-            None => match &mut wasm_process.interpreter_state {
-                InterpreterState::Component {
-                    initial_loaded_object_refs,
-                    additional_object_refs,
-                    component_address,
-                    ..
-                } => {
-                    if !initial_loaded_object_refs
-                        .lazy_map_ids
-                        .contains(&input.lazy_map_id)
-                        && !additional_object_refs
-                            .lazy_map_ids
-                            .contains(&input.lazy_map_id)
-                    {
-                        return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
-                    }
-                    let value = self.track.get_lazy_map_entry(
-                        *component_address,
-                        &input.lazy_map_id,
-                        &input.key,
-                    );
-                    if value.is_some() {
-                        let map_entry_objects =
-                            Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
-                        additional_object_refs.extend(map_entry_objects);
-                    }
+        if let Some((_, value)) = self
+            .owned_snodes
+            .get_lazy_map_entry(&input.lazy_map_id, &input.key) {
+            return Ok(GetLazyMapEntryOutput { value });
+        }
 
-                    Ok(value)
-                }
-                _ => Err(RuntimeError::LazyMapNotFound(input.lazy_map_id)),
-            },
-            Some((_, value)) => Ok(value),
-        }?;
+        if !self.snode_refs.lazy_map_ids.contains(&input.lazy_map_id) {
+            return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
+        }
 
-        Ok(GetLazyMapEntryOutput { value: entry })
+        if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
+            let value = self.track.get_lazy_map_entry(
+                *component_address,
+                &input.lazy_map_id,
+                &input.key,
+            );
+            if value.is_some() {
+                let map_entry_objects =
+                    Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
+                self.snode_refs.extend(map_entry_objects);
+            }
+
+            return Ok(GetLazyMapEntryOutput { value });
+        }
+
+        panic!("Should not get here.");
     }
 
     fn handle_put_lazy_map_entry(
@@ -1166,21 +1071,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .wasm_process_state
             .as_mut()
             .ok_or(RuntimeError::IllegalSystemCall)?;
-        let (old_value, lazy_map_state) = match wasm_process
-            .process_owned_objects
+        let (old_value, lazy_map_state) = match self
+            .owned_snodes
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
         {
             None => match &wasm_process.interpreter_state {
                 InterpreterState::Component {
-                    initial_loaded_object_refs,
-                    additional_object_refs,
                     component_address,
                     ..
                 } => {
-                    if !initial_loaded_object_refs
-                        .lazy_map_ids
-                        .contains(&input.lazy_map_id)
-                        && !additional_object_refs
+                    if !self.snode_refs
                             .lazy_map_ids
                             .contains(&input.lazy_map_id)
                     {
@@ -1216,19 +1116,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
         }
 
-        let new_objects = wasm_process
-            .process_owned_objects
+        let new_objects = self
+            .owned_snodes
             .take(new_entry_object_refs)?;
 
         match lazy_map_state {
             Uncommitted { root } => {
-                wasm_process.process_owned_objects.insert_lazy_map_entry(
+                self.owned_snodes.insert_lazy_map_entry(
                     &input.lazy_map_id,
                     input.key,
                     input.value,
                 );
-                wasm_process
-                    .process_owned_objects
+                self
+                    .owned_snodes
                     .insert_objects_into_map(new_objects, &root);
             }
             Committed { component_address } => {
@@ -1250,10 +1150,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: CreateEmptyVaultInput,
     ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
         let definition = self
             .track
             .get_resource_manager(&input.resource_address)
@@ -1266,39 +1162,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             definition.resource_type(),
         ));
         let vault_id = self.track.new_vault_id();
-        wasm_process
-            .process_owned_objects
+        self
+            .owned_snodes
             .vaults
             .insert(vault_id, new_vault);
 
         Ok(CreateEmptyVaultOutput { vault_id })
-    }
-
-    fn get_local_vault(&mut self, vault_id: &VaultId) -> Result<&mut Vault, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
-        match wasm_process.process_owned_objects.get_vault_mut(vault_id) {
-            Some(vault) => Ok(vault),
-            None => match &wasm_process.interpreter_state {
-                InterpreterState::Component {
-                    component_address,
-                    initial_loaded_object_refs,
-                    additional_object_refs,
-                    ..
-                } => {
-                    if !initial_loaded_object_refs.vault_ids.contains(vault_id)
-                        && !additional_object_refs.vault_ids.contains(vault_id)
-                    {
-                        return Err(RuntimeError::VaultNotFound(*vault_id));
-                    }
-                    let vault = self.track.get_vault_mut(component_address, vault_id);
-                    Ok(vault)
-                }
-                _ => Err(RuntimeError::VaultNotFound(*vault_id)),
-            },
-        }
     }
 
     fn handle_invoke_snode(
@@ -1314,69 +1183,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let result = self.invoke_snode(input.snode_ref, input.function, validated_args)?;
         Ok(InvokeSNodeOutput { rtn: result.raw })
-    }
-
-    fn handle_get_non_fungible_ids_in_vault(
-        &mut self,
-        input: GetNonFungibleIdsInVaultInput,
-    ) -> Result<GetNonFungibleIdsInVaultOutput, RuntimeError> {
-        let vault = self.get_local_vault(&input.vault_id)?;
-        let non_fungible_ids = vault
-            .total_ids()
-            .map_err(|e| RuntimeError::VaultError(VaultError::ResourceContainerError(e)))?
-            .into_iter()
-            .collect();
-
-        Ok(GetNonFungibleIdsInVaultOutput { non_fungible_ids })
-    }
-
-    fn handle_get_vault_amount(
-        &mut self,
-        input: GetVaultAmountInput,
-    ) -> Result<GetVaultAmountOutput, RuntimeError> {
-        let vault = self.get_local_vault(&input.vault_id)?;
-
-        Ok(GetVaultAmountOutput {
-            amount: vault.total_amount(),
-        })
-    }
-
-    fn handle_get_vault_resource_address(
-        &mut self,
-        input: GetVaultResourceAddressInput,
-    ) -> Result<GetVaultResourceAddressOutput, RuntimeError> {
-        let vault = self.get_local_vault(&input.vault_id)?;
-
-        Ok(GetVaultResourceAddressOutput {
-            resource_address: vault.resource_address(),
-        })
-    }
-
-    fn handle_create_vault_proof(
-        &mut self,
-        input: CreateVaultProofInput,
-    ) -> Result<CreateVaultProofOutput, RuntimeError> {
-        Ok(CreateVaultProofOutput {
-            proof_id: self.create_vault_proof(input.vault_id)?,
-        })
-    }
-
-    fn handle_create_vault_proof_by_amount(
-        &mut self,
-        input: CreateVaultProofByAmountInput,
-    ) -> Result<CreateVaultProofByAmountOutput, RuntimeError> {
-        Ok(CreateVaultProofByAmountOutput {
-            proof_id: self.create_vault_proof_by_amount(input.vault_id, input.amount)?,
-        })
-    }
-
-    fn handle_create_vault_proof_by_ids(
-        &mut self,
-        input: CreateVaultProofByIdsInput,
-    ) -> Result<CreateVaultProofByIdsOutput, RuntimeError> {
-        Ok(CreateVaultProofByIdsOutput {
-            proof_id: self.create_vault_proof_by_ids(input.vault_id, &input.ids)?,
-        })
     }
 
     fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
@@ -1546,20 +1352,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
-                    GET_VAULT_AMOUNT => self.handle(args, Self::handle_get_vault_amount),
-                    GET_VAULT_RESOURCE_ADDRESS => {
-                        self.handle(args, Self::handle_get_vault_resource_address)
-                    }
-                    GET_NON_FUNGIBLE_IDS_IN_VAULT => {
-                        self.handle(args, Self::handle_get_non_fungible_ids_in_vault)
-                    }
-                    CREATE_VAULT_PROOF => self.handle(args, Self::handle_create_vault_proof),
-                    CREATE_VAULT_PROOF_BY_AMOUNT => {
-                        self.handle(args, Self::handle_create_vault_proof_by_amount)
-                    }
-                    CREATE_VAULT_PROOF_BY_IDS => {
-                        self.handle(args, Self::handle_create_vault_proof_by_ids)
-                    }
 
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 

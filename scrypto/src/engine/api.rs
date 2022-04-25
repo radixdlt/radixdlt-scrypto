@@ -3,7 +3,6 @@ use sbor::*;
 use scrypto::prelude::AccessRules;
 
 use crate::engine::types::*;
-use crate::rust::collections::BTreeSet;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
@@ -31,19 +30,6 @@ pub const PUT_LAZY_MAP_ENTRY: u32 = 0x22;
 
 /// Create an empty vault
 pub const CREATE_EMPTY_VAULT: u32 = 0x40;
-/// Get vault resource amount
-pub const GET_VAULT_AMOUNT: u32 = 0x43;
-/// Get vault resource address
-pub const GET_VAULT_RESOURCE_ADDRESS: u32 = 0x44;
-/// Get the IDs of all non-fungibles in this vault
-pub const GET_NON_FUNGIBLE_IDS_IN_VAULT: u32 = 0x46;
-
-/// Create a vault proof
-pub const CREATE_VAULT_PROOF: u32 = 0x63;
-/// Create a vault proof by amount
-pub const CREATE_VAULT_PROOF_BY_AMOUNT: u32 = 0x64;
-/// Create a vault proof by ids
-pub const CREATE_VAULT_PROOF_BY_IDS: u32 = 0x65;
 
 pub const INVOKE_SNODE: u32 = 0x70;
 
@@ -160,72 +146,6 @@ pub struct CreateEmptyVaultInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CreateEmptyVaultOutput {
     pub vault_id: VaultId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultAmountInput {
-    pub vault_id: VaultId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultAmountOutput {
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultResourceAddressInput {
-    pub vault_id: VaultId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetVaultResourceAddressOutput {
-    pub resource_address: ResourceAddress,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInVaultInput {
-    pub vault_id: VaultId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetNonFungibleIdsInVaultOutput {
-    pub non_fungible_ids: BTreeSet<NonFungibleId>,
-}
-
-//==========
-// proof
-//==========
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofInput {
-    pub vault_id: VaultId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofByAmountInput {
-    pub vault_id: VaultId,
-    pub amount: Decimal,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofByAmountOutput {
-    pub proof_id: ProofId,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofByIdsInput {
-    pub vault_id: VaultId,
-    pub ids: BTreeSet<NonFungibleId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CreateVaultProofByIdsOutput {
-    pub proof_id: ProofId,
 }
 
 //=======

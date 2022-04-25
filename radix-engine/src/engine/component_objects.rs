@@ -64,7 +64,7 @@ impl UnclaimedLazyMap {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ComponentObjectRefs {
     pub lazy_map_ids: HashSet<LazyMapId>,
     pub vault_ids: HashSet<VaultId>,
@@ -109,6 +109,7 @@ pub struct ComponentObjects {
     pub lazy_maps: HashMap<LazyMapId, UnclaimedLazyMap>,
     /// Vaults which haven't been assigned to a component or lazy map yet.
     pub vaults: HashMap<VaultId, Vault>,
+    borrowed_vault: Option<(VaultId, Option<LazyMapId>)>,
 }
 
 impl ComponentObjects {
@@ -116,10 +117,15 @@ impl ComponentObjects {
         ComponentObjects {
             lazy_maps: HashMap::new(),
             vaults: HashMap::new(),
+            borrowed_vault: None,
         }
     }
 
     pub fn take(&mut self, other: ComponentObjectRefs) -> Result<ComponentObjects, RuntimeError> {
+        if self.borrowed_vault.is_some() {
+            panic!("Should not be taking while value is being borrowed");
+        }
+
         let mut vaults = HashMap::new();
         let mut lazy_maps = HashMap::new();
 
@@ -139,7 +145,7 @@ impl ComponentObjects {
             lazy_maps.insert(lazy_map_id, lazy_map);
         }
 
-        Ok(ComponentObjects { vaults, lazy_maps })
+        Ok(ComponentObjects { vaults, lazy_maps, borrowed_vault: None })
     }
 
     pub fn insert_objects_into_map(
@@ -147,11 +153,19 @@ impl ComponentObjects {
         new_objects: ComponentObjects,
         lazy_map_id: &LazyMapId,
     ) {
+        if self.borrowed_vault.is_some() {
+            panic!("Should not be taking while value is being borrowed");
+        }
+
         let unclaimed_map = self.lazy_maps.get_mut(lazy_map_id).unwrap();
         unclaimed_map.insert_descendents(new_objects);
     }
 
     pub fn insert_lazy_map_entry(&mut self, lazy_map_id: &LazyMapId, key: Vec<u8>, value: Vec<u8>) {
+        if self.borrowed_vault.is_some() {
+            panic!("Should not be taking while value is being borrowed");
+        }
+
         let (_, lazy_map) = self.get_lazy_map_mut(lazy_map_id).unwrap();
         lazy_map.insert(key, value);
     }
@@ -161,6 +175,10 @@ impl ComponentObjects {
         lazy_map_id: &LazyMapId,
         key: &[u8],
     ) -> Option<(LazyMapId, Option<Vec<u8>>)> {
+        if self.borrowed_vault.is_some() {
+            panic!("Should not be taking while value is being borrowed");
+        }
+
         self.get_lazy_map_mut(lazy_map_id)
             .map(|(lazy_map_id, lazy_map)| (lazy_map_id, lazy_map.get(key).map(|v| v.to_vec())))
     }
@@ -169,6 +187,10 @@ impl ComponentObjects {
         &mut self,
         lazy_map_id: &LazyMapId,
     ) -> Option<(LazyMapId, &mut HashMap<Vec<u8>, Vec<u8>>)> {
+        if self.borrowed_vault.is_some() {
+            panic!("Should not be taking while value is being borrowed");
+        }
+
         // TODO: Optimize to prevent iteration
         for (root, unclaimed) in self.lazy_maps.iter_mut() {
             if lazy_map_id.eq(root) {
@@ -184,20 +206,35 @@ impl ComponentObjects {
         None
     }
 
-    pub fn get_vault_mut(&mut self, vault_id: &VaultId) -> Option<&mut Vault> {
-        let vault = self.vaults.get_mut(vault_id);
-        if vault.is_some() {
-            return Some(vault.unwrap());
+    pub fn borrow_vault_mut(&mut self, vault_id: &VaultId) -> Option<Vault> {
+        if let Some(_) = self.borrowed_vault {
+            panic!("Should not be able to borrow multiple times");
         }
 
-        // TODO: Optimize to prevent iteration
-        for (_, unclaimed) in self.lazy_maps.iter_mut() {
-            let vault = unclaimed.descendent_vaults.get_mut(vault_id);
-            if vault.is_some() {
-                return Some(vault.unwrap());
+        if let Some(vault) = self.vaults.remove(vault_id) {
+            self.borrowed_vault = Some((*vault_id, None));
+            return Some(vault);
+        }
+
+        for (lazy_map_id, unclaimed) in self.lazy_maps.iter_mut() {
+            if let Some(vault) = unclaimed.descendent_vaults.remove(vault_id) {
+                self.borrowed_vault = Some((*vault_id, Some(*lazy_map_id)));
+                return Some(vault);
             }
         }
 
         None
+    }
+
+    pub fn return_borrowed_vault_mut(&mut self, vault: Vault) {
+        if let Some((vault_id, maybe_ancestor)) = self.borrowed_vault.take() {
+            if let Some(ancestor_id) = maybe_ancestor {
+                self.lazy_maps.get_mut(&ancestor_id).unwrap().descendent_vaults.insert(vault_id, vault);
+            } else {
+                self.vaults.insert(vault_id, vault);
+            }
+        } else {
+            panic!("Should never get here");
+        }
     }
 }
