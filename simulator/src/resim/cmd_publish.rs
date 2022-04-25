@@ -30,6 +30,41 @@ pub struct Publish {
 }
 
 impl Publish {
+
+    pub fn publish_wasm<O: std::io::Write>(&self, out: &mut O, wasm_path: &str) -> Result<(), Error> {
+        // Load wasm code
+        println!("Publishing ..");
+        let code = fs::read(wasm_path).map_err(Error::IOError)?;
+        println!("Read code to variable");
+        self.store_package(out, &code)
+    }
+
+    fn store_package<O: std::io::Write>(&self, out: &mut O, code: &[u8]) -> Result<(), Error> {
+
+        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        if let Some(package_address) = self.package_address.clone() {
+            // Overwrite package
+            executor
+                .overwrite_package(package_address, code.to_vec())
+                .map_err(|e| Error::PackageValidationError(e))?;
+            writeln!(out, "Package updated!").map_err(Error::IOError)?;
+            Ok(())
+        } else {
+            match executor.publish_package(code) {
+                Ok(package_address) => {
+                    writeln!(out,
+                             "Success! New Package: {}",
+                             package_address.to_string().green()
+                    ).map_err(Error::IOError)?;
+                    Ok(())
+                }
+                Err(error) => Err(Error::TransactionExecutionError(error)),
+            }
+        }
+
+    }
+
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
         let code = fs::read(if self.path.extension() != Some(OsStr::new("wasm")) {
@@ -47,27 +82,7 @@ impl Publish {
             let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
             return fs::write(path, manifest).map_err(Error::IOError);
         }
-
-        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        if let Some(package_address) = self.package_address.clone() {
-            // Overwrite package
-            executor
-                .overwrite_package(package_address, code)
-                .map_err(|e| Error::PackageValidationError(e))?;
-            writeln!(out, "Package updated!").map_err(Error::IOError)?;
-            Ok(())
-        } else {
-            match executor.publish_package(&code) {
-                Ok(package_address) => {
-                    writeln!(out,
-                        "Success! New Package: {}",
-                        package_address.to_string().green()
-                    ).map_err(Error::IOError)?;
-                    Ok(())
-                }
-                Err(error) => Err(Error::TransactionExecutionError(error)),
-            }
-        }
+        self.store_package(out, &code)
     }
+
 }
