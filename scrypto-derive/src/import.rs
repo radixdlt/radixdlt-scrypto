@@ -98,7 +98,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     let output = quote! {
         #(#structs)*
 
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub struct #ident {
             component_address: ::scrypto::component::ComponentAddress,
         }
@@ -237,7 +237,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             }
 
             structs.push(parse_quote! {
-                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub enum #ident {
                     #( #native_variants ),*
                 }
@@ -411,7 +411,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Simple {
                     component_address: ::scrypto::component::ComponentAddress,
                 }
