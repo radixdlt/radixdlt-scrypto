@@ -22,7 +22,6 @@ use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::*;
 use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::errors::*;
-use crate::errors::RuntimeError::PackageNotFound;
 use crate::ledger::*;
 use crate::model::*;
 
@@ -715,35 +714,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(result)
     }
 
-    /// Calls the ABI generator of a blueprint.
-    // TODO: Remove
-    pub fn call_abi(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        re_debug!(self, "Call abi started");
-
-        let package = self.track.get_package(&package_address).ok_or(PackageNotFound(package_address))?;
-        let (module, memory) = package.load_module().unwrap();
-        let export_name = format!("{}_abi", blueprint_name);
-        let result = module.invoke_export(&export_name, &[], &mut NopExternals);
-        let rtn = result
-            .map_err(|e| {
-                match e.into_host_error() {
-                    // Pass-through runtime errors
-                    Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
-                    None => RuntimeError::InvokeError,
-                }
-            })?
-            .ok_or(RuntimeError::NoReturnData)?;
-        re_debug!(self, "Call abi ended");
-        match rtn {
-            RuntimeValue::I32(ptr) => Self::read_return_value(memory, ptr as u32),
-            _ => Err(RuntimeError::InvalidReturnType),
-        }
-    }
-
     /// Checks resource leak.
     fn check_resource(&self) -> Result<(), RuntimeError> {
         re_debug!(self, "Resource check started");
@@ -912,27 +882,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         Err(RuntimeError::MemoryAllocError)
-    }
-
-    fn read_return_value(memory: MemoryRef, ptr: u32) -> Result<ScryptoValue, RuntimeError> {
-        // read length
-        let len: u32 = memory
-            .get_value(ptr)
-            .map_err(|_| RuntimeError::MemoryAccessError)?;
-
-        let start = ptr.checked_add(4).ok_or(RuntimeError::MemoryAccessError)?;
-        let end = start
-            .checked_add(len)
-            .ok_or(RuntimeError::MemoryAccessError)?;
-        let range = start as usize..end as usize;
-        let direct = memory.direct_access();
-        let buffer = direct.as_ref();
-
-        if end > buffer.len().try_into().unwrap() {
-            return Err(RuntimeError::MemoryAccessError);
-        }
-
-        ScryptoValue::from_slice(&buffer[range]).map_err(RuntimeError::ParseScryptoValueError)
     }
 
     /// Handles a system call.

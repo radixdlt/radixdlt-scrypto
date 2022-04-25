@@ -7,6 +7,7 @@ use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::format;
 use scrypto::values::ScryptoValue;
 use wasmi::{Externals, ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals, RuntimeValue};
 
@@ -158,6 +159,30 @@ impl Package {
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
             }
+        }
+    }
+
+    /// Calls the ABI generator of a blueprint.
+    // TODO: Remove
+    pub fn call_abi(
+        &self,
+        blueprint_name: &str,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let (module, memory) = self.load_module().unwrap();
+        let export_name = format!("{}_abi", blueprint_name);
+        let result = module.invoke_export(&export_name, &[], &mut NopExternals);
+        let rtn = result
+            .map_err(|e| {
+                match e.into_host_error() {
+                    // Pass-through runtime errors
+                    Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
+                    None => RuntimeError::InvokeError,
+                }
+            })?
+            .ok_or(RuntimeError::NoReturnData)?;
+        match rtn {
+            RuntimeValue::I32(ptr) => Self::read_return_value(memory, ptr as u32),
+            _ => Err(RuntimeError::InvalidReturnType),
         }
     }
 

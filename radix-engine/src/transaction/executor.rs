@@ -36,7 +36,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .map(|(package, _)| package)
             .ok_or(RuntimeError::PackageNotFound(package_address))?;
 
-        BasicAbiProvider::new(self.trace)
+        BasicAbiProvider::new()
             .with_package(&package_address, package)
             .export_abi(package_address, blueprint_name)
     }
@@ -55,7 +55,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
             .get_decoded_substate(&component.package_address())
             .map(|(package, _)| package)
             .unwrap();
-        BasicAbiProvider::new(self.trace)
+        BasicAbiProvider::new()
             .with_package(&component.package_address(), package)
             .export_abi(component.package_address(), component.blueprint_name())
     }
