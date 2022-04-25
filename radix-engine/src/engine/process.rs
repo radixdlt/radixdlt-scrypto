@@ -103,6 +103,7 @@ pub trait SystemApi {
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
 
     fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError>;
+    fn write_component_state(&mut self, addr: ComponentAddress, state: Vec<u8>) -> Result<(), RuntimeError>;
 
     fn get_component_info(&mut self, component_address: ComponentAddress) -> Result<(PackageAddress, String), RuntimeError>;
 
@@ -944,34 +945,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // SYSTEM CALL HANDLERS START
     //============================
 
-    fn handle_put_component_state(
-        &mut self,
-        input: PutComponentStateInput,
-    ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let (component, new_set, component_address) = match &mut self.component {
-            Some(ComponentState {
-                component,
-                component_address,
-                initial_loaded_object_refs,
-                ..
-            }) => {
-                let mut new_set = Self::process_entry_data(&input.state)?;
-                new_set.remove(&initial_loaded_object_refs)?;
-                Ok((component, new_set, component_address))
-            }
-            _ => Err(RuntimeError::IllegalSystemCall),
-        }?;
-
-        let new_objects = self.owned_snodes.take(new_set)?;
-        self.track.insert_objects_into_component(new_objects, *component_address);
-
-        // TODO: Verify that process_owned_objects is empty
-
-        component.set_state(input.state);
-
-        Ok(PutComponentStateOutput {})
-    }
-
     fn handle_get_lazy_map_entry(
         &mut self,
         input: GetLazyMapEntryInput,
@@ -1191,9 +1164,22 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
             }
         }
 
-        return Err(RuntimeError::ComponentNotFound(addr));
+        Err(RuntimeError::ComponentNotFound(addr))
     }
 
+    fn write_component_state(&mut self, addr: ComponentAddress, state: Vec<u8>) -> Result<(), RuntimeError> {
+        if let Some(ComponentState { component, initial_loaded_object_refs, component_address }) = &mut self.component {
+            if addr.eq(component_address) {
+                let mut new_set = Self::process_entry_data(&state)?;
+                new_set.remove(&initial_loaded_object_refs)?;
+                let new_objects = self.owned_snodes.take(new_set)?;
+                self.track.insert_objects_into_component(new_objects, *component_address);
+                component.set_state(state);
+                return Ok(());
+            }
+        }
+        Err(RuntimeError::ComponentNotFound(addr))
+    }
 
     fn get_component_info(&mut self, component_address: ComponentAddress) -> Result<(PackageAddress, String), RuntimeError> {
         let component = self
@@ -1240,7 +1226,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
             ENGINE_FUNCTION_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
