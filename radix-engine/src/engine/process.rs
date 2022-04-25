@@ -107,6 +107,8 @@ pub trait SystemApi {
     fn get_epoch(&mut self) -> u64;
 
     fn get_transaction_hash(&mut self) -> Hash;
+
+    fn generate_uuid(&mut self) -> u128;
 }
 
 pub enum ConsumedSNodeState {
@@ -1125,15 +1127,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(EmitLogOutput {})
     }
 
-    fn handle_generate_uuid(
-        &mut self,
-        _input: GenerateUuidInput,
-    ) -> Result<GenerateUuidOutput, RuntimeError> {
-        Ok(GenerateUuidOutput {
-            uuid: self.track.new_uuid(),
-        })
-    }
-
     fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
         let wasm_process = self
             .wasm_process_state
@@ -1259,6 +1252,10 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
     fn get_transaction_hash(&mut self) -> Hash {
         self.track.transaction_hash()
     }
+
+    fn generate_uuid(&mut self) -> u128 {
+        self.track.new_uuid()
+    }
 }
 
 impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
@@ -1273,7 +1270,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                 match operation {
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
-                    GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
                     GET_ACTOR => self.handle(args, Self::handle_get_actor),
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),

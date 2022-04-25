@@ -344,6 +344,14 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
+    fn handle_generate_uuid(
+        &mut self,
+        _input: GenerateUuidInput,
+    ) -> Result<GenerateUuidOutput, RuntimeError> {
+        let uuid = self.externals.generate_uuid();
+        Ok(GenerateUuidOutput { uuid })
+    }
+
     /// Send a byte array to wasm instance.
     fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, RuntimeError> {
         let result = self.module.invoke_export(
@@ -376,6 +384,7 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
                     GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
+                    GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
                     _ => self.externals.invoke_index(index, args)
                 }
             }
