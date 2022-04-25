@@ -51,12 +51,12 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     resource_managers: IndexMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
     borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
 
-    vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
+    vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
     borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<(Hash, u32)>>,
 
-    non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
+    non_fungibles: IndexMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
 
-    lazy_map_entries: HashMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
+    lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
@@ -76,10 +76,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             borrowed_components: HashMap::new(),
             resource_managers: IndexMap::new(),
             borrowed_resource_managers: HashMap::new(),
-            lazy_map_entries: HashMap::new(),
-            vaults: HashMap::new(),
+            lazy_map_entries: IndexMap::new(),
+            vaults: IndexMap::new(),
             borrowed_vaults: HashMap::new(),
-            non_fungibles: HashMap::new(),
+            non_fungibles: IndexMap::new(),
         }
     }
 
