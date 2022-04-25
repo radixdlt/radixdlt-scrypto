@@ -318,6 +318,14 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         Ok(CreateComponentOutput { component_address })
     }
 
+    fn handle_get_component_state(
+        &mut self,
+        input: GetComponentStateInput,
+    ) -> Result<GetComponentStateOutput, RuntimeError> {
+        let state = self.externals.read_component_state(input.component_address)?;
+        Ok(GetComponentStateOutput { state })
+    }
+
     fn handle_get_component_info(
         &mut self,
         input: GetComponentInfoInput,
@@ -395,6 +403,7 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
                     GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
+                    GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_ACTOR => self.handle(args, Self::handle_get_actor),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),

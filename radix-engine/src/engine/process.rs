@@ -102,6 +102,8 @@ pub trait SystemApi {
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
 
+    fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError>;
+
     fn get_component_info(&mut self, component_address: ComponentAddress) -> Result<(PackageAddress, String), RuntimeError>;
 
     fn create_lazy_map(&mut self) -> LazyMapId;
@@ -302,8 +304,10 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     proofs: HashMap<ProofId, Proof>,
     owned_snodes: ComponentObjects,
 
-    /// Referenced Snodes
+    /// Readable/Writable Snodes
     component: Option<ComponentState<'r>>,
+
+    /// Referenced Snodes
     snode_refs: ComponentObjectRefs,
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
@@ -940,23 +944,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     // SYSTEM CALL HANDLERS START
     //============================
 
-
-
-    fn handle_get_component_state(
-        &mut self,
-        _: GetComponentStateInput,
-    ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let component_state = match &self.component {
-            Some(ComponentState { component, initial_loaded_object_refs, .. }) => {
-                self.snode_refs.extend(initial_loaded_object_refs.clone());
-                Ok(component.state())
-            },
-            _ => Err(RuntimeError::IllegalSystemCall),
-        }?;
-        let state = component_state.to_vec();
-        Ok(GetComponentStateOutput { state })
-    }
-
     fn handle_put_component_state(
         &mut self,
         input: PutComponentStateInput,
@@ -1195,6 +1182,19 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         Ok(component_address)
     }
 
+    fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError> {
+        if let Some(ComponentState { component, initial_loaded_object_refs, component_address }) = &self.component {
+            if addr.eq(component_address) {
+                self.snode_refs.extend(initial_loaded_object_refs.clone());
+                let state = component.state().to_vec();
+                return Ok(state);
+            }
+        }
+
+        return Err(RuntimeError::ComponentNotFound(addr));
+    }
+
+
     fn get_component_info(&mut self, component_address: ComponentAddress) -> Result<(PackageAddress, String), RuntimeError> {
         let component = self
             .track
@@ -1240,7 +1240,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
             ENGINE_FUNCTION_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
