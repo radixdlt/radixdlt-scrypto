@@ -8,7 +8,7 @@ mod cmd_new_badge_fixed;
 mod cmd_new_badge_mutable;
 mod cmd_new_token_fixed;
 mod cmd_new_token_mutable;
-pub mod cmd_publish;
+mod cmd_publish;
 mod cmd_reset;
 mod cmd_run;
 mod cmd_set_current_epoch;
