@@ -352,6 +352,11 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         Ok(GenerateUuidOutput { uuid })
     }
 
+    fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
+        self.externals.emit_log(input.level, input.message);
+        Ok(EmitLogOutput {})
+    }
+
     /// Send a byte array to wasm instance.
     fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, RuntimeError> {
         let result = self.module.invoke_export(
@@ -385,6 +390,7 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
                     GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
+                    EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     _ => self.externals.invoke_index(index, args)
                 }
             }

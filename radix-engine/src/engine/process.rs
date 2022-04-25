@@ -109,6 +109,8 @@ pub trait SystemApi {
     fn get_transaction_hash(&mut self) -> Hash;
 
     fn generate_uuid(&mut self) -> u128;
+
+    fn emit_log(&mut self, level: Level, message: String);
 }
 
 pub enum ConsumedSNodeState {
@@ -1121,12 +1123,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutLazyMapEntryOutput {})
     }
 
-    fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
-        self.track.add_log(input.level, input.message);
-
-        Ok(EmitLogOutput {})
-    }
-
     fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
         let wasm_process = self
             .wasm_process_state
@@ -1256,6 +1252,10 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
     fn generate_uuid(&mut self) -> u128 {
         self.track.new_uuid()
     }
+
+    fn emit_log(&mut self, level: Level, message: String) {
+        self.track.add_log(level, message);
+    }
 }
 
 impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
@@ -1274,8 +1274,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
-
-                    EMIT_LOG => self.handle(args, Self::handle_emit_log),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }
