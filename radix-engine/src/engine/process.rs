@@ -243,6 +243,7 @@ struct ComponentState<'a> {
     component_address: ComponentAddress,
     component: &'a mut Component,
     initial_loaded_object_refs: ComponentObjectRefs,
+    snode_refs: ComponentObjectRefs,
 }
 
 /// Top level state machine for a process. Empty currently only
@@ -309,7 +310,6 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     component: Option<ComponentState<'r>>,
 
     /// Referenced Snodes
-    snode_refs: ComponentObjectRefs,
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
 
@@ -341,7 +341,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             owned_snodes: ComponentObjects::new(),
             worktop,
             auth_zone,
-            snode_refs: ComponentObjectRefs::new(),
             caller_auth_zone: None,
             wasm_process_state: None,
             component: None,
@@ -419,6 +418,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                         component_address,
                         component,
                         initial_loaded_object_refs,
+                        snode_refs: ComponentObjectRefs::new(),
                     })
                 } else {
                     None
@@ -629,9 +629,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeRef::VaultRef(vault_id) => {
                 let (component, vault) = if let Some(vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
                     (None, vault)
-                } else if !self.snode_refs.vault_ids.contains(vault_id) {
-                    return Err(RuntimeError::VaultNotFound(*vault_id));
-                } else if let Some(ComponentState { component_address, .. }) = &self.component {
+                } else if let Some(ComponentState { component_address, snode_refs, .. }) = &self.component {
+                    if !snode_refs.vault_ids.contains(vault_id) {
+                        return Err(RuntimeError::VaultNotFound(*vault_id));
+                    }
                     let vault = self.track.borrow_vault_mut(component_address, vault_id);
                     (Some(*component_address), vault)
                 } else {
@@ -955,11 +956,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Ok(GetLazyMapEntryOutput { value });
         }
 
-        if !self.snode_refs.lazy_map_ids.contains(&input.lazy_map_id) {
-            return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
-        }
+        if let Some(ComponentState { component_address, snode_refs, .. }) = &mut self.component {
+            if !snode_refs.lazy_map_ids.contains(&input.lazy_map_id) {
+                return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
+            }
 
-        if let Some(ComponentState { component_address, .. }) = &self.component {
             let value = self.track.get_lazy_map_entry(
                 *component_address,
                 &input.lazy_map_id,
@@ -968,13 +969,13 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             if value.is_some() {
                 let map_entry_objects =
                     Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
-                self.snode_refs.extend(map_entry_objects);
+                snode_refs.extend(map_entry_objects);
             }
 
             return Ok(GetLazyMapEntryOutput { value });
         }
 
-        panic!("Should not get here.");
+        return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
     }
 
     fn handle_put_lazy_map_entry(
@@ -986,11 +987,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .get_lazy_map_entry(&input.lazy_map_id, &input.key)
         {
             None => match &self.component {
-                Some(ComponentState {
-                    component_address,
-                    ..
-                }) => {
-                    if !self.snode_refs
+                Some(ComponentState { component_address, snode_refs, .. }) => {
+                    if !snode_refs
                             .lazy_map_ids
                             .contains(&input.lazy_map_id)
                     {
@@ -1156,9 +1154,9 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
     }
 
     fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError> {
-        if let Some(ComponentState { component, initial_loaded_object_refs, component_address }) = &self.component {
+        if let Some(ComponentState { component, initial_loaded_object_refs, component_address, snode_refs }) = &mut self.component {
             if addr.eq(component_address) {
-                self.snode_refs.extend(initial_loaded_object_refs.clone());
+                snode_refs.extend(initial_loaded_object_refs.clone());
                 let state = component.state().to_vec();
                 return Ok(state);
             }
@@ -1168,7 +1166,7 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
     }
 
     fn write_component_state(&mut self, addr: ComponentAddress, state: Vec<u8>) -> Result<(), RuntimeError> {
-        if let Some(ComponentState { component, initial_loaded_object_refs, component_address }) = &mut self.component {
+        if let Some(ComponentState { component, initial_loaded_object_refs, component_address, .. }) = &mut self.component {
             if addr.eq(component_address) {
                 let mut new_set = Self::process_entry_data(&state)?;
                 new_set.remove(&initial_loaded_object_refs)?;
