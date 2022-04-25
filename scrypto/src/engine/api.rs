@@ -94,7 +94,9 @@ pub struct GetComponentInfoOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetComponentStateInput {}
+pub struct GetComponentStateInput {
+    pub component_address: ComponentAddress,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetComponentStateOutput {
