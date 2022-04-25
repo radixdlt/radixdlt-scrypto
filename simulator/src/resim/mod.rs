@@ -57,7 +57,7 @@ use crate::ledger::*;
 #[clap(author, version, about, long_about = None, name = "resim")]
 pub struct ResimCli {
     #[clap(subcommand)]
-    command: Command,
+    pub command: Command,
 }
 
 #[derive(Subcommand, Debug)]
