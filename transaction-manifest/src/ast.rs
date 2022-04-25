@@ -165,7 +165,7 @@ pub enum Value {
     U128(u128),
     String(String),
     Struct(Vec<Value>),
-    Enum(u8, Vec<Value>),
+    Enum(String, Vec<Value>),
     Option(Box<Option<Value>>),
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),

@@ -274,10 +274,10 @@ impl ScryptoValueFormatter {
                     Self::format_elements(fields, bucket_ids, proof_ids)
                 )
             }
-            Value::Enum { index, fields } => {
+            Value::Enum { name, fields } => {
                 format!(
-                    "Enum({}u8{}{})",
-                    index,
+                    "Enum(\"{}\"{}{})",
+                    name,
                     if fields.is_empty() { "" } else { ", " },
                     Self::format_elements(fields, bucket_ids, proof_ids)
                 )

@@ -589,8 +589,8 @@ fn generate_value(
         ast::Value::Struct(fields) => Ok(Value::Struct {
             fields: generate_singletons(fields, None, resolver)?,
         }),
-        ast::Value::Enum(index, fields) => Ok(Value::Enum {
-            index: *index,
+        ast::Value::Enum(name, fields) => Ok(Value::Enum {
+            name: name.clone(),
             fields: generate_singletons(fields, None, resolver)?,
         }),
         ast::Value::Option(value) => match &**value {
@@ -858,18 +858,18 @@ mod tests {
         );
         generate_value_ok!(r#"Struct()"#, Value::Struct { fields: vec![] });
         generate_value_ok!(
-            r#"Enum(0u8, "abc")"#,
+            r#"Enum("Variant", "abc")"#,
             Value::Enum {
-                index: 0,
+                name: "Variant".to_string(),
                 fields: vec![Value::String {
                     value: "abc".to_owned()
                 }]
             }
         );
         generate_value_ok!(
-            r#"Enum(2u8)"#,
+            r#"Enum("Variant")"#,
             Value::Enum {
-                index: 2,
+                name: "Variant".to_string(),
                 fields: vec![]
             }
         );
