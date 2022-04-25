@@ -56,6 +56,13 @@ macro_rules! re_warn {
 }
 
 pub trait SystemApi {
+    fn invoke_snode(
+        &mut self,
+        snode_ref: SNodeRef,
+        function: String,
+        args: Vec<ScryptoValue>,
+    ) -> Result<ScryptoValue, RuntimeError>;
+
     fn get_non_fungible(
         &mut self,
         non_fungible_address: &NonFungibleAddress,
@@ -92,9 +99,10 @@ pub trait SystemApi {
 }
 
 pub enum SNodeState {
+    Transaction(TransactionProcess),
+    PackageStatic,
     AuthZone(AuthZone),
     Worktop(Worktop),
-    PackageStatic,
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
     ResourceRef(ResourceAddress, ResourceManager),
@@ -313,30 +321,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(new_proof_id)
     }
 
-    // Clone a proof.
-    pub fn drop_all_named_proofs(&mut self) -> Result<(), RuntimeError> {
-        for (_, proof) in self.proofs.drain() {
-            proof.drop();
-        }
-
-        Ok(())
-    }
-
-    /// Drops all proofs owned by this process.
-    pub fn drop_all_proofs(&mut self) -> Result<(), RuntimeError> {
-        self.drop_all_named_proofs()?;
-        self.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
-        Ok(())
-    }
-
-    pub fn publish_package(&mut self, code: Vec<u8>) -> Result<PackageAddress, RuntimeError> {
-        re_debug!(self, "Publishing a package");
-
-        let package = Package::new(code).map_err(RuntimeError::WasmValidationError)?;
-        let package_address = self.track.create_package(package);
-        Ok(package_address)
-    }
-
     /// Runs the given export within this process.
     pub fn run(
         &mut self,
@@ -357,6 +341,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         // Execution
         let output = match snode {
+            SNodeState::Transaction(transaction_process) => {
+                transaction_process.main(self)
+            }
+            SNodeState::PackageStatic => {
+                Package::static_main(&function, args, self).map_err(RuntimeError::PackageError)
+            }
             SNodeState::AuthZone(auth_zone) => {
                 auth_zone
                     .main(function.as_str(), args, self)
@@ -366,9 +356,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 worktop
                     .main(function.as_str(), args, self)
                     .map_err(RuntimeError::WorktopError)
-            }
-            SNodeState::PackageStatic => {
-                Package::static_main(&function, args, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::Scrypto(actor, component_state) => {
                 let package = self.track.get_package(actor.package_address()).ok_or(
@@ -465,9 +452,12 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         let moving_proofs = self.send_proofs(&output.proof_ids, MoveMethod::AsReturn)?;
 
         // drop proofs and check resource leak
-        self.drop_all_named_proofs()?;
+        for (_, proof) in self.proofs.drain() {
+            proof.drop();
+        }
+
         if let Some(_) = &mut self.auth_zone {
-            self.call(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
+            self.invoke_snode(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
         }
         self.check_resource()?;
 
@@ -484,7 +474,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Calls a function/method.
-    pub fn call(
+    pub fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
         function: String,
@@ -492,6 +482,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         // Authorization and state load
         let (mut snode, method_auths) = match &snode_ref {
+            SNodeRef::PackageStatic => Ok((SNodeState::PackageStatic, vec![])),
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = self.auth_zone.take() {
                     Ok((SNodeState::AuthZone(auth_zone), vec![]))
@@ -506,7 +497,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Err(RuntimeError::WorktopDoesNotExist)
                 }
             }
-            SNodeRef::PackageStatic => Ok((SNodeState::PackageStatic, vec![])),
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -784,7 +774,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 
     /// Checks resource leak.
-    pub fn check_resource(&self) -> Result<(), RuntimeError> {
+    fn check_resource(&self) -> Result<(), RuntimeError> {
         re_debug!(self, "Resource check started");
         let mut success = true;
 
@@ -1322,7 +1312,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             );
         }
 
-        let result = self.call(input.snode_ref, input.function, validated_args)?;
+        let result = self.invoke_snode(input.snode_ref, input.function, validated_args)?;
         Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
@@ -1459,6 +1449,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 }
 
 impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
+    fn invoke_snode(
+        &mut self,
+        snode_ref: SNodeRef,
+        function: String,
+        args: Vec<ScryptoValue>,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        self.invoke_snode(snode_ref, function, args)
+    }
+
     fn get_non_fungible(
         &mut self,
         non_fungible_address: &NonFungibleAddress,

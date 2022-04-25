@@ -3,6 +3,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
+use scrypto::rust::string::ToString;
 use scrypto::{abi, rule, access_rule_node};
 
 use crate::engine::*;
@@ -157,11 +158,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         signed: &SignedTransaction,
     ) -> Result<Receipt, TransactionValidationError> {
         let validated = signed.validate()?;
-        let receipt = self.execute(&validated);
+        let receipt = self.execute(validated);
         Ok(receipt)
     }
 
-    pub fn execute(&mut self, validated: &ValidatedTransaction) -> Receipt {
+    pub fn execute(&mut self, validated: ValidatedTransaction) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -171,7 +172,18 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
             validated.signers.clone(),
         );
         let mut proc = track.start_process(self.trace);
-        let (outputs, error) = validated.main(&mut proc);
+
+        let txn_process = TransactionProcess::new(validated.clone());
+        let mut txn_snode = SNodeState::Transaction(txn_process);
+        let error = match proc.run(&mut txn_snode, "execute".to_string(), vec![]) {
+            Ok(_) => None,
+            Err(e) => Some(e),
+        };
+        let outputs = if let SNodeState::Transaction(txn_process) = txn_snode {
+            txn_process.outputs().to_vec()
+        } else {
+            panic!("Should not get here");
+        };
 
         // prepare data for receipts
         let new_package_addresses = track.new_package_addresses();
@@ -187,6 +199,8 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         } else {
             None
         };
+
+
 
         #[cfg(feature = "alloc")]
         let execution_time = None;
