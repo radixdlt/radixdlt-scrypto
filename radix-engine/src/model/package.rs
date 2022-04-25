@@ -358,6 +358,14 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         Ok(GetLazyMapEntryOutput { value })
     }
 
+    fn handle_put_lazy_map_entry(
+        &mut self,
+        input: PutLazyMapEntryInput,
+    ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
+        self.externals.write_lazy_map_entry(input.lazy_map_id, input.key, input.value)?;
+        Ok(PutLazyMapEntryOutput {})
+    }
+
     fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
         return Ok(GetActorOutput {
             actor: self.actor_info.clone(),
@@ -423,10 +431,11 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
+                    PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
                     GET_ACTOR => self.handle(args, Self::handle_get_actor),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
-                    _ => self.externals.invoke_index(index, args)
+                    _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }
             }
             _ => Err(RuntimeError::HostFunctionNotFound(index).into()),
