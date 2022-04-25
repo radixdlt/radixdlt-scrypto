@@ -201,10 +201,6 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn get_package2(&self, package_address: &PackageAddress) -> Option<&Package> {
-        self.packages.get(package_address).map(|p| &p.value)
-    }
-
     /// Inserts a new package.
     pub fn create_package(&mut self, package: Package) -> PackageAddress {
         let package_address = self.new_package_address();
