@@ -109,6 +109,8 @@ pub trait SystemApi {
 
     fn create_lazy_map(&mut self) -> LazyMapId;
 
+    fn read_lazy_map_entry(&mut self, lazy_map_id: LazyMapId, key: Vec<u8>) -> Result<Option<Vec<u8>>, RuntimeError>;
+
     fn get_epoch(&mut self) -> u64;
 
     fn get_transaction_hash(&mut self) -> Hash;
@@ -945,39 +947,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     //============================
     // SYSTEM CALL HANDLERS START
     //============================
-
-    fn handle_get_lazy_map_entry(
-        &mut self,
-        input: GetLazyMapEntryInput,
-    ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        if let Some((_, value)) = self
-            .owned_snodes
-            .get_lazy_map_entry(&input.lazy_map_id, &input.key) {
-            return Ok(GetLazyMapEntryOutput { value });
-        }
-
-        if let Some(ComponentState { component_address, snode_refs, .. }) = &mut self.component {
-            if !snode_refs.lazy_map_ids.contains(&input.lazy_map_id) {
-                return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
-            }
-
-            let value = self.track.get_lazy_map_entry(
-                *component_address,
-                &input.lazy_map_id,
-                &input.key,
-            );
-            if value.is_some() {
-                let map_entry_objects =
-                    Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
-                snode_refs.extend(map_entry_objects);
-            }
-
-            return Ok(GetLazyMapEntryOutput { value });
-        }
-
-        return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
-    }
-
     fn handle_put_lazy_map_entry(
         &mut self,
         input: PutLazyMapEntryInput,
@@ -1179,6 +1148,31 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         Err(RuntimeError::ComponentNotFound(addr))
     }
 
+    fn read_lazy_map_entry(&mut self, lazy_map_id: LazyMapId, key: Vec<u8>) -> Result<Option<Vec<u8>>, RuntimeError> {
+        if let Some((_, value)) = self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key) {
+            return Ok(value);
+        }
+
+        if let Some(ComponentState { component_address, snode_refs, .. }) = &mut self.component {
+            if snode_refs.lazy_map_ids.contains(&lazy_map_id) {
+                let value = self.track.get_lazy_map_entry(
+                    *component_address,
+                    &lazy_map_id,
+                    &key,
+                );
+                if value.is_some() {
+                    let map_entry_objects =
+                        Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
+                    snode_refs.extend(map_entry_objects);
+                }
+
+                return Ok(value);
+            }
+        }
+
+        return Err(RuntimeError::LazyMapNotFound(lazy_map_id));
+    }
+
     fn get_component_info(&mut self, component_address: ComponentAddress) -> Result<(PackageAddress, String), RuntimeError> {
         let component = self
             .track
@@ -1224,7 +1218,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
             ENGINE_FUNCTION_INDEX => {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
-                    GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),

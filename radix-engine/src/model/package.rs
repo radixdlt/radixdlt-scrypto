@@ -350,6 +350,14 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         Ok(CreateLazyMapOutput { lazy_map_id })
     }
 
+    fn handle_get_lazy_map_entry(
+        &mut self,
+        input: GetLazyMapEntryInput,
+    ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
+        let value = self.externals.read_lazy_map_entry(input.lazy_map_id, input.key)?;
+        Ok(GetLazyMapEntryOutput { value })
+    }
+
     fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
         return Ok(GetActorOutput {
             actor: self.actor_info.clone(),
@@ -414,6 +422,7 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
+                    GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     GET_ACTOR => self.handle(args, Self::handle_get_actor),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
