@@ -1,7 +1,8 @@
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::prelude::{ComponentAddress, PackageAddress, PackageFunction};
+use scrypto::core::{ScryptoActorInfo};
+use scrypto::prelude::{PackageFunction};
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -211,24 +212,22 @@ impl Package {
     }
 
     pub fn run<'a, E: Externals + SystemApi>(
-        component: Option<ComponentAddress>,
+        actor_info: ScryptoActorInfo,
         message: ScryptoValue,
-        package_address: PackageAddress,
-        func_name: &str,
         module: ModuleRef,
         memory: MemoryRef,
         externals: &'a mut E,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let func_name = actor_info.export_name().to_string();
         let mut wasm_process = WasmProcess::new(
-            component,
+            actor_info,
             message,
-            package_address,
             module.clone(),
             memory.clone(),
             externals,
         );
 
-        let result = module.invoke_export(func_name, &[], &mut wasm_process);
+        let result = module.invoke_export(&func_name, &[], &mut wasm_process);
 
         // Return value
         let rtn = result
@@ -248,30 +247,27 @@ impl Package {
 }
 
 struct WasmProcess<'a, E: Externals + SystemApi> {
-    component: Option<ComponentAddress>,
+    actor_info: ScryptoActorInfo,
     message: ScryptoValue,
     externals: &'a mut E,
     module: ModuleRef,
     memory: MemoryRef,
-    package_address: PackageAddress,
 }
 
 impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
     pub fn new(
-        component: Option<ComponentAddress>,
+        actor_info: ScryptoActorInfo,
         message: ScryptoValue,
-        package_address: PackageAddress,
         module: ModuleRef,
         memory: MemoryRef,
         externals: &'a mut E
     ) -> Self {
         WasmProcess {
-            component,
+            actor_info,
             message,
             module,
             memory,
             externals,
-            package_address,
         }
     }
 
@@ -302,12 +298,8 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         &mut self,
         _input: GetCallDataInput,
     ) -> Result<GetCallDataOutput, RuntimeError> {
-        let component = match self.component {
-            Some(component_address) => Some(component_address.clone()),
-            None => None,
-        };
         Ok(GetCallDataOutput {
-            component,
+            component: self.actor_info.component_address(),
             arg: self.message.raw.clone(),
         })
     }
@@ -317,7 +309,7 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         input: CreateComponentInput,
     ) -> Result<CreateComponentOutput, RuntimeError> {
         let component = Component::new(
-            self.package_address.clone(),
+            self.actor_info.package_address().clone(),
             input.blueprint_name,
             input.access_rules_list,
             input.state,
@@ -332,6 +324,12 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
         let (package_address, blueprint_name) = self.externals.get_component_info(input.component_address)?;
         Ok(GetComponentInfoOutput { package_address, blueprint_name })
+    }
+
+    fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
+        return Ok(GetActorOutput {
+            actor: self.actor_info.clone(),
+        });
     }
 
     fn handle_invoke_snode(
@@ -389,6 +387,7 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                     GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
                     GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
+                    GET_ACTOR => self.handle(args, Self::handle_get_actor),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
                     EMIT_LOG => self.handle(args, Self::handle_emit_log),
                     _ => self.externals.invoke_index(index, args)

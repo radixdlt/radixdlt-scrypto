@@ -229,7 +229,6 @@ pub enum SNodeState<'a> {
 
 /// Represents an interpreter instance.
 pub struct Interpreter {
-    actor: ScryptoActorInfo,
     module: ModuleRef,
     memory: MemoryRef,
 }
@@ -416,12 +415,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 } else {
                     None
                 };
-                let component_address = component_state.as_ref()
-                    .map(|ComponentState { component_address, .. }| component_address.clone());
                 let (module, memory) = package.load_module().unwrap();
                 self.wasm_process_state = Some(WasmProcess {
                     vm: Interpreter {
-                        actor: actor.clone(),
                         module: module.clone(),
                         memory: memory.clone(),
                     },
@@ -429,10 +425,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 });
 
                 Package::run(
-                    component_address,
+                    actor.clone(),
                     arg,
-                    *actor.package_address(),
-                    actor.export_name(),
                     module,
                     memory,
                     self
@@ -1123,16 +1117,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutLazyMapEntryOutput {})
     }
 
-    fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)?;
-
-        return Ok(GetActorOutput {
-            actor: wasm_process.vm.actor.clone(),
-        });
-    }
 
     //============================
     // SYSTEM CALL HANDLERS END
@@ -1270,7 +1254,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                 match operation {
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
-                    GET_ACTOR => self.handle(args, Self::handle_get_actor),
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
