@@ -1,6 +1,6 @@
 use core::ops::*;
 use num_bigint::BigInt;
-use num_traits::Signed;
+use num_traits::{Signed, Zero};
 use sbor::*;
 
 use crate::misc::*;
@@ -170,6 +170,64 @@ impl Decimal {
                 }
             }
         }
+
+    }
+
+    pub fn powi(&self, exp: i32) -> Self {
+        let mut x: BigInt = self.0.clone().into();
+        if x.is_negative() {
+            panic!("powi is not supported for negative numbers");
+        }
+        let s = Self::SCALE;
+        let b: BigInt = 10i128.pow(s).into();
+        let mut n: BigInt = exp.abs().into();
+        let mut z: BigInt;
+        if x.clone() == BigInt::from(0i8) {
+            if n.clone() == Zero::zero() {
+                z = b.clone();
+            } else {
+                z = Zero::zero();
+            }
+        } else if x.clone() == b.clone() {
+            z = b.clone();
+        } else {
+            if n.clone() % 2i8 == Zero::zero() {
+                z = b.clone();
+            } else {
+                z = x.clone();
+            }
+            let half = b.clone() / 2i8;
+            n /= 2i8;
+            while n.clone() > Zero::zero() {
+                let xx = x.clone() * x.clone();
+                if xx.clone() / x.clone() != x.clone() {
+                    panic!("pow overflow: square of {} too large", x);
+                }
+                let xx_round = xx.clone() + half.clone();
+                if xx_round.clone() < xx.clone() {
+                    panic!("pow overflow: sum of {} and {} too large", xx, half);
+                }
+                x = xx_round.clone() / b.clone();
+                if n.clone() % 2i8 != Zero::zero() {
+                    let zx = z.clone() * x.clone();
+                    if x.clone() != Zero::zero() && zx.clone() / x.clone() != z.clone() {
+                        panic!("pow overflow: product of {} and {} too large", z, x);
+                    }
+                    let zx_round = zx.clone() + half.clone();
+                    if zx_round < zx.clone() {
+                        panic!("pow overflow: sum of {} and {} too large", zx, half);
+                    }
+                    z = zx_round.clone() / b.clone();
+                }
+                n /= 2i8;
+            }
+        }   
+
+        if exp.is_negative() {
+            Self(big_int_to_i128(b.clone() * b / z))
+        } else {
+            Self(big_int_to_i128(z))
+        }
     }
 }
 
@@ -267,7 +325,11 @@ impl<T: Into<Decimal>> Sub<T> for Decimal {
     }
 }
 
-fn big_int_to_decimal(v: BigInt) -> Decimal {
+fn big_int_to_i128(v: BigInt) -> i128 {
+    i128::from_le_bytes(calc_le_bytes(v))
+}
+
+fn calc_le_bytes (v: BigInt) -> [u8; 16] {
     let bytes = v.to_signed_bytes_le();
     if bytes.len() > 16 {
         panic!("Overflow");
@@ -278,8 +340,12 @@ fn big_int_to_decimal(v: BigInt) -> Decimal {
             [0u8; 16]
         };
         buf[..bytes.len()].copy_from_slice(&bytes);
-        Decimal(i128::from_le_bytes(buf))
+        buf
     }
+}
+
+fn big_int_to_decimal(v: BigInt) -> Decimal {
+    Decimal(i128::from_le_bytes(calc_le_bytes(v)))
 }
 
 impl<T: Into<Decimal>> Mul<T> for Decimal {
@@ -635,6 +701,90 @@ mod tests {
     }
 
     #[test]
+    fn test_0_pow_0() {
+        let a = dec!("0");
+        assert_eq!((a.pow(0)).to_string(), "1");
+    }
+
+    #[test]
+    fn test_0_pow_1() {
+        let a = dec!("0");
+        assert_eq!((a.pow(1)).to_string(), "0");
+    }
+
+    #[test]
+    fn test_0_pow_10() {
+        let a = dec!("0");
+        assert_eq!((a.pow(10)).to_string(), "0");
+    }
+
+    #[test]
+    fn test_1_pow_0() {
+        let a = dec!("1");
+        assert_eq!((a.pow(0)).to_string(), "1");
+    }
+
+    #[test]
+    fn test_1_pow_1() {
+        let a = dec!("1");
+        assert_eq!((a.pow(1)).to_string(), "1");
+    }
+
+    #[test]
+    fn test_1_pow_10() {
+        let a = dec!("1");
+        assert_eq!((a.pow(10)).to_string(), "1");
+    }
+    
+    #[test]
+    fn test_2_pow_0() {
+        let a = dec!("2");
+        assert_eq!((a.pow(0)).to_string(), "1");
+    }
+    
+    #[test]
+    fn test_2_pow_1() {
+        let a = dec!("1.000234891009084238");
+        assert_eq!((a.pow(3724)).to_string(), "2.397991232254676688");
+    }
+    
+    #[test]
+    fn test_2_pow_2() {
+        let a = dec!("2");
+        assert_eq!((a.pow(2)).to_string(), "4");
+    }
+    
+    #[test]
+    fn test_2_pow_3() {
+        let a = dec!("2");
+        assert_eq!((a.pow(3)).to_string(), "8");
+    }
+
+    #[test]
+    fn test_10_pow_3() {
+        let a = dec!("10");
+        assert_eq!((a.pow(3)).to_string(), "1000");
+    }
+
+    #[test]
+    fn test_5_pow_2() {
+        let a = dec!("5");
+        assert_eq!((a.pow(2)).to_string(), "25");
+    }
+
+    #[test]
+    fn test_5_pow_minus2() {
+        let a = dec!("5");
+        assert_eq!((a.pow(-2)).to_string(), "0.04");
+    }
+
+    #[test]
+    fn test_10_pow_minus3() {
+        let a = dec!("10");
+        assert_eq!((a.pow(-3)).to_string(), "0.001");
+    }
+
+    #[test]
     fn test_one_and_zero() {
         assert_eq!(Decimal::one().to_string(), "1");
         assert_eq!(Decimal::zero().to_string(), "0");
@@ -663,7 +813,6 @@ mod tests {
 
     #[test]
     fn test_dec_bool() {
-        assert_eq!((dec!(true)).to_string(), "1");
         assert_eq!((dec!(false)).to_string(), "0");
     }
 
