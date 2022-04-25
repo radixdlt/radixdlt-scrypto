@@ -1,6 +1,7 @@
 use indexmap::IndexMap;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
+use scrypto::rust::ops::RangeFull;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
@@ -22,6 +23,13 @@ impl BorrowedSNodes {
         self.borrowed_resource_managers.is_empty() &&
         self.borrowed_vaults.is_empty()
     }
+}
+
+pub struct TrackReceipt {
+    pub borrowed: BorrowedSNodes,
+    pub new_packages: Vec<PackageAddress>,
+    pub logs: Vec<(Level, String)>,
+    pub substates: SubstateReceipt,
 }
 
 pub struct SubstateUpdate<T> {
@@ -579,9 +587,20 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
-    pub fn to_receipt(self) -> (SubstateReceipt, BorrowedSNodes, Vec<(Level, String)>) {
-        let substate_receipt = SubstateReceipt {
-            packages: self.packages,
+    pub fn to_receipt(mut self) -> TrackReceipt {
+        let mut new_packages = Vec::new();
+        let mut packages = Vec::new();
+        for (package_address, package) in self.packages.drain(RangeFull) {
+            if let Some((hash, index)) = package.prev_id {
+                packages.push(SubstateInstruction::Down(hash, index));
+            } else {
+                new_packages.push(package_address);
+            }
+            packages.push(SubstateInstruction::Up(package_address, package.value));
+        }
+
+        let substates = SubstateReceipt {
+            packages,
             components: self.components,
             resource_managers: self.resource_managers,
             vaults: self.vaults,
@@ -593,6 +612,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             borrowed_vaults: self.borrowed_vaults,
             borrowed_resource_managers: self.borrowed_resource_managers,
         };
-        (substate_receipt, borrowed, self.logs)
+        TrackReceipt {
+            new_packages,
+            borrowed,
+            substates,
+            logs: self.logs,
+        }
     }
 }

@@ -10,6 +10,6 @@ pub use component_objects::*;
 pub use id_allocator::*;
 pub use id_validator::*;
 pub use process::{Process, SNodeState, SystemApi};
-pub use substate_receipt::{CommitReceipt, SubstateReceipt};
+pub use substate_receipt::{SubstateInstruction, CommitReceipt, SubstateReceipt};
 pub use track::{Track, BorrowedSNodes, SubstateUpdate};
 pub use wasm_env::{EnvModuleResolver, ENGINE_FUNCTION_INDEX, ENGINE_FUNCTION_NAME};

@@ -31,8 +31,13 @@ impl CommitReceipt {
     }
 }
 
+pub enum SubstateInstruction {
+    Down(Hash, u32),
+    Up(PackageAddress, Package),
+}
+
 pub struct SubstateReceipt {
-    pub packages: IndexMap<PackageAddress, SubstateUpdate<Package>>,
+    pub packages: Vec<SubstateInstruction>,
     pub components: IndexMap<ComponentAddress, SubstateUpdate<Component>>,
     pub resource_managers: IndexMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
     pub vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
@@ -41,17 +46,6 @@ pub struct SubstateReceipt {
 }
 
 impl SubstateReceipt {
-    /// Returns new packages created so far.
-    pub fn new_package_addresses(&self) -> Vec<PackageAddress> {
-        let mut package_addresses = Vec::new();
-        for (package_address, update) in self.packages.iter() {
-            if let None = update.prev_id {
-                package_addresses.push(package_address.clone());
-            }
-        }
-        package_addresses
-    }
-
     /// Returns new components created so far.
     pub fn new_component_addresses(&self) -> Vec<ComponentAddress> {
         let mut component_addresses = Vec::new();
@@ -80,14 +74,15 @@ impl SubstateReceipt {
         let mut receipt = CommitReceipt::new();
         let mut id_gen = SubstateIdGenerator::new(hash);
 
-        for (package_address, package) in self.packages.drain(RangeFull) {
-            if let Some(prev_id) = package.prev_id {
-                receipt.down(prev_id);
+        for instruction in self.packages.drain(RangeFull) {
+            match instruction {
+                SubstateInstruction::Down(hash, index) => receipt.down((hash, index)),
+                SubstateInstruction::Up(package_address, package) => {
+                    let phys_id = id_gen.next();
+                    receipt.up(phys_id);
+                    store.put_encoded_substate(&package_address, &package, phys_id);
+                }
             }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            store.put_encoded_substate(&package_address, &package.value, phys_id);
         }
 
         for (component_address, component) in self.components.drain(RangeFull) {
