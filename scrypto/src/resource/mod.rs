@@ -1,5 +1,5 @@
-mod auth_zone;
 mod access_rules;
+mod auth_zone;
 mod bucket;
 mod mint_params;
 mod non_fungible;
@@ -15,8 +15,8 @@ mod schema_path;
 mod system;
 mod vault;
 
-pub use auth_zone::AuthZone;
 pub use access_rules::AccessRules;
+pub use auth_zone::ComponentAuthZone;
 pub use bucket::{Bucket, ParseBucketError};
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;
@@ -25,8 +25,8 @@ pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::{ParseProofError, Proof};
 pub use proof_rule::{
-    require, require_all_of, require_amount, require_any_of, require_n_of, AuthRuleNode,
-    MethodAuth, ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
+    require, require_all_of, require_amount, require_any_of, require_n_of, AccessRuleNode,
+    AccessRule, ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,
     SoftResourceOrNonFungibleList,
 };
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};

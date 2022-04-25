@@ -3,7 +3,7 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthRuleNode, Burn, MethodAuth, Mint, Withdraw};
+use scrypto::prelude::{AccessRuleNode, Burn, AccessRule, Mint, Withdraw};
 use scrypto::resource::{require, LOCKED};
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::BTreeSet;
@@ -437,14 +437,14 @@ impl TransactionBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
             Mint,
-            (auth!(require(minter_resource_address.clone())), LOCKED),
+            (rule!(require(minter_resource_address.clone())), LOCKED),
         );
         resource_auth.insert(
             Burn,
-            (auth!(require(minter_resource_address.clone())), LOCKED),
+            (rule!(require(minter_resource_address.clone())), LOCKED),
         );
 
         self.add_instruction(Instruction::CallFunction {
@@ -468,7 +468,7 @@ impl TransactionBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
@@ -493,14 +493,14 @@ impl TransactionBuilder {
         minter_resource_address: ResourceAddress,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
         resource_auth.insert(
             Mint,
-            (auth!(require(minter_resource_address.clone())), LOCKED),
+            (rule!(require(minter_resource_address.clone())), LOCKED),
         );
         resource_auth.insert(
             Burn,
-            (auth!(require(minter_resource_address.clone())), LOCKED),
+            (rule!(require(minter_resource_address.clone())), LOCKED),
         );
 
         self.add_instruction(Instruction::CallFunction {
@@ -524,7 +524,7 @@ impl TransactionBuilder {
         initial_supply: Decimal,
     ) -> &mut Self {
         let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (auth!(allow_all), LOCKED));
+        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
 
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
@@ -587,7 +587,7 @@ impl TransactionBuilder {
     }
 
     /// Creates an account.
-    pub fn new_account(&mut self, withdraw_auth: &AuthRuleNode) -> &mut Self {
+    pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
@@ -600,7 +600,7 @@ impl TransactionBuilder {
     /// Creates an account with some initial resource.
     pub fn new_account_with_resource(
         &mut self,
-        withdraw_auth: &MethodAuth,
+        withdraw_auth: &AccessRule,
         bucket_id: BucketId,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {

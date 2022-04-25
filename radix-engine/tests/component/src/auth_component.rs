@@ -11,8 +11,8 @@ blueprint! {
                 .instantiate()
                 .add_access_check(
                     AccessRules::new()
-                        .method("get_secret", auth!(require("some_non_fungible")))
-                        .default(auth!(allow_all)),
+                        .method("get_secret", rule!(require("some_non_fungible")))
+                        .default(rule!(allow_all)),
                 )
                 .globalize()
         }

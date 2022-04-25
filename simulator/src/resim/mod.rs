@@ -1,6 +1,7 @@
 mod cmd_call_function;
 mod cmd_call_method;
 mod cmd_export_abi;
+mod cmd_generate_key_pair;
 mod cmd_mint;
 mod cmd_new_account;
 mod cmd_new_badge_fixed;
@@ -22,6 +23,7 @@ mod error;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
 pub use cmd_export_abi::*;
+pub use cmd_generate_key_pair::*;
 pub use cmd_mint::*;
 pub use cmd_new_account::*;
 pub use cmd_new_badge_fixed::*;
@@ -63,6 +65,7 @@ pub enum Command {
     CallFunction(CallFunction),
     CallMethod(CallMethod),
     ExportAbi(ExportAbi),
+    GenerateKeyPair(GenerateKeyPair),
     Mint(Mint),
     NewAccount(NewAccount),
     NewBadgeFixed(NewBadgeFixed),
@@ -83,24 +86,27 @@ pub enum Command {
 pub fn run() -> Result<(), Error> {
     let cli = ResimCli::parse();
 
+    let mut out = std::io::stdout() ;
+
     match cli.command {
         Command::CallFunction(cmd) => cmd.run(),
         Command::CallMethod(cmd) => cmd.run(),
-        Command::ExportAbi(cmd) => cmd.run(),
+        Command::ExportAbi(cmd) => cmd.run(&mut out),
+        Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
         Command::Mint(cmd) => cmd.run(),
-        Command::NewAccount(cmd) => cmd.run(),
+        Command::NewAccount(cmd) => cmd.run(&mut out),
         Command::NewBadgeFixed(cmd) => cmd.run(),
         Command::NewBadgeMutable(cmd) => cmd.run(),
         Command::NewTokenFixed(cmd) => cmd.run(),
         Command::NewTokenMutable(cmd) => cmd.run(),
-        Command::Publish(cmd) => cmd.run(),
-        Command::Reset(cmd) => cmd.run(),
+        Command::Publish(cmd) => cmd.run(&mut out),
+        Command::Reset(cmd) => cmd.run(&mut out),
         Command::Run(cmd) => cmd.run(),
-        Command::SetCurrentEpoch(cmd) => cmd.run(),
-        Command::SetDefaultAccount(cmd) => cmd.run(),
-        Command::ShowConfigs(cmd) => cmd.run(),
-        Command::ShowLedger(cmd) => cmd.run(),
-        Command::Show(cmd) => cmd.run(),
+        Command::SetCurrentEpoch(cmd) => cmd.run(&mut out),
+        Command::SetDefaultAccount(cmd) => cmd.run(&mut out),
+        Command::ShowConfigs(cmd) => cmd.run(&mut out),
+        Command::ShowLedger(cmd) => cmd.run(&mut out),
+        Command::Show(cmd) => cmd.run(&mut out),
         Command::Transfer(cmd) => cmd.run(),
     }
 }

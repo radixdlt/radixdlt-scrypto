@@ -1,11 +1,13 @@
 use sbor::*;
 
+use crate::misc::*;
 use crate::resource::*;
+use crate::rust::borrow::ToOwned;
 use crate::rust::fmt;
 use crate::rust::str::FromStr;
-use crate::types::*;
-
+use crate::rust::string::String;
 use crate::rust::vec::Vec;
+use crate::types::*;
 
 /// Identifier for a non-fungible unit.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -43,7 +45,8 @@ pub enum ParseNonFungibleAddressError {
     InvalidLength(usize),
     InvalidResourceDefId,
     InvalidNonFungibleId,
-    InvalidHex,
+    InvalidHex(String),
+    InvalidPrefix,
 }
 
 impl TryFrom<&[u8]> for NonFungibleAddress {
@@ -89,19 +92,45 @@ impl FromStr for NonFungibleAddress {
     type Err = ParseNonFungibleAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|_| ParseNonFungibleAddressError::InvalidHex)?;
-        Self::try_from(bytes.as_slice())
+        let bytes =
+            hex::decode(s).map_err(|_| ParseNonFungibleAddressError::InvalidHex(s.to_owned()))?;
+        if bytes.get(0) != Some(&3u8) {
+            return Err(ParseNonFungibleAddressError::InvalidPrefix);
+        }
+        Self::try_from(&bytes[1..])
     }
 }
 
 impl fmt::Display for NonFungibleAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}{}", self.resource_address, self.non_fungible_id)
+        // Note that if the non-fungible ID is empty, the non-fungible address won't be distinguishable from resource address.
+        // TODO: figure out what's best for the users
+        write!(f, "{}", hex::encode(combine(3, &self.to_vec())))
     }
 }
 
 impl fmt::Debug for NonFungibleAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::prelude::*;
+
+    #[test]
+    fn test_non_fungible_address_codec() {
+        let expected = "030000000000000000000000000000000000000000000000000005046ff03b949241ce1dadd43519e6960e0a85b41a69a05c328103aa2bce1594ca163c4f753a55bf01dc53f6c0b0c7eee78b40c6ff7d25a96e2282b989cef71c144a";
+        let private_key = EcdsaPrivateKey::from_bytes(&[1u8; 32]).unwrap();
+        let public_key = private_key.public_key();
+        let auth_address =
+            NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(public_key.to_vec()));
+        let s1 = auth_address.to_string();
+        let auth_address2 = NonFungibleAddress::from_str(&s1).unwrap();
+        let s2 = auth_address2.to_string();
+        assert_eq!(s1, expected);
+        assert_eq!(s2, expected);
     }
 }
