@@ -81,8 +81,13 @@ pub trait ReadableSubstateStore {
 }
 
 pub trait WriteableSubstateStore {
-    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate);
-    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate);
+    fn put_substate(&mut self, address: &[u8], substate: Substate);
+    fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate);
+
+    fn put_keyed_substate(&mut self, address: &[u8], value: Vec<u8>, phys_id: (Hash, u32)) {
+        self.put_substate(address, Substate { value, phys_id });
+    }
+
     fn put_encoded_substate<A: Encode, V: Encode>(
         &mut self,
         address: &A,
@@ -90,7 +95,7 @@ pub trait WriteableSubstateStore {
         phys_id: (Hash, u32),
     ) {
         self.put_substate(
-            address,
+            &scrypto_encode(address),
             Substate {
                 value: scrypto_encode(value),
                 phys_id,
@@ -108,7 +113,7 @@ pub trait WriteableSubstateStore {
         let mut key = scrypto_encode(child_key);
         key.extend(grand_child_key.to_vec());
         self.put_child_substate(
-            address,
+            &scrypto_encode(address),
             &key,
             Substate {
                 value: value.to_vec(),
@@ -124,10 +129,9 @@ pub trait WriteableSubstateStore {
         value: &V,
         phys_id: (Hash, u32),
     ) {
-        let child_key = &scrypto_encode(key);
         self.put_child_substate(
-            address,
-            child_key,
+            &scrypto_encode(address),
+            &scrypto_encode(key),
             Substate {
                 value: scrypto_encode(value),
                 phys_id,

@@ -193,9 +193,6 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         // prepare data for receipts
         let hash = track.transaction_hash();
         let track_receipt = track.to_receipt();
-        let new_package_addresses = track_receipt.new_packages;
-        let new_component_addresses = track_receipt.substates.new_component_addresses();
-        let new_resource_addresses = track_receipt.substates.new_resource_addresses();
 
         // commit state updates
         let commit_receipt = if error.is_none() {
@@ -225,9 +222,9 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             },
             outputs,
             logs: track_receipt.logs,
-            new_package_addresses,
-            new_component_addresses,
-            new_resource_addresses,
+            new_package_addresses: track_receipt.new_packages,
+            new_component_addresses: track_receipt.new_components,
+            new_resource_addresses: track_receipt.new_resources,
             execution_time,
         }
     }

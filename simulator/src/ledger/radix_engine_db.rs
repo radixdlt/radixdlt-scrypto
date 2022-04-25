@@ -123,12 +123,12 @@ impl ReadableSubstateStore for RadixEngineDB {
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
-    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate) {
-        self.write(&scrypto_encode(address), &scrypto_encode(&substate));
+    fn put_substate(&mut self, address: &[u8], substate: Substate) {
+        self.write(address, &scrypto_encode(&substate));
     }
 
-    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate) {
-        let mut id = scrypto_encode(address);
+    fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate) {
+        let mut id = address.to_vec();
         id.extend(key.to_vec());
         self.write(&id, &scrypto_encode(&substate));
     }

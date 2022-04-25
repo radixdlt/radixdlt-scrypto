@@ -1,6 +1,7 @@
 use indexmap::IndexMap;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::scrypto_encode;
 use scrypto::rust::ops::RangeFull;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
@@ -28,6 +29,8 @@ impl BorrowedSNodes {
 pub struct TrackReceipt {
     pub borrowed: BorrowedSNodes,
     pub new_packages: Vec<PackageAddress>,
+    pub new_components: Vec<ComponentAddress>,
+    pub new_resources: Vec<ResourceAddress>,
     pub logs: Vec<(Level, String)>,
     pub substates: SubstateReceipt,
 }
@@ -589,24 +592,63 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     /// Currently none of these objects are deleted so all commits are puts
     pub fn to_receipt(mut self) -> TrackReceipt {
         let mut new_packages = Vec::new();
-        let mut packages = Vec::new();
+        let mut new_components = Vec::new();
+        let mut new_resources = Vec::new();
+
+        let mut store_instructions = Vec::new();
         for (package_address, package) in self.packages.drain(RangeFull) {
             if let Some((hash, index)) = package.prev_id {
-                packages.push(SubstateInstruction::Down(hash, index));
+                store_instructions.push(SubstateInstruction::Down(hash, index));
             } else {
                 new_packages.push(package_address);
             }
-            packages.push(SubstateInstruction::Up(package_address, package.value));
+            store_instructions.push(SubstateInstruction::Up(scrypto_encode(&package_address), scrypto_encode(&package.value)));
+        }
+        for (component_address, component) in self.components.drain(RangeFull) {
+            if let Some((hash, index)) = component.prev_id {
+                store_instructions.push(SubstateInstruction::Down(hash, index));
+            } else {
+                new_components.push(component_address);
+            }
+            store_instructions.push(SubstateInstruction::Up(scrypto_encode(&component_address), scrypto_encode(&component.value)));
+        }
+        for (resource_address, resource_manager) in self.resource_managers.drain(RangeFull) {
+            if let Some((hash, index)) = resource_manager.prev_id {
+                store_instructions.push(SubstateInstruction::Down(hash, index));
+            } else {
+                new_resources.push(resource_address);
+            }
+            store_instructions.push(SubstateInstruction::Up(scrypto_encode(&resource_address), scrypto_encode(&resource_manager.value)));
+        }
+        for ((component_address, vault_id), vault) in self.vaults.drain(RangeFull) {
+            if let Some((hash, index)) = vault.prev_id {
+                store_instructions.push(SubstateInstruction::Down(hash, index));
+            }
+            let mut vault_address = scrypto_encode(&component_address);
+            vault_address.extend(scrypto_encode(&vault_id));
+            store_instructions.push(SubstateInstruction::Up(vault_address, scrypto_encode(&vault.value)));
+        }
+        for (addr, non_fungible) in self.non_fungibles.drain(RangeFull) {
+            if let Some((hash, index)) = non_fungible.prev_id {
+                store_instructions.push(SubstateInstruction::Down(hash, index));
+            }
+
+            let mut non_fungible_address = scrypto_encode(&addr.resource_address());
+            non_fungible_address.extend(scrypto_encode(&addr.non_fungible_id()));
+            store_instructions.push(SubstateInstruction::Up(non_fungible_address, scrypto_encode(&non_fungible.value)));
+        }
+        for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
+            if let Some((hash, index)) = entry.prev_id {
+                store_instructions.push(SubstateInstruction::Down(hash, index));
+            }
+
+            let mut entry_address = scrypto_encode(&component_address);
+            entry_address.extend(scrypto_encode(&lazy_map_id));
+            entry_address.extend(key);
+            store_instructions.push(SubstateInstruction::Up(entry_address, entry.value));
         }
 
-        let substates = SubstateReceipt {
-            packages,
-            components: self.components,
-            resource_managers: self.resource_managers,
-            vaults: self.vaults,
-            non_fungibles: self.non_fungibles,
-            lazy_map_entries: self.lazy_map_entries,
-        };
+        let substates = SubstateReceipt { store_instructions };
         let borrowed = BorrowedSNodes {
             borrowed_components: self.borrowed_components,
             borrowed_vaults: self.borrowed_vaults,
@@ -614,6 +656,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         };
         TrackReceipt {
             new_packages,
+            new_components,
+            new_resources,
             borrowed,
             substates,
             logs: self.logs,

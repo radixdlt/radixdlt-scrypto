@@ -205,6 +205,7 @@ impl<'l> TestRunner<'l> {
             .build(self.executor.get_nonce([]))
             .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
+        receipt.result.expect("Should be okay.");
         receipt.new_resource_addresses[0]
     }
 
