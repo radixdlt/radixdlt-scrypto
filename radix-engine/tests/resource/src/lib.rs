@@ -11,8 +11,8 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .mintable(auth!(require(badge.resource_address())), LOCKED)
-                .burnable(auth!(require(badge.resource_address())), LOCKED)
+                .mintable(rule!(require(badge.resource_address())), LOCKED)
+                .burnable(rule!(require(badge.resource_address())), LOCKED)
                 .no_initial_supply();
             (badge, token_address)
         }
@@ -27,8 +27,8 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(divisibility)
                 .metadata("name", "TestToken")
-                .mintable(auth!(require(badge.resource_address())), LOCKED)
-                .burnable(auth!(require(badge.resource_address())), LOCKED)
+                .mintable(rule!(require(badge.resource_address())), LOCKED)
+                .burnable(rule!(require(badge.resource_address())), LOCKED)
                 .no_initial_supply();
             let tokens = badge.authorize(|| borrow_resource_manager!(token_address).mint(amount));
             (badge, tokens, token_address)
@@ -58,8 +58,8 @@ blueprint! {
             let token_address = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .mintable(auth!(require(badge.resource_address())), LOCKED)
-                .burnable(auth!(require(badge.resource_address())), LOCKED)
+                .mintable(rule!(require(badge.resource_address())), LOCKED)
+                .burnable(rule!(require(badge.resource_address())), LOCKED)
                 .no_initial_supply();
             (badge, token_address)
         }
@@ -89,7 +89,7 @@ blueprint! {
                 .divisibility(DIVISIBILITY_NONE)
                 .initial_supply(1);
             let token_resource_manager = borrow_resource_manager!(ResourceBuilder::new_fungible()
-                .updateable_metadata(auth!(require(badge.resource_address())), LOCKED)
+                .updateable_metadata(rule!(require(badge.resource_address())), LOCKED)
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
                 .no_initial_supply());
