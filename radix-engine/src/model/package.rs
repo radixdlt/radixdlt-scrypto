@@ -211,11 +211,11 @@ impl Package {
         ScryptoValue::from_slice(&buffer[range]).map_err(RuntimeError::ParseScryptoValueError)
     }
 
-    pub fn run<'a, E: Externals + SystemApi>(
-        actor_info: ScryptoActorInfo,
-        message: ScryptoValue,
+    pub fn run<'a, E: SystemApi>(
         module: ModuleRef,
         memory: MemoryRef,
+        actor_info: ScryptoActorInfo,
+        message: ScryptoValue,
         externals: &'a mut E,
     ) -> Result<ScryptoValue, RuntimeError> {
         let func_name = actor_info.export_name().to_string();
@@ -246,7 +246,7 @@ impl Package {
     }
 }
 
-struct WasmProcess<'a, E: Externals + SystemApi> {
+struct WasmProcess<'a, E: SystemApi> {
     actor_info: ScryptoActorInfo,
     message: ScryptoValue,
     externals: &'a mut E,
@@ -254,7 +254,7 @@ struct WasmProcess<'a, E: Externals + SystemApi> {
     memory: MemoryRef,
 }
 
-impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
+impl<'a, E: SystemApi> WasmProcess<'a, E> {
     pub fn new(
         actor_info: ScryptoActorInfo,
         message: ScryptoValue,
@@ -413,7 +413,7 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
     }
 }
 
-impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
+impl<'a, E:SystemApi> Externals for WasmProcess<'a, E> {
     fn invoke_index(
         &mut self,
         index: usize,

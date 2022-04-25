@@ -2,21 +2,18 @@ use colored::*;
 
 use sbor::*;
 use sbor::path::SborPath;
-use scrypto::buffer::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
-use scrypto::engine::api::*;
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneMethod;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
-use wasmi::*;
+use wasmi::{MemoryRef, ModuleRef};
 
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::*;
@@ -24,14 +21,6 @@ use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
-
-macro_rules! re_trace {
-    ($proc:expr, $($args: expr),+) => {
-        if $proc.trace {
-            $proc.log(Level::Trace, format!($($args),+));
-        }
-    };
-}
 
 macro_rules! re_debug {
     ($proc:expr, $($args: expr),+) => {
@@ -130,7 +119,7 @@ pub enum ConsumedSNodeState {
 pub enum BorrowedSNodeState {
     AuthZone(AuthZone),
     Worktop(Worktop),
-    Scrypto(ScryptoActorInfo, Option<Component>),
+    Scrypto(ScryptoActorInfo, ModuleRef, MemoryRef, Option<Component>),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, Bucket),
     Proof(ProofId, Proof),
@@ -146,7 +135,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Worktop(worktop) => {
                 process.worktop = Some(worktop);
             }
-            BorrowedSNodeState::Scrypto(actor, component_state) => {
+            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
                 if let Some(component_address) = actor.component_address() {
                     process.track.return_borrowed_global_component(
                         component_address,
@@ -209,7 +198,9 @@ impl LoadedSNodeState {
                 match borrowed {
                     BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                     BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                    BorrowedSNodeState::Scrypto(info, s) => SNodeState::Scrypto(info.clone(), s.as_mut()),
+                    BorrowedSNodeState::Scrypto(info, module, memory, s) => {
+                        SNodeState::Scrypto(info.clone(), module.clone(), memory.clone(), s.as_mut())
+                    },
                     BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                     BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                     BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
@@ -226,7 +217,7 @@ pub enum SNodeState<'a> {
     PackageStatic,
     AuthZoneRef(&'a mut AuthZone),
     Worktop(&'a mut Worktop),
-    Scrypto(ScryptoActorInfo, Option<&'a mut Component>),
+    Scrypto(ScryptoActorInfo, ModuleRef, MemoryRef, Option<&'a mut Component>),
     ResourceStatic,
     ResourceRef(ResourceAddress, &'a mut ResourceManager),
     BucketRef(BucketId, &'a mut Bucket),
@@ -236,26 +227,12 @@ pub enum SNodeState<'a> {
     VaultRef(VaultId, Option<ComponentAddress>, &'a mut Vault),
 }
 
-/// Represents an interpreter instance.
-pub struct Interpreter {
-    module: ModuleRef,
-    memory: MemoryRef,
-}
-
 #[derive(Debug)]
 struct ComponentState<'a> {
     component_address: ComponentAddress,
     component: &'a mut Component,
     initial_loaded_object_refs: ComponentObjectRefs,
     snode_refs: ComponentObjectRefs,
-}
-
-/// Top level state machine for a process. Empty currently only
-/// refers to the initial process since it doesn't run on a wasm interpreter (yet)
-#[allow(dead_code)]
-struct WasmProcess {
-    /// The call depth
-    vm: Interpreter,
 }
 
 ///TODO: Remove
@@ -319,10 +296,6 @@ pub struct Process<'r, 'l, L: SubstateStore> {
 
     /// The caller's auth zone
     caller_auth_zone: Option<&'r AuthZone>,
-
-    /// State for the given wasm process, empty only on the root process
-    /// (root process cannot create components nor is a component itself)
-    wasm_process_state: Option<WasmProcess>,
 }
 
 impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
@@ -346,7 +319,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             worktop,
             auth_zone,
             caller_auth_zone: None,
-            wasm_process_state: None,
             component: None,
         }
     }
@@ -399,18 +371,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .main(arg, self)
                     .map_err(RuntimeError::WorktopError)
             }
-            SNodeState::Scrypto(actor, component_state) => {
-                let package = self.track.get_package(actor.package_address()).ok_or(
-                    RuntimeError::PackageNotFound(actor.package_address().clone()),
-                )?;
-
-                if !package.contains_blueprint(actor.blueprint_name()) {
-                    return Err(RuntimeError::BlueprintNotFound(
-                        actor.package_address().clone(),
-                        actor.blueprint_name().to_string(),
-                    ));
-                }
-
+            SNodeState::Scrypto(actor, module_ref, memory_ref, component_state) => {
                 let component_state = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();
                     let data = ScryptoValue::from_slice(component.state()).unwrap();
@@ -427,22 +388,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 } else {
                     None
                 };
-                let (module, memory) = package.load_module().unwrap();
                 self.component = component_state;
-                self.wasm_process_state = Some(WasmProcess {
-                    vm: Interpreter {
-                        module: module.clone(),
-                        memory: memory.clone(),
-                    },
-                });
 
-                Package::run(
-                    actor.clone(),
-                    arg,
-                    module,
-                    memory,
-                    self
-                )
+                Package::run(module_ref, memory_ref, actor.clone(), arg, self)
             }
             SNodeState::ResourceStatic => {
                 ResourceManager::static_main(arg, self)
@@ -544,6 +492,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
+                        let package = self
+                            .track
+                            .get_package(package_address)
+                            .ok_or(RuntimeError::PackageNotFound(*package_address))?;
+                        if !package.contains_blueprint(blueprint_name) {
+                            return Err(RuntimeError::BlueprintNotFound(
+                                package_address.clone(),
+                                blueprint_name.clone(),
+                            ));
+                        }
+
+                        let (module, memory) = package.load_module().unwrap();
                         let export_name = format!("{}_main", blueprint_name);
                         Ok((
                             Borrowed(BorrowedSNodeState::Scrypto(
@@ -552,6 +512,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                                     blueprint_name.clone(),
                                     export_name.clone(),
                                 ),
+                                module,
+                                memory,
                                 None,
                             )),
                             vec![],
@@ -569,6 +531,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                             .track
                             .get_package(&package_address)
                             .ok_or(RuntimeError::PackageNotFound(package_address))?;
+                        let (module, memory) = package.load_module().unwrap();
+
                         // TODO: Remove clone
                         let schema = package
                             .load_blueprint_schema(&blueprint_name)
@@ -584,6 +548,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                                     export_name,
                                     component_address.clone(),
                                 ),
+                                module,
+                                memory,
                                 Some(component),
                             )),
                             method_auths,
@@ -695,7 +661,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
         moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
 
-        let process_auth_zone = if matches!(loaded_snode, Borrowed(BorrowedSNodeState::Scrypto(_, _))) {
+        let process_auth_zone = if matches!(loaded_snode, Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))) {
             Some(AuthZone::new())
         } else {
             None
@@ -884,66 +850,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             proofs.insert(*proof_id, proof);
         }
         Ok(proofs)
-    }
-
-    /// Send a byte array to wasm instance.
-    fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_ref().unwrap();
-        let result = wasm_process.vm.module.invoke_export(
-            "scrypto_alloc",
-            &[RuntimeValue::I32((bytes.len()) as i32)],
-            &mut NopExternals,
-        );
-
-        if let Ok(Some(RuntimeValue::I32(ptr))) = result {
-            if wasm_process.vm.memory.set((ptr + 4) as u32, bytes).is_ok() {
-                return Ok(ptr);
-            }
-        }
-
-        Err(RuntimeError::MemoryAllocError)
-    }
-
-    /// Handles a system call.
-    fn handle<I: Decode + fmt::Debug, O: Encode + fmt::Debug>(
-        &mut self,
-        args: RuntimeArgs,
-        handler: fn(&mut Self, input: I) -> Result<O, RuntimeError>,
-    ) -> Result<Option<RuntimeValue>, Trap> {
-        let wasm_process = self.wasm_process_state.as_mut().unwrap();
-        let op: u32 = args.nth_checked(0)?;
-        let input_ptr: u32 = args.nth_checked(1)?;
-        let input_len: u32 = args.nth_checked(2)?;
-        // SECURITY: bill before allocating memory
-        let mut input_bytes = vec![0u8; input_len as usize];
-        wasm_process
-            .vm
-            .memory
-            .get_into(input_ptr, &mut input_bytes)
-            .map_err(|_| Trap::from(RuntimeError::MemoryAccessError))?;
-        let input: I = scrypto_decode(&input_bytes)
-            .map_err(|e| Trap::from(RuntimeError::InvalidRequestData(e)))?;
-        if input_len <= 1024 {
-            re_trace!(self, "{:?}", input);
-        } else {
-            re_trace!(self, "Large request: op = {:02x}, len = {}", op, input_len);
-        }
-
-        let output: O = handler(self, input).map_err(Trap::from)?;
-        let output_bytes = scrypto_encode(&output);
-        let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
-        if output_bytes.len() <= 1024 {
-            re_trace!(self, "{:?}", output);
-        } else {
-            re_trace!(
-                self,
-                "Large response: op = {:02x}, len = {}",
-                op,
-                output_bytes.len()
-            );
-        }
-
-        Ok(Some(RuntimeValue::I32(output_ptr)))
     }
 }
 
@@ -1179,17 +1085,5 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
 
     fn emit_log(&mut self, level: Level, message: String) {
         self.track.add_log(level, message);
-    }
-}
-
-impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
-    fn invoke_index(
-        &mut self,
-        index: usize,
-        args: RuntimeArgs,
-    ) -> Result<Option<RuntimeValue>, Trap> {
-        match index {
-            _ => Err(RuntimeError::HostFunctionNotFound(index).into()),
-        }
     }
 }
