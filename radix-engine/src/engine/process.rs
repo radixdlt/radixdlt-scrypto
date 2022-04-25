@@ -226,7 +226,6 @@ pub enum SNodeState<'a> {
 /// Represents an interpreter instance.
 pub struct Interpreter {
     actor: ScryptoActorInfo,
-    arg: ScryptoValue,
     module: ModuleRef,
     memory: MemoryRef,
 }
@@ -413,11 +412,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 } else {
                     None
                 };
-
+                let component_address = component_state.as_ref()
+                    .map(|ComponentState { component_address, .. }| component_address.clone());
                 let (module, memory) = package.load_module().unwrap();
                 self.wasm_process_state = Some(WasmProcess {
                     vm: Interpreter {
-                        arg,
                         actor: actor.clone(),
                         module: module.clone(),
                         memory: memory.clone(),
@@ -425,7 +424,15 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     component: component_state,
                 });
 
-                Package::run(*actor.package_address(), actor.export_name(), module, memory, self)
+                Package::run(
+                    component_address,
+                    arg,
+                    *actor.package_address(),
+                    actor.export_name(),
+                    module,
+                    memory,
+                    self
+                )
             }
             SNodeState::ResourceStatic => {
                 ResourceManager::static_main(arg, self)
@@ -1118,24 +1125,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(EmitLogOutput {})
     }
 
-    fn handle_get_call_data(
-        &mut self,
-        _input: GetCallDataInput,
-    ) -> Result<GetCallDataOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)?;
-        let component = match wasm_process.component {
-            Some(ComponentState { component_address, .. }) => Some(component_address.clone()),
-            None => None,
-        };
-        Ok(GetCallDataOutput {
-            component,
-            arg: wasm_process.vm.arg.raw.clone(),
-        })
-    }
-
     fn handle_generate_uuid(
         &mut self,
         _input: GenerateUuidInput,
@@ -1284,7 +1273,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                 match operation {
                     GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
                     PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
-                    GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
                     GET_ACTOR => self.handle(args, Self::handle_get_actor),
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),

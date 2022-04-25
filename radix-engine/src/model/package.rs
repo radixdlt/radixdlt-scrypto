@@ -1,7 +1,7 @@
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::prelude::{PackageAddress, PackageFunction};
+use scrypto::prelude::{ComponentAddress, PackageAddress, PackageFunction};
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -211,6 +211,8 @@ impl Package {
     }
 
     pub fn run<'a, E: Externals + SystemApi>(
+        component: Option<ComponentAddress>,
+        message: ScryptoValue,
         package_address: PackageAddress,
         func_name: &str,
         module: ModuleRef,
@@ -218,6 +220,8 @@ impl Package {
         externals: &'a mut E,
     ) -> Result<ScryptoValue, RuntimeError> {
         let mut wasm_process = WasmProcess::new(
+            component,
+            message,
             package_address,
             module.clone(),
             memory.clone(),
@@ -244,6 +248,8 @@ impl Package {
 }
 
 struct WasmProcess<'a, E: Externals + SystemApi> {
+    component: Option<ComponentAddress>,
+    message: ScryptoValue,
     externals: &'a mut E,
     module: ModuleRef,
     memory: MemoryRef,
@@ -252,12 +258,16 @@ struct WasmProcess<'a, E: Externals + SystemApi> {
 
 impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
     pub fn new(
+        component: Option<ComponentAddress>,
+        message: ScryptoValue,
         package_address: PackageAddress,
         module: ModuleRef,
         memory: MemoryRef,
         externals: &'a mut E
     ) -> Self {
         WasmProcess {
+            component,
+            message,
             module,
             memory,
             externals,
@@ -286,6 +296,20 @@ impl<'a, E: Externals + SystemApi> WasmProcess<'a, E> {
         let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
 
         Ok(Some(RuntimeValue::I32(output_ptr)))
+    }
+
+    fn handle_get_call_data(
+        &mut self,
+        _input: GetCallDataInput,
+    ) -> Result<GetCallDataOutput, RuntimeError> {
+        let component = match self.component {
+            Some(component_address) => Some(component_address.clone()),
+            None => None,
+        };
+        Ok(GetCallDataOutput {
+            component,
+            arg: self.message.raw.clone(),
+        })
     }
 
     fn handle_create_component(
@@ -349,6 +373,7 @@ impl<'a, E:Externals + SystemApi> Externals for WasmProcess<'a, E> {
                 let operation: u32 = args.nth_checked(0)?;
                 match operation {
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
+                    GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
                     CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
                     GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
                     _ => self.externals.invoke_index(index, args)
