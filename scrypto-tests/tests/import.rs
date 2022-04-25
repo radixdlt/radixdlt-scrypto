@@ -1,11 +1,11 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 use scrypto::component::*;
-use scrypto::import;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
+use scrypto::{blueprint, import};
 
 // base directory: `scrypto-derive`
 import! {
@@ -177,6 +177,22 @@ r#"
     ]
 }
 "#
+}
+
+blueprint! {
+    struct UseImport {
+        simple: Simple
+    }
+
+    impl UseImport {
+        pub fn new(address: ComponentAddress) -> ComponentAddress {
+            Self {
+                simple: address.into(),
+            }
+            .instantiate()
+            .globalize()
+        }
+    }
 }
 
 #[test]
