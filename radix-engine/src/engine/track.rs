@@ -44,7 +44,7 @@ struct SubstateUpdate<T> {
 ///
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
-pub struct Track<'s, S: SubstateStore> {
+pub struct Track<'s, S: ReadableSubstateStore + WriteableSubstateStore> {
     substate_store: &'s mut S,
     transaction_hash: Hash,
     transaction_signers: Vec<EcdsaPublicKey>,
@@ -67,7 +67,7 @@ pub struct Track<'s, S: SubstateStore> {
     lazy_map_entries: HashMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
 }
 
-impl<'s, S: SubstateStore> Track<'s, S> {
+impl<'s, S: ReadableSubstateStore + WriteableSubstateStore> Track<'s, S> {
     pub fn new(
         substate_store: &'s mut S,
         transaction_hash: Hash,

@@ -3,7 +3,7 @@ use scrypto::buffer::scrypto_encode;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::vec::Vec;
 
-use crate::ledger::traits::Substate;
+use crate::ledger::traits::{Substate, WriteableSubstateStore};
 use crate::ledger::*;
 
 /// An in-memory ledger stores all substates in host memory.
@@ -27,7 +27,7 @@ impl InMemorySubstateStore {
 
     pub fn with_bootstrap() -> Self {
         let mut ledger = Self::new();
-        ledger.bootstrap();
+        bootstrap(&mut ledger);
         ledger
     }
 }
@@ -38,13 +38,9 @@ impl Default for InMemorySubstateStore {
     }
 }
 
-impl SubstateStore for InMemorySubstateStore {
+impl ReadableSubstateStore for InMemorySubstateStore {
     fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
         self.substates.get(&scrypto_encode(address)).cloned()
-    }
-
-    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate) {
-        self.substates.insert(scrypto_encode(address), substate);
     }
 
     fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate> {
@@ -53,22 +49,29 @@ impl SubstateStore for InMemorySubstateStore {
         self.child_substates.get(&id).cloned()
     }
 
+
+    fn get_epoch(&self) -> u64 {
+        self.current_epoch
+    }
+
+    fn get_nonce(&self) -> u64 {
+        self.nonce
+    }
+}
+
+impl WriteableSubstateStore for InMemorySubstateStore {
+    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate) {
+        self.substates.insert(scrypto_encode(address), substate);
+    }
+
     fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate) {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
         self.child_substates.insert(id, substate);
     }
 
-    fn get_epoch(&self) -> u64 {
-        self.current_epoch
-    }
-
     fn set_epoch(&mut self, epoch: u64) {
         self.current_epoch = epoch;
-    }
-
-    fn get_nonce(&self) -> u64 {
-        self.nonce
     }
 
     fn increase_nonce(&mut self) {

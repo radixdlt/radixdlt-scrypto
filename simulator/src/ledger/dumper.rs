@@ -19,7 +19,7 @@ pub enum DisplayError {
 }
 
 /// Dump a package into console.
-pub fn dump_package<T: SubstateStore, O: std::io::Write>(
+pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     package_address: PackageAddress,
     substate_store: &T,
     output: &mut O
@@ -42,7 +42,7 @@ pub fn dump_package<T: SubstateStore, O: std::io::Write>(
 }
 
 /// Dump a component into console.
-pub fn dump_component<T: SubstateStore + QueryableSubstateStore, O: std::io::Write>(
+pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
     substate_store: &T,
     output: &mut O
@@ -94,7 +94,7 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore, O: std::io::Wri
     }
 }
 
-fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore, O: std::io::Write>(
+fn dump_lazy_map<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
     lazy_map_id: &LazyMapId,
     substate_store: &T,
@@ -124,7 +124,7 @@ fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore, O: std::io::Write>(
     Ok((referenced_maps, referenced_vaults))
 }
 
-fn dump_resources<T: SubstateStore, O: std::io::Write>(
+fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
     vaults: &HashSet<VaultId>,
     substate_store: &T,
@@ -187,7 +187,7 @@ fn dump_resources<T: SubstateStore, O: std::io::Write>(
 }
 
 /// Dump a resource into console.
-pub fn dump_resource_manager<T: SubstateStore, O: std::io::Write>(
+pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     resource_address: ResourceAddress,
     substate_store: &T,
     output: &mut O

@@ -111,7 +111,7 @@ pub fn run() -> Result<(), Error> {
     }
 }
 
-pub fn process_transaction<L: SubstateStore>(
+pub fn process_transaction<L: ReadableSubstateStore + WriteableSubstateStore>(
     signed: SignedTransaction,
     executor: &mut TransactionExecutor<L>,
     manifest: &Option<PathBuf>,
