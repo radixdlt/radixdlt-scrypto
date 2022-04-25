@@ -31,9 +31,30 @@ pub struct Publish {
 
 impl Publish {
 
-    pub fn publish_wasm<O: std::io::Write>(&self, out: &mut O, wasm_path: &str) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+        // Load wasm code
+        let code = fs::read(if self.path.extension() != Some(OsStr::new("wasm")) {
+            build_package(&self.path, false).map_err(Error::CargoError)?
+        } else {
+            self.path.clone()
+        })
+            .map_err(Error::IOError)?;
+
+        if let Some(path) = &self.manifest {
+            let transaction = TransactionBuilder::new()
+                .publish_package(code.as_ref())
+                .build_with_no_nonce();
+
+            let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
+            return fs::write(path, manifest).map_err(Error::IOError);
+        }
+        self.store_package(out, &code)
+    }
+
+    pub fn publish_wasm<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
         println!("Publishing ..");
+        let wasm_path = "wasm_dir/cur.wasm" ;
         let code = fs::read(wasm_path).map_err(Error::IOError)?;
         println!("Read code to variable");
         self.store_package(out, &code)
@@ -59,30 +80,18 @@ impl Publish {
                     ).map_err(Error::IOError)?;
                     Ok(())
                 }
-                Err(error) => Err(Error::TransactionExecutionError(error)),
+
+                Err(error) => {
+                    writeln!(out,
+                             "Error creating new package: {:?}", error
+                    ).map_err(Error::IOError)?;
+                    Err(Error::TransactionExecutionError(error))
+                },
             }
         }
 
     }
 
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        // Load wasm code
-        let code = fs::read(if self.path.extension() != Some(OsStr::new("wasm")) {
-            build_package(&self.path, false).map_err(Error::CargoError)?
-        } else {
-            self.path.clone()
-        })
-        .map_err(Error::IOError)?;
 
-        if let Some(path) = &self.manifest {
-            let transaction = TransactionBuilder::new()
-                .publish_package(code.as_ref())
-                .build_with_no_nonce();
-
-            let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
-            return fs::write(path, manifest).map_err(Error::IOError);
-        }
-        self.store_package(out, &code)
-    }
 
 }
