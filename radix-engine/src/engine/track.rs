@@ -67,6 +67,7 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     non_fungibles: IndexMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
 
+    lazy_maps: IndexMap<(ComponentAddress, LazyMapId), SubstateUpdate<()>>,
     lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
 }
 
@@ -87,6 +88,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             borrowed_components: HashMap::new(),
             resource_managers: IndexMap::new(),
             borrowed_resource_managers: HashMap::new(),
+            lazy_maps: IndexMap::new(),
             lazy_map_entries: IndexMap::new(),
             vaults: IndexMap::new(),
             borrowed_vaults: HashMap::new(),
@@ -515,7 +517,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new vault.
-    pub fn put_vault(
+    pub fn insert_new_vault(
         &mut self,
         component_address: ComponentAddress,
         vault_id: VaultId,
@@ -527,6 +529,21 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             SubstateUpdate {
                 prev_id: None,
                 value: vault,
+            },
+        );
+    }
+
+    pub fn insert_new_lazy_map(
+        &mut self,
+        component_address: ComponentAddress,
+        lazy_map_id: LazyMapId,
+    ) {
+        let canonical_id = (component_address, lazy_map_id);
+        self.lazy_maps.insert(
+            canonical_id,
+            SubstateUpdate {
+                prev_id: None,
+                value: (),
             },
         );
     }
@@ -636,6 +653,15 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             let mut non_fungible_address = scrypto_encode(&addr.resource_address());
             non_fungible_address.extend(scrypto_encode(&addr.non_fungible_id()));
             store_instructions.push(StateUpdateInstruction::Up(non_fungible_address, scrypto_encode(&non_fungible.value)));
+        }
+        for ((component_address, lazy_map_id), entry) in self.lazy_maps.drain(RangeFull) {
+            if let Some((hash, index)) = entry.prev_id {
+                store_instructions.push(StateUpdateInstruction::Down(hash, index));
+            }
+
+            let mut lazy_map_address = scrypto_encode(&component_address);
+            lazy_map_address.extend(scrypto_encode(&lazy_map_id));
+            store_instructions.push(StateUpdateInstruction::Up(lazy_map_address, scrypto_encode(&entry.value)));
         }
         for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
             if let Some((hash, index)) = entry.prev_id {

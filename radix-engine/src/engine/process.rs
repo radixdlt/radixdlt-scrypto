@@ -158,19 +158,22 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         component_address: ComponentAddress,
     ) {
         for (vault_id, vault) in new_objects.vaults {
-            self.put_vault(component_address, vault_id, vault);
+            self.insert_new_vault(component_address, vault_id, vault);
         }
         for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
+            self.insert_new_lazy_map(component_address, lazy_map_id);
             for (k, v) in unclaimed.lazy_map {
                 self.put_lazy_map_entry(component_address, lazy_map_id, k, v);
             }
+
             for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
+                self.insert_new_lazy_map(component_address, child_lazy_map_id);
                 for (k, v) in child_lazy_map {
                     self.put_lazy_map_entry(component_address, child_lazy_map_id, k, v);
                 }
             }
             for (vault_id, vault) in unclaimed.descendent_vaults {
-                self.put_vault(component_address, vault_id, vault);
+                self.insert_new_vault(component_address, vault_id, vault);
             }
         }
     }

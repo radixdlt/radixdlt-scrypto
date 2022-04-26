@@ -80,6 +80,7 @@ impl QueryableSubstateStore for RadixEngineDB {
         let mut iter = self
             .db
             .iterator(IteratorMode::From(&id, Direction::Forward));
+        iter.next(); // LazyMap
         let mut items = HashMap::new();
         while let Some((key, value)) = iter.next() {
             if !key.starts_with(&id) {
