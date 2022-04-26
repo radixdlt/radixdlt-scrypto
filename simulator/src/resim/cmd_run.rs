@@ -21,7 +21,7 @@ pub struct Run {
 }
 
 impl Run {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let private_keys = if let Some(keys) = &self.signing_keys {
             keys.split(",")
                 .map(str::trim)
@@ -46,6 +46,6 @@ impl Run {
             nonce: executor.substate_store().get_nonce(),
         });
         let signed = unsigned.sign(private_keys.iter().collect::<Vec<&EcdsaPrivateKey>>());
-        process_transaction(signed, &mut executor, &None)
+        process_transaction(signed, &mut executor, &None, out)
     }
 }

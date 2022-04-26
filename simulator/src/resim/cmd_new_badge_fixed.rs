@@ -41,7 +41,7 @@ pub struct NewBadgeFixed {
 }
 
 impl NewBadgeFixed {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_account = get_default_account()?;
@@ -68,6 +68,6 @@ impl NewBadgeFixed {
             .call_method_with_all_resources(default_account, "deposit_batch")
             .build(executor.get_nonce([default_pk]))
             .sign([&default_sk]);
-        process_transaction(transaction, &mut executor, &self.manifest)
+        process_transaction(transaction, &mut executor, &self.manifest, out)
     }
 }

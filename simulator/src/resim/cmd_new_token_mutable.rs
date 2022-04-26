@@ -41,7 +41,7 @@ pub struct NewTokenMutable {
 }
 
 impl NewTokenMutable {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let (default_pk, default_sk) = get_default_signers()?;
@@ -66,6 +66,6 @@ impl NewTokenMutable {
             .new_token_mutable(metadata, self.minter_resource_address)
             .build(executor.get_nonce([default_pk]))
             .sign([&default_sk]);
-        process_transaction(transaction, &mut executor, &self.manifest)
+        process_transaction(transaction, &mut executor, &self.manifest, out)
     }
 }

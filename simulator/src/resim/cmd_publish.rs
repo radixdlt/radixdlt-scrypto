@@ -30,6 +30,7 @@ pub struct Publish {
 }
 
 impl Publish {
+
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         // Load wasm code
         let code = fs::read(if self.path.extension() != Some(OsStr::new("wasm")) {
@@ -37,7 +38,7 @@ impl Publish {
         } else {
             self.path.clone()
         })
-        .map_err(Error::IOError)?;
+            .map_err(Error::IOError)?;
 
         if let Some(path) = &self.manifest {
             let transaction = TransactionBuilder::new()
@@ -47,27 +48,49 @@ impl Publish {
             let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
             return fs::write(path, manifest).map_err(Error::IOError);
         }
+        self.store_package(out, &code)
+    }
+
+    pub fn publish_wasm<O: std::io::Write>(&self, out: &mut O, wasm_file_path: &str) -> Result<(), Error> {
+        // Load wasm code
+        println!("Publishing ..");
+        let code = fs::read(wasm_file_path).map_err(Error::IOError)?;
+        println!("Read code to variable");
+        self.store_package(out, &code)
+    }
+
+    pub fn store_package<O: std::io::Write>(&self, out: &mut O, code: &[u8]) -> Result<(), Error> {
 
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         if let Some(package_address) = self.package_address.clone() {
             // Overwrite package
             executor
-                .overwrite_package(package_address, code)
+                .overwrite_package(package_address, code.to_vec())
                 .map_err(|e| Error::PackageValidationError(e))?;
             writeln!(out, "Package updated!").map_err(Error::IOError)?;
             Ok(())
         } else {
-            match executor.publish_package(&code) {
+            match executor.publish_package(code) {
                 Ok(package_address) => {
                     writeln!(out,
-                        "Success! New Package: {}",
-                        package_address.to_string().green()
+                             "Success! New Package: {}",
+                             package_address.to_string().green()
                     ).map_err(Error::IOError)?;
                     Ok(())
                 }
-                Err(error) => Err(Error::TransactionExecutionError(error)),
+
+                Err(error) => {
+                    writeln!(out,
+                             "Error creating new package: {:?}", error
+                    ).map_err(Error::IOError)?;
+                    Err(Error::TransactionExecutionError(error))
+                },
             }
         }
+
     }
+
+
+
 }
