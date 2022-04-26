@@ -190,16 +190,13 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             panic!("Should not get here");
         };
 
-        // prepare data for receipts
-        let hash = track.transaction_hash();
         let track_receipt = track.to_receipt();
-
         // commit state updates
         let commit_receipt = if error.is_none() {
             if !track_receipt.borrowed.is_empty() {
                 panic!("There should be nothing borrowed by end of transaction.");
             }
-            let commit_receipt = track_receipt.substates.commit(hash, self.substate_store);
+            let commit_receipt = track_receipt.substates.commit(self.substate_store);
             self.substate_store.increase_nonce();
             Some(commit_receipt)
         } else {

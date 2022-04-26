@@ -1,3 +1,6 @@
+use sbor::*;
+use scrypto::buffer::scrypto_encode;
+use scrypto::crypto::hash;
 use scrypto::rust::ops::RangeFull;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
@@ -28,26 +31,29 @@ impl CommitReceipt {
     }
 }
 
-pub enum SubstateInstruction {
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub enum StateUpdateInstruction {
     Down(Hash, u32),
     Up(Vec<u8>, Vec<u8>),
 }
 
-pub struct SubstateReceipt {
-    pub store_instructions: Vec<SubstateInstruction>,
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct StateUpdateReceipt {
+    pub instructions: Vec<StateUpdateInstruction>,
 }
 
-impl SubstateReceipt {
+impl StateUpdateReceipt {
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
-    pub fn commit<S: WriteableSubstateStore>(mut self, hash: Hash, store: &mut S) -> CommitReceipt {
+    pub fn commit<S: WriteableSubstateStore>(mut self, store: &mut S) -> CommitReceipt {
+        let hash = hash(scrypto_encode(&self));
         let mut receipt = CommitReceipt::new();
         let mut id_gen = SubstateIdGenerator::new(hash);
 
-        for instruction in self.store_instructions.drain(RangeFull) {
+        for instruction in self.instructions.drain(RangeFull) {
             match instruction {
-                SubstateInstruction::Down(hash, index) => receipt.down((hash, index)),
-                SubstateInstruction::Up(key, value) => {
+                StateUpdateInstruction::Down(hash, index) => receipt.down((hash, index)),
+                StateUpdateInstruction::Up(key, value) => {
                     let phys_id = id_gen.next();
                     receipt.up(phys_id);
                     store.put_keyed_substate(&key, value, phys_id);
