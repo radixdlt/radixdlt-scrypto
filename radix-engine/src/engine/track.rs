@@ -1,3 +1,4 @@
+use sbor::*;
 use indexmap::IndexMap;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
@@ -13,9 +14,9 @@ use crate::ledger::*;
 use crate::model::*;
 
 pub struct BorrowedSNodes {
-    borrowed_components: HashMap<ComponentAddress, Option<(Hash, u32)>>,
-    borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
-    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<(Hash, u32)>>,
+    borrowed_components: HashMap<ComponentAddress, Option<SubstateId>>,
+    borrowed_resource_managers: HashMap<ResourceAddress, Option<SubstateId>>,
+    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<SubstateId>>,
 }
 
 impl BorrowedSNodes {
@@ -35,8 +36,11 @@ pub struct TrackReceipt {
     pub substates: StateUpdateReceipt,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct SubstateId(pub Hash, pub u32);
+
 pub struct SubstateUpdate<T> {
-    pub prev_id: Option<(Hash, u32)>,
+    pub prev_id: Option<SubstateId>,
     pub value: T,
 }
 
@@ -57,13 +61,13 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     packages: IndexMap<PackageAddress, SubstateUpdate<Package>>,
 
     components: IndexMap<ComponentAddress, SubstateUpdate<Component>>,
-    borrowed_components: HashMap<ComponentAddress, Option<(Hash, u32)>>,
+    borrowed_components: HashMap<ComponentAddress, Option<SubstateId>>,
 
     resource_managers: IndexMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
-    borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
+    borrowed_resource_managers: HashMap<ResourceAddress, Option<SubstateId>>,
 
     vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
-    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<(Hash, u32)>>,
+    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<SubstateId>>,
 
     non_fungibles: IndexMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
 
@@ -154,12 +158,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             return self.packages.get(package_address).map(|p| &p.value);
         }
 
-        if let Some((package, phys_id)) = self.substate_store.get_decoded_substate(package_address)
+        if let Some((package, (hash, index))) = self.substate_store.get_decoded_substate(package_address)
         {
             self.packages.insert(
                 package_address.clone(),
                 SubstateUpdate {
-                    prev_id: Some(phys_id),
+                    prev_id: Some(SubstateId(hash, index)),
                     value: package,
                 },
             );
@@ -192,11 +196,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             Ok(value)
         } else if self.borrowed_components.contains_key(&component_address) {
             Err(RuntimeError::ComponentReentrancy(component_address))
-        } else if let Some((component, phys_id)) =
+        } else if let Some((component, (hash, index))) =
             self.substate_store.get_decoded_substate(&component_address)
         {
             self.borrowed_components
-                .insert(component_address, Some(phys_id));
+                .insert(component_address, Some(SubstateId(hash, index)));
             Ok(component)
         } else {
             Err(RuntimeError::ComponentNotFound(component_address))
@@ -227,13 +231,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             return self.components.get(&component_address).map(|c| &c.value);
         }
 
-        if let Some((component, phys_id)) =
+        if let Some((component, (hash, index))) =
             self.substate_store.get_decoded_substate(&component_address)
         {
             self.components.insert(
                 component_address,
                 SubstateUpdate {
-                    prev_id: Some(phys_id),
+                    prev_id: Some(SubstateId(hash, index)),
                     value: component,
                 },
             );
@@ -269,14 +273,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 .unwrap_or(Option::None);
         }
 
-        if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
+        if let Some((non_fungible, (hash, index))) = self.substate_store.get_decoded_child_substate(
             &non_fungible_address.resource_address(),
             &non_fungible_address.non_fungible_id(),
         ) {
             self.non_fungibles.insert(
                 non_fungible_address.clone(),
                 SubstateUpdate {
-                    prev_id: Some(phys_id),
+                    prev_id: Some(SubstateId(hash, index)),
                     value: non_fungible,
                 },
             );
@@ -300,7 +304,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 &non_fungible_address.resource_address(),
                 &non_fungible_address.non_fungible_id(),
             );
-        let prev_id = cur.map(|(_, cur_id)| cur_id);
+        let prev_id = cur.map(|(_, (hash, index))| SubstateId(hash, index));
 
         self.non_fungibles.insert(
             non_fungible_address,
@@ -334,11 +338,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             lazy_map_id,
             &grand_child_key,
         );
-        if let Some((ref entry_bytes, phys_id)) = value {
+        if let Some((ref entry_bytes, (hash, index))) = value {
             self.lazy_map_entries.insert(
                 canonical_id,
                 SubstateUpdate {
-                    prev_id: Some(phys_id),
+                    prev_id: Some(SubstateId(hash, index)),
                     value: entry_bytes.clone(),
                 },
             );
@@ -361,11 +365,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 &lazy_map_id,
                 &key,
             );
-            if let Some((_, phys_id)) = entry {
+            if let Some((_, (hash, index))) = entry {
                 self.lazy_map_entries.insert(
                     canonical_id,
                     SubstateUpdate {
-                        prev_id: Some(phys_id),
+                        prev_id: Some(SubstateId(hash, index)),
                         value,
                     },
                 );
@@ -399,13 +403,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 .map(|r| &r.value);
         }
 
-        if let Some((resource_manager, phys_id)) =
+        if let Some((resource_manager, (hash, index))) =
             self.substate_store.get_decoded_substate(resource_address)
         {
             self.resource_managers.insert(
                 resource_address.clone(),
                 SubstateUpdate {
-                    prev_id: Some(phys_id),
+                    prev_id: Some(SubstateId(hash, index)),
                     value: resource_manager,
                 },
             );
@@ -431,11 +435,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             self.borrowed_resource_managers
                 .insert(resource_address, prev_id);
             Ok(value)
-        } else if let Some((resource_manager, phys_id)) =
+        } else if let Some((resource_manager, (hash, index))) =
             self.substate_store.get_decoded_substate(&resource_address)
         {
             self.borrowed_resource_managers
-                .insert(resource_address, Some(phys_id));
+                .insert(resource_address, Some(SubstateId(hash, index)));
             Ok(resource_manager)
         } else {
             Err(RuntimeError::ResourceManagerNotFound(resource_address))
@@ -487,9 +491,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             return value;
         }
 
-        if let Some((vault, phys_id)) = self.substate_store.get_decoded_child_substate(component_address, vid) {
+        if let Some((vault, (hash, index))) = self.substate_store.get_decoded_child_substate(component_address, vid) {
             self.borrowed_vaults
-                .insert(canonical_id, Some(phys_id));
+                .insert(canonical_id, Some(SubstateId(hash, index)));
             return vault;
         }
 
@@ -614,40 +618,40 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
         let mut store_instructions = Vec::new();
         for (package_address, package) in self.packages.drain(RangeFull) {
-            if let Some((hash, index)) = package.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(hash, index));
+            if let Some(substate_id) = package.prev_id {
+                store_instructions.push(StateUpdateInstruction::Down(substate_id));
             } else {
                 new_packages.push(package_address);
             }
             store_instructions.push(StateUpdateInstruction::Up(scrypto_encode(&package_address), scrypto_encode(&package.value)));
         }
         for (component_address, component) in self.components.drain(RangeFull) {
-            if let Some((hash, index)) = component.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(hash, index));
+            if let Some(substate_id) = component.prev_id {
+                store_instructions.push(StateUpdateInstruction::Down(substate_id));
             } else {
                 new_components.push(component_address);
             }
             store_instructions.push(StateUpdateInstruction::Up(scrypto_encode(&component_address), scrypto_encode(&component.value)));
         }
         for (resource_address, resource_manager) in self.resource_managers.drain(RangeFull) {
-            if let Some((hash, index)) = resource_manager.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(hash, index));
+            if let Some(substate_id) = resource_manager.prev_id {
+                store_instructions.push(StateUpdateInstruction::Down(substate_id));
             } else {
                 new_resources.push(resource_address);
             }
             store_instructions.push(StateUpdateInstruction::Up(scrypto_encode(&resource_address), scrypto_encode(&resource_manager.value)));
         }
         for ((component_address, vault_id), vault) in self.vaults.drain(RangeFull) {
-            if let Some((hash, index)) = vault.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(hash, index));
+            if let Some(substate_id) = vault.prev_id {
+                store_instructions.push(StateUpdateInstruction::Down(substate_id));
             }
             let mut vault_address = scrypto_encode(&component_address);
             vault_address.extend(scrypto_encode(&vault_id));
             store_instructions.push(StateUpdateInstruction::Up(vault_address, scrypto_encode(&vault.value)));
         }
         for (addr, non_fungible) in self.non_fungibles.drain(RangeFull) {
-            if let Some((hash, index)) = non_fungible.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(hash, index));
+            if let Some(substate_id) = non_fungible.prev_id {
+                store_instructions.push(StateUpdateInstruction::Down(substate_id));
             }
 
             let mut non_fungible_address = scrypto_encode(&addr.resource_address());
@@ -655,8 +659,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(StateUpdateInstruction::Up(non_fungible_address, scrypto_encode(&non_fungible.value)));
         }
         for ((component_address, lazy_map_id), entry) in self.lazy_maps.drain(RangeFull) {
-            if let Some((hash, index)) = entry.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(hash, index));
+            if let Some(substate_id) = entry.prev_id {
+                store_instructions.push(StateUpdateInstruction::Down(substate_id));
             }
 
             let mut lazy_map_address = scrypto_encode(&component_address);
@@ -664,8 +668,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(StateUpdateInstruction::Up(lazy_map_address, scrypto_encode(&entry.value)));
         }
         for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
-            if let Some((hash, index)) = entry.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(hash, index));
+            if let Some(substate_id) = entry.prev_id {
+                store_instructions.push(StateUpdateInstruction::Down(substate_id));
             }
 
             let mut entry_address = scrypto_encode(&component_address);
