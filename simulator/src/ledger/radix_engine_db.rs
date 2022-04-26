@@ -107,6 +107,10 @@ impl ReadableSubstateStore for RadixEngineDB {
         self.read(&id).map(|b| scrypto_decode(&b).unwrap())
     }
 
+    fn get_space(&mut self, address: &[u8]) -> Option<(Hash, u32)> {
+        self.read(&address).map(|b| scrypto_decode(&b).unwrap())
+    }
+
     fn get_epoch(&self) -> u64 {
         let id = scrypto_encode(&"epoch");
         self.read(&id)
@@ -132,6 +136,10 @@ impl WriteableSubstateStore for RadixEngineDB {
         let mut id = address.to_vec();
         id.extend(key.to_vec());
         self.write(&id, &scrypto_encode(&substate));
+    }
+
+    fn put_space(&mut self, address: &[u8], phys_id: (Hash, u32)) {
+        self.write(&address, &scrypto_encode(&phys_id));
     }
 
     fn set_epoch(&mut self, epoch: u64) {

@@ -553,7 +553,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if let Some(index) = self.new_lazy_maps.get_index_of(&canonical_id) {
             SubstateParentId::New(index)
         } else {
-            let ((), (hash, index)) = self.substate_store.get_decoded_child_substate(&component_address, &lazy_map_id).unwrap();
+            let mut space_address = scrypto_encode(&component_address);
+            space_address.extend(scrypto_encode(&lazy_map_id));
+            let (hash, index) = self.substate_store.get_space(&space_address).unwrap();
             SubstateParentId::Exists(PhysicalSubstateId(hash, index))
         }
     }

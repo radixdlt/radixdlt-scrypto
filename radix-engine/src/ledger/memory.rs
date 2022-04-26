@@ -1,5 +1,6 @@
-use sbor::Encode;
+use sbor::{Encode};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::crypto::Hash;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::vec::Vec;
 
@@ -48,6 +49,10 @@ impl ReadableSubstateStore for InMemorySubstateStore {
         self.substates.get(&id).map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
+    fn get_space(&mut self, address: &[u8]) -> Option<(Hash, u32)> {
+        self.substates.get(address).map(|bytes| scrypto_decode(bytes).unwrap())
+    }
+
     fn get_epoch(&self) -> u64 {
         self.current_epoch
     }
@@ -60,6 +65,10 @@ impl ReadableSubstateStore for InMemorySubstateStore {
 impl WriteableSubstateStore for InMemorySubstateStore {
     fn put_substate(&mut self, address: &[u8], substate: Substate) {
         self.substates.insert(address.to_vec(), scrypto_encode(&substate));
+    }
+
+    fn put_space(&mut self, address: &[u8], phys_id: (Hash, u32)) {
+        self.substates.insert(address.to_vec(), scrypto_encode(&phys_id));
     }
 
     fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate) {

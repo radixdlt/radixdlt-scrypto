@@ -41,8 +41,8 @@ impl SubstateIdGenerator {
 /// A ledger stores all transactions and substates.
 pub trait ReadableSubstateStore {
     fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate>;
-
     fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate>;
+    fn get_space(&mut self, address: &[u8]) -> Option<(Hash, u32)>;
 
     // Temporary Encoded/Decoded interface
     fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<(T, (Hash, u32))> {
@@ -83,6 +83,7 @@ pub trait ReadableSubstateStore {
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, address: &[u8], substate: Substate);
     fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate);
+    fn put_space(&mut self, address: &[u8], phys_id: (Hash, u32));
 
     fn put_keyed_substate(&mut self, address: &[u8], value: Vec<u8>, phys_id: (Hash, u32)) {
         self.put_substate(address, Substate { value, phys_id });

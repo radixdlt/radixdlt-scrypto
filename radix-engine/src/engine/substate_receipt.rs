@@ -83,7 +83,7 @@ impl StateUpdateReceipt {
                 StateUpdateInstruction::VirtualUp(address) => {
                     let phys_id = id_gen.next();
                     receipt.virtual_space_up(phys_id);
-                    store.put_keyed_substate(&address, scrypto_encode(&()), phys_id);
+                    store.put_space(&address, phys_id);
                 }
                 StateUpdateInstruction::Up(key, value) => {
                     let phys_id = id_gen.next();
