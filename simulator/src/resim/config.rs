@@ -6,6 +6,7 @@ use scrypto::buffer::*;
 use scrypto::engine::types::*;
 
 use crate::resim::*;
+use std::env ;
 
 /// Simulator configurations.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -17,8 +18,16 @@ pub struct Configs {
 
 /// Returns the data directory.
 pub fn get_data_dir() -> Result<PathBuf, Error> {
-    let mut path = dirs::home_dir().ok_or(Error::HomeDirUnknown)?;
-    path.push("scrypto-simulator");
+    let path = match env::var("DATA_DIR") {
+        Ok(value) => {
+            std::path::PathBuf::from(value)
+        },
+        Err(..) => {
+            let mut path = dirs::home_dir().ok_or(Error::HomeDirUnknown)?;
+            path.push("scrypto-simulator");
+            path
+        }
+    };
     if !path.exists() {
         std::fs::create_dir_all(&path).map_err(Error::IOError)?;
     }
