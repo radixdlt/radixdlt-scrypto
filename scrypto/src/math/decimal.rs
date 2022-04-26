@@ -51,6 +51,9 @@ impl Decimal {
     /// The max value of `Decimal`.
     pub const MAX: Self = Self(i128::MAX);
 
+    /// The bit length of number storing `Decimal`.
+    pub const BITS: usize = 128;
+
     /// The fixed scale used by `Decimal`.
     pub const SCALE: u32 = 18;
 
@@ -179,6 +182,7 @@ impl Decimal {
             panic!("powi is not supported for negative numbers");
         }
         let s = Self::SCALE;
+        let bytes2 = Self::BITS / 4;
         let b: BigInt = 10i128.pow(s).into();
         let mut n: BigInt = exp.abs().into();
         let mut z: BigInt;
@@ -200,17 +204,17 @@ impl Decimal {
             n /= 2i8;
             while n.clone() > Zero::zero() {
                 let xx = x.clone() * x.clone();
-                if xx.clone() / x.clone() != x.clone() {
+                if xx.to_signed_bytes_le().len() > bytes2 {
                     panic!("pow overflow: square of {} too large", x);
                 }
                 let xx_round = xx.clone() + half.clone();
-                if xx_round.clone() < xx.clone() {
+                if xx_round.to_signed_bytes_le().len() > bytes2 {
                     panic!("pow overflow: sum of {} and {} too large", xx, half);
                 }
                 x = xx_round.clone() / b.clone();
                 if n.clone() % 2i8 != Zero::zero() {
                     let zx = z.clone() * x.clone();
-                    if x.clone() != Zero::zero() && zx.clone() / x.clone() != z.clone() {
+                    if zx.to_signed_bytes_le().len() > bytes2 {
                         panic!("pow overflow: product of {} and {} too large", z, x);
                     }
                     let zx_round = zx.clone() + half.clone();
@@ -703,85 +707,98 @@ mod tests {
     #[test]
     fn test_0_pow_0() {
         let a = dec!("0");
-        assert_eq!((a.pow(0)).to_string(), "1");
+        assert_eq!((a.powi(0)).to_string(), "1");
     }
 
     #[test]
-    fn test_0_pow_1() {
+    fn test_0_powi_1() {
         let a = dec!("0");
-        assert_eq!((a.pow(1)).to_string(), "0");
+        assert_eq!((a.powi(1)).to_string(), "0");
     }
 
     #[test]
-    fn test_0_pow_10() {
+    fn test_0_powi_10() {
         let a = dec!("0");
-        assert_eq!((a.pow(10)).to_string(), "0");
+        assert_eq!((a.powi(10)).to_string(), "0");
     }
 
     #[test]
-    fn test_1_pow_0() {
+    fn test_1_powi_0() {
         let a = dec!("1");
-        assert_eq!((a.pow(0)).to_string(), "1");
+        assert_eq!((a.powi(0)).to_string(), "1");
     }
 
     #[test]
-    fn test_1_pow_1() {
+    fn test_1_powi_1() {
         let a = dec!("1");
-        assert_eq!((a.pow(1)).to_string(), "1");
+        assert_eq!((a.powi(1)).to_string(), "1");
     }
 
     #[test]
-    fn test_1_pow_10() {
+    fn test_1_powi_10() {
         let a = dec!("1");
-        assert_eq!((a.pow(10)).to_string(), "1");
+        assert_eq!((a.powi(10)).to_string(), "1");
     }
     
     #[test]
-    fn test_2_pow_0() {
+    fn test_2_powi_0() {
         let a = dec!("2");
-        assert_eq!((a.pow(0)).to_string(), "1");
+        assert_eq!((a.powi(0)).to_string(), "1");
     }
     
     #[test]
-    fn test_2_pow_1() {
+    fn test_2_powi_1() {
         let a = dec!("1.000234891009084238");
-        assert_eq!((a.pow(3724)).to_string(), "2.397991232254676688");
+        assert_eq!((a.powi(3724)).to_string(), "2.397991232254676688");
     }
     
     #[test]
-    fn test_2_pow_2() {
+    fn test_2_powi_2() {
         let a = dec!("2");
-        assert_eq!((a.pow(2)).to_string(), "4");
+        assert_eq!((a.powi(2)).to_string(), "4");
     }
     
     #[test]
-    fn test_2_pow_3() {
+    fn test_2_powi_3() {
         let a = dec!("2");
-        assert_eq!((a.pow(3)).to_string(), "8");
+        assert_eq!((a.powi(3)).to_string(), "8");
     }
 
     #[test]
-    fn test_10_pow_3() {
+    fn test_10_powi_3() {
         let a = dec!("10");
-        assert_eq!((a.pow(3)).to_string(), "1000");
+        assert_eq!((a.powi(3)).to_string(), "1000");
     }
 
     #[test]
-    fn test_5_pow_2() {
+    fn test_5_powi_2() {
         let a = dec!("5");
-        assert_eq!((a.pow(2)).to_string(), "25");
+        assert_eq!((a.powi(2)).to_string(), "25");
     }
 
     #[test]
-    fn test_5_pow_minus2() {
+    fn test_5_powi_minus2() {
         let a = dec!("5");
-        assert_eq!((a.pow(-2)).to_string(), "0.04");
+        assert_eq!((a.powi(-2)).to_string(), "0.04");
     }
 
     #[test]
-    fn test_10_pow_minus3() {
+    fn test_10_powi_minus3() {
         let a = dec!("10");
-        assert_eq!((a.pow(-3)).to_string(), "0.001");
+        assert_eq!((a.powi(-3)).to_string(), "0.001");
+    }
+
+    #[test]
+    fn test_10_powi_20() {
+        let a = dec!(10i128);
+        assert_eq!(a.powi(20).to_string(), "100000000000000000000");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_10_powi_21() {
+        let a = Decimal(10i128);
+        assert_eq!(a.powi(21).to_string(), "1000000000000000000000");
     }
 
     #[test]
