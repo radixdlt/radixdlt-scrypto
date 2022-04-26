@@ -38,6 +38,11 @@ impl Default for InMemorySubstateStore {
 }
 
 impl ReadableSubstateStore for InMemorySubstateStore {
+    fn get_substate_raw(&self, address: &[u8]) -> Option<Substate> {
+        self.substates.get(address)
+            .map(|bytes| scrypto_decode(bytes).unwrap())
+    }
+
     fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
         self.substates.get(&scrypto_encode(address))
             .map(|bytes| scrypto_decode(bytes).unwrap())

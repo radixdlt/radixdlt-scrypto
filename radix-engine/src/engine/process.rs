@@ -66,7 +66,7 @@ pub trait SystemApi {
     fn get_non_fungible(
         &mut self,
         non_fungible_address: &NonFungibleAddress,
-    ) -> Option<&NonFungible>;
+    ) -> Option<NonFungible>;
 
     fn set_non_fungible(
         &mut self,
@@ -1270,7 +1270,7 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
     fn get_non_fungible(
         &mut self,
         non_fungible_address: &NonFungibleAddress,
-    ) -> Option<&NonFungible> {
+    ) -> Option<NonFungible> {
         self.track.get_non_fungible(non_fungible_address)
     }
 

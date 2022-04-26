@@ -96,6 +96,11 @@ impl QueryableSubstateStore for RadixEngineDB {
 }
 
 impl ReadableSubstateStore for RadixEngineDB {
+    fn get_substate_raw(&self, address: &[u8]) -> Option<Substate> {
+        self.read(address)
+            .map(|b| scrypto_decode(&b).unwrap())
+    }
+
     fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
         self.read(&scrypto_encode(address))
             .map(|b| scrypto_decode(&b).unwrap())
