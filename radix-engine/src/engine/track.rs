@@ -36,7 +36,7 @@ pub struct TrackReceipt {
     pub substates: StateUpdateReceipt,
 }
 
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct PhysicalSubstateId(pub Hash, pub u32);
 
 pub struct SubstateUpdate<T> {
@@ -44,12 +44,23 @@ pub struct SubstateUpdate<T> {
     pub value: T,
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub enum SubstateParentId {
+    Exists(PhysicalSubstateId),
+    New(usize),
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
+
+
 pub enum KeyedSubstateId {
-    Physical(PhysicalSubstateId)
+    Physical(PhysicalSubstateId),
+    Virtual(VirtualSubstateId),
 }
 
 pub struct KeyedSubstateUpdate<T> {
-    pub prev_id: Option<KeyedSubstateId>,
+    pub prev_id: KeyedSubstateId,
     pub value: T,
 }
 
@@ -80,7 +91,7 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     non_fungibles: IndexMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
 
-    lazy_maps: IndexMap<(ComponentAddress, LazyMapId), SubstateUpdate<()>>,
+    new_lazy_maps: IndexMap<(ComponentAddress, LazyMapId), SubstateUpdate<()>>,
     lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), KeyedSubstateUpdate<Vec<u8>>>,
 }
 
@@ -101,7 +112,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             borrowed_components: HashMap::new(),
             resource_managers: IndexMap::new(),
             borrowed_resource_managers: HashMap::new(),
-            lazy_maps: IndexMap::new(),
+            new_lazy_maps: IndexMap::new(),
             lazy_map_entries: IndexMap::new(),
             vaults: IndexMap::new(),
             borrowed_vaults: HashMap::new(),
@@ -342,21 +353,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
 
         let grand_child_key = key.to_vec();
-        let value = self.substate_store.get_decoded_grand_child_substate(
+        self.substate_store.get_decoded_grand_child_substate(
             &component_address,
             lazy_map_id,
             &grand_child_key,
-        );
-        if let Some((ref entry_bytes, (hash, index))) = value {
-            self.lazy_map_entries.insert(
-                canonical_id,
-                KeyedSubstateUpdate {
-                    prev_id: Some(KeyedSubstateId::Physical(PhysicalSubstateId(hash, index))),
-                    value: entry_bytes.clone(),
-                },
-            );
-        }
-        value.map(|r| r.0)
+        ).map(|r| r.0)
     }
 
     pub fn put_lazy_map_entry(
@@ -367,37 +368,25 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         value: Vec<u8>,
     ) {
         let canonical_id = (component_address.clone(), lazy_map_id.clone(), key.clone());
-
-        if !self.lazy_map_entries.contains_key(&canonical_id) {
-            let entry = self.substate_store.get_decoded_grand_child_substate(
-                &component_address,
-                &lazy_map_id,
-                &key,
-            );
-            if let Some((_, (hash, index))) = entry {
-                self.lazy_map_entries.insert(
-                    canonical_id,
-                    KeyedSubstateUpdate {
-                        prev_id: Some(KeyedSubstateId::Physical(PhysicalSubstateId(hash, index))),
-                        value,
-                    },
-                );
-                return;
-            }
-        }
-
-        if let Some(entry) = self.lazy_map_entries.get_mut(&canonical_id) {
-            entry.value = value;
+        let entry = self.substate_store.get_decoded_grand_child_substate(
+            &component_address,
+            &lazy_map_id,
+            &key,
+        );
+        let prev_id = if let Some((_, (hash, index))) = entry {
+            KeyedSubstateId::Physical(PhysicalSubstateId(hash, index))
         } else {
-            // TODO: Virtual Down
-            self.lazy_map_entries.insert(
-                canonical_id,
-                KeyedSubstateUpdate {
-                    prev_id: None,
-                    value,
-                },
-            );
-        }
+            let parent_id = self.get_substate_parent_id(component_address, lazy_map_id.clone());
+            KeyedSubstateId::Virtual(VirtualSubstateId(parent_id, key.to_vec()))
+        };
+
+        self.lazy_map_entries.insert(
+            canonical_id,
+            KeyedSubstateUpdate {
+                prev_id,
+                value,
+            },
+        );
     }
 
     /// Returns an immutable reference to a resource manager, if exists.
@@ -552,13 +541,27 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         lazy_map_id: LazyMapId,
     ) {
         let canonical_id = (component_address, lazy_map_id);
-        self.lazy_maps.insert(
+        self.new_lazy_maps.insert(
             canonical_id,
             SubstateUpdate {
                 prev_id: None,
                 value: (),
             },
         );
+    }
+
+    fn get_substate_parent_id(
+        &mut self,
+        component_address: ComponentAddress,
+        lazy_map_id: LazyMapId,
+    ) -> SubstateParentId {
+        let canonical_id = (component_address, lazy_map_id);
+        if let Some(index) = self.new_lazy_maps.get_index_of(&canonical_id) {
+            SubstateParentId::New(index)
+        } else {
+            let ((), (hash, index)) = self.substate_store.get_decoded_child_substate(&component_address, &lazy_map_id).unwrap();
+            SubstateParentId::Exists(PhysicalSubstateId(hash, index))
+        }
     }
 
     /// Creates a new package ID.
@@ -667,7 +670,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             non_fungible_address.extend(scrypto_encode(&addr.non_fungible_id()));
             store_instructions.push(StateUpdateInstruction::Up(non_fungible_address, scrypto_encode(&non_fungible.value)));
         }
-        for ((component_address, lazy_map_id), entry) in self.lazy_maps.drain(RangeFull) {
+        for ((component_address, lazy_map_id), entry) in self.new_lazy_maps.drain(RangeFull) {
             if let Some(substate_id) = entry.prev_id {
                 store_instructions.push(StateUpdateInstruction::Down(substate_id));
             }
@@ -677,11 +680,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(StateUpdateInstruction::Up(lazy_map_address, scrypto_encode(&entry.value)));
         }
         for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
-            if let Some(substate_id) = entry.prev_id {
-                match substate_id {
-                    KeyedSubstateId::Physical(physical_substate_id) => {
-                        store_instructions.push(StateUpdateInstruction::Down(physical_substate_id));
-                    }
+            match entry.prev_id {
+                KeyedSubstateId::Physical(physical_substate_id) => {
+                    store_instructions.push(StateUpdateInstruction::Down(physical_substate_id));
+                },
+                KeyedSubstateId::Virtual(virtual_substate_id) => {
+                    store_instructions.push(StateUpdateInstruction::VirtualDown(virtual_substate_id));
                 }
             }
 
