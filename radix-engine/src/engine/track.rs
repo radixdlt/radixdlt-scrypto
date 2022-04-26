@@ -89,9 +89,8 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
     borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 
+    new_spaces: IndexSet<Vec<u8>>,
     non_fungibles: IndexMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
-
-    new_lazy_maps: IndexSet<(ComponentAddress, LazyMapId)>,
     lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), KeyedSubstateUpdate<Vec<u8>>>,
 }
 
@@ -112,7 +111,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             borrowed_components: HashMap::new(),
             resource_managers: IndexMap::new(),
             borrowed_resource_managers: HashMap::new(),
-            new_lazy_maps: IndexSet::new(),
+            new_spaces: IndexSet::new(),
             lazy_map_entries: IndexMap::new(),
             vaults: IndexMap::new(),
             borrowed_vaults: HashMap::new(),
@@ -540,8 +539,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         component_address: ComponentAddress,
         lazy_map_id: LazyMapId,
     ) {
-        let canonical_id = (component_address, lazy_map_id);
-        self.new_lazy_maps.insert(canonical_id);
+        let mut space_address = scrypto_encode(&component_address);
+        space_address.extend(scrypto_encode(&lazy_map_id));
+        self.new_spaces.insert(space_address);
     }
 
     fn get_substate_parent_id(
@@ -549,12 +549,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         component_address: ComponentAddress,
         lazy_map_id: LazyMapId,
     ) -> SubstateParentId {
-        let canonical_id = (component_address, lazy_map_id);
-        if let Some(index) = self.new_lazy_maps.get_index_of(&canonical_id) {
+        let mut space_address = scrypto_encode(&component_address);
+        space_address.extend(scrypto_encode(&lazy_map_id));
+
+        if let Some(index) = self.new_spaces.get_index_of(&space_address) {
             SubstateParentId::New(index)
         } else {
-            let mut space_address = scrypto_encode(&component_address);
-            space_address.extend(scrypto_encode(&lazy_map_id));
             let (hash, index) = self.substate_store.get_space(&space_address).unwrap();
             SubstateParentId::Exists(PhysicalSubstateId(hash, index))
         }
@@ -666,10 +666,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             non_fungible_address.extend(scrypto_encode(&addr.non_fungible_id()));
             store_instructions.push(StateUpdateInstruction::Up(non_fungible_address, scrypto_encode(&non_fungible.value)));
         }
-        for (component_address, lazy_map_id) in self.new_lazy_maps.drain(RangeFull) {
-            let mut lazy_map_address = scrypto_encode(&component_address);
-            lazy_map_address.extend(scrypto_encode(&lazy_map_id));
-            store_instructions.push(StateUpdateInstruction::VirtualUp(lazy_map_address));
+        for space_address in self.new_spaces.drain(RangeFull) {
+            store_instructions.push(StateUpdateInstruction::VirtualUp(space_address));
         }
         for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
             match entry.prev_id {
