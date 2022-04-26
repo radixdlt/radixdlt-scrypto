@@ -1,5 +1,5 @@
 use sbor::*;
-use indexmap::IndexMap;
+use indexmap::{IndexMap, IndexSet};
 use scrypto::constants::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::scrypto_encode;
@@ -91,7 +91,7 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     non_fungibles: IndexMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
 
-    new_lazy_maps: IndexMap<(ComponentAddress, LazyMapId), SubstateUpdate<()>>,
+    new_lazy_maps: IndexSet<(ComponentAddress, LazyMapId)>,
     lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), KeyedSubstateUpdate<Vec<u8>>>,
 }
 
@@ -112,7 +112,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             borrowed_components: HashMap::new(),
             resource_managers: IndexMap::new(),
             borrowed_resource_managers: HashMap::new(),
-            new_lazy_maps: IndexMap::new(),
+            new_lazy_maps: IndexSet::new(),
             lazy_map_entries: IndexMap::new(),
             vaults: IndexMap::new(),
             borrowed_vaults: HashMap::new(),
@@ -541,13 +541,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         lazy_map_id: LazyMapId,
     ) {
         let canonical_id = (component_address, lazy_map_id);
-        self.new_lazy_maps.insert(
-            canonical_id,
-            SubstateUpdate {
-                prev_id: None,
-                value: (),
-            },
-        );
+        self.new_lazy_maps.insert(canonical_id);
     }
 
     fn get_substate_parent_id(
@@ -670,14 +664,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             non_fungible_address.extend(scrypto_encode(&addr.non_fungible_id()));
             store_instructions.push(StateUpdateInstruction::Up(non_fungible_address, scrypto_encode(&non_fungible.value)));
         }
-        for ((component_address, lazy_map_id), entry) in self.new_lazy_maps.drain(RangeFull) {
-            if let Some(substate_id) = entry.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(substate_id));
-            }
-
+        for (component_address, lazy_map_id) in self.new_lazy_maps.drain(RangeFull) {
             let mut lazy_map_address = scrypto_encode(&component_address);
             lazy_map_address.extend(scrypto_encode(&lazy_map_id));
-            store_instructions.push(StateUpdateInstruction::Up(lazy_map_address, scrypto_encode(&entry.value)));
+            store_instructions.push(StateUpdateInstruction::VirtualUp(lazy_map_address));
         }
         for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
             match entry.prev_id {

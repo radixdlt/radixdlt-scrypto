@@ -14,6 +14,7 @@ use crate::ledger::*;
 pub struct CommitReceipt {
     pub virtual_down_substates: HashSet<HardVirtualSubstateId>,
     pub down_substates: HashSet<(Hash, u32)>,
+    pub virtual_up_substates: Vec<(Hash, u32)>,
     pub up_substates: Vec<(Hash, u32)>,
 }
 
@@ -22,6 +23,7 @@ impl CommitReceipt {
         CommitReceipt {
             virtual_down_substates: HashSet::new(),
             down_substates: HashSet::new(),
+            virtual_up_substates: Vec::new(),
             up_substates: Vec::new(),
         }
     }
@@ -32,6 +34,10 @@ impl CommitReceipt {
 
     fn down(&mut self, id: (Hash, u32)) {
         self.down_substates.insert(id);
+    }
+
+    fn virtual_space_up(&mut self, id: (Hash, u32)) {
+        self.up_substates.push(id);
     }
 
     fn up(&mut self, id: (Hash, u32)) {
@@ -46,6 +52,7 @@ pub struct HardVirtualSubstateId(PhysicalSubstateId, Vec<u8>);
 pub enum StateUpdateInstruction {
     VirtualDown(VirtualSubstateId),
     Down(PhysicalSubstateId),
+    VirtualUp(Vec<u8>),
     Up(Vec<u8>, Vec<u8>),
 }
 
@@ -73,6 +80,11 @@ impl StateUpdateReceipt {
                     receipt.virtual_down(virtual_substate_id);
                 }
                 StateUpdateInstruction::Down(PhysicalSubstateId(hash, index)) => receipt.down((hash, index)),
+                StateUpdateInstruction::VirtualUp(address) => {
+                    let phys_id = id_gen.next();
+                    receipt.virtual_space_up(phys_id);
+                    store.put_keyed_substate(&address, scrypto_encode(&()), phys_id);
+                }
                 StateUpdateInstruction::Up(key, value) => {
                     let phys_id = id_gen.next();
                     receipt.up(phys_id);
