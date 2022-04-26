@@ -14,9 +14,9 @@ use crate::ledger::*;
 use crate::model::*;
 
 pub struct BorrowedSNodes {
-    borrowed_components: HashMap<ComponentAddress, Option<SubstateId>>,
-    borrowed_resource_managers: HashMap<ResourceAddress, Option<SubstateId>>,
-    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<SubstateId>>,
+    borrowed_components: HashMap<ComponentAddress, Option<PhysicalSubstateId>>,
+    borrowed_resource_managers: HashMap<ResourceAddress, Option<PhysicalSubstateId>>,
+    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 }
 
 impl BorrowedSNodes {
@@ -37,10 +37,19 @@ pub struct TrackReceipt {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct SubstateId(pub Hash, pub u32);
+pub struct PhysicalSubstateId(pub Hash, pub u32);
 
 pub struct SubstateUpdate<T> {
-    pub prev_id: Option<SubstateId>,
+    pub prev_id: Option<PhysicalSubstateId>,
+    pub value: T,
+}
+
+pub enum KeyedSubstateId {
+    Physical(PhysicalSubstateId)
+}
+
+pub struct KeyedSubstateUpdate<T> {
+    pub prev_id: Option<KeyedSubstateId>,
     pub value: T,
 }
 
@@ -61,18 +70,18 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     packages: IndexMap<PackageAddress, SubstateUpdate<Package>>,
 
     components: IndexMap<ComponentAddress, SubstateUpdate<Component>>,
-    borrowed_components: HashMap<ComponentAddress, Option<SubstateId>>,
+    borrowed_components: HashMap<ComponentAddress, Option<PhysicalSubstateId>>,
 
     resource_managers: IndexMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
-    borrowed_resource_managers: HashMap<ResourceAddress, Option<SubstateId>>,
+    borrowed_resource_managers: HashMap<ResourceAddress, Option<PhysicalSubstateId>>,
 
     vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
-    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<SubstateId>>,
+    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 
     non_fungibles: IndexMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
 
     lazy_maps: IndexMap<(ComponentAddress, LazyMapId), SubstateUpdate<()>>,
-    lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
+    lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), KeyedSubstateUpdate<Vec<u8>>>,
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
@@ -163,7 +172,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             self.packages.insert(
                 package_address.clone(),
                 SubstateUpdate {
-                    prev_id: Some(SubstateId(hash, index)),
+                    prev_id: Some(PhysicalSubstateId(hash, index)),
                     value: package,
                 },
             );
@@ -200,7 +209,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             self.substate_store.get_decoded_substate(&component_address)
         {
             self.borrowed_components
-                .insert(component_address, Some(SubstateId(hash, index)));
+                .insert(component_address, Some(PhysicalSubstateId(hash, index)));
             Ok(component)
         } else {
             Err(RuntimeError::ComponentNotFound(component_address))
@@ -237,7 +246,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             self.components.insert(
                 component_address,
                 SubstateUpdate {
-                    prev_id: Some(SubstateId(hash, index)),
+                    prev_id: Some(PhysicalSubstateId(hash, index)),
                     value: component,
                 },
             );
@@ -280,7 +289,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             self.non_fungibles.insert(
                 non_fungible_address.clone(),
                 SubstateUpdate {
-                    prev_id: Some(SubstateId(hash, index)),
+                    prev_id: Some(PhysicalSubstateId(hash, index)),
                     value: non_fungible,
                 },
             );
@@ -304,7 +313,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 &non_fungible_address.resource_address(),
                 &non_fungible_address.non_fungible_id(),
             );
-        let prev_id = cur.map(|(_, (hash, index))| SubstateId(hash, index));
+        let prev_id = cur.map(|(_, (hash, index))| PhysicalSubstateId(hash, index));
 
         self.non_fungibles.insert(
             non_fungible_address,
@@ -341,8 +350,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if let Some((ref entry_bytes, (hash, index))) = value {
             self.lazy_map_entries.insert(
                 canonical_id,
-                SubstateUpdate {
-                    prev_id: Some(SubstateId(hash, index)),
+                KeyedSubstateUpdate {
+                    prev_id: Some(KeyedSubstateId::Physical(PhysicalSubstateId(hash, index))),
                     value: entry_bytes.clone(),
                 },
             );
@@ -368,8 +377,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             if let Some((_, (hash, index))) = entry {
                 self.lazy_map_entries.insert(
                     canonical_id,
-                    SubstateUpdate {
-                        prev_id: Some(SubstateId(hash, index)),
+                    KeyedSubstateUpdate {
+                        prev_id: Some(KeyedSubstateId::Physical(PhysicalSubstateId(hash, index))),
                         value,
                     },
                 );
@@ -383,7 +392,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             // TODO: Virtual Down
             self.lazy_map_entries.insert(
                 canonical_id,
-                SubstateUpdate {
+                KeyedSubstateUpdate {
                     prev_id: None,
                     value,
                 },
@@ -409,7 +418,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             self.resource_managers.insert(
                 resource_address.clone(),
                 SubstateUpdate {
-                    prev_id: Some(SubstateId(hash, index)),
+                    prev_id: Some(PhysicalSubstateId(hash, index)),
                     value: resource_manager,
                 },
             );
@@ -439,7 +448,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             self.substate_store.get_decoded_substate(&resource_address)
         {
             self.borrowed_resource_managers
-                .insert(resource_address, Some(SubstateId(hash, index)));
+                .insert(resource_address, Some(PhysicalSubstateId(hash, index)));
             Ok(resource_manager)
         } else {
             Err(RuntimeError::ResourceManagerNotFound(resource_address))
@@ -493,7 +502,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
         if let Some((vault, (hash, index))) = self.substate_store.get_decoded_child_substate(component_address, vid) {
             self.borrowed_vaults
-                .insert(canonical_id, Some(SubstateId(hash, index)));
+                .insert(canonical_id, Some(PhysicalSubstateId(hash, index)));
             return vault;
         }
 
@@ -669,7 +678,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
         for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
             if let Some(substate_id) = entry.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(substate_id));
+                match substate_id {
+                    KeyedSubstateId::Physical(physical_substate_id) => {
+                        store_instructions.push(StateUpdateInstruction::Down(physical_substate_id));
+                    }
+                }
             }
 
             let mut entry_address = scrypto_encode(&component_address);

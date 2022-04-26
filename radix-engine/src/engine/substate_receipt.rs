@@ -5,7 +5,7 @@ use scrypto::rust::ops::RangeFull;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
-use crate::engine::track::SubstateId;
+use crate::engine::track::PhysicalSubstateId;
 
 use crate::ledger::*;
 
@@ -34,7 +34,7 @@ impl CommitReceipt {
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum StateUpdateInstruction {
-    Down(SubstateId),
+    Down(PhysicalSubstateId),
     Up(Vec<u8>, Vec<u8>),
 }
 
@@ -53,7 +53,7 @@ impl StateUpdateReceipt {
 
         for instruction in self.instructions.drain(RangeFull) {
             match instruction {
-                StateUpdateInstruction::Down(SubstateId(hash, index)) => receipt.down((hash, index)),
+                StateUpdateInstruction::Down(PhysicalSubstateId(hash, index)) => receipt.down((hash, index)),
                 StateUpdateInstruction::Up(key, value) => {
                     let phys_id = id_gen.next();
                     receipt.up(phys_id);
