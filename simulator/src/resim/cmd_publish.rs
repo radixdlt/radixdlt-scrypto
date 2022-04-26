@@ -51,11 +51,10 @@ impl Publish {
         self.store_package(out, &code)
     }
 
-    pub fn publish_wasm<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
+    pub fn publish_wasm<O: std::io::Write>(&self, out: &mut O, wasm_file_path: &str) -> Result<(), Error> {
         // Load wasm code
         println!("Publishing ..");
-        let wasm_path = "wasm_dir/cur.wasm" ;
-        let code = fs::read(wasm_path).map_err(Error::IOError)?;
+        let code = fs::read(wasm_file_path).map_err(Error::IOError)?;
         println!("Read code to variable");
         self.store_package(out, &code)
     }
