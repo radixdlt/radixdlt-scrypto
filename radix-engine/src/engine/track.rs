@@ -14,6 +14,27 @@ use crate::errors::RuntimeError;
 use crate::ledger::*;
 use crate::model::*;
 
+
+// TODO: Replace NonFungible with real re address
+// TODO: Move this logic into application layer
+macro_rules! resource_to_non_fungible_space {
+    ($resource_address:expr) => {{
+        let mut addr = scrypto_encode(&$resource_address);
+        addr.push(0u8);
+        addr
+    }};
+}
+
+// TODO: Replace NonFungible with real re address
+// TODO: Move this logic into application layer
+macro_rules! non_fungible_to_re_address {
+    ($non_fungible:expr) => {{
+        let mut addr = resource_to_non_fungible_space!($non_fungible.resource_address());
+        addr.extend($non_fungible.non_fungible_id().to_vec());
+        addr
+    }};
+}
+
 pub struct BorrowedSNodes {
     borrowed_components: HashMap<ComponentAddress, Option<PhysicalSubstateId>>,
     borrowed_resource_managers: HashMap<ResourceAddress, Option<PhysicalSubstateId>>,
@@ -289,10 +310,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             return cur.value.as_ref().map(|n| n.clone())
         }
 
-        let mut nf_address = scrypto_encode(&non_fungible_address.resource_address());
-        nf_address.push(0u8);
-        nf_address.extend(non_fungible_address.non_fungible_id().to_vec());
-
+        let nf_address = non_fungible_to_re_address!(non_fungible_address);
         self.substate_store.get_substate_raw(&nf_address).map(|r| scrypto_decode(&r.value).unwrap())
     }
 
@@ -302,16 +320,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         non_fungible_address: NonFungibleAddress,
         non_fungible: Option<NonFungible>,
     ) {
-        let mut nf_address = scrypto_encode(&non_fungible_address.resource_address());
-        nf_address.push(0u8);
-        nf_address.extend(non_fungible_address.non_fungible_id().to_vec());
-
+        let nf_address = non_fungible_to_re_address!(non_fungible_address);
         let cur: Option<Substate> = self.substate_store.get_substate_raw(&nf_address);
         let prev_id = if let Some(Substate { value: _, phys_id }) = cur {
             KeyedSubstateId::Physical(PhysicalSubstateId(phys_id.0, phys_id.1))
         } else {
-            let mut space_address = scrypto_encode(&non_fungible_address.resource_address());
-            space_address.push(0u8);
+            let space_address = resource_to_non_fungible_space!(non_fungible_address.resource_address());
             let parent_id = self.get_substate_parent_id(&space_address);
 
             KeyedSubstateId::Virtual(VirtualSubstateId(parent_id, non_fungible_address.non_fungible_id().to_vec()))
@@ -464,8 +478,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
         // TODO: Move this into application layer
         if let ResourceType::NonFungible = resource_manager.resource_type() {
-            let mut space_address = scrypto_encode(&resource_address);
-            space_address.push(0u8);
+            let space_address = resource_to_non_fungible_space!(resource_address);
             self.new_spaces.insert(space_address);
         }
 
@@ -670,9 +683,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 }
             }
 
-            let mut non_fungible_address = scrypto_encode(&addr.resource_address());
-            non_fungible_address.push(0u8);
-            non_fungible_address.extend(addr.non_fungible_id().to_vec());
+            let non_fungible_address = non_fungible_to_re_address!(addr);
             store_instructions.push(StateUpdateInstruction::Up(non_fungible_address, scrypto_encode(&update.value)));
         }
         for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
