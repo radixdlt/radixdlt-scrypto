@@ -178,7 +178,7 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 nf_address.extend(id.to_vec());
 
                 let non_fungible: Option<NonFungible> = scrypto_decode(
-                    &substate_store.get_substate_raw(&nf_address).unwrap().value
+                    &substate_store.get_substate(&nf_address).unwrap().value
                 ).unwrap();
 
                 if let Some(non_fungible) = non_fungible {

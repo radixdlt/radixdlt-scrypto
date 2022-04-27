@@ -40,14 +40,13 @@ impl SubstateIdGenerator {
 
 /// A ledger stores all transactions and substates.
 pub trait ReadableSubstateStore {
-    fn get_substate_raw(&self, address: &[u8]) -> Option<Substate>;
-    fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate>;
-    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate>;
+    fn get_substate(&self, address: &[u8]) -> Option<Substate>;
+    fn get_child_substate(&self, address: &[u8], key: &[u8]) -> Option<Substate>;
     fn get_space(&mut self, address: &[u8]) -> Option<(Hash, u32)>;
 
     // Temporary Encoded/Decoded interface
     fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<(T, (Hash, u32))> {
-        self.get_substate(address)
+        self.get_substate(&scrypto_encode(address))
             .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
     }
 
@@ -57,7 +56,7 @@ pub trait ReadableSubstateStore {
         key: &K,
     ) -> Option<(T, (Hash, u32))> {
         let child_key = &scrypto_encode(key);
-        self.get_child_substate(address, child_key)
+        self.get_child_substate(&scrypto_encode(address), child_key)
             .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
     }
 
@@ -69,7 +68,7 @@ pub trait ReadableSubstateStore {
     ) -> Option<(Vec<u8>, (Hash, u32))> {
         let mut key = scrypto_encode(child_key);
         key.extend(grand_child_key.to_vec());
-        self.get_child_substate(address, &key)
+        self.get_child_substate(&scrypto_encode(address), &key)
             .map(|s| (s.value, s.phys_id))
     }
 

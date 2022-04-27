@@ -311,7 +311,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
 
         let nf_address = non_fungible_to_re_address!(non_fungible_address);
-        self.substate_store.get_substate_raw(&nf_address).map(|r| scrypto_decode(&r.value).unwrap())
+        self.substate_store.get_substate(&nf_address).map(|r| scrypto_decode(&r.value).unwrap())
     }
 
     /// Sets a non-fungible.
@@ -321,7 +321,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         non_fungible: Option<NonFungible>,
     ) {
         let nf_address = non_fungible_to_re_address!(non_fungible_address);
-        let cur: Option<Substate> = self.substate_store.get_substate_raw(&nf_address);
+        let cur: Option<Substate> = self.substate_store.get_substate(&nf_address);
         let prev_id = if let Some(Substate { value: _, phys_id }) = cur {
             KeyedSubstateId::Physical(PhysicalSubstateId(phys_id.0, phys_id.1))
         } else {

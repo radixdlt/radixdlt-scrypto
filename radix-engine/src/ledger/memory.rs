@@ -1,4 +1,3 @@
-use sbor::{Encode};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::crypto::Hash;
 use scrypto::rust::collections::HashMap;
@@ -38,18 +37,13 @@ impl Default for InMemorySubstateStore {
 }
 
 impl ReadableSubstateStore for InMemorySubstateStore {
-    fn get_substate_raw(&self, address: &[u8]) -> Option<Substate> {
+    fn get_substate(&self, address: &[u8]) -> Option<Substate> {
         self.substates.get(address)
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
-    fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
-        self.substates.get(&scrypto_encode(address))
-            .map(|bytes| scrypto_decode(bytes).unwrap())
-    }
-
-    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate> {
-        let mut id = scrypto_encode(address);
+    fn get_child_substate(&self, address: &[u8], key: &[u8]) -> Option<Substate> {
+        let mut id = address.to_vec();
         id.extend(key.to_vec());
         self.substates.get(&id).map(|bytes| scrypto_decode(bytes).unwrap())
     }
