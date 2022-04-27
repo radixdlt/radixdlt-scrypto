@@ -46,6 +46,7 @@ use clap::{Parser, Subcommand};
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
+use scrypto::crypto::*;
 use std::fs;
 use std::path::PathBuf;
 use transaction_manifest::decompile;
@@ -92,7 +93,7 @@ pub enum Command {
 pub fn run() -> Result<(), Error> {
     let cli = ResimCli::parse();
 
-    let mut out = std::io::stdout() ;
+    let mut out = std::io::stdout();
 
     match cli.command {
         Command::CallFunction(cmd) => cmd.run(&mut out),
@@ -117,18 +118,27 @@ pub fn run() -> Result<(), Error> {
     }
 }
 
-pub fn process_transaction<L: SubstateStore,O: std::io::Write >(
-    signed: SignedTransaction,
+pub fn process_transaction<L: SubstateStore, O: std::io::Write>(
     executor: &mut TransactionExecutor<L>,
-    manifest: &Option<PathBuf>,
-    out: &mut O
+    mut transaction: Transaction,
+    signing_keys: &Option<String>,
+    manifest_path: &Option<PathBuf>,
+    out: &mut O,
 ) -> Result<(), Error> {
-    match manifest {
+    match manifest_path {
         Some(path) => {
-            let decompiled = decompile(&signed.transaction).map_err(Error::DecompileError)?;
-            fs::write(path, decompiled).map_err(Error::IOError)
+            let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
+            fs::write(path, manifest).map_err(Error::IOError)
         }
         None => {
+            let sks = parse_signing_keys(signing_keys)?;
+            let pks = sks
+                .iter()
+                .map(|e| e.public_key())
+                .collect::<Vec<EcdsaPublicKey>>();
+            let nonce = executor.get_nonce(&pks);
+            transaction.add_nonce(nonce);
+            let signed = transaction.sign(sks.iter().collect::<Vec<&EcdsaPrivateKey>>());
             let receipt = executor
                 .validate_and_execute(&signed)
                 .map_err(Error::TransactionValidationError)?;
@@ -136,4 +146,23 @@ pub fn process_transaction<L: SubstateStore,O: std::io::Write >(
             receipt.result.map_err(Error::TransactionExecutionError)
         }
     }
+}
+
+pub fn parse_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivateKey>, Error> {
+    let private_keys = if let Some(keys) = signing_keys {
+        keys.split(",")
+            .map(str::trim)
+            .map(|key| {
+                hex::decode(key)
+                    .map_err(|_| Error::InvalidPrivateKey)
+                    .and_then(|bytes| {
+                        EcdsaPrivateKey::from_bytes(&bytes).map_err(|_| Error::InvalidPrivateKey)
+                    })
+            })
+            .collect::<Result<Vec<EcdsaPrivateKey>, Error>>()?
+    } else {
+        vec![get_default_private_key()?]
+    };
+
+    Ok(private_keys)
 }
