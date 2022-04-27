@@ -6,25 +6,22 @@ use scrypto::buffer::*;
 use scrypto::engine::types::*;
 
 use crate::resim::*;
-use std::env ;
+use std::env;
 
 /// Simulator configurations.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Configs {
     pub default_account: ComponentAddress,
-    pub default_public_key: EcdsaPublicKey,
     pub default_private_key: Vec<u8>,
 }
 
 /// Returns the data directory.
 pub fn get_data_dir() -> Result<PathBuf, Error> {
-    let path = match env::var("DATA_DIR") {
-        Ok(value) => {
-            std::path::PathBuf::from(value)
-        },
+    let path = match env::var(ENV_DATA_DIR) {
+        Ok(value) => std::path::PathBuf::from(value),
         Err(..) => {
             let mut path = dirs::home_dir().ok_or(Error::HomeDirUnknown)?;
-            path.push("scrypto-simulator");
+            path.push(DEFAULT_SCRYPTO_DIR_UNDER_HOME);
             path
         }
     };
@@ -64,11 +61,8 @@ pub fn get_default_account() -> Result<ComponentAddress, Error> {
         .map(|config| config.default_account)
 }
 
-pub fn get_default_signers() -> Result<(EcdsaPublicKey, EcdsaPrivateKey), Error> {
-    get_configs()?.ok_or(Error::NoDefaultAccount).map(|config| {
-        (
-            config.default_public_key,
-            EcdsaPrivateKey::from_bytes(&config.default_private_key).unwrap(),
-        )
-    })
+pub fn get_default_private_key() -> Result<EcdsaPrivateKey, Error> {
+    get_configs()?
+        .ok_or(Error::NoDefaultAccount)
+        .map(|config| EcdsaPrivateKey::from_bytes(&config.default_private_key).unwrap())
 }
