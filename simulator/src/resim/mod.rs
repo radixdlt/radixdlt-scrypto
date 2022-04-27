@@ -42,11 +42,16 @@ pub use cmd_transfer::*;
 pub use config::*;
 pub use error::*;
 
+pub const DEFAULT_SCRYPTO_DIR_UNDER_HOME: &'static str = ".scrypto";
+pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
+pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
+
 use clap::{Parser, Subcommand};
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use scrypto::crypto::*;
+use std::env;
 use std::fs;
 use std::path::PathBuf;
 use transaction_manifest::decompile;
@@ -127,8 +132,12 @@ pub fn process_transaction<L: SubstateStore, O: std::io::Write>(
 ) -> Result<(), Error> {
     match manifest_path {
         Some(path) => {
-            let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
-            fs::write(path, manifest).map_err(Error::IOError)
+            if env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
+                Ok(())
+            } else {
+                let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
+                fs::write(path, manifest).map_err(Error::IOError)
+            }
         }
         None => {
             let sks = parse_signing_keys(signing_keys)?;

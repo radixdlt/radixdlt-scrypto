@@ -17,11 +17,11 @@ pub struct Configs {
 
 /// Returns the data directory.
 pub fn get_data_dir() -> Result<PathBuf, Error> {
-    let path = match env::var("DATA_DIR") {
+    let path = match env::var(ENV_DATA_DIR) {
         Ok(value) => std::path::PathBuf::from(value),
         Err(..) => {
             let mut path = dirs::home_dir().ok_or(Error::HomeDirUnknown)?;
-            path.push("scrypto-simulator");
+            path.push(DEFAULT_SCRYPTO_DIR_UNDER_HOME);
             path
         }
     };
