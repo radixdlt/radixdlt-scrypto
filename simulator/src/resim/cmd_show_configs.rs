@@ -8,26 +8,33 @@ use crate::resim::*;
 pub struct ShowConfigs {}
 
 impl ShowConfigs {
-
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         if let Some(configs) = get_configs()? {
-            writeln!(out,
+            writeln!(
+                out,
                 "{}: {}",
                 "Default Account".green().bold(),
                 configs.default_account
-            ).map_err(Error::IOError)?;
-            writeln!(out,
+            )
+            .map_err(Error::IOError)?;
+            writeln!(
+                out,
                 "{}: {}",
                 "Default Public Key".green().bold(),
-                configs.default_public_key
-            ).map_err(Error::IOError)?;
-            writeln!(out,
+                EcdsaPrivateKey::from_bytes(&configs.default_private_key)
+                    .unwrap()
+                    .public_key()
+            )
+            .map_err(Error::IOError)?;
+            writeln!(
+                out,
                 "{}: {}",
                 "Default Private Key".green().bold(),
                 hex::encode(configs.default_private_key)
-            ).map_err(Error::IOError)?;
+            )
+            .map_err(Error::IOError)?;
         } else {
-            writeln!(out,"No configuration found").map_err(Error::IOError)?;
+            writeln!(out, "No configuration found").map_err(Error::IOError)?;
         }
         Ok(())
     }
