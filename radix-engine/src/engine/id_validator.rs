@@ -1,111 +1,131 @@
+use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
-use scrypto::types::*;
+use scrypto::values::*;
 
 use crate::engine::*;
-use crate::model::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdValidatorError {
     IdAllocatorError(IdAllocatorError),
-    BucketNotFound(Bid),
-    BucketRefNotFound(Rid),
-    BucketLocked(Bid),
+    BucketNotFound(BucketId),
+    ProofNotFound(ProofId),
+    BucketLocked(BucketId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ProofKind {
+    /// Proof of virtual bucket.
+    VirtualProof,
+    /// Bucket proof.
+    BucketProof(BucketId),
+    /// Proof taken or derived from auth zone.
+    AuthZoneProof,
 }
 
 pub struct IdValidator {
     id_allocator: IdAllocator,
-    buckets: HashMap<Bid, usize>,
-    bucket_refs: HashMap<Rid, Bid>,
+    bucket_ids: HashMap<BucketId, usize>,
+    proof_ids: HashMap<ProofId, ProofKind>,
 }
 
 impl IdValidator {
     pub fn new() -> Self {
-        let mut bucket_refs = HashMap::new();
-        bucket_refs.insert(ECDSA_TOKEN_RID, ECDSA_TOKEN_BID);
         Self {
             id_allocator: IdAllocator::new(IdSpace::Transaction),
-            buckets: HashMap::new(),
-            bucket_refs,
+            bucket_ids: HashMap::new(),
+            proof_ids: HashMap::new(),
         }
     }
 
-    pub fn new_bucket(&mut self) -> Result<Bid, IdValidatorError> {
-        let bid = self
+    pub fn new_bucket(&mut self) -> Result<BucketId, IdValidatorError> {
+        let bucket_id = self
             .id_allocator
-            .new_bid()
+            .new_bucket_id()
             .map_err(IdValidatorError::IdAllocatorError)?;
-        self.buckets.insert(bid, 0);
-        Ok(bid)
+        self.bucket_ids.insert(bucket_id, 0);
+        Ok(bucket_id)
     }
 
-    pub fn drop_bucket(&mut self, bid: Bid) -> Result<(), IdValidatorError> {
-        if let Some(cnt) = self.buckets.get(&bid) {
+    pub fn drop_bucket(&mut self, bucket_id: BucketId) -> Result<(), IdValidatorError> {
+        if let Some(cnt) = self.bucket_ids.get(&bucket_id) {
             if *cnt == 0 {
-                self.buckets.remove(&bid);
+                self.bucket_ids.remove(&bucket_id);
                 Ok(())
             } else {
-                Err(IdValidatorError::BucketLocked(bid))
+                Err(IdValidatorError::BucketLocked(bucket_id))
             }
         } else {
-            Err(IdValidatorError::BucketNotFound(bid))
+            Err(IdValidatorError::BucketNotFound(bucket_id))
         }
     }
 
-    pub fn new_bucket_ref(&mut self, bid: Bid) -> Result<Rid, IdValidatorError> {
-        if let Some(cnt) = self.buckets.get_mut(&bid) {
-            *cnt += 1;
-            let rid = self
-                .id_allocator
-                .new_rid()
-                .map_err(IdValidatorError::IdAllocatorError)?;
-            self.bucket_refs.insert(rid, bid);
-            Ok(rid)
-        } else {
-            Err(IdValidatorError::BucketNotFound(bid))
-        }
-    }
-
-    pub fn clone_bucket_ref(&mut self, rid: Rid) -> Result<Rid, IdValidatorError> {
-        if let Some(bid) = self.bucket_refs.get(&rid).cloned() {
-            // for virtual badge, the corresponding bucket is not owned by transaction.
-            if let Some(cnt) = self.buckets.get_mut(&bid) {
-                *cnt += 1;
+    pub fn new_proof(&mut self, kind: ProofKind) -> Result<ProofId, IdValidatorError> {
+        match &kind {
+            ProofKind::BucketProof(bucket_id) => {
+                if let Some(cnt) = self.bucket_ids.get_mut(bucket_id) {
+                    *cnt += 1;
+                } else {
+                    return Err(IdValidatorError::BucketNotFound(*bucket_id));
+                }
             }
-            let rid = self
+            ProofKind::AuthZoneProof | ProofKind::VirtualProof => {}
+        }
+
+        let proof_id = self
+            .id_allocator
+            .new_proof_id()
+            .map_err(IdValidatorError::IdAllocatorError)?;
+        self.proof_ids.insert(proof_id, kind);
+        Ok(proof_id)
+    }
+
+    pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ProofId, IdValidatorError> {
+        if let Some(kind) = self.proof_ids.get(&proof_id).cloned() {
+            if let ProofKind::BucketProof(bucket_id) = kind {
+                if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
+                    *cnt += 1;
+                } else {
+                    panic!("Illegal state");
+                }
+            }
+            let proof_id = self
                 .id_allocator
-                .new_rid()
+                .new_proof_id()
                 .map_err(IdValidatorError::IdAllocatorError)?;
-            self.bucket_refs.insert(rid, bid);
-            Ok(rid)
+            self.proof_ids.insert(proof_id, kind);
+            Ok(proof_id)
         } else {
-            Err(IdValidatorError::BucketRefNotFound(rid))
+            Err(IdValidatorError::ProofNotFound(proof_id))
         }
     }
 
-    pub fn drop_bucket_ref(&mut self, rid: Rid) -> Result<(), IdValidatorError> {
-        if let Some(bid) = self.bucket_refs.remove(&rid) {
-            // for virtual badge, the corresponding bucket is not owned by transaction.
-            if let Some(cnt) = self.buckets.get_mut(&bid) {
-                *cnt -= 1;
+    pub fn drop_proof(&mut self, proof_id: ProofId) -> Result<(), IdValidatorError> {
+        if let Some(kind) = self.proof_ids.remove(&proof_id) {
+            if let ProofKind::BucketProof(bucket_id) = kind {
+                if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
+                    *cnt -= 1;
+                } else {
+                    panic!("Illegal state");
+                }
             }
             Ok(())
         } else {
-            Err(IdValidatorError::BucketRefNotFound(rid))
+            Err(IdValidatorError::ProofNotFound(proof_id))
         }
     }
 
     pub fn move_all_resources(&mut self) -> Result<(), IdValidatorError> {
-        self.bucket_refs.clear();
-        self.buckets.clear();
+        self.proof_ids.clear();
+        self.bucket_ids.clear();
         Ok(())
     }
 
-    pub fn move_resources(&mut self, arg: &ValidatedData) -> Result<(), IdValidatorError> {
-        for bid in &arg.buckets {
-            self.drop_bucket(*bid)?;
+    pub fn move_resources(&mut self, arg: &ScryptoValue) -> Result<(), IdValidatorError> {
+        for (bucket_id, _) in &arg.bucket_ids {
+            self.drop_bucket(*bucket_id)?;
         }
-        for rid in &arg.bucket_refs {
-            self.drop_bucket_ref(*rid)?;
+        for (proof_id, _) in &arg.proof_ids {
+            self.drop_proof(*proof_id)?;
         }
         Ok(())
     }

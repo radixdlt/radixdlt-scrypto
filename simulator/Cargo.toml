@@ -1,11 +1,11 @@
 [package]
 name = "simulator"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies]
 radix-engine = { path = "../radix-engine" }
-scrypto = { path = "../scrypto", features = ["serde_std"] }
+scrypto = { path = "../scrypto", features = ["serde"] }
 sbor = { path = "../sbor" }
 transaction-manifest = { path = "../transaction-manifest" }
 serde = { version = "1.0", features = ["derive"] }
@@ -15,8 +15,9 @@ dirs = { version = "4.0" }
 colored = { version = "2.0" }
 uuid = { version = "0.8", features = ["v4"] }
 hex = { version = "0.4" }
-cargo_toml = { version = "0.10" }
+cargo_toml = { version = "0.11.5" }
 rocksdb = { git = "https://github.com/rust-rocksdb/rust-rocksdb", tag = "v0.17.0" }
+rand = "*"
 
 [[bin]]
 name = "resim"

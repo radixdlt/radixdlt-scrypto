@@ -1,18 +1,19 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use scrypto::import;
+use scrypto::component::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::str::FromStr;
 use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
+use scrypto::{blueprint, import};
 
 // base directory: `scrypto-derive`
 import! {
 r#"
 {
-    "package": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
-    "name": "Simple",
+    "package_address": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
+    "blueprint_name": "Simple",
     "functions": [
         {
             "name": "stateless_func",
@@ -26,57 +27,22 @@ r#"
             "inputs": [
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Decimal",
+                    "name": "Decimal",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Address",
+                    "name": "PackageAddress",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::H256",
+                    "name": "ComponentAddress",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::types::Bid",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Rid",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Mid",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::types::Vid",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::core::Package",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::core::Blueprint",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::core::Component",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "scrypto::core::LazyMap",
+                    "name": "LazyMap",
                     "generics": [
                         {
                             "type": "String"
@@ -88,23 +54,28 @@ r#"
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Bucket",
+                    "name": "Bucket",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::BucketRef",
+                    "name": "Proof",
                     "generics": []
                 },
                 {
                     "type": "Custom",
-                    "name": "scrypto::resource::Vault",
+                    "name": "Vault",
+                    "generics": []
+                },
+                {
+                    "type": "Custom",
+                    "name": "ResourceAddress",
                     "generics": []
                 }
             ],
             "output": {
                 "type": "Custom",
-                "name": "scrypto::resource::BucketRef",
+                "name": "Bucket",
                 "generics": []
             }
         }
@@ -209,10 +180,26 @@ r#"
 "#
 }
 
+blueprint! {
+    struct UseImport {
+        simple: Simple
+    }
+
+    impl UseImport {
+        pub fn new(address: ComponentAddress) -> ComponentAddress {
+            Self {
+                simple: address.into(),
+            }
+            .instantiate()
+            .globalize()
+        }
+    }
+}
+
 #[test]
 #[should_panic] // asserts it compiles
 fn test_import_from_abi() {
-    let instance = Simple::from(Address::from_str("").unwrap());
+    let instance = Simple::from(ComponentAddress::from_str("").unwrap());
 
     let arg1 = Floor { x: 5, y: 12 };
     let arg2 = (1u8, 2u16);

@@ -8,21 +8,26 @@ blueprint! {
 
     impl ComponentTest {
         fn create_test_token(amount: u32) -> Bucket {
-            ResourceBuilder::new_fungible(DIVISIBILITY_MAXIMUM)
+            ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
-                .initial_supply_fungible(amount)
+                .initial_supply(amount)
         }
 
-        pub fn create_component() -> Component {
+        pub fn create_component() -> ComponentAddress {
             Self {
                 test_vault: Vault::with_bucket(Self::create_test_token(1000)),
                 secret: "Secret".to_owned(),
             }
             .instantiate()
+            .globalize()
         }
 
-        pub fn get_component_info(address: Address) -> Blueprint {
-            Component::from(address).blueprint()
+        pub fn get_component_info(component_address: ComponentAddress) -> (PackageAddress, String) {
+            (
+                borrow_component!(component_address).package_address(),
+                borrow_component!(component_address).blueprint_name(),
+            )
         }
 
         pub fn get_component_state(&self) -> String {

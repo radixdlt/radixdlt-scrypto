@@ -8,38 +8,33 @@ blueprint! {
 
     impl System {
         /// Publishes a package.
-        pub fn publish_package(code: Vec<u8>) -> Address {
-            let package = Package::new(&code);
-            package.into()
+        pub fn publish_package(code: Vec<u8>) -> PackageAddress {
+            component_system().publish_package(&code)
         }
 
         /// Creates a resource.
         pub fn new_resource(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            flags: u64,
-            mutable_flags: u64,
-            authorities: HashMap<Address, u64>,
-            initial_supply: Option<NewSupply>,
-        ) -> (ResourceDef, Option<Bucket>) {
-            ResourceDef::new(
-                resource_type,
-                metadata,
-                flags,
-                mutable_flags,
-                authorities,
-                initial_supply,
-            )
+            access_rules: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+            initial_supply: Option<MintParams>,
+        ) -> (ResourceAddress, Option<Bucket>) {
+            resource_system().new_resource(resource_type, metadata, access_rules, initial_supply)
         }
 
-        /// Mints fungible resource.
-        pub fn mint(amount: Decimal, resource_address: Address, auth: BucketRef) -> Bucket {
-            ResourceDef::from(resource_address).mint(amount, auth)
+        /// Mints fungible resource. TODO: Remove
+        pub fn mint(amount: Decimal, resource_address: ResourceAddress) -> Bucket {
+            borrow_resource_manager!(resource_address).mint(amount)
         }
 
-        /// Gives away XRD tokens for testing.
-        pub fn free_xrd(&mut self, amount: Decimal) -> Bucket {
-            self.xrd.take(amount)
+        /// Burns bucket. TODO: Remove
+        pub fn burn(bucket: Bucket) {
+            bucket.burn()
+        }
+
+        /// Gives away XRD tokens for testing. TODO: Remove
+        pub fn free_xrd(&mut self) -> Bucket {
+            self.xrd.take(1_000_000)
         }
     }
 }

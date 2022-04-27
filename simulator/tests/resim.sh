@@ -7,38 +7,51 @@ cd "$(dirname "$0")/.."
 
 resim="cargo run --bin resim $@ --"
 
-# Set up environment
+# Create test accounts and public keys
 $resim reset
-temp=`$resim new-account | tee /dev/tty | awk '/Account address:|Public key:/ {print $NF}'`
+temp=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 account=`echo $temp | cut -d " " -f1`
-account_key=`echo $temp | cut -d " " -f2`
-account2=`$resim new-account | tee /dev/tty | awk '/Account address:/ {print $NF}'`
-mint_badge=`$resim new-badge-fixed 1 --name 'MintBadge' | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-resource_def=`$resim new-token-mutable $mint_badge | tee /dev/tty | awk '/ResourceDef:/ {print $NF}'`
-$resim mint 777 $resource_def $mint_badge --signers $account_key
-$resim transfer 111,$resource_def $account2 --signers $account_key
+account2=`$resim new-account | awk '/Account component address:/ {print $NF}'`
 
-# Test hello-world
-package=`$resim publish ../examples/core/hello-world | tee /dev/tty | awk '/Package:/ {print $NF}'`
-component=`$resim call-function $package Hello instantiate_hello | tee /dev/tty | awk '/Component:/ {print $NF}'`
+# Test - create fixed supply badge
+minter_badge=`$resim new-badge-fixed 1 --name 'MintBadge' | awk '/Resource:/ {print $NF}'`
+
+# Test - create mutable supply token
+token_address=`$resim new-token-mutable $minter_badge | awk '/Resource:/ {print $NF}'`
+
+# Test - mint and transfer
+$resim mint 777 $token_address $minter_badge
+$resim transfer 111 $token_address $account2
+
+# Test - publish, call-funciton and call-method
+package=`$resim publish ../examples/hello-world | awk '/Package:/ {print $NF}'`
+component=`$resim call-function $package Hello instantiate_hello | awk '/Component:/ {print $NF}'`
 $resim call-method $component free_token
 
-# Test cross component call
-$resim publish ../examples/core/cross-blueprint-call --address 01bda8686d6c2fa45dce04fac71a09b54efbc8028c23aac74bc00e
-package=`$resim publish ../examples/core/cross-blueprint-call | tee /dev/tty | awk '/Package:/ {print $NF}'`
-component=`$resim call-function $package Proxy1 instantiate_proxy | tee /dev/tty | awk '/Component:/ {print $NF}' | tail -n1`
-$resim call-method $component free_token
-component=`$resim call-function $package Proxy2 instantiate_proxy | tee /dev/tty | awk '/Component:/ {print $NF}' | tail -n1`
-$resim call-method $component free_token
+# Test - export abi
+$resim export-abi $package Hello
 
-# Export abi
-$resim export-abi $package Proxy1
-
-# Show state
+# Test - dump component state
 $resim show $package
 $resim show $component
 $resim show $account
 $resim show $account2
+$resim show $token_address
 
+# Test - output manifest
 $resim new-badge-fixed 1 --name 'MintBadge' --manifest ./target/temp.rtm
 cat ./target/temp.rtm
+$resim publish ../examples/hello-world --manifest ./target/temp2.rtm
+$resim run ./target/temp2.rtm
+$resim new-account --manifest ./target/temp3.rtm
+$resim run ./target/temp3.rtm
+
+# Test - run manifest with a given set of signing keys
+$resim generate-key-pair
+$resim run ./target/temp2.rtm --signing-keys 4fc0db017bf9b80743b7151fee3f04bad817f2d8d7e34ae96c022fe7451b0ea3,329a27258d7e9496c42a110571e6ba0d47f2bda8bd610e9777d16853ab145b0c
+
+# Test - nft
+package=`$resim publish ./tests/nft | awk '/Package:/ {print $NF}'`
+$resim call-function $package Foo nfts
+$resim show $account
+

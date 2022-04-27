@@ -1,11 +1,11 @@
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use radix_engine::ledger::*;
-use radix_engine::model::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
-use sbor::*;
+use sbor::{Decode, Encode};
 use scrypto::buffer::*;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
@@ -23,121 +23,122 @@ impl RadixEngineDB {
         ledger
     }
 
-    pub fn list_packages(&self) -> Vec<Address> {
-        self.list_items(Address::Package([0; 26]), Address::Package([255; 26]))
+    pub fn list_packages(&self) -> Vec<PackageAddress> {
+        let start = &scrypto_encode(&PackageAddress([0; 26]));
+        let end = &scrypto_encode(&PackageAddress([255; 26]));
+        self.list_items(start, end)
     }
 
-    pub fn list_components(&self) -> Vec<Address> {
-        self.list_items(Address::Component([0; 26]), Address::Component([255; 26]))
+    pub fn list_components(&self) -> Vec<ComponentAddress> {
+        let start = &scrypto_encode(&ComponentAddress([0; 26]));
+        let end = &scrypto_encode(&ComponentAddress([255; 26]));
+        self.list_items(start, end)
     }
 
-    pub fn list_resource_defs(&self) -> Vec<Address> {
-        self.list_items(
-            Address::ResourceDef([0; 26]),
-            Address::ResourceDef([255; 26]),
-        )
+    pub fn list_resource_managers(&self) -> Vec<ResourceAddress> {
+        let start = &scrypto_encode(&ResourceAddress([0; 26]));
+        let end = &scrypto_encode(&ResourceAddress([255; 26]));
+        self.list_items(start, end)
     }
 
-    fn list_items<K: Encode + Decode>(&self, start: K, end: K) -> Vec<K> {
-        let mut iter = self.db.iterator(IteratorMode::From(
-            &scrypto_encode(&start),
-            Direction::Forward,
-        ));
+    fn list_items<T: Decode>(&self, start: &[u8], inclusive_end: &[u8]) -> Vec<T> {
+        let mut iter = self
+            .db
+            .iterator(IteratorMode::From(start, Direction::Forward));
         let mut items = Vec::new();
         while let Some(kv) = iter.next() {
-            if kv.0.as_ref() > &scrypto_encode(&end) {
+            if kv.0.as_ref() > inclusive_end {
                 break;
             }
-            items.push(scrypto_decode(kv.0.as_ref()).unwrap());
+            if kv.0.len() == start.len() {
+                items.push(scrypto_decode(kv.0.as_ref()).unwrap());
+            }
         }
         items
     }
 
-    fn read<K: Encode, V: Decode>(&self, key: &K) -> Option<V> {
-        self.db
-            .get(scrypto_encode(key))
-            .unwrap()
-            .map(|bytes| scrypto_decode(&bytes).unwrap())
+    fn read(&self, key: &[u8]) -> Option<Vec<u8>> {
+        // TODO: Use get_pinned
+        self.db.get(key).unwrap()
     }
 
-    fn write<K: Encode, V: Encode>(&self, key: K, value: V) {
-        self.db
-            .put(scrypto_encode(&key), scrypto_encode(&value))
-            .unwrap();
+    fn write(&self, key: &[u8], value: &[u8]) {
+        self.db.put(key, value).unwrap();
+    }
+}
+
+impl QueryableSubstateStore for RadixEngineDB {
+    fn get_lazy_map_entries(
+        &self,
+        component_address: ComponentAddress,
+        lazy_map_id: &LazyMapId,
+    ) -> HashMap<Vec<u8>, Vec<u8>> {
+        let mut id = scrypto_encode(&component_address);
+        id.extend(scrypto_encode(lazy_map_id));
+        let key_size = id.len();
+
+        let mut iter = self
+            .db
+            .iterator(IteratorMode::From(&id, Direction::Forward));
+        let mut items = HashMap::new();
+        while let Some((key, value)) = iter.next() {
+            if !key.starts_with(&id) {
+                break;
+            }
+
+            let local_key = key.split_at(key_size).1.to_vec();
+            let substate: Substate = scrypto_decode(&value.to_vec()).unwrap();
+            items.insert(local_key, substate.value);
+        }
+        items
     }
 }
 
 impl SubstateStore for RadixEngineDB {
-    fn get_resource_def(&self, address: Address) -> Option<ResourceDef> {
-        self.read(&address)
+    fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
+        self.read(&scrypto_encode(address))
+            .map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn put_resource_def(&mut self, address: Address, resource_def: ResourceDef) {
-        self.write(address, resource_def)
+    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate) {
+        self.write(&scrypto_encode(address), &scrypto_encode(&substate));
     }
 
-    fn get_package(&self, address: Address) -> Option<Package> {
-        self.read(&address)
+    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate> {
+        let mut id = scrypto_encode(address);
+        id.extend(key.to_vec());
+        self.read(&id).map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn put_package(&mut self, address: Address, package: Package) {
-        self.write(address, package)
-    }
-
-    fn get_component(&self, address: Address) -> Option<Component> {
-        self.read(&address)
-    }
-
-    fn put_component(&mut self, address: Address, component: Component) {
-        self.write(address, component)
-    }
-
-    fn get_lazy_map(&self, component_address: &Address, mid: &Mid) -> Option<LazyMap> {
-        self.read(&(component_address.clone(), mid.clone()))
-    }
-
-    fn put_lazy_map(&mut self, component_address: Address, mid: Mid, lazy_map: LazyMap) {
-        self.write((component_address, mid), lazy_map)
-    }
-
-    fn get_vault(&self, component_address: &Address, vid: &Vid) -> Option<Vault> {
-        self.read(&(component_address.clone(), vid.clone()))
-    }
-
-    fn put_vault(&mut self, component_address: Address, vid: Vid, vault: Vault) {
-        self.write((component_address, vid), vault)
-    }
-
-    fn get_non_fungible(
-        &self,
-        resource_address: Address,
-        key: &NonFungibleKey,
-    ) -> Option<NonFungible> {
-        self.read(&(resource_address, key.clone()))
-    }
-
-    fn put_non_fungible(
-        &mut self,
-        resource_address: Address,
-        key: &NonFungibleKey,
-        non_fungible: NonFungible,
-    ) {
-        self.write((resource_address, key.clone()), non_fungible)
+    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate) {
+        let mut id = scrypto_encode(address);
+        id.extend(key.to_vec());
+        self.write(&id, &scrypto_encode(&substate));
     }
 
     fn get_epoch(&self) -> u64 {
-        self.read(&"epoch").unwrap_or(0)
+        let id = scrypto_encode(&"epoch");
+        self.read(&id)
+            .map(|v| scrypto_decode(&v).unwrap())
+            .unwrap_or(0)
     }
 
     fn set_epoch(&mut self, epoch: u64) {
-        self.write("epoch", epoch)
+        let id = scrypto_encode(&"epoch");
+        let value = scrypto_encode(&epoch);
+        self.write(&id, &value)
     }
 
     fn get_nonce(&self) -> u64 {
-        self.read(&"nonce").unwrap_or(0)
+        let id = scrypto_encode(&"nonce");
+        self.read(&id)
+            .map(|v| scrypto_decode(&v).unwrap())
+            .unwrap_or(0)
     }
 
     fn increase_nonce(&mut self) {
-        self.write("nonce", self.get_nonce() + 1)
+        let id = scrypto_encode(&"nonce");
+        let value = scrypto_encode(&(self.get_nonce() + 1));
+        self.write(&id, &value)
     }
 }

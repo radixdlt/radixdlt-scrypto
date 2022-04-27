@@ -1,9 +1,11 @@
+#![allow(unused_must_use)]
 use colored::*;
-use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
+use scrypto::engine::types::*;
 use scrypto::rust::collections::HashSet;
-use scrypto::types::*;
+use scrypto::values::*;
+use std::collections::VecDeque;
 
 use crate::utils::*;
 
@@ -12,16 +14,32 @@ use crate::utils::*;
 pub enum DisplayError {
     PackageNotFound,
     ComponentNotFound,
-    ResourceDefNotFound,
+    ResourceManagerNotFound,
 }
 
 /// Dump a package into console.
-pub fn dump_package<T: SubstateStore>(address: Address, ledger: &T) -> Result<(), DisplayError> {
-    let package = ledger.get_package(address);
+pub fn dump_package<T: SubstateStore, O: std::io::Write>(
+    package_address: PackageAddress,
+    substate_store: &T,
+    output: &mut O,
+) -> Result<(), DisplayError> {
+    let package: Option<Package> = substate_store
+        .get_decoded_substate(&package_address)
+        .map(|(package, _)| package);
     match package {
         Some(b) => {
-            println!("{}: {}", "Package".green().bold(), address.to_string());
-            println!("{}: {} bytes", "Code size".green().bold(), b.code().len());
+            writeln!(
+                output,
+                "{}: {}",
+                "Package".green().bold(),
+                package_address.to_string()
+            );
+            writeln!(
+                output,
+                "{}: {} bytes",
+                "Code size".green().bold(),
+                b.code().len()
+            );
             Ok(())
         }
         None => Err(DisplayError::PackageNotFound),
@@ -29,146 +47,197 @@ pub fn dump_package<T: SubstateStore>(address: Address, ledger: &T) -> Result<()
 }
 
 /// Dump a component into console.
-pub fn dump_component<T: SubstateStore>(address: Address, ledger: &T) -> Result<(), DisplayError> {
-    let component = ledger.get_component(address);
+pub fn dump_component<T: SubstateStore + QueryableSubstateStore, O: std::io::Write>(
+    component_address: ComponentAddress,
+    substate_store: &T,
+    output: &mut O,
+) -> Result<(), DisplayError> {
+    let component: Option<Component> = substate_store
+        .get_decoded_substate(&component_address)
+        .map(|(component, _)| component);
     match component {
         Some(c) => {
-            println!("{}: {}", "Component".green().bold(), address.to_string());
+            writeln!(
+                output,
+                "{}: {}",
+                "Component".green().bold(),
+                component_address.to_string()
+            );
 
-            println!(
+            writeln!(
+                output,
                 "{}: {{ package_address: {}, blueprint_name: \"{}\" }}",
                 "Blueprint".green().bold(),
                 c.package_address(),
                 c.blueprint_name()
             );
-            let state = c.state();
-            let state_validated = validate_data(state).unwrap();
-            println!("{}: {}", "State".green().bold(), state_validated);
 
-            // TODO: check authorization
-            // The current implementation recursively displays all referenced maps and vaults which
-            // the component may not have access to.
-
-            // Dump lazy map using DFS
-            // Consider using a proper Queue structure
-            let mut queue: Vec<Mid> = state_validated.lazy_maps.clone();
-            let mut i = 0;
-            let mut maps_visited: HashSet<Mid> = HashSet::new();
-            let mut vaults_found: HashSet<Vid> = state_validated.vaults.iter().cloned().collect();
-            while i < queue.len() {
-                let mid = queue[i];
-                i += 1;
-                if maps_visited.insert(mid) {
-                    let (maps, vaults) = dump_lazy_map(&address, &mid, ledger)?;
-                    queue.extend(maps);
-                    for v in vaults {
-                        vaults_found.insert(v);
-                    }
+            writeln!(output, "{}", "Authorization".green().bold());
+            for (_, auth) in c.authorization().iter().identify_last() {
+                for (last, (k, v)) in auth.iter().identify_last() {
+                    writeln!(output, "{} {:?} => {:?}", list_item_prefix(last), k, v);
                 }
             }
 
+            let state = c.state();
+            let state_data = ScryptoValue::from_slice(state).unwrap();
+            writeln!(output, "{}: {}", "State".green().bold(), state_data);
+
+            // Find all vaults owned by the component, assuming a tree structure.
+            let mut vaults_found: HashSet<VaultId> = state_data.vault_ids.iter().cloned().collect();
+            let mut queue: VecDeque<LazyMapId> = state_data.lazy_map_ids.iter().cloned().collect();
+            while !queue.is_empty() {
+                let lazy_map_id = queue.pop_front().unwrap();
+                let (maps, vaults) =
+                    dump_lazy_map(component_address, &lazy_map_id, substate_store, output)?;
+                queue.extend(maps);
+                vaults_found.extend(vaults);
+            }
+
             // Dump resources
-            dump_resources(address, &vaults_found, ledger)
+            dump_resources(component_address, &vaults_found, substate_store, output)
         }
         None => Err(DisplayError::ComponentNotFound),
     }
 }
 
-fn dump_lazy_map<T: SubstateStore>(
-    address: &Address,
-    mid: &Mid,
-    ledger: &T,
-) -> Result<(Vec<Mid>, Vec<Vid>), DisplayError> {
+fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore, O: std::io::Write>(
+    component_address: ComponentAddress,
+    lazy_map_id: &LazyMapId,
+    substate_store: &T,
+    output: &mut O,
+) -> Result<(Vec<LazyMapId>, Vec<VaultId>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
-    let map = ledger.get_lazy_map(address, mid).unwrap();
-    println!("{}: {:?}{:?}", "Lazy Map".green().bold(), address, mid);
-    for (last, (k, v)) in map.map().iter().identify_last() {
-        let k_validated = validate_data(k).unwrap();
-        let v_validated = validate_data(v).unwrap();
-        println!(
+    let map = substate_store.get_lazy_map_entries(component_address, lazy_map_id);
+    writeln!(
+        output,
+        "{}: {:?}{:?}",
+        "Lazy Map".green().bold(),
+        component_address,
+        lazy_map_id
+    );
+    for (last, (k, v)) in map.iter().identify_last() {
+        let k_validated = ScryptoValue::from_slice(k).unwrap();
+        let v_validated = ScryptoValue::from_slice(v).unwrap();
+        writeln!(
+            output,
             "{} {} => {}",
             list_item_prefix(last),
             k_validated,
             v_validated
         );
-        referenced_maps.extend(k_validated.lazy_maps);
-        referenced_maps.extend(v_validated.lazy_maps);
-        referenced_vaults.extend(k_validated.vaults);
-        referenced_vaults.extend(v_validated.vaults);
+        referenced_maps.extend(v_validated.lazy_map_ids);
+        referenced_vaults.extend(v_validated.vault_ids);
     }
     Ok((referenced_maps, referenced_vaults))
 }
 
-fn dump_resources<T: SubstateStore>(
-    address: Address,
-    vaults: &HashSet<Vid>,
-    ledger: &T,
+fn dump_resources<T: SubstateStore, O: std::io::Write>(
+    component_address: ComponentAddress,
+    vaults: &HashSet<VaultId>,
+    substate_store: &T,
+    output: &mut O,
 ) -> Result<(), DisplayError> {
-    println!("{}:", "Resources".green().bold());
-    for (last, vid) in vaults.iter().identify_last() {
-        let vault = ledger.get_vault(&address, vid).unwrap();
-        let amount = vault.amount();
+    writeln!(output, "{}:", "Resources".green().bold());
+    for (last, vault_id) in vaults.iter().identify_last() {
+        let vault: Vault = substate_store
+            .get_decoded_child_substate(&component_address, vault_id)
+            .unwrap()
+            .0;
+
+        let amount = vault.total_amount();
         let resource_address = vault.resource_address();
-        let resource_def = ledger.get_resource_def(resource_address).unwrap();
-        println!(
-            "{} {{ amount: {}, resource_def: {}{}{} }}",
+        let resource_manager: ResourceManager = substate_store
+            .get_decoded_substate(&resource_address)
+            .map(|(resource, _)| resource)
+            .unwrap();
+        writeln!(
+            output,
+            "{} {{ amount: {}, resource address: {}{}{} }}",
             list_item_prefix(last),
             amount,
             resource_address,
-            resource_def
+            resource_manager
                 .metadata()
                 .get("name")
                 .map(|name| format!(", name: \"{}\"", name))
                 .unwrap_or(String::new()),
-            resource_def
+            resource_manager
                 .metadata()
                 .get("symbol")
                 .map(|symbol| format!(", symbol: \"{}\"", symbol))
                 .unwrap_or(String::new()),
         );
-        if let Supply::NonFungible { keys } = vault.total_supply() {
-            for (inner_last, key) in keys.iter().identify_last() {
-                let non_fungible = ledger.get_non_fungible(resource_address, key).unwrap();
-                let immutable_data = validate_data(&non_fungible.immutable_data()).unwrap();
-                let mutable_data = validate_data(&non_fungible.mutable_data()).unwrap();
-                println!(
-                    "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
-                    if last { " " } else { "│" },
-                    list_item_prefix(inner_last),
-                    key,
-                    immutable_data,
-                    mutable_data
-                );
+        if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
+            let ids = vault.total_ids().unwrap();
+            for (inner_last, id) in ids.iter().identify_last() {
+                let non_fungible: Option<NonFungible> = substate_store
+                    .get_decoded_child_substate(&resource_address, id)
+                    .unwrap()
+                    .0;
+
+                if let Some(non_fungible) = non_fungible {
+                    let immutable_data =
+                        ScryptoValue::from_slice(&non_fungible.immutable_data()).unwrap();
+                    let mutable_data =
+                        ScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
+                    writeln!(
+                        output,
+                        "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                        if last { " " } else { "│" },
+                        list_item_prefix(inner_last),
+                        id,
+                        immutable_data,
+                        mutable_data
+                    );
+                }
             }
         }
     }
     Ok(())
 }
 
-/// Dump a resource definition into console.
-pub fn dump_resource_def<T: SubstateStore>(
-    address: Address,
-    ledger: &T,
+/// Dump a resource into console.
+pub fn dump_resource_manager<T: SubstateStore, O: std::io::Write>(
+    resource_address: ResourceAddress,
+    substate_store: &T,
+    output: &mut O,
 ) -> Result<(), DisplayError> {
-    let resource_def = ledger.get_resource_def(address);
-    match resource_def {
+    let resource_manager: Option<ResourceManager> = substate_store
+        .get_decoded_substate(&resource_address)
+        .map(|(resource, _)| resource);
+    match resource_manager {
         Some(r) => {
-            println!(
+            writeln!(
+                output,
                 "{}: {:?}",
                 "Resource Type".green().bold(),
                 r.resource_type()
             );
-            println!("{}: {}", "Metadata".green().bold(), r.metadata().len());
+            writeln!(
+                output,
+                "{}: {}",
+                "Metadata".green().bold(),
+                r.metadata().len()
+            );
             for (last, e) in r.metadata().iter().identify_last() {
-                println!("{} {}: {}", list_item_prefix(last), e.0.green().bold(), e.1);
+                writeln!(
+                    output,
+                    "{} {}: {}",
+                    list_item_prefix(last),
+                    e.0.green().bold(),
+                    e.1
+                );
             }
-            println!("{}: {}", "Flags".green().bold(), r.flags());
-            println!("{}: {}", "Mutable Flags".green().bold(), r.mutable_flags());
-            println!("{}: {:?}", "Authorities".green().bold(), r.authorities());
-            println!("{}: {}", "Total Supply".green().bold(), r.total_supply());
+            writeln!(
+                output,
+                "{}: {}",
+                "Total Supply".green().bold(),
+                r.total_supply()
+            );
             Ok(())
         }
-        None => Err(DisplayError::ResourceDefNotFound),
+        None => Err(DisplayError::ResourceManagerNotFound),
     }
 }

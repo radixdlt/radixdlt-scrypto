@@ -1,6 +1,6 @@
 [package]
 name = "scrypto-abi"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies]
@@ -10,10 +10,8 @@ serde = { version = "1.0", default-features = false, optional = true }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std"]
-alloc = ["sbor/alloc"]
+std = ["sbor/std", "serde?/std"]
+alloc = ["sbor/alloc", "serde?/alloc"]
 
-# Enable serde annotations by either `serde_std` or `serde_alloc`.
-# TODO: use weak depedency feature once it's stablized, https://github.com/rust-lang/cargo/issues/8832 
-serde_std = ["serde", "serde/std", "serde/derive", "sbor/serde_std"]
-serde_alloc = ["serde", "serde/alloc", "serde/derive", "sbor/serde_alloc"]
+# Enable serde derives
+serde = ["serde/derive", "sbor/serde"]

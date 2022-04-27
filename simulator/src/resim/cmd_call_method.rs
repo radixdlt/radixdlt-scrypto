@@ -1,14 +1,16 @@
+#![allow(unused_must_use)]
+
 use clap::Parser;
 use radix_engine::transaction::*;
-use scrypto::types::*;
+use scrypto::engine::types::*;
 
 use crate::resim::*;
 
 /// Call a method
 #[derive(Parser, Debug)]
 pub struct CallMethod {
-    /// The address of the component that the method belongs to
-    component_address: Address,
+    /// The component that the method belongs to
+    component_address: ComponentAddress,
 
     /// The method name
     method_name: String,
@@ -16,13 +18,13 @@ pub struct CallMethod {
     /// The call arguments
     arguments: Vec<String>,
 
-    /// The transaction signers
-    #[clap(short, long)]
-    signers: Option<Vec<EcdsaPublicKey>>,
-
     /// Output a transaction manifest without execution
     #[clap(short, long)]
     manifest: Option<PathBuf>,
+
+    /// The private keys used for signing, separated by comma
+    #[clap(short, long)]
+    signing_keys: Option<String>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -30,22 +32,30 @@ pub struct CallMethod {
 }
 
 impl CallMethod {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_account = get_default_account()?;
-        let default_signers = get_default_signers()?;
-        let signatures = self.signers.clone().unwrap_or(default_signers);
-        let transaction = TransactionBuilder::new(&executor)
-            .call_method(
+
+        let transaction = TransactionBuilder::new()
+            .call_method_with_abi(
                 self.component_address,
                 &self.method_name,
                 self.arguments.clone(),
                 Some(default_account),
+                &executor
+                    .export_abi_by_component(self.component_address)
+                    .map_err(Error::AbiExportError)?,
             )
+            .map_err(Error::TransactionConstructionError)?
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(signatures)
-            .map_err(Error::TransactionConstructionError)?;
-        process_transaction(transaction, &mut executor, &self.manifest)
+            .build_with_no_nonce();
+        process_transaction(
+            &mut executor,
+            transaction,
+            &self.signing_keys,
+            &self.manifest,
+            out,
+        )
     }
 }

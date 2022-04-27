@@ -1,14 +1,17 @@
 [package]
 name = "scrypto"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies]
 sha2 = { version = "0.9", default-features = false }
+sha3 = { version = "0.10", default-features = false }
+p256 = { git = "https://github.com/radixdlt/elliptic-curves", branch = "alloc", default-features = false, features = ["ecdsa"] }
 hex = { version = "0.4", default-features = false }
 num-traits = { version = "0.2", default-features = false }
 num-bigint = { version = "0.4", default-features = false }
-hashbrown = { version = "0.11", optional = true } 
+hashbrown = { version = "0.12", optional = true } 
+cargo_toml = { version = "0.10", optional = true }
 sbor = { path = "../sbor", default-features = false }
 scrypto-abi = { path = "../scrypto-abi", default-features = false }
 scrypto-derive = { path = "../scrypto-derive", default-features = false }
@@ -16,13 +19,11 @@ scrypto-derive = { path = "../scrypto-derive", default-features = false }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "scrypto-abi/std", "scrypto-derive/std"]
-alloc = ["hashbrown", "hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc"]
+std = ["hex/std", "sbor/std", "scrypto-abi/std", "scrypto-derive/std", "p256/alloc", "cargo_toml"]
+alloc = ["hashbrown", "hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc", "p256/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]
 
-# Enable serde annotations by either `serde_std` or `serde_alloc`.
-# TODO: use weak depedency feature once it's stablized, https://github.com/rust-lang/cargo/issues/8832 
-serde_std = ["sbor/serde_std", "scrypto-abi/serde_std"]
-serde_alloc = ["sbor/serde_alloc", "scrypto-abi/serde_alloc"]
+# Enable serde derives
+serde = ["sbor/serde", "scrypto-abi/serde"]

@@ -1,10 +1,15 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+#[rustfmt::skip]
+pub mod utils;
+
+use crate::utils::assert_json_eq;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::*;
-use serde::Serialize;
-use serde_json::{json, to_value, Value};
+use serde_json::json;
 
 #[derive(Debug, PartialEq, TypeId, Encode, Decode, Describe)]
 pub struct TestStructNamed {
@@ -31,37 +36,31 @@ pub enum TestEnum {
     C,
 }
 
-fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
-    assert_eq!(to_value(&actual).unwrap(), expected);
-}
-
 #[test]
 fn test_struct_with_skip() {
     let a = TestStructNamed { x: 1, y: 2 };
     let b = TestStructUnnamed(3, 4);
     let c = TestStructUnit;
 
-    let mut encoder = Encoder::with_type(Vec::with_capacity(512));
+    let mut bytes = Vec::with_capacity(512);
+    let mut encoder = Encoder::with_type(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);
-    let bytes: Vec<u8> = encoder.into();
 
     #[rustfmt::skip]
     assert_eq!(
         vec![
-          16, // struct type
-          18, // fields type
+          16, // struct type 
           1, 0, 0, 0, // number of fields
           9, 2, 0, 0, 0, // field value
           
-          16,  // struct type
-          19,  // fields type
+          16,  // struct type 
           1, 0, 0, 0,  // number of fields
           9, 4, 0, 0, 0,  // field value
           
           16, // struct type
-          20 // fields type
+          0, 0, 0, 0,  // number of fields
         ],
         bytes
     );
@@ -78,44 +77,44 @@ fn test_struct_with_skip() {
     assert_json_eq(
         TestStructNamed::describe(),
         json!({
-          "type": "Struct",
-          "name": "TestStructNamed",
-          "fields": {
-            "type": "Named",
-            "named": [
-              [
-                "y",
-                {
-                  "type": "U32"
-                }
-              ]
-            ]
-          }
+            "type": "Struct",
+            "name": "TestStructNamed",
+            "fields": {
+                "type": "Named",
+                "named": [
+                    [
+                        "y",
+                        {
+                            "type": "U32"
+                        }
+                    ]
+                ]
+            }
         }),
     );
     assert_json_eq(
         TestStructUnnamed::describe(),
         json!({
-          "type": "Struct",
-          "name": "TestStructUnnamed",
-          "fields": {
-            "type": "Unnamed",
-            "unnamed": [
-              {
-                "type": "U32"
-              }
-            ]
-          }
+            "type": "Struct",
+            "name": "TestStructUnnamed",
+            "fields": {
+                "type": "Unnamed",
+                "unnamed": [
+                    {
+                        "type": "U32"
+                    }
+                ]
+            }
         }),
     );
     assert_json_eq(
         TestStructUnit::describe(),
         json!({
-          "type": "Struct",
-          "name": "TestStructUnit",
-          "fields": {
-            "type": "Unit"
-          }
+            "type": "Struct",
+            "name": "TestStructUnit",
+            "fields": {
+                "type": "Unit"
+            }
         }),
     );
 }
@@ -126,30 +125,31 @@ fn test_enum_with_skip() {
     let b = TestEnum::B(3, 4);
     let c = TestEnum::C;
 
-    let mut encoder = Encoder::with_type(Vec::with_capacity(512));
+    let mut bytes = Vec::with_capacity(512);
+    let mut encoder = Encoder::with_type(&mut bytes);
     a.encode(&mut encoder);
     b.encode(&mut encoder);
     c.encode(&mut encoder);
-    let bytes: Vec<u8> = encoder.into();
 
     #[rustfmt::skip]
     assert_eq!(
         vec![
             17, // enum type
-            0, // enum index
-            18, // fields type
+            1, 0, 0, 0, // string size
+            65, // "A"
             1, 0, 0, 0,  // number of fields
             9, 2, 0, 0, 0, // field value
 
             17, // enum type
-            1,  // enum index
-            19, // fields type
+            1, 0, 0, 0, // string size
+            66, // "B"
             1, 0, 0, 0, // number of fields
             9, 4, 0, 0, 0, // field value
             
             17, // enum type
-            2,  // enum index
-            20  // fields type
+            1, 0, 0, 0, // string size
+            67, // "C"
+            0, 0, 0, 0,  // number of fields
         ],
         bytes
     );

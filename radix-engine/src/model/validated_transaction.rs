@@ -1,58 +1,86 @@
-use scrypto::rust::collections::BTreeSet;
+use scrypto::crypto::*;
+use scrypto::engine::types::*;
+use scrypto::rust::collections::{BTreeSet};
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
+use scrypto::values::*;
 
-use crate::model::*;
-
-#[derive(Debug, Clone)]
+/// Represents a validated transaction
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ValidatedTransaction {
+    pub raw_hash: Hash,
     pub instructions: Vec<ValidatedInstruction>,
     pub signers: Vec<EcdsaPublicKey>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValidatedInstruction {
     TakeFromWorktop {
+        resource_address: ResourceAddress,
+    },
+    TakeFromWorktopByAmount {
         amount: Decimal,
-        resource_address: Address,
+        resource_address: ResourceAddress,
     },
-    TakeAllFromWorktop {
-        resource_address: Address,
-    },
-    TakeNonFungiblesFromWorktop {
-        keys: BTreeSet<NonFungibleKey>,
-        resource_address: Address,
+    TakeFromWorktopByIds {
+        ids: BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
     },
     ReturnToWorktop {
-        bid: Bid,
+        bucket_id: BucketId,
     },
     AssertWorktopContains {
+        resource_address: ResourceAddress,
+    },
+    AssertWorktopContainsByAmount {
         amount: Decimal,
-        resource_address: Address,
+        resource_address: ResourceAddress,
     },
-    CreateBucketRef {
-        bid: Bid,
+    AssertWorktopContainsByIds {
+        ids: BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
     },
-    CloneBucketRef {
-        rid: Rid,
+    PopFromAuthZone,
+    PushToAuthZone {
+        proof_id: ProofId,
     },
-    DropBucketRef {
-        rid: Rid,
+    ClearAuthZone,
+    CreateProofFromAuthZone {
+        resource_address: ResourceAddress,
+    },
+    CreateProofFromAuthZoneByAmount {
+        amount: Decimal,
+        resource_address: ResourceAddress,
+    },
+    CreateProofFromAuthZoneByIds {
+        ids: BTreeSet<NonFungibleId>,
+        resource_address: ResourceAddress,
+    },
+    CreateProofFromBucket {
+        bucket_id: BucketId,
+    },
+    CloneProof {
+        proof_id: ProofId,
+    },
+    DropProof {
+        proof_id: ProofId,
     },
     CallFunction {
-        package_address: Address,
+        package_address: PackageAddress,
         blueprint_name: String,
         function: String,
-        args: Vec<ValidatedData>,
+        args: Vec<ScryptoValue>,
     },
     CallMethod {
-        component_address: Address,
+        component_address: ComponentAddress,
         method: String,
-        args: Vec<ValidatedData>,
+        args: Vec<ScryptoValue>,
     },
     CallMethodWithAllResources {
-        component_address: Address,
+        component_address: ComponentAddress,
         method: String,
+    },
+    PublishPackage {
+        code: Vec<u8>,
     },
 }

@@ -1,16 +1,20 @@
 [package]
 name = "radix-engine"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
-scrypto = { path = "../scrypto", default-features = false}
-wasmi = { version = "0.9", default-features = false, features = ["vec_memory"] }
+scrypto = { path = "../scrypto", default-features = false }
+wasmi = { git = "https://github.com/radixdlt/wasmi", branch = "expose-exports" }
 colored = { version = "2.0", default-features = false }
 lru = { version = "0.7" }
 bencher = { version = "0.1.5" }
 hex = { version = "0.4", default-features = false }
+indexmap = { git = "https://github.com/bluss/indexmap", tag = "1.8.1" }
+
+[dev-dependencies]
+wabt = { version = "0.10.0" }
 
 [[bench]]
 name = "bench"
@@ -20,4 +24,4 @@ harness = false
 # You should enable either `std` or `alloc`
 default = ["std"]
 std = ["sbor/std", "scrypto/std", "wasmi/std"]
-alloc = ["sbor/alloc", "scrypto/alloc", "wasmi/core"]
+alloc = ["sbor/alloc", "scrypto/alloc"]

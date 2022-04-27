@@ -1,141 +1,124 @@
-use radix_engine::ledger::*;
+#[rustfmt::skip]
+pub mod test_runner;
+
+use crate::test_runner::TestRunner;
+use radix_engine::errors::RuntimeError;
+use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::*;
-use radix_engine::transaction::*;
 use scrypto::prelude::*;
-use std::fs;
-use std::process::Command;
-
-pub fn compile(name: &str) -> Vec<u8> {
-    Command::new("cargo")
-        .current_dir(format!("./tests/{}", name))
-        .args(["build", "--target", "wasm32-unknown-unknown", "--release"])
-        .status()
-        .unwrap();
-    fs::read(format!(
-        "./tests/{}/target/wasm32-unknown-unknown/release/{}.wasm",
-        name,
-        name.replace("-", "_")
-    ))
-    .unwrap()
-}
-
-fn fungible_amount() -> Resource {
-    Resource::Fungible {
-        amount: Decimal(100),
-        resource_address: RADIX_TOKEN,
-    }
-}
+use scrypto::values::ScryptoValue;
 
 #[test]
 fn can_withdraw_from_my_account() {
     // Arrange
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
-    let other_key = executor.new_public_key();
-    let other_account = executor.new_account(other_key);
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (pk, sk, account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(&fungible_amount(), account)
+    let transaction = test_runner
+        .new_transaction_builder()
+        .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let result = executor.run(transaction);
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(result.unwrap().result.is_ok());
+    assert!(receipt.result.is_ok());
 }
 
 #[test]
 fn can_withdraw_non_fungible_from_my_account() {
     // Arrange
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let package = executor.publish_package(&compile("non_fungible")).unwrap();
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
-    let other_key = executor.new_public_key();
-    let other_account = executor.new_account(other_key);
-    let transaction = TransactionBuilder::new(&executor)
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "create_non_fungible_fixed",
-            vec![],
-            Some(account),
-        )
-        .call_method_with_all_resources(account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let receipt = executor.run(transaction).unwrap();
-    let non_fungible_address = receipt.resource_def(0).unwrap().to_owned();
-    let non_fungible_amount = Resource::NonFungible {
-        keys: BTreeSet::from([NonFungibleKey::from(1)]),
-        resource_address: non_fungible_address,
-    };
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (pk, sk, account) = test_runner.new_account();
+    let (_, _, other_account) = test_runner.new_account();
+    let resource_address = test_runner.create_non_fungible_resource(account);
 
     // Act
-    let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(&non_fungible_amount, account)
+    let transaction = test_runner
+        .new_transaction_builder()
+        .withdraw_from_account(resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![key])
-        .unwrap();
-    let result = executor.run(transaction);
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    println!("{:?}", result);
-    assert!(result.unwrap().result.is_ok());
+    receipt.result.expect("Should be okay");
 }
 
 #[test]
 fn cannot_withdraw_from_other_account() {
     // Arrange
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
-    let other_key = executor.new_public_key();
-    let other_account = executor.new_account(other_key);
-    let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(&fungible_amount(), account)
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (_, _, account) = test_runner.new_account();
+    let (other_pk, other_sk, other_account) = test_runner.new_account();
+    let transaction = test_runner
+        .new_transaction_builder()
+        .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(vec![other_key])
-        .unwrap();
+        .build(test_runner.get_nonce([other_pk]))
+        .sign([&other_sk]);
 
     // Act
-    let result = executor.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(!result.unwrap().result.is_ok());
+    let error = receipt.result.expect_err("Should be runtime error");
+    assert_auth_error!(error);
 }
 
 #[test]
 fn account_to_bucket_to_account() {
     // Arrange
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let key = executor.new_public_key();
-    let account = executor.new_account(key);
-    let amount = fungible_amount();
-    let transaction = TransactionBuilder::new(&executor)
-        .withdraw_from_account(&amount, account)
-        .take_from_worktop(&amount, |builder, bid| {
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (pk, sk, account) = test_runner.new_account();
+    let transaction = test_runner
+        .new_transaction_builder()
+        .withdraw_from_account(RADIX_TOKEN, account)
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
                     method: "deposit".to_owned(),
-                    args: vec![scrypto_encode(&bid)],
+                    args: vec![scrypto_encode(&scrypto::resource::Bucket(bucket_id))],
                 })
                 .0
         })
-        .build(vec![key])
-        .unwrap();
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
 
     // Act
-    let result = executor.run(transaction);
+    let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(result.unwrap().result.is_ok());
+    assert!(receipt.result.is_ok());
+}
+
+#[test]
+fn test_account_balance() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut test_runner = TestRunner::new(&mut substate_store);
+    let (pk, sk, account) = test_runner.new_account();
+    let transaction = test_runner
+        .new_transaction_builder()
+        .call_method(account, "balance", args![RADIX_TOKEN])
+        .build(test_runner.get_nonce([pk]))
+        .sign([&sk]);
+
+    // Act
+    let receipt = test_runner.validate_and_execute(&transaction);
+
+    // Assert
+    assert_eq!(
+        receipt.outputs[0],
+        ScryptoValue::from_value(&Decimal::from(1000000))
+    );
 }

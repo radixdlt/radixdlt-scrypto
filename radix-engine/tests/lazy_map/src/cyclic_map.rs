@@ -1,42 +1,48 @@
+use scrypto::engine::api::*;
+use scrypto::engine::call_engine;
 use scrypto::prelude::*;
-use scrypto::engine::*;
+use std::marker::PhantomData;
 
 blueprint! {
     struct CyclicMap {
-        maps: LazyMap<u32, LazyMap<u32, u32>>
+        maps: LazyMap<u32, LazyMap<u32, u32>>,
     }
 
     impl CyclicMap {
-        pub fn new() -> Component {
+        pub fn new() -> ComponentAddress {
             let map0 = LazyMap::new();
             let map1 = LazyMap::new();
             map0.insert(1u32, map1);
 
             let input = PutLazyMapEntryInput {
-                mid: Mid(Context::transaction_hash(), 1025),
+                lazy_map_id: (Runtime::transaction_hash(), 1025),
                 key: scrypto_encode(&0u32),
-                value: scrypto_encode(&Mid(Context::transaction_hash(), 1024)),
+                value: scrypto_encode(&LazyMap::<(), ()> {
+                    id: (Runtime::transaction_hash(), 1024),
+                    key: PhantomData,
+                    value: PhantomData,
+                }),
             };
             let _: PutLazyMapEntryOutput = call_engine(PUT_LAZY_MAP_ENTRY, input);
 
-            CyclicMap {
-                maps: map0
-            }.instantiate()
+            CyclicMap { maps: map0 }.instantiate().globalize()
         }
 
-        pub fn new_self_cyclic() -> Component {
+        pub fn new_self_cyclic() -> ComponentAddress {
             let map0 = LazyMap::new();
 
             let input = PutLazyMapEntryInput {
-                mid: Mid(Context::transaction_hash(), 1024),
+                lazy_map_id: (Runtime::transaction_hash(), 1024),
                 key: scrypto_encode(&0u32),
-                value: scrypto_encode(&Mid(Context::transaction_hash(), 1024)),
+                value: scrypto_encode(&LazyMap::<(), ()> {
+                    id: (Runtime::transaction_hash(), 1024),
+                    key: PhantomData,
+                    value: PhantomData,
+                }),
             };
             let _: PutLazyMapEntryOutput = call_engine(PUT_LAZY_MAP_ENTRY, input);
 
-            CyclicMap {
-                maps: map0
-            }.instantiate()
+            CyclicMap { maps: map0 }.instantiate().globalize()
         }
     }
 }

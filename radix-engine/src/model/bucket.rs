@@ -1,189 +1,242 @@
+use crate::engine::SystemApi;
 use sbor::*;
-use scrypto::engine::*;
+use scrypto::buffer::scrypto_decode;
+use scrypto::engine::types::*;
+use scrypto::rust::cell::{Ref, RefCell, RefMut};
 use scrypto::rust::collections::BTreeSet;
+use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
+use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
+use scrypto::values::ScryptoValue;
 
-/// Represents an error when accessing a bucket.
-#[derive(Debug, Clone)]
+use crate::model::{
+    Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
+};
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum BucketError {
-    ResourceNotMatching,
-    InsufficientBalance,
-    InvalidAmount(Decimal),
-    UnsupportedOperation,
-    NonFungibleNotFound,
-}
-
-/// Represents the supply of resource.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum Supply {
-    Fungible { amount: Decimal },
-
-    NonFungible { keys: BTreeSet<NonFungibleKey> },
+    InvalidDivisibility,
+    InvalidRequestData(DecodeError),
+    CouldNotCreateBucket,
+    CouldNotTakeBucket,
+    MethodNotFound(String),
+    ResourceContainerError(ResourceContainerError),
+    ProofError(ProofError),
+    CouldNotCreateProof,
 }
 
 /// A transient resource container.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
+#[derive(Debug)]
 pub struct Bucket {
-    resource_address: Address,
-    resource_type: ResourceType,
-    supply: Supply,
+    container: Rc<RefCell<ResourceContainer>>,
 }
-
-/// A bucket becomes locked after a borrow operation.
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct LockedBucket {
-    bucket_id: Bid,
-    bucket: Bucket,
-}
-
-/// A reference to a bucket.
-pub type BucketRef = Rc<LockedBucket>;
 
 impl Bucket {
-    pub fn new(resource_address: Address, resource_type: ResourceType, supply: Supply) -> Self {
+    pub fn new(container: ResourceContainer) -> Self {
         Self {
-            resource_address,
-            resource_type,
-            supply,
+            container: Rc::new(RefCell::new(container)),
         }
     }
 
-    pub fn put(&mut self, other: Self) -> Result<(), BucketError> {
-        if self.resource_address != other.resource_address {
-            Err(BucketError::ResourceNotMatching)
-        } else {
-            match &mut self.supply {
-                Supply::Fungible { ref mut amount } => {
-                    let other_amount = match other.supply() {
-                        Supply::Fungible { amount } => amount,
-                        Supply::NonFungible { .. } => {
-                            panic!("Illegal state!")
-                        }
-                    };
-                    *amount = *amount + other_amount;
-                }
-                Supply::NonFungible { ref mut keys } => {
-                    let other_keys = match other.supply() {
-                        Supply::Fungible { .. } => {
-                            panic!("Illegal state!")
-                        }
-                        Supply::NonFungible { keys } => keys,
-                    };
-                    keys.extend(other_keys);
-                }
-            }
-            Ok(())
-        }
+    fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
+        self.borrow_container_mut().put(other.into_container()?)
     }
 
-    pub fn take(&mut self, quantity: Decimal) -> Result<Self, BucketError> {
-        Self::check_amount(quantity, self.resource_type.divisibility())?;
-
-        if self.amount() < quantity {
-            Err(BucketError::InsufficientBalance)
-        } else {
-            match &mut self.supply {
-                Supply::Fungible { amount } => {
-                    self.supply = Supply::Fungible {
-                        amount: *amount - quantity,
-                    };
-                    Ok(Self::new(
-                        self.resource_address,
-                        self.resource_type,
-                        Supply::Fungible { amount: quantity },
-                    ))
-                }
-                Supply::NonFungible { ref mut keys } => {
-                    let n: usize = quantity.to_string().parse().unwrap();
-                    let taken: BTreeSet<NonFungibleKey> = keys.iter().cloned().take(n).collect();
-                    for e in &taken {
-                        keys.remove(e);
-                    }
-                    Ok(Self::new(
-                        self.resource_address,
-                        self.resource_type,
-                        Supply::NonFungible { keys: taken },
-                    ))
-                }
-            }
-        }
+    fn take(&mut self, amount: Decimal) -> Result<ResourceContainer, ResourceContainerError> {
+        self.borrow_container_mut().take_by_amount(amount)
     }
 
-    pub fn take_non_fungible(&mut self, key: &NonFungibleKey) -> Result<Self, BucketError> {
-        self.take_non_fungibles(&BTreeSet::from([key.clone()]))
-    }
-
-    pub fn take_non_fungibles(
+    fn take_non_fungibles(
         &mut self,
-        set: &BTreeSet<NonFungibleKey>,
-    ) -> Result<Self, BucketError> {
-        match &mut self.supply {
-            Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Supply::NonFungible { ref mut keys } => {
-                for key in set {
-                    if !keys.remove(&key) {
-                        return Err(BucketError::NonFungibleNotFound);
-                    }
-                }
-                Ok(Self::new(
-                    self.resource_address,
-                    self.resource_type,
-                    Supply::NonFungible { keys: set.clone() },
-                ))
+        ids: &BTreeSet<NonFungibleId>,
+    ) -> Result<ResourceContainer, ResourceContainerError> {
+        self.borrow_container_mut().take_by_ids(ids)
+    }
+
+    pub fn create_proof(&mut self, self_bucket_id: BucketId) -> Result<Proof, ProofError> {
+        let container_id = ResourceContainerId::Bucket(self_bucket_id);
+        match self.resource_type() {
+            ResourceType::Fungible { .. } => {
+                self.create_proof_by_amount(self.total_amount(), container_id)
+            }
+            ResourceType::NonFungible => {
+                self.create_proof_by_ids(&self.total_ids().unwrap(), container_id)
             }
         }
     }
 
-    pub fn get_non_fungible_keys(&self) -> Result<Vec<NonFungibleKey>, BucketError> {
-        match &self.supply {
-            Supply::Fungible { .. } => Err(BucketError::UnsupportedOperation),
-            Supply::NonFungible { keys } => Ok(keys.iter().cloned().collect()),
+    pub fn create_proof_by_amount(
+        &mut self,
+        amount: Decimal,
+        container_id: ResourceContainerId,
+    ) -> Result<Proof, ProofError> {
+        // lock the specified amount
+        let locked_amount_or_ids = self
+            .borrow_container_mut()
+            .lock_by_amount(amount)
+            .map_err(ProofError::ResourceContainerError)?;
+
+        // produce proof
+        let mut evidence = HashMap::new();
+        evidence.insert(
+            container_id,
+            (self.container.clone(), locked_amount_or_ids.clone()),
+        );
+        Proof::new(
+            self.resource_address(),
+            self.resource_type(),
+            locked_amount_or_ids,
+            evidence,
+        )
+    }
+
+    pub fn create_proof_by_ids(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+        container_id: ResourceContainerId,
+    ) -> Result<Proof, ProofError> {
+        // lock the specified id set
+        let locked_amount_or_ids = self
+            .borrow_container_mut()
+            .lock_by_ids(ids)
+            .map_err(ProofError::ResourceContainerError)?;
+
+        // produce proof
+        let mut evidence = HashMap::new();
+        evidence.insert(
+            container_id,
+            (self.container.clone(), locked_amount_or_ids.clone()),
+        );
+        Proof::new(
+            self.resource_address(),
+            self.resource_type(),
+            locked_amount_or_ids,
+            evidence,
+        )
+    }
+
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.borrow_container().resource_address()
+    }
+
+    pub fn resource_type(&self) -> ResourceType {
+        self.borrow_container().resource_type()
+    }
+
+    fn total_amount(&self) -> Decimal {
+        self.borrow_container().total_amount()
+    }
+
+    fn total_ids(&self) -> Result<BTreeSet<NonFungibleId>, ResourceContainerError> {
+        self.borrow_container().total_ids()
+    }
+
+    pub fn is_locked(&self) -> bool {
+        self.borrow_container().is_locked()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.borrow_container().is_empty()
+    }
+
+    pub fn into_container(self) -> Result<ResourceContainer, ResourceContainerError> {
+        Rc::try_unwrap(self.container)
+            .map_err(|_| ResourceContainerError::ContainerLocked)
+            .map(|c| c.into_inner())
+    }
+
+    fn borrow_container(&self) -> Ref<ResourceContainer> {
+        self.container.borrow()
+    }
+
+    fn borrow_container_mut(&mut self) -> RefMut<ResourceContainer> {
+        self.container.borrow_mut()
+    }
+
+    pub fn main<S: SystemApi>(
+        &mut self,
+        bucket_id: BucketId,
+        function: &str,
+        args: Vec<ScryptoValue>,
+        system_api: &mut S,
+    ) -> Result<ScryptoValue, BucketError> {
+        match function {
+            "take_from_bucket" => {
+                let amount: Decimal =
+                    scrypto_decode(&args[0].raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                let container = self
+                    .take(amount)
+                    .map_err(BucketError::ResourceContainerError)?;
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| BucketError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
+            }
+            "take_non_fungibles_from_bucket" => {
+                let ids: BTreeSet<NonFungibleId> =
+                    scrypto_decode(&args[0].raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                let container = self
+                    .take_non_fungibles(&ids)
+                    .map_err(BucketError::ResourceContainerError)?;
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| BucketError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
+            }
+            "get_non_fungible_ids_in_bucket" => {
+                let ids = self
+                    .total_ids()
+                    .map_err(BucketError::ResourceContainerError)?;
+                Ok(ScryptoValue::from_value(&ids))
+            }
+            "put_into_bucket" => {
+                let bucket_id: scrypto::resource::Bucket =
+                    scrypto_decode(&args[0].raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                let bucket = system_api
+                    .take_bucket(bucket_id.0)
+                    .map_err(|_| BucketError::CouldNotTakeBucket)?;
+                self.put(bucket)
+                    .map_err(BucketError::ResourceContainerError)?;
+                Ok(ScryptoValue::from_value(&()))
+            }
+            "get_bucket_amount" => Ok(ScryptoValue::from_value(&self.total_amount())),
+            "get_bucket_resource_address" => Ok(ScryptoValue::from_value(&self.resource_address())),
+            "create_bucket_proof" => {
+                let proof = self
+                    .create_proof(bucket_id)
+                    .map_err(BucketError::ProofError)?;
+                let proof_id = system_api
+                    .create_proof(proof)
+                    .map_err(|_| BucketError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                    proof_id,
+                )))
+            }
+            _ => Err(BucketError::MethodNotFound(function.to_string())),
         }
     }
 
-    pub fn supply(&self) -> Supply {
-        self.supply.clone()
-    }
-
-    pub fn amount(&self) -> Decimal {
-        match &self.supply {
-            Supply::Fungible { amount } => *amount,
-            Supply::NonFungible { keys } => keys.len().into(),
+    pub fn drop<'s, S: SystemApi>(self, system_api: &mut S) -> Result<ScryptoValue, BucketError> {
+        // Notify resource manager, TODO: Should not need to notify manually
+        let resource_address = self.resource_address();
+        let mut resource_manager = system_api
+            .borrow_global_mut_resource_manager(resource_address)
+            .unwrap();
+        resource_manager.burn(self.total_amount());
+        if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
+            for id in self.total_ids().unwrap() {
+                let non_fungible_address = NonFungibleAddress::new(resource_address, id);
+                system_api.set_non_fungible(non_fungible_address, Option::None);
+            }
         }
-    }
+        system_api.return_borrowed_global_resource_manager(resource_address, resource_manager);
 
-    pub fn resource_address(&self) -> Address {
-        self.resource_address
-    }
-
-    fn check_amount(amount: Decimal, divisibility: u8) -> Result<(), BucketError> {
-        if !amount.is_negative() && amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
-            Err(BucketError::InvalidAmount(amount))
-        } else {
-            Ok(())
-        }
-    }
-}
-
-impl LockedBucket {
-    pub fn new(bucket_id: Bid, bucket: Bucket) -> Self {
-        Self { bucket_id, bucket }
-    }
-
-    pub fn bucket_id(&self) -> Bid {
-        self.bucket_id
-    }
-
-    pub fn bucket(&self) -> &Bucket {
-        &self.bucket
-    }
-}
-
-impl From<LockedBucket> for Bucket {
-    fn from(b: LockedBucket) -> Self {
-        b.bucket
+        Ok(ScryptoValue::from_value(&()))
     }
 }

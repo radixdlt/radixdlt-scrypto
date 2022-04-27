@@ -1,23 +1,22 @@
 [package]
 name = "sbor"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies]
 sbor-derive = { path = "../sbor-derive" }
-hashbrown = { version = "0.11", optional = true } 
+hashbrown = { version = "0.12", optional = true }
 serde = { version = "1.0", default-features = false, optional = true }
+hex = { version = "0.4.3", default-features = false, optional = true }
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = []
-alloc = ["hashbrown"]
+std = ["serde?/std", "hex?/std"]
+alloc = ["hashbrown", "serde?/alloc", "hex?/alloc"]
+
+# Enable serde derives for SBOR value and type models
+serde = ["serde/derive", "hex/serde"]
 
 # Enable tracing
 trace = ["sbor-derive/trace"]
-
-# Enable serde annotations by either `serde_std` or `serde_alloc`.
-# TODO: use weak depedency feature once it's stablized, https://github.com/rust-lang/cargo/issues/8832 
-serde_std = ["serde", "serde/std", "serde/derive"]
-serde_alloc = ["serde", "serde/alloc", "serde/derive"]

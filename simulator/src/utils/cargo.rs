@@ -55,13 +55,13 @@ pub fn build_package<P: AsRef<Path>>(path: P, trace: bool) -> Result<PathBuf, Ca
             Manifest::from_path(&cargo).map_err(|_| CargoExecutionError::InvalidManifestFile)?;
 
         // resolve lib name from manifest
-        let mut lib_name = None;
+        let mut wasm_name = None;
         if let Some(lib) = manifest.lib {
-            lib_name = lib.name.clone();
+            wasm_name = lib.name.clone();
         }
-        if lib_name == None {
+        if wasm_name == None {
             if let Some(pkg) = manifest.package {
-                lib_name = Some(pkg.name.replace("-", "_"));
+                wasm_name = Some(pkg.name.replace("-", "_"));
             }
         }
 
@@ -69,7 +69,7 @@ pub fn build_package<P: AsRef<Path>>(path: P, trace: bool) -> Result<PathBuf, Ca
         bin.push("target");
         bin.push("wasm32-unknown-unknown");
         bin.push("release");
-        bin.push(lib_name.ok_or(CargoExecutionError::InvalidManifestFile)?);
+        bin.push(wasm_name.ok_or(CargoExecutionError::InvalidManifestFile)?);
         Ok(bin.with_extension("wasm"))
     } else {
         Err(CargoExecutionError::NotCargoPackage)

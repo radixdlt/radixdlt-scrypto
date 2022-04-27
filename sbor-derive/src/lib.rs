@@ -7,6 +7,13 @@ mod utils;
 use proc_macro::TokenStream;
 
 /// Derive code that describes this data structure.
+///
+/// Note that this derive doesn't work with recursive type, such as
+/// ```ignore
+/// struct A {
+///     array: Vec<A>
+/// }
+/// ```
 #[proc_macro_derive(Describe, attributes(sbor))]
 pub fn describe(input: TokenStream) -> TokenStream {
     describe::handle_describe(proc_macro2::TokenStream::from(input))

@@ -1,83 +1,67 @@
-use sbor::{describe::Type, *};
+use crate::args;
+use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::core::SNodeRef;
+use sbor::*;
 
-use crate::buffer::*;
-use crate::engine::*;
+use crate::crypto::*;
+use crate::engine::{api::*, call_engine, types::VaultId};
+use crate::math::*;
+use crate::misc::*;
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::collections::BTreeSet;
+use crate::rust::fmt;
+use crate::rust::str::FromStr;
+use crate::rust::string::String;
+use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a persistent resource container on ledger state.
-#[derive(Debug)]
-pub struct Vault {
-    vid: Vid,
-}
-
-impl From<Vid> for Vault {
-    fn from(vid: Vid) -> Self {
-        Self { vid }
-    }
-}
-
-impl From<Vault> for Vid {
-    fn from(a: Vault) -> Vid {
-        a.vid
-    }
-}
+#[derive(PartialEq, Eq, Hash)]
+pub struct Vault(pub VaultId);
 
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
-    pub fn new<A: Into<ResourceDef>>(resource_def: A) -> Self {
+    pub fn new(resource_address: ResourceAddress) -> Self {
         let input = CreateEmptyVaultInput {
-            resource_address: resource_def.into().address(),
+            resource_address: resource_address,
         };
         let output: CreateEmptyVaultOutput = call_engine(CREATE_EMPTY_VAULT, input);
 
-        output.vid.into()
+        Self(output.vault_id)
     }
 
-    /// Creates an empty vault and fills it with an initial bucket of resources.
+    /// Creates an empty vault and fills it with an initial bucket of resource.
     pub fn with_bucket(bucket: Bucket) -> Self {
-        let mut vault = Vault::new(bucket.resource_def().address());
+        let mut vault = Vault::new(bucket.resource_address());
         vault.put(bucket);
         vault
     }
 
     /// Puts a bucket of resources into this vault.
     pub fn put(&mut self, bucket: Bucket) {
-        let input = PutIntoVaultInput {
-            vid: self.vid,
-            bid: bucket.into(),
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "put_into_vault".to_string(),
+            args: args![bucket],
         };
-        let _: PutIntoVaultOutput = call_engine(PUT_INTO_VAULT, input);
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Takes some amount of resource from this vault into a bucket.
     pub fn take<A: Into<Decimal>>(&mut self, amount: A) -> Bucket {
-        let input = TakeFromVaultInput {
-            vid: self.vid,
-            amount: amount.into(),
-            auth: None,
+        let amount: Decimal = amount.into();
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "take_from_vault".to_string(),
+            args: args![amount],
         };
-        let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
-
-        output.bid.into()
-    }
-
-    /// Takes some amount of resource from this vault into a bucket.
-    ///
-    /// This variant of `take` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_with_auth<A: Into<Decimal>>(&mut self, amount: A, auth: BucketRef) -> Bucket {
-        let input = TakeFromVaultInput {
-            vid: self.vid,
-            amount: amount.into(),
-            auth: Some(auth.into()),
-        };
-        let output: TakeFromVaultOutput = call_engine(TAKE_FROM_VAULT, input);
-
-        output.bid.into()
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let bucket: Bucket = scrypto_decode(&output.rtn).unwrap();
+        bucket
     }
 
     /// Takes all resource stored in this vault.
@@ -85,105 +69,89 @@ impl Vault {
         self.take(self.amount())
     }
 
-    /// Takes all resource stored in this vault.
-    ///
-    /// This variant of `take_all` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    pub fn take_all_with_auth(&mut self, auth: BucketRef) -> Bucket {
-        self.take_with_auth(self.amount(), auth)
-    }
-
-    /// Takes a non-fungible from this vault, by id.
+    /// Takes a specific non-fungible from this vault.
     ///
     /// # Panics
-    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible(&self, key: &NonFungibleKey) -> Bucket {
-        let input = TakeNonFungibleFromVaultInput {
-            vid: self.vid,
-            key: key.clone(),
-            auth: None,
-        };
-        let output: TakeNonFungibleFromVaultOutput =
-            call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
-
-        output.bid.into()
+    /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
+    pub fn take_non_fungible(&mut self, non_fungible_id: &NonFungibleId) -> Bucket {
+        self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
     }
 
-    /// Takes a non-fungible from this vault, by id.
-    ///
-    /// This variant of `take_non_fungible` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
+    /// Takes non-fungibles from this vault.
     ///
     /// # Panics
-    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn take_non_fungible_with_auth(&self, key: &NonFungibleKey, auth: BucketRef) -> Bucket {
-        let input = TakeNonFungibleFromVaultInput {
-            vid: self.vid,
-            key: key.clone(),
-            auth: Some(auth.into()),
+    /// Panics if this is not a non-fungible vault or the specified non-fungible resource is not found.
+    pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "take_non_fungibles_from_vault".to_string(),
+            args: vec![scrypto_encode(non_fungible_ids)],
         };
-        let output: TakeNonFungibleFromVaultOutput =
-            call_engine(TAKE_NON_FUNGIBLE_FROM_VAULT, input);
-
-        output.bid.into()
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
-    /// This is a convenience method for using the contained resource for authorization.
-    ///
-    /// It conducts the following actions in one shot:
-    /// 1. Takes `1` resource from this vault into a bucket;
-    /// 2. Creates a `BucketRef`.
-    /// 3. Applies the specified function `f` with the created bucket reference;
-    /// 4. Puts the `1` resource back into this vault.
-    ///
-    pub fn authorize<F: FnOnce(BucketRef) -> O, O>(&mut self, f: F) -> O {
-        let bucket = self.take(1);
-        let output = f(bucket.present());
-        self.put(bucket);
-        output
+    /// Creates an ownership proof of this vault.
+    pub fn create_proof(&self) -> Proof {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "create_vault_proof".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
-    /// This is a convenience method for using the contained resource for authorization.
-    ///
-    /// It conducts the following actions in one shot:
-    /// 1. Takes `1` resource from this vault into a bucket;
-    /// 2. Creates a `BucketRef`.
-    /// 3. Applies the specified function `f` with the created bucket reference;
-    /// 4. Puts the `1` resource back into this vault.
-    ///
-    /// This variant of `authorize` accepts an additional auth parameter to support resources
-    /// with or without `RESTRICTED_TRANSFER` flag on.
-    ///
-    pub fn authorize_with_auth<F: FnOnce(BucketRef) -> O, O>(
-        &mut self,
-        f: F,
-        auth: BucketRef,
-    ) -> O {
-        let bucket = self.take_with_auth(1, auth);
-        let output = f(bucket.present());
-        self.put(bucket);
+    /// Creates an ownership proof of this vault, by amount.
+    pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "create_vault_proof_by_amount".to_string(),
+            args: vec![scrypto_encode(&amount)],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    /// Creates an ownership proof of this vault, by non-fungible ID set.
+    pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "create_vault_proof_by_ids".to_string(),
+            args: vec![scrypto_encode(ids)],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    /// Uses resources in this vault as authorization for an operation.
+    pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
+        ComponentAuthZone::push(self.create_proof());
+        let output = f();
+        ComponentAuthZone::pop().drop();
         output
     }
 
     /// Returns the amount of resources within this vault.
     pub fn amount(&self) -> Decimal {
-        let input = GetVaultDecimalInput { vid: self.vid };
-        let output: GetVaultDecimalOutput = call_engine(GET_VAULT_AMOUNT, input);
-
-        output.amount
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "get_vault_amount".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
-    /// Returns the resource definition of resources within this vault.
-    pub fn resource_def(&self) -> ResourceDef {
-        let input = GetVaultResourceAddressInput { vid: self.vid };
-        let output: GetVaultResourceAddressOutput = call_engine(GET_VAULT_RESOURCE_ADDRESS, input);
-
-        output.resource_address.into()
-    }
-
-    /// Returns the resource definition address.
-    pub fn resource_address(&self) -> Address {
-        self.resource_def().address()
+    /// Returns the resource address.
+    pub fn resource_address(&self) -> ResourceAddress {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "get_vault_resource_address".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Checks if this vault is empty.
@@ -191,98 +159,115 @@ impl Vault {
         self.amount() == 0.into()
     }
 
+    /// Returns all the non-fungible ids contained.
+    ///
+    /// # Panics
+    /// Panics if this is not a non-fungible vault.
+    pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::VaultRef(self.0),
+            function: "get_non_fungible_ids_in_vault".to_string(),
+            args: vec![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
     /// Returns all the non-fungible units contained.
     ///
     /// # Panics
     /// Panics if this is not a non-fungible vault.
-    pub fn get_non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
-        let input = GetNonFungibleKeysInVaultInput { vid: self.vid };
-        let output: GetNonFungibleKeysInVaultOutput =
-            call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
+    pub fn non_fungibles<T: NonFungibleData>(&self) -> Vec<NonFungible<T>> {
         let resource_address = self.resource_address();
-        output
-            .keys
+        self.non_fungible_ids()
             .iter()
-            .map(|id| NonFungible::from((resource_address, id.clone())))
+            .map(|id| NonFungible::from(NonFungibleAddress::new(resource_address, id.clone())))
             .collect()
     }
 
-    /// Get all non-fungible IDs in this vault.
+    /// Returns a singleton non-fungible.
     ///
     /// # Panics
-    /// Panics if this is not a non-fungible vault.
-    pub fn get_non_fungible_keys(&self) -> Vec<NonFungibleKey> {
-        let input = GetNonFungibleKeysInVaultInput { vid: self.vid };
-        let output: GetNonFungibleKeysInVaultOutput =
-            call_engine(GET_NON_FUNGIBLE_KEYS_IN_VAULT, input);
-
-        output.keys
-    }
-
-    /// Returns the key of a singleton non-fungible.
-    ///
-    /// # Panic
-    /// If this vault is empty or contains more than one non-fungibles.
-    pub fn get_non_fungible_key(&self) -> NonFungibleKey {
-        let keys = self.get_non_fungible_keys();
-        assert!(
-            keys.len() == 1,
-            "Expect 1 non-fungible, but found {}",
-            keys.len()
-        );
-        keys[0].clone()
-    }
-
-    /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible bucket.
-    pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleKey) -> T {
-        self.resource_def().get_non_fungible_data(id)
-    }
-
-    /// Updates the mutable part of the data of a non-fungible unit.
-    ///
-    /// # Panics
-    /// Panics if this is not a non-fungible vault or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(
-        &self,
-        id: &NonFungibleKey,
-        new_data: T,
-        auth: BucketRef,
-    ) {
-        self.resource_def()
-            .update_non_fungible_data(id, new_data, auth)
-    }
-}
-
-//========
-// SBOR
-//========
-
-impl TypeId for Vault {
-    fn type_id() -> u8 {
-        Vid::type_id()
-    }
-}
-
-impl Encode for Vault {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.vid.encode_value(encoder);
-    }
-}
-
-impl Decode for Vault {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        Vid::decode_value(decoder).map(Into::into)
-    }
-}
-
-impl Describe for Vault {
-    fn describe() -> Type {
-        Type::Custom {
-            name: SCRYPTO_NAME_VAULT.to_owned(),
-            generics: vec![],
+    /// Panics if this is not a singleton bucket
+    pub fn non_fungible<T: NonFungibleData>(&self) -> NonFungible<T> {
+        let non_fungibles = self.non_fungibles();
+        if non_fungibles.len() != 1 {
+            panic!("Expecting singleton NFT vault");
         }
+        non_fungibles.into_iter().next().unwrap()
+    }
+}
+
+//========
+// error
+//========
+
+/// Represents an error when decoding vault.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ParseVaultError {
+    InvalidHex(String),
+    InvalidLength(usize),
+}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for ParseVaultError {}
+
+#[cfg(not(feature = "alloc"))]
+impl fmt::Display for ParseVaultError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+//========
+// binary
+//========
+
+impl TryFrom<&[u8]> for Vault {
+    type Error = ParseVaultError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        match slice.len() {
+            36 => Ok(Self((
+                Hash(copy_u8_array(&slice[0..32])),
+                u32::from_le_bytes(copy_u8_array(&slice[32..])),
+            ))),
+            _ => Err(ParseVaultError::InvalidLength(slice.len())),
+        }
+    }
+}
+
+impl Vault {
+    pub fn to_vec(&self) -> Vec<u8> {
+        let mut v = self.0 .0.to_vec();
+        v.extend(self.0 .1.to_le_bytes());
+        v
+    }
+}
+
+scrypto_type!(Vault, ScryptoType::Vault, Vec::new());
+
+//======
+// text
+//======
+
+impl FromStr for Vault {
+    type Err = ParseVaultError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = hex::decode(s).map_err(|_| ParseVaultError::InvalidHex(s.to_owned()))?;
+        Self::try_from(bytes.as_slice())
+    }
+}
+
+impl fmt::Display for Vault {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", hex::encode(self.to_vec()))
+    }
+}
+
+impl fmt::Debug for Vault {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self)
     }
 }

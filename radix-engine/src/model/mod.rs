@@ -1,27 +1,37 @@
+mod auth_converter;
+mod auth_zone;
 mod bucket;
 mod component;
-mod error;
-mod lazy_map;
+mod method_authorization;
 mod non_fungible;
 mod package;
+mod proof;
 mod receipt;
-mod resource_def;
+mod resource;
+mod resource_manager;
 mod transaction;
-mod validated_data;
+mod transaction_process;
 mod validated_transaction;
 mod vault;
+mod worktop;
 
-pub use bucket::{Bucket, BucketError, BucketRef, LockedBucket, Supply};
+pub use auth_zone::{AuthZone, AuthZoneError};
+pub use auth_converter::convert;
+pub use bucket::{Bucket, BucketError};
 pub use component::Component;
-pub use error::{
-    DataValidationError, RuntimeError, TransactionValidationError, WasmValidationError,
+pub use method_authorization::{
+    HardProofRule, HardResourceOrNonFungible, MethodAuthorization, MethodAuthorizationError,
 };
-pub use lazy_map::LazyMap;
 pub use non_fungible::NonFungible;
-pub use package::Package;
+pub use package::{Package, PackageError};
+pub use proof::*;
 pub use receipt::Receipt;
-pub use resource_def::{ResourceDef, ResourceDefError};
-pub use transaction::{Instruction, Transaction};
-pub use validated_data::*;
-pub use validated_transaction::{ValidatedInstruction, ValidatedTransaction};
+pub use resource::*;
+pub use resource_manager::{ResourceManager, ResourceManagerError};
+pub use transaction_process::{TransactionProcess};
+pub use transaction::{
+    Instruction, SignedTransaction, Transaction,
+};
+pub use validated_transaction::{ValidatedTransaction, ValidatedInstruction};
 pub use vault::{Vault, VaultError};
+pub use worktop::{Worktop, WorktopError};

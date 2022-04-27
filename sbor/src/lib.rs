@@ -13,31 +13,37 @@ pub mod decode;
 pub mod describe;
 /// SBOR encoding.
 pub mod encode;
+/// SBOR paths.
+pub mod path;
 /// A facade of Rust types.
 pub mod rust;
 /// SBOR type ids.
 pub mod type_id;
 
-pub use any::{decode_any, encode_any};
+pub use any::{decode_any, encode_any, Value};
 pub use decode::{Decode, DecodeError, Decoder};
-pub use describe::Describe;
+pub use describe::{Describe, Type};
 pub use encode::{Encode, Encoder};
 pub use type_id::TypeId;
+pub use crate::rust::string::String;
+pub use crate::rust::string::ToString;
 
 use crate::rust::vec::Vec;
 
 /// Encode a `T` into byte array, with type info included.
-pub fn encode_with_type<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
-    let mut enc = Encoder::with_type(buf);
+pub fn encode_with_type<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(512);
+    let mut enc = Encoder::with_type(&mut buf);
     v.encode(&mut enc);
-    enc.into()
+    buf
 }
 
 /// Encode a `T` into byte array, with no type info.
-pub fn encode_no_type<T: Encode + ?Sized>(buf: Vec<u8>, v: &T) -> Vec<u8> {
-    let mut enc = Encoder::no_type(buf);
+pub fn encode_no_type<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
+    let mut buf = Vec::with_capacity(512);
+    let mut enc = Encoder::no_type(&mut buf);
     v.encode(&mut enc);
-    enc.into()
+    buf
 }
 
 /// Decode an instance of `T` from a slice, with type info included.

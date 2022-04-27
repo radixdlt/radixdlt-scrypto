@@ -1,0 +1,33 @@
+# Prepare - grab token from the `Hello` component
+CALL_METHOD ComponentAddress("<<<component>>>") "free_token";
+
+# Test - assertions
+ASSERT_WORKTOP_CONTAINS ResourceAddress("<<<resource>>>");
+ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal("1.0") ResourceAddress("<<<resource>>>");
+
+# Test - worktop
+TAKE_FROM_WORKTOP ResourceAddress("<<<resource>>>") Bucket("bucket1");
+RETURN_TO_WORKTOP Bucket("bucket1");
+TAKE_FROM_WORKTOP_BY_AMOUNT Decimal("1.0") ResourceAddress("<<<resource>>>") Bucket("bucket2");
+RETURN_TO_WORKTOP Bucket("bucket2");
+
+# Test - auth zone
+CALL_METHOD ComponentAddress("<<<account>>>") "create_proof_by_amount" Decimal("5.0") ResourceAddress("030000000000000000000000000000000000000000000000000004");
+CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress("030000000000000000000000000000000000000000000000000004") Proof("proof1");
+CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal("2.0") ResourceAddress("030000000000000000000000000000000000000000000000000004") Proof("proof2");
+CLONE_PROOF Proof("proof2") Proof("proof3");
+DROP_PROOF Proof("proof1");
+DROP_PROOF Proof("proof2");
+DROP_PROOF Proof("proof3");
+
+# Test - bucket proof
+CALL_METHOD ComponentAddress("<<<account>>>") "withdraw_by_amount" Decimal("5.0") ResourceAddress("030000000000000000000000000000000000000000000000000004");
+CLEAR_AUTH_ZONE;
+TAKE_FROM_WORKTOP ResourceAddress("030000000000000000000000000000000000000000000000000004") Bucket("xrd");
+CREATE_PROOF_FROM_BUCKET Bucket("xrd") Proof("proof4");
+CLONE_PROOF Proof("proof4") Proof("proof5");
+DROP_PROOF Proof("proof4");
+DROP_PROOF Proof("proof5");
+
+# Clean up - deposit resources
+CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("<<<account>>>") "deposit_batch";

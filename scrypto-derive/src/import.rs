@@ -24,10 +24,10 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     };
     trace!("Parsed ABI: {:?}", blueprint);
 
-    let package = blueprint.package;
-    let name = blueprint.name;
-    let ident = format_ident!("{}", name);
-    trace!("Blueprint name: {}", name);
+    let package_address = blueprint.package_address;
+    let blueprint_name = blueprint.blueprint_name;
+    let ident = format_ident!("{}", blueprint_name);
+    trace!("Blueprint name: {}", blueprint_name);
 
     let mut structs: Vec<Item> = vec![];
 
@@ -52,16 +52,13 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
         functions.push(parse_quote! {
             pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
-                let package = ::scrypto::utils::scrypto_unwrap(
-                    ::scrypto::types::Address::from_str(#package)
-                );
-                let rtn = ::scrypto::core::call_function(
-                    package,
-                    #name,
+                let rtn = ::scrypto::core::Runtime::call_function(
+                    ::scrypto::component::PackageAddress::from_str(#package_address).unwrap(),
+                    #blueprint_name,
                     #func_name,
                     ::scrypto::args!(#(#func_args),*)
                 );
-                ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
+                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
             }
         });
     }
@@ -87,12 +84,12 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
         let m = parse_quote! {
             pub fn #method_indent(&self #(, #method_args: #method_types)*) -> #method_output {
-                let rtn = ::scrypto::core::call_method(
-                    self.address,
+                let rtn = ::scrypto::core::Runtime::call_method(
+                    self.component_address,
                     #method_name,
                     ::scrypto::args!(#(#method_args),*)
                 );
-                ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
+                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
             }
         };
         methods.push(m);
@@ -101,9 +98,9 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     let output = quote! {
         #(#structs)*
 
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub struct #ident {
-            address: ::scrypto::types::Address,
+            component_address: ::scrypto::component::ComponentAddress,
         }
 
         impl #ident {
@@ -112,31 +109,17 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
             #(#methods)*
         }
 
-        impl From<::scrypto::types::Address> for #ident {
-            fn from(address: ::scrypto::types::Address) -> Self {
+        impl From<::scrypto::component::ComponentAddress> for #ident {
+            fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
                 Self {
-                    address
+                    component_address
                 }
             }
         }
 
-        impl From<#ident> for ::scrypto::types::Address {
-            fn from(a: #ident) -> ::scrypto::types::Address {
-                a.address
-            }
-        }
-
-        impl From<::scrypto::core::Component> for #ident {
-            fn from(component: ::scrypto::core::Component) -> Self {
-                Self {
-                    address: component.into()
-                }
-            }
-        }
-
-        impl From<#ident> for ::scrypto::core::Component {
-            fn from(a: #ident) -> ::scrypto::core::Component {
-                a.address.into()
+        impl From<#ident> for ::scrypto::component::ComponentAddress {
+            fn from(a: #ident) -> ::scrypto::component::ComponentAddress {
+                a.component_address
             }
         }
     };
@@ -254,7 +237,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             }
 
             structs.push(parse_quote! {
-                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                #[derive(Debug, ::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub enum #ident {
                     #( #native_variants ),*
                 }
@@ -268,12 +251,6 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             structs.extend(new_structs);
 
             parse_quote! { Option<#new_type> }
-        }
-        des::Type::Box { value } => {
-            let (new_type, new_structs) = get_native_type(value)?;
-            structs.extend(new_structs);
-
-            parse_quote! { Box<#new_type> }
         }
         des::Type::Tuple { elements } => {
             let mut types: Vec<Type> = vec![];
@@ -337,24 +314,43 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             parse_quote! { HashMap<#key_type, #value_type> }
         }
         des::Type::Custom { name, generics } => {
-            if name.starts_with("scrypto::") {
-                let ty: Type = parse_str(&format!("::{}", name)).unwrap();
-                if generics.is_empty() {
-                    parse_quote! { #ty }
-                } else {
-                    let mut types = vec![];
-                    for g in generics {
-                        let (t, v) = get_native_type(g)?;
-                        types.push(t);
-                        structs.extend(v);
-                    }
-                    parse_quote! { #ty<#(#types),*> }
+            // Copying the names to avoid cyclic dependency.
+
+            let canonical_name = match name.as_str() {
+                "PackageAddress" => "::scrypto::component::PackageAddress",
+                "ComponentAddress" => "::scrypto::component::ComponentAddress",
+                "LazyMap" => "::scrypto::component::LazyMap",
+                "Hash" => "::scrypto::crypto::Hash",
+                "EcdsaPublicKey" => "::scrypto::crypto::EcdsaPublicKey",
+                "EcdsaSignature" => "::scrypto::crypto::EcdsaSignature",
+                "Decimal" => "::scrypto::math::Decimal",
+                "Bucket" => "::scrypto::resource::Bucket",
+                "Proof" => "::scrypto::resource::Proof",
+                "Vault" => "::scrypto::resource::Vault",
+                "NonFungibleId" => "::scrypto::resource::NonFungibleId",
+                "NonFungibleAddress" => "::scrypto::resource::NonFungibleAddress",
+                "ResourceAddress" => "::scrypto::resource::ResourceAddress",
+                "ProofRule" => "::scrypto::resource::ProofRule",
+                "AuthRule" => "::scrypto::resource::AuthRule",
+                _ => {
+                    return Err(Error::new(
+                        Span::call_site(),
+                        format!("Invalid custom type: {}", name),
+                    ));
                 }
+            };
+
+            let ty: Type = parse_str(canonical_name).unwrap();
+            if generics.is_empty() {
+                parse_quote! { #ty }
             } else {
-                return Err(Error::new(
-                    Span::call_site(),
-                    format!("Invalid custom type: {}", name),
-                ));
+                let mut types = vec![];
+                for g in generics {
+                    let (t, v) = get_native_type(g)?;
+                    types.push(t);
+                    structs.extend(v);
+                }
+                parse_quote! { #ty<#(#types),*> }
             }
         }
     };
@@ -379,15 +375,15 @@ mod tests {
             r###"
                 r#"
                 {
-                    "package": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
-                    "name": "Simple",
+                    "package_address": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
+                    "blueprint_name": "Simple",
                     "functions": [
                         {
                             "name": "new",
                             "inputs": [],
                             "output": {
                                 "type": "Custom",
-                                "name": "scrypto::core::Component",
+                                "name": "ComponentAddress",
                                 "generics": []
                             }
                         }
@@ -400,7 +396,7 @@ mod tests {
                             ],
                             "output": {
                                 "type": "Custom",
-                                "name": "scrypto::resource::Bucket",
+                                "name": "Bucket",
                                 "generics": []
                             }
                         }
@@ -415,43 +411,39 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Simple {
-                    address: ::scrypto::types::Address,
+                    component_address: ::scrypto::component::ComponentAddress,
                 }
                 impl Simple {
-                    pub fn new() -> ::scrypto::core::Component {
-                        let package = ::scrypto::utils::scrypto_unwrap(::scrypto::types::Address::from_str(
-                            "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7"
-                        ));
-                        let rtn = ::scrypto::core::call_function(package, "Simple", "new", ::scrypto::args!());
-                        ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
+                    pub fn new() -> ::scrypto::component::ComponentAddress {
+                        let rtn = ::scrypto::core::Runtime::call_function(
+                            ::scrypto::component::PackageAddress::from_str("056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7").unwrap(),
+                            "Simple",
+                            "new",
+                            ::scrypto::args!()
+                        );
+                        ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                     pub fn free_token(&self) -> ::scrypto::resource::Bucket {
-                        let rtn = ::scrypto::core::call_method(self.address, "free_token", ::scrypto::args!());
-                        ::scrypto::utils::scrypto_unwrap(::scrypto::buffer::scrypto_decode(&rtn))
+                        let rtn = ::scrypto::core::Runtime::call_method(
+                            self.component_address,
+                            "free_token",
+                            ::scrypto::args!()
+                        );
+                        ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }
-                impl From<::scrypto::types::Address> for Simple {
-                    fn from(address: ::scrypto::types::Address) -> Self {
-                        Self { address }
-                    }
-                }
-                impl From<Simple> for ::scrypto::types::Address {
-                    fn from(a: Simple) -> ::scrypto::types::Address {
-                        a.address
-                    }
-                }
-                impl From<::scrypto::core::Component> for Simple {
-                    fn from(component: ::scrypto::core::Component) -> Self {
+                impl From<::scrypto::component::ComponentAddress> for Simple {
+                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
                         Self {
-                            address: component.into()
+                            component_address
                         }
                     }
                 }
-                impl From<Simple> for ::scrypto::core::Component {
-                    fn from(a: Simple) -> ::scrypto::core::Component {
-                        a.address.into()
+                impl From<Simple> for ::scrypto::component::ComponentAddress {
+                    fn from(a: Simple) -> ::scrypto::component::ComponentAddress {
+                        a.component_address
                     }
                 }
             },

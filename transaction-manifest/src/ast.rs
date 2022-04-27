@@ -6,18 +6,18 @@ pub struct Transaction {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
     TakeFromWorktop {
+        resource_address: Value,
+        new_bucket: Value,
+    },
+
+    TakeFromWorktopByAmount {
         amount: Value,
         resource_address: Value,
         new_bucket: Value,
     },
 
-    TakeAllFromWorktop {
-        resource_address: Value,
-        new_bucket: Value,
-    },
-
-    TakeNonFungiblesFromWorktop {
-        keys: Value,
+    TakeFromWorktopByIds {
+        ids: Value,
         resource_address: Value,
         new_bucket: Value,
     },
@@ -27,22 +27,58 @@ pub enum Instruction {
     },
 
     AssertWorktopContains {
+        resource_address: Value,
+    },
+
+    AssertWorktopContainsByAmount {
         amount: Value,
         resource_address: Value,
     },
 
-    CreateBucketRef {
+    AssertWorktopContainsByIds {
+        ids: Value,
+        resource_address: Value,
+    },
+
+    PopFromAuthZone {
+        new_proof: Value,
+    },
+
+    PushToAuthZone {
+        proof: Value,
+    },
+
+    ClearAuthZone,
+
+    CreateProofFromAuthZone {
+        resource_address: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromAuthZoneByAmount {
+        amount: Value,
+        resource_address: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromAuthZoneByIds {
+        ids: Value,
+        resource_address: Value,
+        new_proof: Value,
+    },
+
+    CreateProofFromBucket {
         bucket: Value,
-        new_bucket_ref: Value,
+        new_proof: Value,
     },
 
-    CloneBucketRef {
-        bucket_ref: Value,
-        new_bucket_ref: Value,
+    CloneProof {
+        proof: Value,
+        new_proof: Value,
     },
 
-    DropBucketRef {
-        bucket_ref: Value,
+    DropProof {
+        proof: Value,
     },
 
     CallFunction {
@@ -61,6 +97,10 @@ pub enum Instruction {
     CallMethodWithAllResources {
         component_address: Value,
         method: Value,
+    },
+
+    PublishPackage {
+        code: Value,
     },
 }
 
@@ -83,7 +123,6 @@ pub enum Type {
     Struct,
     Enum,
     Option,
-    Box,
     Array,
     Tuple,
     Result,
@@ -97,14 +136,17 @@ pub enum Type {
 
     /* Custom types */
     Decimal,
-    BigDecimal,
-    Address,
+    PackageAddress,
+    ComponentAddress,
+    ResourceAddress,
     Hash,
     Bucket,
-    BucketRef,
-    LazyMap,
-    Vault,
-    NonFungibleKey,
+    Proof,
+    NonFungibleId,
+    NonFungibleAddress,
+
+    /* Bytes is a convenient way of producing `Vec<u8>` */
+    Bytes,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -122,10 +164,9 @@ pub enum Value {
     U64(u64),
     U128(u128),
     String(String),
-    Struct(Fields),
-    Enum(u8, Fields),
+    Struct(Vec<Value>),
+    Enum(String, Vec<Value>),
     Option(Box<Option<Value>>),
-    Box(Box<Value>),
     Array(Type, Vec<Value>),
     Tuple(Vec<Value>),
     Result(Box<Result<Value, Value>>),
@@ -137,23 +178,16 @@ pub enum Value {
     HashMap(Type, Type, Vec<Value>),
 
     Decimal(Box<Value>),
-    BigDecimal(Box<Value>),
-    Address(Box<Value>),
+    PackageAddress(Box<Value>),
+    ComponentAddress(Box<Value>),
+    ResourceAddress(Box<Value>),
     Hash(Box<Value>),
     Bucket(Box<Value>),
-    BucketRef(Box<Value>),
-    LazyMap(Box<Value>),
-    Vault(Box<Value>),
-    NonFungibleKey(Box<Value>),
-}
+    Proof(Box<Value>),
+    NonFungibleId(Box<Value>),
+    NonFungibleAddress(Box<Value>),
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Fields {
-    Named(Vec<Value>),
-
-    Unnamed(Vec<Value>),
-
-    Unit,
+    Bytes(Vec<u8>),
 }
 
 impl Value {
@@ -175,7 +209,6 @@ impl Value {
             Value::Struct(_) => Type::Struct,
             Value::Enum(_, _) => Type::Enum,
             Value::Option(_) => Type::Option,
-            Value::Box(_) => Type::Box,
             Value::Array(_, _) => Type::Array,
             Value::Tuple(_) => Type::Tuple,
             Value::Result(_) => Type::Result,
@@ -185,14 +218,15 @@ impl Value {
             Value::HashSet(_, _) => Type::HashSet,
             Value::HashMap(_, _, _) => Type::HashMap,
             Value::Decimal(_) => Type::Decimal,
-            Value::BigDecimal(_) => Type::BigDecimal,
-            Value::Address(_) => Type::Address,
+            Value::PackageAddress(_) => Type::PackageAddress,
+            Value::ComponentAddress(_) => Type::ComponentAddress,
+            Value::ResourceAddress(_) => Type::ResourceAddress,
             Value::Hash(_) => Type::Hash,
             Value::Bucket(_) => Type::Bucket,
-            Value::BucketRef(_) => Type::BucketRef,
-            Value::LazyMap(_) => Type::LazyMap,
-            Value::Vault(_) => Type::Vault,
-            Value::NonFungibleKey(_) => Type::NonFungibleKey,
+            Value::Proof(_) => Type::Proof,
+            Value::NonFungibleId(_) => Type::NonFungibleId,
+            Value::NonFungibleAddress(_) => Type::NonFungibleAddress,
+            Value::Bytes(_) => Type::Vec,
         }
     }
 }

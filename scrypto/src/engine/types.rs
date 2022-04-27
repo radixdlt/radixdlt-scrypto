@@ -1,68 +1,24 @@
-use sbor::{Decode, Describe, Encode, TypeId};
+// Ideally, only the types listed below can be used by Radix Engine.
+// We need a better strategy to enforce this.
 
-use crate::resource::*;
-use crate::rust::collections::HashMap;
-use crate::rust::vec::Vec;
-use crate::types::*;
+pub use crate::component::ComponentAddress;
+pub use crate::component::PackageAddress;
+pub use crate::core::Level;
+pub use crate::core::ScryptoActorInfo;
+pub use crate::crypto::EcdsaPrivateKey;
+pub use crate::crypto::EcdsaPublicKey;
+pub use crate::crypto::EcdsaSignature;
+pub use crate::crypto::Hash;
+pub use crate::math::Decimal;
+pub use crate::resource::MintParams;
+pub use crate::resource::NonFungibleAddress;
+pub use crate::resource::NonFungibleId;
+pub use crate::resource::ResourceAddress;
+pub use crate::resource::ResourceType;
 
-/// Represents the level of a log message.
-#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe, Eq, PartialEq)]
-pub enum LogLevel {
-    Error,
-    Warn,
-    Info,
-    Debug,
-    Trace,
-}
+pub type LazyMapId = (Hash, u32);
+pub type BucketId = u32;
+pub type ProofId = u32;
+pub type VaultId = (Hash, u32);
 
-/// Represents the type of a resource.
-#[derive(Debug, Clone, Copy, TypeId, Encode, Decode, Describe, Eq, PartialEq)]
-pub enum ResourceType {
-    /// Represents a fungible resource
-    Fungible { divisibility: u8 },
-
-    /// Represents a non-fungible resource
-    NonFungible,
-}
-
-impl ResourceType {
-    pub fn divisibility(&self) -> u8 {
-        match self {
-            ResourceType::Fungible { divisibility } => *divisibility,
-            ResourceType::NonFungible => 0,
-        }
-    }
-}
-
-/// Represents some supply of resource.
-#[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]
-pub enum NewSupply {
-    /// A supply of fungible resource represented by amount.
-    Fungible { amount: Decimal },
-
-    /// A supply of non-fungible resource represented by a collection of non-fungibles, keyed by ID.
-    NonFungible {
-        entries: HashMap<NonFungibleKey, (Vec<u8>, Vec<u8>)>,
-    },
-}
-
-impl NewSupply {
-    pub fn fungible<T: Into<Decimal>>(amount: T) -> Self {
-        Self::Fungible {
-            amount: amount.into(),
-        }
-    }
-
-    pub fn non_fungible<T, V>(entries: T) -> Self
-    where
-        T: IntoIterator<Item = (NonFungibleKey, V)>,
-        V: NonFungibleData,
-    {
-        let mut encoded = HashMap::new();
-        for (id, e) in entries {
-            encoded.insert(id, (e.immutable_data(), e.mutable_data()));
-        }
-
-        Self::NonFungible { entries: encoded }
-    }
-}
+pub use crate::constants::*;

@@ -2,10 +2,10 @@ mod abi_provider;
 mod builder;
 mod error;
 mod executor;
-mod validator;
+mod nonce_provider;
 
 pub use abi_provider::{AbiProvider, BasicAbiProvider};
-pub use builder::{ParseResourceError, Resource, TransactionBuilder};
-pub use error::{BuildArgsError, BuildTransactionError};
+pub use builder::TransactionBuilder;
+pub use error::{BuildArgsError, CallWithAbiError};
 pub use executor::TransactionExecutor;
-pub use validator::validate_transaction;
+pub use nonce_provider::NonceProvider;

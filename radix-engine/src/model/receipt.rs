@@ -1,47 +1,28 @@
 use colored::*;
-use scrypto::engine::*;
+use scrypto::engine::types::*;
+use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::fmt;
+use scrypto::rust::format;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
-use scrypto::types::*;
+use scrypto::values::*;
 
+use crate::engine::CommitReceipt;
+use crate::errors::*;
 use crate::model::*;
 
 /// Represents a transaction receipt.
 pub struct Receipt {
-    pub transaction: ValidatedTransaction,
+    pub commit_receipt: Option<CommitReceipt>,
+    pub validated_transaction: ValidatedTransaction,
     pub result: Result<(), RuntimeError>,
-    pub outputs: Vec<ValidatedData>,
-    pub logs: Vec<(LogLevel, String)>,
-    pub new_entities: Vec<Address>,
+    pub outputs: Vec<ScryptoValue>,
+    pub logs: Vec<(Level, String)>,
+    pub new_package_addresses: Vec<PackageAddress>,
+    pub new_component_addresses: Vec<ComponentAddress>,
+    pub new_resource_addresses: Vec<ResourceAddress>,
     pub execution_time: Option<u128>,
-}
-
-impl Receipt {
-    pub fn package(&self, nth: usize) -> Option<Address> {
-        self.new_entities
-            .iter()
-            .filter(|a| matches!(a, Address::Package(_)))
-            .map(Clone::clone)
-            .nth(nth)
-    }
-
-    pub fn component(&self, nth: usize) -> Option<Address> {
-        self.new_entities
-            .iter()
-            .filter(|a| matches!(a, Address::Component(_)))
-            .map(Clone::clone)
-            .nth(nth)
-    }
-
-    pub fn resource_def(&self, nth: usize) -> Option<Address> {
-        self.new_entities
-            .iter()
-            .filter(|a| matches!(a, Address::ResourceDef(_)))
-            .map(Clone::clone)
-            .nth(nth)
-    }
 }
 
 macro_rules! prefix {
@@ -77,12 +58,15 @@ impl fmt::Debug for Receipt {
         )?;
 
         write!(f, "\n{}", "Instructions:".bold().green())?;
-        for (i, inst) in self.transaction.instructions.iter().enumerate() {
+        for (i, inst) in self.validated_transaction.instructions.iter().enumerate() {
             write!(
                 f,
-                "\n{} {:?}",
-                prefix!(i, self.transaction.instructions),
-                inst
+                "\n{} {}",
+                prefix!(i, self.validated_transaction.instructions),
+                match inst {
+                    ValidatedInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
+                    i @ _ => format!("{:?}", i),
+                }
             )?;
         }
 
@@ -94,11 +78,11 @@ impl fmt::Debug for Receipt {
         write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;
         for (i, (level, msg)) in self.logs.iter().enumerate() {
             let (l, m) = match level {
-                LogLevel::Error => ("ERROR".red(), msg.red()),
-                LogLevel::Warn => ("WARN".yellow(), msg.yellow()),
-                LogLevel::Info => ("INFO".green(), msg.green()),
-                LogLevel::Debug => ("DEBUG".cyan(), msg.cyan()),
-                LogLevel::Trace => ("TRACE".normal(), msg.normal()),
+                Level::Error => ("ERROR".red(), msg.red()),
+                Level::Warn => ("WARN".yellow(), msg.yellow()),
+                Level::Info => ("INFO".green(), msg.green()),
+                Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+                Level::Trace => ("TRACE".normal(), msg.normal()),
             };
             write!(f, "\n{} [{:5}] {}", prefix!(i, self.logs), l, m)?;
         }
@@ -107,15 +91,34 @@ impl fmt::Debug for Receipt {
             f,
             "\n{} {}",
             "New Entities:".bold().green(),
-            self.new_entities.len()
+            self.new_package_addresses.len()
+                + self.new_component_addresses.len()
+                + self.new_resource_addresses.len()
         )?;
-        for (i, address) in self.new_entities.iter().enumerate() {
-            let ty = match address {
-                Address::Package(_) => "Package",
-                Address::Component(_) => "Component",
-                Address::ResourceDef(_) => "ResourceDef",
-            };
-            write!(f, "\n{} {}: {}", prefix!(i, self.new_entities), ty, address)?;
+
+        for (i, package_address) in self.new_package_addresses.iter().enumerate() {
+            write!(
+                f,
+                "\n{} Package: {}",
+                prefix!(i, self.new_package_addresses),
+                package_address
+            )?;
+        }
+        for (i, component_address) in self.new_component_addresses.iter().enumerate() {
+            write!(
+                f,
+                "\n{} Component: {}",
+                prefix!(i, self.new_component_addresses),
+                component_address
+            )?;
+        }
+        for (i, resource_address) in self.new_resource_addresses.iter().enumerate() {
+            write!(
+                f,
+                "\n{} Resource: {}",
+                prefix!(i, self.new_resource_addresses),
+                resource_address
+            )?;
         }
 
         Ok(())

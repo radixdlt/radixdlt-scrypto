@@ -1,6 +1,6 @@
 use std::io;
 
-use radix_engine::model::*;
+use radix_engine::errors::*;
 use radix_engine::transaction::*;
 use sbor::*;
 
@@ -24,7 +24,9 @@ pub enum Error {
 
     CargoError(CargoExecutionError),
 
-    TransactionConstructionError(BuildTransactionError),
+    PackageValidationError(WasmValidationError),
+
+    TransactionConstructionError(CallWithAbiError),
 
     TransactionValidationError(TransactionValidationError),
 
@@ -37,4 +39,8 @@ pub enum Error {
     CompileError(transaction_manifest::CompileError),
 
     DecompileError(transaction_manifest::DecompileError),
+
+    InvalidId(String),
+
+    InvalidPrivateKey,
 }

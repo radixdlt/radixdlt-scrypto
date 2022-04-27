@@ -1,20 +1,18 @@
+use crate::borrow_resource_manager;
 use crate::resource::*;
 use crate::rust::marker::PhantomData;
-use crate::types::*;
 
 /// Represents a non-fungible unit.
 #[derive(Debug)]
 pub struct NonFungible<T: NonFungibleData> {
-    resource_address: Address,
-    key: NonFungibleKey,
+    address: NonFungibleAddress,
     data: PhantomData<T>,
 }
 
-impl<T: NonFungibleData> From<(Address, NonFungibleKey)> for NonFungible<T> {
-    fn from(tuple: (Address, NonFungibleKey)) -> Self {
+impl<T: NonFungibleData> From<NonFungibleAddress> for NonFungible<T> {
+    fn from(address: NonFungibleAddress) -> Self {
         Self {
-            resource_address: tuple.0,
-            key: tuple.1.clone(),
+            address,
             data: PhantomData,
         }
     }
@@ -22,23 +20,28 @@ impl<T: NonFungibleData> From<(Address, NonFungibleKey)> for NonFungible<T> {
 
 impl<T: NonFungibleData> NonFungible<T> {
     /// Returns the resource address.
-    pub fn resource_address(&self) -> Address {
-        self.resource_address
+    pub fn resource_address(&self) -> ResourceAddress {
+        self.address.resource_address()
+    }
+
+    /// Returns the non-fungible address.
+    pub fn address(&self) -> NonFungibleAddress {
+        self.address.clone()
     }
 
     /// Returns the non-fungible ID.
-    pub fn key(&self) -> NonFungibleKey {
-        self.key.clone()
+    pub fn id(&self) -> NonFungibleId {
+        self.address.non_fungible_id()
     }
 
     /// Returns the associated data of this unit.
     pub fn data(&self) -> T {
-        ResourceDef::from(self.resource_address()).get_non_fungible_data(&self.key)
+        borrow_resource_manager!(self.resource_address()).get_non_fungible_data(&self.id())
     }
 
     /// Updates the associated data of this unit.
-    pub fn update_data(&self, new_data: T, auth: BucketRef) {
-        ResourceDef::from(self.resource_address())
-            .update_non_fungible_data(&self.key, new_data, auth);
+    pub fn update_data(&self, new_data: T) {
+        borrow_resource_manager!(self.resource_address())
+            .update_non_fungible_data(&self.id(), new_data);
     }
 }

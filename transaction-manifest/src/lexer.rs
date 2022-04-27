@@ -1,11 +1,11 @@
-use std::str::FromStr;
+use scrypto::rust::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {
     /// The start of the span, inclusive
-    pub start: usize,
-    /// The end of the span, exclusive
-    pub end: usize,
+    pub start: (usize, usize),
+    /// The end of the span, inclusive
+    pub end: (usize, usize),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -51,14 +51,14 @@ pub enum TokenKind {
     HashSet,
     HashMap,
     Decimal,
-    BigDecimal,
-    Address,
+    PackageAddress,
+    ComponentAddress,
+    ResourceAddress,
     Hash,
     Bucket,
-    BucketRef,
-    LazyMap,
-    Vault,
-    NonFungibleKey,
+    Proof,
+    NonFungibleId,
+    NonFungibleAddress,
 
     /* Sub-types */
     Some,
@@ -67,8 +67,6 @@ pub enum TokenKind {
     Err,
 
     /* Punctuations */
-    OpenCurlyBrace,
-    CloseCurlyBrace,
     OpenParenthesis,
     CloseParenthesis,
     LessThan,
@@ -76,18 +74,30 @@ pub enum TokenKind {
     Comma,
     Semicolon,
 
+    /* Bytes is a convenient way of producing `Vec<u8>` */
+    Bytes,
+
     /* Instructions */
     TakeFromWorktop,
-    TakeAllFromWorktop,
-    TakeNonFungiblesFromWorktop,
+    TakeFromWorktopByAmount,
+    TakeFromWorktopByIds,
     ReturnToWorktop,
     AssertWorktopContains,
-    CreateBucketRef,
-    CloneBucketRef,
-    DropBucketRef,
+    AssertWorktopContainsByAmount,
+    AssertWorktopContainsByIds,
+    PopFromAuthZone,
+    PushToAuthZone,
+    ClearAuthZone,
+    CreateProofFromAuthZone,
+    CreateProofFromAuthZoneByAmount,
+    CreateProofFromAuthZoneByIds,
+    CreateProofFromBucket,
+    CloneProof,
+    DropProof,
     CallFunction,
     CallMethod,
     CallMethodWithAllResources,
+    PublishPackage,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -371,31 +381,44 @@ impl Lexer {
             "HashSet" => Ok(TokenKind::HashSet),
             "HashMap" => Ok(TokenKind::HashMap),
             "Decimal" => Ok(TokenKind::Decimal),
-            "BigDecimal" => Ok(TokenKind::BigDecimal),
-            "Address" => Ok(TokenKind::Address),
+            "PackageAddress" => Ok(TokenKind::PackageAddress),
+            "ComponentAddress" => Ok(TokenKind::ComponentAddress),
+            "ResourceAddress" => Ok(TokenKind::ResourceAddress),
             "Hash" => Ok(TokenKind::Hash),
             "Bucket" => Ok(TokenKind::Bucket),
-            "BucketRef" => Ok(TokenKind::BucketRef),
-            "LazyMap" => Ok(TokenKind::LazyMap),
-            "Vault" => Ok(TokenKind::Vault),
-            "NonFungibleKey" => Ok(TokenKind::NonFungibleKey),
+            "Proof" => Ok(TokenKind::Proof),
+            "NonFungibleId" => Ok(TokenKind::NonFungibleId),
+            "NonFungibleAddress" => Ok(TokenKind::NonFungibleAddress),
 
             "Some" => Ok(TokenKind::Some),
             "None" => Ok(TokenKind::None),
             "Ok" => Ok(TokenKind::Ok),
             "Err" => Ok(TokenKind::Err),
 
+            "Bytes" => Ok(TokenKind::Bytes),
+
             "TAKE_FROM_WORKTOP" => Ok(TokenKind::TakeFromWorktop),
-            "TAKE_ALL_FROM_WORKTOP" => Ok(TokenKind::TakeAllFromWorktop),
-            "TAKE_NON_FUNGIBLES_FROM_WORKTOP" => Ok(TokenKind::TakeNonFungiblesFromWorktop),
+            "TAKE_FROM_WORKTOP_BY_AMOUNT" => Ok(TokenKind::TakeFromWorktopByAmount),
+            "TAKE_FROM_WORKTOP_BY_IDS" => Ok(TokenKind::TakeFromWorktopByIds),
             "RETURN_TO_WORKTOP" => Ok(TokenKind::ReturnToWorktop),
             "ASSERT_WORKTOP_CONTAINS" => Ok(TokenKind::AssertWorktopContains),
-            "CREATE_BUCKET_REF" => Ok(TokenKind::CreateBucketRef),
-            "CLONE_BUCKET_REF" => Ok(TokenKind::CloneBucketRef),
-            "DROP_BUCKET_REF" => Ok(TokenKind::DropBucketRef),
+            "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT" => Ok(TokenKind::AssertWorktopContainsByAmount),
+            "ASSERT_WORKTOP_CONTAINS_BY_IDS" => Ok(TokenKind::AssertWorktopContainsByIds),
+            "POP_FROM_AUTH_ZONE" => Ok(TokenKind::PopFromAuthZone),
+            "PUSH_TO_AUTH_ZONE" => Ok(TokenKind::PushToAuthZone),
+            "CLEAR_AUTH_ZONE" => Ok(TokenKind::ClearAuthZone),
+            "CREATE_PROOF_FROM_AUTH_ZONE" => Ok(TokenKind::CreateProofFromAuthZone),
+            "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT" => {
+                Ok(TokenKind::CreateProofFromAuthZoneByAmount)
+            }
+            "CREATE_PROOF_FROM_AUTH_ZONE_BY_IDS" => Ok(TokenKind::CreateProofFromAuthZoneByIds),
+            "CREATE_PROOF_FROM_BUCKET" => Ok(TokenKind::CreateProofFromBucket),
+            "CLONE_PROOF" => Ok(TokenKind::CloneProof),
+            "DROP_PROOF" => Ok(TokenKind::DropProof),
             "CALL_FUNCTION" => Ok(TokenKind::CallFunction),
             "CALL_METHOD" => Ok(TokenKind::CallMethod),
             "CALL_METHOD_WITH_ALL_RESOURCES" => Ok(TokenKind::CallMethodWithAllResources),
+            "PUBLISH_PACKAGE" => Ok(TokenKind::PublishPackage),
 
             s @ _ => Err(LexerError::UnknownIdentifier(s.into())),
         }
@@ -406,8 +429,6 @@ impl Lexer {
         let start = self.current;
 
         let token_kind = match self.advance()? {
-            '{' => TokenKind::OpenCurlyBrace,
-            '}' => TokenKind::CloseCurlyBrace,
             '(' => TokenKind::OpenParenthesis,
             ')' => TokenKind::CloseParenthesis,
             '<' => TokenKind::LessThan,
@@ -422,12 +443,27 @@ impl Lexer {
         Ok(self.new_token(token_kind, start))
     }
 
+    fn index_to_coordinate(&self, index_inclusive: usize) -> (usize, usize) {
+        // better to track this dynamically, instead of computing for each token
+        let mut row = 1;
+        let mut col = 1;
+        for i in 0..index_inclusive + 1 {
+            if self.text[i] == '\n' {
+                row += 1;
+                col = 1;
+            } else {
+                col += 1;
+            }
+        }
+        (row, col)
+    }
+
     fn new_token(&self, kind: TokenKind, start: usize) -> Token {
         Token {
             kind,
             span: Span {
-                start,
-                end: self.current,
+                start: self.index_to_coordinate(start),
+                end: self.index_to_coordinate(self.current - 1),
             },
         }
     }

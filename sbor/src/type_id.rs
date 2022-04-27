@@ -1,5 +1,7 @@
 use crate::rust::boxed::Box;
+use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
+use crate::rust::rc::Rc;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 
@@ -24,7 +26,6 @@ pub const TYPE_STRUCT: u8 = 0x10;
 pub const TYPE_ENUM: u8 = 0x11;
 // composite types
 pub const TYPE_OPTION: u8 = 0x20;
-pub const TYPE_BOX: u8 = 0x21;
 pub const TYPE_ARRAY: u8 = 0x22;
 pub const TYPE_TUPLE: u8 = 0x23;
 pub const TYPE_RESULT: u8 = 0x24;
@@ -42,9 +43,6 @@ pub const OPTION_TYPE_NONE: u8 = 0x00;
 pub const OPTION_TYPE_SOME: u8 = 0x01;
 pub const RESULT_TYPE_OK: u8 = 0x00;
 pub const RESULT_TYPE_ERR: u8 = 0x01;
-pub const FIELDS_TYPE_NAMED: u8 = 0x12;
-pub const FIELDS_TYPE_UNNAMED: u8 = 0x13;
-pub const FIELDS_TYPE_UNIT: u8 = 0x14;
 
 /// A SBOR type ID.
 pub trait TypeId {
@@ -143,7 +141,21 @@ impl<T: TypeId> TypeId for Option<T> {
 impl<T: TypeId> TypeId for Box<T> {
     #[inline]
     fn type_id() -> u8 {
-        TYPE_BOX
+        T::type_id()
+    }
+}
+
+impl<T: TypeId> TypeId for Rc<T> {
+    #[inline]
+    fn type_id() -> u8 {
+        T::type_id()
+    }
+}
+
+impl<T: TypeId> TypeId for RefCell<T> {
+    #[inline]
+    fn type_id() -> u8 {
+        T::type_id()
     }
 }
 

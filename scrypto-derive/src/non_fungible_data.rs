@@ -61,18 +61,10 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             use ::sbor::{type_id::*, *};
                             let mut decoder_nm = Decoder::new(immutable_data, true);
                             decoder_nm.check_type(TYPE_STRUCT)?;
-                            let index = decoder_nm.read_u8()?;
-                            if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
-                                return Err(::sbor::DecodeError::InvalidIndex(index));
-                            }
                             decoder_nm.check_len(#im_n)?;
 
                             let mut decoder_m = Decoder::new(mutable_data, true);
                             decoder_m.check_type(TYPE_STRUCT)?;
-                            let index = decoder_m.read_u8()?;
-                            if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
-                                return Err(::sbor::DecodeError::InvalidIndex(index));
-                            }
                             decoder_m.check_len(#m_n)?;
 
                             let decoded = Self {
@@ -89,30 +81,30 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                         fn immutable_data(&self) -> ::scrypto::rust::vec::Vec<u8> {
                             use ::sbor::{type_id::*, *};
 
-                            let mut encoder = Encoder::new(Vec::new(), true);
+                            let mut bytes = Vec::with_capacity(512);
+                        let mut encoder = Encoder::new(&mut bytes, true);
                             encoder.write_type(TYPE_STRUCT);
-                            encoder.write_u8(FIELDS_TYPE_NAMED);
                             encoder.write_len(#im_n);
                             #(
                                 self.#im_ids2.encode(&mut encoder);
                             )*
 
-                            encoder.into()
+                            bytes
                         }
 
                         fn mutable_data(&self) -> ::scrypto::rust::vec::Vec<u8> {
                             use ::sbor::{type_id::*, *};
                             use ::scrypto::rust::vec::Vec;
 
-                            let mut encoder = Encoder::new(Vec::new(), true);
+                            let mut bytes = Vec::with_capacity(512);
+                        let mut encoder = Encoder::new(&mut bytes, true);
                             encoder.write_type(TYPE_STRUCT);
-                            encoder.write_u8(FIELDS_TYPE_NAMED);
                             encoder.write_len(#m_n);
                             #(
                                 self.#m_ids2.encode(&mut encoder);
                             )*
 
-                            encoder.into()
+                            bytes
                         }
 
                         fn immutable_data_schema() -> ::sbor::describe::Type {
@@ -195,17 +187,9 @@ mod tests {
                         use ::sbor::{type_id::*, *};
                         let mut decoder_nm = Decoder::new(immutable_data, true);
                         decoder_nm.check_type(TYPE_STRUCT)?;
-                        let index = decoder_nm.read_u8()?;
-                        if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
-                            return Err(::sbor::DecodeError::InvalidIndex(index));
-                        }
                         decoder_nm.check_len(1)?;
                         let mut decoder_m = Decoder::new(mutable_data, true);
                         decoder_m.check_type(TYPE_STRUCT)?;
-                        let index = decoder_m.read_u8()?;
-                        if index != ::sbor::type_id::FIELDS_TYPE_NAMED {
-                            return Err(::sbor::DecodeError::InvalidIndex(index));
-                        }
                         decoder_m.check_len(1)?;
                         let decoded = Self {
                             field_1: <u32>::decode(&mut decoder_nm)?,
@@ -217,22 +201,22 @@ mod tests {
                     }
                     fn immutable_data(&self) -> ::scrypto::rust::vec::Vec<u8> {
                         use ::sbor::{type_id::*, *};
-                        let mut encoder = Encoder::new(Vec::new(), true);
+                        let mut bytes = Vec::with_capacity(512);
+                        let mut encoder = Encoder::new(&mut bytes, true);
                         encoder.write_type(TYPE_STRUCT);
-                        encoder.write_u8(FIELDS_TYPE_NAMED);
                         encoder.write_len(1);
                         self.field_1.encode(&mut encoder);
-                        encoder.into()
+                        bytes
                     }
                     fn mutable_data(&self) -> ::scrypto::rust::vec::Vec<u8> {
                         use ::sbor::{type_id::*, *};
                         use ::scrypto::rust::vec::Vec;
-                        let mut encoder = Encoder::new(Vec::new(), true);
+                        let mut bytes = Vec::with_capacity(512);
+                        let mut encoder = Encoder::new(&mut bytes, true);
                         encoder.write_type(TYPE_STRUCT);
-                        encoder.write_u8(FIELDS_TYPE_NAMED);
                         encoder.write_len(1);
                         self.field_2.encode(&mut encoder);
-                        encoder.into()
+                        bytes
                     }
                     fn immutable_data_schema() -> ::sbor::describe::Type {
                         use ::sbor::rust::borrow::ToOwned;

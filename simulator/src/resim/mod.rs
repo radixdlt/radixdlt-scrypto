@@ -1,6 +1,7 @@
 mod cmd_call_function;
 mod cmd_call_method;
 mod cmd_export_abi;
+mod cmd_generate_key_pair;
 mod cmd_mint;
 mod cmd_new_account;
 mod cmd_new_badge_fixed;
@@ -22,6 +23,7 @@ mod error;
 pub use cmd_call_function::*;
 pub use cmd_call_method::*;
 pub use cmd_export_abi::*;
+pub use cmd_generate_key_pair::*;
 pub use cmd_mint::*;
 pub use cmd_new_account::*;
 pub use cmd_new_badge_fixed::*;
@@ -40,10 +42,16 @@ pub use cmd_transfer::*;
 pub use config::*;
 pub use error::*;
 
+pub const DEFAULT_SCRYPTO_DIR_UNDER_HOME: &'static str = ".scrypto";
+pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
+pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
+
 use clap::{Parser, Subcommand};
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
+use scrypto::crypto::*;
+use std::env;
 use std::fs;
 use std::path::PathBuf;
 use transaction_manifest::decompile;
@@ -55,7 +63,13 @@ use crate::ledger::*;
 #[clap(author, version, about, long_about = None, name = "resim")]
 pub struct ResimCli {
     #[clap(subcommand)]
-    command: Command,
+    pub(crate) command: Command,
+}
+
+impl ResimCli {
+    pub fn get_command(&self) -> &Command {
+        &self.command
+    }
 }
 
 #[derive(Subcommand, Debug)]
@@ -63,6 +77,7 @@ pub enum Command {
     CallFunction(CallFunction),
     CallMethod(CallMethod),
     ExportAbi(ExportAbi),
+    GenerateKeyPair(GenerateKeyPair),
     Mint(Mint),
     NewAccount(NewAccount),
     NewBadgeFixed(NewBadgeFixed),
@@ -83,44 +98,80 @@ pub enum Command {
 pub fn run() -> Result<(), Error> {
     let cli = ResimCli::parse();
 
+    let mut out = std::io::stdout();
+
     match cli.command {
-        Command::CallFunction(cmd) => cmd.run(),
-        Command::CallMethod(cmd) => cmd.run(),
-        Command::ExportAbi(cmd) => cmd.run(),
-        Command::Mint(cmd) => cmd.run(),
-        Command::NewAccount(cmd) => cmd.run(),
-        Command::NewBadgeFixed(cmd) => cmd.run(),
-        Command::NewBadgeMutable(cmd) => cmd.run(),
-        Command::NewTokenFixed(cmd) => cmd.run(),
-        Command::NewTokenMutable(cmd) => cmd.run(),
-        Command::Publish(cmd) => cmd.run(),
-        Command::Reset(cmd) => cmd.run(),
-        Command::Run(cmd) => cmd.run(),
-        Command::SetCurrentEpoch(cmd) => cmd.run(),
-        Command::SetDefaultAccount(cmd) => cmd.run(),
-        Command::ShowConfigs(cmd) => cmd.run(),
-        Command::ShowLedger(cmd) => cmd.run(),
-        Command::Show(cmd) => cmd.run(),
-        Command::Transfer(cmd) => cmd.run(),
+        Command::CallFunction(cmd) => cmd.run(&mut out),
+        Command::CallMethod(cmd) => cmd.run(&mut out),
+        Command::ExportAbi(cmd) => cmd.run(&mut out),
+        Command::GenerateKeyPair(cmd) => cmd.run(&mut out),
+        Command::Mint(cmd) => cmd.run(&mut out),
+        Command::NewAccount(cmd) => cmd.run(&mut out),
+        Command::NewBadgeFixed(cmd) => cmd.run(&mut out),
+        Command::NewBadgeMutable(cmd) => cmd.run(&mut out),
+        Command::NewTokenFixed(cmd) => cmd.run(&mut out),
+        Command::NewTokenMutable(cmd) => cmd.run(&mut out),
+        Command::Publish(cmd) => cmd.run(&mut out),
+        Command::Reset(cmd) => cmd.run(&mut out),
+        Command::Run(cmd) => cmd.run(&mut out),
+        Command::SetCurrentEpoch(cmd) => cmd.run(&mut out),
+        Command::SetDefaultAccount(cmd) => cmd.run(&mut out),
+        Command::ShowConfigs(cmd) => cmd.run(&mut out),
+        Command::ShowLedger(cmd) => cmd.run(&mut out),
+        Command::Show(cmd) => cmd.run(&mut out),
+        Command::Transfer(cmd) => cmd.run(&mut out),
     }
 }
 
-pub fn process_transaction<L: SubstateStore>(
-    transaction: Transaction,
+pub fn process_transaction<L: SubstateStore, O: std::io::Write>(
     executor: &mut TransactionExecutor<L>,
-    manifest: &Option<PathBuf>,
+    mut transaction: Transaction,
+    signing_keys: &Option<String>,
+    manifest_path: &Option<PathBuf>,
+    out: &mut O,
 ) -> Result<(), Error> {
-    match manifest {
+    match manifest_path {
         Some(path) => {
-            let decompiled = decompile(&transaction).map_err(Error::DecompileError)?;
-            fs::write(path, decompiled).map_err(Error::IOError)
+            if env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
+                Ok(())
+            } else {
+                let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
+                fs::write(path, manifest).map_err(Error::IOError)
+            }
         }
         None => {
+            let sks = parse_signing_keys(signing_keys)?;
+            let pks = sks
+                .iter()
+                .map(|e| e.public_key())
+                .collect::<Vec<EcdsaPublicKey>>();
+            let nonce = executor.get_nonce(&pks);
+            transaction.add_nonce(nonce);
+            let signed = transaction.sign(sks.iter().collect::<Vec<&EcdsaPrivateKey>>());
             let receipt = executor
-                .run(transaction)
+                .validate_and_execute(&signed)
                 .map_err(Error::TransactionValidationError)?;
-            println!("{:?}", receipt);
+            writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             receipt.result.map_err(Error::TransactionExecutionError)
         }
     }
+}
+
+pub fn parse_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivateKey>, Error> {
+    let private_keys = if let Some(keys) = signing_keys {
+        keys.split(",")
+            .map(str::trim)
+            .map(|key| {
+                hex::decode(key)
+                    .map_err(|_| Error::InvalidPrivateKey)
+                    .and_then(|bytes| {
+                        EcdsaPrivateKey::from_bytes(&bytes).map_err(|_| Error::InvalidPrivateKey)
+                    })
+            })
+            .collect::<Result<Vec<EcdsaPrivateKey>, Error>>()?
+    } else {
+        vec![get_default_private_key()?]
+    };
+
+    Ok(private_keys)
 }

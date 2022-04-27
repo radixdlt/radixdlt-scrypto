@@ -1,15 +1,15 @@
 use clap::Parser;
 use radix_engine::transaction::*;
+use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
-use scrypto::types::*;
 
 use crate::resim::*;
 
 /// Create a token with mutable supply
 #[derive(Parser, Debug)]
 pub struct NewTokenMutable {
-    /// The minter badge address
-    badge_address: Address,
+    /// The minter resource address
+    minter_resource_address: ResourceAddress,
 
     /// The symbol
     #[clap(long)]
@@ -35,9 +35,9 @@ pub struct NewTokenMutable {
     #[clap(short, long)]
     manifest: Option<PathBuf>,
 
-    /// The transaction signers
+    /// The private keys used for signing, separated by comma
     #[clap(short, long)]
-    signers: Option<Vec<EcdsaPublicKey>>,
+    signing_keys: Option<String>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -45,10 +45,9 @@ pub struct NewTokenMutable {
 }
 
 impl NewTokenMutable {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        let default_signers = get_default_signers()?;
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
@@ -65,11 +64,16 @@ impl NewTokenMutable {
         if let Some(icon_url) = self.icon_url.clone() {
             metadata.insert("icon_url".to_string(), icon_url);
         };
-        let signatures = self.signers.clone().unwrap_or(default_signers);
-        let transaction = TransactionBuilder::new(&executor)
-            .new_token_mutable(metadata, self.badge_address)
-            .build(signatures)
-            .map_err(Error::TransactionConstructionError)?;
-        process_transaction(transaction, &mut executor, &self.manifest)
+
+        let transaction = TransactionBuilder::new()
+            .new_token_mutable(metadata, self.minter_resource_address)
+            .build_with_no_nonce();
+        process_transaction(
+            &mut executor,
+            transaction,
+            &self.signing_keys,
+            &self.manifest,
+            out,
+        )
     }
 }

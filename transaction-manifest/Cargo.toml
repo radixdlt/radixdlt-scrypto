@@ -1,6 +1,6 @@
 [package]
 name = "transaction-manifest"
-version = "0.3.0"
+version = "0.4.0"
 edition = "2021"
 
 [dependencies]
@@ -8,3 +8,4 @@ sbor = { path = "../sbor" }
 scrypto = { path = "../scrypto" }
 radix-engine = { path = "../radix-engine" }
 clap = { version = "3.0", features = ["derive", "cargo"] }
+hex = { version = "0.4.3" }

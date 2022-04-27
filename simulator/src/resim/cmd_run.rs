@@ -1,19 +1,17 @@
 use clap::Parser;
-use radix_engine::model::*;
-
-use crate::resim::*;
-use scrypto::types::EcdsaPublicKey;
 use std::path::PathBuf;
 
-/// Compile and run a transaction manifest
+use crate::resim::*;
+
+/// Compiles, signs and runs a transaction manifest
 #[derive(Parser, Debug)]
 pub struct Run {
-    /// the path to a transaction manifest file
+    /// The path to a transaction manifest file
     path: PathBuf,
 
-    /// The transaction signers
+    /// The private keys used for signing, separated by comma
     #[clap(short, long)]
-    signers: Option<Vec<EcdsaPublicKey>>,
+    signing_keys: Option<String>,
 
     /// Turn on tracing
     #[clap(short, long)]
@@ -21,17 +19,11 @@ pub struct Run {
 }
 
 impl Run {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        let default_signers = get_default_signers()?;
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
-        let mut transaction =
-            transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
-        let signatures = self.signers.clone().unwrap_or(default_signers);
-        transaction
-            .instructions
-            .push(Instruction::End { signatures });
-        process_transaction(transaction, &mut executor, &None)
+        let transaction = transaction_manifest::compile(&manifest).map_err(Error::CompileError)?;
+        process_transaction(&mut executor, transaction, &self.signing_keys, &None, out)
     }
 }
