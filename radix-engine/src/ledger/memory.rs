@@ -1,5 +1,4 @@
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::crypto::Hash;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::vec::Vec;
 
@@ -48,7 +47,7 @@ impl ReadableSubstateStore for InMemorySubstateStore {
         self.substates.get(&id).map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
-    fn get_space(&mut self, address: &[u8]) -> Option<(Hash, u32)> {
+    fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
         self.substates.get(address).map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
@@ -66,7 +65,7 @@ impl WriteableSubstateStore for InMemorySubstateStore {
         self.substates.insert(address.to_vec(), scrypto_encode(&substate));
     }
 
-    fn put_space(&mut self, address: &[u8], phys_id: (Hash, u32)) {
+    fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
         self.substates.insert(address.to_vec(), scrypto_encode(&phys_id));
     }
 

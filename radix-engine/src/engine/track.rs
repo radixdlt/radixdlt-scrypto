@@ -58,8 +58,6 @@ pub struct TrackReceipt {
     pub substates: StateUpdateReceipt,
 }
 
-#[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct PhysicalSubstateId(pub Hash, pub u32);
 
 pub struct SubstateUpdate<T> {
     pub prev_id: Option<PhysicalSubstateId>,
@@ -199,12 +197,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             return self.packages.get(package_address).map(|p| &p.value);
         }
 
-        if let Some((package, (hash, index))) = self.substate_store.get_decoded_substate(package_address)
+        if let Some((package, substate_id)) = self.substate_store.get_decoded_substate(package_address)
         {
             self.packages.insert(
                 package_address.clone(),
                 SubstateUpdate {
-                    prev_id: Some(PhysicalSubstateId(hash, index)),
+                    prev_id: Some(substate_id),
                     value: package,
                 },
             );
@@ -237,11 +235,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             Ok(value)
         } else if self.borrowed_components.contains_key(&component_address) {
             Err(RuntimeError::ComponentReentrancy(component_address))
-        } else if let Some((component, (hash, index))) =
+        } else if let Some((component, substate_id)) =
             self.substate_store.get_decoded_substate(&component_address)
         {
             self.borrowed_components
-                .insert(component_address, Some(PhysicalSubstateId(hash, index)));
+                .insert(component_address, Some(substate_id));
             Ok(component)
         } else {
             Err(RuntimeError::ComponentNotFound(component_address))
@@ -272,13 +270,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             return self.components.get(&component_address).map(|c| &c.value);
         }
 
-        if let Some((component, (hash, index))) =
+        if let Some((component, substate_id)) =
             self.substate_store.get_decoded_substate(&component_address)
         {
             self.components.insert(
                 component_address,
                 SubstateUpdate {
-                    prev_id: Some(PhysicalSubstateId(hash, index)),
+                    prev_id: Some(substate_id),
                     value: component,
                 },
             );
@@ -378,8 +376,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             &lazy_map_id,
             &key,
         );
-        let prev_id = if let Some((_, (hash, index))) = entry {
-            KeyedSubstateId::Physical(PhysicalSubstateId(hash, index))
+        let prev_id = if let Some((_, substate_id)) = entry {
+            KeyedSubstateId::Physical(substate_id)
         } else {
             let mut space_address = scrypto_encode(&component_address);
             space_address.extend(scrypto_encode(&lazy_map_id));
@@ -408,13 +406,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 .map(|r| &r.value);
         }
 
-        if let Some((resource_manager, (hash, index))) =
+        if let Some((resource_manager, substate_id)) =
             self.substate_store.get_decoded_substate(resource_address)
         {
             self.resource_managers.insert(
                 resource_address.clone(),
                 SubstateUpdate {
-                    prev_id: Some(PhysicalSubstateId(hash, index)),
+                    prev_id: Some(substate_id),
                     value: resource_manager,
                 },
             );
@@ -440,11 +438,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             self.borrowed_resource_managers
                 .insert(resource_address, prev_id);
             Ok(value)
-        } else if let Some((resource_manager, (hash, index))) =
+        } else if let Some((resource_manager, substate_id)) =
             self.substate_store.get_decoded_substate(&resource_address)
         {
             self.borrowed_resource_managers
-                .insert(resource_address, Some(PhysicalSubstateId(hash, index)));
+                .insert(resource_address, Some(substate_id));
             Ok(resource_manager)
         } else {
             Err(RuntimeError::ResourceManagerNotFound(resource_address))
@@ -503,9 +501,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             return value;
         }
 
-        if let Some((vault, (hash, index))) = self.substate_store.get_decoded_child_substate(component_address, vid) {
+        if let Some((vault, substate_id)) = self.substate_store.get_decoded_child_substate(component_address, vid) {
             self.borrowed_vaults
-                .insert(canonical_id, Some(PhysicalSubstateId(hash, index)));
+                .insert(canonical_id, Some(substate_id));
             return vault;
         }
 
@@ -566,8 +564,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if let Some(index) = self.new_spaces.get_index_of(space_address) {
             SubstateParentId::New(index)
         } else {
-            let (hash, index) = self.substate_store.get_space(space_address).unwrap();
-            SubstateParentId::Exists(PhysicalSubstateId(hash, index))
+            let substate_id = self.substate_store.get_space(space_address).unwrap();
+            SubstateParentId::Exists(substate_id)
         }
     }
 

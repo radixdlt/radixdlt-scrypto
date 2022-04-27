@@ -2,20 +2,19 @@ use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
 use scrypto::rust::ops::RangeFull;
-use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
 use crate::engine::SubstateParentId;
-use crate::engine::track::{PhysicalSubstateId, VirtualSubstateId};
+use crate::engine::track::{VirtualSubstateId};
 
 use crate::ledger::*;
 
 
 pub struct CommitReceipt {
     pub virtual_down_substates: HashSet<HardVirtualSubstateId>,
-    pub down_substates: HashSet<(Hash, u32)>,
-    pub virtual_up_substates: Vec<(Hash, u32)>,
-    pub up_substates: Vec<(Hash, u32)>,
+    pub down_substates: HashSet<PhysicalSubstateId>,
+    pub virtual_up_substates: Vec<PhysicalSubstateId>,
+    pub up_substates: Vec<PhysicalSubstateId>,
 }
 
 impl CommitReceipt {
@@ -32,15 +31,15 @@ impl CommitReceipt {
         self.virtual_down_substates.insert(id);
     }
 
-    fn down(&mut self, id: (Hash, u32)) {
+    fn down(&mut self, id: PhysicalSubstateId) {
         self.down_substates.insert(id);
     }
 
-    fn virtual_space_up(&mut self, id: (Hash, u32)) {
+    fn virtual_space_up(&mut self, id: PhysicalSubstateId) {
         self.up_substates.push(id);
     }
 
-    fn up(&mut self, id: (Hash, u32)) {
+    fn up(&mut self, id: PhysicalSubstateId) {
         self.up_substates.push(id);
     }
 }
@@ -79,15 +78,15 @@ impl StateUpdateReceipt {
                     let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key);
                     receipt.virtual_down(virtual_substate_id);
                 }
-                StateUpdateInstruction::Down(PhysicalSubstateId(hash, index)) => receipt.down((hash, index)),
+                StateUpdateInstruction::Down(substate_id) => receipt.down(substate_id),
                 StateUpdateInstruction::VirtualUp(address) => {
                     let phys_id = id_gen.next();
-                    receipt.virtual_space_up(phys_id);
+                    receipt.virtual_space_up(phys_id.clone());
                     store.put_space(&address, phys_id);
                 }
                 StateUpdateInstruction::Up(key, value) => {
                     let phys_id = id_gen.next();
-                    receipt.up(phys_id);
+                    receipt.up(phys_id.clone());
                     store.put_keyed_substate(&key, value, phys_id);
                 }
             }
