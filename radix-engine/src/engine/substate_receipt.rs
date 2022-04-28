@@ -48,7 +48,7 @@ impl CommitReceipt {
 pub struct HardVirtualSubstateId(PhysicalSubstateId, Vec<u8>);
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum StateUpdateInstruction {
+pub enum SubstateOperation {
     VirtualDown(VirtualSubstateId),
     Down(PhysicalSubstateId),
     VirtualUp(Vec<u8>),
@@ -56,11 +56,11 @@ pub enum StateUpdateInstruction {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct StateUpdateReceipt {
-    pub instructions: Vec<StateUpdateInstruction>,
+pub struct SubstateOperationsReceipt {
+    pub substate_operations: Vec<SubstateOperation>,
 }
 
-impl StateUpdateReceipt {
+impl SubstateOperationsReceipt {
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
     pub fn commit<S: WriteableSubstateStore>(mut self, store: &mut S) -> CommitReceipt {
@@ -68,9 +68,9 @@ impl StateUpdateReceipt {
         let mut receipt = CommitReceipt::new();
         let mut id_gen = SubstateIdGenerator::new(hash);
 
-        for instruction in self.instructions.drain(RangeFull) {
+        for instruction in self.substate_operations.drain(RangeFull) {
             match instruction {
-                StateUpdateInstruction::VirtualDown(VirtualSubstateId(parent_id, key)) => {
+                SubstateOperation::VirtualDown(VirtualSubstateId(parent_id, key)) => {
                     let parent_hard_id = match parent_id {
                         SubstateParentId::Exists(real_id) => real_id,
                         SubstateParentId::New(index) => PhysicalSubstateId(hash, index.try_into().unwrap()),
@@ -78,13 +78,13 @@ impl StateUpdateReceipt {
                     let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key);
                     receipt.virtual_down(virtual_substate_id);
                 }
-                StateUpdateInstruction::Down(substate_id) => receipt.down(substate_id),
-                StateUpdateInstruction::VirtualUp(address) => {
+                SubstateOperation::Down(substate_id) => receipt.down(substate_id),
+                SubstateOperation::VirtualUp(address) => {
                     let phys_id = id_gen.next();
                     receipt.virtual_space_up(phys_id.clone());
                     store.put_space(&address, phys_id);
                 }
-                StateUpdateInstruction::Up(key, value) => {
+                SubstateOperation::Up(key, value) => {
                     let phys_id = id_gen.next();
                     receipt.up(phys_id.clone());
                     store.put_keyed_substate(&key, value, phys_id);

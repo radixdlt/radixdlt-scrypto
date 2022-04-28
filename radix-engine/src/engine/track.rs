@@ -55,7 +55,7 @@ pub struct TrackReceipt {
     pub new_components: Vec<ComponentAddress>,
     pub new_resources: Vec<ResourceAddress>,
     pub logs: Vec<(Level, String)>,
-    pub substates: StateUpdateReceipt,
+    pub substates: SubstateOperationsReceipt,
 }
 
 
@@ -636,71 +636,71 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let mut store_instructions = Vec::new();
         for (package_address, package) in self.packages.drain(RangeFull) {
             if let Some(substate_id) = package.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(substate_id));
+                store_instructions.push(SubstateOperation::Down(substate_id));
             } else {
                 new_packages.push(package_address);
             }
-            store_instructions.push(StateUpdateInstruction::Up(scrypto_encode(&package_address), scrypto_encode(&package.value)));
+            store_instructions.push(SubstateOperation::Up(scrypto_encode(&package_address), scrypto_encode(&package.value)));
         }
         for (component_address, component) in self.components.drain(RangeFull) {
             if let Some(substate_id) = component.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(substate_id));
+                store_instructions.push(SubstateOperation::Down(substate_id));
             } else {
                 new_components.push(component_address);
             }
-            store_instructions.push(StateUpdateInstruction::Up(scrypto_encode(&component_address), scrypto_encode(&component.value)));
+            store_instructions.push(SubstateOperation::Up(scrypto_encode(&component_address), scrypto_encode(&component.value)));
         }
         for (resource_address, resource_manager) in self.resource_managers.drain(RangeFull) {
             if let Some(substate_id) = resource_manager.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(substate_id));
+                store_instructions.push(SubstateOperation::Down(substate_id));
             } else {
                 new_resources.push(resource_address);
             }
-            store_instructions.push(StateUpdateInstruction::Up(scrypto_encode(&resource_address), scrypto_encode(&resource_manager.value)));
+            store_instructions.push(SubstateOperation::Up(scrypto_encode(&resource_address), scrypto_encode(&resource_manager.value)));
         }
         for ((component_address, vault_id), vault) in self.vaults.drain(RangeFull) {
             if let Some(substate_id) = vault.prev_id {
-                store_instructions.push(StateUpdateInstruction::Down(substate_id));
+                store_instructions.push(SubstateOperation::Down(substate_id));
             }
             let mut vault_address = scrypto_encode(&component_address);
             vault_address.extend(scrypto_encode(&vault_id));
-            store_instructions.push(StateUpdateInstruction::Up(vault_address, scrypto_encode(&vault.value)));
+            store_instructions.push(SubstateOperation::Up(vault_address, scrypto_encode(&vault.value)));
         }
 
         for space_address in self.new_spaces.drain(RangeFull) {
-            store_instructions.push(StateUpdateInstruction::VirtualUp(space_address));
+            store_instructions.push(SubstateOperation::VirtualUp(space_address));
         }
 
         for (addr, update) in self.non_fungibles.drain(RangeFull) {
             match update.prev_id {
                 KeyedSubstateId::Physical(physical_substate_id) => {
-                    store_instructions.push(StateUpdateInstruction::Down(physical_substate_id));
+                    store_instructions.push(SubstateOperation::Down(physical_substate_id));
                 },
                 KeyedSubstateId::Virtual(virtual_substate_id) => {
-                    store_instructions.push(StateUpdateInstruction::VirtualDown(virtual_substate_id));
+                    store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
                 }
             }
 
             let non_fungible_address = non_fungible_to_re_address!(addr);
-            store_instructions.push(StateUpdateInstruction::Up(non_fungible_address, scrypto_encode(&update.value)));
+            store_instructions.push(SubstateOperation::Up(non_fungible_address, scrypto_encode(&update.value)));
         }
         for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
             match entry.prev_id {
                 KeyedSubstateId::Physical(physical_substate_id) => {
-                    store_instructions.push(StateUpdateInstruction::Down(physical_substate_id));
+                    store_instructions.push(SubstateOperation::Down(physical_substate_id));
                 },
                 KeyedSubstateId::Virtual(virtual_substate_id) => {
-                    store_instructions.push(StateUpdateInstruction::VirtualDown(virtual_substate_id));
+                    store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
                 }
             }
 
             let mut entry_address = scrypto_encode(&component_address);
             entry_address.extend(scrypto_encode(&lazy_map_id));
             entry_address.extend(key);
-            store_instructions.push(StateUpdateInstruction::Up(entry_address, entry.value));
+            store_instructions.push(SubstateOperation::Up(entry_address, entry.value));
         }
 
-        let substates = StateUpdateReceipt { instructions: store_instructions };
+        let substates = SubstateOperationsReceipt { substate_operations: store_instructions };
         let borrowed = BorrowedSNodes {
             borrowed_components: self.borrowed_components,
             borrowed_vaults: self.borrowed_vaults,
