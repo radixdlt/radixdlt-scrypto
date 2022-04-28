@@ -19,6 +19,7 @@ use wasmi::*;
 
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::*;
+use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
@@ -89,6 +90,8 @@ pub trait SystemApi {
 
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError>;
 
+    fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError>;
+
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError>;
 
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError>;
@@ -98,19 +101,115 @@ pub trait SystemApi {
     fn create_package(&mut self, package: Package) -> PackageAddress;
 }
 
-pub enum SNodeState {
-    Transaction(TransactionProcess),
-    PackageStatic,
+pub enum ConsumedSNodeState {
+    Bucket(Bucket),
+    Proof(Proof),
+}
+
+pub enum BorrowedSNodeState {
     AuthZone(AuthZone),
     Worktop(Worktop),
     Scrypto(ScryptoActorInfo, Option<Component>),
+    Resource(ResourceAddress, ResourceManager),
+    Bucket(BucketId, Bucket),
+    Proof(ProofId, Proof),
+    Vault(VaultId, Option<ComponentAddress>, Vault),
+}
+
+impl BorrowedSNodeState {
+    fn return_borrowed_state<'r, 'l, L:SubstateStore>(self, process: &mut Process<'r, 'l, L>) {
+        match self {
+            BorrowedSNodeState::AuthZone(auth_zone) => {
+                process.auth_zone = Some(auth_zone);
+            }
+            BorrowedSNodeState::Worktop(worktop) => {
+                process.worktop = Some(worktop);
+            }
+            BorrowedSNodeState::Scrypto(actor, component_state) => {
+                if let Some(component_address) = actor.component_address() {
+                    process.track.return_borrowed_global_component(
+                        component_address,
+                        component_state.unwrap(),
+                    );
+                }
+            }
+            BorrowedSNodeState::Resource(resource_address, resource_manager) => {
+                process.track.return_borrowed_global_resource_manager(
+                    resource_address,
+                    resource_manager,
+                );
+            }
+            BorrowedSNodeState::Bucket(bucket_id, bucket) => {
+                process.buckets.insert(bucket_id, bucket);
+            }
+            BorrowedSNodeState::Proof(proof_id, proof) => {
+                process.proofs.insert(proof_id, proof);
+            }
+            BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
+                if let Some(component_address) = maybe_component_address {
+                    process.track.return_borrowed_vault(&component_address, &vault_id, vault);
+                } else {
+                    process.owned_snodes.return_borrowed_vault_mut(vault);
+                }
+            }
+        }
+    }
+}
+
+pub enum StaticSNodeState {
+    Package,
+    Resource,
+}
+
+pub enum LoadedSNodeState {
+    Static(StaticSNodeState),
+    Consumed(Option<ConsumedSNodeState>),
+    Borrowed(BorrowedSNodeState),
+}
+
+impl LoadedSNodeState {
+    fn to_snode_state(&mut self) -> SNodeState {
+        match self {
+            Static(static_state) => {
+                match static_state {
+                    StaticSNodeState::Package => SNodeState::PackageStatic,
+                    StaticSNodeState::Resource => SNodeState::ResourceStatic,
+                }
+            }
+            Consumed(ref mut to_consume) => {
+                match to_consume.take().unwrap() {
+                    ConsumedSNodeState::Proof(proof) => SNodeState::Proof(proof),
+                    ConsumedSNodeState::Bucket(bucket) => SNodeState::Bucket(bucket),
+                }
+            }
+            Borrowed(ref mut borrowed) => {
+                match borrowed {
+                    BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
+                    BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
+                    BorrowedSNodeState::Scrypto(info, s) => SNodeState::Scrypto(info.clone(), s.as_mut()),
+                    BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
+                    BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
+                    BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
+                    BorrowedSNodeState::Vault(id, addr, s) => SNodeState::VaultRef(*id, addr.clone(), s),
+                }
+            }
+        }
+    }
+}
+
+pub enum SNodeState<'a> {
+    Transaction(&'a mut TransactionProcess),
+    PackageStatic,
+    AuthZoneRef(&'a mut AuthZone),
+    Worktop(&'a mut Worktop),
+    Scrypto(ScryptoActorInfo, Option<&'a mut Component>),
     ResourceStatic,
-    ResourceRef(ResourceAddress, ResourceManager),
-    BucketRef(BucketId, Bucket),
+    ResourceRef(ResourceAddress, &'a mut ResourceManager),
+    BucketRef(BucketId, &'a mut Bucket),
     Bucket(Bucket),
-    ProofRef(ProofId, Proof),
+    ProofRef(ProofId, &'a mut Proof),
     Proof(Proof),
-    VaultRef(VaultId, Option<ComponentAddress>, Vault),
+    VaultRef(VaultId, Option<ComponentAddress>, &'a mut Vault),
 }
 
 /// Represents an interpreter instance.
@@ -246,7 +345,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     /// Runs the given export within this process.
     pub fn run(
         &mut self,
-        snode: &'r mut SNodeState,
+        snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
+        snode: SNodeState<'r>,
         function: String,
         args: Vec<ScryptoValue>,
     ) -> Result<
@@ -254,6 +354,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             ScryptoValue,
             HashMap<BucketId, Bucket>,
             HashMap<ProofId, Proof>,
+            HashMap<VaultId, Vault>,
         ),
         RuntimeError,
     > {
@@ -269,7 +370,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             SNodeState::PackageStatic => {
                 Package::static_main(&function, args, self).map_err(RuntimeError::PackageError)
             }
-            SNodeState::AuthZone(auth_zone) => {
+            SNodeState::AuthZoneRef(auth_zone) => {
                 auth_zone
                     .main(function.as_str(), args, self)
                     .map_err(RuntimeError::AuthZoneError)
@@ -351,29 +452,39 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
             SNodeState::ResourceRef(resource_address, resource_manager) => {
                 let return_value = resource_manager
-                    .main(*resource_address, function.as_str(), args, self)
+                    .main(resource_address, function.as_str(), args, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
 
                 Ok(return_value)
             }
             SNodeState::BucketRef(bucket_id, bucket) => bucket
-                .main(*bucket_id, function.as_str(), args, self)
+                .main(bucket_id, function.as_str(), args, self)
                 .map_err(RuntimeError::BucketError),
+            SNodeState::Bucket(bucket) => {
+                match function.as_str() {
+                    "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
+                    _ => Err(RuntimeError::IllegalSystemCall),
+                }
+            },
             SNodeState::ProofRef(_, proof) => proof
                 .main(function.as_str(), args, self)
                 .map_err(RuntimeError::ProofError),
+            SNodeState::Proof(proof) => {
+                proof.main_consume(function.as_str())
+                    .map_err(RuntimeError::ProofError)
+            }
             SNodeState::VaultRef(vault_id, _, vault) =>
                 vault
-                    .main(*vault_id, function.as_str(), args, self)
+                    .main(vault_id, function.as_str(), args, self)
                     .map_err(RuntimeError::VaultError),
-            _ => Err(RuntimeError::IllegalSystemCall),
         }?;
 
-        self.process_return_data(&output)?;
+        self.process_return_data(snode_ref, &output)?;
 
         // figure out what buckets and resources to return
         let moving_buckets = self.send_buckets(&output.bucket_ids)?;
         let moving_proofs = self.send_proofs(&output.proof_ids, MoveMethod::AsReturn)?;
+        let moving_vaults = self.send_vaults(&output.vault_ids)?;
 
         // drop proofs and check resource leak
         for (_, proof) in self.proofs.drain() {
@@ -394,7 +505,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         #[cfg(feature = "alloc")]
         re_info!(self, "Run ended");
 
-        Ok((output, moving_buckets, moving_proofs))
+        Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
 
     /// Calls a function/method.
@@ -405,18 +516,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         args: Vec<ScryptoValue>,
     ) -> Result<ScryptoValue, RuntimeError> {
         // Authorization and state load
-        let (mut snode, method_auths) = match &snode_ref {
-            SNodeRef::PackageStatic => Ok((SNodeState::PackageStatic, vec![])),
+        let (mut loaded_snode, method_auths) = match &snode_ref {
+            SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = self.auth_zone.take() {
-                    Ok((SNodeState::AuthZone(auth_zone), vec![]))
+                    Ok((Borrowed(BorrowedSNodeState::AuthZone(auth_zone)), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
             SNodeRef::WorktopRef => {
                 if let Some(worktop) = self.worktop.take() {
-                    Ok((SNodeState::Worktop(worktop), vec![]))
+                    Ok((Borrowed(BorrowedSNodeState::Worktop(worktop)), vec![]))
                 } else {
                     Err(RuntimeError::WorktopDoesNotExist)
                 }
@@ -426,14 +537,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
                         let export_name = format!("{}_main", blueprint_name);
                         Ok((
-                            SNodeState::Scrypto(
+                            Borrowed(BorrowedSNodeState::Scrypto(
                                 ScryptoActorInfo::blueprint(
                                     package_address.clone(),
                                     blueprint_name.clone(),
                                     export_name.clone(),
                                 ),
                                 None,
-                            ),
+                            )),
                             vec![],
                         ))
                     }
@@ -457,7 +568,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
                         let (_, method_auths) = component.method_authorization(&schema, &function);
                         Ok((
-                            SNodeState::Scrypto(
+                            Borrowed(BorrowedSNodeState::Scrypto(
                                 ScryptoActorInfo::component(
                                     package_address,
                                     blueprint_name,
@@ -465,20 +576,20 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                                     component_address.clone(),
                                 ),
                                 Some(component),
-                            ),
+                            )),
                             method_auths,
                         ))
                     }
                 }
             }
-            SNodeRef::ResourceStatic => Ok((SNodeState::ResourceStatic, vec![])),
+            SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::ResourceRef(resource_address) => {
                 let resource_manager: ResourceManager = self
                     .track
                     .borrow_global_mut_resource_manager(resource_address.clone())?;
                 let method_auth = resource_manager.get_auth(&function, &args).clone();
                 Ok((
-                    SNodeState::ResourceRef(resource_address.clone(), resource_manager),
+                    Borrowed(BorrowedSNodeState::Resource(resource_address.clone(), resource_manager)),
                     vec![method_auth],
                 ))
             }
@@ -493,7 +604,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .get_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function, &args);
-                Ok((SNodeState::Bucket(bucket), vec![method_auth.clone()]))
+                Ok((Consumed(Some(ConsumedSNodeState::Bucket(bucket))), vec![method_auth.clone()]))
             }
             SNodeRef::BucketRef(bucket_id) => {
                 let bucket = self
@@ -507,17 +618,17 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .unwrap()
                     .get_auth(&function, &args);
                 Ok((
-                    SNodeState::BucketRef(bucket_id.clone(), bucket),
+                    Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
                     vec![method_auth.clone()],
                 ))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                Ok((SNodeState::ProofRef(proof_id.clone(), proof), vec![]))
+                Ok((Borrowed(BorrowedSNodeState::Proof(proof_id.clone(), proof)), vec![]))
             }
             SNodeRef::Proof(proof_id) => {
                 let proof = self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                Ok((SNodeState::Proof(proof), vec![]))
+                Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (component, vault) = if let Some(vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
@@ -538,7 +649,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     .unwrap()
                     .get_auth(&function, &args);
                 Ok((
-                    SNodeState::VaultRef(vault_id.clone(), component, vault),
+                    Borrowed(BorrowedSNodeState::Vault(vault_id.clone(), component, vault)),
                     vec![method_auth.clone()],
                 ))
             }
@@ -551,9 +662,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 auth_zones.push(self_auth_zone);
             }
 
-            match &snode {
+            match &loaded_snode {
                 // Resource auth check includes caller
-                SNodeState::ResourceRef(_, _) | SNodeState::VaultRef(_, _, _) | SNodeState::BucketRef(_, _) | SNodeState::Bucket(_) => {
+                Borrowed(BorrowedSNodeState::Resource(_, _)) | Borrowed(BorrowedSNodeState::Vault(_, _, _))
+                | Borrowed(BorrowedSNodeState::Bucket(_, _)) | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone);
                     }
@@ -574,94 +686,51 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         }
 
         // Execution
-        let result = match snode {
-            SNodeState::Proof(proof) => {
-                proof.main_consume(function.as_str())
-                    .map_err(RuntimeError::ProofError)
-            },
-            SNodeState::Bucket(bucket) => match function.as_str() {
-                "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
-                _ => Err(RuntimeError::IllegalSystemCall),
-            },
-            _ => {
-                // Figure out what buckets and proofs to move from this process
-                let mut moving_buckets = HashMap::new();
-                let mut moving_proofs = HashMap::new();
-                for arg in &args {
-                    self.process_call_data(arg)?;
-                    moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
-                    moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
-                }
 
-                // start a new process
-                let process_auth_zone = if matches!(snode, SNodeState::Scrypto(_, _)) {
-                    Some(AuthZone::new())
-                } else {
-                    None
-                };
+        // Figure out what buckets and proofs to move from this process
+        let mut moving_buckets = HashMap::new();
+        let mut moving_proofs = HashMap::new();
+        for arg in &args {
+            self.process_call_data(arg)?;
+            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
+            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
+        }
 
-                let mut process = Process::new(
-                    self.depth + 1,
-                    self.trace,
-                    self.track,
-                    process_auth_zone,
-                    None,
-                    moving_buckets,
-                    moving_proofs,
-                );
-                if let Some(auth_zone) = &self.auth_zone {
-                    process.caller_auth_zone = Option::Some(auth_zone);
-                }
+        let process_auth_zone = if matches!(loaded_snode, Borrowed(BorrowedSNodeState::Scrypto(_, _))) {
+            Some(AuthZone::new())
+        } else {
+            None
+        };
 
-                // invoke the main function
-                let (result, received_buckets, received_proofs) =
-                    process.run(&mut snode, function, args)?;
+        let snode = loaded_snode.to_snode_state();
 
-                // move buckets and proofs to this process.
-                self.buckets.extend(received_buckets);
-                self.proofs.extend(received_proofs);
+        // start a new process
+        let mut process = Process::new(
+            self.depth + 1,
+            self.trace,
+            self.track,
+            process_auth_zone,
+            None,
+            moving_buckets,
+            moving_proofs,
+        );
+        if let Some(auth_zone) = &self.auth_zone {
+            process.caller_auth_zone = Option::Some(auth_zone);
+        }
 
-                // Return borrowed snodes
-                match snode {
-                    SNodeState::AuthZone(auth_zone) => {
-                        self.auth_zone = Some(auth_zone);
-                    }
-                    SNodeState::Worktop(worktop) => {
-                        self.worktop = Some(worktop);
-                    }
-                    SNodeState::Scrypto(actor, component_state) => {
-                        if let Some(component_address) = actor.component_address() {
-                            self.track.return_borrowed_global_component(
-                                component_address,
-                                component_state.unwrap(),
-                            );
-                        }
-                    }
-                    SNodeState::ResourceRef(resource_address, resource_manager) => {
-                        self.track.return_borrowed_global_resource_manager(
-                            resource_address,
-                            resource_manager,
-                        );
-                    }
-                    SNodeState::BucketRef(bucket_id, bucket) => {
-                        self.buckets.insert(bucket_id, bucket);
-                    }
-                    SNodeState::ProofRef(proof_id, proof) => {
-                        self.proofs.insert(proof_id, proof);
-                    }
-                    SNodeState::VaultRef(vault_id, maybe_component_address, vault) => {
-                        if let Some(component_address) = maybe_component_address {
-                            self.track.return_borrowed_vault(&component_address, &vault_id, vault);
-                        } else {
-                            self.owned_snodes.return_borrowed_vault_mut(vault);
-                        }
-                    }
-                    _ => {}
-                }
+        // invoke the main function
+        let (result, received_buckets, received_proofs, received_vaults) =
+            process.run(Some(snode_ref), snode, function, args)?;
 
-                Ok(result)
-            }
-        }?;
+        // move buckets and proofs to this process.
+        self.buckets.extend(received_buckets);
+        self.proofs.extend(received_proofs);
+        self.owned_snodes.vaults.extend(received_vaults);
+
+        // Return borrowed snodes
+        if let Borrowed(borrowed) = loaded_snode {
+            borrowed.return_borrowed_state(self);
+        }
 
         Ok(result)
     }
@@ -675,7 +744,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     ) -> Result<ScryptoValue, RuntimeError> {
         re_debug!(self, "Call abi started");
 
-        let mut snode = SNodeState::Scrypto(
+        let snode = SNodeState::Scrypto(
             ScryptoActorInfo::blueprint(
                 package_address,
                 blueprint_name.to_string(),
@@ -686,8 +755,8 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         let mut process = Process::new(self.depth + 1, self.trace, self.track, None, None, HashMap::new(), HashMap::new());
         let result = process
-            .run(&mut snode, String::new(), Vec::new())
-            .map(|(r, _, _)| r);
+            .run(None, snode, String::new(), Vec::new())
+            .map(|(r, _, _, _)| r);
 
         re_debug!(self, "Call abi ended");
         result
@@ -751,13 +820,19 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(())
     }
 
-    fn process_return_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
+    fn process_return_data(&mut self, from: Option<SNodeRef>, validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.lazy_map_ids.is_empty() {
             return Err(RuntimeError::LazyMapNotAllowed);
         }
-        if !validated.vault_ids.is_empty() {
-            return Err(RuntimeError::VaultNotAllowed);
+
+        // Allow vaults to be returned from ResourceStatic
+        // TODO: Should we allow vaults to be returned by any component?
+        if !matches!(from, Some(SNodeRef::ResourceRef(_))) {
+            if !validated.vault_ids.is_empty() {
+                return Err(RuntimeError::VaultNotAllowed);
+            }
         }
+
         Ok(())
     }
 
@@ -772,27 +847,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             return Err(RuntimeError::ProofNotAllowed);
         }
 
-        let mut lazy_map_ids = HashSet::new();
-        for lazy_map_id in validated.lazy_map_ids {
-            if lazy_map_ids.contains(&lazy_map_id) {
-                return Err(RuntimeError::DuplicateLazyMap(lazy_map_id));
-            }
-            lazy_map_ids.insert(lazy_map_id);
-        }
-
-        let mut vault_ids = HashSet::new();
-        for vault_id in validated.vault_ids {
-            if vault_ids.contains(&vault_id) {
-                return Err(RuntimeError::DuplicateVault(vault_id));
-            }
-            vault_ids.insert(vault_id);
-        }
-
         // lazy map allowed
         // vaults allowed
         Ok(ComponentObjectRefs {
-            lazy_map_ids,
-            vault_ids,
+            lazy_map_ids: validated.lazy_map_ids,
+            vault_ids: validated.vault_ids,
         })
     }
 
@@ -814,6 +873,21 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             buckets.insert(*bucket_id, bucket);
         }
         Ok(buckets)
+    }
+
+    /// Sends proofs to another component/blueprint, either as argument or return
+    fn send_vaults(
+        &mut self,
+        vault_ids: &HashSet<VaultId>,
+    ) -> Result<HashMap<VaultId, Vault>, RuntimeError> {
+        let mut vaults = HashMap::new();
+        for vault_id in vault_ids {
+            let vault = self.owned_snodes.vaults
+                .remove(vault_id)
+                .ok_or(RuntimeError::VaultNotFound(*vault_id))?;
+            vaults.insert(*vault_id, vault);
+        }
+        Ok(vaults)
     }
 
     /// Sends proofs to another component/blueprint, either as argument or return
@@ -1146,30 +1220,6 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         Ok(PutLazyMapEntryOutput {})
     }
 
-    fn handle_create_vault(
-        &mut self,
-        input: CreateEmptyVaultInput,
-    ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
-        let definition = self
-            .track
-            .get_resource_manager(&input.resource_address)
-            .ok_or(RuntimeError::ResourceManagerNotFound(
-                input.resource_address,
-            ))?;
-
-        let new_vault = Vault::new(ResourceContainer::new_empty(
-            input.resource_address,
-            definition.resource_type(),
-        ));
-        let vault_id = self.track.new_vault_id();
-        self
-            .owned_snodes
-            .vaults
-            .insert(vault_id, new_vault);
-
-        Ok(CreateEmptyVaultOutput { vault_id })
-    }
-
     fn handle_invoke_snode(
         &mut self,
         input: InvokeSNodeInput,
@@ -1317,6 +1367,15 @@ impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
         Ok(bucket_id)
     }
 
+    fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
+        let vault_id = self.track.new_vault_id();
+        self
+            .owned_snodes
+            .vaults
+            .insert(vault_id, Vault::new(container));
+        Ok(vault_id)
+    }
+
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
         self.buckets
             .remove(&bucket_id)
@@ -1350,8 +1409,6 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
                     GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
                     PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
-
-                    CREATE_EMPTY_VAULT => self.handle(args, Self::handle_create_vault),
 
                     INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
 
