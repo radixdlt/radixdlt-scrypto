@@ -90,5 +90,9 @@ blueprint! {
             let x = bucket.take(amount);
             (bucket, x)
         }
+
+        pub fn create_empty_bucket() -> Bucket {
+            Bucket::new(RADIX_TOKEN)
+        }
     }
 }

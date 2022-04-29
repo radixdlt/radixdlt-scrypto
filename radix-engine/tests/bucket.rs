@@ -25,6 +25,7 @@ fn test_bucket() {
         .call_function(package, "BucketTest", "test_restricted_transfer", args![])
         .call_function(package, "BucketTest", "test_burn", args![])
         .call_function(package, "BucketTest", "test_burn_freely", args![])
+        .call_function(package, "BucketTest", "create_empty_bucket", args![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);
