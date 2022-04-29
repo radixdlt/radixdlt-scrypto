@@ -129,6 +129,7 @@ impl ResourceManager {
         for pub_method in [
             "create_bucket",
             "create_bucket_proof",
+            "create_empty_bucket",
             "get_metadata",
             "get_resource_type",
             "get_total_supply",
