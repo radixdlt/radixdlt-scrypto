@@ -192,7 +192,7 @@ impl Decimal {
         }
         let s = Self::SCALE;
         let bytes2 = Self::BITS / 4;
-        let b: BigInt = 10i128.pow(s).into();
+        let b: BigInt = 10i128.checked_pow(s).into();
         let mut n: BigInt = exp.abs().into();
         let mut z: BigInt;
         if x.clone() == BigInt::from(0i8) {
