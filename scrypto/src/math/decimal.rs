@@ -187,14 +187,14 @@ impl Decimal {
 
     pub fn powi(&self, exp: i32) -> Self {
         let mut x: BigInt = self.0.clone().into();
-        let sign: BigInt= if self.0.is_negative() && exp % 2 == 0 {
-            BigInt::from(-1)
+        let sign = if self.0.is_negative() && exp % 2 == 0 {
+            -1i128
         } else {
-            BigInt::from(1)
+            1i128
         };
         let s = Self::SCALE;
         let bytes2 = Self::BITS / 4;
-        let b: BigInt = 10i128.checked_pow(s).into();
+        let b: BigInt = 10i128.checked_pow(s).unwrap().into();
         let mut n: BigInt = exp.abs().into();
         let mut z: BigInt;
         if x.clone() == BigInt::from(0i8) {
