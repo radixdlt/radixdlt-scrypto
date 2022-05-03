@@ -3,7 +3,7 @@ use indexmap::{IndexMap, IndexSet};
 use scrypto::buffer::scrypto_decode;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::scrypto_encode;
+use scrypto::prelude::{scrypto_encode};
 use scrypto::rust::ops::RangeFull;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
@@ -36,7 +36,7 @@ macro_rules! non_fungible_to_re_address {
 }
 
 pub struct BorrowedSNodes {
-    borrowed_components: HashMap<ComponentAddress, Option<PhysicalSubstateId>>,
+    borrowed_components: HashSet<ComponentAddress>,
     borrowed_resource_managers: HashMap<ResourceAddress, Option<PhysicalSubstateId>>,
     borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 }
@@ -100,18 +100,22 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     packages: IndexMap<PackageAddress, SubstateUpdate<Package>>,
 
-    components: IndexMap<ComponentAddress, SubstateUpdate<Component>>,
-    borrowed_components: HashMap<ComponentAddress, Option<PhysicalSubstateId>>,
+    downed_components: Vec<PhysicalSubstateId>,
+    read_components: IndexMap<ComponentAddress, Component>,
+    borrowed_components: HashSet<ComponentAddress>,
+    up_components: IndexMap<ComponentAddress, Component>,
+    new_components: Vec<ComponentAddress>,
 
     resource_managers: IndexMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
     borrowed_resource_managers: HashMap<ResourceAddress, Option<PhysicalSubstateId>>,
 
-    vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
-    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
-
     new_spaces: IndexSet<Vec<u8>>,
     non_fungibles: IndexMap<NonFungibleAddress, KeyedSubstateUpdate<Option<NonFungible>>>,
     lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), KeyedSubstateUpdate<Vec<u8>>>,
+
+    // TODO: Change this interface to take/put
+    vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
+    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
@@ -127,8 +131,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
             packages: IndexMap::new(),
-            components: IndexMap::new(),
-            borrowed_components: HashMap::new(),
+
+            downed_components: Vec::new(),
+            read_components: IndexMap::new(),
+            borrowed_components: HashSet::new(),
+            up_components: IndexMap::new(),
+            new_components: Vec::new(),
+
             resource_managers: IndexMap::new(),
             borrowed_resource_managers: HashMap::new(),
             new_spaces: IndexSet::new(),
@@ -229,17 +238,17 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<Component, RuntimeError> {
-        let maybe_component = self.components.remove(&component_address);
-        if let Some(SubstateUpdate { value, prev_id }) = maybe_component {
-            self.borrowed_components.insert(component_address, prev_id);
-            Ok(value)
-        } else if self.borrowed_components.contains_key(&component_address) {
+        let maybe_component = self.up_components.remove(&component_address);
+        if let Some(component) = maybe_component {
+            self.borrowed_components.insert(component_address);
+            Ok(component)
+        } else if self.borrowed_components.contains(&component_address) {
             Err(RuntimeError::ComponentReentrancy(component_address))
         } else if let Some((component, substate_id)) =
             self.substate_store.get_decoded_substate(&component_address)
         {
-            self.borrowed_components
-                .insert(component_address, Some(substate_id));
+            self.downed_components.push(substate_id);
+            self.borrowed_components.insert(component_address);
             Ok(component)
         } else {
             Err(RuntimeError::ComponentNotFound(component_address))
@@ -251,36 +260,23 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         component_address: ComponentAddress,
         component: Component,
     ) {
-        if let Some(prev_id) = self.borrowed_components.remove(&component_address) {
-            self.components.insert(
-                component_address,
-                SubstateUpdate {
-                    prev_id,
-                    value: component,
-                },
-            );
-        } else {
+        if !self.borrowed_components.remove(&component_address) {
             panic!("Component was never borrowed");
         }
+
+        self.up_components.insert(component_address, component);
     }
 
     /// Returns an immutable reference to a component, if exists.
     pub fn get_component(&mut self, component_address: ComponentAddress) -> Option<&Component> {
-        if self.components.contains_key(&component_address) {
-            return self.components.get(&component_address).map(|c| &c.value);
+        if self.up_components.contains_key(&component_address) {
+            return self.up_components.get(&component_address);
         }
 
-        if let Some((component, substate_id)) =
-            self.substate_store.get_decoded_substate(&component_address)
-        {
-            self.components.insert(
-                component_address,
-                SubstateUpdate {
-                    prev_id: Some(substate_id),
-                    value: component,
-                },
-            );
-            self.components.get(&component_address).map(|c| &c.value)
+        if let Some(component) = self.substate_store.get_decoded_substate(&component_address)
+            .map(|(component, _)| component) {
+            self.read_components.insert(component_address, component);
+            self.read_components.get(&component_address)
         } else {
             None
         }
@@ -289,13 +285,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     /// Inserts a new component.
     pub fn create_component(&mut self, component: Component) -> ComponentAddress {
         let component_address = self.new_component_address();
-        self.components.insert(
-            component_address,
-            SubstateUpdate {
-                prev_id: None,
-                value: component,
-            },
-        );
+        self.new_components.push(component_address.clone());
+        self.up_components.insert(component_address, component);
         component_address
     }
 
@@ -630,7 +621,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     /// Currently none of these objects are deleted so all commits are puts
     pub fn to_receipt(mut self) -> TrackReceipt {
         let mut new_packages = Vec::new();
-        let mut new_components = Vec::new();
         let mut new_resources = Vec::new();
 
         let mut store_instructions = Vec::new();
@@ -642,14 +632,15 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             }
             store_instructions.push(SubstateOperation::Up(scrypto_encode(&package_address), scrypto_encode(&package.value)));
         }
-        for (component_address, component) in self.components.drain(RangeFull) {
-            if let Some(substate_id) = component.prev_id {
-                store_instructions.push(SubstateOperation::Down(substate_id));
-            } else {
-                new_components.push(component_address);
-            }
-            store_instructions.push(SubstateOperation::Up(scrypto_encode(&component_address), scrypto_encode(&component.value)));
+
+        for substate_id in self.downed_components {
+            store_instructions.push(SubstateOperation::Down(substate_id));
         }
+
+        for (component_address, component) in self.up_components.drain(RangeFull) {
+            store_instructions.push(SubstateOperation::Up(scrypto_encode(&component_address), scrypto_encode(&component)));
+        }
+
         for (resource_address, resource_manager) in self.resource_managers.drain(RangeFull) {
             if let Some(substate_id) = resource_manager.prev_id {
                 store_instructions.push(SubstateOperation::Down(substate_id));
@@ -708,7 +699,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         };
         TrackReceipt {
             new_packages,
-            new_components,
+            new_components: self.new_components,
             new_resources,
             borrowed,
             substates,
