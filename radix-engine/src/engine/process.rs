@@ -493,7 +493,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 let resource_address = bucket.resource_address();
                 let method_auth = self
                     .track
-                    .get_resource_manager(&resource_address)
+                    .borrow_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function, &args);
                 Ok((SNodeState::Bucket(bucket), vec![method_auth.clone()]))
@@ -506,7 +506,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 let resource_address = bucket.resource_address();
                 let method_auth = self
                     .track
-                    .get_resource_manager(&resource_address)
+                    .borrow_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function, &args);
                 Ok((
@@ -537,7 +537,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 let resource_address = vault.resource_address();
                 let method_auth = self
                     .track
-                    .get_resource_manager(&resource_address)
+                    .borrow_resource_manager(&resource_address)
                     .unwrap()
                     .get_auth(&function, &args);
                 Ok((
@@ -962,7 +962,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
         let component = self
             .track
-            .get_component(input.component_address)
+            .borrow_component(input.component_address)
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
 
         Ok(GetComponentInfoOutput {
@@ -1155,7 +1155,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
     ) -> Result<CreateEmptyVaultOutput, RuntimeError> {
         let definition = self
             .track
-            .get_resource_manager(&input.resource_address)
+            .borrow_resource_manager(&input.resource_address)
             .ok_or(RuntimeError::ResourceManagerNotFound(
                 input.resource_address,
             ))?;

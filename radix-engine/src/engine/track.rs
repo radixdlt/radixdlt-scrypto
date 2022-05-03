@@ -37,7 +37,7 @@ macro_rules! non_fungible_to_re_address {
 
 pub struct BorrowedSNodes {
     borrowed_components: HashSet<ComponentAddress>,
-    borrowed_resource_managers: HashMap<ResourceAddress, Option<PhysicalSubstateId>>,
+    borrowed_resource_managers: HashSet<ResourceAddress>,
     borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 }
 
@@ -100,14 +100,18 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     packages: IndexMap<PackageAddress, SubstateUpdate<Package>>,
 
+    new_components: Vec<ComponentAddress>,
+    new_resource_managers: Vec<ResourceAddress>,
+
     downed_components: Vec<PhysicalSubstateId>,
     read_components: IndexMap<ComponentAddress, Component>,
     borrowed_components: HashSet<ComponentAddress>,
     up_components: IndexMap<ComponentAddress, Component>,
-    new_components: Vec<ComponentAddress>,
 
-    resource_managers: IndexMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
-    borrowed_resource_managers: HashMap<ResourceAddress, Option<PhysicalSubstateId>>,
+    downed_resource_managers: Vec<PhysicalSubstateId>,
+    read_resource_managers: IndexMap<ResourceAddress, ResourceManager>,
+    borrowed_resource_managers: HashSet<ResourceAddress>,
+    up_resource_managers: IndexMap<ResourceAddress, ResourceManager>,
 
     new_spaces: IndexSet<Vec<u8>>,
     non_fungibles: IndexMap<NonFungibleAddress, KeyedSubstateUpdate<Option<NonFungible>>>,
@@ -138,8 +142,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             up_components: IndexMap::new(),
             new_components: Vec::new(),
 
-            resource_managers: IndexMap::new(),
-            borrowed_resource_managers: HashMap::new(),
+            downed_resource_managers: Vec::new(),
+            read_resource_managers: IndexMap::new(),
+            borrowed_resource_managers: HashSet::new(),
+            up_resource_managers: IndexMap::new(),
+            new_resource_managers: Vec::new(),
+
             new_spaces: IndexSet::new(),
             lazy_map_entries: IndexMap::new(),
             vaults: IndexMap::new(),
@@ -234,6 +242,15 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         package_address
     }
 
+
+    /// Inserts a new component.
+    pub fn create_component(&mut self, component: Component) -> ComponentAddress {
+        let component_address = self.new_component_address();
+        self.new_components.push(component_address.clone());
+        self.up_components.insert(component_address, component);
+        component_address
+    }
+
     pub fn borrow_global_mut_component(
         &mut self,
         component_address: ComponentAddress,
@@ -268,7 +285,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a component, if exists.
-    pub fn get_component(&mut self, component_address: ComponentAddress) -> Option<&Component> {
+    pub fn borrow_component(&mut self, component_address: ComponentAddress) -> Option<&Component> {
         if self.up_components.contains_key(&component_address) {
             return self.up_components.get(&component_address);
         }
@@ -282,12 +299,71 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    /// Inserts a new component.
-    pub fn create_component(&mut self, component: Component) -> ComponentAddress {
-        let component_address = self.new_component_address();
-        self.new_components.push(component_address.clone());
-        self.up_components.insert(component_address, component);
-        component_address
+
+    /// Inserts a new resource manager.
+    pub fn create_resource_manager(
+        &mut self,
+        resource_manager: ResourceManager,
+    ) -> ResourceAddress {
+        let resource_address = self.new_resource_address();
+
+        // TODO: Move this into application layer
+        if let ResourceType::NonFungible = resource_manager.resource_type() {
+            let space_address = resource_to_non_fungible_space!(resource_address);
+            self.new_spaces.insert(space_address);
+        }
+        self.new_resource_managers.push(resource_address.clone());
+        self.up_resource_managers.insert(resource_address.clone(), resource_manager);
+
+        resource_address
+    }
+
+    pub fn borrow_global_mut_resource_manager(
+        &mut self,
+        resource_address: ResourceAddress,
+    ) -> Result<ResourceManager, RuntimeError> {
+        let maybe_resource = self.up_resource_managers.remove(&resource_address);
+        if let Some(resource_manager) = maybe_resource {
+            self.borrowed_resource_managers.insert(resource_address);
+            Ok(resource_manager)
+        } else if self.borrowed_resource_managers.contains(&resource_address) {
+            panic!("Invalid resource manager reentrancy");
+        } else if let Some((resource_manager, substate_id)) = self.substate_store.get_decoded_substate(&resource_address) {
+            self.downed_resource_managers.push(substate_id);
+            self.borrowed_resource_managers.insert(resource_address);
+            Ok(resource_manager)
+        } else {
+            Err(RuntimeError::ResourceManagerNotFound(resource_address))
+        }
+    }
+
+    pub fn return_borrowed_global_resource_manager(
+        &mut self,
+        resource_address: ResourceAddress,
+        resource_manager: ResourceManager,
+    ) {
+        if !self.borrowed_resource_managers.remove(&resource_address) {
+            panic!("Resource Manager was never borrowed");
+        }
+        self.up_resource_managers.insert(resource_address, resource_manager);
+    }
+
+    /// Returns an immutable reference to a resource manager, if exists.
+    pub fn borrow_resource_manager(
+        &mut self,
+        resource_address: &ResourceAddress,
+    ) -> Option<&ResourceManager> {
+        if self.up_resource_managers.contains_key(resource_address) {
+            return self.up_resource_managers.get(resource_address);
+        }
+
+        if let Some(resource_manager) = self.substate_store.get_decoded_substate(resource_address)
+            .map(|(resource_manager, _)| resource_manager) {
+            self.read_resource_managers.insert(resource_address.clone(), resource_manager);
+            self.read_resource_managers.get(resource_address)
+        } else {
+            None
+        }
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
@@ -385,101 +461,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         );
     }
 
-    /// Returns an immutable reference to a resource manager, if exists.
-    pub fn get_resource_manager(
-        &mut self,
-        resource_address: &ResourceAddress,
-    ) -> Option<&ResourceManager> {
-        if self.resource_managers.contains_key(resource_address) {
-            return self
-                .resource_managers
-                .get(resource_address)
-                .map(|r| &r.value);
-        }
-
-        if let Some((resource_manager, substate_id)) =
-            self.substate_store.get_decoded_substate(resource_address)
-        {
-            self.resource_managers.insert(
-                resource_address.clone(),
-                SubstateUpdate {
-                    prev_id: Some(substate_id),
-                    value: resource_manager,
-                },
-            );
-            self.resource_managers
-                .get(resource_address)
-                .map(|r| &r.value)
-        } else {
-            None
-        }
-    }
-
-    pub fn borrow_global_mut_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ResourceManager, RuntimeError> {
-        let maybe_resource = self.resource_managers.remove(&resource_address);
-        if self
-            .borrowed_resource_managers
-            .contains_key(&resource_address)
-        {
-            panic!("Invalid resource manager reentrancy");
-        } else if let Some(SubstateUpdate { value, prev_id }) = maybe_resource {
-            self.borrowed_resource_managers
-                .insert(resource_address, prev_id);
-            Ok(value)
-        } else if let Some((resource_manager, substate_id)) =
-            self.substate_store.get_decoded_substate(&resource_address)
-        {
-            self.borrowed_resource_managers
-                .insert(resource_address, Some(substate_id));
-            Ok(resource_manager)
-        } else {
-            Err(RuntimeError::ResourceManagerNotFound(resource_address))
-        }
-    }
-
-    pub fn return_borrowed_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-        resource_manager: ResourceManager,
-    ) {
-        if let Some(prev_id) = self.borrowed_resource_managers.remove(&resource_address) {
-            self.resource_managers.insert(
-                resource_address,
-                SubstateUpdate {
-                    prev_id,
-                    value: resource_manager,
-                },
-            );
-        } else {
-            panic!("Resource manager was never borrowed");
-        }
-    }
-
-    /// Inserts a new resource manager.
-    pub fn create_resource_manager(
-        &mut self,
-        resource_manager: ResourceManager,
-    ) -> ResourceAddress {
-        let resource_address = self.new_resource_address();
-
-        // TODO: Move this into application layer
-        if let ResourceType::NonFungible = resource_manager.resource_type() {
-            let space_address = resource_to_non_fungible_space!(resource_address);
-            self.new_spaces.insert(space_address);
-        }
-
-        self.resource_managers.insert(
-            resource_address,
-            SubstateUpdate {
-                prev_id: None,
-                value: resource_manager,
-            },
-        );
-        resource_address
-    }
 
     pub fn borrow_vault_mut(&mut self, component_address: &ComponentAddress, vid: &VaultId) -> Vault {
         let canonical_id = (component_address.clone(), vid.clone());
@@ -621,7 +602,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     /// Currently none of these objects are deleted so all commits are puts
     pub fn to_receipt(mut self) -> TrackReceipt {
         let mut new_packages = Vec::new();
-        let mut new_resources = Vec::new();
 
         let mut store_instructions = Vec::new();
         for (package_address, package) in self.packages.drain(RangeFull) {
@@ -636,19 +616,16 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         for substate_id in self.downed_components {
             store_instructions.push(SubstateOperation::Down(substate_id));
         }
-
         for (component_address, component) in self.up_components.drain(RangeFull) {
             store_instructions.push(SubstateOperation::Up(scrypto_encode(&component_address), scrypto_encode(&component)));
         }
-
-        for (resource_address, resource_manager) in self.resource_managers.drain(RangeFull) {
-            if let Some(substate_id) = resource_manager.prev_id {
-                store_instructions.push(SubstateOperation::Down(substate_id));
-            } else {
-                new_resources.push(resource_address);
-            }
-            store_instructions.push(SubstateOperation::Up(scrypto_encode(&resource_address), scrypto_encode(&resource_manager.value)));
+        for substate_id in self.downed_resource_managers {
+            store_instructions.push(SubstateOperation::Down(substate_id));
         }
+        for (resource_address, resource_manager) in self.up_resource_managers.drain(RangeFull) {
+            store_instructions.push(SubstateOperation::Up(scrypto_encode(&resource_address), scrypto_encode(&resource_manager)));
+        }
+
         for ((component_address, vault_id), vault) in self.vaults.drain(RangeFull) {
             if let Some(substate_id) = vault.prev_id {
                 store_instructions.push(SubstateOperation::Down(substate_id));
@@ -700,7 +677,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         TrackReceipt {
             new_packages,
             new_components: self.new_components,
-            new_resources,
+            new_resources: self.new_resource_managers,
             borrowed,
             substates,
             logs: self.logs,
