@@ -1023,7 +1023,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             input.access_rules_list,
             input.state,
         );
-        let component_address = self.track.create_component(component);
+        let component_address = self.track.create_uuid_value(component).into();
         self.track
             .insert_objects_into_component(new_objects, component_address);
 
@@ -1386,11 +1386,11 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
-        self.track.create_resource_manager(resource_manager)
+        self.track.create_uuid_value(resource_manager).into()
     }
 
     fn create_package(&mut self, package: Package) -> PackageAddress {
-        self.track.create_package(package)
+        self.track.create_uuid_value(package).into()
     }
 }
 

@@ -97,7 +97,37 @@ impl Address {
     }
 }
 
-enum SubstateValue {
+impl Into<PackageAddress> for Address {
+    fn into(self) -> PackageAddress {
+        if let Address::Package(package_address) = self {
+            return package_address;
+        } else {
+            panic!("Address is not a package address");
+        }
+    }
+}
+
+impl Into<ComponentAddress> for Address {
+    fn into(self) -> ComponentAddress {
+        if let Address::Component(component_address) = self {
+            return component_address;
+        } else {
+            panic!("Address is not a component address");
+        }
+    }
+}
+
+impl Into<ResourceAddress> for Address {
+    fn into(self) -> ResourceAddress {
+        if let Address::Resource(resource_address) = self {
+            return resource_address;
+        } else {
+            panic!("Address is not a resource address");
+        }
+    }
+}
+
+pub enum SubstateValue {
     Resource(ResourceManager),
     Component(Component),
     Package(Package),
@@ -112,6 +142,25 @@ impl SubstateValue {
         }
     }
 }
+
+impl Into<SubstateValue> for Package {
+    fn into(self) -> SubstateValue {
+        SubstateValue::Package(self)
+    }
+}
+
+impl Into<SubstateValue> for Component {
+    fn into(self) -> SubstateValue {
+        SubstateValue::Component(self)
+    }
+}
+
+impl Into<SubstateValue> for ResourceManager {
+    fn into(self) -> SubstateValue {
+        SubstateValue::Resource(self)
+    }
+}
+
 
 impl Into<Component> for SubstateValue {
     fn into(self) -> Component {
@@ -244,12 +293,31 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Inserts a new package.
-    pub fn create_package(&mut self, package: Package) -> PackageAddress {
-        let package_address = self.new_package_address();
-        let address = Address::Package(package_address);
+    pub fn create_uuid_value<T: Into<SubstateValue>>(&mut self, value: T) -> Address {
+        let substate_value = value.into();
+        let address = match substate_value {
+            SubstateValue::Package(_) => {
+                let package_address = self.new_package_address();
+                Address::Package(package_address)
+            }
+            SubstateValue::Component(_) => {
+                let component_address = self.new_component_address();
+                Address::Component(component_address)
+            }
+            SubstateValue::Resource(ref resource_manager) => {
+                let resource_address = self.new_resource_address();
+                // TODO: Move this into application layer
+                if let ResourceType::NonFungible = resource_manager.resource_type() {
+                    let space_address = resource_to_non_fungible_space!(resource_address);
+                    self.up_virtual_substate_space.insert(space_address);
+                }
+                Address::Resource(resource_address)
+            }
+        };
+
         self.new_addresses.push(address.clone());
-        self.up_substates.insert(address, SubstateValue::Package(package));
-        package_address
+        self.up_substates.insert(address.clone(), substate_value);
+        address
     }
 
     /// Returns an immutable reference to a package, if exists.
@@ -276,15 +344,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         } else {
             None
         }
-    }
-
-    /// Inserts a new component.
-    pub fn create_component(&mut self, component: Component) -> ComponentAddress {
-        let component_address = self.new_component_address();
-        let address = Address::Component(component_address);
-        self.new_addresses.push(address.clone());
-        self.up_substates.insert(address, SubstateValue::Component(component));
-        component_address
     }
 
     pub fn borrow_global_mut_component(
@@ -346,26 +405,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         } else {
             None
         }
-    }
-
-
-    /// Inserts a new resource manager.
-    pub fn create_resource_manager(
-        &mut self,
-        resource_manager: ResourceManager,
-    ) -> ResourceAddress {
-        let resource_address = self.new_resource_address();
-        let address = Address::Resource(resource_address);
-
-        // TODO: Move this into application layer
-        if let ResourceType::NonFungible = resource_manager.resource_type() {
-            let space_address = resource_to_non_fungible_space!(resource_address);
-            self.up_virtual_substate_space.insert(space_address);
-        }
-        self.new_addresses.push(address.clone());
-        self.up_substates.insert(address, SubstateValue::Resource(resource_manager));
-
-        resource_address
     }
 
     pub fn borrow_global_mut_resource_manager(
