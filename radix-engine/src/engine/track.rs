@@ -154,9 +154,8 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     downed_substates: Vec<PhysicalSubstateId>,
     up_substates: IndexMap<Address, SubstateValue>,
+    up_virtual_substate_space: IndexSet<Vec<u8>>,
 
-
-    new_spaces: IndexSet<Vec<u8>>,
     non_fungibles: IndexMap<NonFungibleAddress, KeyedSubstateUpdate<Option<NonFungible>>>,
     lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), KeyedSubstateUpdate<Vec<u8>>>,
 
@@ -180,11 +179,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
             new_addresses: Vec::new(),
             borrowed_substates: HashSet::new(),
-            downed_substates: Vec::new(),
-            up_substates: IndexMap::new(),
             read_substates: IndexMap::new(),
 
-            new_spaces: IndexSet::new(),
+            downed_substates: Vec::new(),
+            up_substates: IndexMap::new(),
+            up_virtual_substate_space: IndexSet::new(),
+
             lazy_map_entries: IndexMap::new(),
             vaults: IndexMap::new(),
             borrowed_vaults: HashMap::new(),
@@ -360,7 +360,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         // TODO: Move this into application layer
         if let ResourceType::NonFungible = resource_manager.resource_type() {
             let space_address = resource_to_non_fungible_space!(resource_address);
-            self.new_spaces.insert(space_address);
+            self.up_virtual_substate_space.insert(space_address);
         }
         self.new_addresses.push(address.clone());
         self.up_substates.insert(address, SubstateValue::Resource(resource_manager));
@@ -588,14 +588,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     ) {
         let mut space_address = scrypto_encode(&component_address);
         space_address.extend(scrypto_encode(&lazy_map_id));
-        self.new_spaces.insert(space_address);
+        self.up_virtual_substate_space.insert(space_address);
     }
 
     fn get_substate_parent_id(
         &mut self,
         space_address: &[u8],
     ) -> SubstateParentId {
-        if let Some(index) = self.new_spaces.get_index_of(space_address) {
+        if let Some(index) = self.up_virtual_substate_space.get_index_of(space_address) {
             SubstateParentId::New(index)
         } else {
             let substate_id = self.substate_store.get_space(space_address).unwrap();
@@ -680,7 +680,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(SubstateOperation::Up(vault_address, scrypto_encode(&vault.value)));
         }
 
-        for space_address in self.new_spaces.drain(RangeFull) {
+        for space_address in self.up_virtual_substate_space.drain(RangeFull) {
             store_instructions.push(SubstateOperation::VirtualUp(space_address));
         }
 
