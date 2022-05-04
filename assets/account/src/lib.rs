@@ -13,6 +13,7 @@ blueprint! {
             }
 
             let access_rules = AccessRules::new()
+                .method("balance", rule!(allow_all))
                 .method("deposit", rule!(allow_all))
                 .method("deposit_batch", rule!(allow_all))
                 .default(withdraw_rule);

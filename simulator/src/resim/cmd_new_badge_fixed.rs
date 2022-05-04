@@ -35,17 +35,20 @@ pub struct NewBadgeFixed {
     #[clap(short, long)]
     manifest: Option<PathBuf>,
 
+    /// The private keys used for signing, separated by comma
+    #[clap(short, long)]
+    signing_keys: Option<String>,
+
     /// Turn on tracing
     #[clap(short, long)]
     trace: bool,
 }
 
 impl NewBadgeFixed {
-    pub fn run(&self) -> Result<(), Error> {
+    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
         let default_account = get_default_account()?;
-        let (default_pk, default_sk) = get_default_signers()?;
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
@@ -66,8 +69,13 @@ impl NewBadgeFixed {
         let transaction = TransactionBuilder::new()
             .new_badge_fixed(metadata, self.total_supply)
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build(executor.get_nonce([default_pk]))
-            .sign([&default_sk]);
-        process_transaction(transaction, &mut executor, &self.manifest)
+            .build_with_no_nonce();
+        process_transaction(
+            &mut executor,
+            transaction,
+            &self.signing_keys,
+            &self.manifest,
+            out,
+        )
     }
 }
