@@ -123,7 +123,7 @@ pub fn run() -> Result<(), Error> {
     }
 }
 
-pub fn process_transaction<L: SubstateStore, O: std::io::Write>(
+pub fn process_transaction<L: ReadableSubstateStore + WriteableSubstateStore, O: std::io::Write>(
     executor: &mut TransactionExecutor<L>,
     mut transaction: Transaction,
     signing_keys: &Option<String>,

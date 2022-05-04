@@ -1,5 +1,4 @@
 use clap::Parser;
-use radix_engine::ledger::SubstateStore;
 
 use crate::resim::*;
 
