@@ -47,33 +47,34 @@ impl NewAccount {
                 hex::encode(private_key.to_bytes()).green()
             )
             .map_err(Error::IOError)?;
-        }
-
-        let (public_key, private_key, account) = executor.new_account();
-        writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
-        writeln!(
-            out,
-            "Account component address: {}",
-            account.to_string().green()
-        )
-        .map_err(Error::IOError)?;
-        writeln!(out, "Public key: {}", public_key.to_string().green()).map_err(Error::IOError)?;
-        writeln!(
-            out,
-            "Private key: {}",
-            hex::encode(private_key.to_bytes()).green()
-        )
-        .map_err(Error::IOError)?;
-        if get_configs()?.is_none() {
+        } else {
+            let (public_key, private_key, account) = executor.new_account();
+            writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
             writeln!(
                 out,
-                "No configuration found on system. will use the above account as default."
+                "Account component address: {}",
+                account.to_string().green()
             )
             .map_err(Error::IOError)?;
-            set_configs(&Configs {
-                default_account: account,
-                default_private_key: private_key.to_bytes(),
-            })?;
+            writeln!(out, "Public key: {}", public_key.to_string().green())
+                .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "Private key: {}",
+                hex::encode(private_key.to_bytes()).green()
+            )
+            .map_err(Error::IOError)?;
+            if get_configs()?.is_none() {
+                writeln!(
+                    out,
+                    "No configuration found on system. will use the above account as default."
+                )
+                .map_err(Error::IOError)?;
+                set_configs(&Configs {
+                    default_account: account,
+                    default_private_key: private_key.to_bytes(),
+                })?;
+            }
         }
 
         Ok(())
