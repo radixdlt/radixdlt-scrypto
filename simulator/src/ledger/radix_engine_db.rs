@@ -19,7 +19,7 @@ impl RadixEngineDB {
 
     pub fn with_bootstrap(root: PathBuf) -> Self {
         let mut ledger = Self::new(root);
-        ledger.bootstrap();
+        bootstrap(&mut ledger);
         ledger
     }
 
@@ -94,26 +94,16 @@ impl QueryableSubstateStore for RadixEngineDB {
     }
 }
 
-impl SubstateStore for RadixEngineDB {
+impl ReadableSubstateStore for RadixEngineDB {
     fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
         self.read(&scrypto_encode(address))
             .map(|b| scrypto_decode(&b).unwrap())
-    }
-
-    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate) {
-        self.write(&scrypto_encode(address), &scrypto_encode(&substate));
     }
 
     fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate> {
         let mut id = scrypto_encode(address);
         id.extend(key.to_vec());
         self.read(&id).map(|b| scrypto_decode(&b).unwrap())
-    }
-
-    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate) {
-        let mut id = scrypto_encode(address);
-        id.extend(key.to_vec());
-        self.write(&id, &scrypto_encode(&substate));
     }
 
     fn get_epoch(&self) -> u64 {
@@ -123,17 +113,30 @@ impl SubstateStore for RadixEngineDB {
             .unwrap_or(0)
     }
 
-    fn set_epoch(&mut self, epoch: u64) {
-        let id = scrypto_encode(&"epoch");
-        let value = scrypto_encode(&epoch);
-        self.write(&id, &value)
-    }
 
     fn get_nonce(&self) -> u64 {
         let id = scrypto_encode(&"nonce");
         self.read(&id)
             .map(|v| scrypto_decode(&v).unwrap())
             .unwrap_or(0)
+    }
+}
+
+impl WriteableSubstateStore for RadixEngineDB {
+    fn put_substate(&mut self, address: &[u8], substate: Substate) {
+        self.write(address, &scrypto_encode(&substate));
+    }
+
+    fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate) {
+        let mut id = address.to_vec();
+        id.extend(key.to_vec());
+        self.write(&id, &scrypto_encode(&substate));
+    }
+
+    fn set_epoch(&mut self, epoch: u64) {
+        let id = scrypto_encode(&"epoch");
+        let value = scrypto_encode(&epoch);
+        self.write(&id, &value)
     }
 
     fn increase_nonce(&mut self) {

@@ -127,7 +127,7 @@ pub enum BorrowedSNodeState {
 }
 
 impl BorrowedSNodeState {
-    fn return_borrowed_state<'r, 'l, L:SubstateStore>(self, process: &mut Process<'r, 'l, L>) {
+    fn return_borrowed_state<'r, 'l, L:ReadableSubstateStore>(self, process: &mut Process<'r, 'l, L>) {
         match self {
             BorrowedSNodeState::AuthZone(auth_zone) => {
                 process.auth_zone = Some(auth_zone);
@@ -242,7 +242,7 @@ enum LazyMapState {
     Committed { component_address: ComponentAddress },
 }
 
-impl<'s, S: SubstateStore> Track<'s, S> {
+impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     fn insert_objects_into_component(
         &mut self,
         new_objects: ComponentObjects,
@@ -274,7 +274,7 @@ pub enum MoveMethod {
 }
 
 /// A process keeps track of resource movements and code execution.
-pub struct Process<'r, 'l, L: SubstateStore> {
+pub struct Process<'r, 'l, L: ReadableSubstateStore> {
     /// The call depth
     depth: usize,
     /// Whether to show trace messages
@@ -298,7 +298,7 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     caller_auth_zone: Option<&'r AuthZone>,
 }
 
-impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
+impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
     /// Create a new process, which is not started.
     pub fn new(
         depth: usize,
@@ -853,7 +853,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     }
 }
 
-impl<'r, 'l, L: SubstateStore> SystemApi for Process<'r, 'l, L> {
+impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
