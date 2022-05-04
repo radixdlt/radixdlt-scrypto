@@ -49,7 +49,6 @@ impl BorrowedSNodes {
 
 pub struct TrackReceipt {
     pub borrowed: BorrowedSNodes,
-    pub new_packages: Vec<PackageAddress>,
     pub new_addresses: Vec<Address>,
     pub logs: Vec<(Level, String)>,
     pub substates: SubstateOperationsReceipt,
@@ -85,6 +84,7 @@ pub struct KeyedSubstateUpdate<T> {
 pub enum Address {
     Resource(ResourceAddress),
     Component(ComponentAddress),
+    Package(PackageAddress),
 }
 
 /// An abstraction of transaction execution state.
@@ -101,12 +101,12 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
 
-    packages: IndexMap<PackageAddress, SubstateUpdate<Package>>,
-
     new_addresses: Vec<Address>,
     downed_substates: Vec<PhysicalSubstateId>,
     borrowed_substates: HashSet<Address>,
 
+    read_packages: IndexMap<PackageAddress, Package>,
+    up_packages: IndexMap<PackageAddress, Package>,
     read_components: IndexMap<ComponentAddress, Component>,
     up_components: IndexMap<ComponentAddress, Component>,
     read_resource_managers: IndexMap<ResourceAddress, ResourceManager>,
@@ -133,14 +133,15 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
-            packages: IndexMap::new(),
 
-            downed_substates: Vec::new(),
-            read_components: IndexMap::new(),
-            borrowed_substates: HashSet::new(),
-            up_components: IndexMap::new(),
             new_addresses: Vec::new(),
+            downed_substates: Vec::new(),
+            borrowed_substates: HashSet::new(),
 
+            read_packages: IndexMap::new(),
+            up_packages: IndexMap::new(),
+            read_components: IndexMap::new(),
+            up_components: IndexMap::new(),
             read_resource_managers: IndexMap::new(),
             up_resource_managers: IndexMap::new(),
 
@@ -198,46 +199,34 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.substate_store.get_epoch()
     }
 
-
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.logs.push((level, message));
     }
 
+    /// Inserts a new package.
+    pub fn create_package(&mut self, package: Package) -> PackageAddress {
+        let package_address = self.new_package_address();
+        let address = Address::Package(package_address);
+        self.new_addresses.push(address);
+        self.up_packages.insert(package_address, package);
+        package_address
+    }
+
     /// Returns an immutable reference to a package, if exists.
     pub fn get_package(&mut self, package_address: &PackageAddress) -> Option<&Package> {
-        if self.packages.contains_key(package_address) {
-            return self.packages.get(package_address).map(|p| &p.value);
+        if self.up_packages.contains_key(package_address) {
+            return self.up_packages.get(package_address);
         }
 
-        if let Some((package, substate_id)) = self.substate_store.get_decoded_substate(package_address)
-        {
-            self.packages.insert(
-                package_address.clone(),
-                SubstateUpdate {
-                    prev_id: Some(substate_id),
-                    value: package,
-                },
-            );
-            self.packages.get(package_address).map(|p| &p.value)
+        if let Some(package) = self.substate_store.get_decoded_substate(package_address)
+            .map(|(package, _)| package) {
+            self.read_packages.insert(package_address.clone(), package);
+            self.read_packages.get(package_address)
         } else {
             None
         }
     }
-
-    /// Inserts a new package.
-    pub fn create_package(&mut self, package: Package) -> PackageAddress {
-        let package_address = self.new_package_address();
-        self.packages.insert(
-            package_address,
-            SubstateUpdate {
-                prev_id: None,
-                value: package,
-            },
-        );
-        package_address
-    }
-
 
     /// Inserts a new component.
     pub fn create_component(&mut self, component: Component) -> ComponentAddress {
@@ -605,20 +594,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
     pub fn to_receipt(mut self) -> TrackReceipt {
-        let mut new_packages = Vec::new();
-
         let mut store_instructions = Vec::new();
-        for (package_address, package) in self.packages.drain(RangeFull) {
-            if let Some(substate_id) = package.prev_id {
-                store_instructions.push(SubstateOperation::Down(substate_id));
-            } else {
-                new_packages.push(package_address);
-            }
-            store_instructions.push(SubstateOperation::Up(scrypto_encode(&package_address), scrypto_encode(&package.value)));
-        }
-
         for substate_id in self.downed_substates {
             store_instructions.push(SubstateOperation::Down(substate_id));
+        }
+        for (package_address, package) in self.up_packages.drain(RangeFull) {
+            store_instructions.push(SubstateOperation::Up(scrypto_encode(&package_address), scrypto_encode(&package)));
         }
         for (component_address, component) in self.up_components.drain(RangeFull) {
             store_instructions.push(SubstateOperation::Up(scrypto_encode(&component_address), scrypto_encode(&component)));
@@ -675,7 +656,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             borrowed_vaults: self.borrowed_vaults,
         };
         TrackReceipt {
-            new_packages,
             new_addresses: self.new_addresses,
             borrowed,
             substates,

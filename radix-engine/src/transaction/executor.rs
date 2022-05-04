@@ -205,10 +205,12 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
 
         let mut new_component_addresses = Vec::new();
         let mut new_resource_addresses = Vec::new();
+        let mut new_package_addresses = Vec::new();
         for address in track_receipt.new_addresses {
             match address {
                 Address::Component(component_address) => new_component_addresses.push(component_address),
                 Address::Resource(resource_address) => new_resource_addresses.push(resource_address),
+                Address::Package(package_address) => new_package_addresses.push(package_address),
             }
         }
 
@@ -227,7 +229,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             },
             outputs,
             logs: track_receipt.logs,
-            new_package_addresses: track_receipt.new_packages,
+            new_package_addresses,
             new_component_addresses,
             new_resource_addresses,
             execution_time,
