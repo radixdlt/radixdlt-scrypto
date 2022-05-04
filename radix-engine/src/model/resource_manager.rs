@@ -39,6 +39,7 @@ pub enum ResourceManagerError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
     CouldNotCreateBucket,
+    CouldNotCreateVault,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -129,6 +130,7 @@ impl ResourceManager {
         for pub_method in [
             "create_bucket",
             "create_bucket_proof",
+            "create_empty_bucket",
             "get_metadata",
             "get_resource_type",
             "get_total_supply",
@@ -136,11 +138,11 @@ impl ResourceManager {
             "put_into_bucket",
             "get_bucket_amount",
             "get_bucket_resource_address",
+            "create_vault",
             "get_vault_amount",
             "get_vault_resource_address",
             "create_vault_proof",
             "create_vault_proof_by_amount",
-            "create_vault_proof_by_ids",
         ] {
             method_table.insert(pub_method.to_string(), None);
         }
@@ -156,6 +158,7 @@ impl ResourceManager {
                 "get_non_fungible",
                 "get_non_fungible_ids_in_bucket",
                 "get_non_fungible_ids_in_vault",
+                "create_vault_proof_by_ids",
             ] {
                 method_table.insert(pub_method.to_string(), None);
             }
@@ -404,6 +407,16 @@ impl ResourceManager {
                 let method_entry_method: String = scrypto_decode(&args.remove(0).raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 method_entry.main(&method_entry_method, args)
+            }
+            "create_vault" => {
+                let container =
+                    ResourceContainer::new_empty(resource_address, self.resource_type());
+                let vault_id = system_api
+                    .create_vault(container)
+                    .map_err(|_| ResourceManagerError::CouldNotCreateVault)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Vault(
+                    vault_id,
+                )))
             }
             "create_empty_bucket" => {
                 let container =

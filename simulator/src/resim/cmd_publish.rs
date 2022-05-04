@@ -46,8 +46,10 @@ impl Publish {
                 .publish_package(code.as_ref())
                 .build_with_no_nonce();
             process_transaction(&mut executor, transaction, &None, &Some(path.clone()), out)?;
+        } else {
+            self.store_package(out, &code)?;
         }
-        self.store_package(out, &code)
+        Ok(())
     }
 
     pub fn publish_wasm<O: std::io::Write>(
