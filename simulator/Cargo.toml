@@ -18,6 +18,8 @@ hex = { version = "0.4" }
 cargo_toml = { version = "0.11.5" }
 rocksdb = { git = "https://github.com/rust-rocksdb/rust-rocksdb", tag = "v0.17.0" }
 rand = "*"
+regex = "*"
+temp-env = "*"
 
 [[bin]]
 name = "resim"
