@@ -50,8 +50,7 @@ impl BorrowedSNodes {
 pub struct TrackReceipt {
     pub borrowed: BorrowedSNodes,
     pub new_packages: Vec<PackageAddress>,
-    pub new_components: Vec<ComponentAddress>,
-    pub new_resources: Vec<ResourceAddress>,
+    pub new_addresses: Vec<Address>,
     pub logs: Vec<(Level, String)>,
     pub substates: SubstateOperationsReceipt,
 }
@@ -83,7 +82,7 @@ pub struct KeyedSubstateUpdate<T> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-enum Address {
+pub enum Address {
     Resource(ResourceAddress),
     Component(ComponentAddress),
 }
@@ -104,15 +103,12 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     packages: IndexMap<PackageAddress, SubstateUpdate<Package>>,
 
-    new_components: Vec<ComponentAddress>,
-    new_resource_managers: Vec<ResourceAddress>,
-
+    new_addresses: Vec<Address>,
     downed_substates: Vec<PhysicalSubstateId>,
     borrowed_substates: HashSet<Address>,
 
     read_components: IndexMap<ComponentAddress, Component>,
     up_components: IndexMap<ComponentAddress, Component>,
-
     read_resource_managers: IndexMap<ResourceAddress, ResourceManager>,
     up_resource_managers: IndexMap<ResourceAddress, ResourceManager>,
 
@@ -143,11 +139,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             read_components: IndexMap::new(),
             borrowed_substates: HashSet::new(),
             up_components: IndexMap::new(),
-            new_components: Vec::new(),
+            new_addresses: Vec::new(),
 
             read_resource_managers: IndexMap::new(),
             up_resource_managers: IndexMap::new(),
-            new_resource_managers: Vec::new(),
 
             new_spaces: IndexSet::new(),
             lazy_map_entries: IndexMap::new(),
@@ -247,7 +242,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     /// Inserts a new component.
     pub fn create_component(&mut self, component: Component) -> ComponentAddress {
         let component_address = self.new_component_address();
-        self.new_components.push(component_address.clone());
+        let address = Address::Component(component_address);
+        self.new_addresses.push(address);
         self.up_components.insert(component_address, component);
         component_address
     }
@@ -310,13 +306,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         resource_manager: ResourceManager,
     ) -> ResourceAddress {
         let resource_address = self.new_resource_address();
+        let address = Address::Resource(resource_address);
 
         // TODO: Move this into application layer
         if let ResourceType::NonFungible = resource_manager.resource_type() {
             let space_address = resource_to_non_fungible_space!(resource_address);
             self.new_spaces.insert(space_address);
         }
-        self.new_resource_managers.push(resource_address.clone());
+        self.new_addresses.push(address);
         self.up_resource_managers.insert(resource_address.clone(), resource_manager);
 
         resource_address
@@ -679,8 +676,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         };
         TrackReceipt {
             new_packages,
-            new_components: self.new_components,
-            new_resources: self.new_resource_managers,
+            new_addresses: self.new_addresses,
             borrowed,
             substates,
             logs: self.logs,

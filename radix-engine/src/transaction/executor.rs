@@ -203,6 +203,14 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             None
         };
 
+        let mut new_component_addresses = Vec::new();
+        let mut new_resource_addresses = Vec::new();
+        for address in track_receipt.new_addresses {
+            match address {
+                Address::Component(component_address) => new_component_addresses.push(component_address),
+                Address::Resource(resource_address) => new_resource_addresses.push(resource_address),
+            }
+        }
 
 
         #[cfg(feature = "alloc")]
@@ -220,8 +228,8 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             outputs,
             logs: track_receipt.logs,
             new_package_addresses: track_receipt.new_packages,
-            new_component_addresses: track_receipt.new_components,
-            new_resource_addresses: track_receipt.new_resources,
+            new_component_addresses,
+            new_resource_addresses,
             execution_time,
         }
     }
