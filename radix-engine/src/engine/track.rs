@@ -87,6 +87,53 @@ pub enum Address {
     Package(PackageAddress),
 }
 
+impl Address {
+    fn encode(&self) -> Vec<u8> {
+        match self {
+            Address::Resource(resource_address) => scrypto_encode(resource_address),
+            Address::Component(component_address) => scrypto_encode(component_address),
+            Address::Package(package_address) => scrypto_encode(package_address),
+        }
+    }
+}
+
+enum SubstateValue {
+    Resource(ResourceManager),
+    Component(Component),
+    Package(Package),
+}
+
+impl SubstateValue {
+    fn encode(&self) -> Vec<u8> {
+        match self {
+            SubstateValue::Resource(resource_manager) => scrypto_encode(resource_manager),
+            SubstateValue::Package(package) => scrypto_encode(package),
+            SubstateValue::Component(component) => scrypto_encode(component),
+        }
+    }
+}
+
+impl Into<Component> for SubstateValue {
+    fn into(self) -> Component {
+        if let SubstateValue::Component(component) = self {
+            component
+        } else {
+            panic!("Not a component");
+        }
+    }
+}
+
+impl Into<ResourceManager> for SubstateValue {
+    fn into(self) -> ResourceManager {
+        if let SubstateValue::Resource(resource_manager) = self {
+            resource_manager
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+}
+
+
 /// An abstraction of transaction execution state.
 ///
 /// It acts as the facade of ledger state and keeps track of all temporary state updates,
@@ -102,15 +149,12 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     logs: Vec<(Level, String)>,
 
     new_addresses: Vec<Address>,
-    downed_substates: Vec<PhysicalSubstateId>,
     borrowed_substates: HashSet<Address>,
+    read_substates: IndexMap<Address, SubstateValue>,
 
-    read_packages: IndexMap<PackageAddress, Package>,
-    up_packages: IndexMap<PackageAddress, Package>,
-    read_components: IndexMap<ComponentAddress, Component>,
-    up_components: IndexMap<ComponentAddress, Component>,
-    read_resource_managers: IndexMap<ResourceAddress, ResourceManager>,
-    up_resource_managers: IndexMap<ResourceAddress, ResourceManager>,
+    downed_substates: Vec<PhysicalSubstateId>,
+    up_substates: IndexMap<Address, SubstateValue>,
+
 
     new_spaces: IndexSet<Vec<u8>>,
     non_fungibles: IndexMap<NonFungibleAddress, KeyedSubstateUpdate<Option<NonFungible>>>,
@@ -135,15 +179,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             logs: Vec::new(),
 
             new_addresses: Vec::new(),
-            downed_substates: Vec::new(),
             borrowed_substates: HashSet::new(),
-
-            read_packages: IndexMap::new(),
-            up_packages: IndexMap::new(),
-            read_components: IndexMap::new(),
-            up_components: IndexMap::new(),
-            read_resource_managers: IndexMap::new(),
-            up_resource_managers: IndexMap::new(),
+            downed_substates: Vec::new(),
+            up_substates: IndexMap::new(),
+            read_substates: IndexMap::new(),
 
             new_spaces: IndexSet::new(),
             lazy_map_entries: IndexMap::new(),
@@ -208,21 +247,32 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn create_package(&mut self, package: Package) -> PackageAddress {
         let package_address = self.new_package_address();
         let address = Address::Package(package_address);
-        self.new_addresses.push(address);
-        self.up_packages.insert(package_address, package);
+        self.new_addresses.push(address.clone());
+        self.up_substates.insert(address, SubstateValue::Package(package));
         package_address
     }
 
     /// Returns an immutable reference to a package, if exists.
     pub fn get_package(&mut self, package_address: &PackageAddress) -> Option<&Package> {
-        if self.up_packages.contains_key(package_address) {
-            return self.up_packages.get(package_address);
+        let address = Address::Package(*package_address);
+
+        if let Some(v) = self.up_substates.get(&address) {
+            if let SubstateValue::Package(package) = v {
+                return Option::Some(package);
+            }
+            panic!("Non package was given a package address")
         }
 
         if let Some(package) = self.substate_store.get_decoded_substate(package_address)
             .map(|(package, _)| package) {
-            self.read_packages.insert(package_address.clone(), package);
-            self.read_packages.get(package_address)
+            self.read_substates.insert(address.clone(), SubstateValue::Package(package));
+            self.read_substates.get(&address).map(|s| {
+                if let SubstateValue::Package(package) = s {
+                    package
+                } else {
+                    panic!("Should not get here. Stored value is not a package.");
+                }
+            })
         } else {
             None
         }
@@ -232,8 +282,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn create_component(&mut self, component: Component) -> ComponentAddress {
         let component_address = self.new_component_address();
         let address = Address::Component(component_address);
-        self.new_addresses.push(address);
-        self.up_components.insert(component_address, component);
+        self.new_addresses.push(address.clone());
+        self.up_substates.insert(address, SubstateValue::Component(component));
         component_address
     }
 
@@ -242,10 +292,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         component_address: ComponentAddress,
     ) -> Result<Component, RuntimeError> {
         let address = Address::Component(component_address);
-        let maybe_component = self.up_components.remove(&component_address);
-        if let Some(component) = maybe_component {
+        let maybe_value = self.up_substates.remove(&address);
+        if let Some(value) = maybe_value {
             self.borrowed_substates.insert(address);
-            Ok(component)
+            Ok(value.into())
         } else if self.borrowed_substates.contains(&address) {
             Err(RuntimeError::ComponentReentrancy(component_address))
         } else if let Some((component, substate_id)) =
@@ -270,19 +320,29 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             panic!("Component was never borrowed");
         }
 
-        self.up_components.insert(component_address, component);
+        self.up_substates.insert(address, SubstateValue::Component(component));
     }
 
     /// Returns an immutable reference to a component, if exists.
     pub fn borrow_component(&mut self, component_address: ComponentAddress) -> Option<&Component> {
-        if self.up_components.contains_key(&component_address) {
-            return self.up_components.get(&component_address);
+        let address = Address::Component(component_address);
+        if let Some(v) = self.up_substates.get(&address) {
+            if let SubstateValue::Component(component) = v {
+                return Option::Some(component);
+            }
+            panic!("Non package was given a package address")
         }
 
         if let Some(component) = self.substate_store.get_decoded_substate(&component_address)
             .map(|(component, _)| component) {
-            self.read_components.insert(component_address, component);
-            self.read_components.get(&component_address)
+            self.read_substates.insert(address.clone(), SubstateValue::Component(component));
+            self.read_substates.get(&address).map(|s| {
+                if let SubstateValue::Component(component) = s {
+                    component
+                } else {
+                    panic!("Should not get here. Stored value is not a package.");
+                }
+            })
         } else {
             None
         }
@@ -302,8 +362,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             let space_address = resource_to_non_fungible_space!(resource_address);
             self.new_spaces.insert(space_address);
         }
-        self.new_addresses.push(address);
-        self.up_resource_managers.insert(resource_address.clone(), resource_manager);
+        self.new_addresses.push(address.clone());
+        self.up_substates.insert(address, SubstateValue::Resource(resource_manager));
 
         resource_address
     }
@@ -313,11 +373,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         resource_address: ResourceAddress,
     ) -> Result<ResourceManager, RuntimeError> {
         let address = Address::Resource(resource_address);
-
-        let maybe_resource = self.up_resource_managers.remove(&resource_address);
-        if let Some(resource_manager) = maybe_resource {
+        let maybe_value = self.up_substates.remove(&address);
+        if let Some(value) = maybe_value {
             self.borrowed_substates.insert(address);
-            Ok(resource_manager)
+            Ok(value.into())
         } else if self.borrowed_substates.contains(&address) {
             panic!("Invalid resource manager reentrancy");
         } else if let Some((resource_manager, substate_id)) = self.substate_store.get_decoded_substate(&resource_address) {
@@ -338,7 +397,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if !self.borrowed_substates.remove(&address) {
             panic!("Resource Manager was never borrowed");
         }
-        self.up_resource_managers.insert(resource_address, resource_manager);
+        self.up_substates.insert(address, SubstateValue::Resource(resource_manager));
     }
 
     /// Returns an immutable reference to a resource manager, if exists.
@@ -346,14 +405,24 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         &mut self,
         resource_address: &ResourceAddress,
     ) -> Option<&ResourceManager> {
-        if self.up_resource_managers.contains_key(resource_address) {
-            return self.up_resource_managers.get(resource_address);
+        let address = Address::Resource(*resource_address);
+        if let Some(v) = self.up_substates.get(&address) {
+            if let SubstateValue::Resource(resource_manager) = v {
+                return Option::Some(resource_manager);
+            }
+            panic!("Non resource was given a resource address")
         }
 
         if let Some(resource_manager) = self.substate_store.get_decoded_substate(resource_address)
             .map(|(resource_manager, _)| resource_manager) {
-            self.read_resource_managers.insert(resource_address.clone(), resource_manager);
-            self.read_resource_managers.get(resource_address)
+            self.read_substates.insert(address.clone(), SubstateValue::Resource(resource_manager));
+            self.read_substates.get(&address).map(|s| {
+                if let SubstateValue::Resource(resource_manager) = s {
+                    resource_manager
+                } else {
+                    panic!("Should not get here. Stored value is not a package.");
+                }
+            })
         } else {
             None
         }
@@ -598,14 +667,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         for substate_id in self.downed_substates {
             store_instructions.push(SubstateOperation::Down(substate_id));
         }
-        for (package_address, package) in self.up_packages.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::Up(scrypto_encode(&package_address), scrypto_encode(&package)));
-        }
-        for (component_address, component) in self.up_components.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::Up(scrypto_encode(&component_address), scrypto_encode(&component)));
-        }
-        for (resource_address, resource_manager) in self.up_resource_managers.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::Up(scrypto_encode(&resource_address), scrypto_encode(&resource_manager)));
+        for (address, value) in self.up_substates.drain(RangeFull) {
+            store_instructions.push(SubstateOperation::Up(address.encode(), value.encode()));
         }
 
         for ((component_address, vault_id), vault) in self.vaults.drain(RangeFull) {
