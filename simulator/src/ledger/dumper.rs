@@ -184,7 +184,7 @@ fn dump_resources<T: SubstateStore, O: std::io::Write>(
                         ScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                     writeln!(
                         output,
-                        "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                        "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                         if last { " " } else { "│" },
                         list_item_prefix(inner_last),
                         id,
