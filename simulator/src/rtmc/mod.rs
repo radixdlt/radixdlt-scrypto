@@ -1,7 +1,5 @@
 use clap::Parser;
 use scrypto::buffer::scrypto_encode;
-use std::fs::read_to_string;
-use std::fs::write;
 use std::path::PathBuf;
 use transaction_manifest::compile;
 
@@ -27,9 +25,9 @@ pub enum Error {
 pub fn run() -> Result<(), Error> {
     let args = Args::parse();
 
-    let content = read_to_string(args.input).map_err(Error::IoError)?;
+    let content = std::fs::read_to_string(args.input).map_err(Error::IoError)?;
     let transaction = compile(&content).map_err(Error::CompileError)?;
-    write(args.output, scrypto_encode(&transaction)).map_err(Error::IoError)?;
+    std::fs::write(args.output, scrypto_encode(&transaction)).map_err(Error::IoError)?;
 
     Ok(())
 }

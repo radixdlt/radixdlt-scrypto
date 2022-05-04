@@ -13,18 +13,18 @@ use crate::model::*;
 use crate::transaction::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'l, L: SubstateStore> {
+pub struct TransactionExecutor<'l, L: ReadableSubstateStore + WriteableSubstateStore> {
     substate_store: &'l mut L,
     trace: bool,
 }
 
-impl<'l, L: SubstateStore> NonceProvider for TransactionExecutor<'l, L> {
+impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> NonceProvider for TransactionExecutor<'l, L> {
     fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
         self.substate_store.get_nonce()
     }
 }
 
-impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
+impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     fn export_abi(
         &self,
         package_address: PackageAddress,
@@ -61,7 +61,7 @@ impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
     }
 }
 
-impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
+impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<'l, L> {
     pub fn new(substate_store: &'l mut L, trace: bool) -> Self {
         Self {
             substate_store,
@@ -81,8 +81,10 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
     /// Generates a new key pair.
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
+        let nonce = self.substate_store.get_nonce();
+        self.substate_store.increase_nonce();
         let private_key = EcdsaPrivateKey::from_bytes(
-            hash(self.substate_store.get_and_increase_nonce().to_le_bytes()).as_ref(),
+            hash(nonce.to_le_bytes()).as_ref(),
         )
         .unwrap();
         let public_key = private_key.public_key();
@@ -144,7 +146,10 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         package_address: PackageAddress,
         code: Vec<u8>,
     ) -> Result<(), WasmValidationError> {
-        let tx_hash = hash(self.substate_store.get_and_increase_nonce().to_le_bytes());
+        let nonce = self.substate_store.get_nonce();
+        self.substate_store.increase_nonce();
+
+        let tx_hash = hash(nonce.to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         let package = Package::new(code)?;
@@ -181,17 +186,15 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         };
         let outputs = txn_process.outputs().to_vec();
 
-        // prepare data for receipts
-        let new_package_addresses = track.new_package_addresses();
-        let new_component_addresses = track.new_component_addresses();
-        let new_resource_addresses = track.new_resource_addresses();
-        let logs = track.logs().clone();
-
+        let track_receipt = track.to_receipt();
         // commit state updates
         let commit_receipt = if error.is_none() {
-            let receipt = track.commit();
+            if !track_receipt.borrowed.is_empty() {
+                panic!("There should be nothing borrowed by end of transaction.");
+            }
+            let commit_receipt = track_receipt.substates.commit(self.substate_store);
             self.substate_store.increase_nonce();
-            Some(receipt)
+            Some(commit_receipt)
         } else {
             None
         };
@@ -211,10 +214,10 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
                 None => Ok(()),
             },
             outputs,
-            logs,
-            new_package_addresses,
-            new_component_addresses,
-            new_resource_addresses,
+            logs: track_receipt.logs,
+            new_package_addresses: track_receipt.new_packages,
+            new_component_addresses: track_receipt.new_components,
+            new_resource_addresses: track_receipt.new_resources,
             execution_time,
         }
     }

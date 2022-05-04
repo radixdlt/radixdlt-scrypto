@@ -26,6 +26,8 @@ fn test_bucket() {
         .call_function(package, "BucketTest", invocation!(test_restricted_transfer()))
         .call_function(package, "BucketTest", invocation!(test_burn()))
         .call_function(package, "BucketTest", invocation!(test_burn_freely()))
+        .call_function(package, "BucketTest", invocation!(create_empty_bucket_fungible()))
+        .call_function(package, "BucketTest", invocation!(create_empty_bucket_non_fungible()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);

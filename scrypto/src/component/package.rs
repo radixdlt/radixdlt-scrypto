@@ -27,12 +27,7 @@ pub struct Package(pub(crate) PackageAddress);
 
 impl Package {
     /// Invokes a function on this package.
-    pub fn call<T: Decode, S: AsRef<str>>(
-        &self,
-        blueprint_name: S,
-        function: S,
-        args: Vec<Vec<u8>>,
-    ) -> T {
+    pub fn call<T: Decode>(&self, blueprint_name: &str, function: &str, args: Vec<Vec<u8>>) -> T {
         let output = Runtime::call_function(self.0, blueprint_name, function, args);
 
         scrypto_decode(&output).unwrap()
