@@ -36,15 +36,13 @@ macro_rules! non_fungible_to_re_address {
 }
 
 pub struct BorrowedSNodes {
-    borrowed_components: HashSet<ComponentAddress>,
-    borrowed_resource_managers: HashSet<ResourceAddress>,
+    borrowed_substates: HashSet<Address>,
     borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 }
 
 impl BorrowedSNodes {
     pub fn is_empty(&self) -> bool {
-        self.borrowed_components.is_empty() &&
-        self.borrowed_resource_managers.is_empty() &&
+        self.borrowed_substates.is_empty() &&
         self.borrowed_vaults.is_empty()
     }
 }
@@ -84,6 +82,12 @@ pub struct KeyedSubstateUpdate<T> {
     pub value: T,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum Address {
+    Resource(ResourceAddress),
+    Component(ComponentAddress),
+}
+
 /// An abstraction of transaction execution state.
 ///
 /// It acts as the facade of ledger state and keeps track of all temporary state updates,
@@ -103,14 +107,13 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     new_components: Vec<ComponentAddress>,
     new_resource_managers: Vec<ResourceAddress>,
 
-    downed_components: Vec<PhysicalSubstateId>,
+    downed_substates: Vec<PhysicalSubstateId>,
+    borrowed_substates: HashSet<Address>,
+
     read_components: IndexMap<ComponentAddress, Component>,
-    borrowed_components: HashSet<ComponentAddress>,
     up_components: IndexMap<ComponentAddress, Component>,
 
-    downed_resource_managers: Vec<PhysicalSubstateId>,
     read_resource_managers: IndexMap<ResourceAddress, ResourceManager>,
-    borrowed_resource_managers: HashSet<ResourceAddress>,
     up_resource_managers: IndexMap<ResourceAddress, ResourceManager>,
 
     new_spaces: IndexSet<Vec<u8>>,
@@ -136,15 +139,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             logs: Vec::new(),
             packages: IndexMap::new(),
 
-            downed_components: Vec::new(),
+            downed_substates: Vec::new(),
             read_components: IndexMap::new(),
-            borrowed_components: HashSet::new(),
+            borrowed_substates: HashSet::new(),
             up_components: IndexMap::new(),
             new_components: Vec::new(),
 
-            downed_resource_managers: Vec::new(),
             read_resource_managers: IndexMap::new(),
-            borrowed_resource_managers: HashSet::new(),
             up_resource_managers: IndexMap::new(),
             new_resource_managers: Vec::new(),
 
@@ -255,17 +256,18 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<Component, RuntimeError> {
+        let address = Address::Component(component_address);
         let maybe_component = self.up_components.remove(&component_address);
         if let Some(component) = maybe_component {
-            self.borrowed_components.insert(component_address);
+            self.borrowed_substates.insert(address);
             Ok(component)
-        } else if self.borrowed_components.contains(&component_address) {
+        } else if self.borrowed_substates.contains(&address) {
             Err(RuntimeError::ComponentReentrancy(component_address))
         } else if let Some((component, substate_id)) =
             self.substate_store.get_decoded_substate(&component_address)
         {
-            self.downed_components.push(substate_id);
-            self.borrowed_components.insert(component_address);
+            self.downed_substates.push(substate_id);
+            self.borrowed_substates.insert(address);
             Ok(component)
         } else {
             Err(RuntimeError::ComponentNotFound(component_address))
@@ -277,7 +279,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         component_address: ComponentAddress,
         component: Component,
     ) {
-        if !self.borrowed_components.remove(&component_address) {
+        let address = Address::Component(component_address);
+
+        if !self.borrowed_substates.remove(&address) {
             panic!("Component was never borrowed");
         }
 
@@ -322,15 +326,17 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         &mut self,
         resource_address: ResourceAddress,
     ) -> Result<ResourceManager, RuntimeError> {
+        let address = Address::Resource(resource_address);
+
         let maybe_resource = self.up_resource_managers.remove(&resource_address);
         if let Some(resource_manager) = maybe_resource {
-            self.borrowed_resource_managers.insert(resource_address);
+            self.borrowed_substates.insert(address);
             Ok(resource_manager)
-        } else if self.borrowed_resource_managers.contains(&resource_address) {
+        } else if self.borrowed_substates.contains(&address) {
             panic!("Invalid resource manager reentrancy");
         } else if let Some((resource_manager, substate_id)) = self.substate_store.get_decoded_substate(&resource_address) {
-            self.downed_resource_managers.push(substate_id);
-            self.borrowed_resource_managers.insert(resource_address);
+            self.downed_substates.push(substate_id);
+            self.borrowed_substates.insert(address);
             Ok(resource_manager)
         } else {
             Err(RuntimeError::ResourceManagerNotFound(resource_address))
@@ -342,7 +348,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         resource_address: ResourceAddress,
         resource_manager: ResourceManager,
     ) {
-        if !self.borrowed_resource_managers.remove(&resource_address) {
+        let address = Address::Resource(resource_address);
+        if !self.borrowed_substates.remove(&address) {
             panic!("Resource Manager was never borrowed");
         }
         self.up_resource_managers.insert(resource_address, resource_manager);
@@ -613,14 +620,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(SubstateOperation::Up(scrypto_encode(&package_address), scrypto_encode(&package.value)));
         }
 
-        for substate_id in self.downed_components {
+        for substate_id in self.downed_substates {
             store_instructions.push(SubstateOperation::Down(substate_id));
         }
         for (component_address, component) in self.up_components.drain(RangeFull) {
             store_instructions.push(SubstateOperation::Up(scrypto_encode(&component_address), scrypto_encode(&component)));
-        }
-        for substate_id in self.downed_resource_managers {
-            store_instructions.push(SubstateOperation::Down(substate_id));
         }
         for (resource_address, resource_manager) in self.up_resource_managers.drain(RangeFull) {
             store_instructions.push(SubstateOperation::Up(scrypto_encode(&resource_address), scrypto_encode(&resource_manager)));
@@ -670,9 +674,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
         let substates = SubstateOperationsReceipt { substate_operations: store_instructions };
         let borrowed = BorrowedSNodes {
-            borrowed_components: self.borrowed_components,
+            borrowed_substates: self.borrowed_substates,
             borrowed_vaults: self.borrowed_vaults,
-            borrowed_resource_managers: self.borrowed_resource_managers,
         };
         TrackReceipt {
             new_packages,
