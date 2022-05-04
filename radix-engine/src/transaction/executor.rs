@@ -178,17 +178,13 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         );
         let mut proc = track.start_process(self.trace);
 
-        let txn_process = TransactionProcess::new(validated.clone());
-        let mut txn_snode = SNodeState::Transaction(txn_process);
-        let error = match proc.run(&mut txn_snode, "execute".to_string(), vec![]) {
+        let mut txn_process = TransactionProcess::new(validated.clone());
+        let txn_snode = SNodeState::Transaction(&mut txn_process);
+        let error = match proc.run(None, txn_snode, "execute".to_string(), vec![]) {
             Ok(_) => None,
             Err(e) => Some(e),
         };
-        let outputs = if let SNodeState::Transaction(txn_process) = txn_snode {
-            txn_process.outputs().to_vec()
-        } else {
-            panic!("Should not get here");
-        };
+        let outputs = txn_process.outputs().to_vec();
 
         let track_receipt = track.to_receipt();
         // commit state updates

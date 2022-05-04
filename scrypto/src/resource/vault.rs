@@ -25,12 +25,13 @@ pub struct Vault(pub VaultId);
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = CreateEmptyVaultInput {
-            resource_address: resource_address,
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ResourceRef(resource_address),
+            function: "create_vault".to_string(),
+            args: args![],
         };
-        let output: CreateEmptyVaultOutput = call_engine(CREATE_EMPTY_VAULT, input);
-
-        Self(output.vault_id)
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Creates an empty vault and fills it with an initial bucket of resource.
