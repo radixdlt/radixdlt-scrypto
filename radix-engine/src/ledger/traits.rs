@@ -52,16 +52,6 @@ pub trait ReadableSubstateStore {
             .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
     }
 
-    fn get_decoded_child_substate<A: Encode, K: Encode, T: Decode>(
-        &self,
-        address: &A,
-        key: &K,
-    ) -> Option<(T, PhysicalSubstateId)> {
-        let child_key = &scrypto_encode(key);
-        self.get_child_substate(&scrypto_encode(address), child_key)
-            .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
-    }
-
     fn get_epoch(&self) -> u64;
 
     // TODO: redefine what nonce is and how it's updated

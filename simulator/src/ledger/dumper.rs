@@ -142,11 +142,10 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault: Vault = substate_store
-            .get_decoded_child_substate(&component_address, vault_id)
-            .unwrap()
-            .0;
-
+        let mut vault_address = scrypto_encode(&component_address);
+        vault_address.extend(scrypto_encode(vault_id));
+        let substate = substate_store.get_substate(&vault_address).unwrap();
+        let vault: Vault = scrypto_decode(&substate.value).unwrap();
         let amount = vault.total_amount();
         let resource_address = vault.resource_address();
         let resource_manager: ResourceManager = substate_store
