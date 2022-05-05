@@ -1154,16 +1154,20 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         }
 
         if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
-            let value = self.track.get_lazy_map_entry(
-                *component_address,
-                &input.lazy_map_id,
-                &input.key,
+            let substate_value = self.track.read_keyed_value(
+                Address::LazyMap(*component_address, input.lazy_map_id),
+                input.key,
             );
-            if value.is_some() {
-                let map_entry_objects =
-                    Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
-                self.snode_refs.extend(map_entry_objects);
-            }
+            let value = if let SubstateValue::LazyMapEntry(value) = substate_value {
+                if value.is_some() {
+                    let map_entry_objects =
+                        Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
+                    self.snode_refs.extend(map_entry_objects);
+                }
+                value
+            } else {
+                None
+            };
 
             return Ok(GetLazyMapEntryOutput { value });
         }
@@ -1194,11 +1198,16 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     {
                         return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
                     }
-                    let old_value = self.track.get_lazy_map_entry(
-                        *component_address,
-                        &input.lazy_map_id,
-                        &input.key,
+                    let parent_address = Address::LazyMap(*component_address, input.lazy_map_id);
+                    let old_substate_value = self.track.read_keyed_value(
+                        parent_address,
+                        input.key.clone(),
                     );
+                    let old_value = if let SubstateValue::LazyMapEntry(old_value) = old_substate_value {
+                        old_value
+                    } else {
+                        panic!("Value is not a lazy map entry: {:?}", old_substate_value);
+                    };
                     Ok((
                         old_value,
                         Committed {

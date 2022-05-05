@@ -75,6 +75,7 @@ pub enum Address {
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
     NonFungibleEntry(NonFungibleAddress),
+    LazyMap(ComponentAddress, LazyMapId),
     LazyMapEntry(ComponentAddress, LazyMapId, Vec<u8>),
 }
 
@@ -86,6 +87,11 @@ impl Address {
             Address::Package(package_address) => scrypto_encode(package_address),
             Address::NonFungibleSet(resource_address) => resource_to_non_fungible_space!(resource_address.clone()),
             Address::NonFungibleEntry(non_fungible_address) => non_fungible_to_re_address!(non_fungible_address),
+            Address::LazyMap(component_address, lazy_map_id) => {
+                let mut entry_address = scrypto_encode(component_address);
+                entry_address.extend(scrypto_encode(lazy_map_id));
+                entry_address
+            }
             Address::LazyMapEntry(component_address, lazy_map_id, key) => {
                 let mut entry_address = scrypto_encode(component_address);
                 entry_address.extend(scrypto_encode(lazy_map_id));
@@ -435,7 +441,15 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     })
                     .unwrap_or(SubstateValue::NonFungible(None))
             },
-            _ => panic!("oops"),
+            Address::LazyMap(..) => {
+                self.substate_store.get_substate(&address)
+                    .map(|r| {
+                        let lazy_map_entry = scrypto_decode(&r.value).unwrap();
+                        SubstateValue::LazyMapEntry(lazy_map_entry)
+                    })
+                    .unwrap_or(SubstateValue::LazyMapEntry(None))
+            },
+            _ => panic!("Invalid keyed value address"),
         }
     }
 
@@ -460,24 +474,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         };
 
         self.up_substates.insert(address, SubstateValue::NonFungible(non_fungible));
-    }
-
-    pub fn get_lazy_map_entry(
-        &mut self,
-        component_address: ComponentAddress,
-        lazy_map_id: &LazyMapId,
-        key: &[u8],
-    ) -> Option<Vec<u8>> {
-        let address = Address::LazyMapEntry(component_address.clone(), lazy_map_id.clone(), key.to_vec()).encode();
-        if let Some(cur) = self.up_substates.get(&address) {
-            if let SubstateValue::LazyMapEntry(value) = cur {
-                return value.clone();
-            } else {
-                panic!("Value is not a lazy map entry.");
-            }
-        }
-
-        self.substate_store.get_substate(&address).map(|r| scrypto_decode(&r.value).unwrap()).unwrap_or(None)
     }
 
     pub fn put_lazy_map_entry(
