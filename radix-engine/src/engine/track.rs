@@ -10,7 +10,6 @@ use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 
 use crate::engine::*;
-use crate::errors::RuntimeError;
 use crate::ledger::*;
 use crate::model::*;
 
@@ -200,6 +199,10 @@ impl Into<ResourceManager> for SubstateValue {
     }
 }
 
+pub enum TrackError {
+    Reentrancy,
+    NotFound,
+}
 
 /// An abstraction of transaction execution state.
 ///
@@ -377,25 +380,33 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn borrow_global_mut_component(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<Component, RuntimeError> {
-        let address = Address::Component(component_address);
+    // TODO: Add checks to see verify that immutable values aren't being borrowed
+    pub fn borrow_global_mut_value<A: Into<Address>>(&mut self, addr: A) -> Result<SubstateValue, TrackError> {
+        let address = addr.into();
         let maybe_value = self.up_substates.remove(&address);
         if let Some(value) = maybe_value {
             self.borrowed_substates.insert(address);
-            Ok(value.into())
+            Ok(value)
         } else if self.borrowed_substates.contains(&address) {
-            Err(RuntimeError::ComponentReentrancy(component_address))
-        } else if let Some((component, substate_id)) =
-            self.substate_store.get_decoded_substate(&component_address)
+            Err(TrackError::Reentrancy)
+        } else if let Some(substate) =
+            self.substate_store.get_substate(&address.encode())
         {
-            self.downed_substates.push(substate_id);
-            self.borrowed_substates.insert(address);
-            Ok(component)
+            self.downed_substates.push(substate.phys_id);
+            self.borrowed_substates.insert(address.clone());
+            match address {
+                Address::Component(_) => {
+                    let component = scrypto_decode(&substate.value).unwrap();
+                    Ok(SubstateValue::Component(component))
+                }
+                Address::Resource(_) => {
+                    let resource_manager = scrypto_decode(&substate.value).unwrap();
+                    Ok(SubstateValue::Resource(resource_manager))
+                }
+                _ => panic!("Attempting to borrow unsupported value"),
+            }
         } else {
-            Err(RuntimeError::ComponentNotFound(component_address))
+            Err(TrackError::NotFound)
         }
     }
 
@@ -411,26 +422,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
 
         self.up_substates.insert(address, SubstateValue::Component(component));
-    }
-
-    pub fn borrow_global_mut_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ResourceManager, RuntimeError> {
-        let address = Address::Resource(resource_address);
-        let maybe_value = self.up_substates.remove(&address);
-        if let Some(value) = maybe_value {
-            self.borrowed_substates.insert(address);
-            Ok(value.into())
-        } else if self.borrowed_substates.contains(&address) {
-            panic!("Invalid resource manager reentrancy");
-        } else if let Some((resource_manager, substate_id)) = self.substate_store.get_decoded_substate(&resource_address) {
-            self.downed_substates.push(substate_id);
-            self.borrowed_substates.insert(address);
-            Ok(resource_manager)
-        } else {
-            Err(RuntimeError::ResourceManagerNotFound(resource_address))
-        }
     }
 
     pub fn return_borrowed_global_resource_manager(

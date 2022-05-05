@@ -20,7 +20,7 @@ use wasmi::*;
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::*;
 use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
-use crate::engine::track::SubstateValue;
+use crate::engine::track::{SubstateValue, TrackError};
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
@@ -557,9 +557,15 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
-                        let component = self
+                        let component: Component = self
                             .track
-                            .borrow_global_mut_component(component_address.clone())?;
+                            .borrow_global_mut_value(component_address.clone())
+                            .map_err(|e| {
+                                match e {
+                                    TrackError::NotFound => RuntimeError::ComponentNotFound(component_address.clone()),
+                                    TrackError::Reentrancy => RuntimeError::ComponentReentrancy(component_address.clone()),
+                                }
+                            })?.into();
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
                         let export_name = format!("{}_main", blueprint_name);
@@ -598,7 +604,13 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             SNodeRef::ResourceRef(resource_address) => {
                 let resource_manager: ResourceManager = self
                     .track
-                    .borrow_global_mut_resource_manager(resource_address.clone())?;
+                    .borrow_global_mut_value(resource_address.clone())
+                    .map_err(|e| {
+                        match e {
+                            TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+                            TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
+                        }
+                    })?.into();
                 let method_auth = resource_manager.get_auth(&function, &args).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(resource_address.clone(), resource_manager)),
@@ -1356,8 +1368,16 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         &mut self,
         resource_address: ResourceAddress,
     ) -> Result<ResourceManager, RuntimeError> {
-        self.track
-            .borrow_global_mut_resource_manager(resource_address)
+        self
+            .track
+            .borrow_global_mut_value(resource_address.clone())
+            .map(|v| v.into())
+            .map_err(|e| {
+                match e {
+                    TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+                    TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
+                }
+            })
     }
 
     fn return_borrowed_global_resource_manager(
