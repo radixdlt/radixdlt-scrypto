@@ -150,7 +150,7 @@ pub enum SubstateValue {
     Component(Component),
     Package(Package),
     NonFungible(Option<NonFungible>),
-    LazyMapEntry(Vec<u8>),
+    LazyMapEntry(Option<Vec<u8>>),
 }
 
 impl SubstateValue {
@@ -160,7 +160,7 @@ impl SubstateValue {
             SubstateValue::Package(package) => scrypto_encode(package),
             SubstateValue::Component(component) => scrypto_encode(component),
             SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
-            SubstateValue::LazyMapEntry(value) => value.to_vec(),
+            SubstateValue::LazyMapEntry(value) => scrypto_encode(value),
         }
     }
 }
@@ -471,13 +471,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let address = Address::LazyMapEntry(component_address.clone(), lazy_map_id.clone(), key.to_vec()).encode();
         if let Some(cur) = self.up_substates.get(&address) {
             if let SubstateValue::LazyMapEntry(value) = cur {
-                return Some(value.clone());
+                return value.clone();
             } else {
                 panic!("Value is not a lazy map entry.");
             }
         }
 
-        self.substate_store.get_substate(&address).map(|r| r.value)
+        self.substate_store.get_substate(&address).map(|r| scrypto_decode(&r.value).unwrap()).unwrap_or(None)
     }
 
     pub fn put_lazy_map_entry(
@@ -485,7 +485,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         component_address: ComponentAddress,
         lazy_map_id: LazyMapId,
         key: Vec<u8>,
-        value: Vec<u8>,
+        value: Option<Vec<u8>>,
     ) {
         let address = Address::LazyMapEntry(component_address.clone(), lazy_map_id.clone(), key.clone()).encode();
 
