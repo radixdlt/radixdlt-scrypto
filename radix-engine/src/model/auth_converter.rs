@@ -6,7 +6,7 @@ use crate::model::MethodAuthorization;
 use sbor::any::Value;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AccessRuleNode, AccessRule, SoftResource};
+use scrypto::prelude::{AccessRule, AccessRuleNode, SoftResource};
 use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
     SoftResourceOrNonFungibleList,

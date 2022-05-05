@@ -1,10 +1,10 @@
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
+use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::rust::string::ToString;
-use scrypto::{abi, rule, access_rule_node};
+use scrypto::{abi, access_rule_node, rule};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -199,8 +199,6 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         } else {
             None
         };
-
-
 
         #[cfg(feature = "alloc")]
         let execution_time = None;

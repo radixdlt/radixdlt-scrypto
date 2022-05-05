@@ -508,7 +508,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         resource_address
     }
 
-    pub fn borrow_vault_mut(&mut self, component_address: &ComponentAddress, vid: &VaultId) -> Vault {
+    pub fn borrow_vault_mut(
+        &mut self,
+        component_address: &ComponentAddress,
+        vid: &VaultId,
+    ) -> Vault {
         let canonical_id = (component_address.clone(), vid.clone());
         if self.borrowed_vaults.contains_key(&canonical_id) {
             panic!("Invalid vault reentrancy");
@@ -519,9 +523,11 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             return value;
         }
 
-        if let Some((vault, phys_id)) = self.substate_store.get_decoded_child_substate(component_address, vid) {
-            self.borrowed_vaults
-                .insert(canonical_id, Some(phys_id));
+        if let Some((vault, phys_id)) = self
+            .substate_store
+            .get_decoded_child_substate(component_address, vid)
+        {
+            self.borrowed_vaults.insert(canonical_id, Some(phys_id));
             return vault;
         }
 
