@@ -73,6 +73,7 @@ pub enum Address {
     Resource(ResourceAddress),
     Component(ComponentAddress),
     Package(PackageAddress),
+    NonFungible(NonFungibleAddress),
 }
 
 impl Address {
@@ -81,6 +82,7 @@ impl Address {
             Address::Resource(resource_address) => scrypto_encode(resource_address),
             Address::Component(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
+            Address::NonFungible(non_fungible_address) => non_fungible_to_re_address!(non_fungible_address),
         }
     }
 }
@@ -137,6 +139,7 @@ pub enum SubstateValue {
     Resource(ResourceManager),
     Component(Component),
     Package(Package),
+    NonFungible(Option<NonFungible>),
 }
 
 impl SubstateValue {
@@ -145,6 +148,7 @@ impl SubstateValue {
             SubstateValue::Resource(resource_manager) => scrypto_encode(resource_manager),
             SubstateValue::Package(package) => scrypto_encode(package),
             SubstateValue::Component(component) => scrypto_encode(component),
+            SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
         }
     }
 }
@@ -216,7 +220,6 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     up_substates: IndexMap<Address, SubstateValue>,
     up_virtual_substate_space: IndexSet<Vec<u8>>,
 
-    up_non_fungibles: IndexMap<NonFungibleAddress, Option<NonFungible>>,
     lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), Vec<u8>>,
 
     // TODO: Change this interface to take/put
@@ -249,7 +252,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             lazy_map_entries: IndexMap::new(),
             vaults: IndexMap::new(),
             borrowed_vaults: HashMap::new(),
-            up_non_fungibles: IndexMap::new(),
         }
     }
 
@@ -325,6 +327,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 }
                 Address::Resource(resource_address)
             }
+            _ => panic!("Trying to create uuid value with invalid value")
         };
 
         self.new_addresses.push(address.clone());
@@ -358,6 +361,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     self.read_substates.insert(address.clone(), SubstateValue::Resource(resource_manager));
                     self.read_substates.get(&address)
                 }
+                _ => panic!("Reading value of invalid address")
             }
         } else {
             None
@@ -407,8 +411,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         &mut self,
         non_fungible_address: &NonFungibleAddress,
     ) -> Option<NonFungible> {
-        if let Some(cur) = self.up_non_fungibles.get(non_fungible_address) {
-            return cur.as_ref().map(|n| n.clone())
+        let address = Address::NonFungible(non_fungible_address.clone());
+        if let Some(cur) = self.up_substates.get(&address) {
+            if let SubstateValue::NonFungible(non_fungible) = cur {
+                return non_fungible.clone();
+            } else {
+                panic!("Value is not a nonfungible.");
+            }
         }
 
         let nf_address = non_fungible_to_re_address!(non_fungible_address);
@@ -421,9 +430,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         non_fungible_address: NonFungibleAddress,
         non_fungible: Option<NonFungible>,
     ) {
-        let nf_address = non_fungible_to_re_address!(non_fungible_address);
+        let address = Address::NonFungible(non_fungible_address.clone());
 
-        if self.up_non_fungibles.remove(&non_fungible_address).is_none() {
+        if self.up_substates.remove(&address).is_none() {
+            let nf_address = non_fungible_to_re_address!(non_fungible_address);
             let cur: Option<Substate> = self.substate_store.get_substate(&nf_address);
             if let Some(Substate { value: _, phys_id }) = cur {
                 self.downed_substates.push(phys_id);
@@ -435,7 +445,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             }
         };
 
-        self.up_non_fungibles.insert(non_fungible_address, non_fungible);
+        self.up_substates.insert(address, SubstateValue::NonFungible(non_fungible));
     }
 
     pub fn get_lazy_map_entry(
@@ -653,11 +663,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             let mut vault_address = scrypto_encode(&component_address);
             vault_address.extend(scrypto_encode(&vault_id));
             store_instructions.push(SubstateOperation::Up(vault_address, scrypto_encode(&vault.value)));
-        }
-
-        for (addr, non_fungible) in self.up_non_fungibles.drain(RangeFull) {
-            let non_fungible_address = non_fungible_to_re_address!(addr);
-            store_instructions.push(SubstateOperation::Up(non_fungible_address, scrypto_encode(&non_fungible)));
         }
 
         for ((component_address, lazy_map_id, key), value) in self.lazy_map_entries.drain(RangeFull) {
