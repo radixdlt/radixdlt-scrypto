@@ -2,47 +2,65 @@ use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
 use scrypto::rust::ops::RangeFull;
-use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec::Vec;
+use crate::engine::SubstateParentId;
+use crate::engine::track::{VirtualSubstateId};
 
 use crate::ledger::*;
 
 
 pub struct CommitReceipt {
-    pub down_substates: HashSet<(Hash, u32)>,
-    pub up_substates: Vec<(Hash, u32)>,
+    pub virtual_down_substates: HashSet<HardVirtualSubstateId>,
+    pub down_substates: HashSet<PhysicalSubstateId>,
+    pub virtual_up_substates: Vec<PhysicalSubstateId>,
+    pub up_substates: Vec<PhysicalSubstateId>,
 }
 
 impl CommitReceipt {
     fn new() -> Self {
         CommitReceipt {
+            virtual_down_substates: HashSet::new(),
             down_substates: HashSet::new(),
+            virtual_up_substates: Vec::new(),
             up_substates: Vec::new(),
         }
     }
 
-    fn down(&mut self, id: (Hash, u32)) {
+    fn virtual_down(&mut self, id: HardVirtualSubstateId) {
+        self.virtual_down_substates.insert(id);
+    }
+
+    fn down(&mut self, id: PhysicalSubstateId) {
         self.down_substates.insert(id);
     }
 
-    fn up(&mut self, id: (Hash, u32)) {
+    fn virtual_space_up(&mut self, id: PhysicalSubstateId) {
+        self.up_substates.push(id);
+    }
+
+    fn up(&mut self, id: PhysicalSubstateId) {
         self.up_substates.push(id);
     }
 }
 
+#[derive(Debug, Clone, Hash, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct HardVirtualSubstateId(PhysicalSubstateId, Vec<u8>);
+
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum StateUpdateInstruction {
-    Down(Hash, u32),
+pub enum SubstateOperation {
+    VirtualDown(VirtualSubstateId),
+    Down(PhysicalSubstateId),
+    VirtualUp(Vec<u8>),
     Up(Vec<u8>, Vec<u8>),
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct StateUpdateReceipt {
-    pub instructions: Vec<StateUpdateInstruction>,
+pub struct SubstateOperationsReceipt {
+    pub substate_operations: Vec<SubstateOperation>,
 }
 
-impl StateUpdateReceipt {
+impl SubstateOperationsReceipt {
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
     pub fn commit<S: WriteableSubstateStore>(mut self, store: &mut S) -> CommitReceipt {
@@ -50,12 +68,25 @@ impl StateUpdateReceipt {
         let mut receipt = CommitReceipt::new();
         let mut id_gen = SubstateIdGenerator::new(hash);
 
-        for instruction in self.instructions.drain(RangeFull) {
+        for instruction in self.substate_operations.drain(RangeFull) {
             match instruction {
-                StateUpdateInstruction::Down(hash, index) => receipt.down((hash, index)),
-                StateUpdateInstruction::Up(key, value) => {
+                SubstateOperation::VirtualDown(VirtualSubstateId(parent_id, key)) => {
+                    let parent_hard_id = match parent_id {
+                        SubstateParentId::Exists(real_id) => real_id,
+                        SubstateParentId::New(index) => PhysicalSubstateId(hash, index.try_into().unwrap()),
+                    };
+                    let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key);
+                    receipt.virtual_down(virtual_substate_id);
+                }
+                SubstateOperation::Down(substate_id) => receipt.down(substate_id),
+                SubstateOperation::VirtualUp(address) => {
                     let phys_id = id_gen.next();
-                    receipt.up(phys_id);
+                    receipt.virtual_space_up(phys_id.clone());
+                    store.put_space(&address, phys_id);
+                }
+                SubstateOperation::Up(key, value) => {
+                    let phys_id = id_gen.next();
+                    receipt.up(phys_id.clone());
                     store.put_keyed_substate(&key, value, phys_id);
                 }
             }
