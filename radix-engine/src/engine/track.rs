@@ -223,10 +223,11 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     read_substates: IndexMap<Address, SubstateValue>,
 
     downed_substates: Vec<PhysicalSubstateId>,
+    down_virtual_substates: Vec<VirtualSubstateId>,
     up_substates: IndexMap<Address, SubstateValue>,
     up_virtual_substate_space: IndexSet<Vec<u8>>,
 
-    non_fungibles: IndexMap<NonFungibleAddress, KeyedSubstateUpdate<Option<NonFungible>>>,
+    up_non_fungibles: IndexMap<NonFungibleAddress, Option<NonFungible>>,
     lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), KeyedSubstateUpdate<Vec<u8>>>,
 
     // TODO: Change this interface to take/put
@@ -252,13 +253,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             read_substates: IndexMap::new(),
 
             downed_substates: Vec::new(),
+            down_virtual_substates: Vec::new(),
             up_substates: IndexMap::new(),
             up_virtual_substate_space: IndexSet::new(),
 
             lazy_map_entries: IndexMap::new(),
             vaults: IndexMap::new(),
             borrowed_vaults: HashMap::new(),
-            non_fungibles: IndexMap::new(),
+            up_non_fungibles: IndexMap::new(),
         }
     }
 
@@ -416,8 +418,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         &mut self,
         non_fungible_address: &NonFungibleAddress,
     ) -> Option<NonFungible> {
-        if let Some(cur) = self.non_fungibles.get(non_fungible_address) {
-            return cur.value.as_ref().map(|n| n.clone())
+        if let Some(cur) = self.up_non_fungibles.get(non_fungible_address) {
+            return cur.as_ref().map(|n| n.clone())
         }
 
         let nf_address = non_fungible_to_re_address!(non_fungible_address);
@@ -431,23 +433,20 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         non_fungible: Option<NonFungible>,
     ) {
         let nf_address = non_fungible_to_re_address!(non_fungible_address);
-        let cur: Option<Substate> = self.substate_store.get_substate(&nf_address);
-        let prev_id = if let Some(Substate { value: _, phys_id }) = cur {
-            KeyedSubstateId::Physical(PhysicalSubstateId(phys_id.0, phys_id.1))
-        } else {
-            let space_address = resource_to_non_fungible_space!(non_fungible_address.resource_address());
-            let parent_id = self.get_substate_parent_id(&space_address);
 
-            KeyedSubstateId::Virtual(VirtualSubstateId(parent_id, non_fungible_address.non_fungible_id().to_vec()))
+        if self.up_non_fungibles.remove(&non_fungible_address).is_none() {
+            let cur: Option<Substate> = self.substate_store.get_substate(&nf_address);
+            if let Some(Substate { value: _, phys_id }) = cur {
+                self.downed_substates.push(phys_id);
+            } else {
+                let space_address = resource_to_non_fungible_space!(non_fungible_address.resource_address());
+                let parent_id = self.get_substate_parent_id(&space_address);
+                let virtual_substate_id = VirtualSubstateId(parent_id, non_fungible_address.non_fungible_id().to_vec());
+                self.down_virtual_substates.push(virtual_substate_id);
+            }
         };
 
-        self.non_fungibles.insert(
-            non_fungible_address,
-            KeyedSubstateUpdate {
-                prev_id,
-                value: non_fungible,
-            },
-        );
+        self.up_non_fungibles.insert(non_fungible_address, non_fungible);
     }
 
     pub fn get_lazy_map_entry(
@@ -650,6 +649,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         for substate_id in self.downed_substates {
             store_instructions.push(SubstateOperation::Down(substate_id));
         }
+        for virtual_substate_id in self.down_virtual_substates {
+            store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
+        }
+
         for (address, value) in self.up_substates.drain(RangeFull) {
             store_instructions.push(SubstateOperation::Up(address.encode(), value.encode()));
         }
@@ -667,19 +670,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(SubstateOperation::VirtualUp(space_address));
         }
 
-        for (addr, update) in self.non_fungibles.drain(RangeFull) {
-            match update.prev_id {
-                KeyedSubstateId::Physical(physical_substate_id) => {
-                    store_instructions.push(SubstateOperation::Down(physical_substate_id));
-                },
-                KeyedSubstateId::Virtual(virtual_substate_id) => {
-                    store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
-                }
-            }
-
+        for (addr, non_fungible) in self.up_non_fungibles.drain(RangeFull) {
             let non_fungible_address = non_fungible_to_re_address!(addr);
-            store_instructions.push(SubstateOperation::Up(non_fungible_address, scrypto_encode(&update.value)));
+            store_instructions.push(SubstateOperation::Up(non_fungible_address, scrypto_encode(&non_fungible)));
         }
+
         for ((component_address, lazy_map_id, key), entry) in self.lazy_map_entries.drain(RangeFull) {
             match entry.prev_id {
                 KeyedSubstateId::Physical(physical_substate_id) => {
