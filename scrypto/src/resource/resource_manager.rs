@@ -16,7 +16,7 @@ use crate::rust::vec::Vec;
 use crate::types::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
-pub enum ResourceMethod {
+pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
     Withdraw,
@@ -36,7 +36,7 @@ pub enum ResourceManagerFunction {
     Create(
         ResourceType,
         HashMap<String, String>,
-        HashMap<ResourceMethod, (AccessRule, Mutability)>,
+        HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         Option<MintParams>,
     )
 }
@@ -44,8 +44,8 @@ pub enum ResourceManagerFunction {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ResourceManagerMethod {
     Mint(MintParams),
-    UpdateAuth(ResourceMethod, AccessRule),
-    LockAuth(ResourceMethod),
+    UpdateAuth(ResourceMethodAuthKey, AccessRule),
+    LockAuth(ResourceMethodAuthKey),
     GetResourceType(),
     GetMetadata(),
     GetTotalSupply(),
@@ -93,40 +93,40 @@ impl ResourceManager {
                 ResourceManagerMethod::Mint(mint_params)
             }
             pub fn set_mintable(&mut self, mint_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethod::Mint, mint_auth)
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Mint, mint_auth)
             }
             pub fn lock_mintable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethod::Mint)
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Mint)
             }
             pub fn set_burnable(&mut self, burn_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethod::Burn, burn_auth)
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Burn, burn_auth)
             }
             pub fn lock_burnable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethod::Burn)
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Burn)
             }
             pub fn set_withdrawable(&mut self, withdraw_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethod::Withdraw, withdraw_auth)
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Withdraw, withdraw_auth)
             }
             pub fn lock_withdrawable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethod::Withdraw)
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Withdraw)
             }
             pub fn set_depositable(&mut self, deposit_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethod::Deposit, deposit_auth)
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Deposit, deposit_auth)
             }
             pub fn lock_depositable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethod::Deposit)
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Deposit)
             }
             pub fn set_updateable_metadata(&self, update_metadata_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethod::UpdateMetadata, update_metadata_auth)
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::UpdateMetadata, update_metadata_auth)
             }
             pub fn lock_updateable_metadata(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethod::UpdateMetadata)
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::UpdateMetadata)
             }
             pub fn set_updateable_non_fungible_data(&self, update_non_fungible_data_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethod::UpdateNonFungibleData, update_non_fungible_data_auth)
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::UpdateNonFungibleData, update_non_fungible_data_auth)
             }
             pub fn lock_updateable_non_fungible_data(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethod::UpdateNonFungibleData)
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::UpdateNonFungibleData)
             }
             pub fn metadata(&self) -> HashMap<String, String> {
                 ResourceManagerMethod::GetMetadata()

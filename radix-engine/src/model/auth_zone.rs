@@ -79,10 +79,10 @@ impl AuthZone {
 
     pub fn main<S: SystemApi>(
         &mut self,
-        arg: ScryptoValue,
+        call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, AuthZoneError> {
-        let method: AuthZoneMethod = scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+        let method: AuthZoneMethod = scrypto_decode(&call_data.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
 
         match method {
             AuthZoneMethod::Pop() => {

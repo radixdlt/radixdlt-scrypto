@@ -42,7 +42,7 @@ impl ResourceSystem {
         &mut self,
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        authorization: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+        authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
 
