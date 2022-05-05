@@ -41,12 +41,6 @@ impl ReadableSubstateStore for InMemorySubstateStore {
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
-    fn get_child_substate(&self, address: &[u8], key: &[u8]) -> Option<Substate> {
-        let mut id = address.to_vec();
-        id.extend(key.to_vec());
-        self.substates.get(&id).map(|bytes| scrypto_decode(bytes).unwrap())
-    }
-
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
         self.substates.get(address).map(|bytes| scrypto_decode(bytes).unwrap())
     }
