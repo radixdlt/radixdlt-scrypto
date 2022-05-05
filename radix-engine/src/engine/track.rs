@@ -372,7 +372,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         address
     }
 
-    pub fn insert_new_lazy_map(
+    pub fn create_uuid_value_2<A: Into<Address>, V: Into<SubstateValue>>(&mut self, addr: A, value: V) {
+        self.up_substates.insert(addr.into().encode(), value.into());
+    }
+
+    pub fn create_key_space(
         &mut self,
         component_address: ComponentAddress,
         lazy_map_id: LazyMapId,
@@ -382,17 +386,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.up_virtual_substate_space.insert(space_address);
     }
 
-    /// Inserts a new vault.
-    pub fn insert_new_vault(
-        &mut self,
-        component_address: ComponentAddress,
-        vault_id: VaultId,
-        vault: Vault,
-    ) {
-        let mut vault_address = scrypto_encode(&component_address);
-        vault_address.extend(scrypto_encode(&vault_id));
-        self.up_substates.insert(vault_address, SubstateValue::Vault(vault));
-    }
 
     /// Returns an immutable reference to a value, if exists.
     pub fn read_value<A: Into<Address>>(&mut self, addr: A) -> Option<&SubstateValue> {
