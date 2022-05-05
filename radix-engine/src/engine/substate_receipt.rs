@@ -87,7 +87,11 @@ impl SubstateOperationsReceipt {
                 SubstateOperation::Up(key, value) => {
                     let phys_id = id_gen.next();
                     receipt.up(phys_id.clone());
-                    store.put_keyed_substate(&key, value, phys_id);
+                    let substate = Substate {
+                        value,
+                        phys_id,
+                    };
+                    store.put_substate(&key, substate);
                 }
             }
         }
