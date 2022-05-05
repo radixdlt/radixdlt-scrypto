@@ -349,34 +349,27 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             return Some(v);
         }
 
-        match address {
-            Address::Package(package_address) => {
-                if let Some(package) = self.substate_store.get_decoded_substate(&package_address)
-                    .map(|(package, _)| package) {
+        let maybe_substate = self.substate_store.get_substate(&address.encode());
+        if let Some(substate) = maybe_substate {
+            match address {
+                Address::Package(_) => {
+                    let package: Package = scrypto_decode(&substate.value).unwrap();
                     self.read_substates.insert(address.clone(), SubstateValue::Package(package));
                     self.read_substates.get(&address)
-                } else {
-                    None
                 }
-            }
-            Address::Component(component_address) => {
-                if let Some(component) = self.substate_store.get_decoded_substate(&component_address)
-                    .map(|(component, _)| component) {
+                Address::Component(_) => {
+                    let component: Component = scrypto_decode(&substate.value).unwrap();
                     self.read_substates.insert(address.clone(), SubstateValue::Component(component));
                     self.read_substates.get(&address)
-                } else {
-                    None
                 }
-            }
-            Address::Resource(resource_address) => {
-                if let Some(resource_manager) = self.substate_store.get_decoded_substate(&resource_address)
-                    .map(|(resource_manager, _)| resource_manager) {
+                Address::Resource(_) => {
+                    let resource_manager: ResourceManager = scrypto_decode(&substate.value).unwrap();
                     self.read_substates.insert(address.clone(), SubstateValue::Resource(resource_manager));
                     self.read_substates.get(&address)
-                } else {
-                    None
                 }
             }
+        } else {
+            None
         }
     }
 
@@ -410,30 +403,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn return_borrowed_global_component(
-        &mut self,
-        component_address: ComponentAddress,
-        component: Component,
-    ) {
-        let address = Address::Component(component_address);
-
+    pub fn return_borrowed_global_mut_value<A: Into<Address>, V: Into<SubstateValue>>(&mut self, addr: A, value: V) {
+        let address = addr.into();
         if !self.borrowed_substates.remove(&address) {
-            panic!("Component was never borrowed");
+            panic!("Value was never borrowed");
         }
-
-        self.up_substates.insert(address, SubstateValue::Component(component));
-    }
-
-    pub fn return_borrowed_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-        resource_manager: ResourceManager,
-    ) {
-        let address = Address::Resource(resource_address);
-        if !self.borrowed_substates.remove(&address) {
-            panic!("Resource Manager was never borrowed");
-        }
-        self.up_substates.insert(address, SubstateValue::Resource(resource_manager));
+        self.up_substates.insert(address, value.into());
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.

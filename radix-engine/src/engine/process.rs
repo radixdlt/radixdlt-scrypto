@@ -128,14 +128,14 @@ impl BorrowedSNodeState {
             }
             BorrowedSNodeState::Scrypto(actor, component_state) => {
                 if let Some(component_address) = actor.component_address() {
-                    process.track.return_borrowed_global_component(
+                    process.track.return_borrowed_global_mut_value(
                         component_address,
                         component_state.unwrap(),
                     );
                 }
             }
             BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                process.track.return_borrowed_global_resource_manager(
+                process.track.return_borrowed_global_mut_value(
                     resource_address,
                     resource_manager,
                 );
@@ -1386,7 +1386,7 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         resource_manager: ResourceManager,
     ) {
         self.track
-            .return_borrowed_global_resource_manager(resource_address, resource_manager)
+            .return_borrowed_global_mut_value(resource_address, resource_manager)
     }
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
