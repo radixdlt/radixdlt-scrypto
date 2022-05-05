@@ -26,13 +26,11 @@ macro_rules! resource_to_non_fungible_space {
 
 pub struct BorrowedSNodes {
     borrowed_substates: HashSet<Address>,
-    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 }
 
 impl BorrowedSNodes {
     pub fn is_empty(&self) -> bool {
-        self.borrowed_substates.is_empty() &&
-        self.borrowed_vaults.is_empty()
+        self.borrowed_substates.is_empty()
     }
 }
 
@@ -259,10 +257,6 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     down_virtual_substates: Vec<VirtualSubstateId>,
     up_substates: IndexMap<Vec<u8>, SubstateValue>,
     up_virtual_substate_space: IndexSet<Vec<u8>>,
-
-    // TODO: Change this interface to take/put
-    vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
-    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
@@ -286,9 +280,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             down_virtual_substates: Vec::new(),
             up_substates: IndexMap::new(),
             up_virtual_substate_space: IndexSet::new(),
-
-            vaults: IndexMap::new(),
-            borrowed_vaults: HashMap::new(),
         }
     }
 
@@ -608,19 +599,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(SubstateOperation::VirtualUp(space_address));
         }
 
-        for ((component_address, vault_id), vault) in self.vaults.drain(RangeFull) {
-            if let Some(substate_id) = vault.prev_id {
-                store_instructions.push(SubstateOperation::Down(substate_id));
-            }
-            let mut vault_address = scrypto_encode(&component_address);
-            vault_address.extend(scrypto_encode(&vault_id));
-            store_instructions.push(SubstateOperation::Up(vault_address, scrypto_encode(&vault.value)));
-        }
-
         let substates = SubstateOperationsReceipt { substate_operations: store_instructions };
         let borrowed = BorrowedSNodes {
             borrowed_substates: self.borrowed_substates,
-            borrowed_vaults: self.borrowed_vaults,
         };
         TrackReceipt {
             new_addresses: self.new_addresses,
