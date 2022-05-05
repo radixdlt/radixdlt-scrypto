@@ -72,9 +72,7 @@ pub trait ReadableSubstateStore {
 
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, address: &[u8], substate: Substate);
-    fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate);
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId);
-
     fn put_keyed_substate(&mut self, address: &[u8], value: Vec<u8>, phys_id: PhysicalSubstateId) {
         self.put_substate(address, Substate { value, phys_id });
     }
@@ -87,23 +85,6 @@ pub trait WriteableSubstateStore {
     ) {
         self.put_substate(
             &scrypto_encode(address),
-            Substate {
-                value: scrypto_encode(value),
-                phys_id,
-            },
-        );
-    }
-
-    fn put_encoded_child_substate<A: Encode, K: Encode, V: Encode>(
-        &mut self,
-        address: &A,
-        key: &K,
-        value: &V,
-        phys_id: PhysicalSubstateId,
-    ) {
-        self.put_child_substate(
-            &scrypto_encode(address),
-            &scrypto_encode(key),
             Substate {
                 value: scrypto_encode(value),
                 phys_id,

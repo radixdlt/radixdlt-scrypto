@@ -1,4 +1,4 @@
-use crate::ledger::{ReadableSubstateStore, SubstateIdGenerator, WriteableSubstateStore};
+use crate::ledger::{ReadableSubstateStore, Substate, SubstateIdGenerator, WriteableSubstateStore};
 use sbor::*;
 use scrypto::rule;
 use scrypto::buffer::*;
@@ -81,11 +81,14 @@ pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_sto
 
         // Instantiate system component
         let system_vault = Vault::new(minted_xrd);
-        substate_store.put_encoded_child_substate(
-            &SYSTEM_COMPONENT,
-            &XRD_VAULT_ID,
-            &system_vault,
-            id_gen.next(),
+        let mut address = scrypto_encode(&SYSTEM_COMPONENT);
+        address.extend(scrypto_encode(&XRD_VAULT_ID));
+        substate_store.put_substate(
+            &address,
+            Substate {
+                value: scrypto_encode(&system_vault),
+                phys_id: id_gen.next(),
+            },
         );
 
         let system_component = Component::new(

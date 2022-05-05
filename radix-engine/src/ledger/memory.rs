@@ -69,12 +69,6 @@ impl WriteableSubstateStore for InMemorySubstateStore {
         self.substates.insert(address.to_vec(), scrypto_encode(&phys_id));
     }
 
-    fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate) {
-        let mut id = address.to_vec();
-        id.extend(key.to_vec());
-        self.substates.insert(id, scrypto_encode(&substate));
-    }
-
     fn set_epoch(&mut self, epoch: u64) {
         self.current_epoch = epoch;
     }

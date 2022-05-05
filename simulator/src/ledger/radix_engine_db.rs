@@ -132,12 +132,6 @@ impl WriteableSubstateStore for RadixEngineDB {
         self.write(address, &scrypto_encode(&substate));
     }
 
-    fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate) {
-        let mut id = address.to_vec();
-        id.extend(key.to_vec());
-        self.write(&id, &scrypto_encode(&substate));
-    }
-
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
         self.write(&address, &scrypto_encode(&phys_id));
     }
