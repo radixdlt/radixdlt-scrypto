@@ -1,0 +1,14 @@
+{
+    "rust-analyzer.linkedProjects": [
+        "radix-engine/Cargo.toml",
+        "sbor/Cargo.toml",
+        "sbor-derive/Cargo.toml",
+        "sbor-tests/Cargo.toml",
+        "scrypto/Cargo.toml",
+        "scrypto-abi/Cargo.toml",
+        "scrypto-derive/Cargo.toml",
+        "scrypto-tests/Cargo.toml",
+        "simulator/Cargo.toml",
+        "transaction-manifest/Cargo.toml",
+    ]
+}
