@@ -8,6 +8,7 @@ use sbor::*;
 pub enum SNodeRef {
     PackageStatic,
     AuthZoneRef,
+    CallerAuthZoneRef,
     WorktopRef,
     Scrypto(ScryptoActor),
     ResourceStatic,

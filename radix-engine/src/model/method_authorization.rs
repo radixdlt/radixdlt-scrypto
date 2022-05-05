@@ -31,8 +31,12 @@ pub enum HardResourceOrNonFungible {
 }
 
 impl HardResourceOrNonFungible {
-    pub fn proof_matches(&self, proof: &Proof) -> bool {
-        match self {
+    pub fn proof_matches(
+        &self,
+        proof: &Proof,
+        shadow_auth_zone: &mut Option<&mut AuthZone>,
+    ) -> bool {
+        let r = match self {
             HardResourceOrNonFungible::NonFungible(non_fungible_address) => {
                 let proof_resource_address = proof.resource_address();
                 proof_resource_address == non_fungible_address.resource_address()
@@ -46,16 +50,28 @@ impl HardResourceOrNonFungible {
                 proof_resource_address == *resource_address
             }
             HardResourceOrNonFungible::SoftResourceNotFound => false,
+        };
+        if r {
+            if let Some(auth_zone) = shadow_auth_zone {
+                auth_zone.push(proof.clone());
+            }
         }
+        r
     }
 
-    pub fn check_has_amount(&self, amount: Decimal, auth_zones: &[&AuthZone]) -> bool {
+    pub fn check_has_amount(
+        &self,
+        amount: Decimal,
+        auth_zones: &[&AuthZone],
+        shadow_auth_zone: &mut Option<&mut AuthZone>,
+    ) -> bool {
         for auth_zone in auth_zones {
             // FIXME: Need to check the composite max amount rather than just each proof individually
             if auth_zone
                 .proofs
                 .iter()
-                .any(|p| self.proof_matches(p) && p.total_amount() >= amount)
+                .any(|p| p.total_amount() >= amount && self.proof_matches(p, shadow_auth_zone))
+            // amount check first so short circuit comes before proof added to shadow_auth_zone
             {
                 return true;
             }
@@ -64,9 +80,17 @@ impl HardResourceOrNonFungible {
         false
     }
 
-    pub fn check(&self, auth_zones: &[&AuthZone]) -> bool {
+    pub fn check(
+        &self,
+        auth_zones: &[&AuthZone],
+        shadow_auth_zone: &mut Option<&mut AuthZone>,
+    ) -> bool {
         for auth_zone in auth_zones {
-            if auth_zone.proofs.iter().any(|p| self.proof_matches(p)) {
+            if auth_zone
+                .proofs
+                .iter()
+                .any(|p| self.proof_matches(p, shadow_auth_zone))
+            {
                 return true;
             }
         }
@@ -103,17 +127,21 @@ pub enum HardProofRule {
 }
 
 impl HardProofRule {
-    pub fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
+    pub fn check(
+        &self,
+        auth_zones: &[&AuthZone],
+        shadow_auth_zone: &mut Option<&mut AuthZone>,
+    ) -> Result<(), MethodAuthorizationError> {
         match self {
             HardProofRule::This(resource) => {
-                if resource.check(auth_zones) {
+                if resource.check(auth_zones, shadow_auth_zone) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
                 }
             }
             HardProofRule::SomeOfResource(HardDecimal::Amount(amount), resource) => {
-                if resource.check_has_amount(*amount, auth_zones) {
+                if resource.check_has_amount(*amount, auth_zones, shadow_auth_zone) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
@@ -121,7 +149,7 @@ impl HardProofRule {
             }
             HardProofRule::AllOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
-                    if !resource.check(auth_zones) {
+                    if !resource.check(auth_zones, shadow_auth_zone) {
                         return Err(NotAuthorized);
                     }
                 }
@@ -130,7 +158,7 @@ impl HardProofRule {
             }
             HardProofRule::AnyOf(HardProofRuleResourceList::List(resources)) => {
                 for resource in resources {
-                    if resource.check(auth_zones) {
+                    if resource.check(auth_zones, shadow_auth_zone) {
                         return Ok(());
                     }
                 }
@@ -143,7 +171,7 @@ impl HardProofRule {
             ) => {
                 let mut left = count.clone();
                 for resource in resources {
-                    if resource.check(auth_zones) {
+                    if resource.check(auth_zones, shadow_auth_zone) {
                         left -= 1;
                         if left == 0 {
                             return Ok(());
@@ -165,17 +193,27 @@ pub enum HardAuthRule {
 }
 
 impl HardAuthRule {
-    fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
+    fn check(
+        &self,
+        auth_zones: &[&AuthZone],
+        shadow_auth_zone: &mut Option<&mut AuthZone>,
+    ) -> Result<(), MethodAuthorizationError> {
         match self {
-            HardAuthRule::ProofRule(rule) => rule.check(auth_zones),
+            HardAuthRule::ProofRule(rule) => rule.check(auth_zones, shadow_auth_zone),
             HardAuthRule::AnyOf(rules) => {
-                if !rules.iter().any(|r| r.check(auth_zones).is_ok()) {
+                if !rules
+                    .iter()
+                    .any(|r| r.check(auth_zones, shadow_auth_zone).is_ok())
+                {
                     return Err(NotAuthorized);
                 }
                 Ok(())
             }
             HardAuthRule::AllOf(rules) => {
-                if rules.iter().any(|r| r.check(auth_zones).is_err()) {
+                if rules
+                    .iter()
+                    .any(|r| r.check(auth_zones, shadow_auth_zone).is_err())
+                {
                     return Err(NotAuthorized);
                 }
                 Ok(())
@@ -194,9 +232,13 @@ pub enum MethodAuthorization {
 }
 
 impl MethodAuthorization {
-    pub fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
+    pub fn check(
+        &self,
+        auth_zones: &[&AuthZone],
+        shadow_auth_zone: &mut Option<&mut AuthZone>,
+    ) -> Result<(), MethodAuthorizationError> {
         match self {
-            MethodAuthorization::Protected(rule) => rule.check(auth_zones),
+            MethodAuthorization::Protected(rule) => rule.check(auth_zones, shadow_auth_zone),
             MethodAuthorization::AllowAll => Ok(()),
             MethodAuthorization::DenyAll => Err(MethodAuthorizationError::NotAuthorized),
             MethodAuthorization::Unsupported => Err(MethodAuthorizationError::UnsupportedMethod),

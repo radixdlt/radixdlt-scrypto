@@ -102,6 +102,7 @@ pub enum SNodeState {
     Transaction(TransactionProcess),
     PackageStatic,
     AuthZone(AuthZone),
+    CallerAuthZone(AuthZone),
     Worktop(Worktop),
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
@@ -203,6 +204,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
 
     /// The caller's auth zone
     caller_auth_zone: Option<&'r AuthZone>,
+    /// subset of the current auth zone filtered by the matching MethodAuthorizations
+    shadow_auth_zone: Option<AuthZone>,
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
@@ -231,6 +234,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             auth_zone,
             snode_refs: ComponentObjectRefs::new(),
             caller_auth_zone: None,
+            shadow_auth_zone: None,
             wasm_process_state: None,
         }
     }
@@ -407,6 +411,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
+            SNodeRef::CallerAuthZoneRef => {
+                // get the shadow of the real caller auth zone
+                if let Some(auth_zone) = self.shadow_auth_zone.take() {
+                    Ok((SNodeState::AuthZone(auth_zone), vec![]))
+                } else {
+                    Err(RuntimeError::AuthZoneDoesNotExist)
+                }
+            }
             SNodeRef::WorktopRef => {
                 if let Some(worktop) = self.worktop.take() {
                     Ok((SNodeState::Worktop(worktop), vec![]))
@@ -551,6 +563,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             }
         }?;
 
+        // new shadow_auth_zone for each call (populated only when there are some method_auths)
+        let mut process_shadow_auth_zone = None;
+
         // Authorization check
         if !method_auths.is_empty() {
             let mut auth_zones = Vec::new();
@@ -572,14 +587,18 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 _ => {}
             };
 
+            // new shadow_auth_zone for each call (when there are some method_auths)
+            process_shadow_auth_zone = Some(AuthZone::new());
+
             for method_auth in method_auths {
-                method_auth.check(&auth_zones).map_err(|error| {
-                    RuntimeError::AuthorizationError {
+                let mut shadow_auth_zone = process_shadow_auth_zone.as_mut();
+                method_auth
+                    .check(&auth_zones, &mut shadow_auth_zone)
+                    .map_err(|error| RuntimeError::AuthorizationError {
                         function: function.clone(),
                         authorization: method_auth,
                         error,
-                    }
-                })?;
+                    })?;
             }
         }
 
@@ -621,6 +640,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 if let Some(auth_zone) = &self.auth_zone {
                     process.caller_auth_zone = Option::Some(auth_zone);
                 }
+                if let Some(auth_zone) = process_shadow_auth_zone {
+                    process.shadow_auth_zone = Option::Some(auth_zone);
+                }
 
                 // invoke the main function
                 let (result, received_buckets, received_proofs) =
@@ -634,6 +656,9 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 match snode {
                     SNodeState::AuthZone(auth_zone) => {
                         self.auth_zone = Some(auth_zone);
+                    }
+                    SNodeState::CallerAuthZone(auth_zone) => {
+                        self.shadow_auth_zone = Some(auth_zone);
                     }
                     SNodeState::Worktop(worktop) => {
                         self.worktop = Some(worktop);
