@@ -24,16 +24,6 @@ macro_rules! resource_to_non_fungible_space {
     }};
 }
 
-// TODO: Replace NonFungible with real re address
-// TODO: Move this logic into application layer
-macro_rules! non_fungible_to_re_address {
-    ($non_fungible:expr) => {{
-        let mut addr = resource_to_non_fungible_space!($non_fungible.resource_address());
-        addr.extend($non_fungible.non_fungible_id().to_vec());
-        addr
-    }};
-}
-
 pub struct BorrowedSNodes {
     borrowed_substates: HashSet<Address>,
     borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
@@ -74,9 +64,7 @@ pub enum Address {
     Component(ComponentAddress),
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
-    NonFungibleEntry(NonFungibleAddress),
     LazyMap(ComponentAddress, LazyMapId),
-    LazyMapEntry(ComponentAddress, LazyMapId, Vec<u8>),
 }
 
 impl Address {
@@ -86,16 +74,9 @@ impl Address {
             Address::Component(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
             Address::NonFungibleSet(resource_address) => resource_to_non_fungible_space!(resource_address.clone()),
-            Address::NonFungibleEntry(non_fungible_address) => non_fungible_to_re_address!(non_fungible_address),
             Address::LazyMap(component_address, lazy_map_id) => {
                 let mut entry_address = scrypto_encode(component_address);
                 entry_address.extend(scrypto_encode(lazy_map_id));
-                entry_address
-            }
-            Address::LazyMapEntry(component_address, lazy_map_id, key) => {
-                let mut entry_address = scrypto_encode(component_address);
-                entry_address.extend(scrypto_encode(lazy_map_id));
-                entry_address.extend(key.to_vec());
                 entry_address
             }
         }
