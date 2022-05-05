@@ -20,6 +20,7 @@ use wasmi::*;
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::*;
 use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
+use crate::engine::track::SubstateValue;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
@@ -384,9 +385,13 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     .map_err(RuntimeError::WorktopError)
             }
             SNodeState::Scrypto(actor, component_state) => {
-                let package = self.track.get_package(actor.package_address()).ok_or(
+                let substate_value = self.track.read_value(actor.package_address().clone()).ok_or(
                     RuntimeError::PackageNotFound(actor.package_address().clone()),
                 )?;
+                let package = match substate_value {
+                    SubstateValue::Package(package) => package,
+                    _ => panic!("Value is not a package"),
+                };
 
                 if !package.contains_blueprint(actor.blueprint_name()) {
                     return Err(RuntimeError::BlueprintNotFound(
@@ -559,10 +564,14 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                         let blueprint_name = component.blueprint_name().to_string();
                         let export_name = format!("{}_main", blueprint_name);
 
-                        let package = self
-                            .track
-                            .get_package(&package_address)
-                            .ok_or(RuntimeError::PackageNotFound(package_address))?;
+                        let substate_value = self.track.read_value(package_address.clone()).ok_or(
+                            RuntimeError::PackageNotFound(package_address),
+                        )?;
+                        let package = match substate_value {
+                            SubstateValue::Package(package) => package,
+                            _ => panic!("Value is not a package"),
+                        };
+
                         // TODO: Remove clone
                         let schema = package
                             .load_blueprint_schema(&blueprint_name)
@@ -602,11 +611,12 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let resource_address = bucket.resource_address();
-                let method_auth = self
-                    .track
-                    .borrow_resource_manager(&resource_address)
-                    .unwrap()
-                    .get_auth(&function, &args);
+                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let resource_manager = match substate_value {
+                    SubstateValue::Resource(resource_manager) => resource_manager,
+                    _ => panic!("Value is not a resource manager"),
+                };
+                let method_auth = resource_manager.get_auth(&function, &args);
                 Ok((Consumed(Some(ConsumedSNodeState::Bucket(bucket))), vec![method_auth.clone()]))
             }
             SNodeRef::BucketRef(bucket_id) => {
@@ -615,11 +625,13 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let resource_address = bucket.resource_address();
-                let method_auth = self
-                    .track
-                    .borrow_resource_manager(&resource_address)
-                    .unwrap()
-                    .get_auth(&function, &args);
+
+                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let resource_manager = match substate_value {
+                    SubstateValue::Resource(resource_manager) => resource_manager,
+                    _ => panic!("Value is not a resource manager"),
+                };
+                let method_auth = resource_manager.get_auth(&function, &args);
                 Ok((
                     Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
                     vec![method_auth.clone()],
@@ -646,11 +658,12 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 };
 
                 let resource_address = vault.resource_address();
-                let method_auth = self
-                    .track
-                    .borrow_resource_manager(&resource_address)
-                    .unwrap()
-                    .get_auth(&function, &args);
+                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let resource_manager = match substate_value {
+                    SubstateValue::Resource(resource_manager) => resource_manager,
+                    _ => panic!("Value is not a resource manager"),
+                };
+                let method_auth = resource_manager.get_auth(&function, &args);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(vault_id.clone(), component, vault)),
                     vec![method_auth.clone()],
@@ -1034,10 +1047,16 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetComponentInfoInput,
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        let component = self
+        let substate_value = self
             .track
-            .borrow_component(input.component_address)
+            .read_value(input.component_address.clone())
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
+
+        let component = if let SubstateValue::Component(component) = substate_value {
+            component
+        } else {
+            panic!("Value is not a component");
+        };
 
         Ok(GetComponentInfoOutput {
             package_address: component.package_address(),
