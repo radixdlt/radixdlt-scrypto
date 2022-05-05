@@ -73,7 +73,8 @@ pub enum Address {
     Resource(ResourceAddress),
     Component(ComponentAddress),
     Package(PackageAddress),
-    NonFungible(NonFungibleAddress),
+    NonFungibleSet(ResourceAddress),
+    NonFungibleEntry(NonFungibleAddress),
     LazyMapEntry(ComponentAddress, LazyMapId, Vec<u8>),
 }
 
@@ -83,7 +84,8 @@ impl Address {
             Address::Resource(resource_address) => scrypto_encode(resource_address),
             Address::Component(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
-            Address::NonFungible(non_fungible_address) => non_fungible_to_re_address!(non_fungible_address),
+            Address::NonFungibleSet(resource_address) => resource_to_non_fungible_space!(resource_address.clone()),
+            Address::NonFungibleEntry(non_fungible_address) => non_fungible_to_re_address!(non_fungible_address),
             Address::LazyMapEntry(component_address, lazy_map_id, key) => {
                 let mut entry_address = scrypto_encode(component_address);
                 entry_address.extend(scrypto_encode(lazy_map_id));
@@ -142,6 +144,7 @@ impl Into<ResourceAddress> for Address {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum SubstateValue {
     Resource(ResourceManager),
     Component(Component),
@@ -413,20 +416,27 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
-    pub fn get_non_fungible(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<NonFungible> {
-        let address = Address::NonFungible(non_fungible_address.clone());
-        if let Some(cur) = self.up_substates.get(&address.encode()) {
-            if let SubstateValue::NonFungible(non_fungible) = cur {
-                return non_fungible.clone();
-            } else {
-                panic!("Value is not a nonfungible.");
-            }
+    pub fn read_keyed_value(
+    &mut self,
+        parent_address: Address,
+        key: Vec<u8>,
+    ) -> SubstateValue {
+        let mut address = parent_address.encode();
+        address.extend(key);
+        if let Some(cur) = self.up_substates.get(&address) {
+            return cur.clone();
         }
-
-        self.substate_store.get_substate(&address.encode()).map(|r| scrypto_decode(&r.value).unwrap())
+        match parent_address {
+            Address::NonFungibleSet(_) => {
+                self.substate_store.get_substate(&address)
+                    .map(|r| {
+                        let non_fungible = scrypto_decode(&r.value).unwrap();
+                        SubstateValue::NonFungible(non_fungible)
+                    })
+                    .unwrap_or(SubstateValue::NonFungible(None))
+            },
+            _ => panic!("oops"),
+        }
     }
 
     /// Sets a non-fungible.
@@ -435,7 +445,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         non_fungible_address: NonFungibleAddress,
         non_fungible: Option<NonFungible>,
     ) {
-        let address = Address::NonFungible(non_fungible_address.clone()).encode();
+        let address = Address::NonFungibleEntry(non_fungible_address.clone()).encode();
 
         if self.up_substates.remove(&address).is_none() {
             let cur: Option<Substate> = self.substate_store.get_substate(&address);

@@ -1352,7 +1352,12 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         &mut self,
         non_fungible_address: &NonFungibleAddress,
     ) -> Option<NonFungible> {
-        self.track.get_non_fungible(non_fungible_address)
+        let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
+        if let SubstateValue::NonFungible(non_fungible) = self.track.read_keyed_value(parent_address, non_fungible_address.non_fungible_id().to_vec()) {
+            non_fungible
+        } else {
+            panic!("Value is not a non fungible");
+        }
     }
 
     fn set_non_fungible(
