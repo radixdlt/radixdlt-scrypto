@@ -189,6 +189,17 @@ impl Into<SubstateValue> for ResourceManager {
     }
 }
 
+impl Into<SubstateValue> for Option<NonFungible> {
+    fn into(self) -> SubstateValue {
+        SubstateValue::NonFungible(self)
+    }
+}
+
+impl Into<SubstateValue> for Option<Vec<u8>> {
+    fn into(self) -> SubstateValue {
+        SubstateValue::LazyMapEntry(self)
+    }
+}
 
 impl Into<Component> for SubstateValue {
     fn into(self) -> Component {
@@ -422,8 +433,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
-    pub fn read_keyed_value(
-    &mut self,
+    pub fn read_key_value(
+        &mut self,
         parent_address: Address,
         key: Vec<u8>,
     ) -> SubstateValue {
@@ -454,53 +465,28 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Sets a non-fungible.
-    pub fn set_non_fungible(
+    pub fn set_key_value<V: Into<SubstateValue>>(
         &mut self,
-        non_fungible_address: NonFungibleAddress,
-        non_fungible: Option<NonFungible>,
-    ) {
-        let address = Address::NonFungibleEntry(non_fungible_address.clone()).encode();
-
-        if self.up_substates.remove(&address).is_none() {
-            let cur: Option<Substate> = self.substate_store.get_substate(&address);
-            if let Some(Substate { value: _, phys_id }) = cur {
-                self.downed_substates.push(phys_id);
-            } else {
-                let space_address = resource_to_non_fungible_space!(non_fungible_address.resource_address());
-                let parent_id = self.get_substate_parent_id(&space_address);
-                let virtual_substate_id = VirtualSubstateId(parent_id, non_fungible_address.non_fungible_id().to_vec());
-                self.down_virtual_substates.push(virtual_substate_id);
-            }
-        };
-
-        self.up_substates.insert(address, SubstateValue::NonFungible(non_fungible));
-    }
-
-    pub fn put_lazy_map_entry(
-        &mut self,
-        component_address: ComponentAddress,
-        lazy_map_id: LazyMapId,
+        parent_address: Address,
         key: Vec<u8>,
-        value: Option<Vec<u8>>,
+        value: V,
     ) {
-        let address = Address::LazyMapEntry(component_address.clone(), lazy_map_id.clone(), key.clone()).encode();
+        let mut address = parent_address.encode();
+        address.extend(key.clone());
 
         if self.up_substates.remove(&address).is_none() {
             let cur: Option<Substate> = self.substate_store.get_substate(&address);
             if let Some(Substate { value: _, phys_id }) = cur {
                 self.downed_substates.push(phys_id);
             } else {
-                let mut space_address = scrypto_encode(&component_address);
-                space_address.extend(scrypto_encode(&lazy_map_id));
-                let parent_id = self.get_substate_parent_id(&space_address);
-                let virtual_substate_id = VirtualSubstateId(parent_id, key.to_vec());
+                let parent_id = self.get_substate_parent_id(&parent_address.encode());
+                let virtual_substate_id = VirtualSubstateId(parent_id, key);
                 self.down_virtual_substates.push(virtual_substate_id);
             }
         };
 
-        self.up_substates.insert(address, SubstateValue::LazyMapEntry(value));
+        self.up_substates.insert(address, value.into());
     }
-
 
     pub fn borrow_vault_mut(&mut self, component_address: &ComponentAddress, vid: &VaultId) -> Vault {
         let canonical_id = (component_address.clone(), vid.clone());

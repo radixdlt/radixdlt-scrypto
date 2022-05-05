@@ -263,13 +263,15 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
             self.insert_new_lazy_map(component_address, lazy_map_id);
             for (k, v) in unclaimed.lazy_map {
-                self.put_lazy_map_entry(component_address, lazy_map_id, k, Some(v));
+                let parent_address = Address::LazyMap(component_address, lazy_map_id);
+                self.set_key_value(parent_address, k, Some(v));
             }
 
             for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
                 self.insert_new_lazy_map(component_address, child_lazy_map_id);
                 for (k, v) in child_lazy_map {
-                    self.put_lazy_map_entry(component_address, child_lazy_map_id, k, Some(v));
+                    let parent_address = Address::LazyMap(component_address, child_lazy_map_id);
+                    self.set_key_value(parent_address, k, Some(v));
                 }
             }
             for (vault_id, vault) in unclaimed.descendent_vaults {
@@ -1154,7 +1156,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         }
 
         if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
-            let substate_value = self.track.read_keyed_value(
+            let substate_value = self.track.read_key_value(
                 Address::LazyMap(*component_address, input.lazy_map_id),
                 input.key,
             );
@@ -1199,7 +1201,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                         return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
                     }
                     let parent_address = Address::LazyMap(*component_address, input.lazy_map_id);
-                    let old_substate_value = self.track.read_keyed_value(
+                    let old_substate_value = self.track.read_key_value(
                         parent_address,
                         input.key.clone(),
                     );
@@ -1249,9 +1251,9 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     .insert_objects_into_map(new_objects, &root);
             }
             Committed { component_address } => {
-                self.track.put_lazy_map_entry(
-                    component_address,
-                    input.lazy_map_id,
+                let parent_address = Address::LazyMap(component_address, input.lazy_map_id);
+                self.track.set_key_value(
+                    parent_address,
                     input.key,
                     Some(input.value),
                 );
@@ -1362,7 +1364,8 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         non_fungible_address: &NonFungibleAddress,
     ) -> Option<NonFungible> {
         let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
-        if let SubstateValue::NonFungible(non_fungible) = self.track.read_keyed_value(parent_address, non_fungible_address.non_fungible_id().to_vec()) {
+        let key = non_fungible_address.non_fungible_id().to_vec();
+        if let SubstateValue::NonFungible(non_fungible) = self.track.read_key_value(parent_address, key) {
             non_fungible
         } else {
             panic!("Value is not a non fungible");
@@ -1374,8 +1377,9 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         non_fungible_address: NonFungibleAddress,
         non_fungible: Option<NonFungible>,
     ) {
-        self.track
-            .set_non_fungible(non_fungible_address, non_fungible)
+        let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
+        let key = non_fungible_address.non_fungible_id().to_vec();
+        self.track.set_key_value(parent_address, key, non_fungible)
     }
 
     fn borrow_global_mut_resource_manager(
