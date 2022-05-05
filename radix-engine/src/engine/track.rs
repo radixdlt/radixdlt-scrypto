@@ -65,6 +65,7 @@ pub enum Address {
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
     LazyMap(ComponentAddress, LazyMapId),
+    Vault(ComponentAddress, VaultId),
 }
 
 impl Address {
@@ -73,6 +74,11 @@ impl Address {
             Address::Resource(resource_address) => scrypto_encode(resource_address),
             Address::Component(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
+            Address::Vault(component_address, vault_id) => {
+                let mut vault_address = scrypto_encode(component_address);
+                vault_address.extend(scrypto_encode(vault_id));
+                vault_address
+            },
             Address::NonFungibleSet(resource_address) => resource_to_non_fungible_space!(resource_address.clone()),
             Address::LazyMap(component_address, lazy_map_id) => {
                 let mut entry_address = scrypto_encode(component_address);
@@ -98,6 +104,12 @@ impl Into<Address> for ComponentAddress {
 impl Into<Address> for ResourceAddress {
     fn into(self) -> Address {
         Address::Resource(self)
+    }
+}
+
+impl Into<Address> for (ComponentAddress, VaultId) {
+    fn into(self) -> Address {
+        Address::Vault(self.0, self.1)
     }
 }
 
@@ -131,11 +143,12 @@ impl Into<ResourceAddress> for Address {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum SubstateValue {
     Resource(ResourceManager),
     Component(Component),
     Package(Package),
+    Vault(Vault),
     NonFungible(Option<NonFungible>),
     LazyMapEntry(Option<Vec<u8>>),
 }
@@ -146,6 +159,7 @@ impl SubstateValue {
             SubstateValue::Resource(resource_manager) => scrypto_encode(resource_manager),
             SubstateValue::Package(package) => scrypto_encode(package),
             SubstateValue::Component(component) => scrypto_encode(component),
+            SubstateValue::Vault(vault) => scrypto_encode(vault),
             SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
             SubstateValue::LazyMapEntry(value) => scrypto_encode(value),
         }
@@ -167,6 +181,12 @@ impl Into<SubstateValue> for Component {
 impl Into<SubstateValue> for ResourceManager {
     fn into(self) -> SubstateValue {
         SubstateValue::Resource(self)
+    }
+}
+
+impl Into<SubstateValue> for Vault {
+    fn into(self) -> SubstateValue {
+        SubstateValue::Vault(self)
     }
 }
 
@@ -198,6 +218,16 @@ impl Into<ResourceManager> for SubstateValue {
             resource_manager
         } else {
             panic!("Not a resource manager");
+        }
+    }
+}
+
+impl Into<Vault> for SubstateValue {
+    fn into(self) -> Vault {
+        if let SubstateValue::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
         }
     }
 }
@@ -342,6 +372,28 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         address
     }
 
+    pub fn insert_new_lazy_map(
+        &mut self,
+        component_address: ComponentAddress,
+        lazy_map_id: LazyMapId,
+    ) {
+        let mut space_address = scrypto_encode(&component_address);
+        space_address.extend(scrypto_encode(&lazy_map_id));
+        self.up_virtual_substate_space.insert(space_address);
+    }
+
+    /// Inserts a new vault.
+    pub fn insert_new_vault(
+        &mut self,
+        component_address: ComponentAddress,
+        vault_id: VaultId,
+        vault: Vault,
+    ) {
+        let mut vault_address = scrypto_encode(&component_address);
+        vault_address.extend(scrypto_encode(&vault_id));
+        self.up_substates.insert(vault_address, SubstateValue::Vault(vault));
+    }
+
     /// Returns an immutable reference to a value, if exists.
     pub fn read_value<A: Into<Address>>(&mut self, addr: A) -> Option<&SubstateValue> {
         let address: Address = addr.into();
@@ -398,6 +450,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     let resource_manager = scrypto_decode(&substate.value).unwrap();
                     Ok(SubstateValue::Resource(resource_manager))
                 }
+                Address::Vault(..) => {
+                    let vault = scrypto_decode(&substate.value).unwrap();
+                    Ok(SubstateValue::Vault(vault))
+                }
                 _ => panic!("Attempting to borrow unsupported value"),
             }
         } else {
@@ -422,7 +478,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let mut address = parent_address.encode();
         address.extend(key);
         if let Some(cur) = self.up_substates.get(&address) {
-            return cur.clone();
+            match cur {
+                SubstateValue::LazyMapEntry(e) => return SubstateValue::LazyMapEntry(e.clone()),
+                SubstateValue::NonFungible(n) => return SubstateValue::NonFungible(n.clone()),
+                _ => panic!("Unsupported key value"),
+            }
         }
         match parent_address {
             Address::NonFungibleSet(_) => {
@@ -467,73 +527,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         };
 
         self.up_substates.insert(address, value.into());
-    }
-
-    pub fn borrow_vault_mut(&mut self, component_address: &ComponentAddress, vid: &VaultId) -> Vault {
-        let canonical_id = (component_address.clone(), vid.clone());
-        if self.borrowed_vaults.contains_key(&canonical_id) {
-            panic!("Invalid vault reentrancy");
-        }
-
-        if let Some(SubstateUpdate { value, prev_id }) = self.vaults.remove(&canonical_id) {
-            self.borrowed_vaults.insert(canonical_id, prev_id);
-            return value;
-        }
-
-        if let Some((vault, substate_id)) = self.substate_store.get_decoded_child_substate(component_address, vid) {
-            self.borrowed_vaults
-                .insert(canonical_id, Some(substate_id));
-            return vault;
-        }
-
-        panic!("Should not get here");
-    }
-
-    pub fn return_borrowed_vault(
-        &mut self,
-        component_address: &ComponentAddress,
-        vid: &VaultId,
-        vault: Vault,
-    ) {
-        let canonical_id = (component_address.clone(), vid.clone());
-        if let Some(prev_id) = self.borrowed_vaults.remove(&canonical_id) {
-            self.vaults.insert(
-                canonical_id,
-                SubstateUpdate {
-                    prev_id,
-                    value: vault,
-                },
-            );
-        } else {
-            panic!("Vault was never borrowed");
-        }
-    }
-
-    /// Inserts a new vault.
-    pub fn insert_new_vault(
-        &mut self,
-        component_address: ComponentAddress,
-        vault_id: VaultId,
-        vault: Vault,
-    ) {
-        let canonical_id = (component_address, vault_id);
-        self.vaults.insert(
-            canonical_id,
-            SubstateUpdate {
-                prev_id: None,
-                value: vault,
-            },
-        );
-    }
-
-    pub fn insert_new_lazy_map(
-        &mut self,
-        component_address: ComponentAddress,
-        lazy_map_id: LazyMapId,
-    ) {
-        let mut space_address = scrypto_encode(&component_address);
-        space_address.extend(scrypto_encode(&lazy_map_id));
-        self.up_virtual_substate_space.insert(space_address);
     }
 
     fn get_substate_parent_id(

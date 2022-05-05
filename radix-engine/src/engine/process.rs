@@ -148,7 +148,7 @@ impl BorrowedSNodeState {
             }
             BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
                 if let Some(component_address) = maybe_component_address {
-                    process.track.return_borrowed_vault(&component_address, &vault_id, vault);
+                    process.track.return_borrowed_global_mut_value((component_address, vault_id), vault);
                 } else {
                     process.owned_snodes.return_borrowed_vault_mut(vault);
                 }
@@ -665,7 +665,13 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 } else if !self.snode_refs.vault_ids.contains(vault_id) {
                     return Err(RuntimeError::VaultNotFound(*vault_id));
                 } else if let Some(WasmProcess { interpreter_state: InterpreterState::Component { component_address, .. }, .. }) = &self.wasm_process_state {
-                    let vault = self.track.borrow_vault_mut(component_address, vault_id);
+                    let vault: Vault = self.track.borrow_global_mut_value((*component_address, *vault_id))
+                        .map_err(|e| {
+                            match e {
+                                TrackError::NotFound => RuntimeError::VaultNotFound(vault_id.clone()),
+                                TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
+                            }
+                        })?.into();
                     (Some(*component_address), vault)
                 } else {
                     panic!("Should never get here");
