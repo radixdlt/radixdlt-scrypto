@@ -229,7 +229,6 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     non_fungibles: IndexMap<NonFungibleAddress, KeyedSubstateUpdate<Option<NonFungible>>>,
     lazy_map_entries: IndexMap<(ComponentAddress, LazyMapId, Vec<u8>), KeyedSubstateUpdate<Vec<u8>>>,
 
-    // TODO: Change this interface to take/put
     vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
     borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 }
@@ -313,7 +312,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.logs.push((level, message));
     }
 
-    /// Inserts a new package.
+    /// Creates a new uuid key with a given value
     pub fn create_uuid_value<T: Into<SubstateValue>>(&mut self, value: T) -> Address {
         let substate_value = value.into();
         let address = match substate_value {
