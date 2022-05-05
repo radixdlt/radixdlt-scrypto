@@ -226,7 +226,7 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     downed_substates: Vec<PhysicalSubstateId>,
     down_virtual_substates: Vec<VirtualSubstateId>,
-    up_substates: IndexMap<Address, SubstateValue>,
+    up_substates: IndexMap<Vec<u8>, SubstateValue>,
     up_virtual_substate_space: IndexSet<Vec<u8>>,
 
     // TODO: Change this interface to take/put
@@ -337,7 +337,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         };
 
         self.new_addresses.push(address.clone());
-        self.up_substates.insert(address.clone(), substate_value);
+        self.up_substates.insert(address.encode(), substate_value);
         address
     }
 
@@ -345,7 +345,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn read_value<A: Into<Address>>(&mut self, addr: A) -> Option<&SubstateValue> {
         let address: Address = addr.into();
 
-        if let Some(v) = self.up_substates.get(&address) {
+        if let Some(v) = self.up_substates.get(&address.encode()) {
             return Some(v);
         }
 
@@ -377,7 +377,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     // TODO: Add checks to see verify that immutable values aren't being borrowed
     pub fn borrow_global_mut_value<A: Into<Address>>(&mut self, addr: A) -> Result<SubstateValue, TrackError> {
         let address = addr.into();
-        let maybe_value = self.up_substates.remove(&address);
+        let maybe_value = self.up_substates.remove(&address.encode());
         if let Some(value) = maybe_value {
             self.borrowed_substates.insert(address);
             Ok(value)
@@ -409,7 +409,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if !self.borrowed_substates.remove(&address) {
             panic!("Value was never borrowed");
         }
-        self.up_substates.insert(address, value.into());
+        self.up_substates.insert(address.encode(), value.into());
     }
 
     /// Returns an immutable reference to a non-fungible, if exists.
@@ -418,7 +418,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         non_fungible_address: &NonFungibleAddress,
     ) -> Option<NonFungible> {
         let address = Address::NonFungible(non_fungible_address.clone());
-        if let Some(cur) = self.up_substates.get(&address) {
+        if let Some(cur) = self.up_substates.get(&address.encode()) {
             if let SubstateValue::NonFungible(non_fungible) = cur {
                 return non_fungible.clone();
             } else {
@@ -435,10 +435,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         non_fungible_address: NonFungibleAddress,
         non_fungible: Option<NonFungible>,
     ) {
-        let address = Address::NonFungible(non_fungible_address.clone());
+        let address = Address::NonFungible(non_fungible_address.clone()).encode();
 
         if self.up_substates.remove(&address).is_none() {
-            let cur: Option<Substate> = self.substate_store.get_substate(&address.encode());
+            let cur: Option<Substate> = self.substate_store.get_substate(&address);
             if let Some(Substate { value: _, phys_id }) = cur {
                 self.downed_substates.push(phys_id);
             } else {
@@ -458,7 +458,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         lazy_map_id: &LazyMapId,
         key: &[u8],
     ) -> Option<Vec<u8>> {
-        let address = Address::LazyMapEntry(component_address.clone(), lazy_map_id.clone(), key.to_vec());
+        let address = Address::LazyMapEntry(component_address.clone(), lazy_map_id.clone(), key.to_vec()).encode();
         if let Some(cur) = self.up_substates.get(&address) {
             if let SubstateValue::LazyMapEntry(value) = cur {
                 return Some(value.clone());
@@ -467,7 +467,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             }
         }
 
-        self.substate_store.get_substate(&address.encode()).map(|r| r.value)
+        self.substate_store.get_substate(&address).map(|r| r.value)
     }
 
     pub fn put_lazy_map_entry(
@@ -477,10 +477,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         key: Vec<u8>,
         value: Vec<u8>,
     ) {
-        let address = Address::LazyMapEntry(component_address.clone(), lazy_map_id.clone(), key.clone());
+        let address = Address::LazyMapEntry(component_address.clone(), lazy_map_id.clone(), key.clone()).encode();
 
         if self.up_substates.remove(&address).is_none() {
-            let cur: Option<Substate> = self.substate_store.get_substate(&address.encode());
+            let cur: Option<Substate> = self.substate_store.get_substate(&address);
             if let Some(Substate { value: _, phys_id }) = cur {
                 self.downed_substates.push(phys_id);
             } else {
@@ -643,7 +643,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
         }
         for (address, value) in self.up_substates.drain(RangeFull) {
-            store_instructions.push(SubstateOperation::Up(address.encode(), value.encode()));
+            store_instructions.push(SubstateOperation::Up(address, value.encode()));
         }
         for space_address in self.up_virtual_substate_space.drain(RangeFull) {
             store_instructions.push(SubstateOperation::VirtualUp(space_address));
