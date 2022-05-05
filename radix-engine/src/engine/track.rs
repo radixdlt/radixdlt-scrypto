@@ -334,7 +334,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.logs.push((level, message));
     }
 
-    /// Inserts a new package.
+    /// Creates a new uuid key with a given value
     pub fn create_uuid_value<T: Into<SubstateValue>>(&mut self, value: T) -> Address {
         let substate_value = value.into();
         let address = match substate_value {
