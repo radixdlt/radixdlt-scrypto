@@ -50,8 +50,14 @@ impl BasicAbiProvider {
         let tx_hash = hash(self.substate_store.get_nonce().to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
-        self.substate_store
-            .put_encoded_substate(package_address, &package, id_gen.next());
+        self.substate_store.put_substate(
+            &scrypto_encode(package_address),
+            Substate {
+                value: scrypto_encode(&package),
+                phys_id: id_gen.next(),
+            },
+        );
+
         self
     }
 }

@@ -81,10 +81,8 @@ fn create_genesis<S: ReadableSubstateStore>(mut track: Track<S>) -> TrackReceipt
 }
 
 pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_store: &mut S) {
-    let package: Option<Package> = substate_store
-        .get_decoded_substate(&SYSTEM_PACKAGE)
-        .map(|(package, _)| package);
-    if package.is_none() {
+    let system_substate = substate_store.get_substate(&scrypto_encode(&SYSTEM_PACKAGE));
+    if system_substate.is_none() {
         let track = Track::new(substate_store, Hash([0u8; 32]), vec![]);
         let receipt = create_genesis(track);
         receipt.substates.commit(substate_store);

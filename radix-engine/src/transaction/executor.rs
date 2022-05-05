@@ -2,6 +2,7 @@ use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
 use scrypto::rust::string::ToString;
 use scrypto::{abi, rule, access_rule_node};
 

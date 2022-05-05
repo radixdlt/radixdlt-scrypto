@@ -62,23 +62,6 @@ pub trait ReadableSubstateStore {
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, address: &[u8], substate: Substate);
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId);
-
-    fn put_encoded_substate<A: Encode, V: Encode>(
-        &mut self,
-        address: &A,
-        value: &V,
-        phys_id: PhysicalSubstateId,
-    ) {
-        self.put_substate(
-            &scrypto_encode(address),
-            Substate {
-                value: scrypto_encode(value),
-                phys_id,
-            },
-        );
-    }
-
     fn set_epoch(&mut self, epoch: u64);
-
     fn increase_nonce(&mut self);
 }
