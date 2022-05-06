@@ -4,9 +4,9 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::AccessRule::{AllowAll, DenyAll};
-use scrypto::prelude::ResourceMethod::Withdraw;
+use scrypto::prelude::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::Mutability::LOCKED;
-use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
+use scrypto::resource::ResourceMethodAuthKey::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
 use scrypto::resource::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
@@ -15,6 +15,7 @@ use scrypto::rust::vec::*;
 use scrypto::values::ScryptoValue;
 
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
+use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 
 /// Converts soft authorization rule to a hard authorization rule.
 /// Currently required as all auth is defined by soft authorization rules.
@@ -42,15 +43,20 @@ pub enum ResourceManagerError {
     CouldNotCreateVault,
 }
 
+enum MethodAccessRuleMethod {
+    Lock(),
+    Update(AccessRule),
+}
+
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-struct MethodEntry {
+struct MethodAccessRule {
     auth: MethodAuthorization,
     update_auth: MethodAuthorization,
 }
 
-impl MethodEntry {
+impl MethodAccessRule {
     pub fn new(entry: (AccessRule, Mutability)) -> Self {
-        MethodEntry {
+        MethodAccessRule {
             auth: convert_auth!(entry.0),
             update_auth: match entry.1 {
                 Mutability::LOCKED => MethodAuthorization::DenyAll,
@@ -63,30 +69,21 @@ impl MethodEntry {
         &self.auth
     }
 
-    pub fn get_update_auth(&self, args: &[ScryptoValue]) -> &MethodAuthorization {
-        let method: String = match scrypto_decode(&args[0].raw) {
-            Ok(m) => m,
-            _ => return &MethodAuthorization::Unsupported,
-        };
-        match method.as_str() {
-            "lock" | "update" => &self.update_auth,
-            _ => &MethodAuthorization::Unsupported,
+    pub fn get_update_auth(&self, method: MethodAccessRuleMethod) -> &MethodAuthorization {
+        match method {
+            MethodAccessRuleMethod::Lock() | MethodAccessRuleMethod::Update(_) => &self.update_auth
         }
     }
 
     pub fn main(
         &mut self,
-        method: &str,
-        args: Vec<ScryptoValue>,
+        method: MethodAccessRuleMethod
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match method {
-            "lock" => self.lock(),
-            "update" => {
-                let auth: AccessRule = scrypto_decode(&args[0].raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                self.update(auth);
+            MethodAccessRuleMethod::Lock() => self.lock(),
+            MethodAccessRuleMethod::Update(method_auth) => {
+                self.update(method_auth);
             }
-            _ => return Err(ResourceManagerError::MethodNotFound(method.to_string())),
         }
 
         Ok(ScryptoValue::from_value(&()))
@@ -101,13 +98,20 @@ impl MethodEntry {
     }
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+enum ResourceMethodRule {
+    Public,
+    Protected(ResourceMethodAuthKey),
+}
+
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    method_table: HashMap<String, Option<ResourceMethod>>,
-    authorization: HashMap<ResourceMethod, MethodEntry>,
+    method_table: HashMap<String, ResourceMethodRule>,
+    vault_method_table: HashMap<String, ResourceMethodRule>,
+    authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
     total_supply: Decimal,
 }
 
@@ -115,56 +119,49 @@ impl ResourceManager {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        mut auth: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+        mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
-        let mut method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
-        method_table.insert("mint".to_string(), Some(Mint));
-        method_table.insert("burn".to_string(), Some(Burn));
-        method_table.insert("take_from_vault".to_string(), Some(Withdraw));
-        method_table.insert("put_into_vault".to_string(), Some(Deposit));
-        method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
-        if let ResourceType::NonFungible = resource_type {
-            method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
+        let mut vault_method_table: HashMap<String, ResourceMethodRule> = HashMap::new();
+        vault_method_table.insert("take".to_string(), Protected(Withdraw));
+        vault_method_table.insert("put".to_string(), Protected(Deposit));
+        for pub_method in [
+            "get_amount",
+            "get_resource_address",
+            "get_non_fungible_ids",
+            "create_proof",
+            "create_proof_by_amount",
+            "create_proof_by_ids",
+        ] {
+            vault_method_table.insert(pub_method.to_string(), Public);
         }
+        // Non Fungible methods
+        vault_method_table.insert("take_non_fungibles".to_string(), Protected(Withdraw));
 
+
+        let mut method_table: HashMap<String, ResourceMethodRule> = HashMap::new();
+        method_table.insert("mint".to_string(), Protected(Mint));
+        method_table.insert("burn".to_string(), Protected(Burn));
+        method_table.insert("update_metadata".to_string(), Protected(UpdateMetadata));
         for pub_method in [
             "create_bucket",
-            "create_bucket_proof",
-            "create_empty_bucket",
             "get_metadata",
             "get_resource_type",
             "get_total_supply",
-            "take_from_bucket",
-            "put_into_bucket",
-            "get_bucket_amount",
-            "get_bucket_resource_address",
             "create_vault",
-            "get_vault_amount",
-            "get_vault_resource_address",
-            "create_vault_proof",
-            "create_vault_proof_by_amount",
         ] {
-            method_table.insert(pub_method.to_string(), None);
+            method_table.insert(pub_method.to_string(), Public);
         }
 
-        if let ResourceType::NonFungible = resource_type {
-            method_table.insert(
-                "update_non_fungible_mutable_data".to_string(),
-                Some(UpdateNonFungibleData),
-            );
-            for pub_method in [
-                "take_non_fungibles_from_bucket",
-                "non_fungible_exists",
-                "get_non_fungible",
-                "get_non_fungible_ids_in_bucket",
-                "get_non_fungible_ids_in_vault",
-                "create_vault_proof_by_ids",
-            ] {
-                method_table.insert(pub_method.to_string(), None);
-            }
+        // Non Fungible methods
+        method_table.insert("update_non_fungible_data".to_string(), Protected(UpdateNonFungibleData));
+        for pub_method in [
+            "non_fungible_exists",
+            "get_non_fungible",
+        ] {
+            method_table.insert(pub_method.to_string(), Public);
         }
 
-        let mut authorization: HashMap<ResourceMethod, MethodEntry> = HashMap::new();
+        let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();
         for (auth_entry_key, default) in [
             (Mint, (DenyAll, LOCKED)),
             (Burn, (DenyAll, LOCKED)),
@@ -174,13 +171,14 @@ impl ResourceManager {
             (UpdateNonFungibleData, (DenyAll, LOCKED)),
         ] {
             let entry = auth.remove(&auth_entry_key).unwrap_or(default);
-            authorization.insert(auth_entry_key, MethodEntry::new(entry));
+            authorization.insert(auth_entry_key, MethodAccessRule::new(entry));
         }
 
         let resource_manager = Self {
             resource_type,
             metadata,
             method_table,
+            vault_method_table,
             authorization,
             total_supply: 0.into(),
         };
@@ -188,25 +186,62 @@ impl ResourceManager {
         Ok(resource_manager)
     }
 
-    pub fn get_auth(&self, method_name: &str, args: &[ScryptoValue]) -> &MethodAuthorization {
-        if method_name.eq("method_auth") {
-            let method: ResourceMethod = match scrypto_decode(&args[0].raw) {
-                Ok(r) => r,
-                Err(_) => return &MethodAuthorization::Unsupported,
-            };
+    pub fn get_vault_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
+        let method: VaultMethod = match scrypto_decode(&arg.raw) {
+            Ok(m) => m,
+            Err(_) => return &MethodAuthorization::Unsupported,
+        };
 
-            match self.authorization.get(&method) {
-                None => &MethodAuthorization::Unsupported,
-                Some(entry) => {
-                    let auth_args = args.split_at(1).1;
-                    entry.get_update_auth(auth_args)
+        match self.vault_method_table.get(method.name()) {
+            None => &MethodAuthorization::Unsupported,
+            Some(Public) => &MethodAuthorization::AllowAll,
+            Some(Protected(auth_key)) => self.authorization.get(auth_key).unwrap().get_method_auth(),
+        }
+    }
+
+    pub fn get_consuming_bucket_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
+        let method = scrypto_decode(&arg.raw);
+        match method {
+            Err(_) => &MethodAuthorization::Unsupported,
+            Ok(ConsumingBucketMethod::Burn()) => {
+                match self.method_table.get("burn") {
+                    None => &MethodAuthorization::Unsupported,
+                    Some(Public) => &MethodAuthorization::AllowAll,
+                    Some(Protected(method)) => self.authorization.get(method).unwrap().get_method_auth(),
                 }
             }
-        } else {
-            match self.method_table.get(method_name) {
-                None => &MethodAuthorization::Unsupported,
-                Some(None) => &MethodAuthorization::AllowAll,
-                Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+        }
+    }
+
+    pub fn get_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
+        let method: ResourceManagerMethod = match scrypto_decode(&arg.raw) {
+            Ok(m) => m,
+            Err(_) => return &MethodAuthorization::Unsupported,
+        };
+
+        match method {
+            ResourceManagerMethod::UpdateAuth(method, method_auth) => {
+                match self.authorization.get(&method) {
+                    None => &MethodAuthorization::Unsupported,
+                    Some(entry) => {
+                        entry.get_update_auth(MethodAccessRuleMethod::Update(method_auth))
+                    }
+                }
+            }
+            ResourceManagerMethod::LockAuth(method) => {
+                match self.authorization.get(&method) {
+                    None => &MethodAuthorization::Unsupported,
+                    Some(entry) => {
+                        entry.get_update_auth(MethodAccessRuleMethod::Lock())
+                    }
+                }
+            }
+            method => {
+                match self.method_table.get(method.name()) {
+                    None => &MethodAuthorization::Unsupported,
+                    Some(Public) => &MethodAuthorization::AllowAll,
+                    Some(Protected(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+                }
             }
         }
     }
@@ -350,20 +385,13 @@ impl ResourceManager {
     }
 
     pub fn static_main<S: SystemApi>(
-        function: &str,
-        args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
+        let function: ResourceManagerFunction = scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+
         match function {
-            "create" => {
-                let resource_type = scrypto_decode(&args[0].raw)
-                    .map_err(ResourceManagerError::InvalidRequestData)?;
-                let metadata = scrypto_decode(&args[1].raw)
-                    .map_err(ResourceManagerError::InvalidRequestData)?;
-                let auth = scrypto_decode(&args[2].raw)
-                    .map_err(ResourceManagerError::InvalidRequestData)?;
-                let mint_params_maybe: Option<MintParams> = scrypto_decode(&args[3].raw)
-                    .map_err(ResourceManagerError::InvalidRequestData)?;
+            ResourceManagerFunction::Create(resource_type, metadata, auth, mint_params_maybe) => {
                 let resource_manager = ResourceManager::new(resource_type, metadata, auth)?;
                 let resource_address = system_api.create_resource(resource_manager);
 
@@ -388,27 +416,27 @@ impl ResourceManager {
 
                 Ok(ScryptoValue::from_value(&(resource_address, bucket_id)))
             }
-            _ => Err(ResourceManagerError::MethodNotFound(function.to_string())),
         }
     }
 
     pub fn main<S: SystemApi>(
         &mut self,
         resource_address: ResourceAddress,
-        function: &str,
-        mut args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
-        match function {
-            "method_auth" => {
-                let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+        let method: ResourceManagerMethod = scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+
+        match method {
+            ResourceManagerMethod::UpdateAuth(method, method_auth) => {
                 let method_entry = self.authorization.get_mut(&method).unwrap();
-                let method_entry_method: String = scrypto_decode(&args.remove(0).raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                method_entry.main(&method_entry_method, args)
+                method_entry.main(MethodAccessRuleMethod::Update(method_auth))
             }
-            "create_vault" => {
+            ResourceManagerMethod::LockAuth(method) => {
+                let method_entry = self.authorization.get_mut(&method).unwrap();
+                method_entry.main(MethodAccessRuleMethod::Lock())
+            }
+            ResourceManagerMethod::CreateVault() => {
                 let container =
                     ResourceContainer::new_empty(resource_address, self.resource_type());
                 let vault_id = system_api
@@ -418,7 +446,7 @@ impl ResourceManager {
                     vault_id,
                 )))
             }
-            "create_empty_bucket" => {
+            ResourceManagerMethod::CreateBucket() => {
                 let container =
                     ResourceContainer::new_empty(resource_address, self.resource_type());
                 let bucket_id = system_api
@@ -428,10 +456,7 @@ impl ResourceManager {
                     bucket_id,
                 )))
             }
-            "mint" => {
-                // TODO: cleanup
-                let mint_params: MintParams = scrypto_decode(&args[0].raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+            ResourceManagerMethod::Mint(mint_params) => {
                 let container = self.mint(mint_params, resource_address, system_api)?;
                 let bucket_id = system_api
                     .create_bucket(container)
@@ -440,21 +465,14 @@ impl ResourceManager {
                     bucket_id,
                 )))
             }
-            "get_metadata" => Ok(ScryptoValue::from_value(&self.metadata)),
-            "get_resource_type" => Ok(ScryptoValue::from_value(&self.resource_type)),
-            "get_total_supply" => Ok(ScryptoValue::from_value(&self.total_supply)),
-            "update_metadata" => {
-                let new_metadata: HashMap<String, String> = scrypto_decode(&args[0].raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+            ResourceManagerMethod::GetMetadata() => Ok(ScryptoValue::from_value(&self.metadata)),
+            ResourceManagerMethod::GetResourceType() => Ok(ScryptoValue::from_value(&self.resource_type)),
+            ResourceManagerMethod::GetTotalSupply() => Ok(ScryptoValue::from_value(&self.total_supply)),
+            ResourceManagerMethod::UpdateMetadata(new_metadata) => {
                 self.update_metadata(new_metadata)?;
                 Ok(ScryptoValue::from_value(&()))
             }
-            "update_non_fungible_mutable_data" => {
-                let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let new_mutable_data: Vec<u8> = scrypto_decode(&args[1].raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-
+            ResourceManagerMethod::UpdateNonFungibleData(non_fungible_id, new_mutable_data) => {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
                 let data = Self::process_non_fungible_data(&new_mutable_data)?;
@@ -468,17 +486,13 @@ impl ResourceManager {
 
                 Ok(ScryptoValue::from_value(&()))
             }
-            "non_fungible_exists" => {
-                let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+            ResourceManagerMethod::NonFungibleExists(non_fungible_id) => {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
                 let non_fungible = system_api.get_non_fungible(&non_fungible_address);
                 Ok(ScryptoValue::from_value(&non_fungible.is_some()))
             }
-            "get_non_fungible" => {
-                let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
-                    .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+            ResourceManagerMethod::GetNonFungible(non_fungible_id) => {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
                 let non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
@@ -489,7 +503,6 @@ impl ResourceManager {
                     non_fungible.mutable_data(),
                 ]))
             }
-            _ => Err(ResourceManagerError::MethodNotFound(function.to_string())),
         }
     }
 }

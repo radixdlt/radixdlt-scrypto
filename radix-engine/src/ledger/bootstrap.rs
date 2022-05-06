@@ -6,7 +6,7 @@ use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::LOCKED;
-use scrypto::resource::ResourceMethod::Withdraw;
+use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec;

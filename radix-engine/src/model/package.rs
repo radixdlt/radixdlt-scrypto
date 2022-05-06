@@ -1,6 +1,7 @@
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
+use scrypto::prelude::PackageFunction;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -150,19 +151,16 @@ impl Package {
     }
 
     pub fn static_main<S: SystemApi>(
-        function: &str,
-        args: Vec<ScryptoValue>,
+        arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, PackageError> {
+        let function: PackageFunction = scrypto_decode(&arg.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
         match function {
-            "publish" => {
-                let bytes =
-                    scrypto_decode(&args[0].raw).map_err(PackageError::InvalidRequestData)?;
+            PackageFunction::Publish(bytes) => {
                 let package = Package::new(bytes).map_err(PackageError::WasmValidationError)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
             }
-            _ => Err(PackageError::MethodNotFound(function.to_string())),
         }
     }
 }
