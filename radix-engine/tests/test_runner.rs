@@ -1,7 +1,7 @@
 use radix_engine::ledger::*;
 use radix_engine::model::{Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
-use scrypto::{abi, invocation};
+use scrypto::{abi, call_data};
 use scrypto::prelude::*;
 
 pub struct TestRunner<'l> {
@@ -96,7 +96,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                invocation!(function.to_string(), token, set_auth),
+                call_data!(function.to_string(), token, set_auth),
             )
             .call_method_with_all_resources(account.2, "deposit_batch")
             .build(self.executor.get_nonce([account.0.clone()]))
@@ -129,7 +129,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                invocation!(create_restricted_token(mint_auth, burn_auth, withdraw_auth, admin_auth)),
+                call_data!(create_restricted_token(mint_auth, burn_auth, withdraw_auth, admin_auth)),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -154,7 +154,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                invocation!(create_restricted_burn(auth_resource_address)),
+                call_data!(create_restricted_burn(auth_resource_address)),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -174,7 +174,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                invocation![create_restricted_transfer(auth_resource_address)],
+                call_data![create_restricted_transfer(auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -189,7 +189,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                invocation!(create_non_fungible_fixed()),
+                call_data!(create_non_fungible_fixed()),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -210,7 +210,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                invocation!(create_fungible_fixed(amount, divisibility)),
+                call_data!(create_fungible_fixed(amount, divisibility)),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))

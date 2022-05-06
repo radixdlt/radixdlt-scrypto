@@ -82,12 +82,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
             // Retrieve call data
-            let calldata: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
+            let output: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
                 ::scrypto::engine::api::GET_CALL_DATA,
                 ::scrypto::engine::api::GetCallDataInput {},
             );
 
-            let method = ::scrypto::buffer::scrypto_decode::<#method_enum_ident>(&calldata.arg).unwrap();
+            let method = ::scrypto::buffer::scrypto_decode::<#method_enum_ident>(&output.call_data).unwrap();
 
             // Dispatch the call
             let rtn;
@@ -215,7 +215,7 @@ fn generate_dispatcher(method_enum_ident: &Ident, bp_ident: &Ident, items: &[Imp
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let stmt: Stmt = parse_quote! {
-                                let component_address = calldata.component.unwrap();
+                                let component_address = output.component.unwrap();
                             };
                             trace!("Generated stmt: {}", quote! { #stmt });
                             args.push(parse_quote! { & #mutability state });
@@ -562,17 +562,17 @@ mod tests {
                     ::scrypto::misc::set_up_panic_hook();
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
-                    let calldata: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
+                    let output: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
                         ::scrypto::engine::api::GET_CALL_DATA,
                         ::scrypto::engine::api::GetCallDataInput {},
                     );
 
-                    let method = ::scrypto::buffer::scrypto_decode::<TestMethod>(&calldata.arg).unwrap();
+                    let method = ::scrypto::buffer::scrypto_decode::<TestMethod>(&output.call_data).unwrap();
 
                     let rtn;
                     match method {
                         TestMethod::x(arg0) => {
-                            let component_address = calldata.component.unwrap();
+                            let component_address = output.component.unwrap();
                             let state: blueprint::Test = borrow_component!(component_address).get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, arg0));
                         }

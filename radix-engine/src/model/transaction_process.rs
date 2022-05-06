@@ -1,7 +1,7 @@
 use scrypto::component::PackageFunction;
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
-use scrypto::invocation;
+use scrypto::call_data;
 use scrypto::prelude::{ConsumingProofMethod, ProofMethod, ScryptoActor};
 use scrypto::resource::{AuthZoneMethod, BucketMethod};
 use scrypto::rust::collections::{HashMap};
@@ -267,13 +267,13 @@ impl TransactionProcess {
                 ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    arg,
+                    call_data,
                 } => {
-                    self.replace_ids(arg.clone())
-                        .and_then(|arg|
+                    self.replace_ids(call_data.clone())
+                        .and_then(|call_data|
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Blueprint(*package_address, blueprint_name.to_string())),
-                                arg
+                                call_data
                             )
                         )
                         .and_then(|result| {
@@ -296,13 +296,13 @@ impl TransactionProcess {
                 },
                 ValidatedInstruction::CallMethod {
                     component_address,
-                    arg,
+                    call_data,
                 } => {
-                    self.replace_ids(arg.clone())
-                        .and_then(|arg|
+                    self.replace_ids(call_data.clone())
+                        .and_then(|call_data|
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
-                                arg
+                                call_data
                             )
                         )
                         .and_then(|result| {
@@ -351,7 +351,7 @@ impl TransactionProcess {
                             for (_, real_id) in self.bucket_id_mapping.drain() {
                                 buckets.push(scrypto::resource::Bucket(real_id));
                             }
-                            let encoded = invocation!(method.to_string(), buckets);
+                            let encoded = call_data!(method.to_string(), buckets);
                             system_api.invoke_snode(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
                                 ScryptoValue::from_slice(&encoded).unwrap(),

@@ -1,7 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::invocation;
+use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
@@ -25,7 +25,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            invocation!(create_component_with_auth(authorization)),
+            call_data!(create_component_with_auth(authorization)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -38,7 +38,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            invocation!(create_component()),
+            call_data!(create_component()),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -51,7 +51,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .new_transaction_builder()
         .call_method(
             my_component,
-            invocation!(cross_component_call(secured_component)),
+            call_data!(cross_component_call(secured_component)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -80,7 +80,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            invocation!(create_component_with_auth(authorization)),
+            call_data!(create_component_with_auth(authorization)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -93,7 +93,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            invocation!(create_component()),
+            call_data!(create_component()),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -115,7 +115,7 @@ fn can_make_cross_component_call_with_authorization() {
         .new_transaction_builder()
         .call_method(
             my_component,
-            invocation!(cross_component_call(secured_component)),
+            call_data!(cross_component_call(secured_component)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);

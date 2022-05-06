@@ -1,4 +1,4 @@
-use scrypto::invocation;
+use scrypto::call_data;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
@@ -12,7 +12,7 @@ fn test_process_and_transaction() {
         .unwrap();
 
     let transaction1 = TransactionBuilder::new()
-        .call_function(package, "CoreTest", invocation![query()])
+        .call_function(package, "CoreTest", call_data![query()])
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
@@ -29,8 +29,8 @@ fn test_call() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "MoveTest", invocation![move_bucket()])
-        .call_function(package, "MoveTest", invocation![move_proof()])
+        .call_function(package, "MoveTest", call_data![move_bucket()])
+        .call_function(package, "MoveTest", call_data![move_proof()])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);

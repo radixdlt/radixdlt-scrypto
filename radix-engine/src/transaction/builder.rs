@@ -91,8 +91,8 @@ impl TransactionBuilder {
             Instruction::DropProof { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
-            Instruction::CallFunction { arg, .. } | Instruction::CallMethod { arg, .. } => {
-                let scrypt_value = ScryptoValue::from_slice(&arg).unwrap();
+            Instruction::CallFunction { call_data , .. } | Instruction::CallMethod { call_data, .. } => {
+                let scrypt_value = ScryptoValue::from_slice(&call_data).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
             Instruction::CallMethodWithAllResources { .. } => {
@@ -287,12 +287,12 @@ impl TransactionBuilder {
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
-        arg: Vec<u8>,
+        call_data: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address,
             blueprint_name: blueprint_name.to_owned(),
-            arg,
+            call_data,
         });
         self
     }
@@ -340,7 +340,7 @@ impl TransactionBuilder {
             .add_instruction(Instruction::CallFunction {
                 package_address,
                 blueprint_name: blueprint_name.to_owned(),
-                arg: bytes,
+                call_data: bytes,
             })
             .0)
     }
@@ -349,11 +349,11 @@ impl TransactionBuilder {
     pub fn call_method(
         &mut self,
         component_address: ComponentAddress,
-        arg: Vec<u8>,
+        call_data: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address,
-            arg,
+            call_data,
         });
         self
     }
@@ -399,7 +399,7 @@ impl TransactionBuilder {
         Ok(self
             .add_instruction(Instruction::CallMethod {
                 component_address,
-                arg: bytes,
+                call_data: bytes,
             })
             .0)
     }
@@ -467,7 +467,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            arg: invocation!(
+            call_data: call_data!(
                 new_resource(
                     ResourceType::Fungible { divisibility: 18 },
                     metadata,
@@ -491,7 +491,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            arg: invocation!(
+            call_data: call_data!(
                 new_resource(
                     ResourceType::Fungible { divisibility: 18 },
                     metadata,
@@ -527,7 +527,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            arg: invocation!(
+            call_data: call_data!(
                 new_resource(
                     ResourceType::Fungible { divisibility: 0 },
                     metadata,
@@ -551,7 +551,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            arg: invocation!(
+            call_data: call_data!(
                 new_resource(
                     ResourceType::Fungible { divisibility: 0 },
                     metadata,
@@ -570,7 +570,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            arg: invocation!(mint(amount, resource_address)),
+            call_data: call_data!(mint(amount, resource_address)),
         });
         self
     }
@@ -582,7 +582,7 @@ impl TransactionBuilder {
                 .add_instruction(Instruction::CallFunction {
                     package_address: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
-                    arg: invocation!(burn(scrypto::resource::Bucket(bucket_id))),
+                    call_data: call_data!(burn(scrypto::resource::Bucket(bucket_id))),
                 })
                 .0
         })
@@ -599,7 +599,7 @@ impl TransactionBuilder {
                     .add_instruction(Instruction::CallFunction {
                         package_address: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
-                        arg: invocation!(burn(scrypto::resource::Bucket(bucket_id))),
+                        call_data: call_data!(burn(scrypto::resource::Bucket(bucket_id))),
                     })
                     .0
             },
@@ -611,7 +611,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
-            arg: invocation!(new(withdraw_auth.clone())),
+            call_data: call_data!(new(withdraw_auth.clone())),
         })
         .0
     }
@@ -625,7 +625,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
-            arg: invocation!(new_with_resource(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)))
+            call_data: call_data!(new_with_resource(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)))
         })
         .0
     }
@@ -638,7 +638,7 @@ impl TransactionBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            arg: invocation!(withdraw(resource_address)),
+            call_data: call_data!(withdraw(resource_address)),
         })
         .0
     }
@@ -652,7 +652,7 @@ impl TransactionBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            arg: invocation!(withdraw_by_amount(amount, resource_address)),
+            call_data: call_data!(withdraw_by_amount(amount, resource_address)),
         })
         .0
     }
@@ -666,7 +666,7 @@ impl TransactionBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            arg: invocation!(withdraw_by_ids(ids.clone(), resource_address)),
+            call_data: call_data!(withdraw_by_ids(ids.clone(), resource_address)),
         })
         .0
     }
@@ -679,7 +679,7 @@ impl TransactionBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            arg: invocation!(create_proof(resource_address)),
+            call_data: call_data!(create_proof(resource_address)),
         })
         .0
     }
@@ -693,7 +693,7 @@ impl TransactionBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            arg: invocation!(create_proof_by_amount(amount, resource_address)),
+            call_data: call_data!(create_proof_by_amount(amount, resource_address)),
         })
         .0
     }
@@ -707,7 +707,7 @@ impl TransactionBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            arg: invocation!(create_proof_by_ids(ids.clone(), resource_address)),
+            call_data: call_data!(create_proof_by_ids(ids.clone(), resource_address)),
         })
         .0
     }

@@ -1,7 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::invocation;
+use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::*;
 use radix_engine::ledger::*;
@@ -19,15 +19,15 @@ fn test_bucket() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "BucketTest", invocation!(combine()))
-        .call_function(package, "BucketTest", invocation!(split()))
-        .call_function(package, "BucketTest", invocation!(borrow()))
-        .call_function(package, "BucketTest", invocation!(query()))
-        .call_function(package, "BucketTest", invocation!(test_restricted_transfer()))
-        .call_function(package, "BucketTest", invocation!(test_burn()))
-        .call_function(package, "BucketTest", invocation!(test_burn_freely()))
-        .call_function(package, "BucketTest", invocation!(create_empty_bucket_fungible()))
-        .call_function(package, "BucketTest", invocation!(create_empty_bucket_non_fungible()))
+        .call_function(package, "BucketTest", call_data!(combine()))
+        .call_function(package, "BucketTest", call_data!(split()))
+        .call_function(package, "BucketTest", call_data!(borrow()))
+        .call_function(package, "BucketTest", call_data!(query()))
+        .call_function(package, "BucketTest", call_data!(test_restricted_transfer()))
+        .call_function(package, "BucketTest", call_data!(test_burn()))
+        .call_function(package, "BucketTest", call_data!(test_burn_freely()))
+        .call_function(package, "BucketTest", call_data!(create_empty_bucket_fungible()))
+        .call_function(package, "BucketTest", call_data!(create_empty_bucket_non_fungible()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);
@@ -45,10 +45,10 @@ fn test_bucket_of_badges() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "BadgeTest", invocation!(combine()))
-        .call_function(package, "BadgeTest", invocation!(split()))
-        .call_function(package, "BadgeTest", invocation!(borrow()))
-        .call_function(package, "BadgeTest", invocation!(query()))
+        .call_function(package, "BadgeTest", call_data!(combine()))
+        .call_function(package, "BadgeTest", call_data!(split()))
+        .call_function(package, "BadgeTest", call_data!(borrow()))
+        .call_function(package, "BadgeTest", call_data!(query()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);

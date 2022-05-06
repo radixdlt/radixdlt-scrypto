@@ -103,7 +103,7 @@ pub enum Instruction {
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
-        arg: Vec<u8>,
+        call_data: Vec<u8>,
     },
 
     /// Calls a component method.
@@ -111,7 +111,7 @@ pub enum Instruction {
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
         component_address: ComponentAddress,
-        arg: Vec<u8>,
+        call_data: Vec<u8>,
     },
 
     /// Calls a component method with all resources owned by the transaction.
@@ -301,21 +301,21 @@ impl SignedTransaction {
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    arg,
+                    call_data,
                 } => {
                     instructions.push(ValidatedInstruction::CallFunction {
                         package_address,
                         blueprint_name,
-                        arg: Self::validate_arg(arg, &mut id_validator)?,
+                        call_data: Self::validate_call_data(call_data, &mut id_validator)?,
                     });
                 }
                 Instruction::CallMethod {
                     component_address,
-                    arg,
+                    call_data,
                 } => {
                     instructions.push(ValidatedInstruction::CallMethod {
                         component_address,
-                        arg: Self::validate_arg(arg, &mut id_validator)?,
+                        call_data: Self::validate_call_data(call_data, &mut id_validator)?,
                     });
                 }
                 Instruction::CallMethodWithAllResources {
@@ -346,11 +346,11 @@ impl SignedTransaction {
         })
     }
 
-    fn validate_arg(
-        arg: Vec<u8>,
+    fn validate_call_data(
+        call_data: Vec<u8>,
         id_validator: &mut IdValidator,
     ) -> Result<ScryptoValue, TransactionValidationError> {
-        let value = ScryptoValue::from_slice(&arg)
+        let value = ScryptoValue::from_slice(&call_data)
             .map_err(TransactionValidationError::ParseScryptoValueError)?;
         id_validator
             .move_resources(&value)
@@ -383,7 +383,7 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        arg: scrypto_encode(&scrypto::resource::Vault((
+                        call_data: scrypto_encode(&scrypto::resource::Vault((
                             Hash([2u8; 32]),
                             0,
                         ))),
@@ -406,7 +406,7 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        arg: scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
+                        call_data: scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
                             id: (Hash([2u8; 32]), 0,),
                             key: PhantomData,
                             value: PhantomData,
