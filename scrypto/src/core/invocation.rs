@@ -9,6 +9,7 @@ pub enum SNodeRef {
     PackageStatic,
     AuthZoneRef,
     CallerAuthZoneRef,
+    AuthZoneManager,
     WorktopRef,
     Scrypto(ScryptoActor),
     ResourceStatic,

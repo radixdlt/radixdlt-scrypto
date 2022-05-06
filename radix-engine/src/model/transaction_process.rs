@@ -160,6 +160,14 @@ impl TransactionProcess {
                         ScryptoValue::from_value(resource_address),
                     ],
                 ),
+                ValidatedInstruction::StartAuthZone => {
+                    //self.proof_id_mapping.clear(); // FIXME handle proof_id_mapping (stack?)
+                    system_api.invoke_snode(SNodeRef::AuthZoneManager, "start".to_string(), vec![])
+                }
+                ValidatedInstruction::EndAuthZone => {
+                    //self.proof_id_mapping.clear(); // FIXME handle proof_id_mapping (stack?)
+                    system_api.invoke_snode(SNodeRef::AuthZoneManager, "end".to_string(), vec![])
+                }
                 ValidatedInstruction::PopFromAuthZone {} => self
                     .id_allocator
                     .new_proof_id()

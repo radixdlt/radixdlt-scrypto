@@ -103,6 +103,7 @@ pub enum SNodeState {
     PackageStatic,
     AuthZone(AuthZone),
     CallerAuthZone(AuthZone),
+    AuthZoneManager(AuthZone),
     Worktop(Worktop),
     Scrypto(ScryptoActorInfo, Option<Component>),
     ResourceStatic,
@@ -206,6 +207,8 @@ pub struct Process<'r, 'l, L: SubstateStore> {
     caller_auth_zone: Option<&'r AuthZone>,
     /// subset of the current auth zone filtered by the matching MethodAuthorizations
     shadow_auth_zone: Option<AuthZone>,
+    /// the AuthZones shadowed by calls to AuthZoneManager::start / StartAuthZone
+    auth_zone_stack: Vec<AuthZone>,
 
     /// State for the given wasm process, empty only on the root process
     /// (root process cannot create components nor is a component itself)
@@ -235,6 +238,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             snode_refs: ComponentObjectRefs::new(),
             caller_auth_zone: None,
             shadow_auth_zone: None,
+            auth_zone_stack: vec![],
             wasm_process_state: None,
         }
     }
@@ -415,6 +419,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // get the shadow of the real caller auth zone
                 if let Some(auth_zone) = self.shadow_auth_zone.take() {
                     Ok((SNodeState::AuthZone(auth_zone), vec![]))
+                } else {
+                    Err(RuntimeError::AuthZoneDoesNotExist)
+                }
+            }
+            // take the current AuthZone since we're going to posh it or drop it
+            SNodeRef::AuthZoneManager => {
+                if let Some(auth_zone) = self.auth_zone.take() {
+                    Ok((SNodeState::AuthZoneManager(auth_zone), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -611,6 +623,29 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
                 _ => Err(RuntimeError::IllegalSystemCall),
             },
+            SNodeState::AuthZoneManager(current_auth_zone) => {
+                let function = function.as_str();
+                match function {
+                    "start" => {
+                        self.auth_zone_stack.push(current_auth_zone);
+                        self.auth_zone = Some(AuthZone::new());
+                        Ok(ScryptoValue::from_value(&()))
+                    }
+                    "end" => {
+                        let top = self.auth_zone_stack.pop();
+                        if top.is_some() {
+                            self.auth_zone = top;
+                            // TODO do we need to do any explicit cleanup or drop of the
+                            // current_auth_zone we are about to lose???
+                            Ok(ScryptoValue::from_value(&()))
+                        } else {
+                            self.auth_zone = Some(current_auth_zone); // put the original zone back on error
+                            Err(RuntimeError::AuthZoneDoesNotExist)
+                        }
+                    }
+                    _ => Err(RuntimeError::IllegalSystemCall),
+                }
+            }
             _ => {
                 // Figure out what buckets and proofs to move from this process
                 let mut moving_buckets = HashMap::new();

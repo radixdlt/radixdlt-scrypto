@@ -59,6 +59,8 @@ impl TransactionBuilder {
             Instruction::AssertWorktopContains { .. }
             | Instruction::AssertWorktopContainsByAmount { .. }
             | Instruction::AssertWorktopContainsByIds { .. } => {}
+            Instruction::StartAuthZone => {}
+            Instruction::EndAuthZone => {}
             Instruction::PopFromAuthZone { .. } => {
                 new_proof_id = Some(
                     self.id_validator
@@ -189,6 +191,16 @@ impl TransactionBuilder {
             resource_address,
         })
         .0
+    }
+
+    pub fn start_auth_zone(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::StartAuthZone);
+        self
+    }
+
+    pub fn end_auth_zone(&mut self) -> &mut Self {
+        self.add_instruction(Instruction::EndAuthZone);
+        self
     }
 
     /// Pops the most recent proof from auth zone.

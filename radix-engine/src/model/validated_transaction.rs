@@ -40,6 +40,8 @@ pub enum ValidatedInstruction {
         ids: BTreeSet<NonFungibleId>,
         resource_address: ResourceAddress,
     },
+    StartAuthZone,
+    EndAuthZone,
     PopFromAuthZone,
     PushToAuthZone {
         proof_id: ProofId,

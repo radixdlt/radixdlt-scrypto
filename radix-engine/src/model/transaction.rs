@@ -62,6 +62,11 @@ pub enum Instruction {
         resource_address: ResourceAddress,
     },
 
+    /// Creates a new AuthZone making the old one the previous AuthZone
+    StartAuthZone,
+    /// Removes the current AuthZone and replaces it with the previous AuthZone
+    EndAuthZone,
+
     /// Takes the last proof from the auth zone.
     PopFromAuthZone,
 
@@ -234,6 +239,12 @@ impl SignedTransaction {
                         ids,
                         resource_address,
                     });
+                }
+                Instruction::StartAuthZone => {
+                    instructions.push(ValidatedInstruction::StartAuthZone);
+                }
+                Instruction::EndAuthZone => {
+                    instructions.push(ValidatedInstruction::EndAuthZone);
                 }
                 Instruction::PopFromAuthZone => {
                     id_validator
