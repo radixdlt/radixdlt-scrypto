@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 sbor-derive = { path = "../sbor-derive" }
 hashbrown = { version = "0.12", optional = true }
-serde = { version = "1.0", default-features = false, optional = true }
+serde = { version = "1.0", default-features = false, optional = true, features=["derive"] }
 hex = { version = "0.4.3", default-features = false, optional = true }
 
 [features]
@@ -16,7 +16,7 @@ std = ["serde?/std", "hex?/std"]
 alloc = ["hashbrown", "serde?/alloc", "hex?/alloc"]
 
 # Enable serde derives for SBOR value and type models
-serde = ["serde/derive", "hex/serde"]
+serde = ["dep:serde", "hex/serde"]
 
 # Enable tracing
 trace = ["sbor-derive/trace"]
