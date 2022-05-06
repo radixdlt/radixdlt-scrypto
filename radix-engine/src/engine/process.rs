@@ -21,6 +21,7 @@ use wasmi::*;
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::*;
 use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
+use crate::engine::track::{SubstateValue, TrackError};
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
@@ -128,14 +129,14 @@ impl BorrowedSNodeState {
             }
             BorrowedSNodeState::Scrypto(actor, component_state) => {
                 if let Some(component_address) = actor.component_address() {
-                    process.track.return_borrowed_global_component(
+                    process.track.return_borrowed_global_mut_value(
                         component_address,
                         component_state.unwrap(),
                     );
                 }
             }
             BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                process.track.return_borrowed_global_resource_manager(
+                process.track.return_borrowed_global_mut_value(
                     resource_address,
                     resource_manager,
                 );
@@ -400,9 +401,13 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     .map_err(RuntimeError::WorktopError)
             }
             SNodeState::Scrypto(actor, component_state) => {
-                let package = self.track.get_package(actor.package_address()).ok_or(
+                let substate_value = self.track.read_value(actor.package_address().clone()).ok_or(
                     RuntimeError::PackageNotFound(actor.package_address().clone()),
                 )?;
+                let package = match substate_value {
+                    SubstateValue::Package(package) => package,
+                    _ => panic!("Value is not a package"),
+                };
 
                 if !package.contains_blueprint(actor.blueprint_name()) {
                     return Err(RuntimeError::BlueprintNotFound(
@@ -607,17 +612,27 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
-                        let component = self
+                        let component: Component = self
                             .track
-                            .borrow_global_mut_component(component_address.clone())?;
+                            .borrow_global_mut_value(component_address.clone())
+                            .map_err(|e| {
+                                match e {
+                                    TrackError::NotFound => RuntimeError::ComponentNotFound(component_address.clone()),
+                                    TrackError::Reentrancy => RuntimeError::ComponentReentrancy(component_address.clone()),
+                                }
+                            })?.into();
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
                         let export_name = format!("{}_main", blueprint_name);
 
-                        let package = self
-                            .track
-                            .get_package(&package_address)
-                            .ok_or(RuntimeError::PackageNotFound(package_address))?;
+                        let substate_value = self.track.read_value(package_address.clone()).ok_or(
+                            RuntimeError::PackageNotFound(package_address),
+                        )?;
+                        let package = match substate_value {
+                            SubstateValue::Package(package) => package,
+                            _ => panic!("Value is not a package"),
+                        };
+
                         // TODO: Remove clone
                         let schema = package
                             .load_blueprint_schema(&blueprint_name)
@@ -649,7 +664,13 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 }?;
                 let resource_manager: ResourceManager = self
                     .track
-                    .borrow_global_mut_resource_manager(resource_address.clone())?;
+                    .borrow_global_mut_value(resource_address.clone())
+                    .map_err(|e| {
+                        match e {
+                            TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+                            TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
+                        }
+                    })?.into();
                 let method_auth = resource_manager.get_auth(arg).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(resource_address.clone(), resource_manager)),
@@ -668,11 +689,12 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let resource_address = bucket.resource_address();
-                let method_auth = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .unwrap()
-                    .get_consuming_bucket_auth(arg);
+                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let resource_manager = match substate_value {
+                    SubstateValue::Resource(resource_manager) => resource_manager,
+                    _ => panic!("Value is not a resource manager"),
+                };
+                let method_auth = resource_manager.get_consuming_bucket_auth(&arg);
                 Ok((Consumed(Some(ConsumedSNodeState::Bucket(bucket))), vec![method_auth.clone()]))
             }
             SNodeRef::BucketRef(bucket_id) => {
@@ -709,11 +731,12 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 }?;
 
                 let resource_address = vault.resource_address();
-                let method_auth = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .unwrap()
-                    .get_vault_auth(arg);
+                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let resource_manager = match substate_value {
+                    SubstateValue::Resource(resource_manager) => resource_manager,
+                    _ => panic!("Value is not a resource manager"),
+                };
+                let method_auth = resource_manager.get_vault_auth(arg);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(vault_id.clone(), component, vault)),
                     vec![method_auth.clone()],
@@ -1086,7 +1109,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             input.access_rules_list,
             input.state,
         );
-        let component_address = self.track.create_component(component);
+        let component_address = self.track.create_uuid_value(component).into();
         self.track
             .insert_objects_into_component(new_objects, component_address);
 
@@ -1097,10 +1120,16 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetComponentInfoInput,
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        let component = self
+        let substate_value = self
             .track
-            .get_component(input.component_address)
+            .read_value(input.component_address.clone())
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
+
+        let component = if let SubstateValue::Component(component) = substate_value {
+            component
+        } else {
+            panic!("Value is not a component");
+        };
 
         Ok(GetComponentInfoOutput {
             package_address: component.package_address(),
@@ -1400,8 +1429,16 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         &mut self,
         resource_address: ResourceAddress,
     ) -> Result<ResourceManager, RuntimeError> {
-        self.track
-            .borrow_global_mut_resource_manager(resource_address)
+        self
+            .track
+            .borrow_global_mut_value(resource_address.clone())
+            .map(|v| v.into())
+            .map_err(|e| {
+                match e {
+                    TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+                    TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
+                }
+            })
     }
 
     fn return_borrowed_global_resource_manager(
@@ -1410,7 +1447,7 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         resource_manager: ResourceManager,
     ) {
         self.track
-            .return_borrowed_global_resource_manager(resource_address, resource_manager)
+            .return_borrowed_global_mut_value(resource_address, resource_manager)
     }
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
@@ -1449,11 +1486,11 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
-        self.track.create_resource_manager(resource_manager)
+        self.track.create_uuid_value(resource_manager).into()
     }
 
     fn create_package(&mut self, package: Package) -> PackageAddress {
-        self.track.create_package(package)
+        self.track.create_uuid_value(package).into()
     }
 }
 

@@ -12,5 +12,5 @@ pub use id_allocator::*;
 pub use id_validator::*;
 pub use process::{Process, SNodeState, SystemApi};
 pub use substate_receipt::{SubstateOperation, CommitReceipt, SubstateOperationsReceipt};
-pub use track::{Track, BorrowedSNodes, SubstateUpdate, SubstateParentId};
+pub use track::{Address, Track, BorrowedSNodes, SubstateUpdate, SubstateParentId};
 pub use wasm_env::{EnvModuleResolver, ENGINE_FUNCTION_INDEX, ENGINE_FUNCTION_NAME};
