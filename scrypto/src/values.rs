@@ -1,6 +1,6 @@
+use sbor::path::{MutableSborPath, SborPath};
 use sbor::type_id::*;
 use sbor::{any::*, *};
-use sbor::path::{MutableSborPath, SborPath};
 
 use crate::buffer::*;
 use crate::component::*;
@@ -54,8 +54,16 @@ impl ScryptoValue {
         Ok(ScryptoValue {
             raw: slice.to_vec(),
             dom: value,
-            bucket_ids: checker.buckets.drain().map(|(e, path)| (e.0, path)).collect(),
-            proof_ids: checker.proofs.drain().map(|(e, path)| (e.0, path)).collect(),
+            bucket_ids: checker
+                .buckets
+                .drain()
+                .map(|(e, path)| (e.0, path))
+                .collect(),
+            proof_ids: checker
+                .proofs
+                .drain()
+                .map(|(e, path)| (e.0, path))
+                .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
             lazy_map_ids: checker.lazy_maps.iter().map(|e| e.id).collect(),
         })
@@ -64,14 +72,19 @@ impl ScryptoValue {
     pub fn replace_ids(
         &mut self,
         proof_replacements: &mut HashMap<ProofId, ProofId>,
-        bucket_replacements: &mut HashMap<BucketId, BucketId>
-    ) -> Result<(), ScryptoValueReplaceError>{
+        bucket_replacements: &mut HashMap<BucketId, BucketId>,
+    ) -> Result<(), ScryptoValueReplaceError> {
         let mut new_proof_ids = HashMap::new();
         for (proof_id, path) in self.proof_ids.drain() {
-            let next_id = proof_replacements.remove(&proof_id)
+            let next_id = proof_replacements
+                .remove(&proof_id)
                 .ok_or(ScryptoValueReplaceError::ProofIdNotFound(proof_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
-            if let Value::Custom { type_id: _, ref mut bytes} = value {
+            if let Value::Custom {
+                type_id: _,
+                ref mut bytes,
+            } = value
+            {
                 *bytes = scrypto::resource::Proof(next_id).to_vec();
             } else {
                 panic!("Proof Id should be custom type");
@@ -83,10 +96,15 @@ impl ScryptoValue {
 
         let mut new_bucket_ids = HashMap::new();
         for (bucket_id, path) in self.bucket_ids.drain() {
-            let next_id = bucket_replacements.remove(&bucket_id)
+            let next_id = bucket_replacements
+                .remove(&bucket_id)
                 .ok_or(ScryptoValueReplaceError::BucketIdNotFound(bucket_id))?;
             let value = path.get_from_value_mut(&mut self.dom).unwrap();
-            if let Value::Custom { type_id: _, ref mut bytes} = value {
+            if let Value::Custom {
+                type_id: _,
+                ref mut bytes,
+            } = value
+            {
                 *bytes = scrypto::resource::Bucket(next_id).to_vec();
             } else {
                 panic!("Bucket should be custom type");
@@ -176,7 +194,12 @@ impl ScryptoCustomValueChecker {
 impl CustomValueVisitor for ScryptoCustomValueChecker {
     type Err = ScryptoCustomValueCheckError;
 
-    fn visit(&mut self, path: &mut MutableSborPath, type_id: u8, data: &[u8]) -> Result<(), Self::Err> {
+    fn visit(
+        &mut self,
+        path: &mut MutableSborPath,
+        type_id: u8,
+        data: &[u8],
+    ) -> Result<(), Self::Err> {
         match ScryptoType::from_id(type_id).ok_or(Self::Err::InvalidTypeId(type_id))? {
             ScryptoType::PackageAddress => {
                 PackageAddress::try_from(data)
@@ -208,15 +231,17 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 Decimal::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
             }
             ScryptoType::Bucket => {
-                let bucket = Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
+                let bucket =
+                    Bucket::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidBucket)?;
                 if self.buckets.insert(bucket, path.clone().into()).is_some() {
-                    return Err(ScryptoCustomValueCheckError::DuplicateIds)
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
             ScryptoType::Proof => {
-                let proof = Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
+                let proof =
+                    Proof::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidProof)?;
                 if self.proofs.insert(proof, path.clone().into()).is_some() {
-                    return Err(ScryptoCustomValueCheckError::DuplicateIds)
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
             ScryptoType::Vault => {

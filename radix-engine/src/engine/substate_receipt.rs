@@ -1,14 +1,13 @@
+use crate::engine::track::VirtualSubstateId;
+use crate::engine::SubstateParentId;
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
-use scrypto::rust::ops::RangeFull;
 use scrypto::rust::collections::*;
+use scrypto::rust::ops::RangeFull;
 use scrypto::rust::vec::Vec;
-use crate::engine::SubstateParentId;
-use crate::engine::track::{VirtualSubstateId};
 
 use crate::ledger::*;
-
 
 pub struct CommitReceipt {
     pub virtual_down_substates: HashSet<HardVirtualSubstateId>,
@@ -73,7 +72,9 @@ impl SubstateOperationsReceipt {
                 SubstateOperation::VirtualDown(VirtualSubstateId(parent_id, key)) => {
                     let parent_hard_id = match parent_id {
                         SubstateParentId::Exists(real_id) => real_id,
-                        SubstateParentId::New(index) => PhysicalSubstateId(hash, index.try_into().unwrap()),
+                        SubstateParentId::New(index) => {
+                            PhysicalSubstateId(hash, index.try_into().unwrap())
+                        }
                     };
                     let virtual_substate_id = HardVirtualSubstateId(parent_hard_id, key);
                     receipt.virtual_down(virtual_substate_id);

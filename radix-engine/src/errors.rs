@@ -7,7 +7,6 @@ use scrypto::values::*;
 use crate::engine::*;
 use crate::model::*;
 
-
 /// Represents an error when validating a transaction.
 #[derive(Debug, PartialEq, Eq)]
 pub enum TransactionValidationError {
@@ -175,7 +174,6 @@ pub enum RuntimeError {
 
     /// Can't move restricted proof.
     CantMoveRestrictedProof(ProofId),
-
 }
 
 impl fmt::Display for RuntimeError {

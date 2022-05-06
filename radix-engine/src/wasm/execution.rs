@@ -1,8 +1,6 @@
-
 use super::env_resolver::*;
 use super::errors::*;
 use wasmi::{ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef};
-
 
 pub fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), WasmValidationError> {
     // Instantiate

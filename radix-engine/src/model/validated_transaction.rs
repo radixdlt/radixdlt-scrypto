@@ -1,6 +1,6 @@
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::{BTreeSet};
+use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;

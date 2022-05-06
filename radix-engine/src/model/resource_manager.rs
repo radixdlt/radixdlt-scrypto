@@ -7,7 +7,10 @@ use scrypto::prelude::AccessRule::{AllowAll, DenyAll};
 use scrypto::prelude::ResourceMethod::Withdraw;
 use scrypto::resource::Mutability::LOCKED;
 use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
-use scrypto::resource::{ResourceMethod::{self, *}, AccessRule, Mutability};
+use scrypto::resource::{
+    AccessRule, Mutability,
+    ResourceMethod::{self, *},
+};
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -458,11 +461,9 @@ impl ResourceManager {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
                 let data = Self::process_non_fungible_data(&new_mutable_data)?;
-                let mut non_fungible = system_api
-                    .get_non_fungible(&non_fungible_address)
-                    .ok_or(ResourceManagerError::NonFungibleNotFound(
-                        non_fungible_address.clone(),
-                    ))?;
+                let mut non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
+                    ResourceManagerError::NonFungibleNotFound(non_fungible_address.clone()),
+                )?;
                 non_fungible.set_mutable_data(data.raw);
                 system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
 

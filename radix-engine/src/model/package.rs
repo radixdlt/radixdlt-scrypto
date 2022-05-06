@@ -8,8 +8,8 @@ use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{ SystemApi};
-use crate::wasm::{  WasmValidationError, parse_module, instantiate_module, validate_module};
+use crate::engine::SystemApi;
+use crate::wasm::{instantiate_module, parse_module, validate_module, WasmValidationError};
 use wasmi::*; // TODO: remove wasmi coupling
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -31,9 +31,8 @@ impl Package {
     /// Validates and creates a package
     pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
         // Parse
-        let module =  parse_module(&code)?;
+        let module = parse_module(&code)?;
         let (module_ref, memory_ref) = validate_module(&module)?;
- 
 
         // TODO: Currently a hack so that we don't require a package_init function.
         // TODO: Fix this by implement package metadata along with the code during compilation.
@@ -97,13 +96,11 @@ impl Package {
             .ok_or(PackageError::BlueprintNotFound)
     }
 
-    
     pub fn load_module(&self) -> Result<(ModuleRef, MemoryRef), PackageError> {
-        let module =  parse_module(&self.code).unwrap();
-        let inst =  instantiate_module(&module).unwrap();
+        let module = parse_module(&self.code).unwrap();
+        let inst = instantiate_module(&module).unwrap();
         Ok(inst)
     }
-
 
     pub fn static_main<S: SystemApi>(
         function: &str,
