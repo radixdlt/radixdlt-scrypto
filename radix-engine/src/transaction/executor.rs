@@ -140,24 +140,6 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         }
     }
 
-    /// Overwrites a package.
-    pub fn overwrite_package(
-        &mut self,
-        package_address: PackageAddress,
-        code: Vec<u8>,
-    ) -> Result<(), WasmValidationError> {
-        let nonce = self.substate_store.get_nonce();
-        self.substate_store.increase_nonce();
-
-        let tx_hash = hash(nonce.to_le_bytes());
-        let mut id_gen = SubstateIdGenerator::new(tx_hash);
-
-        let package = Package::new(code)?;
-        self.substate_store
-            .put_encoded_substate(&package_address, &package, id_gen.next());
-        Ok(())
-    }
-
     pub fn validate_and_execute(
         &mut self,
         signed: &SignedTransaction,

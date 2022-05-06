@@ -4,9 +4,9 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::AccessRule::{AllowAll, DenyAll};
-use scrypto::prelude::ResourceMethod::Withdraw;
+use scrypto::prelude::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::Mutability::LOCKED;
-use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
+use scrypto::resource::ResourceMethodAuthKey::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
 use scrypto::resource::*;
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
@@ -15,6 +15,7 @@ use scrypto::rust::vec::*;
 use scrypto::values::ScryptoValue;
 
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
+use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 
 /// Converts soft authorization rule to a hard authorization rule.
 /// Currently required as all auth is defined by soft authorization rules.
@@ -97,14 +98,20 @@ impl MethodAccessRule {
     }
 }
 
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+enum ResourceMethodRule {
+    Public,
+    Protected(ResourceMethodAuthKey),
+}
+
 /// The definition of a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ResourceManager {
     resource_type: ResourceType,
     metadata: HashMap<String, String>,
-    method_table: HashMap<String, Option<ResourceMethod>>,
-    vault_method_table: HashMap<String, Option<ResourceMethod>>,
-    authorization: HashMap<ResourceMethod, MethodAccessRule>,
+    method_table: HashMap<String, ResourceMethodRule>,
+    vault_method_table: HashMap<String, ResourceMethodRule>,
+    authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule>,
     total_supply: Decimal,
 }
 
@@ -112,14 +119,11 @@ impl ResourceManager {
     pub fn new(
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        mut auth: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+        mut auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
     ) -> Result<Self, ResourceManagerError> {
-        let mut vault_method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
-        vault_method_table.insert("take".to_string(), Some(Withdraw));
-        vault_method_table.insert("put".to_string(), Some(Deposit));
-        if let ResourceType::NonFungible = resource_type {
-            vault_method_table.insert("take_non_fungibles".to_string(), Some(Withdraw));
-        }
+        let mut vault_method_table: HashMap<String, ResourceMethodRule> = HashMap::new();
+        vault_method_table.insert("take".to_string(), Protected(Withdraw));
+        vault_method_table.insert("put".to_string(), Protected(Deposit));
         for pub_method in [
             "get_amount",
             "get_resource_address",
@@ -128,14 +132,16 @@ impl ResourceManager {
             "create_proof_by_amount",
             "create_proof_by_ids",
         ] {
-            vault_method_table.insert(pub_method.to_string(), None);
+            vault_method_table.insert(pub_method.to_string(), Public);
         }
+        // Non Fungible methods
+        vault_method_table.insert("take_non_fungibles".to_string(), Protected(Withdraw));
 
 
-        let mut method_table: HashMap<String, Option<ResourceMethod>> = HashMap::new();
-        method_table.insert("mint".to_string(), Some(Mint));
-        method_table.insert("burn".to_string(), Some(Burn));
-        method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
+        let mut method_table: HashMap<String, ResourceMethodRule> = HashMap::new();
+        method_table.insert("mint".to_string(), Protected(Mint));
+        method_table.insert("burn".to_string(), Protected(Burn));
+        method_table.insert("update_metadata".to_string(), Protected(UpdateMetadata));
         for pub_method in [
             "create_bucket",
             "get_metadata",
@@ -143,23 +149,19 @@ impl ResourceManager {
             "get_total_supply",
             "create_vault",
         ] {
-            method_table.insert(pub_method.to_string(), None);
+            method_table.insert(pub_method.to_string(), Public);
         }
 
-        if let ResourceType::NonFungible = resource_type {
-            method_table.insert(
-                "update_non_fungible_data".to_string(),
-                Some(UpdateNonFungibleData),
-            );
-            for pub_method in [
-                "non_fungible_exists",
-                "get_non_fungible",
-            ] {
-                method_table.insert(pub_method.to_string(), None);
-            }
+        // Non Fungible methods
+        method_table.insert("update_non_fungible_data".to_string(), Protected(UpdateNonFungibleData));
+        for pub_method in [
+            "non_fungible_exists",
+            "get_non_fungible",
+        ] {
+            method_table.insert(pub_method.to_string(), Public);
         }
 
-        let mut authorization: HashMap<ResourceMethod, MethodAccessRule> = HashMap::new();
+        let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();
         for (auth_entry_key, default) in [
             (Mint, (DenyAll, LOCKED)),
             (Burn, (DenyAll, LOCKED)),
@@ -192,8 +194,8 @@ impl ResourceManager {
 
         match self.vault_method_table.get(method.name()) {
             None => &MethodAuthorization::Unsupported,
-            Some(None) => &MethodAuthorization::AllowAll,
-            Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+            Some(Public) => &MethodAuthorization::AllowAll,
+            Some(Protected(auth_key)) => self.authorization.get(auth_key).unwrap().get_method_auth(),
         }
     }
 
@@ -204,8 +206,8 @@ impl ResourceManager {
             Ok(ConsumingBucketMethod::Burn()) => {
                 match self.method_table.get("burn") {
                     None => &MethodAuthorization::Unsupported,
-                    Some(None) => &MethodAuthorization::AllowAll,
-                    Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+                    Some(Public) => &MethodAuthorization::AllowAll,
+                    Some(Protected(method)) => self.authorization.get(method).unwrap().get_method_auth(),
                 }
             }
         }
@@ -237,8 +239,8 @@ impl ResourceManager {
             method => {
                 match self.method_table.get(method.name()) {
                     None => &MethodAuthorization::Unsupported,
-                    Some(None) => &MethodAuthorization::AllowAll,
-                    Some(Some(method)) => self.authorization.get(method).unwrap().get_method_auth(),
+                    Some(Public) => &MethodAuthorization::AllowAll,
+                    Some(Protected(method)) => self.authorization.get(method).unwrap().get_method_auth(),
                 }
             }
         }
@@ -476,7 +478,6 @@ impl ResourceManager {
                 let data = Self::process_non_fungible_data(&new_mutable_data)?;
                 let mut non_fungible = system_api
                     .get_non_fungible(&non_fungible_address)
-                    .cloned()
                     .ok_or(ResourceManagerError::NonFungibleNotFound(
                         non_fungible_address.clone(),
                     ))?;
