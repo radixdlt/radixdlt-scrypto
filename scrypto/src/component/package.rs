@@ -10,6 +10,11 @@ use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum PackageFunction {
+    Publish(Vec<u8>),
+}
+
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PackageAddress(pub [u8; 26]);

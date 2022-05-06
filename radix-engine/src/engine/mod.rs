@@ -5,6 +5,7 @@ mod process;
 mod substate_receipt;
 mod track;
 mod wasm_env;
+pub mod receipt;
 
 pub use component_objects::*;
 pub use id_allocator::*;

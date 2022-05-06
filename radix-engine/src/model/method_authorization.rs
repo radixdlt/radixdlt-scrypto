@@ -94,8 +94,8 @@ pub enum HardProofRuleResourceList {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardProofRule {
-    This(HardResourceOrNonFungible),
-    SomeOfResource(HardDecimal, HardResourceOrNonFungible),
+    Require(HardResourceOrNonFungible),
+    AmountOf(HardDecimal, HardResourceOrNonFungible),
     AllOf(HardProofRuleResourceList),
     AnyOf(HardProofRuleResourceList),
     CountOf(HardCount, HardProofRuleResourceList),
@@ -104,14 +104,14 @@ pub enum HardProofRule {
 impl HardProofRule {
     pub fn check(&self, auth_zones: &[&AuthZone]) -> Result<(), MethodAuthorizationError> {
         match self {
-            HardProofRule::This(resource) => {
+            HardProofRule::Require(resource) => {
                 if resource.check(auth_zones) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
                 }
             }
-            HardProofRule::SomeOfResource(HardDecimal::Amount(amount), resource) => {
+            HardProofRule::AmountOf(HardDecimal::Amount(amount), resource) => {
                 if resource.check_has_amount(*amount, auth_zones) {
                     Ok(())
                 } else {
