@@ -6,6 +6,16 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  check-code-format:
+    name: Check code format
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Check format
+      run: bash ./check.sh
   sbor-unit-tests:
     name: Run SBOR unit tests
     runs-on: ${{ matrix.os }}

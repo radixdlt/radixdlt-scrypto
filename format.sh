@@ -16,9 +16,9 @@ cd "$(dirname "$0")"
 (cd simulator; cargo fmt)
 (cd transaction-manifest; cargo fmt)
 
-(cd assets/account; scrypto fmt)
-(cd assets/system; scrypto fmt)
-(cd examples; find . -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && scrypto fmt" \;)
-(cd radix-engine/tests; find . -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && scrypto fmt" \;)
+(cd assets/account; cargo fmt)
+(cd assets/system; cargo fmt)
+(cd examples; find . -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && cargo fmt" \;)
+(cd radix-engine/tests; find . -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && cargo fmt" \;)
 
-echo "All packages have been formatted."
+echo "Code format check passed!"
