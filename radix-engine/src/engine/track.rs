@@ -412,7 +412,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.up_substates.insert(address.encode(), value.into());
     }
 
-    /// Returns an immutable reference to a non-fungible, if exists.
+    /// Returns the value of a key value pair
     pub fn read_key_value(
         &mut self,
         parent_address: Address,
@@ -444,7 +444,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    /// Sets a non-fungible.
+    /// Sets a key value
     pub fn set_key_value<V: Into<SubstateValue>>(
         &mut self,
         parent_address: Address,
