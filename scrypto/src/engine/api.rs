@@ -50,7 +50,7 @@ macro_rules! sfunctions {
             $vis $fn $method_name $s -> $rtn {
                 let input = InvokeSNodeInput {
                     snode_ref: $snode_ref,
-                    arg: scrypto::buffer::scrypto_encode(&$method_enum),
+                    call_data: scrypto::buffer::scrypto_encode(&$method_enum),
                 };
                 let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
                 scrypto_decode(&output.rtn).unwrap()
@@ -62,7 +62,7 @@ macro_rules! sfunctions {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct InvokeSNodeInput {
     pub snode_ref: SNodeRef,
-    pub arg: Vec<u8>,
+    pub call_data: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -165,7 +165,7 @@ pub struct GetCallDataInput {}
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetCallDataOutput {
     pub component: Option<ComponentAddress>,
-    pub arg: Vec<u8>,
+    pub call_data: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

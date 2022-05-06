@@ -57,7 +57,7 @@ impl Runtime {
                 package_address,
                 blueprint_name.as_ref().to_owned(),
             )),
-            arg: bytes,
+            call_data: bytes,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
@@ -84,7 +84,7 @@ impl Runtime {
 
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
-            arg: bytes,
+            call_data: bytes,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 

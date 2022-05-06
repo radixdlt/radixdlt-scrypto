@@ -212,7 +212,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::CallFunction {
                 package_address,
                 blueprint_name,
-                arg,
+                call_data: arg,
             } => {
                 let validated_arg = ScryptoValue::from_slice(&arg)
                     .map_err(DecompileError::ParseScryptoValueError)?;
@@ -240,7 +240,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             }
             Instruction::CallMethod {
                 component_address,
-                arg,
+                call_data: arg,
             } => {
                 let validated_arg = ScryptoValue::from_slice(&arg)
                     .map_err(DecompileError::ParseScryptoValueError)?;

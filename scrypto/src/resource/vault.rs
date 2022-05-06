@@ -55,7 +55,7 @@ impl Vault {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(resource_address),
-            arg: scrypto_encode(&ResourceManagerMethod::CreateVault()),
+            call_data: scrypto_encode(&ResourceManagerMethod::CreateVault()),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

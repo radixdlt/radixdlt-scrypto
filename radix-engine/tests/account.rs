@@ -87,7 +87,7 @@ fn account_to_bucket_to_account() {
             builder
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
-                    arg: invocation!(deposit(scrypto::resource::Bucket(bucket_id))),
+                    call_data: invocation!(deposit(scrypto::resource::Bucket(bucket_id))),
                 })
                 .0
         })
