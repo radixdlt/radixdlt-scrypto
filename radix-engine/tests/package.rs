@@ -6,6 +6,7 @@ use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::WasmValidationError::NoValidMemoryExport;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
@@ -50,7 +51,7 @@ fn large_return_len_should_cause_memory_access_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "LargeReturnSize", "something", args![])
+        .call_function(package, "LargeReturnSize", call_data!(something()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -70,7 +71,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "MaxReturnSize", "something", args![])
+        .call_function(package, "MaxReturnSize", call_data!(something()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -90,7 +91,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package, "ZeroReturnSize", "something", args![])
+        .call_function(package, "ZeroReturnSize", call_data!(something()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);

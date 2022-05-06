@@ -4,6 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 fn test_dynamic_auth(
@@ -39,8 +40,9 @@ fn test_dynamic_auth(
         .call_function(
             package,
             "AuthComponent",
-            "create_component",
-            vec![scrypto_encode(addresses.get(initial_auth).unwrap())],
+            call_data![create_component(
+                addresses.get(initial_auth).unwrap().clone()
+            )],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -53,8 +55,7 @@ fn test_dynamic_auth(
             .new_transaction_builder()
             .call_method(
                 component,
-                "update_auth",
-                vec![scrypto_encode(addresses.get(next_auth).unwrap())],
+                call_data![update_auth(addresses.get(next_auth).unwrap().clone())],
             )
             .build(test_runner.get_nonce([]))
             .sign([]);
@@ -67,7 +68,7 @@ fn test_dynamic_auth(
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(component, "get_secret", args![])
+        .call_method(component, call_data![get_secret()])
         .build(test_runner.get_nonce(pks))
         .sign(sks);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
@@ -114,8 +115,7 @@ fn test_dynamic_authlist(
         .call_function(
             package,
             "AuthListComponent",
-            "create_component",
-            args!(2u8, list, authorization),
+            call_data![create_component(2u8, list, authorization)],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -126,7 +126,7 @@ fn test_dynamic_authlist(
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(component, "get_secret", args![])
+        .call_method(component, call_data!(get_secret()))
         .build(test_runner.get_nonce(pks))
         .sign(sks);
     let receipt = test_runner.validate_and_execute(&transaction2);
@@ -239,12 +239,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "Chess",
-            "create_game",
-            vec![scrypto_encode(&players)],
-        )
+        .call_function(package, "Chess", call_data![create_game(players)])
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -254,7 +249,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(component, "make_move", args![])
+        .call_method(component, call_data!(make_move()))
         .build(test_runner.get_nonce([other_pk]))
         .sign([&other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction2);
@@ -279,12 +274,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "Chess",
-            "create_game",
-            vec![scrypto_encode(&players)],
-        )
+        .call_function(package, "Chess", call_data![create_game(players)])
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -292,7 +282,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let component = receipt1.new_component_addresses[0];
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(component, "make_move", args![])
+        .call_method(component, call_data!(make_move()))
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     test_runner
@@ -303,7 +293,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     // Act
     let transaction3 = test_runner
         .new_transaction_builder()
-        .call_method(component, "make_move", args![])
+        .call_method(component, call_data!(make_move()))
         .build(test_runner.get_nonce([other_pk]))
         .sign([&other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction3);

@@ -11,8 +11,8 @@ use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
+use crate::sfunctions;
 use crate::types::*;
-use crate::{args, invocations};
 use sbor::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
@@ -87,7 +87,7 @@ impl ResourceAddress {}
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
-    invocations! {
+    sfunctions! {
         SNodeRef::ResourceRef(self.0) => {
             fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
                 ResourceManagerMethod::Mint(mint_params)

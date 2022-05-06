@@ -5,7 +5,7 @@ use crate::math::Decimal;
 use crate::resource::*;
 use crate::rust::collections::BTreeSet;
 use crate::rust::string::ToString;
-use crate::{args, invocations};
+use crate::sfunctions;
 use sbor::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -26,7 +26,7 @@ pub enum AuthZoneMethod {
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    invocations! {
+    sfunctions! {
         SNodeRef::AuthZoneRef => {
             pub fn push(proof: Proof) -> () {
                 AuthZoneMethod::Push(proof)
