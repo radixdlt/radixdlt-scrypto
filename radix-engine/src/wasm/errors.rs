@@ -44,16 +44,30 @@ impl From<wasmi::Error> for WasmiError {
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]
 pub enum WasmValidationError {
-    /// The wasm module is invalid.
-    InvalidModule,
+    /// Failed to parse.
+    FailedToParse,
+    // Failed to instantiate.
+    FailedToInstantiate,
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
     /// The wasm module uses float points.
     FloatingPointNotAllowed,
-    /// The wasm module does not have memory export.
-    NoValidMemoryExport,
-    /// package_init function does not exist in module
-    NoPackageInitExport(WasmiError),
-    /// package_init function is not the correct interface
+    /// The wasm module does not have the `memory` export.
+    NoMemoryExport,
+    /// The wasm module does not have the `scrypto_alloc` export.
+    NoScryptoAllocExport,
+    /// The wasm module does not have the `scrypto_free` export.
+    NoScryptoFreeExport,
+    /// TODO: remove
     InvalidPackageInit,
+    /// TODO: remove
+    NoPackageInitExport,
 }
+
+/// Represents an error when instrumenting a WASM module.
+#[derive(Debug, PartialEq, Clone)]
+pub enum WasmInstrumentationError {}
+
+/// Represents an error when executing a WASM module.
+#[derive(Debug, PartialEq, Clone)]
+pub enum WasmExecutionError {}

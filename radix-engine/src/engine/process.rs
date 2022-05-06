@@ -430,7 +430,9 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     ));
                 }
 
-                let (module, memory) = package.load_module().unwrap();
+                let m = package.load_module();
+                let module = m.module_ref;
+                let memory = m.memory_ref;
 
                 let (interpreter_state, args) = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();

@@ -5,7 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::PackageError;
-use radix_engine::wasm::WasmValidationError::NoValidMemoryExport;
+use radix_engine::wasm::WasmValidationError::NoMemoryExport;
 use scrypto::prelude::*;
 
 #[test]
@@ -36,7 +36,7 @@ fn missing_memory_should_cause_error() {
     let error = receipt.result.expect_err("Should be error.");
     assert_eq!(
         error,
-        RuntimeError::PackageError(PackageError::WasmValidationError(NoValidMemoryExport))
+        RuntimeError::PackageError(PackageError::WasmValidationError(NoMemoryExport))
     );
 }
 
