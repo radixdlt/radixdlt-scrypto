@@ -2,6 +2,7 @@ use std::io;
 
 use radix_engine::errors::*;
 use radix_engine::transaction::*;
+use radix_engine::wasm::*;
 use sbor::*;
 
 use crate::ledger::*;
