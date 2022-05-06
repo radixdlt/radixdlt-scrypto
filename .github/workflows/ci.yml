@@ -14,6 +14,8 @@ jobs:
         os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v2
+    - name: Install Scrypto toolchain
+      run: cargo install --path ./simulator
     - name: Check format
       run: bash ./check.sh
   sbor-unit-tests:
