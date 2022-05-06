@@ -76,7 +76,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().map(| v| {
+            let match_arms = variants.iter().map(|v| {
                 let v_id = &v.ident;
                 let name_string = v_id.to_string();
                 let name: Expr = parse_quote! { #name_string };

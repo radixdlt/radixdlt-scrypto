@@ -4,6 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
@@ -20,8 +21,7 @@ fn create_non_fungible_mutable() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_non_fungible_mutable",
-            vec![],
+            call_data!(create_non_fungible_mutable()),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([]))
@@ -44,8 +44,7 @@ fn can_burn_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_burnable_non_fungible",
-            vec![],
+            call_data!(create_burnable_non_fungible()),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([]))
@@ -66,8 +65,7 @@ fn can_burn_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
-            "verify_does_not_exist",
-            args![non_fungible_address],
+            call_data![verify_does_not_exist(non_fungible_address)],
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
@@ -91,29 +89,33 @@ fn test_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
-            "create_non_fungible_fixed",
-            vec![],
+            call_data!(create_non_fungible_fixed()),
         )
         .call_function(
             package,
             "NonFungibleTest",
-            "update_and_get_non_fungible",
-            vec![],
-        )
-        .call_function(package, "NonFungibleTest", "non_fungible_exists", args![])
-        .call_function(package, "NonFungibleTest", "take_and_put_bucket", args![])
-        .call_function(package, "NonFungibleTest", "take_and_put_vault", args![])
-        .call_function(
-            package,
-            "NonFungibleTest",
-            "get_non_fungible_ids_bucket",
-            vec![],
+            call_data!(update_and_get_non_fungible()),
         )
         .call_function(
             package,
             "NonFungibleTest",
-            "get_non_fungible_ids_vault",
-            vec![],
+            call_data!(non_fungible_exists()),
+        )
+        .call_function(
+            package,
+            "NonFungibleTest",
+            call_data!(take_and_put_bucket()),
+        )
+        .call_function(package, "NonFungibleTest", call_data!(take_and_put_vault()))
+        .call_function(
+            package,
+            "NonFungibleTest",
+            call_data!(get_non_fungible_ids_bucket()),
+        )
+        .call_function(
+            package,
+            "NonFungibleTest",
+            call_data!(get_non_fungible_ids_vault()),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
@@ -133,7 +135,11 @@ fn test_singleton_non_fungible() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "NonFungibleTest", "singleton_non_fungible", vec![])
+        .call_function(
+            package,
+            "NonFungibleTest",
+            call_data!(singleton_non_fungible()),
+        )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
         .sign([&sk]);

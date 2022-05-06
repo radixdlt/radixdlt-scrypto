@@ -46,7 +46,10 @@ pub trait ReadableSubstateStore {
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId>;
 
     // Temporary Encoded/Decoded interface
-    fn get_decoded_substate<A: Encode, T: Decode>(&self, address: &A) -> Option<(T, PhysicalSubstateId)> {
+    fn get_decoded_substate<A: Encode, T: Decode>(
+        &self,
+        address: &A,
+    ) -> Option<(T, PhysicalSubstateId)> {
         self.get_substate(&scrypto_encode(address))
             .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
     }

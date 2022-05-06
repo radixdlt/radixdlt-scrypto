@@ -1,6 +1,6 @@
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::{BTreeSet};
+use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
@@ -68,13 +68,11 @@ pub enum ValidatedInstruction {
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
-        function: String,
-        args: Vec<ScryptoValue>,
+        call_data: ScryptoValue,
     },
     CallMethod {
         component_address: ComponentAddress,
-        method: String,
-        args: Vec<ScryptoValue>,
+        call_data: ScryptoValue,
     },
     CallMethodWithAllResources {
         component_address: ComponentAddress,

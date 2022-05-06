@@ -1,16 +1,16 @@
+use crate::engine::{Track, TrackReceipt};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use sbor::*;
-use scrypto::rule;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::rule;
 use scrypto::prelude::LOCKED;
-use scrypto::resource::ResourceMethod::Withdraw;
+use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec;
-use crate::engine::{Track, TrackReceipt};
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -30,7 +30,8 @@ const SYSTEM_COMPONENT_NAME: &str = "System";
 use crate::model::*;
 
 fn create_genesis<S: ReadableSubstateStore>(mut track: Track<S>) -> TrackReceipt {
-    let system_package = Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
+    let system_package =
+        Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
     track.create_uuid_value_2(SYSTEM_PACKAGE, system_package);
     let account_package =
         Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
@@ -50,7 +51,8 @@ fn create_genesis<S: ReadableSubstateStore>(mut track: Track<S>) -> TrackReceipt
         ResourceType::Fungible { divisibility: 18 },
         metadata,
         resource_auth,
-    ).unwrap();
+    )
+    .unwrap();
     let minted_xrd = xrd_resource_manager
         .mint_fungible(XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone())
         .unwrap();
@@ -62,7 +64,8 @@ fn create_genesis<S: ReadableSubstateStore>(mut track: Track<S>) -> TrackReceipt
         ResourceType::NonFungible,
         HashMap::new(),
         ecdsa_resource_auth,
-    ).unwrap();
+    )
+    .unwrap();
     track.create_uuid_value_2(ECDSA_TOKEN, ecdsa_token);
 
     let system_vault = Vault::new(minted_xrd);

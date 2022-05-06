@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use radix_engine::ledger::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
-use sbor::{Decode};
+use sbor::Decode;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
 
@@ -97,8 +97,7 @@ impl QueryableSubstateStore for RadixEngineDB {
 
 impl ReadableSubstateStore for RadixEngineDB {
     fn get_substate(&self, address: &[u8]) -> Option<Substate> {
-        self.read(address)
-            .map(|b| scrypto_decode(&b).unwrap())
+        self.read(address).map(|b| scrypto_decode(&b).unwrap())
     }
 
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
@@ -111,7 +110,6 @@ impl ReadableSubstateStore for RadixEngineDB {
             .map(|v| scrypto_decode(&v).unwrap())
             .unwrap_or(0)
     }
-
 
     fn get_nonce(&self) -> u64 {
         let id = scrypto_encode(&"nonce");
