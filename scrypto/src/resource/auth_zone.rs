@@ -15,6 +15,26 @@ use crate::rust::string::ToString;
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
+    pub fn start() {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::AuthZoneManager,
+            function: "start".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    pub fn end() {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::AuthZoneManager,
+            function: "end".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
     /// Pushes a proof to the auth zone.
     pub fn push(proof: Proof) {
         let input = InvokeSNodeInput {
