@@ -4,10 +4,10 @@
 pub mod utils;
 
 use crate::utils::assert_json_eq;
-use sbor::rust::vec;
-use sbor::rust::vec::Vec;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use serde_json::json;
 

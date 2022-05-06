@@ -1,11 +1,12 @@
-use sbor::*;
 use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::call_data_bytes_args;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
+use sbor::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum SystemFunction {
@@ -48,24 +49,13 @@ impl Runtime {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
-        let mut fields = Vec::new();
-        for arg in args {
-            fields.push(::sbor::decode_any(&arg).unwrap());
-        }
-        let variant = ::sbor::Value::Enum {
-            name: function.as_ref().to_owned(),
-            fields
-        };
-        let mut bytes = Vec::new();
-        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-        ::sbor::encode_any(None, &variant, &mut enc);
-
+        let call_data = call_data_bytes_args!(function.as_ref().to_owned(), args);
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Blueprint(
                 package_address,
                 blueprint_name.as_ref().to_owned(),
             )),
-            call_data: bytes,
+            call_data,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
@@ -84,7 +74,7 @@ impl Runtime {
         }
         let variant = ::sbor::Value::Enum {
             name: method.as_ref().to_owned(),
-            fields
+            fields,
         };
         let mut bytes = Vec::new();
         let mut enc = ::sbor::Encoder::with_type(&mut bytes);

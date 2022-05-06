@@ -1,7 +1,7 @@
-use sbor::*;
-use crate::{sfunctions};
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
+use crate::sfunctions;
+use sbor::*;
 
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
@@ -10,8 +10,8 @@ use crate::resource::*;
 use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
-use crate::rust::vec::Vec;
 use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]

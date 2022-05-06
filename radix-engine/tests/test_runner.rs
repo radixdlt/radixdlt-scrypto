@@ -1,8 +1,8 @@
 use radix_engine::ledger::*;
 use radix_engine::model::{Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
-use scrypto::{abi, call_data};
 use scrypto::prelude::*;
+use scrypto::{abi, call_data};
 
 pub struct TestRunner<'l> {
     executor: TransactionExecutor<'l, InMemorySubstateStore>,
@@ -129,7 +129,12 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                call_data!(create_restricted_token(mint_auth, burn_auth, withdraw_auth, admin_auth)),
+                call_data!(create_restricted_token(
+                    mint_auth,
+                    burn_auth,
+                    withdraw_auth,
+                    admin_auth
+                )),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))

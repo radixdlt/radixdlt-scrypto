@@ -158,7 +158,8 @@ impl Bucket {
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, BucketError> {
-        let method: BucketMethod = scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+        let method: BucketMethod =
+            scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
 
         match method {
             BucketMethod::Take(amount) => {
@@ -198,7 +199,9 @@ impl Bucket {
                 Ok(ScryptoValue::from_value(&()))
             }
             BucketMethod::GetAmount() => Ok(ScryptoValue::from_value(&self.total_amount())),
-            BucketMethod::GetResourceAddress() => Ok(ScryptoValue::from_value(&self.resource_address())),
+            BucketMethod::GetResourceAddress() => {
+                Ok(ScryptoValue::from_value(&self.resource_address()))
+            }
             BucketMethod::CreateProof() => {
                 let proof = self
                     .create_proof(bucket_id)
@@ -218,7 +221,8 @@ impl Bucket {
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, BucketError> {
-        let method: ConsumingBucketMethod = scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+        let method: ConsumingBucketMethod =
+            scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
         match method {
             ConsumingBucketMethod::Burn() => {
                 // Notify resource manager, TODO: Should not need to notify manually
@@ -233,7 +237,8 @@ impl Bucket {
                         system_api.set_non_fungible(non_fungible_address, Option::None);
                     }
                 }
-                system_api.return_borrowed_global_resource_manager(resource_address, resource_manager);
+                system_api
+                    .return_borrowed_global_resource_manager(resource_address, resource_manager);
 
                 Ok(ScryptoValue::from_value(&()))
             }

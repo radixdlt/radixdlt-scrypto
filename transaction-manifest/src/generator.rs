@@ -3,7 +3,8 @@ use radix_engine::engine::*;
 use radix_engine::model::*;
 use sbor::any::{encode_any, Value};
 use sbor::type_id::*;
-use sbor::{Encoder};
+use sbor::Encoder;
+use scrypto::call_data_any_args;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
@@ -291,18 +292,10 @@ pub fn generate_instruction(
                 fields.push(validated_arg.dom);
             }
 
-            let variant = ::sbor::Value::Enum {
-                name: generate_string(function)?,
-                fields
-            };
-            let mut bytes = Vec::new();
-            let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-            ::sbor::encode_any(None, &variant, &mut enc);
-
             Instruction::CallFunction {
                 package_address: generate_package_address(package_address)?,
                 blueprint_name: generate_string(blueprint_name)?,
-                call_data: bytes,
+                call_data: call_data_any_args!(generate_string(function)?, fields),
             }
         }
         ast::Instruction::CallMethod {
@@ -322,7 +315,7 @@ pub fn generate_instruction(
 
             let variant = ::sbor::Value::Enum {
                 name: generate_string(method)?,
-                fields
+                fields,
             };
             let mut bytes = Vec::new();
             let mut enc = ::sbor::Encoder::with_type(&mut bytes);
@@ -786,10 +779,10 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::call_data;
     use super::*;
     use crate::lexer::tokenize;
     use crate::parser::Parser;
+    use scrypto::call_data;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1073,9 +1066,9 @@ mod tests {
                         call_data: call_data!(withdraw_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
-                                    "030000000000000000000000000000000000000000000000000004"
-                                )
-                                .unwrap()
+                                "030000000000000000000000000000000000000000000000000004"
+                            )
+                            .unwrap()
                         ))
                     },
                     Instruction::TakeFromWorktopByAmount {
@@ -1123,9 +1116,9 @@ mod tests {
                         call_data: call_data!(create_proof_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
-                                    "030000000000000000000000000000000000000000000000000004"
-                                )
-                                .unwrap()
+                                "030000000000000000000000000000000000000000000000000004"
+                            )
+                            .unwrap()
                         ))
                     },
                     Instruction::PopFromAuthZone,

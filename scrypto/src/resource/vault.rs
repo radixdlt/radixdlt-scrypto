@@ -1,6 +1,6 @@
-use crate::{sfunctions};
 use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
+use crate::sfunctions;
 use sbor::*;
 
 use crate::crypto::*;

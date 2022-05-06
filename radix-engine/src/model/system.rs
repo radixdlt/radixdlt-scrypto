@@ -1,8 +1,8 @@
+use crate::engine::SystemApi;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::SystemFunction;
 use scrypto::values::ScryptoValue;
-use crate::engine::SystemApi;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SystemError {
@@ -16,7 +16,8 @@ impl System {
         call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, SystemError> {
-        let function: SystemFunction = scrypto_decode(&call_data.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
+        let function: SystemFunction =
+            scrypto_decode(&call_data.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
         match function {
             SystemFunction::GetEpoch() => {
                 // TODO: Make this stateful

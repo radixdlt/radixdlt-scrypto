@@ -188,7 +188,11 @@ fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEn
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(method_enum_ident: &Ident, bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>)> {
+fn generate_dispatcher(
+    method_enum_ident: &Ident,
+    bp_ident: &Ident,
+    items: &[ImplItem],
+) -> Result<(Vec<Expr>, Vec<Expr>)> {
     let mut arm_guards = Vec::<Expr>::new();
     let mut arm_bodies = Vec::<Expr>::new();
 
@@ -235,11 +239,7 @@ fn generate_dispatcher(method_enum_ident: &Ident, bp_ident: &Ident, items: &[Imp
                             }
                         }
                         FnArg::Typed(_) => {
-                            let arg_index = if get_state.is_some() {
-                                i - 1
-                            } else {
-                                i
-                            };
+                            let arg_index = if get_state.is_some() { i - 1 } else { i };
                             let arg = format_ident!("arg{}", arg_index);
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
@@ -269,7 +269,8 @@ fn generate_dispatcher(method_enum_ident: &Ident, bp_ident: &Ident, items: &[Imp
                     stmts.push(stmt);
                 }
 
-                arm_guards.push(parse_quote! { #method_enum_ident::#fn_ident(#(#non_self_args),*) });
+                arm_guards
+                    .push(parse_quote! { #method_enum_ident::#fn_ident(#(#non_self_args),*) });
                 arm_bodies.push(Expr::Block(ExprBlock {
                     attrs: vec![],
                     label: None,

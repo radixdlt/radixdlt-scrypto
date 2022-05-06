@@ -37,18 +37,23 @@ impl Default for InMemorySubstateStore {
 
 impl ReadableSubstateStore for InMemorySubstateStore {
     fn get_substate(&self, address: &[u8]) -> Option<Substate> {
-        self.substates.get(address)
+        self.substates
+            .get(address)
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
     fn get_child_substate(&self, address: &[u8], key: &[u8]) -> Option<Substate> {
         let mut id = address.to_vec();
         id.extend(key.to_vec());
-        self.substates.get(&id).map(|bytes| scrypto_decode(bytes).unwrap())
+        self.substates
+            .get(&id)
+            .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
-        self.substates.get(address).map(|bytes| scrypto_decode(bytes).unwrap())
+        self.substates
+            .get(address)
+            .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
     fn get_epoch(&self) -> u64 {
@@ -62,11 +67,13 @@ impl ReadableSubstateStore for InMemorySubstateStore {
 
 impl WriteableSubstateStore for InMemorySubstateStore {
     fn put_substate(&mut self, address: &[u8], substate: Substate) {
-        self.substates.insert(address.to_vec(), scrypto_encode(&substate));
+        self.substates
+            .insert(address.to_vec(), scrypto_encode(&substate));
     }
 
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
-        self.substates.insert(address.to_vec(), scrypto_encode(&phys_id));
+        self.substates
+            .insert(address.to_vec(), scrypto_encode(&phys_id));
     }
 
     fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate) {
