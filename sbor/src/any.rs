@@ -1,4 +1,3 @@
-use sbor::path::MutableSborPath;
 use crate::decode::*;
 use crate::encode::*;
 use crate::rust::borrow::Borrow;
@@ -6,6 +5,7 @@ use crate::rust::boxed::Box;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
+use sbor::path::MutableSborPath;
 
 /// Represents a SBOR value.
 #[cfg_attr(
@@ -497,7 +497,11 @@ fn decode_next(ty_ctx: Option<u8>, dec: &mut Decoder) -> Result<Value, DecodeErr
     }
 }
 
-pub fn traverse_any<V, E>(path: &mut MutableSborPath, value: &Value, visitor: &mut V) -> Result<(), E>
+pub fn traverse_any<V, E>(
+    path: &mut MutableSborPath,
+    value: &Value,
+    visitor: &mut V,
+) -> Result<(), E>
 where
     V: CustomValueVisitor<Err = E>,
 {
@@ -578,7 +582,12 @@ where
 pub trait CustomValueVisitor {
     type Err;
 
-    fn visit(&mut self, path: &mut MutableSborPath, type_id: u8, data: &[u8]) -> Result<(), Self::Err>;
+    fn visit(
+        &mut self,
+        path: &mut MutableSborPath,
+        type_id: u8,
+        data: &[u8],
+    ) -> Result<(), Self::Err>;
 }
 
 #[cfg(test)]

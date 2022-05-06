@@ -1,7 +1,7 @@
-use sbor::*;
-use crate::{args, invocations};
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
+use crate::sfunctions;
+use sbor::*;
 
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
@@ -10,8 +10,8 @@ use crate::resource::*;
 use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
-use crate::rust::vec::Vec;
 use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -32,7 +32,7 @@ pub enum ProofMethod {
 pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
-    invocations! {
+    sfunctions! {
         SNodeRef::ProofRef(self.0) => {
             fn clone(&self) -> Self { ProofMethod::Clone() }
         }
@@ -40,7 +40,7 @@ impl Clone for Proof {
 }
 
 impl Proof {
-    invocations! {
+    sfunctions! {
         SNodeRef::ProofRef(self.0) => {
             pub fn amount(&self) -> Decimal { ProofMethod::Amount() }
             pub fn resource_address(&self) -> ResourceAddress { ProofMethod::ResourceAddress() }
@@ -48,7 +48,7 @@ impl Proof {
         }
     }
 
-    invocations! {
+    sfunctions! {
         SNodeRef::Proof(self.0) => {
             pub fn drop(self) -> () { ConsumingProofMethod::Drop() }
         }

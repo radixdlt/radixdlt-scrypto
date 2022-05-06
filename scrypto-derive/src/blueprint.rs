@@ -64,10 +64,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_mod });
+    let method_enum_ident = format_ident!("{}Method", bp_ident);
+    let method_enum = generate_method_enum(&method_enum_ident, bp_items);
 
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
-    let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items)?;
+    let (arm_guards, arm_bodies) = generate_dispatcher(&method_enum_ident, bp_ident, bp_items)?;
     let output_dispatcher = quote! {
+        #method_enum
+
         #[no_mangle]
         pub extern "C" fn #dispatcher_ident() -> *mut u8 {
             // Set up panic hook
@@ -78,18 +82,17 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
             // Retrieve call data
-            let calldata: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
+            let output: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
                 ::scrypto::engine::api::GET_CALL_DATA,
                 ::scrypto::engine::api::GetCallDataInput {},
             );
 
+            let method = ::scrypto::buffer::scrypto_decode::<#method_enum_ident>(&output.call_data).unwrap();
+
             // Dispatch the call
             let rtn;
-            match calldata.function.as_str() {
+            match method {
                 #( #arm_guards => #arm_bodies )*
-                _ => {
-                    panic!("Function/method not fund")
-                }
             }
 
             // Return
@@ -145,9 +148,51 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     Ok(output)
 }
 
+fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEnum {
+    let mut variants = Vec::new();
+
+    for item in items {
+        if let ImplItem::Method(method) = item {
+            if !matches!(method.vis, Visibility::Public(_)) {
+                continue;
+            }
+
+            let mut fields = Vec::new();
+            for input in (&method.sig.inputs).into_iter() {
+                match input {
+                    FnArg::Typed(ref t) => {
+                        // Generate an `Arg` and a loading `Stmt` for the i-th argument
+                        let ty = &t.ty;
+                        fields.push(ty);
+                    }
+                    _ => {}
+                }
+            }
+
+            let method_ident = method.sig.ident.clone();
+            let variant: Variant = parse_quote! {
+                #method_ident(#(#fields),*)
+            };
+            variants.push(variant);
+        }
+    }
+
+    parse_quote! {
+        #[allow(non_camel_case_types)]
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        enum #method_enum_ident {
+            #(#variants),*,
+        }
+    }
+}
+
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>)> {
+fn generate_dispatcher(
+    method_enum_ident: &Ident,
+    bp_ident: &Ident,
+    items: &[ImplItem],
+) -> Result<(Vec<Expr>, Vec<Expr>)> {
     let mut arm_guards = Vec::<Expr>::new();
     let mut arm_bodies = Vec::<Expr>::new();
 
@@ -156,15 +201,14 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
 
         if let ImplItem::Method(ref m) = item {
             if let Visibility::Public(_) = &m.vis {
-                let fn_name = &m.sig.ident.to_string();
                 let fn_ident = &m.sig.ident;
 
                 let mut args: Vec<Expr> = vec![];
+                let mut non_self_args: Vec<Expr> = vec![];
                 let mut stmts: Vec<Stmt> = vec![];
                 let mut get_state: Option<Stmt> = None;
                 let mut put_state: Option<Stmt> = None;
                 for (i, input) in (&m.sig.inputs).into_iter().enumerate() {
-                    let arg = format_ident!("arg{}", i);
                     match input {
                         FnArg::Receiver(ref r) => {
                             // Check receiver type and mutability
@@ -175,8 +219,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             let stmt: Stmt = parse_quote! {
-                                let #arg = ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentAddress>(&calldata.args[#i])
-                                .unwrap();
+                                let component_address = output.component.unwrap();
                             };
                             trace!("Generated stmt: {}", quote! { #stmt });
                             args.push(parse_quote! { & #mutability state });
@@ -185,27 +228,24 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can have at most 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = borrow_component!(#arg).get_state();
+                                let #mutability state: blueprint::#bp_ident = borrow_component!(component_address).get_state();
                             });
 
                             // Generate a `Stmt` for writing back component state
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
-                                    ::scrypto::borrow_component!(#arg).put_state(state);
+                                    ::scrypto::borrow_component!(component_address).put_state(state);
                                 });
                             }
                         }
-                        FnArg::Typed(ref t) => {
+                        FnArg::Typed(_) => {
+                            let arg_index = if get_state.is_some() { i - 1 } else { i };
+                            let arg = format_ident!("arg{}", arg_index);
+
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                            let ty = &t.ty;
-                            let stmt: Stmt = parse_quote! {
-                                let #arg =
-                                    ::scrypto::buffer::scrypto_decode::<#ty>(&calldata.args[#i])
-                                    .unwrap();
-                            };
                             trace!("Generated stmt: {}", quote! { #stmt });
                             args.push(parse_quote! { #arg });
-                            stmts.push(stmt);
+                            non_self_args.push(parse_quote! { #arg });
                         }
                     }
                 }
@@ -229,7 +269,8 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                     stmts.push(stmt);
                 }
 
-                arm_guards.push(parse_quote! { #fn_name });
+                arm_guards
+                    .push(parse_quote! { #method_enum_ident::#fn_ident(#(#non_self_args),*) });
                 arm_bodies.push(Expr::Block(ExprBlock {
                     attrs: vec![],
                     label: None,
@@ -478,7 +519,7 @@ mod tests {
     #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self) -> u32 { self.a } }",
+            "struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } }",
         )
         .unwrap();
         let output = handle_blueprint(input).unwrap();
@@ -496,8 +537,8 @@ mod tests {
                     }
 
                     impl Test {
-                        pub fn x(&self) -> u32 {
-                            self.a
+                        pub fn x(&self, i: u32) -> u32 {
+                            i + self.a
                         }
                     }
 
@@ -510,27 +551,31 @@ mod tests {
                         }
                     }
                 }
+
+                #[allow(non_camel_case_types)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                enum TestMethod {
+                    x(u32),
+                }
+
                 #[no_mangle]
                 pub extern "C" fn Test_main() -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
-                    let calldata: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
+                    let output: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
                         ::scrypto::engine::api::GET_CALL_DATA,
                         ::scrypto::engine::api::GetCallDataInput {},
                     );
+
+                    let method = ::scrypto::buffer::scrypto_decode::<TestMethod>(&output.call_data).unwrap();
+
                     let rtn;
-                    match calldata.function.as_str() {
-                        "x" => {
-                            let arg0 =
-                                ::scrypto::buffer::scrypto_decode::<::scrypto::component::ComponentAddress>(
-                                    &calldata.args[0usize]
-                                ).unwrap();
-                            let state: blueprint::Test = borrow_component!(arg0).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state));
-                        }
-                        _ => {
-                            panic!("Function/method not fund")
+                    match method {
+                        TestMethod::x(arg0) => {
+                            let component_address = output.component.unwrap();
+                            let state: blueprint::Test = borrow_component!(component_address).get_state();
+                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, arg0));
                         }
                     }
                     ::scrypto::buffer::scrypto_wrap(rtn)
@@ -546,7 +591,7 @@ mod tests {
                     let methods: Vec<Method> = vec![::scrypto::abi::Method {
                         name: "x".to_owned(),
                         mutability: ::scrypto::abi::Mutability::Immutable,
-                        inputs: vec![],
+                        inputs: vec![<u32>::describe()],
                         output: <u32>::describe(),
                     }];
                     let schema: Type = blueprint::Test::describe();
@@ -559,8 +604,8 @@ mod tests {
                     component_address: ::scrypto::component::ComponentAddress,
                 }
                 impl Test {
-                    pub fn x(&self) -> u32 {
-                        let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!());
+                    pub fn x(&self, arg0: u32) -> u32 {
+                        let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0));
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
                 }

@@ -1,6 +1,6 @@
-use crate::{args, invocations};
-use crate::buffer::{scrypto_decode};
+use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
+use crate::sfunctions;
 use sbor::*;
 
 use crate::crypto::*;
@@ -55,8 +55,7 @@ impl Vault {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(resource_address),
-            function: "main".to_string(),
-            args: args![ResourceManagerMethod::CreateVault()],
+            call_data: scrypto_encode(&ResourceManagerMethod::CreateVault()),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -69,7 +68,7 @@ impl Vault {
         vault
     }
 
-    invocations! {
+    sfunctions! {
         SNodeRef::VaultRef(self.0) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultMethod::Put(bucket)

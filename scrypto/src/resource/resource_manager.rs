@@ -1,5 +1,3 @@
-use crate::{args, invocations};
-use sbor::*;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
@@ -13,7 +11,9 @@ use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
+use crate::sfunctions;
 use crate::types::*;
+use sbor::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
 pub enum ResourceMethodAuthKey {
@@ -38,7 +38,7 @@ pub enum ResourceManagerFunction {
         HashMap<String, String>,
         HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         Option<MintParams>,
-    )
+    ),
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -87,7 +87,7 @@ impl ResourceAddress {}
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
-    invocations! {
+    sfunctions! {
         SNodeRef::ResourceRef(self.0) => {
             fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
                 ResourceManagerMethod::Mint(mint_params)
@@ -154,7 +154,9 @@ impl ResourceManager {
 
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> Bucket {
-        self.mint_internal(MintParams::Fungible { amount: amount.into()})
+        self.mint_internal(MintParams::Fungible {
+            amount: amount.into(),
+        })
     }
 
     /// Mints non-fungible resources
@@ -182,7 +184,11 @@ impl ResourceManager {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(&mut self, id: &NonFungibleId, new_data: T) {
+    pub fn update_non_fungible_data<T: NonFungibleData>(
+        &mut self,
+        id: &NonFungibleId,
+        new_data: T,
+    ) {
         self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
     }
 }
