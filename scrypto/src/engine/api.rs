@@ -36,10 +36,6 @@ pub const EMIT_LOG: u32 = 0xf0;
 pub const GENERATE_UUID: u32 = 0xf1;
 /// Retrieve call data
 pub const GET_CALL_DATA: u32 = 0xf2;
-/// Retrieve current current_epoch
-pub const GET_CURRENT_EPOCH: u32 = 0xf3;
-/// Retrieve transaction hash
-pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Retrieve the running entity
 pub const GET_ACTOR: u32 = 0xf5;
 
@@ -167,25 +163,6 @@ pub struct GetCallDataOutput {
     pub component: Option<ComponentAddress>,
     pub call_data: Vec<u8>,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetCurrentEpochInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetCurrentEpochOutput {
-    pub current_epoch: u64,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetTransactionHashInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetTransactionHashOutput {
-    pub transaction_hash: Hash,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetTransactionSignersInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GenerateUuidInput {}
