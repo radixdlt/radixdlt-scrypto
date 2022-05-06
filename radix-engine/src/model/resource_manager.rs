@@ -7,7 +7,7 @@ use scrypto::prelude::AccessRule::{AllowAll, DenyAll};
 use scrypto::prelude::ResourceMethod::Withdraw;
 use scrypto::resource::Mutability::LOCKED;
 use scrypto::resource::ResourceMethod::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
-use scrypto::resource::*;
+use scrypto::resource::{ResourceMethod::{self, *}, AccessRule, Mutability};
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
