@@ -17,7 +17,7 @@ cd "$(dirname "$0")"
 
 (cd assets/account; cargo fmt --check --quiet)
 (cd assets/system; cargo fmt --check --quiet)
-(cd examples; find . -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && cargo fmt --check --quiet" \;)
-(cd radix-engine/tests; find . -maxdepth 1 -type d \( ! -name . \) -exec bash -c "cd '{}' && cargo fmt --check --quiet" \;)
+(cd examples; find . -maxdepth 1 -type d \( ! -name . \) -print0 | xargs -0 -n1 -I '{}' cargo fmt --manifest-path {}/Cargo.toml --check --quiet)
+(cd radix-engine/tests; find . -maxdepth 1 -type d \( ! -name . \) -print0 | xargs -0 -n1 -I '{}' cargo fmt --manifest-path {}/Cargo.toml --check --quiet)
 
-echo "All packages have been formatted."
+echo "Code format check passed!"
