@@ -16,12 +16,12 @@ pub struct ResourceBuilder;
 pub struct FungibleResourceBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
 }
 
 impl ResourceBuilder {

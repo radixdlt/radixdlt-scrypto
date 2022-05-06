@@ -8,7 +8,7 @@ Documentation: https://docs.radixdlt.com/main/scrypto/introduction.html
 
 ## Installation
 
-1. Install Rust
+1. Install Rust - this requires Rust 1.60+ (if rust is already installed, upgrade with `rustup update`)
    * Windows:
        * Download and install [`rustup-init.exe`](https://win.rustup.rs/x86_64)
        * Install "Desktop development with C++" with [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/thank-you-downloading-visual-studio/?sku=BuildTools&rel=16)
