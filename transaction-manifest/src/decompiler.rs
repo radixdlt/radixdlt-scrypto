@@ -1,6 +1,6 @@
-use sbor::{encode_any, Value};
 use radix_engine::engine::*;
 use radix_engine::model::*;
+use sbor::{encode_any, Value};
 use scrypto::engine::types::*;
 use scrypto::rust::collections::*;
 use scrypto::values::*;
@@ -225,7 +225,8 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                         let mut bytes = Vec::new();
                         let mut enc = ::sbor::Encoder::with_type(&mut bytes);
                         encode_any(None, &field, &mut enc);
-                        let validated_arg = ScryptoValue::from_slice(&bytes).map_err(DecompileError::ParseScryptoValueError)?;
+                        let validated_arg = ScryptoValue::from_slice(&bytes)
+                            .map_err(DecompileError::ParseScryptoValueError)?;
                         id_validator
                             .move_resources(&validated_arg)
                             .map_err(DecompileError::IdValidatorError)?;
@@ -254,7 +255,8 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                         let mut bytes = Vec::new();
                         let mut enc = ::sbor::Encoder::with_type(&mut bytes);
                         encode_any(None, &field, &mut enc);
-                        let validated_arg = ScryptoValue::from_slice(&bytes).map_err(DecompileError::ParseScryptoValueError)?;
+                        let validated_arg = ScryptoValue::from_slice(&bytes)
+                            .map_err(DecompileError::ParseScryptoValueError)?;
                         id_validator
                             .move_resources(&validated_arg)
                             .map_err(DecompileError::IdValidatorError)?;

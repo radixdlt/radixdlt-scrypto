@@ -1,10 +1,10 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
@@ -354,7 +354,10 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
-                call_data!(compose_vault_and_bucket_proof_by_amount(Bucket(bucket_id), Decimal::from(2))),
+                call_data!(compose_vault_and_bucket_proof_by_amount(
+                    Bucket(bucket_id),
+                    Decimal::from(2)
+                )),
             )
         })
         .build(test_runner.get_nonce([pk]))
@@ -398,12 +401,10 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             |builder, bucket_id| {
                 builder.call_method(
                     component_address,
-                    call_data!(
-                        compose_vault_and_bucket_proof_by_ids(
-                            Bucket(bucket_id),
-                            BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2),])
-                        )
-                    ),
+                    call_data!(compose_vault_and_bucket_proof_by_ids(
+                        Bucket(bucket_id),
+                        BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2),])
+                    )),
                 )
             },
         )
@@ -439,7 +440,10 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         .new_transaction_builder()
         .call_method(
             component_address,
-            call_data![create_clone_drop_vault_proof_by_amount(Decimal::from(3), Decimal::from(1))],
+            call_data![create_clone_drop_vault_proof_by_amount(
+                Decimal::from(3),
+                Decimal::from(1)
+            )],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -479,13 +483,11 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 builder.call_function(
                     package_address,
                     "Receiver",
-                    call_data!(
-                        assert_ids(
-                            Proof(proof_id),
-                            BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
-                            resource_address
-                        )
-                    ),
+                    call_data!(assert_ids(
+                        Proof(proof_id),
+                        BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
+                        resource_address
+                    )),
                 )
             },
         )

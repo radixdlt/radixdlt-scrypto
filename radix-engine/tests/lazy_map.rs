@@ -1,7 +1,7 @@
-use scrypto::call_data;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
@@ -132,7 +132,11 @@ fn cannot_remove_lazy_maps() {
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();
     let transaction = TransactionBuilder::new()
-        .call_function(package, "LazyMapTest", call_data!(new_lazy_map_into_vector()))
+        .call_function(
+            package,
+            "LazyMapTest",
+            call_data!(new_lazy_map_into_vector()),
+        )
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();

@@ -52,7 +52,7 @@ impl ResourceSystem {
                 resource_type,
                 metadata,
                 authorization,
-                mint_params
+                mint_params,
             )),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);

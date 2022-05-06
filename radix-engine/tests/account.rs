@@ -1,11 +1,11 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::*;
+use scrypto::call_data;
 use scrypto::prelude::*;
 use scrypto::values::ScryptoValue;
 

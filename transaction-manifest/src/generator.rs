@@ -315,7 +315,7 @@ pub fn generate_instruction(
 
             let variant = ::sbor::Value::Enum {
                 name: generate_string(method)?,
-                fields
+                fields,
             };
             let mut bytes = Vec::new();
             let mut enc = ::sbor::Encoder::with_type(&mut bytes);
@@ -779,10 +779,10 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
 
 #[cfg(test)]
 mod tests {
-    use scrypto::call_data;
     use super::*;
     use crate::lexer::tokenize;
     use crate::parser::Parser;
+    use scrypto::call_data;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1066,9 +1066,9 @@ mod tests {
                         call_data: call_data!(withdraw_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
-                                    "030000000000000000000000000000000000000000000000000004"
-                                )
-                                .unwrap()
+                                "030000000000000000000000000000000000000000000000000004"
+                            )
+                            .unwrap()
                         ))
                     },
                     Instruction::TakeFromWorktopByAmount {
@@ -1116,9 +1116,9 @@ mod tests {
                         call_data: call_data!(create_proof_by_amount(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
-                                    "030000000000000000000000000000000000000000000000000004"
-                                )
-                                .unwrap()
+                                "030000000000000000000000000000000000000000000000000004"
+                            )
+                            .unwrap()
                         ))
                     },
                     Instruction::PopFromAuthZone,

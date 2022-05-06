@@ -66,7 +66,7 @@ impl Runtime {
         }
         let variant = ::sbor::Value::Enum {
             name: method.as_ref().to_owned(),
-            fields
+            fields,
         };
         let mut bytes = Vec::new();
         let mut enc = ::sbor::Encoder::with_type(&mut bytes);

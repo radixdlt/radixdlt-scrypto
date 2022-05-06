@@ -366,11 +366,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
     > {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(
-            self,
-            "Run started: snode_ref = {:?}",
-            snode_ref
-        );
+        re_info!(self, "Run started: snode_ref = {:?}", snode_ref);
 
         // Execution
         let output = match snode {
@@ -378,16 +374,12 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             SNodeState::PackageStatic => {
                 Package::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
-            SNodeState::AuthZoneRef(auth_zone) => {
-                auth_zone
-                    .main(call_data, self)
-                    .map_err(RuntimeError::AuthZoneError)
-            }
-            SNodeState::Worktop(worktop) => {
-                worktop
-                    .main(call_data, self)
-                    .map_err(RuntimeError::WorktopError)
-            }
+            SNodeState::AuthZoneRef(auth_zone) => auth_zone
+                .main(call_data, self)
+                .map_err(RuntimeError::AuthZoneError),
+            SNodeState::Worktop(worktop) => worktop
+                .main(call_data, self)
+                .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, component_state) => {
                 let substate_value = self
                     .track
@@ -457,10 +449,8 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     _ => Err(RuntimeError::InvalidReturnType),
                 }
             }
-            SNodeState::ResourceStatic => {
-                ResourceManager::static_main(call_data, self)
-                    .map_err(RuntimeError::ResourceManagerError)
-            }
+            SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
+                .map_err(RuntimeError::ResourceManagerError),
             SNodeState::ResourceRef(resource_address, resource_manager) => {
                 let return_value = resource_manager
                     .main(resource_address, call_data, self)
@@ -468,27 +458,21 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
 
                 Ok(return_value)
             }
-            SNodeState::BucketRef(bucket_id, bucket) => {
-                bucket
-                    .main(bucket_id, call_data, self)
-                    .map_err(RuntimeError::BucketError)
-            }
-            SNodeState::Bucket(bucket) => {
-                bucket.consuming_main(call_data, self).map_err(RuntimeError::BucketError)
-            },
-            SNodeState::ProofRef(_, proof) => {
-                proof
-                    .main(call_data, self)
-                    .map_err(RuntimeError::ProofError)
-            },
-            SNodeState::Proof(proof) => {
-                proof.main_consume(call_data).map_err(RuntimeError::ProofError)
-            }
-            SNodeState::VaultRef(vault_id, _, vault) => {
-                vault
-                    .main(vault_id, call_data, self)
-                    .map_err(RuntimeError::VaultError)
-            }
+            SNodeState::BucketRef(bucket_id, bucket) => bucket
+                .main(bucket_id, call_data, self)
+                .map_err(RuntimeError::BucketError),
+            SNodeState::Bucket(bucket) => bucket
+                .consuming_main(call_data, self)
+                .map_err(RuntimeError::BucketError),
+            SNodeState::ProofRef(_, proof) => proof
+                .main(call_data, self)
+                .map_err(RuntimeError::ProofError),
+            SNodeState::Proof(proof) => proof
+                .main_consume(call_data)
+                .map_err(RuntimeError::ProofError),
+            SNodeState::VaultRef(vault_id, _, vault) => vault
+                .main(vault_id, call_data, self)
+                .map_err(RuntimeError::VaultError),
         }?;
 
         self.process_return_data(snode_ref, &output)?;
@@ -506,7 +490,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         if let Some(_) = &mut self.auth_zone {
             self.invoke_snode(
                 SNodeRef::AuthZoneRef,
-                ScryptoValue::from_value(&AuthZoneMethod::Clear())
+                ScryptoValue::from_value(&AuthZoneMethod::Clear()),
             )?;
         }
         self.check_resource()?;
@@ -529,8 +513,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         snode_ref: SNodeRef,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-
-        let function = if let Value::Enum {name, ..} = &call_data.dom {
+        let function = if let Value::Enum { name, .. } = &call_data.dom {
             name.clone()
         } else {
             return Err(RuntimeError::InvalidInvocation);
@@ -838,9 +821,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             HashMap::new(),
             HashMap::new(),
         );
-        let result = process
-            .run(None, snode, mock)
-            .map(|(r, _, _, _)| r);
+        let result = process.run(None, snode, mock).map(|(r, _, _, _)| r);
 
         re_debug!(self, "Call abi ended");
         result
@@ -1340,8 +1321,10 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             .as_ref()
             .ok_or(RuntimeError::InterpreterNotStarted)?;
         let component = match wasm_process.interpreter_state {
-            InterpreterState::Component { component_address, .. } => Some(component_address.clone()),
-            InterpreterState::Blueprint  => None,
+            InterpreterState::Component {
+                component_address, ..
+            } => Some(component_address.clone()),
+            InterpreterState::Blueprint => None,
         };
         Ok(GetCallDataOutput {
             component,

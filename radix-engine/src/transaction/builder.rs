@@ -91,7 +91,8 @@ impl TransactionBuilder {
             Instruction::DropProof { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
-            Instruction::CallFunction { call_data , .. } | Instruction::CallMethod { call_data, .. } => {
+            Instruction::CallFunction { call_data, .. }
+            | Instruction::CallMethod { call_data, .. } => {
                 let scrypt_value = ScryptoValue::from_slice(&call_data).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
@@ -330,7 +331,7 @@ impl TransactionBuilder {
         }
         let variant = ::sbor::Value::Enum {
             name: function.to_owned(),
-            fields
+            fields,
         };
         let mut bytes = Vec::new();
         let mut enc = ::sbor::Encoder::with_type(&mut bytes);
@@ -456,14 +457,12 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            call_data: call_data!(
-                new_resource(
-                    ResourceType::Fungible { divisibility: 18 },
-                    metadata,
-                    resource_auth,
-                    mint_params
-                )
-            ),
+            call_data: call_data!(new_resource(
+                ResourceType::Fungible { divisibility: 18 },
+                metadata,
+                resource_auth,
+                mint_params
+            )),
         })
         .0
     }
@@ -480,16 +479,14 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            call_data: call_data!(
-                new_resource(
-                    ResourceType::Fungible { divisibility: 18 },
-                    metadata,
-                    resource_auth,
-                    Option::Some(MintParams::Fungible {
-                        amount: initial_supply.into(),
-                    })
-                )
-            ),
+            call_data: call_data!(new_resource(
+                ResourceType::Fungible { divisibility: 18 },
+                metadata,
+                resource_auth,
+                Option::Some(MintParams::Fungible {
+                    amount: initial_supply.into(),
+                })
+            )),
         })
         .0
     }
@@ -516,14 +513,12 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            call_data: call_data!(
-                new_resource(
-                    ResourceType::Fungible { divisibility: 0 },
-                    metadata,
-                    resource_auth,
-                    mint_params
-                )
-            ),
+            call_data: call_data!(new_resource(
+                ResourceType::Fungible { divisibility: 0 },
+                metadata,
+                resource_auth,
+                mint_params
+            )),
         })
         .0
     }
@@ -540,16 +535,14 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            call_data: call_data!(
-                new_resource(
-                    ResourceType::Fungible { divisibility: 0 },
-                    metadata,
-                    resource_auth,
-                    Option::Some(MintParams::Fungible {
-                        amount: initial_supply.into(),
-                    })
-                )
-            ),
+            call_data: call_data!(new_resource(
+                ResourceType::Fungible { divisibility: 0 },
+                metadata,
+                resource_auth,
+                Option::Some(MintParams::Fungible {
+                    amount: initial_supply.into(),
+                })
+            )),
         })
         .0
     }
@@ -614,7 +607,10 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
-            call_data: call_data!(new_with_resource(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)))
+            call_data: call_data!(new_with_resource(
+                withdraw_auth.clone(),
+                scrypto::resource::Bucket(bucket_id)
+            )),
         })
         .0
     }

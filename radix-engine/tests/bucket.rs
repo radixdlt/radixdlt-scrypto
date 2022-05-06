@@ -1,12 +1,12 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::*;
 use radix_engine::ledger::*;
 use radix_engine::model::{BucketError, ResourceContainerError};
 use radix_engine::transaction::*;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
@@ -23,11 +23,23 @@ fn test_bucket() {
         .call_function(package, "BucketTest", call_data!(split()))
         .call_function(package, "BucketTest", call_data!(borrow()))
         .call_function(package, "BucketTest", call_data!(query()))
-        .call_function(package, "BucketTest", call_data!(test_restricted_transfer()))
+        .call_function(
+            package,
+            "BucketTest",
+            call_data!(test_restricted_transfer()),
+        )
         .call_function(package, "BucketTest", call_data!(test_burn()))
         .call_function(package, "BucketTest", call_data!(test_burn_freely()))
-        .call_function(package, "BucketTest", call_data!(create_empty_bucket_fungible()))
-        .call_function(package, "BucketTest", call_data!(create_empty_bucket_non_fungible()))
+        .call_function(
+            package,
+            "BucketTest",
+            call_data!(create_empty_bucket_fungible()),
+        )
+        .call_function(
+            package,
+            "BucketTest",
+            call_data!(create_empty_bucket_non_fungible()),
+        )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);

@@ -11,8 +11,8 @@ use crate::rust::collections::BTreeSet;
 use crate::rust::fmt;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
+use crate::sfunctions;
 use crate::types::*;
-use crate::{sfunctions};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ConsumingBucketMethod {

@@ -382,10 +382,7 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        call_data: scrypto_encode(&scrypto::resource::Vault((
-                            Hash([2u8; 32]),
-                            0,
-                        ))),
+                        call_data: scrypto_encode(&scrypto::resource::Vault((Hash([2u8; 32]), 0,))),
                     }],
                 },
                 signatures: Vec::new(),

@@ -1,8 +1,8 @@
-use scrypto::call_data;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::ResourceManagerError;
 use radix_engine::transaction::*;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
@@ -20,7 +20,11 @@ fn test_resource_manager() {
         .call_function(package, "ResourceTest", call_data!(create_fungible()))
         .call_function(package, "ResourceTest", call_data!(query()))
         .call_function(package, "ResourceTest", call_data!(burn()))
-        .call_function(package, "ResourceTest", call_data!(update_resource_metadata()))
+        .call_function(
+            package,
+            "ResourceTest",
+            call_data!(update_resource_metadata()),
+        )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
         .sign([&sk]);
