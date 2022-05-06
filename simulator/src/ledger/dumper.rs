@@ -6,6 +6,7 @@ use scrypto::engine::types::*;
 use scrypto::rust::collections::HashSet;
 use scrypto::values::*;
 use std::collections::VecDeque;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
 use crate::utils::*;
 
@@ -172,10 +173,13 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
         if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
             let ids = vault.total_ids().unwrap();
             for (inner_last, id) in ids.iter().identify_last() {
-                let non_fungible: Option<NonFungible> = substate_store
-                    .get_decoded_child_substate(&resource_address, id)
-                    .unwrap()
-                    .0;
+                let mut nf_address = scrypto_encode(&resource_address);
+                nf_address.push(0u8);
+                nf_address.extend(id.to_vec());
+
+                let non_fungible: Option<NonFungible> = scrypto_decode(
+                    &substate_store.get_substate(&nf_address).unwrap().value
+                ).unwrap();
 
                 if let Some(non_fungible) = non_fungible {
                     let immutable_data =

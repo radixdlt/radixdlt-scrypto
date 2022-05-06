@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use radix_engine::ledger::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
-use sbor::{Decode, Encode};
+use sbor::{Decode};
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
 
@@ -80,6 +80,7 @@ impl QueryableSubstateStore for RadixEngineDB {
         let mut iter = self
             .db
             .iterator(IteratorMode::From(&id, Direction::Forward));
+        iter.next(); // LazyMap
         let mut items = HashMap::new();
         while let Some((key, value)) = iter.next() {
             if !key.starts_with(&id) {
@@ -95,15 +96,19 @@ impl QueryableSubstateStore for RadixEngineDB {
 }
 
 impl ReadableSubstateStore for RadixEngineDB {
-    fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
-        self.read(&scrypto_encode(address))
+    fn get_substate(&self, address: &[u8]) -> Option<Substate> {
+        self.read(address)
             .map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate> {
-        let mut id = scrypto_encode(address);
+    fn get_child_substate(&self, address: &[u8], key: &[u8]) -> Option<Substate> {
+        let mut id = address.to_vec();
         id.extend(key.to_vec());
         self.read(&id).map(|b| scrypto_decode(&b).unwrap())
+    }
+
+    fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
+        self.read(&address).map(|b| scrypto_decode(&b).unwrap())
     }
 
     fn get_epoch(&self) -> u64 {
@@ -131,6 +136,10 @@ impl WriteableSubstateStore for RadixEngineDB {
         let mut id = address.to_vec();
         id.extend(key.to_vec());
         self.write(&id, &scrypto_encode(&substate));
+    }
+
+    fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
+        self.write(&address, &scrypto_encode(&phys_id));
     }
 
     fn set_epoch(&mut self, epoch: u64) {
