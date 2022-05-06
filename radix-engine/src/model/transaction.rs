@@ -26,7 +26,6 @@ pub struct SignedTransaction {
     pub signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
 }
 
-
 /// Represents an instruction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Instruction {

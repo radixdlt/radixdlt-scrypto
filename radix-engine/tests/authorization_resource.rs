@@ -71,15 +71,17 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         Action::Deposit => builder
             .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
-            .take_from_worktop(token_address, |builder, bucket_id|
-                builder.call_method(account, "deposit", args![scrypto::resource::Bucket(bucket_id)])
-            )
+            .take_from_worktop(token_address, |builder, bucket_id| {
+                builder.call_method(
+                    account,
+                    "deposit",
+                    args![scrypto::resource::Bucket(bucket_id)],
+                )
+            })
             .call_method_with_all_resources(account, "deposit_batch"),
     };
 
-    let transaction = builder
-        .build(test_runner.get_nonce([pk]))
-        .sign([&sk]);
+    let transaction = builder.build(test_runner.get_nonce([pk])).sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert

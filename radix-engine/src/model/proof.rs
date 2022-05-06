@@ -1,3 +1,4 @@
+use crate::engine::SystemApi;
 use scrypto::engine::types::*;
 use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::BTreeSet;
@@ -7,7 +8,6 @@ use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
-use crate::engine::SystemApi;
 
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -335,13 +335,17 @@ impl Proof {
             "get_non_fungible_ids" => {
                 let ids = self.total_ids()?;
                 Ok(ScryptoValue::from_value(&ids))
-            },
+            }
             "get_resource_address" => Ok(ScryptoValue::from_value(&self.resource_address())),
             "clone" => {
                 let cloned_proof = self.clone();
-                let proof_id = system_api.create_proof(cloned_proof).map_err(|_| ProofError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
-            },
+                let proof_id = system_api
+                    .create_proof(cloned_proof)
+                    .map_err(|_| ProofError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                    proof_id,
+                )))
+            }
             _ => Err(ProofError::MethodNotFound(function.to_string())),
         }
     }
@@ -351,7 +355,7 @@ impl Proof {
             "drop" => {
                 self.drop();
                 Ok(ScryptoValue::from_value(&()))
-            },
+            }
             _ => Err(ProofError::MethodNotFound(function.to_string())),
         }
     }
