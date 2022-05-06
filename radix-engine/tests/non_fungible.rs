@@ -1,10 +1,10 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
@@ -96,8 +96,16 @@ fn test_non_fungible() {
             "NonFungibleTest",
             call_data!(update_and_get_non_fungible()),
         )
-        .call_function(package, "NonFungibleTest", call_data!(non_fungible_exists()))
-        .call_function(package, "NonFungibleTest", call_data!(take_and_put_bucket()))
+        .call_function(
+            package,
+            "NonFungibleTest",
+            call_data!(non_fungible_exists()),
+        )
+        .call_function(
+            package,
+            "NonFungibleTest",
+            call_data!(take_and_put_bucket()),
+        )
         .call_function(package, "NonFungibleTest", call_data!(take_and_put_vault()))
         .call_function(
             package,
@@ -127,7 +135,11 @@ fn test_singleton_non_fungible() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "NonFungibleTest", call_data!(singleton_non_fungible()))
+        .call_function(
+            package,
+            "NonFungibleTest",
+            call_data!(singleton_non_fungible()),
+        )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
         .sign([&sk]);

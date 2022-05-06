@@ -1,10 +1,10 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 fn test_dynamic_auth(
@@ -40,7 +40,9 @@ fn test_dynamic_auth(
         .call_function(
             package,
             "AuthComponent",
-            call_data![create_component(addresses.get(initial_auth).unwrap().clone())],
+            call_data![create_component(
+                addresses.get(initial_auth).unwrap().clone()
+            )],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -237,11 +239,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "Chess",
-            call_data![create_game(players)],
-        )
+        .call_function(package, "Chess", call_data![create_game(players)])
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -276,11 +274,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "Chess",
-            call_data![create_game(players)],
-        )
+        .call_function(package, "Chess", call_data![create_game(players)])
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);

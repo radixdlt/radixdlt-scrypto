@@ -1,9 +1,9 @@
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
+use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
-use crate::rust::string::ToString;
 use sbor::*;
 use scrypto::math::Decimal;
 

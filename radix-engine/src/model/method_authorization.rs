@@ -52,7 +52,8 @@ impl HardResourceOrNonFungible {
     pub fn check_has_amount(&self, amount: Decimal, auth_zones: &[&AuthZone]) -> bool {
         for auth_zone in auth_zones {
             // FIXME: Need to check the composite max amount rather than just each proof individually
-            if auth_zone.proofs
+            if auth_zone
+                .proofs
                 .iter()
                 .any(|p| self.proof_matches(p) && p.total_amount() >= amount)
             {

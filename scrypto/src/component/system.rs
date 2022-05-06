@@ -7,7 +7,6 @@ use crate::rust::borrow::ToOwned;
 use crate::rust::collections::*;
 use crate::rust::vec::Vec;
 
-
 /// Represents the Radix Engine component subsystem.
 ///
 /// Notes:

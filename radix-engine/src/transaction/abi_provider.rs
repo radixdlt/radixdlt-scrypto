@@ -64,10 +64,17 @@ impl AbiProvider for BasicAbiProvider {
         let mut ledger = self.substate_store.clone();
         let transaction_hash = hash([]);
         let mut track = Track::new(&mut ledger, transaction_hash, Vec::new());
-        let package = track.get_package(&package_address).ok_or(RuntimeError::PackageNotFound(package_address))?;
-        let output: (Type, Vec<abi::Function>, Vec<abi::Method>) = package
-            .call_abi(blueprint_name)
-            .and_then(|rtn| scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError))?;
+        let substate_value = track
+            .read_value(package_address.clone())
+            .ok_or(RuntimeError::PackageNotFound(package_address))?;
+        let output: (Type, Vec<abi::Function>, Vec<abi::Method>) =
+            if let SubstateValue::Package(package) = substate_value {
+                package.call_abi(blueprint_name).and_then(|rtn| {
+                    scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError)
+                })?
+            } else {
+                panic!("Value is not a package");
+            };
 
         // Return ABI
         Ok(abi::Blueprint {

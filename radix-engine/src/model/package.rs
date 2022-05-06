@@ -1,22 +1,24 @@
+use crate::engine::*;
+use crate::errors::RuntimeError;
+use crate::model::Component;
+use crate::wasm::{
+    instantiate_module, parse_module, validate_module, WasmValidationError, ENGINE_FUNCTION_INDEX,
+};
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::core::{ScryptoActorInfo};
-use scrypto::prelude::{PackageFunction};
+use scrypto::core::ScryptoActorInfo;
+use scrypto::engine::api::*;
+use scrypto::prelude::PackageFunction;
 use scrypto::rust::collections::HashMap;
+use scrypto::rust::fmt;
+use scrypto::rust::format;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
-use scrypto::rust::fmt;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::rust::format;
 use scrypto::values::ScryptoValue;
-use scrypto::engine::api::*;
-use wasmi::{Externals, ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals, RuntimeArgs, RuntimeValue, Trap};
-use crate::engine::*;
-use crate::engine::{EnvModuleResolver, SystemApi};
-use crate::errors::{RuntimeError, WasmValidationError};
-use crate::model::Component;
+use wasmi::*; // TODO: remove wasmi coupling
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -37,35 +39,12 @@ impl Package {
     /// Validates and creates a package
     pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
         // Parse
-        let parsed = Self::parse_module(&code)?;
-
-        // check floating point
-        parsed
-            .deny_floating_point()
-            .map_err(|_| WasmValidationError::FloatingPointNotAllowed)?;
-
-        // Instantiate
-        let instance = ModuleInstance::new(
-            &parsed,
-            &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
-        )
-        .map_err(|_| WasmValidationError::InvalidModule)?;
-
-        // Check start function
-        if instance.has_start() {
-            return Err(WasmValidationError::StartFunctionNotAllowed);
-        }
-        let module = instance.assert_no_start();
-
-        // Check memory export
-        let memory = match module.export_by_name("memory") {
-            Some(ExternVal::Memory(mem)) => mem,
-            _ => return Err(WasmValidationError::NoValidMemoryExport),
-        };
+        let module = parse_module(&code)?;
+        let (module_ref, memory_ref) = validate_module(&module)?;
 
         // TODO: Currently a hack so that we don't require a package_init function.
         // TODO: Fix this by implement package metadata along with the code during compilation.
-        let exports = module.exports();
+        let exports = module_ref.exports();
         let blueprint_abi_methods: Vec<String> = exports
             .iter()
             .filter(|(name, val)| {
@@ -77,20 +56,20 @@ impl Package {
         let mut blueprints = HashMap::new();
 
         for method_name in blueprint_abi_methods {
-            let rtn = module
+            let rtn = module_ref
                 .invoke_export(&method_name, &[], &mut NopExternals)
                 .map_err(|e| WasmValidationError::NoPackageInitExport(e.into()))?
                 .ok_or(WasmValidationError::InvalidPackageInit)?;
 
             let blueprint_type: Type = match rtn {
                 RuntimeValue::I32(ptr) => {
-                    let len: u32 = memory
+                    let len: u32 = memory_ref
                         .get_value(ptr as u32)
                         .map_err(|_| WasmValidationError::InvalidPackageInit)?;
 
                     // SECURITY: meter before allocating memory
                     let mut data = vec![0u8; len as usize];
-                    memory
+                    memory_ref
                         .get_into((ptr + 4) as u32, &mut data)
                         .map_err(|_| WasmValidationError::InvalidPackageInit)?;
 
@@ -126,37 +105,17 @@ impl Package {
     }
 
     pub fn load_module(&self) -> Result<(ModuleRef, MemoryRef), PackageError> {
-        let module = Self::parse_module(&self.code).unwrap();
-        let inst = Self::instantiate_module(&module).unwrap();
+        let module = parse_module(&self.code).unwrap();
+        let inst = instantiate_module(&module).unwrap();
         Ok(inst)
-    }
-
-    fn parse_module(code: &[u8]) -> Result<Module, WasmValidationError> {
-        Module::from_buffer(code).map_err(|_| WasmValidationError::InvalidModule)
-    }
-
-    fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), WasmValidationError> {
-        // Instantiate
-        let instance = ModuleInstance::new(
-            module,
-            &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
-        )
-        .map_err(|_| WasmValidationError::InvalidModule)?
-        .assert_no_start();
-
-        // Find memory export
-        if let Some(ExternVal::Memory(memory)) = instance.export_by_name("memory") {
-            Ok((instance, memory))
-        } else {
-            Err(WasmValidationError::NoValidMemoryExport)
-        }
     }
 
     pub fn static_main<S: SystemApi>(
         call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, PackageError> {
-        let function: PackageFunction = scrypto_decode(&call_data.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
+        let function: PackageFunction =
+            scrypto_decode(&call_data.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
         match function {
             PackageFunction::Publish(bytes) => {
                 let package = Package::new(bytes).map_err(PackageError::WasmValidationError)?;
@@ -168,10 +127,7 @@ impl Package {
 
     /// Calls the ABI generator of a blueprint.
     // TODO: Remove
-    pub fn call_abi(
-        &self,
-        blueprint_name: &str,
-    ) -> Result<ScryptoValue, RuntimeError> {
+    pub fn call_abi(&self, blueprint_name: &str) -> Result<ScryptoValue, RuntimeError> {
         let (module, memory) = self.load_module().unwrap();
         let export_name = format!("{}_abi", blueprint_name);
         let result = module.invoke_export(&export_name, &[], &mut NopExternals);
@@ -260,7 +216,7 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
         message: ScryptoValue,
         module: ModuleRef,
         memory: MemoryRef,
-        externals: &'a mut E
+        externals: &'a mut E,
     ) -> Self {
         WasmProcess {
             actor_info,
@@ -322,7 +278,9 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
         &mut self,
         input: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let state = self.externals.read_component_state(input.component_address)?;
+        let state = self
+            .externals
+            .read_component_state(input.component_address)?;
         Ok(GetComponentStateOutput { state })
     }
 
@@ -330,7 +288,8 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
         &mut self,
         input: PutComponentStateInput,
     ) -> Result<PutComponentStateOutput, RuntimeError> {
-        self.externals.write_component_state(input.component_address, input.state)?;
+        self.externals
+            .write_component_state(input.component_address, input.state)?;
         Ok(PutComponentStateOutput {})
     }
 
@@ -338,8 +297,12 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
         &mut self,
         input: GetComponentInfoInput,
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        let (package_address, blueprint_name) = self.externals.get_component_info(input.component_address)?;
-        Ok(GetComponentInfoOutput { package_address, blueprint_name })
+        let (package_address, blueprint_name) =
+            self.externals.get_component_info(input.component_address)?;
+        Ok(GetComponentInfoOutput {
+            package_address,
+            blueprint_name,
+        })
     }
 
     fn handle_create_lazy_map(
@@ -354,7 +317,9 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
         &mut self,
         input: GetLazyMapEntryInput,
     ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let value = self.externals.read_lazy_map_entry(input.lazy_map_id, input.key)?;
+        let value = self
+            .externals
+            .read_lazy_map_entry(input.lazy_map_id, input.key)?;
         Ok(GetLazyMapEntryOutput { value })
     }
 
@@ -362,7 +327,8 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
         &mut self,
         input: PutLazyMapEntryInput,
     ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
-        self.externals.write_lazy_map_entry(input.lazy_map_id, input.key, input.value)?;
+        self.externals
+            .write_lazy_map_entry(input.lazy_map_id, input.key, input.value)?;
         Ok(PutLazyMapEntryOutput {})
     }
 
@@ -413,7 +379,7 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
     }
 }
 
-impl<'a, E:SystemApi> Externals for WasmProcess<'a, E> {
+impl<'a, E: SystemApi> Externals for WasmProcess<'a, E> {
     fn invoke_index(
         &mut self,
         index: usize,

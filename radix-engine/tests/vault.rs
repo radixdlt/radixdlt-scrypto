@@ -1,7 +1,7 @@
-use scrypto::call_data;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
@@ -203,7 +203,11 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", call_data!(new_vault_into_map_then_get()))
+        .call_function(
+            package,
+            "VaultTest",
+            call_data!(new_vault_into_map_then_get()),
+        )
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -397,7 +401,11 @@ fn create_mutable_vault_with_get_amount() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(package, "VaultTest", call_data!(new_vault_with_get_amount()))
+        .call_function(
+            package,
+            "VaultTest",
+            call_data!(new_vault_with_get_amount()),
+        )
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
