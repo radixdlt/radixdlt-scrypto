@@ -1,3 +1,4 @@
+use crate::call_data_bytes_args;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
@@ -40,24 +41,13 @@ impl Runtime {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
-        let mut fields = Vec::new();
-        for arg in args {
-            fields.push(::sbor::decode_any(&arg).unwrap());
-        }
-        let variant = ::sbor::Value::Enum {
-            name: function.as_ref().to_owned(),
-            fields
-        };
-        let mut bytes = Vec::new();
-        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-        ::sbor::encode_any(None, &variant, &mut enc);
-
+        let call_data = call_data_bytes_args!(function.as_ref().to_owned(), args);
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Blueprint(
                 package_address,
                 blueprint_name.as_ref().to_owned(),
             )),
-            call_data: bytes,
+            call_data,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 

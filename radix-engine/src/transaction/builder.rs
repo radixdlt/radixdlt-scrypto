@@ -384,22 +384,11 @@ impl TransactionBuilder {
             .parse_args(&abi.inputs, args, account)
             .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
 
-        let mut fields = Vec::new();
-        for arg in arguments {
-            fields.push(::sbor::decode_any(&arg).unwrap());
-        }
-        let variant = ::sbor::Value::Enum {
-            name: method.to_owned(),
-            fields
-        };
-        let mut bytes = Vec::new();
-        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-        ::sbor::encode_any(None, &variant, &mut enc);
-
+        let call_data = call_data_bytes_args!(method.to_owned(), arguments);
         Ok(self
             .add_instruction(Instruction::CallMethod {
                 component_address,
-                call_data: bytes,
+                call_data,
             })
             .0)
     }
