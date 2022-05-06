@@ -1,7 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::invocation;
+use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
@@ -87,7 +87,7 @@ fn account_to_bucket_to_account() {
             builder
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
-                    call_data: invocation!(deposit(scrypto::resource::Bucket(bucket_id))),
+                    call_data: call_data!(deposit(scrypto::resource::Bucket(bucket_id))),
                 })
                 .0
         })
@@ -109,7 +109,7 @@ fn test_account_balance() {
     let (pk, sk, account) = test_runner.new_account();
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(account, invocation![balance(RADIX_TOKEN)])
+        .call_method(account, call_data![balance(RADIX_TOKEN)])
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
 

@@ -1,7 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::invocation;
+use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
@@ -40,7 +40,7 @@ fn test_dynamic_auth(
         .call_function(
             package,
             "AuthComponent",
-            invocation![create_component(addresses.get(initial_auth).unwrap().clone())],
+            call_data![create_component(addresses.get(initial_auth).unwrap().clone())],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -53,7 +53,7 @@ fn test_dynamic_auth(
             .new_transaction_builder()
             .call_method(
                 component,
-                invocation![update_auth(addresses.get(next_auth).unwrap().clone())],
+                call_data![update_auth(addresses.get(next_auth).unwrap().clone())],
             )
             .build(test_runner.get_nonce([]))
             .sign([]);
@@ -66,7 +66,7 @@ fn test_dynamic_auth(
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(component, invocation![get_secret()])
+        .call_method(component, call_data![get_secret()])
         .build(test_runner.get_nonce(pks))
         .sign(sks);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
@@ -113,7 +113,7 @@ fn test_dynamic_authlist(
         .call_function(
             package,
             "AuthListComponent",
-            invocation![create_component(2u8, list, authorization)],
+            call_data![create_component(2u8, list, authorization)],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -124,7 +124,7 @@ fn test_dynamic_authlist(
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(component, invocation!(get_secret()))
+        .call_method(component, call_data!(get_secret()))
         .build(test_runner.get_nonce(pks))
         .sign(sks);
     let receipt = test_runner.validate_and_execute(&transaction2);
@@ -240,7 +240,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
         .call_function(
             package,
             "Chess",
-            invocation![create_game(players)],
+            call_data![create_game(players)],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -251,7 +251,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(component, invocation!(make_move()))
+        .call_method(component, call_data!(make_move()))
         .build(test_runner.get_nonce([other_pk]))
         .sign([&other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction2);
@@ -279,7 +279,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .call_function(
             package,
             "Chess",
-            invocation![create_game(players)],
+            call_data![create_game(players)],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -288,7 +288,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let component = receipt1.new_component_addresses[0];
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(component, invocation!(make_move()))
+        .call_method(component, call_data!(make_move()))
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     test_runner
@@ -299,7 +299,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     // Act
     let transaction3 = test_runner
         .new_transaction_builder()
-        .call_method(component, invocation!(make_move()))
+        .call_method(component, call_data!(make_move()))
         .build(test_runner.get_nonce([other_pk]))
         .sign([&other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction3);

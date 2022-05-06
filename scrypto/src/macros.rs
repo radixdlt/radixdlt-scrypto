@@ -21,7 +21,7 @@ macro_rules! args {
 }
 
 #[macro_export]
-macro_rules! invocation {
+macro_rules! call_data {
     ($name:expr, $($args: expr),*) => {
         {
             let mut fields = Vec::new();
