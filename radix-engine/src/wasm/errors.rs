@@ -1,3 +1,4 @@
+use scrypto::rust::string::String;
 use wasmi::*;
 
 /// Error coming from WASMI module which maps to wasmi:Error but is cloneable
