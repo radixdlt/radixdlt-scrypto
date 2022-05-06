@@ -1,10 +1,10 @@
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
-use scrypto::rust::vec::Vec;
-use scrypto::rust::vec;
 use scrypto::rust::string::ToString;
-use scrypto::{abi, rule, access_rule_node};
+use scrypto::rust::vec;
+use scrypto::rust::vec::Vec;
+use scrypto::{abi, access_rule_node, rule};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -18,13 +18,17 @@ pub struct TransactionExecutor<'l, L: ReadableSubstateStore + WriteableSubstateS
     trace: bool,
 }
 
-impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> NonceProvider for TransactionExecutor<'l, L> {
+impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> NonceProvider
+    for TransactionExecutor<'l, L>
+{
     fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
         self.substate_store.get_nonce()
     }
 }
 
-impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider for TransactionExecutor<'l, L> {
+impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
+    for TransactionExecutor<'l, L>
+{
     fn export_abi(
         &self,
         package_address: PackageAddress,
@@ -83,10 +87,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
         let nonce = self.substate_store.get_nonce();
         self.substate_store.increase_nonce();
-        let private_key = EcdsaPrivateKey::from_bytes(
-            hash(nonce.to_le_bytes()).as_ref(),
-        )
-        .unwrap();
+        let private_key = EcdsaPrivateKey::from_bytes(hash(nonce.to_le_bytes()).as_ref()).unwrap();
         let public_key = private_key.public_key();
         (public_key, private_key)
     }
@@ -186,12 +187,15 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         let mut new_package_addresses = Vec::new();
         for address in track_receipt.new_addresses {
             match address {
-                Address::Component(component_address) => new_component_addresses.push(component_address),
-                Address::Resource(resource_address) => new_resource_addresses.push(resource_address),
+                Address::Component(component_address) => {
+                    new_component_addresses.push(component_address)
+                }
+                Address::Resource(resource_address) => {
+                    new_resource_addresses.push(resource_address)
+                }
                 Address::Package(package_address) => new_package_addresses.push(package_address),
             }
         }
-
 
         #[cfg(feature = "alloc")]
         let execution_time = None;

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "$0")"
+
+echo "Running code format check...If it stops you from committing, try running script './format.sh' first"
+
+../check.sh

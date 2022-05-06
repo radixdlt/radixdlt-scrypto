@@ -18,7 +18,10 @@ blueprint! {
                 .method("deposit_batch", rule!(allow_all))
                 .default(withdraw_rule);
 
-            Self { vaults }.instantiate().add_access_check(access_rules).globalize()
+            Self { vaults }
+                .instantiate()
+                .add_access_check(access_rules)
+                .globalize()
         }
 
         pub fn new(withdraw_rule: AccessRule) -> ComponentAddress {

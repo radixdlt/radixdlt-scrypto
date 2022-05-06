@@ -82,6 +82,12 @@ A convenience script is also provided to format the whole code base:
 ./format.sh
 ```
 
+You're also highly recommended to install the git hooks
+
+```
+git config core.hooksPath .githooks
+```
+
 ### Commit messages
 
 Please follow the convention below for commit messages:

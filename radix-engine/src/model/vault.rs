@@ -1,3 +1,4 @@
+use crate::engine::SystemApi;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
@@ -7,7 +8,6 @@ use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
 use scrypto::values::ScryptoValue;
-use crate::engine::SystemApi;
 
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -48,7 +48,10 @@ impl Vault {
         Ok(container)
     }
 
-    fn take_non_fungibles(&mut self, ids: &BTreeSet<NonFungibleId>) -> Result<ResourceContainer, VaultError> {
+    fn take_non_fungibles(
+        &mut self,
+        ids: &BTreeSet<NonFungibleId>,
+    ) -> Result<ResourceContainer, VaultError> {
         let container = self
             .borrow_container_mut()
             .take_by_ids(ids)
@@ -153,25 +156,37 @@ impl Vault {
         &mut self,
         vault_id: VaultId,
         arg: ScryptoValue,
-        system_api: &mut S
+        system_api: &mut S,
     ) -> Result<ScryptoValue, VaultError> {
-        let method: VaultMethod = scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+        let method: VaultMethod =
+            scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
         match method {
             VaultMethod::Put(bucket) => {
-                let bucket = system_api.take_bucket(bucket.0).map_err(|_| VaultError::CouldNotTakeBucket)?;
-                self.put(bucket).map_err(VaultError::ResourceContainerError)?;
+                let bucket = system_api
+                    .take_bucket(bucket.0)
+                    .map_err(|_| VaultError::CouldNotTakeBucket)?;
+                self.put(bucket)
+                    .map_err(VaultError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&()))
             }
             VaultMethod::Take(amount) => {
                 let container = self.take(amount)?;
-                let bucket_id = system_api.create_bucket(container).map_err(|_| VaultError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| VaultError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
             }
             VaultMethod::TakeNonFungibles(non_fungible_ids) => {
                 let container = self.take_non_fungibles(&non_fungible_ids)?;
-                let bucket_id = system_api.create_bucket(container).map_err(|_| VaultError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(bucket_id)))
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| VaultError::CouldNotCreateBucket)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )))
             }
             VaultMethod::GetAmount() => {
                 let amount = self.total_amount();
@@ -182,23 +197,43 @@ impl Vault {
                 Ok(ScryptoValue::from_value(&resource_address))
             }
             VaultMethod::GetNonFungibleIds() => {
-                let ids = self.total_ids().map_err(VaultError::ResourceContainerError)?;
+                let ids = self
+                    .total_ids()
+                    .map_err(VaultError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&ids))
             }
             VaultMethod::CreateProof() => {
-                let proof = self.create_proof(ResourceContainerId::Vault(vault_id)).map_err(VaultError::ProofError)?;
-                let proof_id = system_api.create_proof(proof).map_err(|_| VaultError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
+                let proof = self
+                    .create_proof(ResourceContainerId::Vault(vault_id))
+                    .map_err(VaultError::ProofError)?;
+                let proof_id = system_api
+                    .create_proof(proof)
+                    .map_err(|_| VaultError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                    proof_id,
+                )))
             }
             VaultMethod::CreateProofByAmount(amount) => {
-                let proof = self.create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id)).map_err(VaultError::ProofError)?;
-                let proof_id = system_api.create_proof(proof).map_err(|_| VaultError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
+                let proof = self
+                    .create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id))
+                    .map_err(VaultError::ProofError)?;
+                let proof_id = system_api
+                    .create_proof(proof)
+                    .map_err(|_| VaultError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                    proof_id,
+                )))
             }
             VaultMethod::CreateProofByIds(ids) => {
-                let proof = self.create_proof_by_ids(&ids, ResourceContainerId::Vault(vault_id)).map_err(VaultError::ProofError)?;
-                let proof_id = system_api.create_proof(proof).map_err(|_| VaultError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
+                let proof = self
+                    .create_proof_by_ids(&ids, ResourceContainerId::Vault(vault_id))
+                    .map_err(VaultError::ProofError)?;
+                let proof_id = system_api
+                    .create_proof(proof)
+                    .map_err(|_| VaultError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                    proof_id,
+                )))
             }
         }
     }

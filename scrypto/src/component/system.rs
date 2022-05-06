@@ -9,7 +9,6 @@ use crate::rust::collections::*;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 
-
 /// Represents the Radix Engine component subsystem.
 ///
 /// Notes:

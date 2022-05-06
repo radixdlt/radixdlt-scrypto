@@ -74,8 +74,7 @@ impl Publish {
             }
 
             Err(error) => {
-                writeln!(out, "Error creating new package: {:?}", error)
-                    .map_err(Error::IOError)?;
+                writeln!(out, "Error creating new package: {:?}", error).map_err(Error::IOError)?;
                 Err(Error::TransactionExecutionError(error))
             }
         }

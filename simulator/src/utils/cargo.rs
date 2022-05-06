@@ -106,7 +106,11 @@ where
 }
 
 /// Format a package.
-pub fn fmt_package<P: AsRef<Path>>(path: P) -> Result<(), CargoExecutionError> {
+pub fn fmt_package<P: AsRef<Path>>(
+    path: P,
+    check: bool,
+    quiet: bool,
+) -> Result<(), CargoExecutionError> {
     let mut cargo = path.as_ref().to_owned();
     cargo.push("Cargo.toml");
     if cargo.exists() {
@@ -128,6 +132,16 @@ pub fn fmt_package<P: AsRef<Path>>(path: P) -> Result<(), CargoExecutionError> {
             .arg("fmt")
             .arg("--manifest-path")
             .arg(cargo.to_str().unwrap())
+            .args({
+                let mut args = Vec::new();
+                if check {
+                    args.push("--check")
+                }
+                if quiet {
+                    args.push("--quiet")
+                }
+                args
+            })
             .status()
             .map_err(CargoExecutionError::FailedToRunCargo)?;
 
