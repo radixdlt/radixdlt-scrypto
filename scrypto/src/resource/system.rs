@@ -46,7 +46,7 @@ impl ResourceSystem {
 
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceStatic,
-            arg: scrypto_encode(&ResourceManagerFunction::Create(
+            call_data: scrypto_encode(&ResourceManagerFunction::Create(
                 resource_type,
                 metadata,
                 authorization,

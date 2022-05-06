@@ -65,7 +65,7 @@ impl Runtime {
                 package_address,
                 blueprint_name.as_ref().to_owned(),
             )),
-            arg: bytes,
+            call_data: bytes,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
@@ -92,7 +92,7 @@ impl Runtime {
 
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
-            arg: bytes,
+            call_data: bytes,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
@@ -103,7 +103,7 @@ impl Runtime {
     pub fn transaction_hash() -> Hash {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::SystemStatic,
-            arg: scrypto_encode(&SystemFunction::GetTransactionHash()),
+            call_data: scrypto_encode(&SystemFunction::GetTransactionHash()),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
@@ -113,7 +113,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::SystemStatic,
-            arg: scrypto_encode(&SystemFunction::GetEpoch()),
+            call_data: scrypto_encode(&SystemFunction::GetEpoch()),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

@@ -1,7 +1,7 @@
 // This is optional, as you may choose to use std for testing only.
 #![no_std]
 
-use scrypto::invocation;
+use scrypto::call_data;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
@@ -17,7 +17,7 @@ fn test_say_hello() {
 
     // Test the `say_hello` function.
     let transaction1 = TransactionBuilder::new()
-        .call_function(package, "NoStd", invocation!(say_hello()))
+        .call_function(package, "NoStd", call_data!(say_hello()))
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();

@@ -1,7 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::invocation;
+use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
@@ -15,7 +15,7 @@ fn test_package() {
 
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(package, "PackageTest", invocation!(publish()))
+        .call_function(package, "PackageTest", call_data!(publish()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -32,7 +32,7 @@ fn test_component() {
     // Create component
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(package, "ComponentTest", invocation!(create_component()))
+        .call_function(package, "ComponentTest", call_data!(create_component()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -47,10 +47,10 @@ fn test_component() {
         .call_function(
             package,
             "ComponentTest",
-            invocation![get_component_info(component)],
+            call_data![get_component_info(component)],
         )
-        .call_method(component, invocation!(get_component_state()))
-        .call_method(component, invocation!(put_component_state()))
+        .call_method(component, call_data!(get_component_state()))
+        .call_method(component, call_data!(put_component_state()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
@@ -71,7 +71,7 @@ fn invalid_blueprint_name_should_cause_error() {
         .call_function(
             package_address,
             "NonExistentBlueprint",
-            invocation![create_component()],
+            call_data![create_component()],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -93,7 +93,7 @@ fn reentrancy_should_not_be_possible() {
     let package_address = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(package_address, "ReentrantComponent", invocation!(new()))
+        .call_function(package_address, "ReentrantComponent", call_data!(new()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -103,7 +103,7 @@ fn reentrancy_should_not_be_possible() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(component_address, invocation!(call_self()))
+        .call_method(component_address, call_data!(call_self()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -126,7 +126,7 @@ fn missing_component_address_should_cause_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(component_address, invocation!(get_component_state()))
+        .call_method(component_address, call_data!(get_component_state()))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);

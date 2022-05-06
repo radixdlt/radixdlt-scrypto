@@ -3,7 +3,7 @@ extern crate core;
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::invocation;
+use scrypto::call_data;
 use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
@@ -73,7 +73,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .create_proof_from_account(withdraw_auth, account)
             .withdraw_from_account_by_amount(Decimal::from("1.0"), token_address, account)
             .take_from_worktop(token_address, |builder, bucket_id|
-                builder.call_method(account, invocation![deposit(scrypto::resource::Bucket(bucket_id))])
+                builder.call_method(account, call_data![deposit(scrypto::resource::Bucket(bucket_id))])
             )
             .call_method_with_all_resources(account, "deposit_batch"),
     };

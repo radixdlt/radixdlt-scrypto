@@ -13,10 +13,10 @@ pub struct System {}
 
 impl System {
     pub fn static_main<S: SystemApi>(
-        arg: ScryptoValue,
+        call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, SystemError> {
-        let function: SystemFunction = scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
+        let function: SystemFunction = scrypto_decode(&call_data.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
         match function {
             SystemFunction::GetEpoch() => {
                 // TODO: Make this stateful

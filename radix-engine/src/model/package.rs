@@ -153,10 +153,10 @@ impl Package {
     }
 
     pub fn static_main<S: SystemApi>(
-        arg: ScryptoValue,
+        call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, PackageError> {
-        let function: PackageFunction = scrypto_decode(&arg.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
+        let function: PackageFunction = scrypto_decode(&call_data.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
         match function {
             PackageFunction::Publish(bytes) => {
                 let package = Package::new(bytes).map_err(PackageError::WasmValidationError)?;
@@ -300,7 +300,7 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
     ) -> Result<GetCallDataOutput, RuntimeError> {
         Ok(GetCallDataOutput {
             component: self.actor_info.component_address(),
-            arg: self.message.raw.clone(),
+            call_data: self.message.raw.clone(),
         })
     }
 
@@ -376,9 +376,9 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
         &mut self,
         input: InvokeSNodeInput,
     ) -> Result<InvokeSNodeOutput, RuntimeError> {
-        let arg = ScryptoValue::from_slice(&input.arg)
+        let call_data = ScryptoValue::from_slice(&input.call_data)
             .map_err(RuntimeError::ParseScryptoValueError)?;
-        let result = self.externals.invoke_snode(input.snode_ref, arg)?;
+        let result = self.externals.invoke_snode(input.snode_ref, call_data)?;
         Ok(InvokeSNodeOutput { rtn: result.raw })
     }
 
