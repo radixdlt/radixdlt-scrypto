@@ -3,11 +3,12 @@ use crate::model::NonFungible;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::AccessRule::{AllowAll, DenyAll};
-use scrypto::prelude::ResourceMethodAuthKey::Withdraw;
-use scrypto::resource::Mutability::LOCKED;
-use scrypto::resource::ResourceMethodAuthKey::{Burn, Mint, UpdateMetadata, UpdateNonFungibleData};
-use scrypto::resource::*;
+use scrypto::prelude::AccessRule::{self, *};
+use scrypto::resource::Mutability::{self, *};
+use scrypto::resource::ResourceMethodAuthKey::{self, *};
+use scrypto::resource::{
+    ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod, VaultMethod,
+};
 use scrypto::rust::collections::*;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
