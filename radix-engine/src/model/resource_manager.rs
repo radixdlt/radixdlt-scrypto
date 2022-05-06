@@ -478,7 +478,6 @@ impl ResourceManager {
                 let data = Self::process_non_fungible_data(&new_mutable_data)?;
                 let mut non_fungible = system_api
                     .get_non_fungible(&non_fungible_address)
-                    .cloned()
                     .ok_or(ResourceManagerError::NonFungibleNotFound(
                         non_fungible_address.clone(),
                     ))?;
