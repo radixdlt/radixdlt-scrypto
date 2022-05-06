@@ -2,14 +2,11 @@ use colored::*;
 
 use sbor::path::SborPath;
 use sbor::*;
-use scrypto::buffer::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
-use scrypto::engine::api::*;
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneMethod;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
-use scrypto::rust::fmt;
 use scrypto::rust::format;
 use scrypto::rust::string::String;
 use scrypto::rust::string::ToString;
@@ -26,15 +23,6 @@ use crate::engine::*;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
-use crate::wasm::*;
-
-macro_rules! re_trace {
-    ($proc:expr, $($args: expr),+) => {
-        if $proc.trace {
-            $proc.log(Level::Trace, format!($($args),+));
-        }
-    };
-}
 
 macro_rules! re_debug {
     ($proc:expr, $($args: expr),+) => {
@@ -64,8 +52,7 @@ pub trait SystemApi {
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        function: String,
-        args: Vec<ScryptoValue>,
+        call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
     fn get_non_fungible(
@@ -103,6 +90,43 @@ pub trait SystemApi {
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
     fn create_package(&mut self, package: Package) -> PackageAddress;
+
+    fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
+
+    fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError>;
+    fn write_component_state(
+        &mut self,
+        addr: ComponentAddress,
+        state: Vec<u8>,
+    ) -> Result<(), RuntimeError>;
+
+    fn get_component_info(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<(PackageAddress, String), RuntimeError>;
+
+    fn create_lazy_map(&mut self) -> LazyMapId;
+
+    fn read_lazy_map_entry(
+        &mut self,
+        lazy_map_id: LazyMapId,
+        key: Vec<u8>,
+    ) -> Result<Option<Vec<u8>>, RuntimeError>;
+
+    fn write_lazy_map_entry(
+        &mut self,
+        lazy_map_id: LazyMapId,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) -> Result<(), RuntimeError>;
+
+    fn get_epoch(&mut self) -> u64;
+
+    fn get_transaction_hash(&mut self) -> Hash;
+
+    fn generate_uuid(&mut self) -> u128;
+
+    fn emit_log(&mut self, level: Level, message: String);
 }
 
 pub enum ConsumedSNodeState {
@@ -113,7 +137,7 @@ pub enum ConsumedSNodeState {
 pub enum BorrowedSNodeState {
     AuthZone(AuthZone),
     Worktop(Worktop),
-    Scrypto(ScryptoActorInfo, Option<Component>),
+    Scrypto(ScryptoActorInfo, ModuleRef, MemoryRef, Option<Component>),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, Bucket),
     Proof(ProofId, Proof),
@@ -132,7 +156,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Worktop(worktop) => {
                 process.worktop = Some(worktop);
             }
-            BorrowedSNodeState::Scrypto(actor, component_state) => {
+            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
                 if let Some(component_address) = actor.component_address() {
                     process.track.return_borrowed_global_mut_value(
                         component_address,
@@ -167,6 +191,7 @@ impl BorrowedSNodeState {
 pub enum StaticSNodeState {
     Package,
     Resource,
+    System,
 }
 
 pub enum LoadedSNodeState {
@@ -181,6 +206,7 @@ impl LoadedSNodeState {
             Static(static_state) => match static_state {
                 StaticSNodeState::Package => SNodeState::PackageStatic,
                 StaticSNodeState::Resource => SNodeState::ResourceStatic,
+                StaticSNodeState::System => SNodeState::SystemStatic,
             },
             Consumed(ref mut to_consume) => match to_consume.take().unwrap() {
                 ConsumedSNodeState::Proof(proof) => SNodeState::Proof(proof),
@@ -189,8 +215,8 @@ impl LoadedSNodeState {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                BorrowedSNodeState::Scrypto(info, s) => {
-                    SNodeState::Scrypto(info.clone(), s.as_mut())
+                BorrowedSNodeState::Scrypto(info, module, memory, s) => {
+                    SNodeState::Scrypto(info.clone(), module.clone(), memory.clone(), s.as_mut())
                 }
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
@@ -204,11 +230,17 @@ impl LoadedSNodeState {
 }
 
 pub enum SNodeState<'a> {
+    SystemStatic,
     Transaction(&'a mut TransactionProcess),
     PackageStatic,
     AuthZoneRef(&'a mut AuthZone),
     Worktop(&'a mut Worktop),
-    Scrypto(ScryptoActorInfo, Option<&'a mut Component>),
+    Scrypto(
+        ScryptoActorInfo,
+        ModuleRef,
+        MemoryRef,
+        Option<&'a mut Component>,
+    ),
     ResourceStatic,
     ResourceRef(ResourceAddress, &'a mut ResourceManager),
     BucketRef(BucketId, &'a mut Bucket),
@@ -218,35 +250,12 @@ pub enum SNodeState<'a> {
     VaultRef(VaultId, Option<ComponentAddress>, &'a mut Vault),
 }
 
-/// Represents an interpreter instance.
-pub struct Interpreter {
-    actor: ScryptoActorInfo,
-    function: String,
-    args: Vec<ScryptoValue>,
-    module: ModuleRef,
-    memory: MemoryRef,
-}
-
-/// Qualitative states for a WASM process
 #[derive(Debug)]
-enum InterpreterState<'a> {
-    Blueprint,
-    Component {
-        component_address: ComponentAddress,
-        component: &'a mut Component,
-        initial_loaded_object_refs: ComponentObjectRefs,
-    },
-}
-
-/// Top level state machine for a process. Empty currently only
-/// refers to the initial process since it doesn't run on a wasm interpreter (yet)
-#[allow(dead_code)]
-struct WasmProcess<'a> {
-    /// The call depth
-    depth: usize,
-    trace: bool,
-    vm: Interpreter,
-    interpreter_state: InterpreterState<'a>,
+struct ComponentState<'a> {
+    component_address: ComponentAddress,
+    component: &'a mut Component,
+    initial_loaded_object_refs: ComponentObjectRefs,
+    snode_refs: ComponentObjectRefs,
 }
 
 ///TODO: Remove
@@ -304,17 +313,15 @@ pub struct Process<'r, 'l, L: ReadableSubstateStore> {
     proofs: HashMap<ProofId, Proof>,
     owned_snodes: ComponentObjects,
 
+    /// Readable/Writable Snodes
+    component: Option<ComponentState<'r>>,
+
     /// Referenced Snodes
-    snode_refs: ComponentObjectRefs,
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
 
     /// The caller's auth zone
     caller_auth_zone: Option<&'r AuthZone>,
-
-    /// State for the given wasm process, empty only on the root process
-    /// (root process cannot create components nor is a component itself)
-    wasm_process_state: Option<WasmProcess<'r>>,
 }
 
 impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
@@ -337,9 +344,8 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             owned_snodes: ComponentObjects::new(),
             worktop,
             auth_zone,
-            snode_refs: ComponentObjectRefs::new(),
             caller_auth_zone: None,
-            wasm_process_state: None,
+            component: None,
         }
     }
 
@@ -356,8 +362,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'r>,
-        function: String,
-        args: Vec<ScryptoValue>,
+        call_data: ScryptoValue,
     ) -> Result<
         (
             ScryptoValue,
@@ -369,204 +374,68 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
     > {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(
-            self,
-            "Run started: snode_ref = {:?} function = {:?}",
-            snode_ref,
-            function
-        );
+        re_info!(self, "Run started: snode_ref = {:?}", snode_ref);
 
         // Execution
         let output = match snode {
+            SNodeState::SystemStatic => {
+                System::static_main(call_data, self).map_err(RuntimeError::SystemError)
+            }
             SNodeState::Transaction(transaction_process) => transaction_process.main(self),
             SNodeState::PackageStatic => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-                Package::static_main(arg, self).map_err(RuntimeError::PackageError)
+                Package::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
-            SNodeState::AuthZoneRef(auth_zone) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-                auth_zone
-                    .main(arg, self)
-                    .map_err(RuntimeError::AuthZoneError)
-            }
-            SNodeState::Worktop(worktop) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-                worktop.main(arg, self).map_err(RuntimeError::WorktopError)
-            }
-            SNodeState::Scrypto(actor, component_state) => {
-                let substate_value = self
-                    .track
-                    .read_value(actor.package_address().clone())
-                    .ok_or(RuntimeError::PackageNotFound(
-                        actor.package_address().clone(),
-                    ))?;
-                let package = match substate_value {
-                    SubstateValue::Package(package) => package,
-                    _ => panic!("Value is not a package"),
-                };
-
-                if !package.contains_blueprint(actor.blueprint_name()) {
-                    return Err(RuntimeError::BlueprintNotFound(
-                        actor.package_address().clone(),
-                        actor.blueprint_name().to_string(),
-                    ));
-                }
-
-                let m = package.load_module();
-                let module = m.module_ref;
-                let memory = m.memory_ref;
-
-                let (interpreter_state, args) = if let Some(component) = component_state {
+            SNodeState::AuthZoneRef(auth_zone) => auth_zone
+                .main(call_data, self)
+                .map_err(RuntimeError::AuthZoneError),
+            SNodeState::Worktop(worktop) => worktop
+                .main(call_data, self)
+                .map_err(RuntimeError::WorktopError),
+            SNodeState::Scrypto(actor, module_ref, memory_ref, component_state) => {
+                let component_state = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();
                     let data = ScryptoValue::from_slice(component.state()).unwrap();
                     let initial_loaded_object_refs = ComponentObjectRefs {
                         vault_ids: data.vault_ids.into_iter().collect(),
                         lazy_map_ids: data.lazy_map_ids.into_iter().collect(),
                     };
-                    let istate = InterpreterState::Component {
+                    Some(ComponentState {
                         component_address,
                         component,
                         initial_loaded_object_refs,
-                    };
-                    let mut args_with_self = vec![ScryptoValue::from_value(&component_address)];
-                    args_with_self.extend(args);
-
-                    (istate, args_with_self)
+                        snode_refs: ComponentObjectRefs::new(),
+                    })
                 } else {
-                    (InterpreterState::Blueprint, args)
+                    None
                 };
+                self.component = component_state;
 
-                self.wasm_process_state = Some(WasmProcess {
-                    depth: self.depth,
-                    trace: self.trace,
-                    vm: Interpreter {
-                        function,
-                        args,
-                        actor: actor.clone(),
-                        module: module.clone(),
-                        memory,
-                    },
-                    interpreter_state,
-                });
-
-                // Execution
-                let result = module.invoke_export(actor.export_name(), &[], self);
-
-                // Return value
-                re_debug!(self, "Invoke result: {:?}", result);
-                let rtn = result
-                    .map_err(|e| {
-                        match e.into_host_error() {
-                            // Pass-through runtime errors
-                            Some(host_error) => *host_error.downcast::<RuntimeError>().unwrap(),
-                            None => RuntimeError::InvokeError,
-                        }
-                    })?
-                    .ok_or(RuntimeError::NoReturnData)?;
-                match rtn {
-                    RuntimeValue::I32(ptr) => self.read_return_value(ptr as u32),
-                    _ => Err(RuntimeError::InvalidReturnType),
-                }
+                Package::run(module_ref, memory_ref, actor.clone(), call_data, self)
             }
-            SNodeState::ResourceStatic => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-                ResourceManager::static_main(arg, self).map_err(RuntimeError::ResourceManagerError)
-            }
+            SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
+                .map_err(RuntimeError::ResourceManagerError),
             SNodeState::ResourceRef(resource_address, resource_manager) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-
                 let return_value = resource_manager
-                    .main(resource_address, arg, self)
+                    .main(resource_address, call_data, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
 
                 Ok(return_value)
             }
-            SNodeState::BucketRef(bucket_id, bucket) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-                bucket
-                    .main(bucket_id, arg, self)
-                    .map_err(RuntimeError::BucketError)
-            }
-            SNodeState::Bucket(bucket) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-                bucket
-                    .consuming_main(arg, self)
-                    .map_err(RuntimeError::BucketError)
-            }
-            SNodeState::ProofRef(_, proof) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-                proof.main(arg, self).map_err(RuntimeError::ProofError)
-            }
-            SNodeState::Proof(proof) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-                proof.main_consume(arg).map_err(RuntimeError::ProofError)
-            }
-            SNodeState::VaultRef(vault_id, _, vault) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.into_iter()
-                        .nth(0)
-                        .ok_or(RuntimeError::InvalidInvocation)
-                }?;
-                vault
-                    .main(vault_id, arg, self)
-                    .map_err(RuntimeError::VaultError)
-            }
+            SNodeState::BucketRef(bucket_id, bucket) => bucket
+                .main(bucket_id, call_data, self)
+                .map_err(RuntimeError::BucketError),
+            SNodeState::Bucket(bucket) => bucket
+                .consuming_main(call_data, self)
+                .map_err(RuntimeError::BucketError),
+            SNodeState::ProofRef(_, proof) => proof
+                .main(call_data, self)
+                .map_err(RuntimeError::ProofError),
+            SNodeState::Proof(proof) => proof
+                .main_consume(call_data)
+                .map_err(RuntimeError::ProofError),
+            SNodeState::VaultRef(vault_id, _, vault) => vault
+                .main(vault_id, call_data, self)
+                .map_err(RuntimeError::VaultError),
         }?;
 
         self.process_return_data(snode_ref, &output)?;
@@ -584,8 +453,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         if let Some(_) = &mut self.auth_zone {
             self.invoke_snode(
                 SNodeRef::AuthZoneRef,
-                "main".to_string(),
-                vec![ScryptoValue::from_value(&AuthZoneMethod::Clear())],
+                ScryptoValue::from_value(&AuthZoneMethod::Clear()),
             )?;
         }
         self.check_resource()?;
@@ -606,12 +474,18 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
     pub fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        function: String,
-        args: Vec<ScryptoValue>,
+        call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let function = if let Value::Enum { name, .. } = &call_data.dom {
+            name.clone()
+        } else {
+            return Err(RuntimeError::InvalidInvocation);
+        };
+
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
+            SNodeRef::SystemStatic => Ok((Static(StaticSNodeState::System), vec![])),
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = self.auth_zone.take() {
                     Ok((Borrowed(BorrowedSNodeState::AuthZone(auth_zone)), vec![]))
@@ -629,6 +503,21 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
+                        let substate_value = self
+                            .track
+                            .read_value(package_address.clone())
+                            .ok_or(RuntimeError::PackageNotFound(*package_address))?;
+                        let package = match substate_value {
+                            SubstateValue::Package(package) => package,
+                            _ => panic!("Value is not a package"),
+                        };
+                        if !package.contains_blueprint(blueprint_name) {
+                            return Err(RuntimeError::BlueprintNotFound(
+                                package_address.clone(),
+                                blueprint_name.clone(),
+                            ));
+                        }
+                        let module = package.load_module();
                         let export_name = format!("{}_main", blueprint_name);
                         Ok((
                             Borrowed(BorrowedSNodeState::Scrypto(
@@ -637,6 +526,8 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                                     blueprint_name.clone(),
                                     export_name.clone(),
                                 ),
+                                module.module_ref,
+                                module.memory_ref,
                                 None,
                             )),
                             vec![],
@@ -667,6 +558,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                             SubstateValue::Package(package) => package,
                             _ => panic!("Value is not a package"),
                         };
+                        let module = package.load_module();
 
                         // TODO: Remove clone
                         let schema = package
@@ -683,6 +575,8 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                                     export_name,
                                     component_address.clone(),
                                 ),
+                                module.module_ref,
+                                module.memory_ref,
                                 Some(component),
                             )),
                             method_auths,
@@ -692,11 +586,6 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             }
             SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::ResourceRef(resource_address) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
                 let resource_manager: ResourceManager = self
                     .track
                     .borrow_global_mut_value(resource_address.clone())
@@ -707,7 +596,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                         TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
                     })?
                     .into();
-                let method_auth = resource_manager.get_auth(arg).clone();
+                let method_auth = resource_manager.get_auth(&call_data).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(
                         resource_address.clone(),
@@ -717,12 +606,6 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 ))
             }
             SNodeRef::Bucket(bucket_id) => {
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
-
                 let bucket = self
                     .buckets
                     .remove(&bucket_id)
@@ -733,7 +616,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
-                let method_auth = resource_manager.get_consuming_bucket_auth(&arg);
+                let method_auth = resource_manager.get_consuming_bucket_auth(&call_data);
                 Ok((
                     Consumed(Some(ConsumedSNodeState::Bucket(bucket))),
                     vec![method_auth.clone()],
@@ -770,27 +653,20 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 let (component, vault) =
                     if let Some(vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
                         (None, vault)
-                    } else if !self.snode_refs.vault_ids.contains(vault_id) {
-                        return Err(RuntimeError::VaultNotFound(*vault_id));
-                    } else if let Some(WasmProcess {
-                        interpreter_state:
-                            InterpreterState::Component {
-                                component_address, ..
-                            },
+                    } else if let Some(ComponentState {
+                        component_address,
+                        snode_refs,
                         ..
-                    }) = &self.wasm_process_state
+                    }) = &self.component
                     {
+                        if !snode_refs.vault_ids.contains(vault_id) {
+                            return Err(RuntimeError::VaultNotFound(*vault_id));
+                        }
                         let vault = self.track.borrow_vault_mut(component_address, vault_id);
                         (Some(*component_address), vault)
                     } else {
                         panic!("Should never get here");
                     };
-
-                let arg = if args.len() > 1 {
-                    Err(RuntimeError::InvalidInvocation)
-                } else {
-                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
-                }?;
 
                 let resource_address = vault.resource_address();
                 let substate_value = self.track.read_value(resource_address.clone()).unwrap();
@@ -798,7 +674,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
-                let method_auth = resource_manager.get_vault_auth(arg);
+                let method_auth = resource_manager.get_vault_auth(&call_data);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(
                         vault_id.clone(),
@@ -847,18 +723,18 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         // Figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
-        for arg in &args {
-            self.process_call_data(arg)?;
-            moving_buckets.extend(self.send_buckets(&arg.bucket_ids)?);
-            moving_proofs.extend(self.send_proofs(&arg.proof_ids, MoveMethod::AsArgument)?);
-        }
+        self.process_call_data(&call_data)?;
+        moving_buckets.extend(self.send_buckets(&call_data.bucket_ids)?);
+        moving_proofs.extend(self.send_proofs(&call_data.proof_ids, MoveMethod::AsArgument)?);
 
-        let process_auth_zone =
-            if matches!(loaded_snode, Borrowed(BorrowedSNodeState::Scrypto(_, _))) {
-                Some(AuthZone::new())
-            } else {
-                None
-            };
+        let process_auth_zone = if matches!(
+            loaded_snode,
+            Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
+        ) {
+            Some(AuthZone::new())
+        } else {
+            None
+        };
 
         let snode = loaded_snode.to_snode_state();
 
@@ -878,7 +754,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
 
         // invoke the main function
         let (result, received_buckets, received_proofs, received_vaults) =
-            process.run(Some(snode_ref), snode, function, args)?;
+            process.run(Some(snode_ref), snode, call_data)?;
 
         // move buckets and proofs to this process.
         self.buckets.extend(received_buckets);
@@ -891,41 +767,6 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         }
 
         Ok(result)
-    }
-
-    /// Calls the ABI generator of a blueprint.
-    // TODO: Remove
-    pub fn call_abi(
-        &mut self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        re_debug!(self, "Call abi started");
-
-        let snode = SNodeState::Scrypto(
-            ScryptoActorInfo::blueprint(
-                package_address,
-                blueprint_name.to_string(),
-                format!("{}_abi", blueprint_name),
-            ),
-            None,
-        );
-
-        let mut process = Process::new(
-            self.depth + 1,
-            self.trace,
-            self.track,
-            None,
-            None,
-            HashMap::new(),
-            HashMap::new(),
-        );
-        let result = process
-            .run(None, snode, String::new(), Vec::new())
-            .map(|(r, _, _, _)| r);
-
-        re_debug!(self, "Call abi ended");
-        result
     }
 
     /// Checks resource leak.
@@ -1085,410 +926,15 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         }
         Ok(proofs)
     }
-
-    /// Send a byte array to wasm instance.
-    fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_ref().unwrap();
-        let result = wasm_process.vm.module.invoke_export(
-            "scrypto_alloc",
-            &[RuntimeValue::I32((bytes.len()) as i32)],
-            &mut NopExternals,
-        );
-
-        if let Ok(Some(RuntimeValue::I32(ptr))) = result {
-            if wasm_process.vm.memory.set((ptr + 4) as u32, bytes).is_ok() {
-                return Ok(ptr);
-            }
-        }
-
-        Err(RuntimeError::MemoryAllocError)
-    }
-
-    fn read_return_value(&mut self, ptr: u32) -> Result<ScryptoValue, RuntimeError> {
-        let wasm_process = self.wasm_process_state.as_ref().unwrap();
-        // read length
-        let len: u32 = wasm_process
-            .vm
-            .memory
-            .get_value(ptr)
-            .map_err(|_| RuntimeError::MemoryAccessError)?;
-
-        let start = ptr.checked_add(4).ok_or(RuntimeError::MemoryAccessError)?;
-        let end = start
-            .checked_add(len)
-            .ok_or(RuntimeError::MemoryAccessError)?;
-        let range = start as usize..end as usize;
-        let direct = wasm_process.vm.memory.direct_access();
-        let buffer = direct.as_ref();
-
-        if end > buffer.len().try_into().unwrap() {
-            return Err(RuntimeError::MemoryAccessError);
-        }
-
-        ScryptoValue::from_slice(&buffer[range]).map_err(RuntimeError::ParseScryptoValueError)
-    }
-
-    /// Handles a system call.
-    fn handle<I: Decode + fmt::Debug, O: Encode + fmt::Debug>(
-        &mut self,
-        args: RuntimeArgs,
-        handler: fn(&mut Self, input: I) -> Result<O, RuntimeError>,
-    ) -> Result<Option<RuntimeValue>, Trap> {
-        let wasm_process = self.wasm_process_state.as_mut().unwrap();
-        let op: u32 = args.nth_checked(0)?;
-        let input_ptr: u32 = args.nth_checked(1)?;
-        let input_len: u32 = args.nth_checked(2)?;
-        // SECURITY: bill before allocating memory
-        let mut input_bytes = vec![0u8; input_len as usize];
-        wasm_process
-            .vm
-            .memory
-            .get_into(input_ptr, &mut input_bytes)
-            .map_err(|_| Trap::from(RuntimeError::MemoryAccessError))?;
-        let input: I = scrypto_decode(&input_bytes)
-            .map_err(|e| Trap::from(RuntimeError::InvalidRequestData(e)))?;
-        if input_len <= 1024 {
-            re_trace!(self, "{:?}", input);
-        } else {
-            re_trace!(self, "Large request: op = {:02x}, len = {}", op, input_len);
-        }
-
-        let output: O = handler(self, input).map_err(Trap::from)?;
-        let output_bytes = scrypto_encode(&output);
-        let output_ptr = self.send_bytes(&output_bytes).map_err(Trap::from)?;
-        if output_bytes.len() <= 1024 {
-            re_trace!(self, "{:?}", output);
-        } else {
-            re_trace!(
-                self,
-                "Large response: op = {:02x}, len = {}",
-                op,
-                output_bytes.len()
-            );
-        }
-
-        Ok(Some(RuntimeValue::I32(output_ptr)))
-    }
-
-    //============================
-    // SYSTEM CALL HANDLERS START
-    //============================
-
-    fn handle_create_component(
-        &mut self,
-        input: CreateComponentInput,
-    ) -> Result<CreateComponentOutput, RuntimeError> {
-        let data = Self::process_entry_data(&input.state)?;
-        let new_objects = self.owned_snodes.take(data)?;
-
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
-        let package_address = wasm_process.vm.actor.package_address().clone();
-        let component = Component::new(
-            package_address,
-            input.blueprint_name,
-            input.access_rules_list,
-            input.state,
-        );
-        let component_address = self.track.create_uuid_value(component).into();
-        self.track
-            .insert_objects_into_component(new_objects, component_address);
-
-        Ok(CreateComponentOutput { component_address })
-    }
-
-    fn handle_get_component_info(
-        &mut self,
-        input: GetComponentInfoInput,
-    ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        let substate_value = self
-            .track
-            .read_value(input.component_address.clone())
-            .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
-
-        let component = if let SubstateValue::Component(component) = substate_value {
-            component
-        } else {
-            panic!("Value is not a component");
-        };
-
-        Ok(GetComponentInfoOutput {
-            package_address: component.package_address(),
-            blueprint_name: component.blueprint_name().to_owned(),
-        })
-    }
-
-    fn handle_get_component_state(
-        &mut self,
-        _: GetComponentStateInput,
-    ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
-        let component_state = match &wasm_process.interpreter_state {
-            InterpreterState::Component {
-                component,
-                initial_loaded_object_refs,
-                ..
-            } => {
-                self.snode_refs.extend(initial_loaded_object_refs.clone());
-                Ok(component.state())
-            }
-            _ => Err(RuntimeError::IllegalSystemCall),
-        }?;
-        let state = component_state.to_vec();
-        Ok(GetComponentStateOutput { state })
-    }
-
-    fn handle_put_component_state(
-        &mut self,
-        input: PutComponentStateInput,
-    ) -> Result<PutComponentStateOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
-        let (component, new_set, component_address) = match &mut wasm_process.interpreter_state {
-            InterpreterState::Component {
-                ref mut component,
-                component_address,
-                initial_loaded_object_refs,
-                ..
-            } => {
-                let mut new_set = Self::process_entry_data(&input.state)?;
-                new_set.remove(&initial_loaded_object_refs)?;
-                Ok((component, new_set, component_address))
-            }
-            _ => Err(RuntimeError::IllegalSystemCall),
-        }?;
-
-        let new_objects = self.owned_snodes.take(new_set)?;
-        self.track
-            .insert_objects_into_component(new_objects, *component_address);
-
-        // TODO: Verify that process_owned_objects is empty
-
-        component.set_state(input.state);
-
-        Ok(PutComponentStateOutput {})
-    }
-
-    fn handle_create_lazy_map(
-        &mut self,
-        _input: CreateLazyMapInput,
-    ) -> Result<CreateLazyMapOutput, RuntimeError> {
-        let lazy_map_id = self.track.new_lazy_map_id();
-        self.owned_snodes
-            .lazy_maps
-            .insert(lazy_map_id, UnclaimedLazyMap::new());
-        Ok(CreateLazyMapOutput { lazy_map_id })
-    }
-
-    fn handle_get_lazy_map_entry(
-        &mut self,
-        input: GetLazyMapEntryInput,
-    ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        if let Some((_, value)) = self
-            .owned_snodes
-            .get_lazy_map_entry(&input.lazy_map_id, &input.key)
-        {
-            return Ok(GetLazyMapEntryOutput { value });
-        }
-
-        if !self.snode_refs.lazy_map_ids.contains(&input.lazy_map_id) {
-            return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
-        }
-
-        if let Some(WasmProcess {
-            interpreter_state:
-                InterpreterState::Component {
-                    component_address, ..
-                },
-            ..
-        }) = &self.wasm_process_state
-        {
-            let value =
-                self.track
-                    .get_lazy_map_entry(*component_address, &input.lazy_map_id, &input.key);
-            if value.is_some() {
-                let map_entry_objects = Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
-                self.snode_refs.extend(map_entry_objects);
-            }
-
-            return Ok(GetLazyMapEntryOutput { value });
-        }
-
-        panic!("Should not get here.");
-    }
-
-    fn handle_put_lazy_map_entry(
-        &mut self,
-        input: PutLazyMapEntryInput,
-    ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_mut()
-            .ok_or(RuntimeError::IllegalSystemCall)?;
-        let (old_value, lazy_map_state) = match self
-            .owned_snodes
-            .get_lazy_map_entry(&input.lazy_map_id, &input.key)
-        {
-            None => match &wasm_process.interpreter_state {
-                InterpreterState::Component {
-                    component_address, ..
-                } => {
-                    if !self.snode_refs.lazy_map_ids.contains(&input.lazy_map_id) {
-                        return Err(RuntimeError::LazyMapNotFound(input.lazy_map_id));
-                    }
-                    let old_value = self.track.get_lazy_map_entry(
-                        *component_address,
-                        &input.lazy_map_id,
-                        &input.key,
-                    );
-                    Ok((
-                        old_value,
-                        Committed {
-                            component_address: *component_address,
-                        },
-                    ))
-                }
-                _ => Err(RuntimeError::LazyMapNotFound(input.lazy_map_id)),
-            },
-            Some((root, value)) => Ok((value, Uncommitted { root })),
-        }?;
-        let mut new_entry_object_refs = Self::process_entry_data(&input.value)?;
-        let old_entry_object_refs = match old_value {
-            None => ComponentObjectRefs::new(),
-            Some(e) => Self::process_entry_data(&e).unwrap(),
-        };
-        new_entry_object_refs.remove(&old_entry_object_refs)?;
-
-        // Check for cycles
-        if let Uncommitted { root } = lazy_map_state {
-            if new_entry_object_refs.lazy_map_ids.contains(&root) {
-                return Err(RuntimeError::CyclicLazyMap(root));
-            }
-        }
-
-        let new_objects = self.owned_snodes.take(new_entry_object_refs)?;
-
-        match lazy_map_state {
-            Uncommitted { root } => {
-                self.owned_snodes
-                    .insert_lazy_map_entry(&input.lazy_map_id, input.key, input.value);
-                self.owned_snodes
-                    .insert_objects_into_map(new_objects, &root);
-            }
-            Committed { component_address } => {
-                self.track.put_lazy_map_entry(
-                    component_address,
-                    input.lazy_map_id,
-                    input.key,
-                    input.value,
-                );
-                self.track
-                    .insert_objects_into_component(new_objects, component_address);
-            }
-        }
-
-        Ok(PutLazyMapEntryOutput {})
-    }
-
-    fn handle_invoke_snode(
-        &mut self,
-        input: InvokeSNodeInput,
-    ) -> Result<InvokeSNodeOutput, RuntimeError> {
-        let mut validated_args = Vec::new();
-        for arg in input.args {
-            validated_args.push(
-                ScryptoValue::from_slice(&arg).map_err(RuntimeError::ParseScryptoValueError)?,
-            );
-        }
-
-        let result = self.invoke_snode(input.snode_ref, input.function, validated_args)?;
-        Ok(InvokeSNodeOutput { rtn: result.raw })
-    }
-
-    fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
-        self.track.add_log(input.level, input.message);
-
-        Ok(EmitLogOutput {})
-    }
-
-    fn handle_get_call_data(
-        &mut self,
-        _input: GetCallDataInput,
-    ) -> Result<GetCallDataOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)?;
-        Ok(GetCallDataOutput {
-            function: wasm_process.vm.function.clone(),
-            args: wasm_process
-                .vm
-                .args
-                .iter()
-                .cloned()
-                .map(|v| v.raw)
-                .collect(),
-        })
-    }
-
-    fn handle_get_transaction_hash(
-        &mut self,
-        _input: GetTransactionHashInput,
-    ) -> Result<GetTransactionHashOutput, RuntimeError> {
-        Ok(GetTransactionHashOutput {
-            transaction_hash: self.track.transaction_hash(),
-        })
-    }
-
-    fn handle_get_current_epoch(
-        &mut self,
-        _input: GetCurrentEpochInput,
-    ) -> Result<GetCurrentEpochOutput, RuntimeError> {
-        Ok(GetCurrentEpochOutput {
-            current_epoch: self.track.current_epoch(),
-        })
-    }
-
-    fn handle_generate_uuid(
-        &mut self,
-        _input: GenerateUuidInput,
-    ) -> Result<GenerateUuidOutput, RuntimeError> {
-        Ok(GenerateUuidOutput {
-            uuid: self.track.new_uuid(),
-        })
-    }
-
-    fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
-        let wasm_process = self
-            .wasm_process_state
-            .as_ref()
-            .ok_or(RuntimeError::InterpreterNotStarted)?;
-
-        return Ok(GetActorOutput {
-            actor: wasm_process.vm.actor.clone(),
-        });
-    }
-
-    //============================
-    // SYSTEM CALL HANDLERS END
-    //============================
 }
 
 impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        function: String,
-        args: Vec<ScryptoValue>,
+        call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_snode(snode_ref, function, args)
+        self.invoke_snode(snode_ref, call_data)
     }
 
     fn get_non_fungible(
@@ -1573,40 +1019,196 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
     fn create_package(&mut self, package: Package) -> PackageAddress {
         self.track.create_uuid_value(package).into()
     }
-}
 
-impl<'r, 'l, L: ReadableSubstateStore> Externals for Process<'r, 'l, L> {
-    fn invoke_index(
-        &mut self,
-        index: usize,
-        args: RuntimeArgs,
-    ) -> Result<Option<RuntimeValue>, Trap> {
-        match index {
-            ENGINE_FUNCTION_INDEX => {
-                let operation: u32 = args.nth_checked(0)?;
-                match operation {
-                    CREATE_COMPONENT => self.handle(args, Self::handle_create_component),
-                    GET_COMPONENT_INFO => self.handle(args, Self::handle_get_component_info),
-                    GET_COMPONENT_STATE => self.handle(args, Self::handle_get_component_state),
-                    PUT_COMPONENT_STATE => self.handle(args, Self::handle_put_component_state),
+    fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
+        let data = Self::process_entry_data(component.state())?;
+        let new_objects = self.owned_snodes.take(data)?;
+        let address = self.track.create_uuid_value(component);
+        self.track
+            .insert_objects_into_component(new_objects, address.clone().into());
+        Ok(address.into())
+    }
 
-                    CREATE_LAZY_MAP => self.handle(args, Self::handle_create_lazy_map),
-                    GET_LAZY_MAP_ENTRY => self.handle(args, Self::handle_get_lazy_map_entry),
-                    PUT_LAZY_MAP_ENTRY => self.handle(args, Self::handle_put_lazy_map_entry),
-
-                    INVOKE_SNODE => self.handle(args, Self::handle_invoke_snode),
-
-                    EMIT_LOG => self.handle(args, Self::handle_emit_log),
-                    GET_CALL_DATA => self.handle(args, Self::handle_get_call_data),
-                    GET_TRANSACTION_HASH => self.handle(args, Self::handle_get_transaction_hash),
-                    GET_CURRENT_EPOCH => self.handle(args, Self::handle_get_current_epoch),
-                    GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
-                    GET_ACTOR => self.handle(args, Self::handle_get_actor),
-
-                    _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
-                }
+    fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError> {
+        if let Some(ComponentState {
+            component,
+            initial_loaded_object_refs,
+            component_address,
+            snode_refs,
+        }) = &mut self.component
+        {
+            if addr.eq(component_address) {
+                snode_refs.extend(initial_loaded_object_refs.clone());
+                let state = component.state().to_vec();
+                return Ok(state);
             }
-            _ => Err(RuntimeError::HostFunctionNotFound(index).into()),
         }
+
+        Err(RuntimeError::ComponentNotFound(addr))
+    }
+
+    fn write_component_state(
+        &mut self,
+        addr: ComponentAddress,
+        state: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        if let Some(ComponentState {
+            component,
+            initial_loaded_object_refs,
+            component_address,
+            ..
+        }) = &mut self.component
+        {
+            if addr.eq(component_address) {
+                let mut new_set = Self::process_entry_data(&state)?;
+                new_set.remove(&initial_loaded_object_refs)?;
+                let new_objects = self.owned_snodes.take(new_set)?;
+                self.track
+                    .insert_objects_into_component(new_objects, *component_address);
+                component.set_state(state);
+                return Ok(());
+            }
+        }
+        Err(RuntimeError::ComponentNotFound(addr))
+    }
+
+    fn read_lazy_map_entry(
+        &mut self,
+        lazy_map_id: LazyMapId,
+        key: Vec<u8>,
+    ) -> Result<Option<Vec<u8>>, RuntimeError> {
+        if let Some((_, value)) = self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key) {
+            return Ok(value);
+        }
+
+        if let Some(ComponentState {
+            component_address,
+            snode_refs,
+            ..
+        }) = &mut self.component
+        {
+            if snode_refs.lazy_map_ids.contains(&lazy_map_id) {
+                let value = self
+                    .track
+                    .get_lazy_map_entry(*component_address, &lazy_map_id, &key);
+                if value.is_some() {
+                    let map_entry_objects =
+                        Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
+                    snode_refs.extend(map_entry_objects);
+                }
+
+                return Ok(value);
+            }
+        }
+
+        return Err(RuntimeError::LazyMapNotFound(lazy_map_id));
+    }
+
+    fn write_lazy_map_entry(
+        &mut self,
+        lazy_map_id: LazyMapId,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
+        let (old_value, lazy_map_state) =
+            match self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key) {
+                None => match &self.component {
+                    Some(ComponentState {
+                        component_address,
+                        snode_refs,
+                        ..
+                    }) => {
+                        if !snode_refs.lazy_map_ids.contains(&lazy_map_id) {
+                            return Err(RuntimeError::LazyMapNotFound(lazy_map_id));
+                        }
+                        let old_value =
+                            self.track
+                                .get_lazy_map_entry(*component_address, &lazy_map_id, &key);
+                        Ok((
+                            old_value,
+                            Committed {
+                                component_address: *component_address,
+                            },
+                        ))
+                    }
+                    _ => Err(RuntimeError::LazyMapNotFound(lazy_map_id)),
+                },
+                Some((root, value)) => Ok((value, Uncommitted { root })),
+            }?;
+        let mut new_entry_object_refs = Self::process_entry_data(&value)?;
+        let old_entry_object_refs = match old_value {
+            None => ComponentObjectRefs::new(),
+            Some(e) => Self::process_entry_data(&e).unwrap(),
+        };
+        new_entry_object_refs.remove(&old_entry_object_refs)?;
+
+        // Check for cycles
+        if let Uncommitted { root } = lazy_map_state {
+            if new_entry_object_refs.lazy_map_ids.contains(&root) {
+                return Err(RuntimeError::CyclicLazyMap(root));
+            }
+        }
+
+        let new_objects = self.owned_snodes.take(new_entry_object_refs)?;
+
+        match lazy_map_state {
+            Uncommitted { root } => {
+                self.owned_snodes
+                    .insert_lazy_map_entry(&lazy_map_id, key, value);
+                self.owned_snodes
+                    .insert_objects_into_map(new_objects, &root);
+            }
+            Committed { component_address } => {
+                self.track
+                    .put_lazy_map_entry(component_address, lazy_map_id, key, value);
+                self.track
+                    .insert_objects_into_component(new_objects, component_address);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn get_component_info(
+        &mut self,
+        component_address: ComponentAddress,
+    ) -> Result<(PackageAddress, String), RuntimeError> {
+        let substate_value = self
+            .track
+            .read_value(component_address)
+            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
+
+        if let SubstateValue::Component(component) = substate_value {
+            Ok((
+                component.package_address(),
+                component.blueprint_name().to_owned(),
+            ))
+        } else {
+            panic!("Value is not a component");
+        }
+    }
+
+    fn create_lazy_map(&mut self) -> LazyMapId {
+        let lazy_map_id = self.track.new_lazy_map_id();
+        self.owned_snodes
+            .lazy_maps
+            .insert(lazy_map_id, UnclaimedLazyMap::new());
+        lazy_map_id
+    }
+
+    fn get_epoch(&mut self) -> u64 {
+        self.track.current_epoch()
+    }
+
+    fn get_transaction_hash(&mut self) -> Hash {
+        self.track.transaction_hash()
+    }
+
+    fn generate_uuid(&mut self) -> u128 {
+        self.track.new_uuid()
+    }
+
+    fn emit_log(&mut self, level: Level, message: String) {
+        self.track.add_log(level, message);
     }
 }

@@ -36,22 +36,17 @@ pub const EMIT_LOG: u32 = 0xf0;
 pub const GENERATE_UUID: u32 = 0xf1;
 /// Retrieve call data
 pub const GET_CALL_DATA: u32 = 0xf2;
-/// Retrieve current current_epoch
-pub const GET_CURRENT_EPOCH: u32 = 0xf3;
-/// Retrieve transaction hash
-pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Retrieve the running entity
 pub const GET_ACTOR: u32 = 0xf5;
 
 #[macro_export]
-macro_rules! invocations {
+macro_rules! sfunctions {
     ($snode_ref:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $method_enum:expr })* } ) => {
         $(
             $vis $fn $method_name $s -> $rtn {
                 let input = InvokeSNodeInput {
                     snode_ref: $snode_ref,
-                    function: "main".to_string(),
-                    args: args![$method_enum],
+                    call_data: scrypto::buffer::scrypto_encode(&$method_enum),
                 };
                 let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
                 scrypto_decode(&output.rtn).unwrap()
@@ -63,8 +58,7 @@ macro_rules! invocations {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct InvokeSNodeInput {
     pub snode_ref: SNodeRef,
-    pub function: String,
-    pub args: Vec<Vec<u8>>,
+    pub call_data: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -100,7 +94,9 @@ pub struct GetComponentInfoOutput {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct GetComponentStateInput {}
+pub struct GetComponentStateInput {
+    pub component_address: ComponentAddress,
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetComponentStateOutput {
@@ -109,6 +105,7 @@ pub struct GetComponentStateOutput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PutComponentStateInput {
+    pub component_address: ComponentAddress,
     pub state: Vec<u8>,
 }
 
@@ -166,28 +163,9 @@ pub struct GetCallDataInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetCallDataOutput {
-    pub function: String,
-    pub args: Vec<Vec<u8>>,
+    pub component: Option<ComponentAddress>,
+    pub call_data: Vec<u8>,
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetCurrentEpochInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetCurrentEpochOutput {
-    pub current_epoch: u64,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetTransactionHashInput {}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetTransactionHashOutput {
-    pub transaction_hash: Hash,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct GetTransactionSignersInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GenerateUuidInput {}

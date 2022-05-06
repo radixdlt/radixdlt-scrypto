@@ -1,7 +1,7 @@
 use crate::core::SNodeRef;
 use sbor::*;
 
-use crate::buffer::scrypto_decode;
+use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
@@ -11,8 +11,8 @@ use crate::rust::collections::BTreeSet;
 use crate::rust::fmt;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
+use crate::sfunctions;
 use crate::types::*;
-use crate::{args, invocations};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ConsumingBucketMethod {
@@ -39,14 +39,13 @@ impl Bucket {
     pub fn new(resource_address: ResourceAddress) -> Self {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceRef(resource_address),
-            function: "main".to_string(),
-            args: args![ResourceManagerMethod::CreateBucket()],
+            call_data: scrypto_encode(&ResourceManagerMethod::CreateBucket()),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()
     }
 
-    invocations! {
+    sfunctions! {
         SNodeRef::Bucket(self.0) => {
            pub fn burn(self) -> () {
                 ConsumingBucketMethod::Burn()
@@ -54,7 +53,7 @@ impl Bucket {
         }
     }
 
-    invocations! {
+    sfunctions! {
         SNodeRef::BucketRef(self.0) => {
             pub fn put(&mut self, other: Self) -> () {
                 BucketMethod::Put(other)

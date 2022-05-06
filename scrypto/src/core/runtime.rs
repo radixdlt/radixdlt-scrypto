@@ -1,9 +1,18 @@
+use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::call_data_bytes_args;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
 use crate::rust::borrow::ToOwned;
 use crate::rust::vec::Vec;
+use sbor::*;
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum SystemFunction {
+    GetEpoch(),
+    GetTransactionHash(),
+}
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -40,13 +49,13 @@ impl Runtime {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
+        let call_data = call_data_bytes_args!(function.as_ref().to_owned(), args);
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Blueprint(
                 package_address,
                 blueprint_name.as_ref().to_owned(),
             )),
-            function: function.as_ref().to_owned(),
-            args,
+            call_data,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
@@ -59,10 +68,21 @@ impl Runtime {
         method: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
+        let mut fields = Vec::new();
+        for arg in args {
+            fields.push(::sbor::decode_any(&arg).unwrap());
+        }
+        let variant = ::sbor::Value::Enum {
+            name: method.as_ref().to_owned(),
+            fields,
+        };
+        let mut bytes = Vec::new();
+        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+        ::sbor::encode_any(None, &variant, &mut enc);
+
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
-            function: method.as_ref().to_owned(),
-            args,
+            call_data: bytes,
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 
@@ -71,15 +91,21 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = GetTransactionHashInput {};
-        let output: GetTransactionHashOutput = call_engine(GET_TRANSACTION_HASH, input);
-        output.transaction_hash
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::SystemStatic,
+            call_data: scrypto_encode(&SystemFunction::GetTransactionHash()),
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
-        let input = GetCurrentEpochInput {};
-        let output: GetCurrentEpochOutput = call_engine(GET_CURRENT_EPOCH, input);
-        output.current_epoch
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::SystemStatic,
+            call_data: scrypto_encode(&SystemFunction::GetEpoch()),
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
     }
 }

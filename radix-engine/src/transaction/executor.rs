@@ -2,9 +2,9 @@ use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::rust::string::ToString;
-use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
-use scrypto::{abi, access_rule_node, rule};
+use scrypto::values::ScryptoValue;
+use scrypto::{abi, access_rule_node, call_data, rule};
 
 use crate::engine::*;
 use crate::errors::*;
@@ -40,7 +40,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
             .map(|(package, _)| package)
             .ok_or(RuntimeError::PackageNotFound(package_address))?;
 
-        BasicAbiProvider::new(self.trace)
+        BasicAbiProvider::new()
             .with_package(&package_address, package)
             .export_abi(package_address, blueprint_name)
     }
@@ -59,7 +59,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
             .get_decoded_substate(&component.package_address())
             .map(|(package, _)| package)
             .unwrap();
-        BasicAbiProvider::new(self.trace)
+        BasicAbiProvider::new()
             .with_package(&component.package_address(), package)
             .export_abi(component.package_address(), component.blueprint_name())
     }
@@ -97,7 +97,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+                    .call_method(SYSTEM_COMPONENT, call_data!(free_xrd()))
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })
@@ -163,7 +163,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
 
         let mut txn_process = TransactionProcess::new(validated.clone());
         let txn_snode = SNodeState::Transaction(&mut txn_process);
-        let error = match proc.run(None, txn_snode, "execute".to_string(), vec![]) {
+        let error = match proc.run(None, txn_snode, ScryptoValue::from_value(&())) {
             Ok(_) => None,
             Err(e) => Some(e),
         };
