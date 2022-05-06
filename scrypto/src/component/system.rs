@@ -49,8 +49,8 @@ impl ComponentSystem {
     pub fn publish_package(&mut self, code: &[u8]) -> PackageAddress {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::PackageStatic,
-            function: "publish".to_string(),
-            args: args![code.to_vec()],
+            function: "main".to_string(),
+            args: args![PackageFunction::Publish(code.to_vec())],
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

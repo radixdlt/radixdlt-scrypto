@@ -11,7 +11,6 @@ use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
-use crate::wasm::*;
 
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'l, L: ReadableSubstateStore + WriteableSubstateStore> {
@@ -142,24 +141,6 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         }
     }
 
-    /// Overwrites a package.
-    pub fn overwrite_package(
-        &mut self,
-        package_address: PackageAddress,
-        code: Vec<u8>,
-    ) -> Result<(), WasmValidationError> {
-        let nonce = self.substate_store.get_nonce();
-        self.substate_store.increase_nonce();
-
-        let tx_hash = hash(nonce.to_le_bytes());
-        let mut id_gen = SubstateIdGenerator::new(tx_hash);
-
-        let package = Package::new(code)?;
-        self.substate_store
-            .put_encoded_substate(&package_address, &package, id_gen.next());
-        Ok(())
-    }
-
     pub fn validate_and_execute(
         &mut self,
         signed: &SignedTransaction,
@@ -201,6 +182,21 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             None
         };
 
+        let mut new_component_addresses = Vec::new();
+        let mut new_resource_addresses = Vec::new();
+        let mut new_package_addresses = Vec::new();
+        for address in track_receipt.new_addresses {
+            match address {
+                Address::Component(component_address) => {
+                    new_component_addresses.push(component_address)
+                }
+                Address::Resource(resource_address) => {
+                    new_resource_addresses.push(resource_address)
+                }
+                Address::Package(package_address) => new_package_addresses.push(package_address),
+            }
+        }
+
         #[cfg(feature = "alloc")]
         let execution_time = None;
         #[cfg(not(feature = "alloc"))]
@@ -215,9 +211,9 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             },
             outputs,
             logs: track_receipt.logs,
-            new_package_addresses: track_receipt.new_packages,
-            new_component_addresses: track_receipt.new_components,
-            new_resource_addresses: track_receipt.new_resources,
+            new_package_addresses,
+            new_component_addresses,
+            new_resource_addresses,
             execution_time,
         }
     }

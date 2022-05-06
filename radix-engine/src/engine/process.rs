@@ -6,6 +6,7 @@ use scrypto::buffer::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::api::*;
 use scrypto::engine::types::*;
+use scrypto::resource::AuthZoneMethod;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::fmt;
@@ -19,6 +20,8 @@ use wasmi::*; // TODO: remove coupling with wasmi
 
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
+use crate::engine::track::{SubstateValue, TrackError};
+use crate::engine::ComponentObjectRefs;
 use crate::engine::*;
 use crate::errors::*;
 use crate::ledger::*;
@@ -131,7 +134,7 @@ impl BorrowedSNodeState {
             }
             BorrowedSNodeState::Scrypto(actor, component_state) => {
                 if let Some(component_address) = actor.component_address() {
-                    process.track.return_borrowed_global_component(
+                    process.track.return_borrowed_global_mut_value(
                         component_address,
                         component_state.unwrap(),
                     );
@@ -140,7 +143,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Resource(resource_address, resource_manager) => {
                 process
                     .track
-                    .return_borrowed_global_resource_manager(resource_address, resource_manager);
+                    .return_borrowed_global_mut_value(resource_address, resource_manager);
             }
             BorrowedSNodeState::Bucket(bucket_id, bucket) => {
                 process.buckets.insert(bucket_id, bucket);
@@ -366,24 +369,59 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
     > {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(self, "Run started: function = {:?}", function);
+        re_info!(
+            self,
+            "Run started: snode_ref = {:?} function = {:?}",
+            snode_ref,
+            function
+        );
 
         // Execution
         let output = match snode {
             SNodeState::Transaction(transaction_process) => transaction_process.main(self),
             SNodeState::PackageStatic => {
-                Package::static_main(&function, args, self).map_err(RuntimeError::PackageError)
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                Package::static_main(arg, self).map_err(RuntimeError::PackageError)
             }
-            SNodeState::AuthZoneRef(auth_zone) => auth_zone
-                .main(function.as_str(), args, self)
-                .map_err(RuntimeError::AuthZoneError),
-            SNodeState::Worktop(worktop) => worktop
-                .main(function.as_str(), args, self)
-                .map_err(RuntimeError::WorktopError),
+            SNodeState::AuthZoneRef(auth_zone) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                auth_zone
+                    .main(arg, self)
+                    .map_err(RuntimeError::AuthZoneError)
+            }
+            SNodeState::Worktop(worktop) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                worktop.main(arg, self).map_err(RuntimeError::WorktopError)
+            }
             SNodeState::Scrypto(actor, component_state) => {
-                let package = self.track.get_package(actor.package_address()).ok_or(
-                    RuntimeError::PackageNotFound(actor.package_address().clone()),
-                )?;
+                let substate_value = self
+                    .track
+                    .read_value(actor.package_address().clone())
+                    .ok_or(RuntimeError::PackageNotFound(
+                        actor.package_address().clone(),
+                    ))?;
+                let package = match substate_value {
+                    SubstateValue::Package(package) => package,
+                    _ => panic!("Value is not a package"),
+                };
 
                 if !package.contains_blueprint(actor.blueprint_name()) {
                     return Err(RuntimeError::BlueprintNotFound(
@@ -447,32 +485,86 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 }
             }
             SNodeState::ResourceStatic => {
-                ResourceManager::static_main(function.as_str(), args, self)
-                    .map_err(RuntimeError::ResourceManagerError)
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                ResourceManager::static_main(arg, self).map_err(RuntimeError::ResourceManagerError)
             }
             SNodeState::ResourceRef(resource_address, resource_manager) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+
                 let return_value = resource_manager
-                    .main(resource_address, function.as_str(), args, self)
+                    .main(resource_address, arg, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
 
                 Ok(return_value)
             }
-            SNodeState::BucketRef(bucket_id, bucket) => bucket
-                .main(bucket_id, function.as_str(), args, self)
-                .map_err(RuntimeError::BucketError),
-            SNodeState::Bucket(bucket) => match function.as_str() {
-                "burn" => bucket.drop(self).map_err(RuntimeError::BucketError),
-                _ => Err(RuntimeError::IllegalSystemCall),
-            },
-            SNodeState::ProofRef(_, proof) => proof
-                .main(function.as_str(), args, self)
-                .map_err(RuntimeError::ProofError),
-            SNodeState::Proof(proof) => proof
-                .main_consume(function.as_str())
-                .map_err(RuntimeError::ProofError),
-            SNodeState::VaultRef(vault_id, _, vault) => vault
-                .main(vault_id, function.as_str(), args, self)
-                .map_err(RuntimeError::VaultError),
+            SNodeState::BucketRef(bucket_id, bucket) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                bucket
+                    .main(bucket_id, arg, self)
+                    .map_err(RuntimeError::BucketError)
+            }
+            SNodeState::Bucket(bucket) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                bucket
+                    .consuming_main(arg, self)
+                    .map_err(RuntimeError::BucketError)
+            }
+            SNodeState::ProofRef(_, proof) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                proof.main(arg, self).map_err(RuntimeError::ProofError)
+            }
+            SNodeState::Proof(proof) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                proof.main_consume(arg).map_err(RuntimeError::ProofError)
+            }
+            SNodeState::VaultRef(vault_id, _, vault) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.into_iter()
+                        .nth(0)
+                        .ok_or(RuntimeError::InvalidInvocation)
+                }?;
+                vault
+                    .main(vault_id, arg, self)
+                    .map_err(RuntimeError::VaultError)
+            }
         }?;
 
         self.process_return_data(snode_ref, &output)?;
@@ -488,7 +580,11 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         }
 
         if let Some(_) = &mut self.auth_zone {
-            self.invoke_snode(SNodeRef::AuthZoneRef, "clear".to_string(), vec![])?;
+            self.invoke_snode(
+                SNodeRef::AuthZoneRef,
+                "main".to_string(),
+                vec![ScryptoValue::from_value(&AuthZoneMethod::Clear())],
+            )?;
         }
         self.check_resource()?;
 
@@ -545,17 +641,31 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                         ))
                     }
                     ScryptoActor::Component(component_address) => {
-                        let component = self
+                        let component: Component = self
                             .track
-                            .borrow_global_mut_component(component_address.clone())?;
+                            .borrow_global_mut_value(component_address.clone())
+                            .map_err(|e| match e {
+                                TrackError::NotFound => {
+                                    RuntimeError::ComponentNotFound(component_address.clone())
+                                }
+                                TrackError::Reentrancy => {
+                                    RuntimeError::ComponentReentrancy(component_address.clone())
+                                }
+                            })?
+                            .into();
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
                         let export_name = format!("{}_main", blueprint_name);
 
-                        let package = self
+                        let substate_value = self
                             .track
-                            .get_package(&package_address)
+                            .read_value(package_address.clone())
                             .ok_or(RuntimeError::PackageNotFound(package_address))?;
+                        let package = match substate_value {
+                            SubstateValue::Package(package) => package,
+                            _ => panic!("Value is not a package"),
+                        };
+
                         // TODO: Remove clone
                         let schema = package
                             .load_blueprint_schema(&blueprint_name)
@@ -580,10 +690,22 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             }
             SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::ResourceRef(resource_address) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
                 let resource_manager: ResourceManager = self
                     .track
-                    .borrow_global_mut_resource_manager(resource_address.clone())?;
-                let method_auth = resource_manager.get_auth(&function, &args).clone();
+                    .borrow_global_mut_value(resource_address.clone())
+                    .map_err(|e| match e {
+                        TrackError::NotFound => {
+                            RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                        }
+                        TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
+                    })?
+                    .into();
+                let method_auth = resource_manager.get_auth(arg).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(
                         resource_address.clone(),
@@ -593,16 +715,23 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 ))
             }
             SNodeRef::Bucket(bucket_id) => {
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+
                 let bucket = self
                     .buckets
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let resource_address = bucket.resource_address();
-                let method_auth = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .unwrap()
-                    .get_auth(&function, &args);
+                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let resource_manager = match substate_value {
+                    SubstateValue::Resource(resource_manager) => resource_manager,
+                    _ => panic!("Value is not a resource manager"),
+                };
+                let method_auth = resource_manager.get_consuming_bucket_auth(&arg);
                 Ok((
                     Consumed(Some(ConsumedSNodeState::Bucket(bucket))),
                     vec![method_auth.clone()],
@@ -613,15 +742,9 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                     .buckets
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
-                let resource_address = bucket.resource_address();
-                let method_auth = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .unwrap()
-                    .get_auth(&function, &args);
                 Ok((
                     Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
-                    vec![method_auth.clone()],
+                    vec![],
                 ))
             }
             SNodeRef::ProofRef(proof_id) => {
@@ -661,12 +784,19 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                         panic!("Should never get here");
                     };
 
+                let arg = if args.len() > 1 {
+                    Err(RuntimeError::InvalidInvocation)
+                } else {
+                    args.iter().nth(0).ok_or(RuntimeError::InvalidInvocation)
+                }?;
+
                 let resource_address = vault.resource_address();
-                let method_auth = self
-                    .track
-                    .get_resource_manager(&resource_address)
-                    .unwrap()
-                    .get_auth(&function, &args);
+                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let resource_manager = match substate_value {
+                    SubstateValue::Resource(resource_manager) => resource_manager,
+                    _ => panic!("Value is not a resource manager"),
+                };
+                let method_auth = resource_manager.get_vault_auth(arg);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(
                         vault_id.clone(),
@@ -1060,7 +1190,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             input.access_rules_list,
             input.state,
         );
-        let component_address = self.track.create_component(component);
+        let component_address = self.track.create_uuid_value(component).into();
         self.track
             .insert_objects_into_component(new_objects, component_address);
 
@@ -1071,10 +1201,16 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         &mut self,
         input: GetComponentInfoInput,
     ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        let component = self
+        let substate_value = self
             .track
-            .get_component(input.component_address)
+            .read_value(input.component_address.clone())
             .ok_or(RuntimeError::ComponentNotFound(input.component_address))?;
+
+        let component = if let SubstateValue::Component(component) = substate_value {
+            component
+        } else {
+            panic!("Value is not a component");
+        };
 
         Ok(GetComponentInfoOutput {
             package_address: component.package_address(),
@@ -1374,7 +1510,14 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         resource_address: ResourceAddress,
     ) -> Result<ResourceManager, RuntimeError> {
         self.track
-            .borrow_global_mut_resource_manager(resource_address)
+            .borrow_global_mut_value(resource_address.clone())
+            .map(|v| v.into())
+            .map_err(|e| match e {
+                TrackError::NotFound => {
+                    RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                }
+                TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
+            })
     }
 
     fn return_borrowed_global_resource_manager(
@@ -1383,7 +1526,7 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         resource_manager: ResourceManager,
     ) {
         self.track
-            .return_borrowed_global_resource_manager(resource_address, resource_manager)
+            .return_borrowed_global_mut_value(resource_address, resource_manager)
     }
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
@@ -1422,11 +1565,11 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
-        self.track.create_resource_manager(resource_manager)
+        self.track.create_uuid_value(resource_manager).into()
     }
 
     fn create_package(&mut self, package: Package) -> PackageAddress {
-        self.track.create_package(package)
+        self.track.create_uuid_value(package).into()
     }
 }
 

@@ -174,6 +174,8 @@ pub enum RuntimeError {
 
     /// Can't move restricted proof.
     CantMoveRestrictedProof(ProofId),
+
+    InvalidInvocation,
 }
 
 impl fmt::Display for RuntimeError {

@@ -1,6 +1,6 @@
-use crate::args;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
+use crate::{args, invocations};
 use sbor::*;
 
 use crate::engine::{api::*, call_engine, types::ProofId};
@@ -14,23 +14,46 @@ use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::types::*;
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum ConsumingProofMethod {
+    Drop(),
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum ProofMethod {
+    Amount(),
+    ResourceAddress(),
+    NonFungibleIds(),
+    Clone(),
+}
+
 /// Represents a proof of owning some resource.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
-    fn clone(&self) -> Self {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ProofRef(self.0),
-            function: "clone".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+    invocations! {
+        SNodeRef::ProofRef(self.0) => {
+            fn clone(&self) -> Self { ProofMethod::Clone() }
+        }
     }
 }
 
 impl Proof {
+    invocations! {
+        SNodeRef::ProofRef(self.0) => {
+            pub fn amount(&self) -> Decimal { ProofMethod::Amount() }
+            pub fn resource_address(&self) -> ResourceAddress { ProofMethod::ResourceAddress() }
+            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> { ProofMethod::NonFungibleIds() }
+        }
+    }
+
+    invocations! {
+        SNodeRef::Proof(self.0) => {
+            pub fn drop(self) -> () { ConsumingProofMethod::Drop() }
+        }
+    }
+
     /// Whether this proof includes an ownership proof of any of the given resource.
     pub fn contains(&self, resource_address: ResourceAddress) -> bool {
         self.resource_address() == resource_address
@@ -50,42 +73,6 @@ impl Proof {
         self.non_fungible_ids()
             .iter()
             .any(|k| k.eq(&non_fungible_address.non_fungible_id()))
-    }
-
-    /// Returns the resource amount within the bucket.
-    pub fn amount(&self) -> Decimal {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ProofRef(self.0),
-            function: "get_total_amount".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    /// Returns the resource address
-    pub fn resource_address(&self) -> ResourceAddress {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ProofRef(self.0),
-            function: "get_resource_address".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    /// Returns the ids of all non-fungibles in this bucket.
-    ///
-    /// # Panics
-    /// If the bucket is not a non-fungible bucket.
-    pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ProofRef(self.0),
-            function: "get_non_fungible_ids".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Returns all the non-fungible units contained.
@@ -110,17 +97,6 @@ impl Proof {
             panic!("Expecting singleton NFT proof");
         }
         non_fungibles.into_iter().next().unwrap()
-    }
-
-    /// Destroys this proof.
-    pub fn drop(self) {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Proof(self.0),
-            function: "drop".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
     }
 
     /// Checks if the referenced bucket is empty.

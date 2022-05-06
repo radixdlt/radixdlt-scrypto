@@ -134,10 +134,10 @@ pub fn fmt_package<P: AsRef<Path>>(
             .arg(cargo.to_str().unwrap())
             .args({
                 let mut args = Vec::new();
-                if (check) {
+                if check {
                     args.push("--check")
                 }
-                if (quiet) {
+                if quiet {
                     args.push("--quiet")
                 }
                 args
