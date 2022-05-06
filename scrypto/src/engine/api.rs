@@ -43,11 +43,26 @@ pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Retrieve the running entity
 pub const GET_ACTOR: u32 = 0xf5;
 
+#[macro_export]
+macro_rules! sfunctions {
+    ($snode_ref:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $method_enum:expr })* } ) => {
+        $(
+            $vis $fn $method_name $s -> $rtn {
+                let input = InvokeSNodeInput {
+                    snode_ref: $snode_ref,
+                    call_data: scrypto::buffer::scrypto_encode(&$method_enum),
+                };
+                let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+                scrypto_decode(&output.rtn).unwrap()
+            }
+        )+
+    };
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct InvokeSNodeInput {
     pub snode_ref: SNodeRef,
-    pub function: String,
-    pub args: Vec<Vec<u8>>,
+    pub call_data: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -149,8 +164,8 @@ pub struct GetCallDataInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetCallDataOutput {
-    pub function: String,
-    pub args: Vec<Vec<u8>>,
+    pub component: Option<ComponentAddress>,
+    pub call_data: Vec<u8>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

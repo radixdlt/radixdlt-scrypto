@@ -1,7 +1,6 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::transaction::*;
-use scrypto::engine::types::*;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -15,10 +14,6 @@ use crate::utils::*;
 pub struct Publish {
     /// the path to a Scrypto package or a .wasm file
     path: PathBuf,
-
-    /// The package ID, for overwriting
-    #[clap(long)]
-    package_address: Option<PackageAddress>,
 
     /// Output a transaction manifest without execution
     #[clap(short, long)]
@@ -67,30 +62,20 @@ impl Publish {
     pub fn store_package<O: std::io::Write>(&self, out: &mut O, code: &[u8]) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        if let Some(package_address) = self.package_address.clone() {
-            // Overwrite package
-            executor
-                .overwrite_package(package_address, code.to_vec())
-                .map_err(|e| Error::PackageValidationError(e))?;
-            writeln!(out, "Package updated!").map_err(Error::IOError)?;
-            Ok(())
-        } else {
-            match executor.publish_package(code) {
-                Ok(package_address) => {
-                    writeln!(
-                        out,
-                        "Success! New Package: {}",
-                        package_address.to_string().green()
-                    )
-                    .map_err(Error::IOError)?;
-                    Ok(())
-                }
+        match executor.publish_package(code) {
+            Ok(package_address) => {
+                writeln!(
+                    out,
+                    "Success! New Package: {}",
+                    package_address.to_string().green()
+                )
+                .map_err(Error::IOError)?;
+                Ok(())
+            }
 
-                Err(error) => {
-                    writeln!(out, "Error creating new package: {:?}", error)
-                        .map_err(Error::IOError)?;
-                    Err(Error::TransactionExecutionError(error))
-                }
+            Err(error) => {
+                writeln!(out, "Error creating new package: {:?}", error).map_err(Error::IOError)?;
+                Err(Error::TransactionExecutionError(error))
             }
         }
     }

@@ -2,11 +2,11 @@
 use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::engine::types::*;
 use scrypto::rust::collections::HashSet;
 use scrypto::values::*;
 use std::collections::VecDeque;
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
 use crate::utils::*;
 
@@ -177,9 +177,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
                 nf_address.push(0u8);
                 nf_address.extend(id.to_vec());
 
-                let non_fungible: Option<NonFungible> = scrypto_decode(
-                    &substate_store.get_substate(&nf_address).unwrap().value
-                ).unwrap();
+                let non_fungible: Option<NonFungible> =
+                    scrypto_decode(&substate_store.get_substate(&nf_address).unwrap().value)
+                        .unwrap();
 
                 if let Some(non_fungible) = non_fungible {
                     let immutable_data =

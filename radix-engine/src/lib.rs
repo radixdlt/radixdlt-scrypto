@@ -15,3 +15,5 @@ pub mod ledger;
 pub mod model;
 /// Transaction builder, validator and executor.
 pub mod transaction;
+/// Wasm validation, instrumentation and execution.
+pub mod wasm;

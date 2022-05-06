@@ -20,6 +20,52 @@ macro_rules! args {
     };
 }
 
+#[macro_export]
+macro_rules! call_data_any_args {
+    ($name:expr, $args: expr) => {{
+        let variant = ::sbor::Value::Enum {
+            name: $name,
+            fields: $args,
+        };
+        ::sbor::encode_any_with_type!(&variant)
+    }};
+}
+
+#[macro_export]
+macro_rules! call_data_bytes_args {
+    ($name:expr, $args: expr) => {{
+        let mut fields = Vec::new();
+        for arg in $args {
+            fields.push(::sbor::decode_any(&arg).unwrap());
+        }
+        ::scrypto::call_data_any_args!($name, fields)
+    }};
+}
+
+#[macro_export]
+macro_rules! call_data {
+    ($name:expr, $($args: expr),*) => {
+        {
+            let mut fields = Vec::new();
+            $(
+                let encoded = ::scrypto::prelude::scrypto_encode(&$args);
+                fields.push(::sbor::decode_any(&encoded).unwrap());
+            )*
+            ::scrypto::call_data_any_args!($name, fields)
+        }
+    };
+    ($name:ident($($args: expr),*)) => {
+        {
+            let mut fields = Vec::new();
+            $(
+                let encoded = ::scrypto::prelude::scrypto_encode(&$args);
+                fields.push(::sbor::decode_any(&encoded).unwrap());
+            )*
+            ::scrypto::call_data_any_args!(stringify!($name).to_string(), fields)
+        }
+    };
+}
+
 /// Logs an `ERROR` message.
 ///
 /// # Example

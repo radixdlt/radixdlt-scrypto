@@ -4,7 +4,7 @@ use crate::component::ComponentTest;
 
 blueprint! {
     struct TypedCrossComponentCall {
-        other: ComponentTest
+        other: ComponentTest,
     }
 
     impl TypedCrossComponentCall {

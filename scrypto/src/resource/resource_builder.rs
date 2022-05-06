@@ -1,6 +1,6 @@
-use crate::rule;
 use crate::math::*;
 use crate::resource::*;
+use crate::rule;
 use crate::rust::borrow::ToOwned;
 use crate::rust::collections::HashMap;
 use crate::rust::string::String;
@@ -16,12 +16,12 @@ pub struct ResourceBuilder;
 pub struct FungibleResourceBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
 }
 
 impl ResourceBuilder {

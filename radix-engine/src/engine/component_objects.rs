@@ -145,7 +145,11 @@ impl ComponentObjects {
             lazy_maps.insert(lazy_map_id, lazy_map);
         }
 
-        Ok(ComponentObjects { vaults, lazy_maps, borrowed_vault: None })
+        Ok(ComponentObjects {
+            vaults,
+            lazy_maps,
+            borrowed_vault: None,
+        })
     }
 
     pub fn insert_objects_into_map(
@@ -229,7 +233,11 @@ impl ComponentObjects {
     pub fn return_borrowed_vault_mut(&mut self, vault: Vault) {
         if let Some((vault_id, maybe_ancestor)) = self.borrowed_vault.take() {
             if let Some(ancestor_id) = maybe_ancestor {
-                self.lazy_maps.get_mut(&ancestor_id).unwrap().descendent_vaults.insert(vault_id, vault);
+                self.lazy_maps
+                    .get_mut(&ancestor_id)
+                    .unwrap()
+                    .descendent_vaults
+                    .insert(vault_id, vault);
             } else {
                 self.vaults.insert(vault_id, vault);
             }

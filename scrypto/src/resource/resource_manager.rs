@@ -1,6 +1,3 @@
-use sbor::*;
-
-use crate::args;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
@@ -14,10 +11,12 @@ use crate::rust::str::FromStr;
 use crate::rust::string::String;
 use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
+use crate::sfunctions;
 use crate::types::*;
+use sbor::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
-pub enum ResourceMethod {
+pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
     Withdraw,
@@ -32,6 +31,51 @@ pub enum Mutability {
     MUTABLE(AccessRule),
 }
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum ResourceManagerFunction {
+    Create(
+        ResourceType,
+        HashMap<String, String>,
+        HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        Option<MintParams>,
+    ),
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum ResourceManagerMethod {
+    Mint(MintParams),
+    UpdateAuth(ResourceMethodAuthKey, AccessRule),
+    LockAuth(ResourceMethodAuthKey),
+    GetResourceType(),
+    GetMetadata(),
+    GetTotalSupply(),
+    GetNonFungible(NonFungibleId),
+    NonFungibleExists(NonFungibleId),
+    UpdateNonFungibleData(NonFungibleId, Vec<u8>),
+    UpdateMetadata(HashMap<String, String>),
+    CreateVault(),
+    CreateBucket(),
+}
+
+impl ResourceManagerMethod {
+    pub fn name(&self) -> &str {
+        match self {
+            ResourceManagerMethod::Mint(_) => "mint",
+            ResourceManagerMethod::UpdateAuth(_, _) => "update_auth",
+            ResourceManagerMethod::LockAuth(_) => "lock_auth",
+            ResourceManagerMethod::GetResourceType() => "get_resource_type",
+            ResourceManagerMethod::GetMetadata() => "get_metadata",
+            ResourceManagerMethod::GetTotalSupply() => "get_total_supply",
+            ResourceManagerMethod::GetNonFungible(_) => "get_non_fungible",
+            ResourceManagerMethod::NonFungibleExists(_) => "non_fungible_exists",
+            ResourceManagerMethod::UpdateNonFungibleData(_, _) => "update_non_fungible_data",
+            ResourceManagerMethod::UpdateMetadata(_) => "update_metadata",
+            ResourceManagerMethod::CreateVault() => "create_vault",
+            ResourceManagerMethod::CreateBucket() => "create_bucket",
+        }
+    }
+}
+
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ResourceAddress(pub [u8; 26]);
@@ -43,194 +87,88 @@ impl ResourceAddress {}
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
+    sfunctions! {
+        SNodeRef::ResourceRef(self.0) => {
+            fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
+                ResourceManagerMethod::Mint(mint_params)
+            }
+            pub fn set_mintable(&mut self, mint_auth: AccessRule) -> () {
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Mint, mint_auth)
+            }
+            pub fn lock_mintable(&mut self) -> () {
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Mint)
+            }
+            pub fn set_burnable(&mut self, burn_auth: AccessRule) -> () {
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Burn, burn_auth)
+            }
+            pub fn lock_burnable(&mut self) -> () {
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Burn)
+            }
+            pub fn set_withdrawable(&mut self, withdraw_auth: AccessRule) -> () {
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Withdraw, withdraw_auth)
+            }
+            pub fn lock_withdrawable(&mut self) -> () {
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Withdraw)
+            }
+            pub fn set_depositable(&mut self, deposit_auth: AccessRule) -> () {
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Deposit, deposit_auth)
+            }
+            pub fn lock_depositable(&mut self) -> () {
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Deposit)
+            }
+            pub fn set_updateable_metadata(&self, update_metadata_auth: AccessRule) -> () {
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::UpdateMetadata, update_metadata_auth)
+            }
+            pub fn lock_updateable_metadata(&mut self) -> () {
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::UpdateMetadata)
+            }
+            pub fn set_updateable_non_fungible_data(&self, update_non_fungible_data_auth: AccessRule) -> () {
+                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::UpdateNonFungibleData, update_non_fungible_data_auth)
+            }
+            pub fn lock_updateable_non_fungible_data(&mut self) -> () {
+                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::UpdateNonFungibleData)
+            }
+            pub fn metadata(&self) -> HashMap<String, String> {
+                ResourceManagerMethod::GetMetadata()
+            }
+            pub fn total_supply(&self) -> Decimal {
+                ResourceManagerMethod::GetTotalSupply()
+            }
+            fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
+                ResourceManagerMethod::GetNonFungible(id)
+            }
+            fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, new_data: Vec<u8>) -> () {
+                ResourceManagerMethod::UpdateNonFungibleData(id, new_data)
+            }
+            pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
+                ResourceManagerMethod::NonFungibleExists(id.clone())
+            }
+            pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>) -> () {
+                ResourceManagerMethod::UpdateMetadata(new_metadata)
+            }
+            pub fn resource_type(&self) -> () {
+                ResourceManagerMethod::GetResourceType()
+            }
+        }
+    }
+
     /// Mints fungible resources
-    pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "mint".to_string(),
-            args: args![MintParams::Fungible {
-                amount: amount.into()
-            }],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn set_mintable(&self, mint_auth: AccessRule) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Mint, "update", mint_auth],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn lock_mintable(&self) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Mint, "lock"],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+    pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> Bucket {
+        self.mint_internal(MintParams::Fungible {
+            amount: amount.into(),
+        })
     }
 
     /// Mints non-fungible resources
-    pub fn mint_non_fungible<T: NonFungibleData>(&self, id: &NonFungibleId, data: T) -> Bucket {
+    pub fn mint_non_fungible<T: NonFungibleData>(&mut self, id: &NonFungibleId, data: T) -> Bucket {
         let mut entries = HashMap::new();
         entries.insert(id.clone(), (data.immutable_data(), data.mutable_data()));
-
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "mint".to_string(),
-            args: args![MintParams::NonFungible { entries }],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+        self.mint_internal(MintParams::NonFungible { entries })
     }
 
     /// Burns a bucket of resources.
     pub fn burn(&self, bucket: Bucket) {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Bucket(bucket.0),
-            function: "burn".to_string(),
-            args: args![],
-        };
-        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-    }
-
-    pub fn set_burnable(&self, burn_auth: AccessRule) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Burn, "update", burn_auth],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn lock_burnable(&self) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Burn, "lock"],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    /// Returns the resource type.
-    pub fn resource_type(&self) -> ResourceType {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "get_resource_type".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn set_withdrawable(&self, withdraw_auth: AccessRule) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Withdraw, "update", withdraw_auth],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn lock_withdrawable(&self) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Withdraw, "lock"],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn set_depositable(&self, deposit_auth: AccessRule) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Deposit, "update", deposit_auth],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn lock_depositable(&self) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![Deposit, "lock"],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn set_updateable_metadata(&self, update_metadata_auth: AccessRule) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![UpdateMetadata, "update", update_metadata_auth],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn lock_updateable_metadata(&self) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![UpdateMetadata, "lock"],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn set_updateable_non_fungible_data(&self, update_metadata_auth: AccessRule) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![UpdateNonFungibleData, "update", update_metadata_auth],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn lock_updateable_non_fungible_data(&self) -> () {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "method_auth".to_string(),
-            args: args![UpdateNonFungibleData, "lock"],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    /// Returns the metadata associated with this resource.
-    pub fn metadata(&self) -> HashMap<String, String> {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "get_metadata".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    /// Returns the current supply of this resource.
-    pub fn total_supply(&self) -> Decimal {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "get_total_supply".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+        bucket.burn()
     }
 
     /// Returns the data of a non-fungible unit, both the immutable and mutable parts.
@@ -238,13 +176,7 @@ impl ResourceManager {
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
     pub fn get_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId) -> T {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "get_non_fungible".to_string(),
-            args: args![id.clone()],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        let non_fungible: [Vec<u8>; 2] = scrypto_decode(&output.rtn).unwrap();
+        let non_fungible = self.get_non_fungible_data_internal(id.clone());
         T::decode(&non_fungible[0], &non_fungible[1]).unwrap()
     }
 
@@ -252,35 +184,12 @@ impl ResourceManager {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(&self, id: &NonFungibleId, new_data: T) {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "update_non_fungible_mutable_data".to_string(),
-            args: args![id.clone(), new_data.mutable_data()],
-        };
-        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-    }
-
-    /// Checks if non-fungible unit, with certain key exists or not.
-    ///
-    pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "non_fungible_exists".to_string(),
-            args: args![id.clone()],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    /// Updates the resource metadata
-    pub fn update_metadata(&self, new_metadata: HashMap<String, String>) {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceRef(self.0),
-            function: "update_metadata".to_string(),
-            args: args![new_metadata],
-        };
-        let _: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+    pub fn update_non_fungible_data<T: NonFungibleData>(
+        &mut self,
+        id: &NonFungibleId,
+        new_data: T,
+    ) {
+        self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
     }
 }
 
