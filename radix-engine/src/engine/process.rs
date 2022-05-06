@@ -15,7 +15,7 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
-use wasmi::*;
+use wasmi::*; // TODO: remove coupling with wasmi
 
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
@@ -23,6 +23,7 @@ use crate::engine::*;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
+use crate::wasm::*;
 
 macro_rules! re_trace {
     ($proc:expr, $($args: expr),+) => {

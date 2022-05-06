@@ -7,13 +7,10 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
-use wasmi::{
-    ExternVal, ImportsBuilder, MemoryRef, Module, ModuleInstance, ModuleRef, NopExternals,
-    RuntimeValue,
-};
 
-use crate::engine::{EnvModuleResolver, SystemApi};
-use crate::errors::WasmValidationError;
+use crate::engine::SystemApi;
+use crate::wasm::{instantiate_module, parse_module, validate_module, WasmValidationError};
+use wasmi::*; // TODO: remove wasmi coupling
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -34,35 +31,12 @@ impl Package {
     /// Validates and creates a package
     pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
         // Parse
-        let parsed = Self::parse_module(&code)?;
-
-        // check floating point
-        parsed
-            .deny_floating_point()
-            .map_err(|_| WasmValidationError::FloatingPointNotAllowed)?;
-
-        // Instantiate
-        let instance = ModuleInstance::new(
-            &parsed,
-            &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
-        )
-        .map_err(|_| WasmValidationError::InvalidModule)?;
-
-        // Check start function
-        if instance.has_start() {
-            return Err(WasmValidationError::StartFunctionNotAllowed);
-        }
-        let module = instance.assert_no_start();
-
-        // Check memory export
-        let memory = match module.export_by_name("memory") {
-            Some(ExternVal::Memory(mem)) => mem,
-            _ => return Err(WasmValidationError::NoValidMemoryExport),
-        };
+        let module = parse_module(&code)?;
+        let (module_ref, memory_ref) = validate_module(&module)?;
 
         // TODO: Currently a hack so that we don't require a package_init function.
         // TODO: Fix this by implement package metadata along with the code during compilation.
-        let exports = module.exports();
+        let exports = module_ref.exports();
         let blueprint_abi_methods: Vec<String> = exports
             .iter()
             .filter(|(name, val)| {
@@ -74,20 +48,20 @@ impl Package {
         let mut blueprints = HashMap::new();
 
         for method_name in blueprint_abi_methods {
-            let rtn = module
+            let rtn = module_ref
                 .invoke_export(&method_name, &[], &mut NopExternals)
                 .map_err(|e| WasmValidationError::NoPackageInitExport(e.into()))?
                 .ok_or(WasmValidationError::InvalidPackageInit)?;
 
             let blueprint_type: Type = match rtn {
                 RuntimeValue::I32(ptr) => {
-                    let len: u32 = memory
+                    let len: u32 = memory_ref
                         .get_value(ptr as u32)
                         .map_err(|_| WasmValidationError::InvalidPackageInit)?;
 
                     // SECURITY: meter before allocating memory
                     let mut data = vec![0u8; len as usize];
-                    memory
+                    memory_ref
                         .get_into((ptr + 4) as u32, &mut data)
                         .map_err(|_| WasmValidationError::InvalidPackageInit)?;
 
@@ -123,30 +97,9 @@ impl Package {
     }
 
     pub fn load_module(&self) -> Result<(ModuleRef, MemoryRef), PackageError> {
-        let module = Self::parse_module(&self.code).unwrap();
-        let inst = Self::instantiate_module(&module).unwrap();
+        let module = parse_module(&self.code).unwrap();
+        let inst = instantiate_module(&module).unwrap();
         Ok(inst)
-    }
-
-    fn parse_module(code: &[u8]) -> Result<Module, WasmValidationError> {
-        Module::from_buffer(code).map_err(|_| WasmValidationError::InvalidModule)
-    }
-
-    fn instantiate_module(module: &Module) -> Result<(ModuleRef, MemoryRef), WasmValidationError> {
-        // Instantiate
-        let instance = ModuleInstance::new(
-            module,
-            &ImportsBuilder::new().with_resolver("env", &EnvModuleResolver),
-        )
-        .map_err(|_| WasmValidationError::InvalidModule)?
-        .assert_no_start();
-
-        // Find memory export
-        if let Some(ExternVal::Memory(memory)) = instance.export_by_name("memory") {
-            Ok((instance, memory))
-        } else {
-            Err(WasmValidationError::NoValidMemoryExport)
-        }
     }
 
     pub fn static_main<S: SystemApi>(

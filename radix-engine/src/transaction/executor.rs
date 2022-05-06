@@ -11,6 +11,7 @@ use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
+use crate::wasm::*;
 
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'l, L: ReadableSubstateStore + WriteableSubstateStore> {
