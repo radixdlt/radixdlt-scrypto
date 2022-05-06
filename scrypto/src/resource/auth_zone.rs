@@ -8,7 +8,6 @@ use crate::resource::*;
 use crate::rust::collections::BTreeSet;
 use crate::rust::string::ToString;
 
-
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum AuthZoneMethod {
     Push(Proof),

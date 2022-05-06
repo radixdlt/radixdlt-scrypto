@@ -1,10 +1,10 @@
 use crate::ledger::{ReadableSubstateStore, SubstateIdGenerator, WriteableSubstateStore};
 use sbor::*;
-use scrypto::rule;
 use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::rule;
 use scrypto::prelude::LOCKED;
 use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::rust::borrow::ToOwned;
@@ -63,7 +63,7 @@ pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_sto
             metadata,
             resource_auth,
         )
-            .unwrap();
+        .unwrap();
         substate_store.put_encoded_substate(&RADIX_TOKEN, &xrd, id_gen.next());
         let minted_xrd = xrd
             .mint_fungible(XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone())
@@ -76,7 +76,7 @@ pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_sto
             HashMap::new(),
             ecdsa_resource_auth,
         )
-            .unwrap();
+        .unwrap();
         substate_store.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, id_gen.next());
 
         // Instantiate system component

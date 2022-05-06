@@ -90,7 +90,10 @@ blueprint! {
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof = ComponentAuthZone::create_proof_by_amount(amount, bucket.resource_address());
+                    let proof = ComponentAuthZone::create_proof_by_amount(
+                        amount,
+                        bucket.resource_address(),
+                    );
                     assert_eq!(proof.amount(), amount);
                     proof.drop();
                 })
@@ -105,7 +108,8 @@ blueprint! {
         ) {
             self.vault.authorize(|| {
                 bucket.authorize(|| {
-                    let proof = ComponentAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
+                    let proof =
+                        ComponentAuthZone::create_proof_by_ids(&ids, bucket.resource_address());
                     assert_eq!(proof.non_fungible_ids(), ids);
                     proof.drop();
                 })

@@ -10,8 +10,8 @@ use crate::resource::*;
 use crate::rust::collections::BTreeSet;
 #[cfg(not(feature = "alloc"))]
 use crate::rust::fmt;
-use crate::rust::vec::Vec;
 use crate::rust::string::ToString;
+use crate::rust::vec::Vec;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]

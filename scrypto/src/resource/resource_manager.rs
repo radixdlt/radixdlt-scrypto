@@ -38,7 +38,7 @@ pub enum ResourceManagerFunction {
         HashMap<String, String>,
         HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         Option<MintParams>,
-    )
+    ),
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -154,7 +154,9 @@ impl ResourceManager {
 
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&mut self, amount: T) -> Bucket {
-        self.mint_internal(MintParams::Fungible { amount: amount.into()})
+        self.mint_internal(MintParams::Fungible {
+            amount: amount.into(),
+        })
     }
 
     /// Mints non-fungible resources
@@ -182,7 +184,11 @@ impl ResourceManager {
     ///
     /// # Panics
     /// Panics if this is not a non-fungible resource or the specified non-fungible is not found.
-    pub fn update_non_fungible_data<T: NonFungibleData>(&mut self, id: &NonFungibleId, new_data: T) {
+    pub fn update_non_fungible_data<T: NonFungibleData>(
+        &mut self,
+        id: &NonFungibleId,
+        new_data: T,
+    ) {
         self.update_non_fungible_data_internal(id.clone(), new_data.mutable_data())
     }
 }

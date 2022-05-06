@@ -1,3 +1,4 @@
+use crate::engine::SystemApi;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
@@ -7,10 +8,9 @@ use scrypto::rust::cell::RefCell;
 use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
-use scrypto::rust::vec::Vec;
 use scrypto::rust::string::ToString;
+use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
-use crate::engine::SystemApi;
 
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -332,7 +332,8 @@ impl Proof {
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
-        let method: ProofMethod = scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+        let method: ProofMethod =
+            scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
 
         match method {
             ProofMethod::Amount() => Ok(ScryptoValue::from_value(&self.total_amount())),
@@ -340,17 +341,24 @@ impl Proof {
                 let ids = self.total_ids()?;
                 Ok(ScryptoValue::from_value(&ids))
             }
-            ProofMethod::ResourceAddress() => Ok(ScryptoValue::from_value(&self.resource_address())),
+            ProofMethod::ResourceAddress() => {
+                Ok(ScryptoValue::from_value(&self.resource_address()))
+            }
             ProofMethod::Clone() => {
                 let cloned_proof = self.clone();
-                let proof_id = system_api.create_proof(cloned_proof).map_err(|_| ProofError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(proof_id)))
-            },
+                let proof_id = system_api
+                    .create_proof(cloned_proof)
+                    .map_err(|_| ProofError::CouldNotCreateProof)?;
+                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                    proof_id,
+                )))
+            }
         }
     }
 
     pub fn main_consume(self, arg: ScryptoValue) -> Result<ScryptoValue, ProofError> {
-        let method: ConsumingProofMethod = scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+        let method: ConsumingProofMethod =
+            scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
 
         match method {
             ConsumingProofMethod::Drop() => {

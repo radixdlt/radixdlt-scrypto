@@ -45,7 +45,6 @@ impl Bucket {
         scrypto_decode(&output.rtn).unwrap()
     }
 
-
     sfunctions! {
         SNodeRef::Bucket(self.0) => {
            pub fn burn(self) -> () {

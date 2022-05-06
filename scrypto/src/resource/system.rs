@@ -27,7 +27,10 @@ impl ResourceSystem {
     }
 
     /// Returns a reference to a resource manager.
-    pub fn get_resource_manager(&mut self, resource_address: ResourceAddress) -> &mut ResourceManager {
+    pub fn get_resource_manager(
+        &mut self,
+        resource_address: ResourceAddress,
+    ) -> &mut ResourceManager {
         self.resource_managers
             .entry(resource_address)
             .or_insert(ResourceManager(resource_address))
@@ -43,7 +46,6 @@ impl ResourceSystem {
         authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
-
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::ResourceStatic,
             call_data: scrypto_encode(&ResourceManagerFunction::Create(

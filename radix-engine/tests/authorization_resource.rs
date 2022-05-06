@@ -78,9 +78,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .call_method_with_all_resources(account, "deposit_batch"),
     };
 
-    let transaction = builder
-        .build(test_runner.get_nonce([pk]))
-        .sign([&sk]);
+    let transaction = builder.build(test_runner.get_nonce([pk])).sign([&sk]);
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
