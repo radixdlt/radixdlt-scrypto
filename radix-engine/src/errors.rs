@@ -61,6 +61,7 @@ pub enum RuntimeError {
 
     /// Package does not exist.
     PackageNotFound(PackageAddress),
+    InvalidPackage(DecodeError),
 
     PackageError(PackageError),
     SystemError(SystemError),

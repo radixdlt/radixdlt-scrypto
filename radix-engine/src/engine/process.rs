@@ -101,7 +101,7 @@ pub trait SystemApi {
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
-    fn create_package(&mut self, package: Package) -> PackageAddress;
+    fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress;
 
     fn get_epoch(&mut self) -> u64;
 
@@ -382,7 +382,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             }
             SNodeState::Transaction(transaction_process) => transaction_process.main(self),
             SNodeState::PackageStatic => {
-                Package::static_main(call_data, self).map_err(RuntimeError::PackageError)
+                ValidatedPackage::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(call_data, self)
@@ -1456,7 +1456,7 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
         self.track.create_uuid_value(resource_manager).into()
     }
 
-    fn create_package(&mut self, package: Package) -> PackageAddress {
+    fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress {
         self.track.create_uuid_value(package).into()
     }
 

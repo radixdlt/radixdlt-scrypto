@@ -1,4 +1,5 @@
 use crate::buffer::*;
+use crate::component::package::Package;
 use crate::component::*;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
@@ -44,10 +45,10 @@ impl ComponentSystem {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> PackageAddress {
+    pub fn publish_package(&mut self, package: Package) -> PackageAddress {
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::PackageStatic,
-            call_data: scrypto_encode(&PackageFunction::Publish(code.to_vec())),
+            call_data: scrypto_encode(&PackageFunction::Publish(package)),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
         scrypto_decode(&output.rtn).unwrap()

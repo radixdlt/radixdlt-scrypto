@@ -4,8 +4,8 @@ use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::rule;
 use scrypto::prelude::LOCKED;
+use scrypto::prelude::{rule, Package};
 use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
@@ -29,7 +29,7 @@ const SYSTEM_COMPONENT_NAME: &str = "System";
 use crate::model::*;
 
 pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_store: &mut S) {
-    let package: Option<Package> = substate_store
+    let package: Option<ValidatedPackage> = substate_store
         .get_decoded_substate(&SYSTEM_PACKAGE)
         .map(|(package, _)| package);
     if package.is_none() {
@@ -39,14 +39,22 @@ pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_sto
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         // System package
-        let system_package =
-            Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
-        substate_store.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, id_gen.next());
+        let system_package = Package::new(include_bytes!("../../../assets/system.wasm").to_vec());
+        let validated_system_package = ValidatedPackage::new(system_package).unwrap();
+        substate_store.put_encoded_substate(
+            &SYSTEM_PACKAGE,
+            &validated_system_package,
+            id_gen.next(),
+        );
 
         // Account package
-        let account_package =
-            Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
-        substate_store.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, id_gen.next());
+        let account_package = Package::new(include_bytes!("../../../assets/account.wasm").to_vec());
+        let validated_account_package = ValidatedPackage::new(account_package).unwrap();
+        substate_store.put_encoded_substate(
+            &ACCOUNT_PACKAGE,
+            &validated_account_package,
+            id_gen.next(),
+        );
 
         // Radix token resource address
         let mut metadata = HashMap::new();

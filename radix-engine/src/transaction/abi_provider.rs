@@ -45,7 +45,7 @@ impl BasicAbiProvider {
     pub fn with_package(
         &mut self,
         package_address: &PackageAddress,
-        package: Package,
+        package: ValidatedPackage,
     ) -> &mut Self {
         let tx_hash = hash(self.substate_store.get_nonce().to_le_bytes());
         let mut id_gen = SubstateIdGenerator::new(tx_hash);

@@ -1,3 +1,5 @@
+use scrypto::buffer::scrypto_encode;
+use scrypto::component::Package;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
@@ -34,7 +36,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let package: Package = self
+        let package: ValidatedPackage = self
             .substate_store
             .get_decoded_substate(&package_address)
             .map(|(package, _)| package)
@@ -54,7 +56,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
             .get_decoded_substate(&component_address)
             .map(|(component, _)| component)
             .ok_or(RuntimeError::ComponentNotFound(component_address))?;
-        let package: Package = self
+        let package: ValidatedPackage = self
             .substate_store
             .get_decoded_substate(&component.package_address())
             .map(|(package, _)| package)
@@ -121,14 +123,11 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
     }
 
     /// Publishes a package.
-    pub fn publish_package<T: AsRef<[u8]>>(
-        &mut self,
-        code: T,
-    ) -> Result<PackageAddress, RuntimeError> {
+    pub fn publish_package(&mut self, package: Package) -> Result<PackageAddress, RuntimeError> {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .publish_package(code.as_ref())
+                    .publish_package(&scrypto_encode(&package))
                     .build(self.get_nonce([]))
                     .sign([]),
             )

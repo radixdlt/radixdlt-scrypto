@@ -26,9 +26,10 @@ fn missing_memory_should_cause_error() {
             "#,
     )
     .expect("failed to parse wat");
+    let package = Package::new(code);
     let transaction = test_runner
         .new_transaction_builder()
-        .publish_package(&code)
+        .publish_package(&scrypto_encode(&package))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);

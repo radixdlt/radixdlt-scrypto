@@ -15,7 +15,7 @@ use wasmi::*; // TODO: remove wasmi coupling
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Package {
+pub struct ValidatedPackage {
     code: Vec<u8>,
     blueprints: HashMap<String, Type>,
 }
@@ -28,11 +28,13 @@ pub enum PackageError {
     MethodNotFound(String),
 }
 
-impl Package {
+impl ValidatedPackage {
     /// Validates and creates a package
-    pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
+    pub fn new(package: scrypto::prelude::Package) -> Result<Self, WasmValidationError> {
+        let code = package.code();
+
         // Parse
-        let module = parse_module(&code)?;
+        let module = parse_module(code)?;
         let (module_ref, memory_ref) = validate_module(&module)?;
 
         // TODO: Currently a hack so that we don't require a package_init function.
@@ -80,7 +82,10 @@ impl Package {
             }
         }
 
-        Ok(Self { blueprints, code })
+        Ok(Self {
+            blueprints,
+            code: code.to_vec(),
+        })
     }
 
     pub fn code(&self) -> &[u8] {
@@ -110,8 +115,9 @@ impl Package {
         let function: PackageFunction =
             scrypto_decode(&arg.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
         match function {
-            PackageFunction::Publish(bytes) => {
-                let package = Package::new(bytes).map_err(PackageError::WasmValidationError)?;
+            PackageFunction::Publish(package) => {
+                let package =
+                    ValidatedPackage::new(package).map_err(PackageError::WasmValidationError)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
             }

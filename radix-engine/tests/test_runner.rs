@@ -47,7 +47,8 @@ impl<'l> TestRunner<'l> {
     }
 
     pub fn publish_package(&mut self, name: &str) -> PackageAddress {
-        self.executor.publish_package(&Self::compile(name)).unwrap()
+        let package = scrypto::component::Package::new(Self::compile(name));
+        self.executor.publish_package(package).unwrap()
     }
 
     pub fn compile(name: &str) -> Vec<u8> {
