@@ -611,11 +611,16 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 _ => {}
             };
 
-            // new shadow_auth_zone for each call (when there are some method_auths)
+            // new shadow_auth_zone for each call
+            // but code here so it only exists when there are some method_auths
+            // and, only shadow zones after the first default auth zone
             process_shadow_auth_zone = match snode {
                 SNodeState::Proof(_) => None,
                 SNodeState::Bucket(_) => None,
-                _ => Some(AuthZone::new()),
+                _ => match self.auth_zone_stack.len() {
+                    0 => None,
+                    _ => Some(AuthZone::new()),
+                },
             };
 
             for method_auth in method_auths {

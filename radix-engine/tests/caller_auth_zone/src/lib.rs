@@ -103,10 +103,28 @@ blueprint! {
 
         pub fn run_as_alice(&mut self, callee: ComponentAddress) {
             info!("running");
+            ComponentAuthZone::start();
             let hello: super::super::Hello = callee.into();
             let alice_badge: Proof = hello.badge_for_alice();
             ComponentAuthZone::push(alice_badge);
             let free_tokens = hello.free_token();
+            ComponentAuthZone::end();
+            if let Some(vault) = &mut self.tokens {
+                vault.put(free_tokens);
+            } else {
+                self.tokens = Some(Vault::with_bucket(free_tokens));
+            }
+        }
+
+        pub fn xfail_run_as_alice(&mut self, callee: ComponentAddress) {
+            info!("running");
+            // fails without non-default auth zone
+            // ComponentAuthZone::start();
+            let hello: super::super::Hello = callee.into();
+            let alice_badge: Proof = hello.badge_for_alice();
+            ComponentAuthZone::push(alice_badge);
+            let free_tokens = hello.free_token();
+            // ComponentAuthZone::end();
             if let Some(vault) = &mut self.tokens {
                 vault.put(free_tokens);
             } else {
@@ -116,6 +134,8 @@ blueprint! {
 
         pub fn run_as_both(&mut self, callee: ComponentAddress) {
             info!("running");
+            ComponentAuthZone::start(); // use non-default
+
             let hello: super::super::Hello = callee.into();
             let alice_badge: Proof = hello.badge_for_alice();
             let bob_badge: Proof = hello.badge_for_bob();
@@ -130,6 +150,8 @@ blueprint! {
 
             // more for alice
             let more_alice_tokens = hello.free_token();
+
+            ComponentAuthZone::end(); // end non-default
 
             assert_eq!(alice_tokens.amount(), dec!(10));
             assert_eq!(bob_tokens.amount(), dec!(1));
