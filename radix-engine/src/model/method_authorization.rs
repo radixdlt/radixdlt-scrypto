@@ -53,7 +53,14 @@ impl HardResourceOrNonFungible {
         };
         if r {
             if let Some(auth_zone) = shadow_auth_zone {
-                auth_zone.push(proof.clone());
+                println!(
+                    "shadow_auth_zone push proof (before inc refcount): {:?}",
+                    proof
+                );
+                let p = proof.clone();
+                println!("shadow_auth_zone push proof (after inc refcount): {:?}", p);
+                //auth_zone.push(proof.clone());
+                auth_zone.push(p);
             }
         }
         r
@@ -65,12 +72,24 @@ impl HardResourceOrNonFungible {
         auth_zones: &[&AuthZone],
         shadow_auth_zone: &mut Option<&mut AuthZone>,
     ) -> bool {
-        for auth_zone in auth_zones {
+        for auth_zone in &auth_zones[..=0] {
             // FIXME: Need to check the composite max amount rather than just each proof individually
             if auth_zone
                 .proofs
                 .iter()
                 .any(|p| p.total_amount() >= amount && self.proof_matches(p, shadow_auth_zone))
+            // amount check first so short circuit comes before proof added to shadow_auth_zone
+            {
+                return true;
+            }
+            break;
+        }
+        let mut no_shadow_auth_zone = None;
+        for auth_zone in auth_zones.iter().skip(1) {
+            // FIXME: Need to check the composite max amount rather than just each proof individually
+            if auth_zone.proofs.iter().any(|p| {
+                p.total_amount() >= amount && self.proof_matches(p, &mut no_shadow_auth_zone)
+            })
             // amount check first so short circuit comes before proof added to shadow_auth_zone
             {
                 return true;
@@ -85,13 +104,28 @@ impl HardResourceOrNonFungible {
         auth_zones: &[&AuthZone],
         shadow_auth_zone: &mut Option<&mut AuthZone>,
     ) -> bool {
+        // TODO make this less verbose with a local var for shadow_auth_zone that gets swapped to
+        // None (but figure out the borrow checker)
+        let mut first_auth_zone = true;
         for auth_zone in auth_zones {
-            if auth_zone
-                .proofs
-                .iter()
-                .any(|p| self.proof_matches(p, shadow_auth_zone))
-            {
-                return true;
+            if first_auth_zone {
+                if auth_zone
+                    .proofs
+                    .iter()
+                    .any(|p| self.proof_matches(p, shadow_auth_zone))
+                {
+                    return true;
+                }
+                first_auth_zone = false;
+            } else {
+                let mut no_shadow = None;
+                if auth_zone
+                    .proofs
+                    .iter()
+                    .any(|p| self.proof_matches(p, &mut no_shadow))
+                {
+                    return true;
+                }
             }
         }
 

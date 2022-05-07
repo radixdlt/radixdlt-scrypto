@@ -372,6 +372,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
 
         self.process_return_data(&output)?;
 
+        // cleanup shadow_auth_zone before attmpting resource moves to remove extra references
+        if let Some(mut auth_zone) = self.shadow_auth_zone.take() {
+            auth_zone.clear();
+        }
+
         // figure out what buckets and resources to return
         let moving_buckets = self.send_buckets(&output.bucket_ids)?;
         let moving_proofs = self.send_proofs(&output.proof_ids, MoveMethod::AsReturn)?;
@@ -594,13 +599,24 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone);
                     }
+                    // FIXME include the auth zone stack? what about ignoring the
+                    // caller_auth_zone?
+                    /*
+                    for auth_zone in &self.auth_zone_stack {
+                        auth_zones.push(auth_zone);
+                    }
+                    */
                 }
                 // Extern call auth check
                 _ => {}
             };
 
             // new shadow_auth_zone for each call (when there are some method_auths)
-            process_shadow_auth_zone = Some(AuthZone::new());
+            process_shadow_auth_zone = match snode {
+                SNodeState::Proof(_) => None,
+                SNodeState::Bucket(_) => None,
+                _ => Some(AuthZone::new()),
+            };
 
             for method_auth in method_auths {
                 let mut shadow_auth_zone = process_shadow_auth_zone.as_mut();
@@ -634,9 +650,10 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                     "end" => {
                         let top = self.auth_zone_stack.pop();
                         if top.is_some() {
+                            if let Some(mut auth_zone) = self.auth_zone.take() {
+                                auth_zone.clear();
+                            }
                             self.auth_zone = top;
-                            // TODO do we need to do any explicit cleanup or drop of the
-                            // current_auth_zone we are about to lose???
                             Ok(ScryptoValue::from_value(&()))
                         } else {
                             self.auth_zone = Some(current_auth_zone); // put the original zone back on error
@@ -682,6 +699,11 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
                 // invoke the main function
                 let (result, received_buckets, received_proofs) =
                     process.run(&mut snode, function, args)?;
+
+                // cleanup the shadow AuthZone (if process.run hasn't already)
+                if let Some(mut auth_zone) = process.shadow_auth_zone.take() {
+                    auth_zone.clear();
+                }
 
                 // move buckets and proofs to this process.
                 self.buckets.extend(received_buckets);
