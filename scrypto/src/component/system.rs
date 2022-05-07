@@ -16,7 +16,7 @@ use crate::rust::vec::Vec;
 /// TODO: research if need to introduce `&` and `&mut` for packages and components.
 /// TODO: add mutex/lock for non-WebAssembly target
 pub struct ComponentSystem {
-    packages: HashMap<PackageAddress, Package>,
+    packages: HashMap<PackageAddress, BorrowedPackage>,
     components: HashMap<ComponentAddress, Component>,
 }
 
@@ -30,10 +30,10 @@ impl ComponentSystem {
     }
 
     /// Returns a reference to a package.
-    pub fn get_package(&mut self, package_address: PackageAddress) -> &Package {
+    pub fn get_package(&mut self, package_address: PackageAddress) -> &BorrowedPackage {
         self.packages
             .entry(package_address)
-            .or_insert(Package(package_address))
+            .or_insert(BorrowedPackage(package_address))
     }
 
     /// Returns a reference to a component.
