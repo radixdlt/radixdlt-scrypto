@@ -56,7 +56,7 @@ pub enum ConsumedSNodeState {
 pub enum BorrowedSNodeState {
     AuthZone(AuthZone),
     Worktop(Worktop),
-    Scrypto(ScryptoActorInfo, WasmiScryptoModule, Option<Component>),
+    Scrypto(ScryptoActorInfo, Vec<u8>, String, Option<Component>),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, Bucket),
     Proof(ProofId, Proof),
@@ -75,7 +75,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Worktop(worktop) => {
                 process.worktop = Some(worktop);
             }
-            BorrowedSNodeState::Scrypto(actor, _, component_state) => {
+            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
                 if let Some(component_address) = actor.component_address() {
                     process.track.return_borrowed_global_mut_value(
                         component_address,
@@ -134,8 +134,8 @@ impl LoadedSNodeState {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                BorrowedSNodeState::Scrypto(info, module, s) => {
-                    SNodeState::Scrypto(info.clone(), module.clone(), s.as_mut())
+                BorrowedSNodeState::Scrypto(info, code, export_name, s) => {
+                    SNodeState::Scrypto(info.clone(), code.clone(), export_name.clone(), s.as_mut())
                 }
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
@@ -154,11 +154,7 @@ pub enum SNodeState<'a> {
     PackageStatic,
     AuthZoneRef(&'a mut AuthZone),
     Worktop(&'a mut Worktop),
-    Scrypto(
-        ScryptoActorInfo,
-        WasmiScryptoModule,
-        Option<&'a mut Component>,
-    ),
+    Scrypto(ScryptoActorInfo, Vec<u8>, String, Option<&'a mut Component>),
     ResourceStatic,
     ResourceRef(ResourceAddress, &'a mut ResourceManager),
     BucketRef(BucketId, &'a mut Bucket),
@@ -315,7 +311,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
             SNodeState::Worktop(worktop) => worktop
                 .main(call_data, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, module, component_state) => {
+            SNodeState::Scrypto(actor, code, export_name, component_state) => {
                 let component_state = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();
                     let data = ScryptoValue::from_slice(component.state()).unwrap();
@@ -334,7 +330,14 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 };
                 self.component = component_state;
 
-                Package::run(module, actor.clone(), call_data, self)
+                let runtime = BlueprintComponentRuntime::new(actor, call_data, self);
+                let mut engine = WasmiEngine::new(runtime);
+                let module = engine.instantiate(&code);
+
+                // TODO: consider passing the arguments to main
+                module
+                    .invoke_export(&export_name, &[])
+                    .map_err(|_| RuntimeError::InvokeError)
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
                 .map_err(RuntimeError::ResourceManagerError),
@@ -441,16 +444,15 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                                 blueprint_name.clone(),
                             ));
                         }
-                        let module = package.load_module();
                         let export_name = format!("{}_main", blueprint_name);
                         Ok((
                             Borrowed(BorrowedSNodeState::Scrypto(
                                 ScryptoActorInfo::blueprint(
                                     package_address.clone(),
                                     blueprint_name.clone(),
-                                    export_name.clone(),
                                 ),
-                                module,
+                                package.code().to_vec(),
+                                export_name.clone(),
                                 None,
                             )),
                             vec![],
@@ -481,7 +483,6 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                             SubstateValue::Package(package) => package,
                             _ => panic!("Value is not a package"),
                         };
-                        let module = package.load_module();
 
                         // TODO: Remove clone
                         let schema = package
@@ -495,10 +496,10 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                                 ScryptoActorInfo::component(
                                     package_address,
                                     blueprint_name,
-                                    export_name,
                                     component_address.clone(),
                                 ),
-                                module,
+                                package.code().to_vec(),
+                                export_name,
                                 Some(component),
                             )),
                             method_auths,
@@ -649,12 +650,14 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
         moving_buckets.extend(self.send_buckets(&call_data.bucket_ids)?);
         moving_proofs.extend(self.send_proofs(&call_data.proof_ids, MoveMethod::AsArgument)?);
 
-        let process_auth_zone =
-            if matches!(loaded_snode, Borrowed(BorrowedSNodeState::Scrypto(_, _, _))) {
-                Some(AuthZone::new())
-            } else {
-                None
-            };
+        let process_auth_zone = if matches!(
+            loaded_snode,
+            Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
+        ) {
+            Some(AuthZone::new())
+        } else {
+            None
+        };
 
         let snode = loaded_snode.to_snode_state();
 

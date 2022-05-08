@@ -15,43 +15,31 @@ pub struct ScryptoActorInfo {
     package_address: PackageAddress,
     blueprint_name: String,
     component_address: Option<ComponentAddress>,
-    export_name: String,
 }
 
 impl ScryptoActorInfo {
-    pub fn blueprint(
-        package_address: PackageAddress,
-        blueprint_name: String,
-        export_name: String,
-    ) -> Self {
+    pub fn blueprint(package_address: PackageAddress, blueprint_name: String) -> Self {
         Self {
             package_address,
             blueprint_name,
             component_address: None,
-            export_name,
         }
     }
 
     pub fn component(
         package_address: PackageAddress,
         blueprint_name: String,
-        export_name: String,
         component_address: ComponentAddress,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
             component_address: Some(component_address),
-            export_name,
         }
     }
 
     pub fn component_address(&self) -> Option<ComponentAddress> {
         self.component_address
-    }
-
-    pub fn export_name(&self) -> &str {
-        &self.export_name
     }
 
     pub fn actor(&self) -> ScryptoActor {

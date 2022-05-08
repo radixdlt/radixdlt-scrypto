@@ -15,13 +15,15 @@ pub struct BlueprintComponentRuntime<'a, S: SystemApi> {
 }
 
 impl<'a, S: SystemApi> BlueprintComponentRuntime<'a, S> {
-    pub fn new(this: ScryptoActorInfo, message: ScryptoValue, system_api: &'a mut S) -> Self {
+    pub fn new(this: ScryptoActorInfo, call_data: ScryptoValue, system_api: &'a mut S) -> Self {
         BlueprintComponentRuntime {
             this,
-            call_data: message,
+            call_data,
             system_api,
         }
     }
+
+    // FIXME: limit access to the API
 
     fn handle_get_call_data(
         &mut self,
@@ -51,7 +53,6 @@ impl<'a, S: SystemApi> BlueprintComponentRuntime<'a, S> {
         &mut self,
         input: GetComponentStateInput,
     ) -> Result<GetComponentStateOutput, RuntimeError> {
-        // FIXME: limit access to this API
         let state = self
             .system_api
             .read_component_state(input.component_address)?;
