@@ -15,7 +15,7 @@ mod validated_transaction;
 mod vault;
 mod worktop;
 
-pub use crate::engine::receipt::Receipt;
+pub use crate::engine::Receipt;
 pub use auth_converter::convert;
 pub use auth_zone::{AuthZone, AuthZoneError};
 pub use bucket::{Bucket, BucketError};

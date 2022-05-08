@@ -14,8 +14,8 @@ use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
-use crate::engine::process::LazyMapState::{Committed, Uncommitted};
-use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
+use self::LazyMapState::{Committed, Uncommitted};
+use self::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::engine::track::{SubstateValue, TrackError};
 use crate::engine::ComponentObjectRefs;
 use crate::engine::*;
@@ -48,87 +48,6 @@ macro_rules! re_warn {
     };
 }
 
-pub trait SystemApi {
-    fn invoke_snode(
-        &mut self,
-        snode_ref: SNodeRef,
-        call_data: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError>;
-
-    fn get_non_fungible(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<NonFungible>;
-
-    fn set_non_fungible(
-        &mut self,
-        non_fungible_address: NonFungibleAddress,
-        non_fungible: Option<NonFungible>,
-    );
-
-    fn borrow_global_mut_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ResourceManager, RuntimeError>;
-
-    fn return_borrowed_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-        resource_manager: ResourceManager,
-    );
-
-    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
-
-    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError>;
-
-    fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError>;
-
-    fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError>;
-
-    fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError>;
-
-    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
-
-    fn create_package(&mut self, package: Package) -> PackageAddress;
-
-    fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
-
-    fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError>;
-    fn write_component_state(
-        &mut self,
-        addr: ComponentAddress,
-        state: Vec<u8>,
-    ) -> Result<(), RuntimeError>;
-
-    fn get_component_info(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<(PackageAddress, String), RuntimeError>;
-
-    fn create_lazy_map(&mut self) -> LazyMapId;
-
-    fn read_lazy_map_entry(
-        &mut self,
-        lazy_map_id: LazyMapId,
-        key: Vec<u8>,
-    ) -> Result<Option<Vec<u8>>, RuntimeError>;
-
-    fn write_lazy_map_entry(
-        &mut self,
-        lazy_map_id: LazyMapId,
-        key: Vec<u8>,
-        value: Vec<u8>,
-    ) -> Result<(), RuntimeError>;
-
-    fn get_epoch(&mut self) -> u64;
-
-    fn get_transaction_hash(&mut self) -> Hash;
-
-    fn generate_uuid(&mut self) -> u128;
-
-    fn emit_log(&mut self, level: Level, message: String);
-}
-
 pub enum ConsumedSNodeState {
     Bucket(Bucket),
     Proof(Proof),
@@ -147,7 +66,7 @@ pub enum BorrowedSNodeState {
 impl BorrowedSNodeState {
     fn return_borrowed_state<'r, 'l, L: ReadableSubstateStore>(
         self,
-        process: &mut Process<'r, 'l, L>,
+        process: &mut CallFrame<'r, 'l, L>,
     ) {
         match self {
             BorrowedSNodeState::AuthZone(auth_zone) => {
@@ -259,7 +178,7 @@ struct ComponentState<'a> {
 
 ///TODO: Remove
 #[derive(Debug)]
-enum LazyMapState {
+pub enum LazyMapState {
     Uncommitted { root: LazyMapId },
     Committed { component_address: ComponentAddress },
 }
@@ -298,8 +217,14 @@ pub enum MoveMethod {
     AsArgument,
 }
 
-/// A process keeps track of resource movements and code execution.
-pub struct Process<'r, 'l, L: ReadableSubstateStore> {
+/// A call frame is the basic unit of transaction call stack. It keeps track of the owned objects by the
+/// this frame and allows Scrypto module to refer to or move owned objects.
+///
+/// Call frame can be either native or wasm (in case the callee snode is a blueprint/component).
+///
+/// Radix Engine is responsible for maintaining the call semantics and interprets object movement
+/// between call frames.
+pub struct CallFrame<'r, 'l, L: ReadableSubstateStore> {
     /// The call depth
     depth: usize,
     /// Whether to show trace messages
@@ -323,7 +248,7 @@ pub struct Process<'r, 'l, L: ReadableSubstateStore> {
     caller_auth_zone: Option<&'r AuthZone>,
 }
 
-impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
+impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
     /// Create a new process, which is not started.
     pub fn new(
         depth: usize,
@@ -734,7 +659,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         let snode = loaded_snode.to_snode_state();
 
         // start a new process
-        let mut process = Process::new(
+        let mut process = CallFrame::new(
             self.depth + 1,
             self.trace,
             self.track,
@@ -923,7 +848,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
     }
 }
 
-impl<'r, 'l, L: ReadableSubstateStore> SystemApi for Process<'r, 'l, L> {
+impl<'r, 'l, L: ReadableSubstateStore> SystemApi for CallFrame<'r, 'l, L> {
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
