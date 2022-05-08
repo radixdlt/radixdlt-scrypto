@@ -2,10 +2,10 @@ use scrypto::values::ScryptoValue;
 
 use super::WasmValidationError;
 
-/// Represents an error when invoking an export of a wasm module.
+/// Represents an error when invoking an export of a scrypto module.
 pub enum InvokeError {}
 
-/// A common trait for Scrypto modules, a.k.a., packages.
+/// Represents an instantiated, invoke-able scrypto module.
 pub trait ScryptoModule {
     /// Invokes an export defined in this module.
     fn invoke_export<R: ScryptoRuntime>(
@@ -22,7 +22,7 @@ pub trait ScryptoModule {
     fn function_exports(&self) -> Vec<String>;
 }
 
-/// Denotes a runtime object that may be invoked by wasm code.
+/// Represents the runtime object that can be invoked by scrypto modules.
 pub trait ScryptoRuntime {
     type Error;
 
@@ -33,18 +33,22 @@ pub trait ScryptoRuntime {
     ) -> Result<Option<ScryptoValue>, Self::Error>;
 }
 
+/// Trait for validating scrypto module.
 pub trait ScryptoWasmValidator {
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
 }
 
+/// Trait for instrumenting, a.k.a. metering, scrypto module.
 pub trait ScryptoWasmInstrumenter {
     fn instrument(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
 }
 
+/// Trait for instantiating and executing scrypto module.
 pub trait ScryptoWasmExecutor<T: ScryptoModule> {
     fn instantiate(&mut self, code: &[u8]) -> T;
 }
 
+/// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
 pub struct NopScryptoRuntime;
 
 impl ScryptoRuntime for NopScryptoRuntime {

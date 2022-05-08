@@ -129,12 +129,10 @@ impl<T: ScryptoRuntime> ScryptoWasmExecutor<WasmiScryptoModule> for WasmiEngine<
         .assert_no_start();
 
         // find memory ref
-        let memory_ref =
-            if let Some(ExternVal::Memory(memory)) = module_ref.export_by_name(EXPORT_MEMORY) {
-                memory
-            } else {
-                panic!("Failed to find memory export");
-            };
+        let memory_ref = match module_ref.export_by_name(EXPORT_MEMORY) {
+            Some(ExternVal::Memory(memory)) => memory,
+            _ => panic!("Failed to find memory export"),
+        };
 
         WasmiScryptoModule {
             module_ref,

@@ -12,6 +12,7 @@
         "transaction-manifest/Cargo.toml",
     ],
     "cSpell.words": [
+        "Substate",
         "Wasmi"
     ]
 }
