@@ -1,13 +1,30 @@
-use super::WasmValidationError;
-use sbor::Value;
+use crate::errors::RuntimeError;
+use crate::wasm::WasmValidationError;
+use scrypto::values::ParseScryptoValueError;
+use scrypto::values::ScryptoValue;
 
 /// Represents an error when invoking an export of a scrypto module.
-pub enum InvokeError {}
+pub enum InvokeError {
+    MemoryAllocError,
+
+    MemoryAccessError,
+
+    InvalidScryptoValue(ParseScryptoValueError),
+
+    WasmError,
+
+    RuntimeError(RuntimeError),
+
+    MissingReturnData,
+
+    InvalidReturn,
+}
 
 /// Represents an instantiated, invoke-able scrypto module.
 pub trait ScryptoModule {
     /// Invokes an export defined in this module.
-    fn invoke_export(&self, name: &str, args: &[Value]) -> Result<Option<Value>, InvokeError>;
+    fn invoke_export(&self, name: &str, args: &[ScryptoValue])
+        -> Result<ScryptoValue, InvokeError>;
 
     /// Lists all functions exported by this module.
     ///
@@ -23,8 +40,8 @@ pub trait ScryptoRuntime {
     fn invoke_function(
         &mut self,
         name: u32, // TODO: this will likely be changed
-        args: &[Value],
-    ) -> Result<Value, Self::Error>;
+        args: &[ScryptoValue],
+    ) -> Result<ScryptoValue, Self::Error>;
 }
 
 /// Trait for validating scrypto module.
@@ -48,7 +65,11 @@ pub struct NopScryptoRuntime;
 impl ScryptoRuntime for NopScryptoRuntime {
     type Error = ();
 
-    fn invoke_function(&mut self, _name: &str, _args: &[Value]) -> Result<Value, Self::Error> {
-        Ok(None)
+    fn invoke_function(
+        &mut self,
+        _name: u32,
+        _args: &[ScryptoValue],
+    ) -> Result<ScryptoValue, Self::Error> {
+        Ok(ScryptoValue::from_value(&()))
     }
 }

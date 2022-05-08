@@ -1,6 +1,7 @@
-use super::constants::*;
-use super::errors::*;
-use super::traits::*;
+use crate::errors::*;
+use crate::wasm::constants::*;
+use crate::wasm::errors::*;
+use crate::wasm::traits::*;
 use scrypto::values::ScryptoValue;
 use wasmi::*;
 
@@ -40,13 +41,67 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
+impl WasmiScryptoModule {
+    pub fn send_value(&mut self, value: &ScryptoValue) -> Result<i32, InvokeError> {
+        let result = self.module_ref.invoke_export(
+            EXPORT_SCRYPTO_ALLOC,
+            &[RuntimeValue::I32((value.raw.len()) as i32)],
+            &mut NopExternals,
+        );
+
+        if let Ok(Some(RuntimeValue::I32(ptr))) = result {
+            if self.memory_ref.set((ptr + 4) as u32, &value.raw).is_ok() {
+                return Ok(ptr);
+            }
+        }
+
+        Err(InvokeError::MemoryAllocError)
+    }
+
+    pub fn read_value(&self, ptr: u32) -> Result<ScryptoValue, InvokeError> {
+        let len: u32 = self
+            .memory_ref
+            .get_value(ptr)
+            .map_err(|_| InvokeError::MemoryAccessError)?;
+
+        let start = ptr.checked_add(4).ok_or(InvokeError::MemoryAccessError)?;
+        let end = start
+            .checked_add(len)
+            .ok_or(InvokeError::MemoryAccessError)?;
+        let range = start as usize..end as usize;
+        let direct = self.memory_ref.direct_access();
+        let buffer = direct.as_ref();
+
+        if end > buffer.len().try_into().unwrap() {
+            return Err(InvokeError::MemoryAccessError);
+        }
+
+        ScryptoValue::from_slice(&buffer[range]).map_err(InvokeError::InvalidScryptoValue)
+    }
+}
+
 impl ScryptoModule for WasmiScryptoModule {
     fn invoke_export(
         &self,
         name: &str,
         args: &[ScryptoValue],
-    ) -> Result<Option<ScryptoValue>, InvokeError> {
-        todo!()
+    ) -> Result<ScryptoValue, InvokeError> {
+        let result = self.module_ref.invoke_export(name, &[], &mut NopExternals);
+        let rtn = result
+            .map_err(|e| {
+                match e.into_host_error() {
+                    // Pass-through runtime errors
+                    Some(host_error) => {
+                        InvokeError::RuntimeError(*host_error.downcast::<RuntimeError>().unwrap())
+                    }
+                    None => InvokeError::WasmError,
+                }
+            })?
+            .ok_or(InvokeError::MissingReturnData)?;
+        match rtn {
+            RuntimeValue::I32(ptr) => self.read_value(ptr as u32),
+            _ => Err(InvokeError::InvalidReturn),
+        }
     }
 
     fn function_exports(&self) -> Vec<String> {
