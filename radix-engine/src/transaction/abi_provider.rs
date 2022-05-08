@@ -69,9 +69,10 @@ impl AbiProvider for BasicAbiProvider {
             .ok_or(RuntimeError::PackageNotFound(package_address))?;
         let output: (Type, Vec<abi::Function>, Vec<abi::Method>) =
             if let SubstateValue::Package(package) = substate_value {
-                package.call_abi(blueprint_name).and_then(|rtn| {
-                    scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError)
-                })?
+                // package.call_abi(blueprint_name).and_then(|rtn| {
+                //     scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError)
+                // })?
+                todo!()
             } else {
                 panic!("Value is not a package");
             };

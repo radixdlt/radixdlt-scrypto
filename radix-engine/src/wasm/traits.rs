@@ -1,6 +1,5 @@
-use scrypto::values::ScryptoValue;
-
 use super::WasmValidationError;
+use sbor::Value;
 
 /// Represents an error when invoking an export of a scrypto module.
 pub enum InvokeError {}
@@ -8,11 +7,7 @@ pub enum InvokeError {}
 /// Represents an instantiated, invoke-able scrypto module.
 pub trait ScryptoModule {
     /// Invokes an export defined in this module.
-    fn invoke_export(
-        &self,
-        name: &str,
-        args: &[ScryptoValue],
-    ) -> Result<Option<ScryptoValue>, InvokeError>;
+    fn invoke_export(&self, name: &str, args: &[Value]) -> Result<Option<Value>, InvokeError>;
 
     /// Lists all functions exported by this module.
     ///
@@ -27,9 +22,9 @@ pub trait ScryptoRuntime {
 
     fn invoke_function(
         &mut self,
-        name: &str,
-        args: &[ScryptoValue],
-    ) -> Result<Option<ScryptoValue>, Self::Error>;
+        name: u32, // TODO: this will likely be changed
+        args: &[Value],
+    ) -> Result<Value, Self::Error>;
 }
 
 /// Trait for validating scrypto module.
@@ -53,11 +48,7 @@ pub struct NopScryptoRuntime;
 impl ScryptoRuntime for NopScryptoRuntime {
     type Error = ();
 
-    fn invoke_function(
-        &mut self,
-        _name: &str,
-        _args: &[ScryptoValue],
-    ) -> Result<Option<ScryptoValue>, Self::Error> {
+    fn invoke_function(&mut self, _name: &str, _args: &[Value]) -> Result<Value, Self::Error> {
         Ok(None)
     }
 }
