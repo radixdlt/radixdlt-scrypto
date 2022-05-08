@@ -7,8 +7,8 @@ use wasmi::*;
 
 #[derive(Clone)]
 pub struct WasmiScryptoModule {
-    pub module_ref: ModuleRef, // TODO: make fields private
-    pub memory_ref: MemoryRef,
+    module_ref: ModuleRef,
+    memory_ref: MemoryRef,
 }
 
 pub struct WasmiEngine<T: ScryptoRuntime> {

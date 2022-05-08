@@ -59,9 +59,9 @@ pub enum WasmValidationError {
     /// The wasm module does not have the `scrypto_free` export.
     NoScryptoFreeExport,
     /// TODO: remove
-    InvalidPackageInit,
-    /// TODO: remove
-    NoPackageInitExport,
+    UnableToExportBlueprintAbi,
+    // TODO: remove
+    InvalidBlueprintAbi,
 }
 
 /// Represents an error when instrumenting a WASM module.
