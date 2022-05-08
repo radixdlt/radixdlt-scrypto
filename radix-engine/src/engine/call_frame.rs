@@ -150,7 +150,7 @@ impl LoadedSNodeState {
 
 pub enum SNodeState<'a> {
     SystemStatic,
-    Transaction(&'a mut TransactionProcess),
+    Transaction(&'a mut TransactionProcessor),
     PackageStatic,
     AuthZoneRef(&'a mut AuthZone),
     Worktop(&'a mut Worktop),

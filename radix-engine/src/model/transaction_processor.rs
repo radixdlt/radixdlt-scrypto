@@ -14,7 +14,7 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
-pub struct TransactionProcess {
+pub struct TransactionProcessor {
     transaction: ValidatedTransaction,
     proof_id_mapping: HashMap<ProofId, ProofId>,
     bucket_id_mapping: HashMap<BucketId, BucketId>,
@@ -22,7 +22,7 @@ pub struct TransactionProcess {
     id_allocator: IdAllocator,
 }
 
-impl TransactionProcess {
+impl TransactionProcessor {
     pub fn new(transaction: ValidatedTransaction) -> Self {
         Self {
             transaction,
