@@ -6,7 +6,6 @@ use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::ScryptoActorInfo;
 use scrypto::engine::api::*;
-use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
 pub struct BlueprintComponentRuntime<'a, S: SystemApi> {
@@ -138,24 +137,25 @@ impl<'a, S: SystemApi> BlueprintComponentRuntime<'a, S> {
     }
 }
 
-// TODO: Remove temporary solution once the wasm ABI is stable.
-fn decode<T: Decode>(args: &[Value]) -> T {
-    let bytes = Vec::new();
-    let encoder = sbor::Encoder::new(&mut bytes, true);
-    sbor::encode_any(None, &args[0], &mut encoder);
-
-    scrypto_decode(&bytes).unwrap()
+// TODO: Remove this temporary solutions once wasm ABI is stable.
+fn decode<T: Decode>(args: &[ScryptoValue]) -> T {
+    scrypto_decode(&args[0].raw).unwrap()
 }
 
-fn encode<T: Encode>(output: T) -> Value {
+// TODO: Remove this temporary solutions once wasm ABI is stable.
+fn encode<T: Encode>(output: T) -> ScryptoValue {
     let bytes = scrypto_encode(&output);
-    sbor::decode_any(&bytes).unwrap()
+    ScryptoValue::from_value(&output)
 }
 
 impl<'a, S: SystemApi> ScryptoRuntime for BlueprintComponentRuntime<'a, S> {
     type Error = RuntimeError;
 
-    fn invoke_function(&mut self, name: u32, args: &[Value]) -> Result<Value, Self::Error> {
+    fn invoke_function(
+        &mut self,
+        name: u32,
+        args: &[ScryptoValue],
+    ) -> Result<ScryptoValue, Self::Error> {
         match name {
             INVOKE_SNODE => self
                 .handle_invoke_snode(decode::<InvokeSNodeInput>(args))
