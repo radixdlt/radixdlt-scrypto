@@ -13,7 +13,6 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec;
 use scrypto::rust::vec::Vec;
 use scrypto::values::*;
-use wasmi::*; // TODO: remove coupling with wasmi
 
 use crate::engine::process::LazyMapState::{Committed, Uncommitted};
 use crate::engine::process::LoadedSNodeState::{Borrowed, Consumed, Static};
@@ -23,6 +22,7 @@ use crate::engine::*;
 use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
+use crate::wasm::*;
 
 macro_rules! re_debug {
     ($proc:expr, $($args: expr),+) => {
@@ -137,7 +137,7 @@ pub enum ConsumedSNodeState {
 pub enum BorrowedSNodeState {
     AuthZone(AuthZone),
     Worktop(Worktop),
-    Scrypto(ScryptoActorInfo, ModuleRef, MemoryRef, Option<Component>),
+    Scrypto(ScryptoActorInfo, WasmiScryptoModule, Option<Component>),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, Bucket),
     Proof(ProofId, Proof),
@@ -156,7 +156,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Worktop(worktop) => {
                 process.worktop = Some(worktop);
             }
-            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
+            BorrowedSNodeState::Scrypto(actor, _, component_state) => {
                 if let Some(component_address) = actor.component_address() {
                     process.track.return_borrowed_global_mut_value(
                         component_address,
@@ -215,8 +215,8 @@ impl LoadedSNodeState {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                BorrowedSNodeState::Scrypto(info, module, memory, s) => {
-                    SNodeState::Scrypto(info.clone(), module.clone(), memory.clone(), s.as_mut())
+                BorrowedSNodeState::Scrypto(info, module, s) => {
+                    SNodeState::Scrypto(info.clone(), module.clone(), s.as_mut())
                 }
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
@@ -237,8 +237,7 @@ pub enum SNodeState<'a> {
     Worktop(&'a mut Worktop),
     Scrypto(
         ScryptoActorInfo,
-        ModuleRef,
-        MemoryRef,
+        WasmiScryptoModule,
         Option<&'a mut Component>,
     ),
     ResourceStatic,
@@ -391,7 +390,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
             SNodeState::Worktop(worktop) => worktop
                 .main(call_data, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, module_ref, memory_ref, component_state) => {
+            SNodeState::Scrypto(actor, module, component_state) => {
                 let component_state = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();
                     let data = ScryptoValue::from_slice(component.state()).unwrap();
@@ -410,7 +409,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                 };
                 self.component = component_state;
 
-                Package::run(module_ref, memory_ref, actor.clone(), call_data, self)
+                Package::run(module, actor.clone(), call_data, self)
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
                 .map_err(RuntimeError::ResourceManagerError),
@@ -526,8 +525,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                                     blueprint_name.clone(),
                                     export_name.clone(),
                                 ),
-                                module.module_ref,
-                                module.memory_ref,
+                                module,
                                 None,
                             )),
                             vec![],
@@ -575,8 +573,7 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
                                     export_name,
                                     component_address.clone(),
                                 ),
-                                module.module_ref,
-                                module.memory_ref,
+                                module,
                                 Some(component),
                             )),
                             method_auths,
@@ -727,14 +724,12 @@ impl<'r, 'l, L: ReadableSubstateStore> Process<'r, 'l, L> {
         moving_buckets.extend(self.send_buckets(&call_data.bucket_ids)?);
         moving_proofs.extend(self.send_proofs(&call_data.proof_ids, MoveMethod::AsArgument)?);
 
-        let process_auth_zone = if matches!(
-            loaded_snode,
-            Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
-        ) {
-            Some(AuthZone::new())
-        } else {
-            None
-        };
+        let process_auth_zone =
+            if matches!(loaded_snode, Borrowed(BorrowedSNodeState::Scrypto(_, _, _))) {
+                Some(AuthZone::new())
+            } else {
+                None
+            };
 
         let snode = loaded_snode.to_snode_state();
 

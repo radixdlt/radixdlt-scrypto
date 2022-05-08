@@ -4,6 +4,7 @@ use super::traits::*;
 use scrypto::values::ScryptoValue;
 use wasmi::*;
 
+#[derive(Clone)]
 pub struct WasmiScryptoModule {
     pub module_ref: ModuleRef, // TODO: make fields private
     pub memory_ref: MemoryRef,
@@ -40,11 +41,10 @@ impl ModuleImportResolver for WasmiEnvModule {
 }
 
 impl ScryptoModule for WasmiScryptoModule {
-    fn invoke_export<R: ScryptoRuntime>(
+    fn invoke_export(
         &self,
         name: &str,
         args: &[ScryptoValue],
-        host: &mut R,
     ) -> Result<Option<ScryptoValue>, InvokeError> {
         todo!()
     }

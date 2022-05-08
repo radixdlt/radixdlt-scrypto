@@ -168,8 +168,7 @@ impl Package {
     }
 
     pub fn run<'a, E: SystemApi>(
-        module: ModuleRef,
-        memory: MemoryRef,
+        module: WasmiScryptoModule,
         actor_info: ScryptoActorInfo,
         message: ScryptoValue,
         externals: &'a mut E,
@@ -178,12 +177,13 @@ impl Package {
         let mut wasm_process = WasmProcess::new(
             actor_info,
             message,
-            module.clone(),
-            memory.clone(),
+            module.clone(), // TODO: remove
             externals,
         );
 
-        let result = module.invoke_export(&func_name, &[], &mut wasm_process);
+        let result = module
+            .module_ref
+            .invoke_export(&func_name, &[], &mut wasm_process);
 
         // Return value
         let rtn = result
@@ -196,7 +196,7 @@ impl Package {
             })?
             .ok_or(RuntimeError::NoReturnData)?;
         match rtn {
-            RuntimeValue::I32(ptr) => Self::read_return_value(memory, ptr as u32),
+            RuntimeValue::I32(ptr) => Self::read_return_value(module.memory_ref, ptr as u32),
             _ => Err(RuntimeError::InvalidReturnType),
         }
     }
@@ -206,23 +206,20 @@ struct WasmProcess<'a, E: SystemApi> {
     actor_info: ScryptoActorInfo,
     message: ScryptoValue,
     externals: &'a mut E,
-    module: ModuleRef,
-    memory: MemoryRef,
+    module: WasmiScryptoModule,
 }
 
 impl<'a, E: SystemApi> WasmProcess<'a, E> {
     pub fn new(
         actor_info: ScryptoActorInfo,
         message: ScryptoValue,
-        module: ModuleRef,
-        memory: MemoryRef,
+        module: WasmiScryptoModule,
         externals: &'a mut E,
     ) -> Self {
         WasmProcess {
             actor_info,
             message,
             module,
-            memory,
             externals,
         }
     }
@@ -237,7 +234,8 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
         let input_len: u32 = args.nth_checked(2)?;
         // SECURITY: bill before allocating memory
         let mut input_bytes = vec![0u8; input_len as usize];
-        self.memory
+        self.module
+            .memory_ref
             .get_into(input_ptr, &mut input_bytes)
             .map_err(|_| Trap::from(RuntimeError::MemoryAccessError))?;
         let input: I = scrypto_decode(&input_bytes)
@@ -363,14 +361,14 @@ impl<'a, E: SystemApi> WasmProcess<'a, E> {
 
     /// Send a byte array to wasm instance.
     fn send_bytes(&mut self, bytes: &[u8]) -> Result<i32, RuntimeError> {
-        let result = self.module.invoke_export(
+        let result = self.module.module_ref.invoke_export(
             "scrypto_alloc",
             &[RuntimeValue::I32((bytes.len()) as i32)],
             &mut NopExternals,
         );
 
         if let Ok(Some(RuntimeValue::I32(ptr))) = result {
-            if self.memory.set((ptr + 4) as u32, bytes).is_ok() {
+            if self.module.memory_ref.set((ptr + 4) as u32, bytes).is_ok() {
                 return Ok(ptr);
             }
         }

@@ -8,11 +8,10 @@ pub enum InvokeError {}
 /// Represents an instantiated, invoke-able scrypto module.
 pub trait ScryptoModule {
     /// Invokes an export defined in this module.
-    fn invoke_export<R: ScryptoRuntime>(
+    fn invoke_export(
         &self,
         name: &str,
         args: &[ScryptoValue],
-        host: &mut R,
     ) -> Result<Option<ScryptoValue>, InvokeError>;
 
     /// Lists all functions exported by this module.
