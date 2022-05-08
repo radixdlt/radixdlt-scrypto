@@ -34,34 +34,14 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let package: Package = self
-            .substate_store
-            .get_decoded_substate(&package_address)
-            .map(|(package, _)| package)
-            .ok_or(RuntimeError::PackageNotFound(package_address))?;
-
-        BasicAbiProvider::new()
-            .with_package(&package_address, package)
-            .export_abi(package_address, blueprint_name)
+        BasicAbiProvider::new(self.substate_store()).export_abi(package_address, blueprint_name)
     }
 
     fn export_abi_by_component(
         &self,
         component_address: ComponentAddress,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let component: Component = self
-            .substate_store
-            .get_decoded_substate(&component_address)
-            .map(|(component, _)| component)
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
-        let package: Package = self
-            .substate_store
-            .get_decoded_substate(&component.package_address())
-            .map(|(package, _)| package)
-            .unwrap();
-        BasicAbiProvider::new()
-            .with_package(&component.package_address(), package)
-            .export_abi(component.package_address(), component.blueprint_name())
+        BasicAbiProvider::new(self.substate_store()).export_abi_by_component(component_address)
     }
 }
 

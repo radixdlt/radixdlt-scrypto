@@ -63,10 +63,8 @@ impl Package {
     pub fn blueprint_abi(
         &self,
         blueprint_name: &str,
-    ) -> Result<&(Type, Vec<Function>, Vec<Method>), PackageError> {
-        self.blueprints
-            .get(blueprint_name)
-            .ok_or(PackageError::BlueprintNotFound)
+    ) -> Option<&(Type, Vec<Function>, Vec<Method>)> {
+        self.blueprints.get(blueprint_name)
     }
 
     pub fn contains_blueprint(&self, blueprint_name: &str) -> bool {
@@ -74,7 +72,9 @@ impl Package {
     }
 
     pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
-        self.blueprint_abi(blueprint_name).map(|v| &v.0)
+        self.blueprint_abi(blueprint_name)
+            .map(|v| &v.0)
+            .ok_or(PackageError::BlueprintNotFound)
     }
 
     pub fn static_main<S: SystemApi>(
