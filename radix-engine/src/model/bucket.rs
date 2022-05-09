@@ -1,4 +1,3 @@
-use crate::engine::SystemApi;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
@@ -9,6 +8,7 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::rc::Rc;
 use scrypto::values::ScryptoValue;
 
+use crate::engine::SystemApi;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };

@@ -3,7 +3,6 @@ use radix_engine::engine::*;
 use radix_engine::model::*;
 use sbor::any::{encode_any, Value};
 use sbor::type_id::*;
-use sbor::Encoder;
 use scrypto::call_data_any_args;
 use scrypto::engine::types::*;
 use scrypto::rust::collections::BTreeSet;
@@ -360,8 +359,7 @@ fn generate_args(
     for v in values {
         let value = generate_value(v, None, resolver)?;
 
-        let mut bytes = encode_any(&value);
-        result.push(bytes);
+        result.push(encode_any(&value));
     }
     Ok(result)
 }

@@ -250,7 +250,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     ));
 
                     for field in fields {
-                        let mut bytes = encode_any(&field);
+                        let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
                             .map_err(DecompileError::ParseScryptoValueError)?;
                         id_validator

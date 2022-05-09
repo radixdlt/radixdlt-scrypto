@@ -1,9 +1,9 @@
-use crate::errors::*;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
 use scrypto::values::ParseScryptoValueError;
+use wasmi::HostError;
 
-pub use wasmi::HostError;
+use crate::engine::RuntimeError;
 
 /// Represents an error when invoking an export of a scrypto module.
 #[derive(Debug, PartialEq, Clone)]

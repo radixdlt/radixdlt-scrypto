@@ -3,7 +3,7 @@ use scrypto::engine::types::*;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::string::ToString;
 
-use crate::errors::*;
+use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
 

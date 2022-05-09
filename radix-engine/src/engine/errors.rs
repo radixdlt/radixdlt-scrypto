@@ -130,6 +130,3 @@ impl fmt::Display for RuntimeError {
         write!(f, "{:?}", self)
     }
 }
-
-// TODO: remove dependency on wasmi
-impl wasmi::HostError for RuntimeError {}

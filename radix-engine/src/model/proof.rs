@@ -1,4 +1,3 @@
-use crate::engine::SystemApi;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
@@ -12,6 +11,7 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
+use crate::engine::SystemApi;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };

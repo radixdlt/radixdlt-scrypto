@@ -1,4 +1,3 @@
-use crate::engine::SystemApi;
 use sbor::DecodeError;
 use scrypto::engine::types::*;
 use scrypto::prelude::scrypto_decode;
@@ -7,6 +6,7 @@ use scrypto::rust::collections::BTreeSet;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
+use crate::engine::SystemApi;
 use crate::model::{Proof, ProofError, ResourceManager};
 
 #[derive(Debug, Clone, PartialEq)]

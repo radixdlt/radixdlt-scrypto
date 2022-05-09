@@ -1,8 +1,9 @@
-use crate::wasm::errors::*;
-use crate::wasm::WasmValidationError;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
+
+use crate::wasm::errors::*;
+use crate::wasm::WasmValidationError;
 
 /// Represents an instantiated, invoke-able scrypto module.
 pub trait ScryptoModule {

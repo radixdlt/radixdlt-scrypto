@@ -1,5 +1,3 @@
-use crate::engine::SystemApi;
-use crate::wasm::*;
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
@@ -8,6 +6,9 @@ use scrypto::rust::collections::HashMap;
 use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
+
+use crate::engine::SystemApi;
+use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

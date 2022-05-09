@@ -7,7 +7,6 @@ use scrypto::values::ScryptoValue;
 use scrypto::{abi, access_rule_node, call_data, rule};
 
 use crate::engine::*;
-use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
