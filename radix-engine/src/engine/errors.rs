@@ -21,7 +21,7 @@ pub enum TransactionValidationError {
 /// Represents an error when executing a transaction.
 #[derive(Debug, PartialEq, Clone)]
 pub enum RuntimeError {
-    /// Error when invoking an another blueprint or component (recursive).
+    /// Error when invoking a blueprint or component (recursive).
     InvokeError(Box<InvokeError>),
 
     /// The data is not a valid SBOR value.

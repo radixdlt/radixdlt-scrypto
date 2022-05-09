@@ -210,10 +210,10 @@ pub enum MoveMethod {
     AsArgument,
 }
 
-/// A call frame is the basic unit that forms a transaction call stack. It keeps track of the owned objects by the
-/// function and allows Scrypto module to reference or move these objects.
+/// A call frame is the basic unit that forms a transaction call stack. It keeps track of the
+/// owned objects by this function.
 ///
-/// A call frame can be either native or wasm (where the callee is a Scrypto blueprint or component).
+/// A call frame can be either native or wasm (when the callee is a blueprint or component).
 ///
 /// Radix Engine manages the lifecycle of call frames and enforces the call and move semantics.
 pub struct CallFrame<'r, 'l, L: ReadableSubstateStore> {
