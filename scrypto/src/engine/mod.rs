@@ -3,24 +3,19 @@ pub mod api;
 /// Types and functions shared by both Scrypto and Radix Engine.
 pub mod types;
 
-use sbor::*;
+use sbor::Decode;
+
+use crate::engine::api::RadixEngineInput;
 
 /// Utility function for making a radix engine call.
 #[cfg(target_arch = "wasm32")]
-pub fn call_engine<T: Encode, V: Decode>(method: u32, arguments: T) -> V {
+pub fn call_engine<V: Decode>(input: RadixEngineInput) -> V {
     use crate::buffer::*;
     use crate::engine::api::radix_engine;
-    use sbor::rust::vec;
-
-    // TODO: introduce proper method name and encode arguments as array.
-    let input = Value::Enum {
-        name: method.to_string(),
-        fields: vec![decode_any(&scrypto_encode(&arguments)).unwrap()],
-    };
 
     unsafe {
         // 1. serialize the input
-        let input_bytes = scrypto_encode_any_with_size_prefix(&input);
+        let input_bytes = scrypto_encode_with_size_prefix(&input);
 
         // 2. make a radix engine call
         let output_ptr = radix_engine(input_bytes.as_ptr());
@@ -32,6 +27,6 @@ pub fn call_engine<T: Encode, V: Decode>(method: u32, arguments: T) -> V {
 
 /// Utility function for making a radix engine call.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn call_engine<T: Encode, V: Decode>(_method: u32, _arguments: T) -> V {
+pub fn call_engine<V: Decode>(_invocation: RadixEngineInput) -> V {
     todo!()
 }

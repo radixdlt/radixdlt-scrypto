@@ -81,15 +81,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
             ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-            // Retrieve call data
-            let output: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
-                ::scrypto::engine::api::GET_CALL_DATA,
-                ::scrypto::engine::api::GetCallDataInput {},
-            );
-
-            let method = ::scrypto::buffer::scrypto_decode::<#method_enum_ident>(&output.call_data).unwrap();
-
             // Dispatch the call
+            let method: #method_enum_ident = ::scrypto::buffer::scrypto_decode_with_size_prefix(input).unwrap();
             let rtn;
             match method {
                 #( #arm_guards => #arm_bodies )*
@@ -160,12 +153,14 @@ fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEn
             let mut fields = Vec::new();
             for input in (&method.sig.inputs).into_iter() {
                 match input {
+                    FnArg::Receiver(_) => {
+                        fields.push(parse_quote! { ::scrypto::component::ComponentAddress })
+                    }
                     FnArg::Typed(ref t) => {
                         // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                        let ty = &t.ty;
-                        fields.push(ty);
+                        let ty = t.ty.as_ref();
+                        fields.push(ty.clone());
                     }
-                    _ => {}
                 }
             }
 
@@ -203,8 +198,8 @@ fn generate_dispatcher(
             if let Visibility::Public(_) = &m.vis {
                 let fn_ident = &m.sig.ident;
 
-                let mut args: Vec<Expr> = vec![];
-                let mut non_self_args: Vec<Expr> = vec![];
+                let mut match_args: Vec<Expr> = vec![];
+                let mut dispatch_args: Vec<Expr> = vec![];
                 let mut stmts: Vec<Stmt> = vec![];
                 let mut get_state: Option<Stmt> = None;
                 let mut put_state: Option<Stmt> = None;
@@ -218,23 +213,19 @@ fn generate_dispatcher(
                             let mutability = r.mutability;
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                            let stmt: Stmt = parse_quote! {
-                                let component_address = output.component.unwrap();
-                            };
-                            trace!("Generated stmt: {}", quote! { #stmt });
-                            args.push(parse_quote! { & #mutability state });
-                            stmts.push(stmt);
+                            match_args.push(parse_quote! { this });
+                            dispatch_args.push(parse_quote! { & #mutability state });
 
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can have at most 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = borrow_component!(component_address).get_state();
+                                let #mutability state: blueprint::#bp_ident = borrow_component!(this).get_state();
                             });
 
                             // Generate a `Stmt` for writing back component state
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
-                                    ::scrypto::borrow_component!(component_address).put_state(state);
+                                    ::scrypto::borrow_component!(this).put_state(state);
                                 });
                             }
                         }
@@ -244,8 +235,8 @@ fn generate_dispatcher(
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
                             trace!("Generated stmt: {}", quote! { #stmt });
-                            args.push(parse_quote! { #arg });
-                            non_self_args.push(parse_quote! { #arg });
+                            match_args.push(parse_quote! { #arg });
+                            dispatch_args.push(parse_quote! { #arg });
                         }
                     }
                 }
@@ -258,7 +249,7 @@ fn generate_dispatcher(
                 // call the function
                 let stmt: Stmt = parse_quote! {
                     rtn = ::scrypto::buffer::scrypto_encode_with_size_prefix(
-                        &blueprint::#bp_ident::#fn_ident(#(#args),*)
+                        &blueprint::#bp_ident::#fn_ident(#(#dispatch_args),*)
                     );
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
@@ -269,8 +260,7 @@ fn generate_dispatcher(
                     stmts.push(stmt);
                 }
 
-                arm_guards
-                    .push(parse_quote! { #method_enum_ident::#fn_ident(#(#non_self_args),*) });
+                arm_guards.push(parse_quote! { #method_enum_ident::#fn_ident(#(#match_args),*) });
                 arm_bodies.push(Expr::Block(ExprBlock {
                     attrs: vec![],
                     label: None,
@@ -555,7 +545,8 @@ mod tests {
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 enum TestMethod {
-                    x(u32),
+                    // TODO: better representation of `&self` and `&mut self`
+                    x(::scrypto::component::ComponentAddress, u32),
                 }
 
                 #[no_mangle]
@@ -563,18 +554,12 @@ mod tests {
                     ::scrypto::misc::set_up_panic_hook();
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
-                    let output: ::scrypto::engine::api::GetCallDataOutput = ::scrypto::engine::call_engine(
-                        ::scrypto::engine::api::GET_CALL_DATA,
-                        ::scrypto::engine::api::GetCallDataInput {},
-                    );
 
-                    let method = ::scrypto::buffer::scrypto_decode::<TestMethod>(&output.call_data).unwrap();
-
+                    let method: TestMethod = ::scrypto::buffer::scrypto_decode_with_size_prefix(input).unwrap();
                     let rtn;
                     match method {
-                        TestMethod::x(arg0) => {
-                            let component_address = output.component.unwrap();
-                            let state: blueprint::Test = borrow_component!(component_address).get_state();
+                        TestMethod::x(this, arg0) => {
+                            let state: blueprint::Test = borrow_component!(this).get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_with_size_prefix(&blueprint::Test::x(&state, arg0));
                         }
                     }

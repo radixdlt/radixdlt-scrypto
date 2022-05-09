@@ -47,17 +47,17 @@ impl ResourceSystem {
         authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::ResourceStatic,
-            call_data: scrypto_encode(&ResourceManagerFunction::Create(
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::ResourceStatic,
+            scrypto_encode(&ResourceManagerFunction::Create(
                 resource_type,
                 metadata,
                 authorization,
                 mint_params,
             )),
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
     }
 }
 

@@ -46,12 +46,12 @@ impl ComponentSystem {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, code: &[u8]) -> PackageAddress {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::PackageStatic,
-            call_data: scrypto_encode(&PackageFunction::Publish(code.to_vec())),
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::PackageStatic,
+            scrypto_encode(&PackageFunction::Publish(code.to_vec())),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
     }
 
     /// Instantiates a component.
@@ -61,14 +61,14 @@ impl ComponentSystem {
         authorization: Vec<AccessRules>,
         state: T,
     ) -> ComponentAddress {
-        let input = CreateComponentInput {
-            blueprint_name: blueprint_name.to_owned(),
-            state: scrypto_encode(&state),
-            access_rules_list: authorization,
-        };
-        let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
+        let input = RadixEngineInput::CreateComponent(
+            blueprint_name.to_owned(),
+            scrypto_encode(&state),
+            authorization,
+        );
+        let output: ComponentAddress = call_engine(input);
 
-        output.component_address
+        output
     }
 
     /// Instantiates a component.
