@@ -40,7 +40,11 @@ impl Package {
         let mut blueprints = HashMap::new();
         for method_name in exports {
             let rtn = module
-                .invoke_export(&method_name, &[], &mut NopScryptoRuntime {})
+                .invoke_export(
+                    &method_name,
+                    &ScryptoValue::unit(),
+                    &mut NopScryptoRuntime {},
+                )
                 .map_err(|_| WasmValidationError::UnableToExportBlueprintAbi)?;
 
             let abi: (Type, Vec<Function>, Vec<Method>) =

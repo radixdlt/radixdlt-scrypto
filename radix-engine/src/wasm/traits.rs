@@ -5,10 +5,13 @@ use scrypto::values::ScryptoValue;
 /// Represents an instantiated, invoke-able scrypto module.
 pub trait ScryptoModule {
     /// Invokes an export defined in this module.
+    ///
+    /// For simplicity, we require the export to have a signature of `f(u32) -> u32` where
+    /// both argument and return are a pointer to a `ScryptoValue`.
     fn invoke_export<R: ScryptoRuntime>(
         &self,
-        export_name: &str,
-        args: &[ScryptoValue],
+        name: &str,
+        input: &ScryptoValue,
         runtime: &mut R,
     ) -> Result<ScryptoValue, InvokeError>;
 

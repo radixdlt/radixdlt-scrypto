@@ -42,6 +42,10 @@ pub struct ScryptoValue {
 }
 
 impl ScryptoValue {
+    pub fn unit() -> Self {
+        Self::from_value(&())
+    }
+
     pub fn from_slice(slice: &[u8]) -> Result<Self, ParseScryptoValueError> {
         // Decode with SBOR
         let value = decode_any(slice).map_err(ParseScryptoValueError::DecodeError)?;

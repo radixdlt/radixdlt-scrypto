@@ -97,7 +97,7 @@ impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
 
         // check function index
         if index != ENGINE_FUNCTION_INDEX {
-            return Err(InvokeError::FunctionNotFound.into());
+            return Err(InvokeError::ExportNotFound.into());
         }
         // check buffer boundary
         if input_ptr >= buffer_len || buffer_len - input_ptr < input_len {
@@ -123,20 +123,17 @@ impl ScryptoModule for WasmiScryptoModule {
     fn invoke_export<R: ScryptoRuntime>(
         &self,
         export_name: &str,
-        args: &[ScryptoValue],
+        input: &ScryptoValue,
         runtime: &mut R,
     ) -> Result<ScryptoValue, InvokeError> {
-        let arguments = args
-            .iter()
-            .map(|a| self.send_value(a))
-            .collect::<Result<Vec<RuntimeValue>, InvokeError>>()?;
+        let pointer = self.send_value(input)?;
         let mut externals = WasmiScryptoModuleExternals {
             module: self,
             runtime,
         };
         let result = self
             .module_ref
-            .invoke_export(export_name, &arguments, &mut externals);
+            .invoke_export(export_name, &[pointer], &mut externals);
         let rtn = result
             .map_err(|e| {
                 match e.into_host_error() {

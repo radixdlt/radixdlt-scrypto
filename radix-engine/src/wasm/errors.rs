@@ -17,7 +17,7 @@ pub enum InvokeError {
 
     HostError(RuntimeError),
 
-    FunctionNotFound,
+    ExportNotFound,
 
     MissingReturnData,
 

@@ -11,7 +11,7 @@ use scrypto::values::ScryptoValue;
 
 pub struct RadixEngineScryptoRuntime<'a, S: SystemApi> {
     this: ScryptoActorInfo,
-    call_data: ScryptoValue,
+    call_data: ScryptoValue, // TODO: remove this
     system_api: &'a mut S,
 }
 
