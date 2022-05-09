@@ -22,7 +22,7 @@ pub enum TransactionValidationError {
 #[derive(Debug, PartialEq, Clone)]
 pub enum RuntimeError {
     /// Error when invoking an another blueprint or component (recursive).
-    ScryptoError(Box<InvokeError>),
+    InvokeError(Box<InvokeError>),
 
     /// The data is not a valid SBOR value.
     ParseScryptoValueError(ParseScryptoValueError),

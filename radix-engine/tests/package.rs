@@ -61,7 +61,7 @@ fn large_return_len_should_cause_memory_access_error() {
     let error = receipt.result.expect_err("Should be an error.");
     assert_eq!(
         error,
-        RuntimeError::ScryptoError(InvokeError::MemoryAccessError.into())
+        RuntimeError::InvokeError(InvokeError::MemoryAccessError.into())
     );
 }
 
@@ -84,7 +84,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let error = receipt.result.expect_err("Should be an error.");
     assert_eq!(
         error,
-        RuntimeError::ScryptoError(InvokeError::MemoryAccessError.into())
+        RuntimeError::InvokeError(InvokeError::MemoryAccessError.into())
     );
 }
 

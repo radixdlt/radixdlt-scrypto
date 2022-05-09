@@ -259,26 +259,14 @@ impl<'l> TestRunner<'l> {
 #[macro_export]
 macro_rules! assert_auth_error {
     ($error:expr) => {{
-        let matches = match &$error {
-            RuntimeError::AuthorizationError{ error, .. } =>
-                matches!(
-                    error,
-                    ::radix_engine::model::MethodAuthorizationError::NotAuthorized
-                ),
-            RuntimeError::ScryptoError(e) => match e.as_ref() {
-                ::radix_engine::wasm::InvokeError::RuntimeError(e) => matches!(
-                    e,
-                    RuntimeError::AuthorizationError {
-                        error: ::radix_engine::model::MethodAuthorizationError::NotAuthorized,
-                        ..
-                    }
-                ),
-                _ => false
-            },
-            _ => false
-        };
-
-        if !matches {
+        if !matches!(
+            $error,
+            RuntimeError::AuthorizationError {
+                authorization: _,
+                function: _,
+                error: ::radix_engine::model::MethodAuthorizationError::NotAuthorized
+            }
+        ) {
             panic!("Expected auth error but got: {:?}", $error);
         }
     }};
