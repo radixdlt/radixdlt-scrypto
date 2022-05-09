@@ -440,9 +440,9 @@ macro_rules! checked_impl {
 checked_impl! { U8, U16, U32, U64, U128, I8, I16, I32, I64, I128 }
 
 macro_rules! checked_int_impl {
-    ($($I:ident, $i:ident, $t:ident)*) => ($(
+    ($($I:ident, $i:ident, $n:ident)*) => ($(
         paste! {
-            impl [<$I$t>] {
+            impl [<$I$n>] {
                 /// Returns the smallest value that can be represented by this integer type.
                 ///
                 /// # Examples
@@ -452,9 +452,9 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("assert_eq!(<I128>::MIN, Integer(", stringify!($t), "::MIN));")]
+                #[doc = concat!("assert_eq!(<I128>::MIN, Integer(", stringify!($n), "::MIN));")]
                 /// ```
-                pub const MIN: Self = Self(<[<$i$t>]>::MIN);
+                pub const MIN: Self = Self(<[<$i$n>]>::MIN);
 
                 /// Returns the largest value that can be represented by this integer type.
                 ///
@@ -465,9 +465,9 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("assert_eq!(<I128>::MAX, Integer(", stringify!([<$i$t>]), "::MAX));")]
+                #[doc = concat!("assert_eq!(<I128>::MAX, Integer(", stringify!([<$i$n>]), "::MAX));")]
                 /// ```
-                pub const MAX: Self = Self(<[<$i$t>]>::MAX);
+                pub const MAX: Self = Self(<[<$i$n>]>::MAX);
 
                 /// Returns the size of this integer type in bits.
                 ///
@@ -478,9 +478,9 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("assert_eq!(<I128>::BITS, ", stringify!([<$i$t>]), "::BITS);")]
+                #[doc = concat!("assert_eq!(<I128>::BITS, ", stringify!([<$i$n>]), "::BITS);")]
                 /// ```
-                pub const BITS: u32 = <[<$i$t>]>::BITS;
+                pub const BITS: u32 = <[<$i$n>]>::BITS;
 
                 /// Returns the number of ones in the binary representation of `self`.
                 ///
@@ -491,7 +491,7 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("let n = Integer(0b01001100", stringify!([<$i$t>]), ");")]
+                #[doc = concat!("let n = Integer(0b01001100", stringify!([<$i$n>]), ");")]
                 ///
                 /// assert_eq!(n.count_ones(), 3);
                 /// ```
@@ -513,7 +513,7 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("assert_eq!(Integer(!0", stringify!([<$i$t>]), ").count_zeros(), 0);")]
+                #[doc = concat!("assert_eq!(Integer(!0", stringify!([<$i$n>]), ").count_zeros(), 0);")]
                 /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
@@ -531,7 +531,7 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("let n = Integer(0b0101000", stringify!([<$i$t>]), ");")]
+                #[doc = concat!("let n = Integer(0b0101000", stringify!([<$i$n>]), ");")]
                 ///
                 /// assert_eq!(n.trailing_zeros(), 3);
                 /// ```
@@ -657,7 +657,7 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("let n = Integer(0x1A", stringify!([<$i$t>]), ");")]
+                #[doc = concat!("let n = Integer(0x1A", stringify!([<$i$n>]), ");")]
                 ///
                 /// if cfg!(target_endian = "big") {
                 #[doc = concat!("    assert_eq!(<I128>::from_be(n), n)")]
@@ -668,7 +668,7 @@ macro_rules! checked_int_impl {
                 #[inline]
                 #[must_use]
                 pub const fn from_be(x: Self) -> Self {
-                    Integer(<[<$i$t>]>::from_be(x.0))
+                    Integer(<[<$i$n>]>::from_be(x.0))
                 }
 
                 /// Converts an integer from little endian to the target's endianness.
@@ -683,7 +683,7 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("let n = Integer(0x1A", stringify!([<$i$t>]), ");")]
+                #[doc = concat!("let n = Integer(0x1A", stringify!([<$i$n>]), ");")]
                 ///
                 /// if cfg!(target_endian = "little") {
                 #[doc = concat!("    assert_eq!(<I128>::from_le(n), n)")]
@@ -694,7 +694,7 @@ macro_rules! checked_int_impl {
                 #[inline]
                 #[must_use]
                 pub const fn from_le(x: Self) -> Self {
-                    Integer(<[<$i$t>]>::from_le(x.0))
+                    Integer(<[<$i$n>]>::from_le(x.0))
                 }
 
                 /// Converts `self` to big endian from the target's endianness.
@@ -709,7 +709,7 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("let n = Integer(0x1A", stringify!([<$i$t>]), ");")]
+                #[doc = concat!("let n = Integer(0x1A", stringify!([<$i$n>]), ");")]
                 ///
                 /// if cfg!(target_endian = "big") {
                 ///     assert_eq!(n.to_be(), n)
@@ -736,7 +736,7 @@ macro_rules! checked_int_impl {
                 /// ```
                 /// use scrypto::math::Integer;
                 ///
-                #[doc = concat!("let n = Integer(0x1A", stringify!([<$i$t>]), ");")]
+                #[doc = concat!("let n = Integer(0x1A", stringify!([<$i$n>]), ");")]
                 ///
                 /// if cfg!(target_endian = "little") {
                 ///     assert_eq!(n.to_le(), n)
@@ -766,3 +766,109 @@ macro_rules! checked_int_impl {
 
 checked_int_impl! { (I, i, 8), (I, i, 16), (I, i, 32), (I, i, 64), (I, i, 128) }
 checked_int_impl! { (U, u, 8), (U, u, 16), (U, u, 32), (U, u, 64), (U, u, 128) }
+
+macro_rules! checked_int_impl_signed {
+    ($($I:ident, $i: ident, $c:ident)*) => ($(
+        paste! {
+            impl [<$I$n>] {
+                /// Returns the number of leading zeros in the binary representation of `self`.
+                ///
+                /// # Examples
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                /// use scrypto::math::[<$I$c>];
+                ///
+                #[doc = concat!("let n = [<$I$c>](", stringify!([<$i$c>]), "::MAX) >> 2;")]
+                ///
+                /// assert_eq!(n.leading_zeros(), 3);
+                /// ```
+                #[inline]
+                #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                pub const fn leading_zeros(self) -> u32 {
+                    self.0.leading_zeros()
+                }
+
+                /// Computes the absolute value of `self`, with overflow causing panic.
+                ///
+                /// The only case where such overflow can occur is when one takes the absolute value of the negative
+                /// minimal value for the type this is a positive value that is too large to represent in the type. In
+                /// such a case, this function panics.
+                ///
+                #[inline]
+                #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                pub fn abs(self) -> [<$I$c>] {
+                    [<$I$c>](self.0.checked_abs().unwrap())
+                }
+
+                /// Returns a number representing sign of `self`.
+                ///
+                ///  - `0` if the number is zero
+                ///  - `1` if the number is positive
+                ///  - `-1` if the number is negative
+                ///
+                /// # Examples
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                /// use scrypto::math::[<$I$c>];
+                ///
+                #[doc = concat!("assert_eq!([<$I$c>](10", stringify!([<$i$c>]), ").signum(), [<$I$c>](1));")]
+                #[doc = concat!("assert_eq!([<$I$c>](0", stringify!([<$i$c>]), ").signum(), [<$I$c>](0));")]
+                #[doc = concat!("assert_eq!([<$I$c>](-10", stringify!([<$i$c>]), ").signum(), [<$I$c>](-1));")]
+                /// ```
+                #[inline]
+                #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                pub fn signum(self) -> [<$I$c>] {
+                    [<$I$c>](self.0.signum())
+                }
+
+                /// Returns `true` if `self` is positive and `false` if the number is zero or
+                /// negative.
+                ///
+                /// # Examples
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                /// use scrypto::math::[<$I$c>];
+                ///
+                #[doc = concat!("assert!([<$I$c>](10", stringify!([<$i$c>]), ").is_positive());")]
+                #[doc = concat!("assert!(![<$I$c>](-10", stringify!([<$i$c>]), ").is_positive());")]
+                /// ```
+                #[must_use]
+                #[inline]
+                pub const fn is_positive(self) -> bool {
+                    self.0.is_positive()
+                }
+
+                /// Returns `true` if `self` is negative and `false` if the number is zero or
+                /// positive.
+                ///
+                /// # Examples
+                ///
+                /// Basic usage:
+                ///
+                /// ```
+                /// use scrypto::math::[<$I$c>];
+                ///
+                #[doc = concat!("assert!([<$I$c>](-10", stringify!([<$i$c>]), ").is_negative());")]
+                #[doc = concat!("assert!(![<$I$c>](10", stringify!([<$i$c>]), ").is_negative());")]
+                /// ```
+                #[must_use]
+                #[inline]
+                pub const fn is_negative(self) -> bool {
+                    self.0.is_negative()
+                }
+            }
+        }
+    )*)
+}
+
+checked_int_impl_signed! { (I, i, 8), (I, i, 16), (I, i, 32), (I, i, 64), (I, i, 128) }
+checked_int_impl_signed! { (U, u, 8), (U, u, 16), (U, u, 32), (U, u, 64), (U, u, 128) }
