@@ -105,7 +105,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
-    if !matches!(error, RuntimeError::ParseScryptoValueError(_)) {
+    if !matches!(error, RuntimeError::InvokeError(_)) {
         panic!("{} should be data validation error", error);
     }
 }

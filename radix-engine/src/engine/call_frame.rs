@@ -66,41 +66,41 @@ pub enum BorrowedSNodeState {
 impl BorrowedSNodeState {
     fn return_borrowed_state<'r, 'l, L: ReadableSubstateStore>(
         self,
-        process: &mut CallFrame<'r, 'l, L>,
+        frame: &mut CallFrame<'r, 'l, L>,
     ) {
         match self {
             BorrowedSNodeState::AuthZone(auth_zone) => {
-                process.auth_zone = Some(auth_zone);
+                frame.auth_zone = Some(auth_zone);
             }
             BorrowedSNodeState::Worktop(worktop) => {
-                process.worktop = Some(worktop);
+                frame.worktop = Some(worktop);
             }
             BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
                 if let Some(component_address) = actor.component_address() {
-                    process.track.return_borrowed_global_mut_value(
+                    frame.track.return_borrowed_global_mut_value(
                         component_address,
                         component_state.unwrap(),
                     );
                 }
             }
             BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                process
+                frame
                     .track
                     .return_borrowed_global_mut_value(resource_address, resource_manager);
             }
             BorrowedSNodeState::Bucket(bucket_id, bucket) => {
-                process.buckets.insert(bucket_id, bucket);
+                frame.buckets.insert(bucket_id, bucket);
             }
             BorrowedSNodeState::Proof(proof_id, proof) => {
-                process.proofs.insert(proof_id, proof);
+                frame.proofs.insert(proof_id, proof);
             }
             BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
                 if let Some(component_address) = maybe_component_address {
-                    process
+                    frame
                         .track
                         .return_borrowed_vault(&component_address, &vault_id, vault);
                 } else {
-                    process.owned_snodes.return_borrowed_vault_mut(vault);
+                    frame.owned_snodes.return_borrowed_vault_mut(vault);
                 }
             }
         }
@@ -227,7 +227,7 @@ pub struct CallFrame<'r, 'l, L: ReadableSubstateStore> {
     /// Transactional state updates
     track: &'r mut Track<'l, L>,
 
-    /// Process Owned Snodes
+    /// Owned Snodes
     buckets: HashMap<BucketId, Bucket>,
     proofs: HashMap<ProofId, Proof>,
     owned_snodes: ComponentObjects,
@@ -244,7 +244,7 @@ pub struct CallFrame<'r, 'l, L: ReadableSubstateStore> {
 }
 
 impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
-    /// Create a new process, which is not started.
+    /// Create a new call frame, which is not started.
     pub fn new(
         depth: usize,
         trace: bool,
@@ -663,7 +663,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
         let snode = loaded_snode.to_snode_state();
 
         // start a new process
-        let mut process = CallFrame::new(
+        let mut frame = CallFrame::new(
             self.depth + 1,
             self.trace,
             self.track,
@@ -673,12 +673,12 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
             moving_proofs,
         );
         if let Some(auth_zone) = &self.auth_zone {
-            process.caller_auth_zone = Option::Some(auth_zone);
+            frame.caller_auth_zone = Option::Some(auth_zone);
         }
 
         // invoke the main function
         let (result, received_buckets, received_proofs, received_vaults) =
-            process.run(Some(snode_ref), snode, call_data)?;
+            frame.run(Some(snode_ref), snode, call_data)?;
 
         // move buckets and proofs to this process.
         self.buckets.extend(received_buckets);

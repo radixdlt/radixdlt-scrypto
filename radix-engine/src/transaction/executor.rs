@@ -139,7 +139,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             validated.raw_hash.clone(),
             validated.signers.clone(),
         );
-        let mut proc = track.start_process(self.trace);
+        let mut proc = track.start_call_frame(self.trace);
 
         let mut txn_process = TransactionProcessor::new(validated.clone());
         let txn_snode = SNodeState::Transaction(&mut txn_process);

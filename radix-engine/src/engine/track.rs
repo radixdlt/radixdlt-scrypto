@@ -260,8 +260,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    /// Start a process.
-    pub fn start_process<'r>(&'r mut self, verbose: bool) -> CallFrame<'r, 's, S> {
+    /// Start a call frame.
+    pub fn start_call_frame<'r>(&'r mut self, verbose: bool) -> CallFrame<'r, 's, S> {
         let signers: BTreeSet<NonFungibleId> = self
             .transaction_signers
             .clone()
