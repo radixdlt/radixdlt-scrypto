@@ -150,11 +150,7 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
 }
 
 impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
-    fn main(
-        &mut self,
-        name: &str,
-        args: &[ScryptoValue],
-    ) -> Result<Option<ScryptoValue>, InvokeError> {
+    fn main(&mut self, name: &str, args: &[ScryptoValue]) -> Result<ScryptoValue, InvokeError> {
         let code = u32::from_str(name).unwrap(); // FIXME: update method name
         match code {
             INVOKE_SNODE => self
@@ -195,7 +191,6 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
                 .map(encode),
             _ => Err(RuntimeError::UnknownSystemCall(name.to_string())),
         }
-        .map(Option::Some)
         .map_err(InvokeError::HostError)
     }
 }

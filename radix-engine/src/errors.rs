@@ -1,3 +1,4 @@
+use sbor::rust::boxed::Box;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::rust::fmt;
@@ -6,6 +7,7 @@ use scrypto::values::*;
 
 use crate::engine::*;
 use crate::model::*;
+use crate::wasm::InvokeError;
 
 /// Represents an error when validating a transaction.
 #[derive(Debug, PartialEq, Eq)]
@@ -36,7 +38,7 @@ pub enum RuntimeError {
     IdAllocatorError(IdAllocatorError),
 
     /// Error when invoking an export.
-    InvokeError,
+    InvokeError(Box<InvokeError>),
 
     /// Error when accessing the program memory.
     MemoryAccessError,

@@ -46,6 +46,14 @@ impl ScryptoValue {
         Self::from_value(&())
     }
 
+    pub fn from_value<T: Encode>(value: &T) -> Self {
+        ScryptoValue::from_slice(&scrypto_encode(value)).unwrap()
+    }
+
+    pub fn from_any(value: &Value) -> Result<Self, ParseScryptoValueError> {
+        ScryptoValue::from_slice(&encode_any(value))
+    }
+
     pub fn from_slice(slice: &[u8]) -> Result<Self, ParseScryptoValueError> {
         // Decode with SBOR
         let value = decode_any(slice).map_err(ParseScryptoValueError::DecodeError)?;
@@ -118,16 +126,9 @@ impl ScryptoValue {
         }
         self.bucket_ids = new_bucket_ids;
 
-        let mut bytes = Vec::new();
-        let mut enc = Encoder::with_type(&mut bytes);
-        encode_any(None, &self.dom, &mut enc);
-        self.raw = bytes;
+        self.raw = encode_any(&self.dom);
 
         Ok(())
-    }
-
-    pub fn from_value<T: Encode>(value: &T) -> Self {
-        ScryptoValue::from_slice(&scrypto_encode(value)).unwrap()
     }
 
     pub fn to_string(&self) -> String {

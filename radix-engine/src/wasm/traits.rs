@@ -1,5 +1,7 @@
 use crate::wasm::errors::*;
 use crate::wasm::WasmValidationError;
+use scrypto::rust::string::String;
+use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
 /// Represents an instantiated, invoke-able scrypto module.
@@ -24,11 +26,7 @@ pub trait ScryptoModule {
 
 /// Represents the runtime object that can be invoked by scrypto modules.
 pub trait ScryptoRuntime {
-    fn main(
-        &mut self,
-        name: &str,
-        args: &[ScryptoValue],
-    ) -> Result<Option<ScryptoValue>, InvokeError>;
+    fn main(&mut self, name: &str, args: &[ScryptoValue]) -> Result<ScryptoValue, InvokeError>;
 }
 
 /// Trait for validating scrypto modules.
@@ -50,11 +48,7 @@ pub trait ScryptoWasmExecutor<T: ScryptoModule> {
 pub struct NopScryptoRuntime;
 
 impl ScryptoRuntime for NopScryptoRuntime {
-    fn main(
-        &mut self,
-        _name: &str,
-        _args: &[ScryptoValue],
-    ) -> Result<Option<ScryptoValue>, InvokeError> {
-        Ok(None)
+    fn main(&mut self, _name: &str, _args: &[ScryptoValue]) -> Result<ScryptoValue, InvokeError> {
+        Ok(ScryptoValue::unit())
     }
 }

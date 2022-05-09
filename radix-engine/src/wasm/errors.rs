@@ -1,5 +1,6 @@
 use crate::errors::*;
 use scrypto::rust::fmt;
+use scrypto::rust::string::String;
 use scrypto::values::ParseScryptoValueError;
 
 pub use wasmi::HostError;
@@ -13,11 +14,13 @@ pub enum InvokeError {
 
     InvalidScryptoValue(ParseScryptoValueError),
 
-    WasmError,
+    VmError,
 
     HostError(RuntimeError),
 
-    ExportNotFound,
+    FunctionNotFound,
+
+    InvalidCallData,
 
     MissingReturnData,
 
@@ -38,7 +41,7 @@ pub enum WasmValidationError {
     /// Failed to parse.
     FailedToParse,
     // Failed to instantiate.
-    FailedToInstantiate,
+    FailedToInstantiate(String),
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
     /// The wasm module uses float points.

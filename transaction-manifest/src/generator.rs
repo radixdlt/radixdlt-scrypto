@@ -317,9 +317,7 @@ pub fn generate_instruction(
                 name: generate_string(method)?,
                 fields,
             };
-            let mut bytes = Vec::new();
-            let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-            ::sbor::encode_any(None, &variant, &mut enc);
+            let bytes = ::sbor::encode_any(&variant);
 
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address)?,
@@ -362,9 +360,7 @@ fn generate_args(
     for v in values {
         let value = generate_value(v, None, resolver)?;
 
-        let mut bytes = Vec::new();
-        let mut enc = Encoder::with_type(&mut bytes);
-        encode_any(None, &value, &mut enc);
+        let mut bytes = encode_any(&value);
         result.push(bytes);
     }
     Ok(result)

@@ -1,7 +1,10 @@
-use crate::errors::*;
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
+use scrypto::rust::format;
+use scrypto::rust::string::String;
+use scrypto::rust::string::ToString;
+use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 use wasmi::*;
 
@@ -22,7 +25,7 @@ impl ModuleImportResolver for WasmiEnvModule {
     fn resolve_func(&self, field_name: &str, signature: &Signature) -> Result<FuncRef, Error> {
         match field_name {
             ENGINE_FUNCTION_NAME => {
-                if signature.params() != [ValueType::I32, ValueType::I32, ValueType::I32]
+                if signature.params() != [ValueType::I32]
                     || signature.return_type() != Some(ValueType::I32)
                 {
                     return Err(Error::Instantiation(
@@ -87,34 +90,25 @@ impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
         index: usize,
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
-        let opcode: u32 = args.nth_checked(0)?;
-        let input_ptr: u32 = args.nth_checked(1)?;
-        let input_len: u32 = args.nth_checked(2)?;
-
-        let direct = self.module.memory_ref.direct_access();
-        let buffer = direct.as_ref();
-        let buffer_len = buffer.len().try_into().unwrap();
-
-        // check function index
         if index != ENGINE_FUNCTION_INDEX {
-            return Err(InvokeError::ExportNotFound.into());
-        }
-        // check buffer boundary
-        if input_ptr >= buffer_len || buffer_len - input_ptr < input_len {
-            return Err(InvokeError::MemoryAccessError.into());
+            return Err(InvokeError::FunctionNotFound.into());
         }
 
-        let slice = &buffer[input_ptr as usize..(input_ptr + input_len) as usize];
-        let input = ScryptoValue::from_slice(slice).map_err(InvokeError::InvalidScryptoValue)?;
-        let output = self.runtime.main(&opcode.to_string(), &[input])?; // FIXME: clean up function name and arguments
+        let input_ptr: u32 = args.nth_checked(0)?;
+        let input = self.module.read_value(input_ptr)?;
 
-        if let Some(value) = output {
+        if let sbor::Value::Enum { name, fields } = input.dom {
+            let output = self.runtime.main(
+                name.as_str(),
+                &[ScryptoValue::from_any(&fields[0]).expect("FIXME")],
+            )?;
+
             self.module
-                .send_value(&value)
+                .send_value(&output)
                 .map(Option::Some)
                 .map_err(|e| e.into())
         } else {
-            Ok(None)
+            Err(InvokeError::InvalidCallData.into())
         }
     }
 }
@@ -134,14 +128,13 @@ impl ScryptoModule for WasmiScryptoModule {
         let result = self
             .module_ref
             .invoke_export(export_name, &[pointer], &mut externals);
+
         let rtn = result
             .map_err(|e| {
                 match e.into_host_error() {
                     // Pass-through runtime errors
-                    Some(host_error) => {
-                        InvokeError::HostError(*host_error.downcast::<RuntimeError>().unwrap())
-                    }
-                    None => InvokeError::WasmError,
+                    Some(host_error) => *host_error.downcast::<InvokeError>().unwrap(),
+                    None => InvokeError::VmError,
                 }
             })?
             .ok_or(InvokeError::MissingReturnData)?;
@@ -182,7 +175,7 @@ impl ScryptoWasmValidator for WasmiEngine {
             &module,
             &ImportsBuilder::new().with_resolver("env", &WasmiEnvModule),
         )
-        .map_err(|_| WasmValidationError::FailedToInstantiate)?;
+        .map_err(|e| WasmValidationError::FailedToInstantiate(e.to_string()))?;
 
         // Check start function
         if instance.has_start() {
