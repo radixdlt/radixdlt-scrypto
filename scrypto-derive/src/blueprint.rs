@@ -73,7 +73,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         #method_enum
 
         #[no_mangle]
-        pub extern "C" fn #dispatcher_ident(input: *const u8) -> *mut u8 {
+        pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
             // Set up panic hook
             ::scrypto::misc::set_up_panic_hook();
 
@@ -82,14 +82,14 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
             // Dispatch the call
-            let method: #method_enum_ident = ::scrypto::buffer::scrypto_decode_with_size_prefix(input).unwrap();
+            let method: #method_enum_ident = ::scrypto::buffer::scrypto_decode_from_buffer(input).unwrap();
             let rtn;
             match method {
                 #( #arm_guards => #arm_bodies )*
             }
 
             // Return
-            ::scrypto::buffer::scrypto_wrap(rtn)
+            rtn
         }
     };
     trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
@@ -98,7 +98,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let (abi_functions, abi_methods) = generate_abi(bp_ident, bp_items)?;
     let output_abi = quote! {
         #[no_mangle]
-        pub extern "C" fn #abi_ident(input: *const u8) -> *mut u8 {
+        pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
             use ::sbor::{Describe, Type};
             use ::scrypto::abi::{Function, Method};
             use ::sbor::rust::borrow::ToOwned;
@@ -110,11 +110,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             let schema: Type = blueprint::#bp_ident::describe();
             let output = (schema, functions, methods);
 
-            // serialize the output
-            let output_bytes = ::scrypto::buffer::scrypto_encode_with_size_prefix(&output);
-
-            // return the output wrapped in a radix-style buffer
-            ::scrypto::buffer::scrypto_wrap(output_bytes)
+            ::scrypto::buffer::scrypto_encode_to_buffer(&output)
         }
     };
     trace!(
@@ -248,7 +244,7 @@ fn generate_dispatcher(
                 }
                 // call the function
                 let stmt: Stmt = parse_quote! {
-                    rtn = ::scrypto::buffer::scrypto_encode_with_size_prefix(
+                    rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
                         &blueprint::#bp_ident::#fn_ident(#(#dispatch_args),*)
                     );
                 };
@@ -550,23 +546,23 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_main(input: *const u8) -> *mut u8 {
+                pub extern "C" fn Test_main(input: *mut u8) -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let method: TestMethod = ::scrypto::buffer::scrypto_decode_with_size_prefix(input).unwrap();
+                    let method: TestMethod = ::scrypto::buffer::scrypto_decode_from_buffer(input).unwrap();
                     let rtn;
                     match method {
                         TestMethod::x(this, arg0) => {
                             let state: blueprint::Test = borrow_component!(this).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_with_size_prefix(&blueprint::Test::x(&state, arg0));
+                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, arg0));
                         }
                     }
                     ::scrypto::buffer::scrypto_wrap(rtn)
                 }
                 #[no_mangle]
-                pub extern "C" fn Test_abi(input: *const u8) -> *mut u8 {
+                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{Function, Method};
                     use ::sbor::rust::borrow::ToOwned;
@@ -581,8 +577,7 @@ mod tests {
                     }];
                     let schema: Type = blueprint::Test::describe();
                     let output = (schema, functions, methods);
-                    let output_bytes = ::scrypto::buffer::scrypto_encode_with_size_prefix(&output);
-                    ::scrypto::buffer::scrypto_wrap(output_bytes)
+                    ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Test {

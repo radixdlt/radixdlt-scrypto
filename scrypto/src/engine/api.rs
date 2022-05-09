@@ -9,7 +9,7 @@ use crate::engine::types::*;
 #[cfg(target_arch = "wasm32")]
 extern "C" {
     /// Entrance to Radix Engine.
-    pub fn radix_engine(input: *const u8) -> *mut u8;
+    pub fn radix_engine(input: *mut u8) -> *mut u8;
 }
 
 #[macro_export]

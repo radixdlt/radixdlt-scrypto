@@ -219,7 +219,7 @@ impl<T: Encode> Encode for [T] {
         if T::type_id() == TYPE_U8 || T::type_id() == TYPE_I8 {
             let mut buf = Vec::<u8>::with_capacity(self.len());
             unsafe {
-                copy(self.as_ptr() as *const u8, buf.as_mut_ptr(), self.len());
+                copy(self.as_ptr() as *mut u8, buf.as_mut_ptr(), self.len());
                 buf.set_len(self.len());
             }
             encoder.write_slice(&buf);
