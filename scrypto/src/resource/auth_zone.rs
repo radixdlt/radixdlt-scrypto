@@ -3,9 +3,9 @@ use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::resource::*;
-use crate::rust::collections::BTreeSet;
-use crate::rust::string::ToString;
 use crate::sfunctions;
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::string::ToString;
 use sbor::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]

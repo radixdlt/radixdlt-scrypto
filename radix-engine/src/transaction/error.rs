@@ -1,6 +1,6 @@
 use sbor::describe::Type;
+use sbor::rust::string::String;
 use scrypto::engine::types::*;
-use scrypto::rust::string::String;
 
 use crate::engine::RuntimeError;
 

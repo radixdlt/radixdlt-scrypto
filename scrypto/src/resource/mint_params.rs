@@ -2,8 +2,8 @@ use sbor::*;
 
 use crate::math::*;
 use crate::resource::*;
-use crate::rust::collections::HashMap;
-use crate::rust::vec::Vec;
+use sbor::rust::collections::HashMap;
+use sbor::rust::vec::Vec;
 
 /// Represents the minting parameters
 #[derive(Debug, Clone, TypeId, Encode, Decode, Describe)]

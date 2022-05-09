@@ -12,10 +12,10 @@ pub use crate::{
     resource_list, rule, trace, warn, Decode, Describe, Encode, NonFungibleData, TypeId,
 };
 
-pub use crate::rust::borrow::ToOwned;
-pub use crate::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-pub use crate::rust::str::FromStr;
-pub use crate::rust::string::String;
-pub use crate::rust::string::ToString;
-pub use crate::rust::vec;
-pub use crate::rust::vec::Vec;
+pub use sbor::rust::borrow::ToOwned;
+pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+pub use sbor::rust::str::FromStr;
+pub use sbor::rust::string::String;
+pub use sbor::rust::string::ToString;
+pub use sbor::rust::vec;
+pub use sbor::rust::vec::Vec;

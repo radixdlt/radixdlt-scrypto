@@ -8,15 +8,15 @@ use crate::crypto::*;
 use crate::engine::types::*;
 use crate::math::*;
 use crate::resource::*;
-use crate::rust::borrow::Borrow;
-use crate::rust::collections::HashMap;
-use crate::rust::collections::HashSet;
-use crate::rust::fmt;
-use crate::rust::format;
-use crate::rust::string::String;
-use crate::rust::string::ToString;
-use crate::rust::vec::Vec;
 use crate::types::*;
+use sbor::rust::borrow::Borrow;
+use sbor::rust::collections::HashMap;
+use sbor::rust::collections::HashSet;
+use sbor::rust::fmt;
+use sbor::rust::format;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 
 /// Represents an error when parsing a Scrypto value.
 #[derive(Debug, Clone, PartialEq, Eq)]

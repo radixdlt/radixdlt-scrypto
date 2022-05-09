@@ -14,7 +14,7 @@ pub fn sha3<T: AsRef<[u8]>>(data: T) -> Hash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::str::FromStr;
+    use sbor::rust::str::FromStr;
 
     #[test]
     fn test_sha3() {

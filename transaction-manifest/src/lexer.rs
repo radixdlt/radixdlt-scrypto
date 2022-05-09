@@ -1,4 +1,4 @@
-use scrypto::rust::str::FromStr;
+use sbor::rust::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Span {

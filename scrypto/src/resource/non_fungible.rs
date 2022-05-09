@@ -1,6 +1,6 @@
 use crate::borrow_resource_manager;
 use crate::resource::*;
-use crate::rust::marker::PhantomData;
+use sbor::rust::marker::PhantomData;
 
 /// Represents a non-fungible unit.
 #[derive(Debug)]

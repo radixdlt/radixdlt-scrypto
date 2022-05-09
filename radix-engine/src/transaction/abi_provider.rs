@@ -1,7 +1,7 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::string::ToString;
 use scrypto::abi;
 use scrypto::engine::types::*;
-use scrypto::rust::borrow::ToOwned;
-use scrypto::rust::string::ToString;
 
 use crate::engine::*;
 use crate::ledger::*;

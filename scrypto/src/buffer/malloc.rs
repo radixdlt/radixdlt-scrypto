@@ -1,6 +1,6 @@
-use crate::rust::mem::forget;
-use crate::rust::ptr::copy;
-use crate::rust::vec::Vec;
+use sbor::rust::mem::forget;
+use sbor::rust::ptr::copy;
+use sbor::rust::vec::Vec;
 
 /// Allocates a chunk of memory that is not tracked by Rust ownership system.
 ///

@@ -1,6 +1,6 @@
+use sbor::rust::collections::*;
+use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::*;
-use scrypto::rust::vec::Vec;
 
 use crate::engine::*;
 use crate::model::*;

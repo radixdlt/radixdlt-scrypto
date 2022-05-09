@@ -1,13 +1,13 @@
 use sbor::*;
 
 use crate::misc::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::convert::TryFrom;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
 use crate::types::*;
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::convert::TryFrom;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -117,7 +117,7 @@ impl fmt::Debug for Hash {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::string::ToString;
+    use sbor::rust::string::ToString;
 
     #[test]
     fn test_from_to_string() {

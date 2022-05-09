@@ -7,12 +7,12 @@ use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::rust::collections::BTreeSet;
-#[cfg(not(feature = "alloc"))]
-use crate::rust::fmt;
-use crate::rust::string::ToString;
-use crate::rust::vec::Vec;
 use crate::types::*;
+use sbor::rust::collections::BTreeSet;
+#[cfg(not(feature = "alloc"))]
+use sbor::rust::fmt;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ConsumingProofMethod {

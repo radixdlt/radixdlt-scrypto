@@ -1,6 +1,6 @@
 use sbor::{any::encode_any_with_buffer, *};
 
-use crate::rust::vec::Vec;
+use sbor::rust::vec::Vec;
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
@@ -49,7 +49,7 @@ pub fn scrypto_decode<T: Decode>(buf: &[u8]) -> Result<T, DecodeError> {
 mod tests {
     use super::*;
     use crate::engine::api::*;
-    use crate::rust::vec;
+    use sbor::rust::vec;
 
     #[test]
     fn test_serialization() {

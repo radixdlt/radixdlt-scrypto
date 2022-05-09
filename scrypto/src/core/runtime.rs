@@ -4,8 +4,8 @@ use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
-use crate::rust::borrow::ToOwned;
-use crate::rust::vec::Vec;
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]

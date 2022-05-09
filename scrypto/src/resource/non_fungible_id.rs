@@ -1,12 +1,12 @@
 use sbor::*;
 
-use crate::rust::borrow::ToOwned;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::string::ToString;
-use crate::rust::vec::Vec;
 use crate::types::*;
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -103,7 +103,7 @@ impl fmt::Debug for NonFungibleId {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::vec;
+    use sbor::rust::vec;
 
     #[test]
     fn test_non_fungible_id_string_rep() {

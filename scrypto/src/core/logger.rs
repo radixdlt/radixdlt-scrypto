@@ -1,6 +1,6 @@
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
-use crate::rust::string::String;
+use sbor::rust::string::String;
 
 /// A utility for logging messages.
 #[derive(Debug)]

@@ -1,9 +1,9 @@
+use sbor::rust::collections::BTreeMap;
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::HashMap;
+use sbor::rust::string::ToString;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::BTreeMap;
-use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::collections::HashMap;
-use scrypto::rust::string::ToString;
 
 /// Represents an error when manipulating resources in a container.
 #[derive(Debug, Clone, PartialEq, Eq)]

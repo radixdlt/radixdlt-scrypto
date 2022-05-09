@@ -108,9 +108,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         pub extern "C" fn #abi_ident(input: *const u8) -> *mut u8 {
             use ::sbor::{Describe, Type};
             use ::scrypto::abi::{Function, Method};
-            use ::scrypto::rust::borrow::ToOwned;
-            use ::scrypto::rust::vec;
-            use ::scrypto::rust::vec::Vec;
+            use ::sbor::rust::borrow::ToOwned;
+            use ::sbor::rust::vec;
+            use ::sbor::rust::vec::Vec;
 
             let functions: Vec<Function> = vec![ #(#abi_functions),* ];
             let methods: Vec<Method> = vec![ #(#abi_methods),* ];
@@ -584,9 +584,9 @@ mod tests {
                 pub extern "C" fn Test_abi(input: *const u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{Function, Method};
-                    use ::scrypto::rust::borrow::ToOwned;
-                    use ::scrypto::rust::vec;
-                    use ::scrypto::rust::vec::Vec;
+                    use ::sbor::rust::borrow::ToOwned;
+                    use ::sbor::rust::vec;
+                    use ::sbor::rust::vec::Vec;
                     let functions: Vec<Function> = vec![];
                     let methods: Vec<Method> = vec![::scrypto::abi::Method {
                         name: "x".to_owned(),

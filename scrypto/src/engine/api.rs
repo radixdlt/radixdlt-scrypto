@@ -3,8 +3,8 @@ use sbor::*;
 use scrypto::prelude::AccessRules;
 
 use crate::engine::types::*;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {
