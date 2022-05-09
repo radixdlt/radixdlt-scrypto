@@ -1,30 +1,16 @@
-use crate::errors::RuntimeError;
+use crate::wasm::errors::*;
 use crate::wasm::WasmValidationError;
-use scrypto::values::ParseScryptoValueError;
 use scrypto::values::ScryptoValue;
-
-/// Represents an error when invoking an export of a scrypto module.
-pub enum InvokeError {
-    MemoryAllocError,
-
-    MemoryAccessError,
-
-    InvalidScryptoValue(ParseScryptoValueError),
-
-    WasmError,
-
-    RuntimeError(RuntimeError),
-
-    MissingReturnData,
-
-    InvalidReturn,
-}
 
 /// Represents an instantiated, invoke-able scrypto module.
 pub trait ScryptoModule {
     /// Invokes an export defined in this module.
-    fn invoke_export(&self, name: &str, args: &[ScryptoValue])
-        -> Result<ScryptoValue, InvokeError>;
+    fn invoke_export<R: ScryptoRuntime>(
+        &self,
+        export_name: &str,
+        args: &[ScryptoValue],
+        runtime: &mut R,
+    ) -> Result<ScryptoValue, InvokeError>;
 
     /// Lists all functions exported by this module.
     ///
@@ -35,26 +21,24 @@ pub trait ScryptoModule {
 
 /// Represents the runtime object that can be invoked by scrypto modules.
 pub trait ScryptoRuntime {
-    type Error;
-
-    fn invoke_function(
+    fn main(
         &mut self,
-        name: u32, // TODO: this will likely be changed
+        name: &str,
         args: &[ScryptoValue],
-    ) -> Result<ScryptoValue, Self::Error>;
+    ) -> Result<Option<ScryptoValue>, InvokeError>;
 }
 
-/// Trait for validating scrypto module.
+/// Trait for validating scrypto modules.
 pub trait ScryptoWasmValidator {
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
 }
 
-/// Trait for instrumenting, a.k.a. metering, scrypto module.
+/// Trait for instrumenting, a.k.a. metering, scrypto modules.
 pub trait ScryptoWasmInstrumenter {
     fn instrument(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
 }
 
-/// Trait for instantiating and executing scrypto module.
+/// Trait for instantiating scrypto modules.
 pub trait ScryptoWasmExecutor<T: ScryptoModule> {
     fn instantiate(&mut self, code: &[u8]) -> T;
 }
@@ -63,13 +47,11 @@ pub trait ScryptoWasmExecutor<T: ScryptoModule> {
 pub struct NopScryptoRuntime;
 
 impl ScryptoRuntime for NopScryptoRuntime {
-    type Error = ();
-
-    fn invoke_function(
+    fn main(
         &mut self,
-        _name: u32,
+        _name: &str,
         _args: &[ScryptoValue],
-    ) -> Result<ScryptoValue, Self::Error> {
-        Ok(ScryptoValue::from_value(&()))
+    ) -> Result<Option<ScryptoValue>, InvokeError> {
+        Ok(None)
     }
 }

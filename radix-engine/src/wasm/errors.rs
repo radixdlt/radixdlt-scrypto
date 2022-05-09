@@ -1,45 +1,36 @@
-use scrypto::rust::string::String;
-use wasmi::*;
+use crate::errors::*;
+use scrypto::rust::fmt;
+use scrypto::values::ParseScryptoValueError;
 
-/// Error coming from WASMI module which maps to wasmi:Error but is cloneable
+pub use wasmi::HostError;
+
+/// Represents an error when invoking an export of a scrypto module.
 #[derive(Debug, PartialEq, Clone)]
-pub enum WasmiError {
-    /// Module validation error. Might occur only at load time.
-    Validation(String),
-    /// Error while instantiating a module. Might occur when provided
-    /// with incorrect exports (i.e. linkage failure).
-    Instantiation(String),
-    /// Function-level error.
-    Function(String),
-    /// Table-level error.
-    Table(String),
-    /// Memory-level error.
-    Memory(String),
-    /// Global-level error.
-    Global(String),
-    /// Value-level error.
-    Value(String),
-    /// Trap.
-    Trap,
-    /// Custom embedder error.
-    Host,
+pub enum InvokeError {
+    MemoryAllocError,
+
+    MemoryAccessError,
+
+    InvalidScryptoValue(ParseScryptoValueError),
+
+    WasmError,
+
+    HostError(RuntimeError),
+
+    FunctionNotFound,
+
+    MissingReturnData,
+
+    InvalidReturnData,
 }
 
-impl From<wasmi::Error> for WasmiError {
-    fn from(e: Error) -> Self {
-        match e {
-            Error::Validation(e) => WasmiError::Validation(e),
-            Error::Instantiation(e) => WasmiError::Instantiation(e),
-            Error::Function(e) => WasmiError::Function(e),
-            Error::Table(e) => WasmiError::Table(e),
-            Error::Memory(e) => WasmiError::Memory(e),
-            Error::Global(e) => WasmiError::Global(e),
-            Error::Value(e) => WasmiError::Value(e),
-            Error::Trap(_) => WasmiError::Trap,
-            Error::Host(_) => WasmiError::Host,
-        }
+impl fmt::Display for InvokeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
+
+impl HostError for InvokeError {}
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]

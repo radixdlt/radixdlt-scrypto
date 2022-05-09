@@ -51,7 +51,7 @@ pub enum RuntimeError {
     InvalidReturnType,
 
     /// Invalid request code.
-    UnknownSystemCall(u32),
+    UnknownSystemCall(String),
 
     /// Invalid request data.
     InvalidRequestData(DecodeError),

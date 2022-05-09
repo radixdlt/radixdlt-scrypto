@@ -1,22 +1,23 @@
 use crate::engine::SystemApi;
 use crate::errors::RuntimeError;
 use crate::model::Component;
-use crate::wasm::ScryptoRuntime;
+use crate::wasm::{InvokeError, ScryptoRuntime};
 use sbor::*;
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActorInfo;
 use scrypto::engine::api::*;
+use scrypto::rust::str::FromStr;
 use scrypto::values::ScryptoValue;
 
-pub struct BlueprintComponentRuntime<'a, S: SystemApi> {
+pub struct RadixEngineScryptoRuntime<'a, S: SystemApi> {
     this: ScryptoActorInfo,
     call_data: ScryptoValue,
     system_api: &'a mut S,
 }
 
-impl<'a, S: SystemApi> BlueprintComponentRuntime<'a, S> {
+impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
     pub fn new(this: ScryptoActorInfo, call_data: ScryptoValue, system_api: &'a mut S) -> Self {
-        BlueprintComponentRuntime {
+        RadixEngineScryptoRuntime {
             this,
             call_data,
             system_api,
@@ -145,19 +146,17 @@ fn decode<T: Decode>(args: &[ScryptoValue]) -> T {
 
 // TODO: Remove this temporary solutions once wasm ABI is stable.
 fn encode<T: Encode>(output: T) -> ScryptoValue {
-    let bytes = scrypto_encode(&output);
     ScryptoValue::from_value(&output)
 }
 
-impl<'a, S: SystemApi> ScryptoRuntime for BlueprintComponentRuntime<'a, S> {
-    type Error = RuntimeError;
-
-    fn invoke_function(
+impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
+    fn main(
         &mut self,
-        name: u32,
+        name: &str,
         args: &[ScryptoValue],
-    ) -> Result<ScryptoValue, Self::Error> {
-        match name {
+    ) -> Result<Option<ScryptoValue>, InvokeError> {
+        let code = u32::from_str(name).unwrap(); // FIXME: update method name
+        match code {
             INVOKE_SNODE => self
                 .handle_invoke_snode(decode::<InvokeSNodeInput>(args))
                 .map(encode),
@@ -194,7 +193,9 @@ impl<'a, S: SystemApi> ScryptoRuntime for BlueprintComponentRuntime<'a, S> {
             EMIT_LOG => self
                 .handle_emit_log(decode::<EmitLogInput>(args))
                 .map(encode),
-            _ => Err(RuntimeError::UnknownSystemCall(name).into()),
+            _ => Err(RuntimeError::UnknownSystemCall(name.to_string())),
         }
+        .map(Option::Some)
+        .map_err(InvokeError::HostError)
     }
 }

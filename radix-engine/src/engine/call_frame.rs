@@ -174,7 +174,7 @@ struct ComponentState<'a> {
 
 ///TODO: Remove
 #[derive(Debug)]
-pub enum LazyMapState {
+enum LazyMapState {
     Uncommitted { root: LazyMapId },
     Committed { component_address: ComponentAddress },
 }
@@ -213,13 +213,12 @@ pub enum MoveMethod {
     AsArgument,
 }
 
-/// A call frame is the basic unit of transaction call stack. It keeps track of the owned objects by the
-/// this frame and allows Scrypto module to refer to or move owned objects.
+/// A call frame is the basic unit that forms a transaction call stack. It keeps track of the owned objects by the
+/// function and allows Scrypto module to reference or move these objects.
 ///
-/// Call frame can be either native or wasm (in case the callee snode is a blueprint/component).
+/// A call frame can be either native or wasm (where the callee is a Scrypto blueprint or component).
 ///
-/// Radix Engine is responsible for maintaining the call semantics and interprets object movement
-/// between call frames.
+/// Radix Engine manages the lifecycle of call frames and enforces the call and move semantics.
 pub struct CallFrame<'r, 'l, L: ReadableSubstateStore> {
     /// The call depth
     depth: usize,
@@ -330,13 +329,11 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 };
                 self.component = component_state;
 
-                let runtime = BlueprintComponentRuntime::new(actor, call_data, self);
-                let mut engine = WasmiEngine::new(runtime);
+                let mut runtime = RadixEngineScryptoRuntime::new(actor, call_data, self);
+                let mut engine = WasmiEngine::new();
                 let module = engine.instantiate(&code);
-
-                // TODO: consider passing the arguments to main
                 module
-                    .invoke_export(&export_name, &[])
+                    .invoke_export(&export_name, &[], &mut runtime)
                     .map_err(|_| RuntimeError::InvokeError)
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)

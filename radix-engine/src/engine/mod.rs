@@ -13,7 +13,7 @@ pub use component_objects::*;
 pub use id_allocator::*;
 pub use id_validator::*;
 pub use receipt::*;
-pub use runtime::BlueprintComponentRuntime;
+pub use runtime::RadixEngineScryptoRuntime;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
 pub use system_api::SystemApi;
 pub use track::{Address, BorrowedSNodes, SubstateParentId, SubstateUpdate, SubstateValue, Track};

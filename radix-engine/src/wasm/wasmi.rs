@@ -5,15 +5,16 @@ use crate::wasm::traits::*;
 use scrypto::values::ScryptoValue;
 use wasmi::*;
 
-#[derive(Clone)]
 pub struct WasmiScryptoModule {
     module_ref: ModuleRef,
     memory_ref: MemoryRef,
 }
-
-pub struct WasmiEngine<T: ScryptoRuntime> {
-    runtime: T,
+pub struct WasmiScryptoModuleExternals<'a, T: ScryptoRuntime> {
+    module: &'a WasmiScryptoModule,
+    runtime: &'a mut T,
 }
+
+pub struct WasmiEngine {}
 
 pub struct WasmiEnvModule;
 
@@ -42,7 +43,7 @@ impl ModuleImportResolver for WasmiEnvModule {
 }
 
 impl WasmiScryptoModule {
-    pub fn send_value(&mut self, value: &ScryptoValue) -> Result<i32, InvokeError> {
+    pub fn send_value(&self, value: &ScryptoValue) -> Result<RuntimeValue, InvokeError> {
         let result = self.module_ref.invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.raw.len()) as i32)],
@@ -51,7 +52,7 @@ impl WasmiScryptoModule {
 
         if let Ok(Some(RuntimeValue::I32(ptr))) = result {
             if self.memory_ref.set((ptr + 4) as u32, &value.raw).is_ok() {
-                return Ok(ptr);
+                return Ok(RuntimeValue::I32(ptr));
             }
         }
 
@@ -80,19 +81,68 @@ impl WasmiScryptoModule {
     }
 }
 
+impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
+    fn invoke_index(
+        &mut self,
+        index: usize,
+        args: RuntimeArgs,
+    ) -> Result<Option<RuntimeValue>, Trap> {
+        let opcode: u32 = args.nth_checked(0)?;
+        let input_ptr: u32 = args.nth_checked(1)?;
+        let input_len: u32 = args.nth_checked(2)?;
+
+        let direct = self.module.memory_ref.direct_access();
+        let buffer = direct.as_ref();
+        let buffer_len = buffer.len().try_into().unwrap();
+
+        // check function index
+        if index != ENGINE_FUNCTION_INDEX {
+            return Err(InvokeError::FunctionNotFound.into());
+        }
+        // check buffer boundary
+        if input_ptr >= buffer_len || buffer_len - input_ptr < input_len {
+            return Err(InvokeError::MemoryAccessError.into());
+        }
+
+        let slice = &buffer[input_ptr as usize..(input_ptr + input_len) as usize];
+        let input = ScryptoValue::from_slice(slice).map_err(InvokeError::InvalidScryptoValue)?;
+        let output = self.runtime.main(&opcode.to_string(), &[input])?; // FIXME: clean up function name and arguments
+
+        if let Some(value) = output {
+            self.module
+                .send_value(&value)
+                .map(Option::Some)
+                .map_err(|e| e.into())
+        } else {
+            Ok(None)
+        }
+    }
+}
+
 impl ScryptoModule for WasmiScryptoModule {
-    fn invoke_export(
+    fn invoke_export<R: ScryptoRuntime>(
         &self,
-        name: &str,
+        export_name: &str,
         args: &[ScryptoValue],
+        runtime: &mut R,
     ) -> Result<ScryptoValue, InvokeError> {
-        let result = self.module_ref.invoke_export(name, &[], &mut NopExternals);
+        let arguments = args
+            .iter()
+            .map(|a| self.send_value(a))
+            .collect::<Result<Vec<RuntimeValue>, InvokeError>>()?;
+        let mut externals = WasmiScryptoModuleExternals {
+            module: self,
+            runtime,
+        };
+        let result = self
+            .module_ref
+            .invoke_export(export_name, &arguments, &mut externals);
         let rtn = result
             .map_err(|e| {
                 match e.into_host_error() {
                     // Pass-through runtime errors
                     Some(host_error) => {
-                        InvokeError::RuntimeError(*host_error.downcast::<RuntimeError>().unwrap())
+                        InvokeError::HostError(*host_error.downcast::<RuntimeError>().unwrap())
                     }
                     None => InvokeError::WasmError,
                 }
@@ -100,7 +150,7 @@ impl ScryptoModule for WasmiScryptoModule {
             .ok_or(InvokeError::MissingReturnData)?;
         match rtn {
             RuntimeValue::I32(ptr) => self.read_value(ptr as u32),
-            _ => Err(InvokeError::InvalidReturn),
+            _ => Err(InvokeError::InvalidReturnData),
         }
     }
 
@@ -114,13 +164,13 @@ impl ScryptoModule for WasmiScryptoModule {
     }
 }
 
-impl<T: ScryptoRuntime> WasmiEngine<T> {
-    pub fn new(runtime: T) -> Self {
-        Self { runtime }
+impl WasmiEngine {
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
-impl<T: ScryptoRuntime> ScryptoWasmValidator for WasmiEngine<T> {
+impl ScryptoWasmValidator for WasmiEngine {
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError> {
         // parse wasm module
         let module = Module::from_buffer(code).map_err(|_| WasmValidationError::FailedToParse)?;
@@ -170,7 +220,7 @@ impl<T: ScryptoRuntime> ScryptoWasmValidator for WasmiEngine<T> {
     }
 }
 
-impl<T: ScryptoRuntime> ScryptoWasmExecutor<WasmiScryptoModule> for WasmiEngine<T> {
+impl ScryptoWasmExecutor<WasmiScryptoModule> for WasmiEngine {
     fn instantiate(&mut self, code: &[u8]) -> WasmiScryptoModule {
         // parse wasm
         let module = Module::from_buffer(code).expect("Failed to parse wasm module");

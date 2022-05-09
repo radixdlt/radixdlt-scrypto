@@ -27,7 +27,7 @@ pub enum PackageError {
 impl Package {
     /// Validates and creates a package
     pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
-        let mut wasm_engine = WasmiEngine::new(NopScryptoRuntime {});
+        let mut wasm_engine = WasmiEngine::new();
         wasm_engine.validate(&code)?;
 
         let module = wasm_engine.instantiate(&code);
@@ -40,7 +40,7 @@ impl Package {
         let mut blueprints = HashMap::new();
         for method_name in exports {
             let rtn = module
-                .invoke_export(&method_name, &[])
+                .invoke_export(&method_name, &[], &mut NopScryptoRuntime {})
                 .map_err(|_| WasmValidationError::UnableToExportBlueprintAbi)?;
 
             let abi: (Type, Vec<Function>, Vec<Method>) =
