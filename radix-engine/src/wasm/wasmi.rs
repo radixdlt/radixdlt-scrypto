@@ -132,9 +132,9 @@ impl ScryptoModule for WasmiScryptoModule {
         let rtn = result
             .map_err(|e| {
                 match e.into_host_error() {
-                    // Pass-through runtime errors
+                    // Pass-through invoke errors
                     Some(host_error) => *host_error.downcast::<InvokeError>().unwrap(),
-                    None => InvokeError::VmError,
+                    None => InvokeError::WasmError,
                 }
             })?
             .ok_or(InvokeError::MissingReturnData)?;

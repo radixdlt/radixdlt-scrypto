@@ -14,9 +14,9 @@ pub enum InvokeError {
 
     InvalidScryptoValue(ParseScryptoValueError),
 
-    VmError,
+    WasmError,
 
-    HostError(RuntimeError),
+    RuntimeError(RuntimeError),
 
     FunctionNotFound,
 

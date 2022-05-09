@@ -334,7 +334,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 let module = engine.instantiate(&code);
                 module
                     .invoke_export(&export_name, &call_data, &mut runtime)
-                    .map_err(|e| RuntimeError::InvokeError(e.into()))
+                    .map_err(|e| RuntimeError::ScryptoError(e.into()))
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
                 .map_err(RuntimeError::ResourceManagerError),

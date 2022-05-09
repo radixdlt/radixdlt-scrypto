@@ -5,6 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::PackageError;
+use radix_engine::wasm::InvokeError;
 use radix_engine::wasm::WasmValidationError::NoMemoryExport;
 use scrypto::call_data;
 use scrypto::prelude::*;
@@ -58,7 +59,10 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
-    assert_eq!(error, RuntimeError::MemoryAccessError);
+    assert_eq!(
+        error,
+        RuntimeError::ScryptoError(InvokeError::MemoryAccessError.into())
+    );
 }
 
 #[test]
@@ -78,7 +82,10 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
-    assert_eq!(error, RuntimeError::MemoryAccessError);
+    assert_eq!(
+        error,
+        RuntimeError::ScryptoError(InvokeError::MemoryAccessError.into())
+    );
 }
 
 #[test]

@@ -189,8 +189,8 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
             EMIT_LOG => self
                 .handle_emit_log(decode::<EmitLogInput>(args))
                 .map(encode),
-            _ => Err(RuntimeError::UnknownSystemCall(name.to_string())),
+            _ => Err(RuntimeError::UnknownMethod(name.to_string())),
         }
-        .map_err(InvokeError::HostError)
+        .map_err(InvokeError::RuntimeError)
     }
 }
