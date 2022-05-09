@@ -1,4 +1,3 @@
-use crate::resource::schema_path::SchemaSubPath::{Field, Index};
 use sbor::describe::Fields;
 use sbor::path::SborPath;
 use sbor::rust::str::FromStr;
@@ -7,6 +6,8 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+
+use crate::resource::schema_path::SchemaSubPath::{Field, Index};
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 enum SchemaSubPath {

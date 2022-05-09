@@ -1,10 +1,11 @@
-use crate::resource::*;
 use sbor::rust::collections::hash_map::Iter;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::*;
+
+use crate::resource::*;
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Describe, TypeId, Encode, Decode)]

@@ -1,4 +1,3 @@
-use crate::ast;
 use radix_engine::engine::*;
 use radix_engine::model::*;
 use sbor::any::{encode_any, Value};
@@ -10,6 +9,8 @@ use scrypto::call_data_any_args;
 use scrypto::engine::types::*;
 use scrypto::types::*;
 use scrypto::values::*;
+
+use crate::ast;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {

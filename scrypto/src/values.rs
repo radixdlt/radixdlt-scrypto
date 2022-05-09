@@ -1,4 +1,12 @@
 use sbor::path::{MutableSborPath, SborPath};
+use sbor::rust::borrow::Borrow;
+use sbor::rust::collections::HashMap;
+use sbor::rust::collections::HashSet;
+use sbor::rust::fmt;
+use sbor::rust::format;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use sbor::type_id::*;
 use sbor::{any::*, *};
 
@@ -9,14 +17,6 @@ use crate::engine::types::*;
 use crate::math::*;
 use crate::resource::*;
 use crate::types::*;
-use sbor::rust::borrow::Borrow;
-use sbor::rust::collections::HashMap;
-use sbor::rust::collections::HashSet;
-use sbor::rust::fmt;
-use sbor::rust::format;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
 
 /// Represents an error when parsing a Scrypto value.
 #[derive(Debug, Clone, PartialEq, Eq)]

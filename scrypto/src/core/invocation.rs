@@ -1,8 +1,9 @@
+use sbor::rust::string::ToString;
+use sbor::*;
+
 use crate::core::ScryptoActor;
 use crate::engine::types::{BucketId, ProofId, VaultId};
 use crate::resource::ResourceAddress;
-use sbor::rust::string::ToString;
-use sbor::*;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum SNodeRef {

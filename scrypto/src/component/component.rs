@@ -1,3 +1,8 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::*;
@@ -7,11 +12,6 @@ use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
 use crate::types::*;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::fmt;
-use sbor::rust::str::FromStr;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 
 pub struct LocalComponent {
     blueprint_name: String,

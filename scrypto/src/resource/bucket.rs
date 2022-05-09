@@ -1,18 +1,18 @@
-use crate::core::SNodeRef;
+use sbor::rust::collections::BTreeSet;
+#[cfg(not(feature = "alloc"))]
+use sbor::rust::fmt;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::sfunctions;
 use crate::types::*;
-use sbor::rust::collections::BTreeSet;
-#[cfg(not(feature = "alloc"))]
-use sbor::rust::fmt;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ConsumingBucketMethod {

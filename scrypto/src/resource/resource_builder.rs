@@ -1,9 +1,10 @@
-use crate::math::*;
-use crate::resource::*;
-use crate::rule;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
+
+use crate::math::*;
+use crate::resource::*;
+use crate::rule;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;

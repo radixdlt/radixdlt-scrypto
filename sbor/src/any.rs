@@ -1,3 +1,5 @@
+use sbor::path::MutableSborPath;
+
 use crate::decode::*;
 use crate::encode::*;
 use crate::rust::borrow::Borrow;
@@ -5,7 +7,6 @@ use crate::rust::boxed::Box;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
-use sbor::path::MutableSborPath;
 
 /// Represents a SBOR value.
 #[cfg_attr(

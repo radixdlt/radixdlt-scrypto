@@ -1,7 +1,7 @@
+use sbor::rust::string::String;
 use sbor::*;
 
 use crate::component::*;
-use sbor::rust::string::String;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum ScryptoActor {

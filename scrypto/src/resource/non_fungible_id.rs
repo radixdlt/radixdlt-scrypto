@@ -1,12 +1,12 @@
-use sbor::*;
-
-use crate::types::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use sbor::*;
+
+use crate::types::*;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

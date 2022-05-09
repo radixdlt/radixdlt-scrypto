@@ -1,16 +1,16 @@
 use core::ops::*;
 use num_bigint::BigInt;
 use num_traits::Signed;
-use sbor::*;
-
-use crate::misc::*;
-use crate::types::*;
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use sbor::*;
+
+use crate::misc::*;
+use crate::types::*;
 
 /// `Decimal` represents a 128 bit representation of a fixed-scale decimal number.
 ///

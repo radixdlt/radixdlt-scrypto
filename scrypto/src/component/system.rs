@@ -1,11 +1,12 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::collections::*;
+use sbor::rust::vec::Vec;
+
 use crate::buffer::*;
 use crate::component::*;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::prelude::AccessRules;
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::*;
-use sbor::rust::vec::Vec;
 
 /// Represents the Radix Engine component subsystem.
 ///

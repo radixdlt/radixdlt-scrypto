@@ -1,7 +1,6 @@
 use crate::any::Value;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
-use sbor::*;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct MutableSborPath(Vec<usize>);

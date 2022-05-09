@@ -1,10 +1,10 @@
-use crate::core::SNodeRef;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::prelude::AccessRules;
 
+use crate::core::SNodeRef;
 use crate::engine::types::*;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 
 #[cfg(target_arch = "wasm32")]
 extern "C" {

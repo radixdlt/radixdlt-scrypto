@@ -1,10 +1,3 @@
-use sbor::*;
-
-use crate::buffer::*;
-use crate::crypto::*;
-use crate::engine::{api::*, call_engine, types::LazyMapId};
-use crate::misc::*;
-use crate::types::*;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::marker::PhantomData;
@@ -12,6 +5,13 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use sbor::*;
+
+use crate::buffer::*;
+use crate::crypto::*;
+use crate::engine::{api::*, call_engine, types::LazyMapId};
+use crate::misc::*;
+use crate::types::*;
 
 /// A scalable key-value map which loads entries on demand.
 #[derive(PartialEq, Eq, Hash)]

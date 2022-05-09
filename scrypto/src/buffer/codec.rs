@@ -1,6 +1,5 @@
-use sbor::{any::encode_any_with_buffer, *};
-
 use sbor::rust::vec::Vec;
+use sbor::{any::encode_any_with_buffer, *};
 
 /// Encodes a data structure into byte array.
 pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
