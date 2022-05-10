@@ -216,5 +216,5 @@ pub struct CheckAccessRuleInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct CheckAccessRuleOutput {
-    pub authorized: bool
+    pub is_authorized: bool
 }

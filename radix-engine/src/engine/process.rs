@@ -1254,11 +1254,14 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             .iter()
             .map(|proof_id| self.proofs.get(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone())).unwrap().clone())
             .collect::<Vec<Proof>>();
-        let simulated_auth_zone = AuthZone::new_with_proofs(proofs);
+        let mut simulated_auth_zone = AuthZone::new_with_proofs(proofs);
+
         let method_authorization = convert(&Type::Unit, &Value::Unit, &input.access_rule);
+        let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
+        simulated_auth_zone.main("clear", Vec::new(), self).map_err(RuntimeError::AuthZoneError)?;
 
         return Ok(CheckAccessRuleOutput{
-            authorized: method_authorization.check(&[&simulated_auth_zone]).is_ok()
+            is_authorized
         });
     }
 

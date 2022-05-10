@@ -361,7 +361,7 @@ impl AccessRule {
         };
         let output: CheckAccessRuleOutput = call_engine(CHECK_ACCESS_RULE, input);
 
-        output.authorized
+        output.is_authorized
     }
 }
 
