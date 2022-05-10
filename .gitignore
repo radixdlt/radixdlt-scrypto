@@ -3,6 +3,7 @@
 
 # Rust auto-generated
 target/
+Cargo.lock
 **/*.rs.bk
 
 # Flamegraph profiles
