@@ -82,7 +82,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
             // Dispatch the call
-            let method: #method_enum_ident = ::scrypto::buffer::scrypto_decode_from_buffer(input).unwrap();
+            let method = ::scrypto::buffer::scrypto_decode_from_buffer::<#method_enum_ident>(input).unwrap();
             let rtn;
             match method {
                 #( #arm_guards => #arm_bodies )*
@@ -149,13 +149,9 @@ fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEn
             let mut fields = Vec::new();
             for input in (&method.sig.inputs).into_iter() {
                 match input {
-                    FnArg::Receiver(_) => {
-                        fields.push(parse_quote! { ::scrypto::component::ComponentAddress })
-                    }
+                    FnArg::Receiver(_) => {}
                     FnArg::Typed(ref t) => {
-                        // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                        let ty = t.ty.as_ref();
-                        fields.push(ty.clone());
+                        fields.push(t.ty.as_ref());
                     }
                 }
             }
@@ -209,19 +205,18 @@ fn generate_dispatcher(
                             let mutability = r.mutability;
 
                             // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                            match_args.push(parse_quote! { this });
                             dispatch_args.push(parse_quote! { & #mutability state });
 
                             // Generate a `Stmt` for loading the component state
-                            assert!(get_state.is_none(), "Can have at most 1 self reference");
+                            assert!(get_state.is_none(), "Can't have more than 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = borrow_component!(this).get_state();
+                                let #mutability state: blueprint::#bp_ident = borrow_component!(component_address).get_state();
                             });
 
                             // Generate a `Stmt` for writing back component state
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
-                                    ::scrypto::borrow_component!(this).put_state(state);
+                                    ::scrypto::borrow_component!(component_address).put_state(state);
                                 });
                             }
                         }
@@ -240,8 +235,12 @@ fn generate_dispatcher(
                 // load state if needed
                 if let Some(stmt) = get_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
+                    stmts.push(parse_quote!{
+                        let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
+                    });
                     stmts.push(stmt);
                 }
+
                 // call the function
                 let stmt: Stmt = parse_quote! {
                     rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
@@ -250,6 +249,7 @@ fn generate_dispatcher(
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
                 stmts.push(stmt);
+
                 // update state
                 if let Some(stmt) = put_state {
                     trace!("Generated stmt: {}", quote! { #stmt });
@@ -541,8 +541,7 @@ mod tests {
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 enum TestMethod {
-                    // TODO: better representation of `&self` and `&mut self`
-                    x(::scrypto::component::ComponentAddress, u32),
+                    x(u32),
                 }
 
                 #[no_mangle]
@@ -551,15 +550,16 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let method: TestMethod = ::scrypto::buffer::scrypto_decode_from_buffer(input).unwrap();
+                    let method = ::scrypto::buffer::scrypto_decode_from_buffer::<TestMethod>(input).unwrap();
                     let rtn;
                     match method {
-                        TestMethod::x(this, arg0) => {
-                            let state: blueprint::Test = borrow_component!(this).get_state();
+                        TestMethod::x(arg0) => {
+                            let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
+                            let state: blueprint::Test = borrow_component!(component_address).get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, arg0));
                         }
                     }
-                    ::scrypto::buffer::scrypto_wrap(rtn)
+                    rtn
                 }
                 #[no_mangle]
                 pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
