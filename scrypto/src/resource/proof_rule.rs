@@ -354,7 +354,7 @@ pub enum AccessRule {
 }
 
 impl AccessRule {
-    pub fn check(&self, proofs: Vec<Proof>) -> bool {
+    pub fn check(&self, proofs: &[Proof]) -> bool {
         let input = CheckAccessRuleInput {
             access_rule: self.clone(),
             proof_ids: proofs.iter().map(|proof| proof.0).collect()
