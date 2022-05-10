@@ -332,7 +332,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 let mut runtime =
                     RadixEngineScryptoRuntime::new(actor, self, CALL_FUNCTION_TBD_LIMIT);
                 let module = engine.load(&code);
-                let instance = module.instantiate(&mut runtime);
+                let mut instance = module.instantiate(&mut runtime);
                 let result =
                     instance
                         .invoke_export(&export_name, &call_data)

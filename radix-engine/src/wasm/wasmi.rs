@@ -14,7 +14,7 @@ pub struct WasmiScryptoModule {
 }
 
 pub struct WasmiScryptoInstance<'a, R: ScryptoRuntime> {
-    module_ref: ModuleRef,
+    module_ref: ModuleRef, // Follows reference counting semantics
     memory_ref: MemoryRef,
     runtime: &'a mut R,
 }
@@ -86,7 +86,7 @@ impl<'a, R: ScryptoRuntime> ScryptoModule<'a, WasmiScryptoInstance<'a, R>, R>
 
 impl<'a, R: ScryptoRuntime> WasmiScryptoInstance<'a, R> {
     pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, InvokeError> {
-        let result = self.module_ref.invoke_export(
+        let result = self.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.raw.len()) as i32)],
             self,
@@ -157,7 +157,10 @@ impl<'a, R: ScryptoRuntime> ScryptoInstance<R> for WasmiScryptoInstance<'a, R> {
         input: &ScryptoValue,
     ) -> Result<ScryptoValue, InvokeError> {
         let pointer = self.send_value(input)?;
-        let result = self.module_ref.invoke_export(name, &[pointer], self);
+        let result = self
+            .module_ref
+            .clone()
+            .invoke_export(name, &[pointer], self);
 
         let rtn = result
             .map_err(|e| {
@@ -261,9 +264,7 @@ impl ScryptoWasmInstrumenter for WasmiEngine {
     }
 }
 
-impl<'a, R: ScryptoRuntime>
-    ScryptoWasmLoader<'a, WasmiScryptoModule, WasmiScryptoInstance<'a, R>, R> for WasmiEngine
-{
+impl ScryptoWasmLoader<WasmiScryptoModule> for WasmiEngine {
     fn load(&mut self, code: &[u8]) -> WasmiScryptoModule {
         let module = Module::from_buffer(code).expect("Failed to parse wasm module");
 

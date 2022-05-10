@@ -5,7 +5,7 @@ use scrypto::values::ScryptoValue;
 use crate::wasm::errors::*;
 use crate::wasm::WasmValidationError;
 
-/// Represents a parsed Scrypto module.
+/// Represents a parsed Scrypto module (may be shared).
 pub trait ScryptoModule<'a, I: ScryptoInstance<R>, R: ScryptoRuntime> {
     /// Instantiate this module with the given runtime
     fn instantiate(&self, runtime: &'a mut R) -> I;
@@ -48,13 +48,7 @@ pub trait ScryptoWasmInstrumenter {
 }
 
 /// Trait for loading scrypto modules.
-pub trait ScryptoWasmLoader<
-    'a,
-    M: ScryptoModule<'a, I, R>,
-    I: ScryptoInstance<R>,
-    R: ScryptoRuntime,
->
-{
+pub trait ScryptoWasmLoader<M> {
     fn load(&mut self, code: &[u8]) -> M;
 }
 

@@ -43,7 +43,7 @@ impl Package {
         // export blueprint ABI
         let mut blueprint_abis = HashMap::new();
         let module = wasm_engine.load(&code);
-        let instance = module.instantiate(&mut runtime);
+        let mut instance = module.instantiate(&mut runtime);
         let exports: Vec<String> = instance
             .function_exports()
             .into_iter()
