@@ -10,13 +10,13 @@ use wasm_instrument::{gas_metering, inject_stack_limiter, parity_wasm};
 use wasmi::*;
 
 pub struct WasmiScryptoModule {
-    module_ref: ModuleRef,
-    memory_ref: MemoryRef,
+    module: Module,
 }
 
-pub struct WasmiScryptoModuleExternals<'a, T: ScryptoRuntime> {
-    module: &'a WasmiScryptoModule,
-    runtime: &'a mut T,
+pub struct WasmiScryptoInstance<'a, R: ScryptoRuntime> {
+    module_ref: ModuleRef,
+    memory_ref: MemoryRef,
+    runtime: &'a mut R,
 }
 
 pub struct WasmiEnvModule {}
@@ -58,16 +58,38 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
-impl WasmiScryptoModule {
-    pub fn send_value<T: ScryptoRuntime>(
-        &self,
-        value: &ScryptoValue,
-        externals: &mut WasmiScryptoModuleExternals<T>,
-    ) -> Result<RuntimeValue, InvokeError> {
+impl<'a, R: ScryptoRuntime> ScryptoModule<'a, WasmiScryptoInstance<'a, R>, R>
+    for WasmiScryptoModule
+{
+    fn instantiate(&self, runtime: &'a mut R) -> WasmiScryptoInstance<'a, R> {
+        // link with env module
+        let module_ref = ModuleInstance::new(
+            &self.module,
+            &ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
+        )
+        .expect("Failed to instantiate wasm module")
+        .assert_no_start();
+
+        // find memory ref
+        let memory_ref = match module_ref.export_by_name(EXPORT_MEMORY) {
+            Some(ExternVal::Memory(memory)) => memory,
+            _ => panic!("Failed to find memory export"),
+        };
+
+        WasmiScryptoInstance {
+            module_ref,
+            memory_ref,
+            runtime,
+        }
+    }
+}
+
+impl<'a, R: ScryptoRuntime> WasmiScryptoInstance<'a, R> {
+    pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, InvokeError> {
         let result = self.module_ref.invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.raw.len()) as i32)],
-            externals,
+            self,
         );
 
         if let Ok(Some(RuntimeValue::I32(ptr))) = result {
@@ -100,7 +122,7 @@ impl WasmiScryptoModule {
     }
 }
 
-impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
+impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoInstance<'a, T> {
     fn invoke_index(
         &mut self,
         index: usize,
@@ -109,11 +131,10 @@ impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
         match index {
             RADIX_ENGINE_FUNCTION_INDEX => {
                 let input_ptr = args.nth_checked::<u32>(0)? as usize;
-                let input = self.module.read_value(input_ptr)?;
+                let input = self.read_value(input_ptr)?;
 
                 let output = self.runtime.main(input)?;
-                self.module
-                    .send_value(&output, self)
+                self.send_value(&output)
                     .map(Option::Some)
                     .map_err(|e| e.into())
             }
@@ -129,21 +150,14 @@ impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
     }
 }
 
-impl ScryptoModule for WasmiScryptoModule {
-    fn invoke_export<R: ScryptoRuntime>(
-        &self,
-        export_name: &str,
+impl<'a, R: ScryptoRuntime> ScryptoInstance<R> for WasmiScryptoInstance<'a, R> {
+    fn invoke_export(
+        &mut self,
+        name: &str,
         input: &ScryptoValue,
-        runtime: &mut R,
     ) -> Result<ScryptoValue, InvokeError> {
-        let mut externals = WasmiScryptoModuleExternals {
-            module: self,
-            runtime,
-        };
-        let pointer = self.send_value(input, &mut externals)?;
-        let result = self
-            .module_ref
-            .invoke_export(export_name, &[pointer], &mut externals);
+        let pointer = self.send_value(input)?;
+        let result = self.module_ref.invoke_export(name, &[pointer], self);
 
         let rtn = result
             .map_err(|e| {
@@ -247,28 +261,12 @@ impl ScryptoWasmInstrumenter for WasmiEngine {
     }
 }
 
-impl ScryptoWasmExecutor<WasmiScryptoModule> for WasmiEngine {
-    fn instantiate(&mut self, code: &[u8]) -> WasmiScryptoModule {
-        // parse wasm
+impl<'a, R: ScryptoRuntime>
+    ScryptoWasmLoader<'a, WasmiScryptoModule, WasmiScryptoInstance<'a, R>, R> for WasmiEngine
+{
+    fn load(&mut self, code: &[u8]) -> WasmiScryptoModule {
         let module = Module::from_buffer(code).expect("Failed to parse wasm module");
 
-        // link with env module
-        let module_ref = ModuleInstance::new(
-            &module,
-            &ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
-        )
-        .expect("Failed to instantiate wasm module")
-        .assert_no_start();
-
-        // find memory ref
-        let memory_ref = match module_ref.export_by_name(EXPORT_MEMORY) {
-            Some(ExternVal::Memory(memory)) => memory,
-            _ => panic!("Failed to find memory export"),
-        };
-
-        WasmiScryptoModule {
-            module_ref,
-            memory_ref,
-        }
+        WasmiScryptoModule { module }
     }
 }

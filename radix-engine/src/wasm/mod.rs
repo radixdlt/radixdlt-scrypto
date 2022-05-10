@@ -4,8 +4,8 @@ mod traits;
 mod wasmer;
 mod wasmi;
 
-pub use self::wasmer::{WasmerEngine, WasmerScryptoModule};
-pub use self::wasmi::{WasmiEngine, WasmiScryptoModule};
+pub use self::wasmer::*;
+pub use self::wasmi::*;
 pub use constants::*;
 pub use errors::*;
 pub use traits::*;

@@ -5,17 +5,22 @@ use scrypto::values::ScryptoValue;
 use crate::wasm::errors::*;
 use crate::wasm::WasmValidationError;
 
+/// Represents a parsed Scrypto module.
+pub trait ScryptoModule<'a, I: ScryptoInstance<R>, R: ScryptoRuntime> {
+    /// Instantiate this module with the given runtime
+    fn instantiate(&self, runtime: &'a mut R) -> I;
+}
+
 /// Represents an instantiated, invoke-able scrypto module.
-pub trait ScryptoModule {
+pub trait ScryptoInstance<R: ScryptoRuntime> {
     /// Invokes an export defined in this module.
     ///
     /// For simplicity, we require the export to have a signature of `f(u32) -> u32` where
     /// both argument and return are a pointer to a `ScryptoValue`.
-    fn invoke_export<R: ScryptoRuntime>(
-        &self,
+    fn invoke_export(
+        &mut self,
         name: &str,
         input: &ScryptoValue,
-        runtime: &mut R,
     ) -> Result<ScryptoValue, InvokeError>;
 
     /// Lists all functions exported by this module.
@@ -42,9 +47,15 @@ pub trait ScryptoWasmInstrumenter {
     fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError>;
 }
 
-/// Trait for instantiating scrypto modules.
-pub trait ScryptoWasmExecutor<T: ScryptoModule> {
-    fn instantiate(&mut self, code: &[u8]) -> T;
+/// Trait for loading scrypto modules.
+pub trait ScryptoWasmLoader<
+    'a,
+    M: ScryptoModule<'a, I, R>,
+    I: ScryptoInstance<R>,
+    R: ScryptoRuntime,
+>
+{
+    fn load(&mut self, code: &[u8]) -> M;
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
