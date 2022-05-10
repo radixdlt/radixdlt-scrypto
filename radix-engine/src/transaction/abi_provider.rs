@@ -31,14 +31,12 @@ pub trait AbiProvider {
 /// Provides ABIs for blueprints either installed during bootstrap or added manually.
 pub struct BasicAbiProvider {
     substate_store: InMemorySubstateStore,
-    trace: bool,
 }
 
 impl BasicAbiProvider {
-    pub fn new(trace: bool) -> Self {
+    pub fn new() -> Self {
         Self {
             substate_store: InMemorySubstateStore::with_bootstrap(),
-            trace,
         }
     }
 
@@ -71,13 +69,18 @@ impl AbiProvider for BasicAbiProvider {
         // Deterministic transaction context
         let mut ledger = self.substate_store.clone();
         let transaction_hash = hash([]);
-
-        // Start a process and run abi generator
         let mut track = Track::new(&mut ledger, transaction_hash, Vec::new());
-        let mut proc = track.start_process(self.trace);
-        let output: (Type, Vec<abi::Function>, Vec<abi::Method>) = proc
-            .call_abi(package_address, blueprint_name)
-            .and_then(|rtn| scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError))?;
+        let substate_value = track
+            .read_value(package_address.clone())
+            .ok_or(RuntimeError::PackageNotFound(package_address))?;
+        let output: (Type, Vec<abi::Function>, Vec<abi::Method>) =
+            if let SubstateValue::Package(package) = substate_value {
+                package.call_abi(blueprint_name).and_then(|rtn| {
+                    scrypto_decode(&rtn.raw).map_err(RuntimeError::AbiValidationError)
+                })?
+            } else {
+                panic!("Value is not a package");
+            };
 
         // Return ABI
         Ok(abi::Blueprint {

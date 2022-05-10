@@ -11,4 +11,6 @@ pub use id_allocator::*;
 pub use id_validator::*;
 pub use process::{Process, SNodeState, SystemApi};
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
-pub use track::{Address, BorrowedSNodes, SubstateParentId, SubstateUpdate, Track, TrackReceipt};
+pub use track::{
+    Address, BorrowedSNodes, SubstateParentId, SubstateUpdate, SubstateValue, Track, TrackReceipt,
+};
