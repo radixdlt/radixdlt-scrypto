@@ -331,14 +331,17 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 let mut engine = WasmiEngine::new();
                 let mut runtime =
                     RadixEngineScryptoRuntime::new(actor, self, CALL_FUNCTION_TBD_LIMIT);
-                let module = engine.instantiate(&code);
-                module
+                let result = engine
+                    .instantiate(&code)
                     .invoke_export(&export_name, &call_data, &mut runtime)
                     .map_err(|e| match e {
                         // Flatten error code for more readable transaction receipt
                         InvokeError::RuntimeError(e) => e,
                         e @ _ => RuntimeError::InvokeError(e.into()),
-                    })
+                    });
+                let tbd_used = runtime.tbd_used();
+                re_debug!(self, "TBD used: {}, result: {:?}", tbd_used, result);
+                result
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
                 .map_err(RuntimeError::ResourceManagerError),

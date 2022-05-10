@@ -30,6 +30,10 @@ impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
         }
     }
 
+    pub fn tbd_used(&self) -> u32 {
+        self.tbd_limit - self.tbd_balance
+    }
+
     // FIXME: limit access to the API
 
     fn handle_invoke_snode(
@@ -171,6 +175,7 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
             self.tbd_balance -= amount;
             Ok(())
         } else {
+            self.tbd_balance = 0;
             Err(InvokeError::OutOfTbd {
                 limit: self.tbd_limit,
                 balance: self.tbd_balance,

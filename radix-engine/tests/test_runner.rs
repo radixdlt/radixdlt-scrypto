@@ -271,3 +271,19 @@ macro_rules! assert_auth_error {
         }
     }};
 }
+
+#[macro_export]
+macro_rules! assert_invoke_error {
+    ($result:expr, $pattern:pat) => {{
+        let matches = match &$result {
+            Err(radix_engine::engine::RuntimeError::InvokeError(e)) => {
+                matches!(e.as_ref(), $pattern)
+            }
+            _ => false,
+        };
+
+        if !matches {
+            panic!("Expected invoke error but got: {:?}", $result);
+        }
+    }};
+}

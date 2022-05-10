@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
+use radix_engine::wasm::InvokeError;
 use scrypto::call_data;
 use scrypto::prelude::*;
 
@@ -15,7 +16,7 @@ fn test_loop() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "Metering", call_data!(loooop(100u32)))
+        .call_function(package, "Metering", call_data!(iterations(10_000u32)))
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -31,41 +32,9 @@ fn test_loop_out_of_tbd() {
         .unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "Metering", call_data!(loooop(100u32)))
+        .call_function(package, "Metering", call_data!(iterations(5_000_000u32)))
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert!(receipt.result.is_ok());
-}
-
-#[test]
-fn test_fib() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "metering")))
-        .unwrap();
-
-    let transaction = TransactionBuilder::new()
-        .call_function(package, "Metering", call_data!(loooop(100u32)))
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert!(receipt.result.is_ok());
-}
-
-#[test]
-fn test_fib_out_of_stack() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "metering")))
-        .unwrap();
-
-    let transaction = TransactionBuilder::new()
-        .call_function(package, "Metering", call_data!(loooop(100u32)))
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert!(receipt.result.is_ok());
+    assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. });
 }

@@ -50,7 +50,7 @@ impl ModuleImportResolver for WasmiEnvModule {
                 ))
             }
             _ => Err(Error::Instantiation(format!(
-                "Export {} not found",
+                "Function {} not found",
                 field_name
             ))),
         }
@@ -117,7 +117,13 @@ impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
                     .map(Option::Some)
                     .map_err(|e| e.into())
             }
-            TBD_FUNCTION_INDEX => Ok(None),
+            TBD_FUNCTION_INDEX => {
+                let amount: u32 = args.nth_checked(0)?;
+                self.runtime
+                    .use_tbd(amount)
+                    .map(|_| Option::None)
+                    .map_err(|e| e.into())
+            }
             _ => Err(InvokeError::FunctionNotFound.into()),
         }
     }

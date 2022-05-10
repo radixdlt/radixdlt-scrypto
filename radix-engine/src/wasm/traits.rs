@@ -72,6 +72,7 @@ impl ScryptoRuntime for NopScryptoRuntime {
             self.tbd_balance -= amount;
             Ok(())
         } else {
+            self.tbd_balance = 0;
             Err(InvokeError::OutOfTbd {
                 limit: self.tbd_limit,
                 balance: self.tbd_balance,
