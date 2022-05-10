@@ -70,7 +70,9 @@ impl Component {
 
     /// Returns the state of this component.
     pub fn get_state<T: ComponentState>(&self) -> T {
-        let input = GetComponentStateInput {};
+        let input = GetComponentStateInput {
+            component_address: self.0,
+        };
         let output: GetComponentStateOutput = call_engine(GET_COMPONENT_STATE, input);
 
         scrypto_decode(&output.state).unwrap()
@@ -79,6 +81,7 @@ impl Component {
     /// Updates the state of this component.
     pub fn put_state<T: ComponentState>(&self, state: T) {
         let input = PutComponentStateInput {
+            component_address: self.0,
             state: scrypto_encode(&state),
         };
         let _: PutComponentStateOutput = call_engine(PUT_COMPONENT_STATE, input);
