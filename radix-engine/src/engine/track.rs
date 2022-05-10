@@ -9,9 +9,9 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
+use scrypto::buffer::scrypto_encode;
 use scrypto::constants::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::scrypto_encode;
 
 use crate::ledger::*;
 use crate::model::*;

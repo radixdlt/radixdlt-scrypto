@@ -6,7 +6,7 @@ use crate::buffer::*;
 use crate::component::*;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
-use crate::prelude::AccessRules;
+use crate::resource::AccessRules;
 
 /// Represents the Radix Engine component subsystem.
 ///

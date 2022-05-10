@@ -22,6 +22,6 @@ pub fn call_engine<V: Decode>(input: RadixEngineInput) -> V {
 
 /// Utility function for making a radix engine call.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn call_engine<V: Decode>(_invocation: RadixEngineInput) -> V {
+pub fn call_engine<V: Decode>(_input: RadixEngineInput) -> V {
     todo!()
 }

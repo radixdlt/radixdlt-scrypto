@@ -1,8 +1,8 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::vec::Vec;
 use sbor::DecodeError;
+use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::scrypto_decode;
 use scrypto::resource::AuthZoneMethod;
 use scrypto::values::ScryptoValue;
 

@@ -1,7 +1,7 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::prelude::AccessRules;
+use scrypto::resource::AccessRules;
 
 use crate::core::SNodeRef;
 use crate::engine::types::*;
@@ -21,7 +21,7 @@ macro_rules! sfunctions {
                     $snode_ref,
                     scrypto::buffer::scrypto_encode(&$method_enum)
                 );
-                let output: Vec<u8> = call_engine(input);
+                let output: sbor::rust::vec::Vec<u8> = call_engine(input);
                 scrypto_decode(&output).unwrap()
             }
         )+

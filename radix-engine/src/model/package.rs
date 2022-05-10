@@ -4,7 +4,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
-use scrypto::prelude::PackageFunction;
+use scrypto::component::PackageFunction;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;

@@ -1,5 +1,6 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 
 use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;

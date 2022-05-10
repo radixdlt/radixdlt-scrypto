@@ -1,3 +1,4 @@
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::SNodeRef;
