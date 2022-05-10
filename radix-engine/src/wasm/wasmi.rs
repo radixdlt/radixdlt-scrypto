@@ -13,19 +13,20 @@ pub struct WasmiScryptoModule {
     module_ref: ModuleRef,
     memory_ref: MemoryRef,
 }
+
 pub struct WasmiScryptoModuleExternals<'a, T: ScryptoRuntime> {
     module: &'a WasmiScryptoModule,
     runtime: &'a mut T,
 }
 
-pub struct WasmiEngine {}
+pub struct WasmiEnvModule {}
 
-pub struct WasmiEnvModule;
+pub struct WasmiEngine {}
 
 impl ModuleImportResolver for WasmiEnvModule {
     fn resolve_func(&self, field_name: &str, signature: &Signature) -> Result<FuncRef, Error> {
         match field_name {
-            ENGINE_FUNCTION_NAME => {
+            RADIX_ENGINE_FUNCTION_NAME => {
                 if signature.params() != [ValueType::I32]
                     || signature.return_type() != Some(ValueType::I32)
                 {
@@ -35,10 +36,10 @@ impl ModuleImportResolver for WasmiEnvModule {
                 }
                 Ok(FuncInstance::alloc_host(
                     signature.clone(),
-                    ENGINE_FUNCTION_INDEX,
+                    RADIX_ENGINE_FUNCTION_INDEX,
                 ))
             }
-            TBD_FUNCTION_NAME => {
+            USE_TBD_FUNCTION_NAME => {
                 if signature.params() != [ValueType::I32] || signature.return_type() != None {
                     return Err(Error::Instantiation(
                         "Function signature does not match".into(),
@@ -46,7 +47,7 @@ impl ModuleImportResolver for WasmiEnvModule {
                 }
                 Ok(FuncInstance::alloc_host(
                     signature.clone(),
-                    TBD_FUNCTION_INDEX,
+                    USE_TBD_FUNCTION_INDEX,
                 ))
             }
             _ => Err(Error::Instantiation(format!(
@@ -78,25 +79,24 @@ impl WasmiScryptoModule {
         Err(InvokeError::MemoryAllocError)
     }
 
-    pub fn read_value(&self, ptr: u32) -> Result<ScryptoValue, InvokeError> {
-        let len: u32 = self
+    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, InvokeError> {
+        let len = self
             .memory_ref
-            .get_value(ptr)
-            .map_err(|_| InvokeError::MemoryAccessError)?;
+            .get_value::<u32>(ptr as u32)
+            .map_err(|_| InvokeError::MemoryAccessError)? as usize;
 
         let start = ptr.checked_add(4).ok_or(InvokeError::MemoryAccessError)?;
         let end = start
             .checked_add(len)
             .ok_or(InvokeError::MemoryAccessError)?;
-        let range = start as usize..end as usize;
+
         let direct = self.memory_ref.direct_access();
         let buffer = direct.as_ref();
-
         if end > buffer.len().try_into().unwrap() {
             return Err(InvokeError::MemoryAccessError);
         }
 
-        ScryptoValue::from_slice(&buffer[range]).map_err(InvokeError::InvalidScryptoValue)
+        ScryptoValue::from_slice(&buffer[start..end]).map_err(InvokeError::InvalidScryptoValue)
     }
 }
 
@@ -107,8 +107,8 @@ impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
         match index {
-            ENGINE_FUNCTION_INDEX => {
-                let input_ptr: u32 = args.nth_checked(0)?;
+            RADIX_ENGINE_FUNCTION_INDEX => {
+                let input_ptr = args.nth_checked::<u32>(0)? as usize;
                 let input = self.module.read_value(input_ptr)?;
 
                 let output = self.runtime.main(input)?;
@@ -117,7 +117,7 @@ impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
                     .map(Option::Some)
                     .map_err(|e| e.into())
             }
-            TBD_FUNCTION_INDEX => {
+            USE_TBD_FUNCTION_INDEX => {
                 let amount: u32 = args.nth_checked(0)?;
                 self.runtime
                     .use_tbd(amount)
@@ -155,7 +155,7 @@ impl ScryptoModule for WasmiScryptoModule {
             })?
             .ok_or(InvokeError::MissingReturnData)?;
         match rtn {
-            RuntimeValue::I32(ptr) => self.read_value(ptr as u32),
+            RuntimeValue::I32(ptr) => self.read_value(ptr as usize),
             _ => Err(InvokeError::InvalidReturnData),
         }
     }
@@ -189,7 +189,7 @@ impl ScryptoWasmValidator for WasmiEngine {
         // Instantiate
         let instance = ModuleInstance::new(
             &module,
-            &ImportsBuilder::new().with_resolver("env", &WasmiEnvModule),
+            &ImportsBuilder::new().with_resolver("env", &WasmiEnvModule {}),
         )
         .map_err(|e| WasmValidationError::FailedToInstantiate(e.to_string()))?;
 
@@ -255,7 +255,7 @@ impl ScryptoWasmExecutor<WasmiScryptoModule> for WasmiEngine {
         // link with env module
         let module_ref = ModuleInstance::new(
             &module,
-            &ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule),
+            &ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
         )
         .expect("Failed to instantiate wasm module")
         .assert_no_start();
