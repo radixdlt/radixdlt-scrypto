@@ -21,6 +21,8 @@ pub use core::hash;
 pub use core::mem;
 #[cfg(feature = "alloc")]
 pub use core::ptr;
+#[cfg(feature = "alloc")]
+pub use core::iter;
 
 #[cfg(not(feature = "alloc"))]
 pub use std::borrow;
@@ -42,6 +44,8 @@ pub use std::rc;
 pub use std::string;
 #[cfg(not(feature = "alloc"))]
 pub use std::vec;
+#[cfg(not(feature = "alloc"))]
+pub use std::iter;
 
 /// Rust's standard collection library.
 pub mod collections {
