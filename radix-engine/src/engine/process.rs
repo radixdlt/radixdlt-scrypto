@@ -1252,7 +1252,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn handle_check_access_rule(&mut self, input: CheckAccessRuleInput) -> Result<CheckAccessRuleOutput, RuntimeError> {
         let proofs = input.proof_ids
             .iter()
-            .map(|proof_id| self.proofs.remove(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone())).unwrap())
+            .map(|proof_id| self.proofs.get(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone())).unwrap().clone())
             .collect::<Vec<Proof>>();
         let simulated_auth_zone = AuthZone::new_with_proofs(proofs);
         let method_authorization = convert(&Type::Unit, &Value::Unit, &input.access_rule);
