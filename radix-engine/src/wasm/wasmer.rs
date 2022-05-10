@@ -127,19 +127,19 @@ impl WasmerEngine {
     }
 }
 
-impl ScryptoWasmValidator for WasmerEngine {
+impl ScryptoValidator for WasmerEngine {
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError> {
         Ok(())
     }
 }
 
-impl ScryptoWasmInstrumenter for WasmerEngine {
+impl ScryptoInstrumenter for WasmerEngine {
     fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError> {
         Ok(code.to_vec())
     }
 }
 
-impl ScryptoWasmLoader<WasmerScryptoModule> for WasmerEngine {
+impl ScryptoLoader<WasmerScryptoModule> for WasmerEngine {
     fn load(&mut self, code: &[u8]) -> WasmerScryptoModule {
         let module = Module::new(&self.store, code).expect("Failed to parse wasm module");
 

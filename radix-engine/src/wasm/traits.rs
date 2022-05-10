@@ -38,17 +38,17 @@ pub trait ScryptoRuntime {
 }
 
 /// Trait for validating scrypto modules.
-pub trait ScryptoWasmValidator {
+pub trait ScryptoValidator {
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
 }
 
 /// Trait for instrumenting, a.k.a. metering, scrypto modules.
-pub trait ScryptoWasmInstrumenter {
+pub trait ScryptoInstrumenter {
     fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError>;
 }
 
 /// Trait for loading scrypto modules.
-pub trait ScryptoWasmLoader<M> {
+pub trait ScryptoLoader<M> {
     fn load(&mut self, code: &[u8]) -> M;
 }
 

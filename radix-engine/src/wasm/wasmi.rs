@@ -193,7 +193,7 @@ impl WasmiEngine {
     }
 }
 
-impl ScryptoWasmValidator for WasmiEngine {
+impl ScryptoValidator for WasmiEngine {
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError> {
         // parse wasm module
         let module = Module::from_buffer(code).map_err(|_| WasmValidationError::FailedToParse)?;
@@ -243,7 +243,7 @@ impl ScryptoWasmValidator for WasmiEngine {
     }
 }
 
-impl ScryptoWasmInstrumenter for WasmiEngine {
+impl ScryptoInstrumenter for WasmiEngine {
     fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError> {
         let mut module =
             parity_wasm::deserialize_buffer(code).expect("Unable to parse wasm module");
@@ -264,7 +264,7 @@ impl ScryptoWasmInstrumenter for WasmiEngine {
     }
 }
 
-impl ScryptoWasmLoader<WasmiScryptoModule> for WasmiEngine {
+impl ScryptoLoader<WasmiScryptoModule> for WasmiEngine {
     fn load(&mut self, code: &[u8]) -> WasmiScryptoModule {
         let module = Module::from_buffer(code).expect("Failed to parse wasm module");
 
