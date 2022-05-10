@@ -328,8 +328,9 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 };
                 self.component = component_state;
 
-                let mut runtime = RadixEngineScryptoRuntime::new(actor, self);
                 let mut engine = WasmiEngine::new();
+                let mut runtime =
+                    RadixEngineScryptoRuntime::new(actor, self, CALL_FUNCTION_TBD_LIMIT);
                 let module = engine.instantiate(&code);
                 module
                     .invoke_export(&export_name, &call_data, &mut runtime)
@@ -451,7 +452,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                                     package_address.clone(),
                                     blueprint_name.clone(),
                                 ),
-                                package.code().to_vec(),
+                                package.instrumented_code().to_vec(),
                                 export_name.clone(),
                                 None,
                             )),
@@ -498,7 +499,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                                     blueprint_name,
                                     component_address.clone(),
                                 ),
-                                package.code().to_vec(),
+                                package.instrumented_code().to_vec(),
                                 export_name,
                                 Some(component),
                             )),

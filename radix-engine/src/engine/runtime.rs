@@ -16,11 +16,18 @@ use crate::wasm::{InvokeError, ScryptoRuntime};
 pub struct RadixEngineScryptoRuntime<'a, S: SystemApi> {
     this: ScryptoActorInfo,
     system_api: &'a mut S,
+    tbd_limit: u32,
+    tbd_balance: u32,
 }
 
 impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
-    pub fn new(this: ScryptoActorInfo, system_api: &'a mut S) -> Self {
-        RadixEngineScryptoRuntime { this, system_api }
+    pub fn new(this: ScryptoActorInfo, system_api: &'a mut S, tbd_limit: u32) -> Self {
+        RadixEngineScryptoRuntime {
+            this,
+            system_api,
+            tbd_limit,
+            tbd_balance: tbd_limit,
+        }
     }
 
     // FIXME: limit access to the API
@@ -157,5 +164,18 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
             }
         }
         .map_err(InvokeError::RuntimeError)
+    }
+
+    fn use_tbd(&mut self, amount: u32) -> Result<(), InvokeError> {
+        if self.tbd_balance >= amount {
+            self.tbd_balance -= amount;
+            Ok(())
+        } else {
+            Err(InvokeError::OutOfTbd {
+                limit: self.tbd_limit,
+                balance: self.tbd_balance,
+                required: amount,
+            })
+        }
     }
 }

@@ -28,6 +28,8 @@ pub trait ScryptoModule {
 /// Represents the runtime object that can be invoked by scrypto modules.
 pub trait ScryptoRuntime {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError>;
+
+    fn use_tbd(&mut self, amount: u32) -> Result<(), InvokeError>;
 }
 
 /// Trait for validating scrypto modules.
@@ -37,7 +39,7 @@ pub trait ScryptoWasmValidator {
 
 /// Trait for instrumenting, a.k.a. metering, scrypto modules.
 pub trait ScryptoWasmInstrumenter {
-    fn instrument(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
+    fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError>;
 }
 
 /// Trait for instantiating scrypto modules.
@@ -46,10 +48,35 @@ pub trait ScryptoWasmExecutor<T: ScryptoModule> {
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
-pub struct NopScryptoRuntime;
+pub struct NopScryptoRuntime {
+    tbd_limit: u32,
+    tbd_balance: u32,
+}
+
+impl NopScryptoRuntime {
+    pub fn new(tbd_limit: u32) -> Self {
+        Self {
+            tbd_limit,
+            tbd_balance: tbd_limit,
+        }
+    }
+}
 
 impl ScryptoRuntime for NopScryptoRuntime {
     fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         Ok(ScryptoValue::unit())
+    }
+
+    fn use_tbd(&mut self, amount: u32) -> Result<(), InvokeError> {
+        if self.tbd_balance >= amount {
+            self.tbd_balance -= amount;
+            Ok(())
+        } else {
+            Err(InvokeError::OutOfTbd {
+                limit: self.tbd_limit,
+                balance: self.tbd_balance,
+                required: amount,
+            })
+        }
     }
 }

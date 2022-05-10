@@ -14,7 +14,8 @@ use crate::wasm::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Package {
     code: Vec<u8>,
-    blueprints: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
+    instrumented_code: Vec<u8>,
+    blueprint_abis: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -28,52 +29,67 @@ pub enum PackageError {
 impl Package {
     /// Validates and creates a package
     pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
-        let mut wasm_engine = WasmiEngine::new();
+        let mut wasm_engine = WasmiEngine::new(); // stateless
+
+        // validate wasm
         wasm_engine.validate(&code)?;
 
+        // instrument wasm
+        let instrumented_code = wasm_engine
+            .instrument(&code)
+            .map_err(|_| WasmValidationError::FailedToInstrumentCode)?;
+
+        // export blueprint ABI
+        let mut blueprint_abis = HashMap::new();
         let module = wasm_engine.instantiate(&code);
         let exports: Vec<String> = module
             .function_exports()
             .into_iter()
             .filter(|e| e.ends_with("_abi") && e.len() > 4)
             .collect();
-
-        let mut blueprints = HashMap::new();
         for method_name in exports {
             let rtn = module
                 .invoke_export(
                     &method_name,
                     &ScryptoValue::unit(),
-                    &mut NopScryptoRuntime {},
+                    &mut NopScryptoRuntime::new(EXPORT_BLUEPRINT_ABI_TBD_LIMIT),
                 )
-                .map_err(|_| WasmValidationError::UnableToExportBlueprintAbi)?;
+                .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
 
             let abi: (Type, Vec<Function>, Vec<Method>) =
                 scrypto_decode(&rtn.raw).map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
 
             if let Type::Struct { name, fields: _ } = &abi.0 {
-                blueprints.insert(name.clone(), abi);
+                blueprint_abis.insert(name.clone(), abi);
             } else {
                 return Err(WasmValidationError::InvalidBlueprintAbi);
             }
         }
 
-        Ok(Self { blueprints, code })
+        Ok(Self {
+            code,
+            instrumented_code,
+            blueprint_abis,
+        })
     }
 
     pub fn code(&self) -> &[u8] {
         &self.code
     }
 
+    pub fn instrumented_code(&self) -> &[u8] {
+        &self.instrumented_code
+    }
+
     pub fn blueprint_abi(
         &self,
         blueprint_name: &str,
     ) -> Option<&(Type, Vec<Function>, Vec<Method>)> {
-        self.blueprints.get(blueprint_name)
+        self.blueprint_abis.get(blueprint_name)
     }
 
     pub fn contains_blueprint(&self, blueprint_name: &str) -> bool {
-        self.blueprints.contains_key(blueprint_name)
+        self.blueprint_abis.contains_key(blueprint_name)
     }
 
     pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
