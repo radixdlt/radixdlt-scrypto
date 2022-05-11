@@ -1,4 +1,3 @@
-use crate::engine::SystemApi;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
@@ -10,6 +9,7 @@ use scrypto::rust::string::String;
 use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
+use crate::engine::SystemApi;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError, ResourceManager};
 
 #[derive(Debug, TypeId, Encode, Decode)]

@@ -1,4 +1,4 @@
-use sbor::*;
+use sbor::rust::boxed::Box;
 use scrypto::engine::types::*;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
@@ -6,6 +6,7 @@ use scrypto::values::*;
 
 use crate::engine::*;
 use crate::model::*;
+use crate::wasm::InvokeError;
 
 /// Represents an error when validating a transaction.
 #[derive(Debug, PartialEq, Eq)]
@@ -20,82 +21,45 @@ pub enum TransactionValidationError {
 /// Represents an error when executing a transaction.
 #[derive(Debug, PartialEq, Clone)]
 pub enum RuntimeError {
-    /// Assertion check failed.
-    AssertionFailed,
+    /// Error when invoking a blueprint or component (recursive).
+    InvokeError(Box<InvokeError>),
 
     /// The data is not a valid SBOR value.
     ParseScryptoValueError(ParseScryptoValueError),
 
-    /// Not a valid ABI.
-    AbiValidationError(DecodeError),
-
     AuthZoneDoesNotExist,
+
     WorktopDoesNotExist,
 
     /// Failed to allocate an ID.
     IdAllocatorError(IdAllocatorError),
 
-    /// Error when invoking an export.
-    InvokeError,
-
-    /// Error when accessing the program memory.
-    MemoryAccessError,
-
-    /// Error when allocating memory in program.
-    MemoryAllocError,
-
-    /// No return data.
-    NoReturnData,
-
-    /// The return value type is invalid.
-    InvalidReturnType,
-
     /// Invalid request code.
-    InvalidRequestCode(u32),
-
-    /// Invalid request data.
-    InvalidRequestData(DecodeError),
-
-    /// The requested host function does not exist.
-    HostFunctionNotFound(usize),
+    UnknownMethod(String),
 
     /// Package does not exist.
     PackageNotFound(PackageAddress),
 
     PackageError(PackageError),
+
     SystemError(SystemError),
 
     /// Blueprint does not exist.
     BlueprintNotFound(PackageAddress, String),
-
-    /// System call not allowed in given context.
-    IllegalSystemCall,
 
     ComponentReentrancy(ComponentAddress),
 
     /// Component does not exist.
     ComponentNotFound(ComponentAddress),
 
-    /// Component is already loaded
-    ComponentAlreadyLoaded(ComponentAddress),
-
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
-
-    /// Non-fungible does not exist.
-    NonFungibleNotFound(NonFungibleAddress),
-
-    /// Non-fungible already exists.
-    NonFungibleAlreadyExists(NonFungibleAddress),
 
     /// Lazy map does not exist.
     LazyMapNotFound(LazyMapId),
 
     /// Lazy map removed.
     LazyMapRemoved(LazyMapId),
-
-    /// Duplicate LazyMap added
-    DuplicateLazyMap(LazyMapId),
 
     /// Cyclic LazyMap added
     CyclicLazyMap(LazyMapId),
@@ -106,17 +70,11 @@ pub enum RuntimeError {
     /// Vault removed.
     VaultRemoved(VaultId),
 
-    /// Duplicate Vault added
-    DuplicateVault(VaultId),
-
     /// Bucket does not exist.
     BucketNotFound(BucketId),
 
     /// Proof does not exist.
     ProofNotFound(ProofId),
-
-    /// The bucket contains no resource.
-    EmptyProof,
 
     /// Resource manager access error.
     ResourceManagerError(ResourceManagerError),
@@ -145,12 +103,6 @@ pub enum RuntimeError {
     /// Lazy Map is not allowed
     LazyMapNotAllowed,
 
-    /// Interpreter is not started.
-    InterpreterNotStarted,
-
-    /// Invalid log level.
-    InvalidLevel,
-
     /// Resource check failure.
     ResourceCheckFailure,
 
@@ -162,12 +114,6 @@ pub enum RuntimeError {
         function: String,
         authorization: MethodAuthorization,
         error: MethodAuthorizationError,
-    },
-
-    /// Index out of bounds.
-    IndexOutOfBounds {
-        index: usize,
-        max: usize,
     },
 
     /// Can't move a locked bucket.
@@ -184,6 +130,3 @@ impl fmt::Display for RuntimeError {
         write!(f, "{:?}", self)
     }
 }
-
-// TODO: remove dependency on wasmi
-impl wasmi::HostError for RuntimeError {}

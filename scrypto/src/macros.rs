@@ -27,7 +27,7 @@ macro_rules! call_data_any_args {
             name: $name,
             fields: $args,
         };
-        ::sbor::encode_any_with_type!(&variant)
+        ::sbor::encode_any(&variant)
     }};
 }
 

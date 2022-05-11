@@ -1,4 +1,3 @@
-use crate::ledger::{ReadableSubstateStore, SubstateIdGenerator, WriteableSubstateStore};
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::constants::*;
@@ -10,6 +9,8 @@ use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::rust::borrow::ToOwned;
 use scrypto::rust::collections::*;
 use scrypto::rust::vec;
+
+use crate::ledger::{ReadableSubstateStore, SubstateIdGenerator, WriteableSubstateStore};
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {

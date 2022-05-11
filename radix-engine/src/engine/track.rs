@@ -1,5 +1,5 @@
 use crate::engine::{
-    IdAllocator, IdSpace, Process, SubstateOperation, SubstateOperationsReceipt,
+    CallFrame, IdAllocator, IdSpace, SubstateOperation, SubstateOperationsReceipt,
     ECDSA_TOKEN_BUCKET_ID,
 };
 use indexmap::{IndexMap, IndexSet};
@@ -263,8 +263,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    /// Start a process.
-    pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 's, S> {
+    /// Start a call frame.
+    pub fn start_call_frame<'r>(&'r mut self, verbose: bool) -> CallFrame<'r, 's, S> {
         let signers: BTreeSet<NonFungibleId> = self
             .transaction_signers
             .clone()
@@ -288,7 +288,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             initial_auth_zone_proofs.push(ecdsa_proof);
         }
 
-        Process::new(
+        CallFrame::new(
             0,
             verbose,
             self,

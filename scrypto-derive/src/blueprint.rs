@@ -73,7 +73,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         #method_enum
 
         #[no_mangle]
-        pub extern "C" fn #dispatcher_ident() -> *mut u8 {
+        pub extern "C" fn #dispatcher_ident(input: *const u8) -> *mut u8 {
             // Set up panic hook
             ::scrypto::misc::set_up_panic_hook();
 
@@ -105,7 +105,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let (abi_functions, abi_methods) = generate_abi(bp_ident, bp_items)?;
     let output_abi = quote! {
         #[no_mangle]
-        pub extern "C" fn #abi_ident() -> *mut u8 {
+        pub extern "C" fn #abi_ident(input: *const u8) -> *mut u8 {
             use ::sbor::{Describe, Type};
             use ::scrypto::abi::{Function, Method};
             use ::scrypto::rust::borrow::ToOwned;
@@ -118,7 +118,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             let output = (schema, functions, methods);
 
             // serialize the output
-            let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
+            let output_bytes = ::scrypto::buffer::scrypto_encode_with_size_prefix(&output);
 
             // return the output wrapped in a radix-style buffer
             ::scrypto::buffer::scrypto_wrap(output_bytes)
@@ -257,7 +257,7 @@ fn generate_dispatcher(
                 }
                 // call the function
                 let stmt: Stmt = parse_quote! {
-                    rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(
+                    rtn = ::scrypto::buffer::scrypto_encode_with_size_prefix(
                         &blueprint::#bp_ident::#fn_ident(#(#args),*)
                     );
                 };
@@ -559,7 +559,7 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_main() -> *mut u8 {
+                pub extern "C" fn Test_main(input: *const u8) -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
@@ -575,13 +575,13 @@ mod tests {
                         TestMethod::x(arg0) => {
                             let component_address = output.component.unwrap();
                             let state: blueprint::Test = borrow_component!(component_address).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state, arg0));
+                            rtn = ::scrypto::buffer::scrypto_encode_with_size_prefix(&blueprint::Test::x(&state, arg0));
                         }
                     }
                     ::scrypto::buffer::scrypto_wrap(rtn)
                 }
                 #[no_mangle]
-                pub extern "C" fn Test_abi() -> *mut u8 {
+                pub extern "C" fn Test_abi(input: *const u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{Function, Method};
                     use ::scrypto::rust::borrow::ToOwned;
@@ -596,7 +596,7 @@ mod tests {
                     }];
                     let schema: Type = blueprint::Test::describe();
                     let output = (schema, functions, methods);
-                    let output_bytes = ::scrypto::buffer::scrypto_encode_for_radix_engine(&output);
+                    let output_bytes = ::scrypto::buffer::scrypto_encode_with_size_prefix(&output);
                     ::scrypto::buffer::scrypto_wrap(output_bytes)
                 }
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]

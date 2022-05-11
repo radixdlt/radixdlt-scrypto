@@ -333,9 +333,7 @@ impl TransactionBuilder {
             name: function.to_owned(),
             fields,
         };
-        let mut bytes = Vec::new();
-        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-        ::sbor::encode_any(None, &variant, &mut enc);
+        let bytes = ::sbor::encode_any(&variant);
 
         Ok(self
             .add_instruction(Instruction::CallFunction {
