@@ -9,7 +9,6 @@ use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
 use crate::engine::*;
-use crate::errors::*;
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
 
 /// Represents an unsigned transaction

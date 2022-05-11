@@ -1,4 +1,4 @@
-use sbor::*;
+use sbor::{any::encode_any_with_buffer, *};
 
 use crate::rust::vec::Vec;
 
@@ -7,8 +7,8 @@ pub fn scrypto_encode<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     encode_with_type(v)
 }
 
-/// Encodes a data structure into byte array for radix engine.
-pub fn scrypto_encode_for_radix_engine<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
+/// Encodes a data structure into byte array and stores the size at the front.
+pub fn scrypto_encode_with_size_prefix<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     // create a buffer and pre-append with length (0).
     let mut buf = Vec::with_capacity(512);
     buf.extend(&[0u8; 4]);
@@ -16,6 +16,22 @@ pub fn scrypto_encode_for_radix_engine<T: Encode + ?Sized>(v: &T) -> Vec<u8> {
     // encode the data structure
     let mut enc = Encoder::with_type(&mut buf);
     enc.encode(v);
+
+    // update the length field
+    let len = (buf.len() - 4) as u32;
+    (&mut buf[0..4]).copy_from_slice(&len.to_le_bytes());
+
+    buf
+}
+
+/// Encodes any value into byte array and stores the size at the front.
+pub fn scrypto_encode_any_with_size_prefix(v: &Value) -> Vec<u8> {
+    // create a buffer and pre-append with length (0).
+    let mut buf = Vec::with_capacity(512);
+    buf.extend(&[0u8; 4]);
+
+    // encode the data structure
+    encode_any_with_buffer(v, &mut buf);
 
     // update the length field
     let len = (buf.len() - 4) as u32;
@@ -45,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_encode_for_radix_engine() {
-        let encoded = scrypto_encode_for_radix_engine("abc");
+        let encoded = scrypto_encode_with_size_prefix("abc");
         assert_eq!(vec![8, 0, 0, 0, 12, 3, 0, 0, 0, 97, 98, 99], encoded);
     }
 }

@@ -9,7 +9,7 @@ use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
 use crate::engine::CommitReceipt;
-use crate::errors::*;
+use crate::engine::RuntimeError;
 use crate::model::*;
 
 /// Represents a transaction receipt.

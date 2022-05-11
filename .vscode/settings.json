@@ -10,5 +10,9 @@
         "scrypto-tests/Cargo.toml",
         "simulator/Cargo.toml",
         "transaction-manifest/Cargo.toml",
+    ],
+    "cSpell.words": [
+        "Substate",
+        "Wasmi"
     ]
 }

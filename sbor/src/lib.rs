@@ -22,7 +22,7 @@ pub mod type_id;
 
 pub use crate::rust::string::String;
 pub use crate::rust::string::ToString;
-pub use any::{decode_any, encode_any, Value};
+pub use any::{decode_any, encode_any, encode_any_with_buffer, Value};
 pub use decode::{Decode, DecodeError, Decoder};
 pub use describe::{Describe, Type};
 pub use encode::{Encode, Encoder};

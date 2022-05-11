@@ -1,5 +1,3 @@
-use crate::engine::SystemApi;
-use crate::model::NonFungible;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
@@ -15,7 +13,9 @@ use scrypto::rust::string::ToString;
 use scrypto::rust::vec::*;
 use scrypto::values::ScryptoValue;
 
+use crate::engine::SystemApi;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
+use crate::model::NonFungible;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
 
 /// Converts soft authorization rule to a hard authorization rule.

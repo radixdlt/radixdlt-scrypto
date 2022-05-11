@@ -1,4 +1,4 @@
-use radix_engine::errors::RuntimeError;
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::call_data;
