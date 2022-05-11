@@ -10,6 +10,11 @@ use scrypto::prelude::*;
 use scrypto::values::ScryptoValue;
 
 #[test]
+fn test_bootstrap() {
+    InMemorySubstateStore::with_bootstrap();
+}
+
+#[test]
 fn can_withdraw_from_my_account() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();

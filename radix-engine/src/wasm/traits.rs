@@ -8,7 +8,7 @@ use crate::wasm::WasmValidationError;
 /// Represents a parsed Scrypto module (may be shared).
 pub trait ScryptoModule<'r, I, R>
 where
-    I: ScryptoInstance<'r, R>,
+    I: ScryptoInstance,
     R: ScryptoRuntime,
 {
     /// Instantiate this module with the given runtime
@@ -16,10 +16,7 @@ where
 }
 
 /// Represents an instantiated, invoke-able scrypto module.
-pub trait ScryptoInstance<'r, R>
-where
-    R: ScryptoRuntime,
-{
+pub trait ScryptoInstance {
     /// Invokes an export defined in this module.
     ///
     /// For simplicity, we require the export to have a signature of `f(u32) -> u32` where
@@ -41,7 +38,7 @@ where
 pub trait ScryptoRuntime {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError>;
 
-    fn use_tbd(&mut self, amount: u32) -> Result<(), InvokeError>;
+    fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError>;
 }
 
 /// Trait for validating scrypto modules.
@@ -55,13 +52,18 @@ pub trait ScryptoInstrumenter {
 }
 
 /// Trait for loading scrypto modules.
-pub trait ScryptoLoader<'r, M, I, R>
-where
+pub trait ScryptoLoader<
+    'l, /* Loader lifetime */
+    'r, /* Runtime  lifetime */
+    M,  /* Module generic type */
+    I,  /* Instance generic type */
+    R,  /* Runtime generic type */
+> where
     M: ScryptoModule<'r, I, R>,
-    I: ScryptoInstance<'r, R>,
+    I: ScryptoInstance,
     R: ScryptoRuntime,
 {
-    fn load(&mut self, code: &[u8]) -> M;
+    fn load(&'l mut self, code: &[u8]) -> M;
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -84,16 +86,16 @@ impl ScryptoRuntime for NopScryptoRuntime {
         Ok(ScryptoValue::unit())
     }
 
-    fn use_tbd(&mut self, amount: u32) -> Result<(), InvokeError> {
-        if self.tbd_balance >= amount {
-            self.tbd_balance -= amount;
+    fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError> {
+        if self.tbd_balance >= tbd {
+            self.tbd_balance -= tbd;
             Ok(())
         } else {
             self.tbd_balance = 0;
             Err(InvokeError::OutOfTbd {
                 limit: self.tbd_limit,
                 balance: self.tbd_balance,
-                required: amount,
+                required: tbd,
             })
         }
     }

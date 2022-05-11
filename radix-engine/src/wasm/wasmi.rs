@@ -58,9 +58,8 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
-impl<'r, R> ScryptoModule<'r, WasmiScryptoInstance<'r, R>, R> for WasmiScryptoModule
-where
-    R: ScryptoRuntime,
+impl<'r, R: ScryptoRuntime> ScryptoModule<'r, WasmiScryptoInstance<'r, R>, R>
+    for WasmiScryptoModule
 {
     fn instantiate(&self, runtime: &'r mut R) -> WasmiScryptoInstance<'r, R> {
         // link with env module
@@ -151,10 +150,7 @@ impl<'r, R: ScryptoRuntime> Externals for WasmiScryptoInstance<'r, R> {
     }
 }
 
-impl<'r, R> ScryptoInstance<'r, R> for WasmiScryptoInstance<'r, R>
-where
-    R: ScryptoRuntime,
-{
+impl<'r, R: ScryptoRuntime> ScryptoInstance for WasmiScryptoInstance<'r, R> {
     fn invoke_export(
         &mut self,
         name: &str,
@@ -268,11 +264,10 @@ impl ScryptoInstrumenter for WasmiEngine {
     }
 }
 
-impl<'r, R> ScryptoLoader<'r, WasmiScryptoModule, WasmiScryptoInstance<'r, R>, R> for WasmiEngine
-where
-    R: ScryptoRuntime,
+impl<'l, 'r, R: ScryptoRuntime>
+    ScryptoLoader<'l, 'r, WasmiScryptoModule, WasmiScryptoInstance<'r, R>, R> for WasmiEngine
 {
-    fn load(&mut self, code: &[u8]) -> WasmiScryptoModule {
+    fn load(&'l mut self, code: &[u8]) -> WasmiScryptoModule {
         let module = Module::from_buffer(code).expect("Failed to parse wasm module");
 
         WasmiScryptoModule { module }

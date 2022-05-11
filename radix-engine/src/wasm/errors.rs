@@ -75,3 +75,5 @@ impl fmt::Display for InvokeError {
 }
 
 impl HostError for InvokeError {}
+
+impl std::error::Error for InvokeError {}

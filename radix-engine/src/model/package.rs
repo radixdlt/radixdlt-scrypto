@@ -43,8 +43,7 @@ impl Package {
         // TODO replace this with static ABIs
         // export blueprint ABI
         let mut blueprint_abis = HashMap::new();
-        let module: WasmiScryptoModule =
-            ScryptoLoader::<'_, _, _, NopScryptoRuntime>::load(&mut engine, &code);
+        let module = ScryptoLoader::<'_, '_, _, _, NopScryptoRuntime>::load(&mut engine, &code);
         let mut instance = module.instantiate(&mut runtime);
         let exports: Vec<String> = instance
             .function_exports()
