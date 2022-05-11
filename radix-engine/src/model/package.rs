@@ -29,20 +29,22 @@ pub enum PackageError {
 impl Package {
     /// Validates and creates a package
     pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
-        let mut wasm_engine = WasmiEngine::new();
+        let mut engine = WasmiEngine::new();
         let mut runtime = NopScryptoRuntime::new(EXPORT_BLUEPRINT_ABI_TBD_LIMIT); // stateless
 
         // validate wasm
-        wasm_engine.validate(&code)?;
+        engine.validate(&code)?;
 
         // instrument wasm
-        let instrumented_code = wasm_engine
+        let instrumented_code = engine
             .instrument(&code)
             .map_err(|_| WasmValidationError::FailedToInstrumentCode)?;
 
+        // TODO replace this with static ABIs
         // export blueprint ABI
         let mut blueprint_abis = HashMap::new();
-        let module = wasm_engine.load(&code);
+        let module: WasmiScryptoModule =
+            ScryptoLoader::<'_, _, _, NopScryptoRuntime>::load(&mut engine, &code);
         let mut instance = module.instantiate(&mut runtime);
         let exports: Vec<String> = instance
             .function_exports()
@@ -50,12 +52,12 @@ impl Package {
             .filter(|e| e.ends_with("_abi") && e.len() > 4)
             .collect();
         for method_name in exports {
-            let rtn = instance
+            let return_data = instance
                 .invoke_export(&method_name, &ScryptoValue::unit())
                 .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
 
-            let abi: (Type, Vec<Function>, Vec<Method>) =
-                scrypto_decode(&rtn.raw).map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
+            let abi: (Type, Vec<Function>, Vec<Method>) = scrypto_decode(&return_data.raw)
+                .map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
 
             if let Type::Struct { name, fields: _ } = &abi.0 {
                 blueprint_abis.insert(name.clone(), abi);

@@ -331,7 +331,10 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 let mut engine = WasmiEngine::new();
                 let mut runtime =
                     RadixEngineScryptoRuntime::new(actor, self, CALL_FUNCTION_TBD_LIMIT);
-                let module = engine.load(&code);
+                let module = ScryptoLoader::<'_, _, _, RadixEngineScryptoRuntime<Self>>::load(
+                    &mut engine,
+                    &code,
+                );
                 let mut instance = module.instantiate(&mut runtime);
                 let result =
                     instance
