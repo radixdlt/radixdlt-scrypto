@@ -17,16 +17,6 @@ pub trait Encode: TypeId {
     fn encode_value(&self, encoder: &mut Encoder);
 }
 
-#[macro_export]
-macro_rules! encode_any_with_type {
-    ($value:expr) => {{
-        let mut bytes = Vec::new();
-        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-        ::sbor::encode_any(None, $value, &mut enc);
-        bytes
-    }};
-}
-
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
 pub struct Encoder<'a> {
     buf: &'a mut Vec<u8>,

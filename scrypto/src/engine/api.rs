@@ -9,7 +9,7 @@ use crate::rust::vec::Vec;
 #[cfg(target_arch = "wasm32")]
 extern "C" {
     /// Entrance to Radix Engine.
-    pub fn radix_engine(op: u32, input_ptr: *const u8, input_len: usize) -> *mut u8;
+    pub fn radix_engine(input: *const u8) -> *mut u8;
 }
 
 /// Create a component

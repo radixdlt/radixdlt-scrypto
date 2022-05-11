@@ -76,13 +76,10 @@ impl Runtime {
             name: method.as_ref().to_owned(),
             fields,
         };
-        let mut bytes = Vec::new();
-        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-        ::sbor::encode_any(None, &variant, &mut enc);
 
         let input = InvokeSNodeInput {
             snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
-            call_data: bytes,
+            call_data: ::sbor::encode_any(&variant),
         };
         let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
 

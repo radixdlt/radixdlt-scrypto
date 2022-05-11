@@ -1,11 +1,9 @@
-mod env_resolver;
+mod constants;
 mod errors;
-mod execution;
-mod instrumentation;
-mod validation;
+mod traits;
+mod wasmi;
 
-pub use env_resolver::{EnvModuleResolver, ENGINE_FUNCTION_INDEX, ENGINE_FUNCTION_NAME};
+pub use self::wasmi::{WasmiEngine, WasmiScryptoModule};
+pub use constants::*;
 pub use errors::*;
-pub use errors::*;
-pub use execution::instantiate_module;
-pub use validation::{parse_module, validate_module};
+pub use traits::*;
