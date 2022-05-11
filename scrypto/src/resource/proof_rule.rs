@@ -1,3 +1,5 @@
+use crate::engine::api::{CheckAccessRuleInput, CheckAccessRuleOutput, CHECK_ACCESS_RULE};
+use crate::engine::call_engine;
 use crate::resource::AccessRuleNode::{AllOf, AnyOf};
 use crate::resource::*;
 use crate::rust::borrow::ToOwned;
@@ -349,6 +351,18 @@ pub enum AccessRule {
     AllowAll,
     DenyAll,
     Protected(AccessRuleNode),
+}
+
+impl AccessRule {
+    pub fn check(&self, proofs: &[Proof]) -> bool {
+        let input = CheckAccessRuleInput {
+            access_rule: self.clone(),
+            proof_ids: proofs.iter().map(|proof| proof.0).collect()
+        };
+        let output: CheckAccessRuleOutput = call_engine(CHECK_ACCESS_RULE, input);
+
+        output.is_authorized
+    }
 }
 
 #[macro_export]

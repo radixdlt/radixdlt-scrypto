@@ -1248,6 +1248,22 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
             actor: wasm_process.vm.actor.clone(),
         });
     }
+    
+    fn handle_check_access_rule(&mut self, input: CheckAccessRuleInput) -> Result<CheckAccessRuleOutput, RuntimeError> {
+        let proofs = input.proof_ids
+            .iter()
+            .map(|proof_id| self.proofs.get(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone())).unwrap().clone())
+            .collect::<Vec<Proof>>();
+        let mut simulated_auth_zone = AuthZone::new_with_proofs(proofs);
+
+        let method_authorization = convert(&Type::Unit, &Value::Unit, &input.access_rule);
+        let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
+        simulated_auth_zone.main("clear", Vec::new(), self).map_err(RuntimeError::AuthZoneError)?;
+
+        return Ok(CheckAccessRuleOutput{
+            is_authorized
+        });
+    }
 
     //============================
     // SYSTEM CALL HANDLERS END
@@ -1361,6 +1377,8 @@ impl<'r, 'l, L: SubstateStore> Externals for Process<'r, 'l, L> {
                     GET_CURRENT_EPOCH => self.handle(args, Self::handle_get_current_epoch),
                     GENERATE_UUID => self.handle(args, Self::handle_generate_uuid),
                     GET_ACTOR => self.handle(args, Self::handle_get_actor),
+
+                    CHECK_ACCESS_RULE => self.handle(args, Self::handle_check_access_rule),
 
                     _ => Err(RuntimeError::InvalidRequestCode(operation).into()),
                 }

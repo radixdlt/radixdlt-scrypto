@@ -1,6 +1,6 @@
 use crate::core::SNodeRef;
 use sbor::*;
-use scrypto::prelude::AccessRules;
+use scrypto::prelude::{AccessRule, AccessRules};
 
 use crate::engine::types::*;
 use crate::rust::string::String;
@@ -45,6 +45,9 @@ pub const GET_CURRENT_EPOCH: u32 = 0xf3;
 pub const GET_TRANSACTION_HASH: u32 = 0xf4;
 /// Retrieve the running entity
 pub const GET_ACTOR: u32 = 0xf5;
+
+/// Check that an access rule is satisfied
+pub const CHECK_ACCESS_RULE: u32 = 0xf6;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct InvokeSNodeInput {
@@ -203,4 +206,15 @@ pub struct GetActorInput {}
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct GetActorOutput {
     pub actor: ScryptoActorInfo,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CheckAccessRuleInput {
+    pub access_rule: AccessRule,
+    pub proof_ids: Vec<ProofId>
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CheckAccessRuleOutput {
+    pub is_authorized: bool
 }
