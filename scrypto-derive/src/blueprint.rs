@@ -88,7 +88,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             match calldata.function.as_str() {
                 #( #arm_guards => #arm_bodies )*
                 _ => {
-                    panic!("Function/method not fund")
+                    panic!("Function/method not found")
                 }
             }
 
@@ -530,7 +530,7 @@ mod tests {
                             rtn = ::scrypto::buffer::scrypto_encode_for_radix_engine(&blueprint::Test::x(&state));
                         }
                         _ => {
-                            panic!("Function/method not fund")
+                            panic!("Function/method not found")
                         }
                     }
                     ::scrypto::buffer::scrypto_wrap(rtn)
