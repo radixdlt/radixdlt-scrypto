@@ -31,6 +31,7 @@ impl Package {
         let mut wasm_engine = WasmiEngine::new();
         wasm_engine.validate(&code)?;
 
+        // TODO will replace this with static ABIs
         let module = wasm_engine.instantiate(&code);
         let exports: Vec<String> = module
             .function_exports()
