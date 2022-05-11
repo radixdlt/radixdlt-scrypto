@@ -95,7 +95,7 @@ impl BorrowedSNodeState {
                 if let Some(component_address) = maybe_component_address {
                     frame
                         .track
-                        .return_borrowed_vault(&component_address, &vault_id, vault);
+                        .return_borrowed_global_mut_value((component_address, vault_id), vault);
                 } else {
                     frame.owned_snodes.return_borrowed_vault_mut(vault);
                 }
@@ -183,24 +183,24 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         component_address: ComponentAddress,
     ) {
         for (vault_id, vault) in new_objects.vaults {
-            self.insert_new_vault(component_address, vault_id, vault);
+            self.create_uuid_value_2((component_address, vault_id), vault);
         }
         for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
-            self.insert_new_lazy_map(component_address, lazy_map_id);
+            self.create_key_space(component_address, lazy_map_id);
             for (k, v) in unclaimed.lazy_map {
                 let parent_address = Address::LazyMap(component_address, lazy_map_id);
                 self.set_key_value(parent_address, k, Some(v));
             }
 
             for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                self.insert_new_lazy_map(component_address, child_lazy_map_id);
+                self.create_key_space(component_address, child_lazy_map_id);
                 for (k, v) in child_lazy_map {
                     let parent_address = Address::LazyMap(component_address, child_lazy_map_id);
                     self.set_key_value(parent_address, k, Some(v));
                 }
             }
             for (vault_id, vault) in unclaimed.descendent_vaults {
-                self.insert_new_vault(component_address, vault_id, vault);
+                self.create_uuid_value_2((component_address, vault_id), vault);
             }
         }
     }
@@ -573,23 +573,31 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
-                let (component, vault) =
-                    if let Some(vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
-                        (None, vault)
-                    } else if let Some(ComponentState {
-                        component_address,
-                        snode_refs,
-                        ..
-                    }) = &self.component
-                    {
-                        if !snode_refs.vault_ids.contains(vault_id) {
-                            return Err(RuntimeError::VaultNotFound(*vault_id));
-                        }
-                        let vault = self.track.borrow_vault_mut(component_address, vault_id);
-                        (Some(*component_address), vault)
-                    } else {
-                        panic!("Should never get here");
-                    };
+                let (component, vault) = if let Some(vault) =
+                    self.owned_snodes.borrow_vault_mut(vault_id)
+                {
+                    (None, vault)
+                } else if let Some(ComponentState {
+                    component_address,
+                    snode_refs,
+                    ..
+                }) = &self.component
+                {
+                    if !snode_refs.vault_ids.contains(vault_id) {
+                        return Err(RuntimeError::VaultNotFound(*vault_id));
+                    }
+                    let vault: Vault = self
+                        .track
+                        .borrow_global_mut_value((*component_address, *vault_id))
+                        .map_err(|e| match e {
+                            TrackError::NotFound => RuntimeError::VaultNotFound(vault_id.clone()),
+                            TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
+                        })?
+                        .into();
+                    (Some(*component_address), vault)
+                } else {
+                    panic!("Should never get here");
+                };
 
                 let resource_address = vault.resource_address();
                 let substate_value = self.track.read_value(resource_address.clone()).unwrap();
