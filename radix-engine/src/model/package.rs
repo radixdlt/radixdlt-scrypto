@@ -30,7 +30,7 @@ impl Package {
     /// Validates and creates a package
     pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
         let mut engine = WasmiEngine::new();
-        let mut runtime = NopScryptoRuntime::new(EXPORT_BLUEPRINT_ABI_TBD_LIMIT); // stateless
+        let runtime = NopScryptoRuntime::new(EXPORT_BLUEPRINT_ABI_TBD_LIMIT); // stateless
 
         // validate wasm
         engine.validate(&code)?;
@@ -43,8 +43,8 @@ impl Package {
         // TODO replace this with static ABIs
         // export blueprint ABI
         let mut blueprint_abis = HashMap::new();
-        let module = ScryptoLoader::<'_, '_, _, _, NopScryptoRuntime>::load(&mut engine, &code);
-        let mut instance = module.instantiate(&mut runtime);
+        let module = engine.load(&code);
+        let mut instance = module.instantiate(Box::new(runtime));
         let exports: Vec<String> = instance
             .function_exports()
             .into_iter()

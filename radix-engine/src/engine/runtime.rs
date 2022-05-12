@@ -13,9 +13,9 @@ use crate::engine::SystemApi;
 use crate::model::Component;
 use crate::wasm::{InvokeError, ScryptoRuntime};
 
-pub struct RadixEngineScryptoRuntime<'a, S: SystemApi> {
+pub struct RadixEngineScryptoRuntime<'s, S: SystemApi> {
     this: ScryptoActorInfo,
-    system_api: &'a mut S,
+    system_api: &'s mut S,
     tbd_limit: u32,
     tbd_balance: u32,
 }

@@ -13,10 +13,10 @@ pub struct WasmiScryptoModule {
     module: Module,
 }
 
-pub struct WasmiScryptoInstance<'r, R: ScryptoRuntime> {
+pub struct WasmiScryptoInstance<'r> {
     module_ref: ModuleRef, // Follows reference counting semantics
     memory_ref: MemoryRef,
-    runtime: &'r mut R,
+    runtime: Box<dyn ScryptoRuntime + 'r>,
 }
 
 pub struct WasmiEnvModule {}
@@ -58,10 +58,8 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
-impl<'r, R: ScryptoRuntime> ScryptoModule<'r, WasmiScryptoInstance<'r, R>, R>
-    for WasmiScryptoModule
-{
-    fn instantiate(&self, runtime: &'r mut R) -> WasmiScryptoInstance<'r, R> {
+impl<'r> ScryptoModule<'r, WasmiScryptoInstance<'r>> for WasmiScryptoModule {
+    fn instantiate(&self, runtime: Box<dyn ScryptoRuntime + 'r>) -> WasmiScryptoInstance<'r> {
         // link with env module
         let module_ref = ModuleInstance::new(
             &self.module,
@@ -84,7 +82,7 @@ impl<'r, R: ScryptoRuntime> ScryptoModule<'r, WasmiScryptoInstance<'r, R>, R>
     }
 }
 
-impl<'r, R: ScryptoRuntime> WasmiScryptoInstance<'r, R> {
+impl<'r> WasmiScryptoInstance<'r> {
     pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, InvokeError> {
         let result = self.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
@@ -122,7 +120,7 @@ impl<'r, R: ScryptoRuntime> WasmiScryptoInstance<'r, R> {
     }
 }
 
-impl<'r, R: ScryptoRuntime> Externals for WasmiScryptoInstance<'r, R> {
+impl<'r> Externals for WasmiScryptoInstance<'r> {
     fn invoke_index(
         &mut self,
         index: usize,
@@ -150,7 +148,7 @@ impl<'r, R: ScryptoRuntime> Externals for WasmiScryptoInstance<'r, R> {
     }
 }
 
-impl<'r, R: ScryptoRuntime> ScryptoInstance for WasmiScryptoInstance<'r, R> {
+impl<'r> ScryptoInstance for WasmiScryptoInstance<'r> {
     fn invoke_export(
         &mut self,
         name: &str,
@@ -264,9 +262,7 @@ impl ScryptoInstrumenter for WasmiEngine {
     }
 }
 
-impl<'l, 'r, R: ScryptoRuntime>
-    ScryptoLoader<'l, 'r, WasmiScryptoModule, WasmiScryptoInstance<'r, R>, R> for WasmiEngine
-{
+impl<'l, 'r> ScryptoLoader<'l, 'r, WasmiScryptoModule, WasmiScryptoInstance<'r>> for WasmiEngine {
     fn load(&'l mut self, code: &[u8]) -> WasmiScryptoModule {
         let module = Module::from_buffer(code).expect("Failed to parse wasm module");
 

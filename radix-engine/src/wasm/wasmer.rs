@@ -14,59 +14,118 @@ pub struct WasmerScryptoModule<'l> {
     store: &'l Store,
 }
 
-#[derive(Clone, WasmerEnv)]
-pub struct WasmerScryptoInstance {
+pub struct WasmerScryptoInstance<'r> {
     instance: Instance,
+    // This is to keep the trait object live so the runtime pointers
+    // are valid as long as this instance is not dropped.
+    #[allow(dead_code)]
+    runtime: Box<dyn ScryptoRuntime + 'r>,
 }
 
 #[derive(Clone)]
 pub struct WasmerScryptoInstanceEnv {
-    instance: LazyInit<WasmerScryptoInstance>,
-    runtime: usize,
+    instance: LazyInit<Instance>,
+    runtime_ptr: usize,
 }
 
 pub struct WasmerEngine {
     store: Store,
 }
 
+pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, InvokeError> {
+    let slice = &value.raw;
+    let n = slice.len();
+
+    let result = instance
+        .exports
+        .get_function(EXPORT_SCRYPTO_ALLOC)
+        .map_err(|_| InvokeError::MemoryAllocError)?
+        .call(&[Val::I32(n as i32)])
+        .map_err(|_| InvokeError::MemoryAllocError)?;
+
+    if let Some(Value::I32(ptr)) = result.as_ref().get(0) {
+        let ptr = *ptr as usize;
+        let memory = instance
+            .exports
+            .get_memory(EXPORT_MEMORY)
+            .map_err(|_| InvokeError::MemoryAllocError)?;
+        let size = memory.size().bytes().0;
+        if size > ptr && size - ptr >= n {
+            unsafe {
+                let dest = memory.data_ptr().add(ptr);
+                ptr::copy(slice.as_ptr(), dest, n);
+            }
+            return Ok(ptr);
+        }
+    }
+
+    Err(InvokeError::MemoryAllocError)
+}
+
+pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, InvokeError> {
+    let memory = instance
+        .exports
+        .get_memory(EXPORT_MEMORY)
+        .map_err(|_| InvokeError::MemoryAccessError)?;
+    let size = memory.size().bytes().0;
+    if size > ptr && size - ptr >= 4 {
+        // read len
+        let mut temp = [0u8; 4];
+        unsafe {
+            let from = memory.data_ptr().add(ptr);
+            ptr::copy(from, temp.as_mut_ptr(), 4);
+        }
+        let n = u32::from_le_bytes(temp) as usize;
+
+        // read value
+        if size - ptr - 4 >= (n as usize) {
+            // TODO: avoid copying
+            let mut temp = Vec::with_capacity(n);
+            unsafe {
+                let from = memory.data_ptr().add(ptr).add(4);
+                ptr::copy(from, temp.as_mut_ptr(), n);
+                temp.set_len(n);
+            }
+
+            return ScryptoValue::from_slice(&temp).map_err(InvokeError::InvalidScryptoValue);
+        }
+    }
+
+    Err(InvokeError::MemoryAccessError)
+}
+
 impl WasmerEnv for WasmerScryptoInstanceEnv {
     fn init_with_instance(&mut self, instance: &Instance) -> Result<(), HostEnvInitError> {
-        self.instance.initialize(WasmerScryptoInstance {
-            instance: instance.clone(),
-        });
+        self.instance.initialize(instance.clone());
         Ok(())
     }
 }
 
-impl<'l, 'r, R: ScryptoRuntime + 'static> ScryptoModule<'r, WasmerScryptoInstance, R>
-    for WasmerScryptoModule<'l>
-{
-    fn instantiate(&self, runtime: &'r mut R) -> WasmerScryptoInstance {
+impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModule<'l> {
+    fn instantiate(&self, runtime: Box<dyn ScryptoRuntime + 'r>) -> WasmerScryptoInstance<'r> {
         // native functions
-        fn radix_engine<R: ScryptoRuntime>(
+        fn radix_engine(
             env: &WasmerScryptoInstanceEnv,
             input_ptr: i32,
         ) -> Result<i32, RuntimeError> {
-            let input = unsafe { env.instance.get_unchecked() }
-                .read_value(input_ptr as usize)
+            let instance = unsafe { env.instance.get_unchecked() };
+            let input = read_value(&instance, input_ptr as usize)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            let runtime = unsafe { &mut *(env.runtime as *mut R) };
+            let runtime: &mut Box<dyn ScryptoRuntime> =
+                unsafe { &mut *(env.runtime_ptr as *mut _) };
             let output = runtime
                 .main(input)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            unsafe { env.instance.get_unchecked() }
-                .send_value(&output)
+            send_value(&instance, &output)
                 .map(|ptr| ptr as i32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
-        fn use_tbd<R: ScryptoRuntime>(
-            env: &WasmerScryptoInstanceEnv,
-            tbd: i32,
-        ) -> Result<(), RuntimeError> {
-            let runtime = unsafe { &mut *(env.runtime as *mut R) };
+        fn use_tbd(env: &WasmerScryptoInstanceEnv, tbd: i32) -> Result<(), RuntimeError> {
+            let runtime: &mut Box<dyn ScryptoRuntime> =
+                unsafe { &mut *(env.runtime_ptr as *mut _) };
             runtime
                 .use_tbd(tbd as u32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
@@ -75,17 +134,14 @@ impl<'l, 'r, R: ScryptoRuntime + 'static> ScryptoModule<'r, WasmerScryptoInstanc
         // env
         let env = WasmerScryptoInstanceEnv {
             instance: LazyInit::new(),
-            // TODO: this is very bad practice; it requires the caller to ensure the
-            // runtime object lives longer than the intended wasm execution and it's not
-            // thread-safe.
-            runtime: runtime as *mut R as usize,
+            runtime_ptr: &runtime as *const _ as usize,
         };
 
         // imports
         let import_object = imports! {
             MODULE_ENV_NAME => {
-                RADIX_ENGINE_FUNCTION_NAME => Function::new_native_with_env(&self.store, env.clone(), radix_engine::<R>),
-                USE_TBD_FUNCTION_NAME => Function::new_native_with_env(&self.store, env, use_tbd::<R>),
+                RADIX_ENGINE_FUNCTION_NAME => Function::new_native_with_env(&self.store, env.clone(), radix_engine),
+                USE_TBD_FUNCTION_NAME => Function::new_native_with_env(&self.store, env, use_tbd),
             }
         };
 
@@ -93,84 +149,17 @@ impl<'l, 'r, R: ScryptoRuntime + 'static> ScryptoModule<'r, WasmerScryptoInstanc
         let instance =
             Instance::new(&self.module, &import_object).expect("Failed to instantiate module");
 
-        WasmerScryptoInstance { instance }
+        WasmerScryptoInstance { instance, runtime }
     }
 }
 
-impl WasmerScryptoInstance {
-    pub fn send_value(&self, value: &ScryptoValue) -> Result<usize, InvokeError> {
-        let slice = &value.raw;
-        let n = slice.len();
-
-        let result = self
-            .instance
-            .exports
-            .get_function(EXPORT_SCRYPTO_ALLOC)
-            .map_err(|_| InvokeError::MemoryAllocError)?
-            .call(&[Val::I32(n as i32)])
-            .map_err(|_| InvokeError::MemoryAllocError)?;
-
-        if let Some(Value::I32(ptr)) = result.as_ref().get(0) {
-            let ptr = *ptr as usize;
-            let memory = self
-                .instance
-                .exports
-                .get_memory(EXPORT_MEMORY)
-                .map_err(|_| InvokeError::MemoryAllocError)?;
-            let size = memory.size().bytes().0;
-            if size > ptr && size - ptr >= n {
-                unsafe {
-                    let dest = memory.data_ptr().add(ptr);
-                    ptr::copy(slice.as_ptr(), dest, n);
-                }
-                return Ok(ptr);
-            }
-        }
-
-        Err(InvokeError::MemoryAllocError)
-    }
-
-    pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, InvokeError> {
-        let memory = self
-            .instance
-            .exports
-            .get_memory(EXPORT_MEMORY)
-            .map_err(|_| InvokeError::MemoryAccessError)?;
-        let size = memory.size().bytes().0;
-        if size > ptr && size - ptr >= 4 {
-            // read len
-            let mut temp = [0u8; 4];
-            unsafe {
-                let from = memory.data_ptr().add(ptr);
-                ptr::copy(from, temp.as_mut_ptr(), 4);
-            }
-            let n = u32::from_le_bytes(temp) as usize;
-
-            // read value
-            if size - ptr - 4 >= (n as usize) {
-                // TODO: avoid copying
-                let mut temp = Vec::with_capacity(n);
-                unsafe {
-                    let from = memory.data_ptr().add(ptr).add(4);
-                    ptr::copy(from, temp.as_mut_ptr(), n);
-                    temp.set_len(n);
-                }
-
-                return ScryptoValue::from_slice(&temp).map_err(InvokeError::InvalidScryptoValue);
-            }
-        }
-
-        Err(InvokeError::MemoryAccessError)
-    }
-}
-
-impl ScryptoInstance for WasmerScryptoInstance {
+impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
     fn invoke_export(
         &mut self,
         export_name: &str,
         input: &ScryptoValue,
     ) -> Result<ScryptoValue, InvokeError> {
-        let pointer = self.send_value(input)?;
+        let pointer = send_value(&self.instance, input)?;
         let result = self
             .instance
             .exports
@@ -190,7 +179,7 @@ impl ScryptoInstance for WasmerScryptoInstance {
                     .ok_or(InvokeError::MissingReturnData)?
                     .i32()
                     .ok_or(InvokeError::InvalidReturnData)?;
-                self.read_value(ptr as usize)
+                read_value(&self.instance, ptr as usize)
             }
             _ => Err(InvokeError::InvalidReturnData),
         }
@@ -226,8 +215,8 @@ impl ScryptoInstrumenter for WasmerEngine {
     }
 }
 
-impl<'l, 'r, R: ScryptoRuntime + 'static>
-    ScryptoLoader<'l, 'r, WasmerScryptoModule<'l>, WasmerScryptoInstance, R> for WasmerEngine
+impl<'l, 'r> ScryptoLoader<'l, 'r, WasmerScryptoModule<'l>, WasmerScryptoInstance<'r>>
+    for WasmerEngine
 {
     fn load(&'l mut self, code: &[u8]) -> WasmerScryptoModule<'l> {
         let module = Module::new(&self.store, code).expect("Failed to parse wasm module");

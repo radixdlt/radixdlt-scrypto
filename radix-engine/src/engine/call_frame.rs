@@ -276,8 +276,8 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run(
-        &mut self,
+    pub fn run<'s>(
+        &'s mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'r>,
         call_data: ScryptoValue,
@@ -329,24 +329,16 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 self.component = component_state;
 
                 let mut engine = WasmiEngine::new();
-                let mut runtime =
-                    RadixEngineScryptoRuntime::new(actor, self, CALL_FUNCTION_TBD_LIMIT);
-                let module = ScryptoLoader::<'_, '_, _, _, RadixEngineScryptoRuntime<Self>>::load(
-                    &mut engine,
-                    &code,
-                );
-                let mut instance = module.instantiate(&mut runtime);
-                let result =
-                    instance
-                        .invoke_export(&export_name, &call_data)
-                        .map_err(|e| match e {
-                            // Flatten error code for more readable transaction receipt
-                            InvokeError::RuntimeError(e) => e,
-                            e @ _ => RuntimeError::InvokeError(e.into()),
-                        });
-                let tbd_used = runtime.tbd_used();
-                re_debug!(self, "TBD used: {}, result: {:?}", tbd_used, result);
-                result
+                let runtime = RadixEngineScryptoRuntime::new(actor, self, CALL_FUNCTION_TBD_LIMIT);
+                let module = engine.load(&code);
+                let mut instance = module.instantiate(Box::new(runtime));
+                instance
+                    .invoke_export(&export_name, &call_data)
+                    .map_err(|e| match e {
+                        // Flatten error code for more readable transaction receipt
+                        InvokeError::RuntimeError(e) => e,
+                        e @ _ => RuntimeError::InvokeError(e.into()),
+                    })
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
                 .map_err(RuntimeError::ResourceManagerError),
