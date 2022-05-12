@@ -13,9 +13,8 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
-pub struct WasmerScryptoModule<'l> {
+pub struct WasmerScryptoModule {
     module: Module,
-    store: &'l Store,
 }
 
 pub struct WasmerScryptoInstance<'r> {
@@ -105,7 +104,7 @@ impl WasmerEnv for WasmerScryptoInstanceEnv {
     }
 }
 
-impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModule<'l> {
+impl<'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModule {
     fn instantiate(&self, runtime: Box<dyn ScryptoRuntime + 'r>) -> WasmerScryptoInstance<'r> {
         // native functions
         fn radix_engine(
@@ -146,8 +145,8 @@ impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModul
         // imports
         let import_object = imports! {
             MODULE_ENV_NAME => {
-                RADIX_ENGINE_FUNCTION_NAME => Function::new_native_with_env(&self.store, env.clone(), radix_engine),
-                USE_TBD_FUNCTION_NAME => Function::new_native_with_env(&self.store, env, use_tbd),
+                RADIX_ENGINE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), radix_engine),
+                USE_TBD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env, use_tbd),
             }
         };
 
@@ -220,15 +219,10 @@ impl ScryptoInstrumenter for WasmerEngine {
     }
 }
 
-impl<'l, 'r> ScryptoLoader<'l, 'r, WasmerScryptoModule<'l>, WasmerScryptoInstance<'r>>
-    for WasmerEngine
-{
-    fn load(&'l mut self, code: &[u8]) -> WasmerScryptoModule<'l> {
+impl<'r> ScryptoLoader<'r, WasmerScryptoModule, WasmerScryptoInstance<'r>> for WasmerEngine {
+    fn load(&mut self, code: &[u8]) -> WasmerScryptoModule {
         let module = Module::new(&self.store, code).expect("Failed to parse wasm module");
 
-        WasmerScryptoModule {
-            module,
-            store: &self.store,
-        }
+        WasmerScryptoModule { module }
     }
 }

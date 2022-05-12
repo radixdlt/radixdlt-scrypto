@@ -264,8 +264,8 @@ impl ScryptoInstrumenter for WasmiEngine {
     }
 }
 
-impl<'l, 'r> ScryptoLoader<'l, 'r, WasmiScryptoModule, WasmiScryptoInstance<'r>> for WasmiEngine {
-    fn load(&'l mut self, code: &[u8]) -> WasmiScryptoModule {
+impl<'r> ScryptoLoader<'r, WasmiScryptoModule, WasmiScryptoInstance<'r>> for WasmiEngine {
+    fn load(&mut self, code: &[u8]) -> WasmiScryptoModule {
         let module = Module::from_buffer(code).expect("Failed to parse wasm module");
 
         WasmiScryptoModule { module }

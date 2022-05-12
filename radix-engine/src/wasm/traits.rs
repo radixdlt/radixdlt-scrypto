@@ -53,7 +53,6 @@ pub trait ScryptoInstrumenter {
 
 /// Trait for loading scrypto modules.
 pub trait ScryptoLoader<
-    'l, /* Loader lifetime */
     'r, /* Runtime lifetime */
     M,  /* Module generic type */
     I,  /* Instance generic type */
@@ -61,7 +60,7 @@ pub trait ScryptoLoader<
     M: ScryptoModule<'r, I>,
     I: ScryptoInstance,
 {
-    fn load(&'l mut self, code: &[u8]) -> M;
+    fn load(&mut self, code: &[u8]) -> M;
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
