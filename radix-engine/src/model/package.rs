@@ -6,9 +6,10 @@ use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
 use scrypto::component::PackageFunction;
+use scrypto::core::ScryptoActorInfo;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
+use crate::engine::*;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -111,5 +112,25 @@ impl Package {
                 Ok(ScryptoValue::from_value(&package_address))
             }
         }
+    }
+
+    pub fn invoke<S: SystemApi>(
+        &self,
+        actor: ScryptoActorInfo,
+        export_name: String,
+        call_data: ScryptoValue,
+        system_api: &mut S,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let mut engine = WasmiEngine::new();
+        let runtime = RadixEngineScryptoRuntime::new(actor, system_api, CALL_FUNCTION_TBD_LIMIT);
+        let module = engine.load(self.instrumented_code());
+        let mut instance = module.instantiate(Box::new(runtime));
+        instance
+            .invoke_export(&export_name, &call_data)
+            .map_err(|e| match e {
+                // Flatten error code for more readable transaction receipt
+                InvokeError::RuntimeError(e) => e,
+                e @ _ => RuntimeError::InvokeError(e.into()),
+            })
     }
 }
