@@ -2,6 +2,7 @@ use crate::engine::{
     CallFrame, IdAllocator, IdSpace, SubstateOperation, SubstateOperationsReceipt,
     ECDSA_TOKEN_BUCKET_ID,
 };
+use crate::wasm::{ScryptoLoader, ScryptoModule};
 use indexmap::{IndexMap, IndexSet};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
@@ -15,6 +16,7 @@ use scrypto::engine::types::*;
 
 use crate::ledger::*;
 use crate::model::*;
+use crate::wasm::*;
 
 // TODO: Replace NonFungible with real re address
 // TODO: Move this logic into application layer
@@ -264,7 +266,16 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Start a call frame.
-    pub fn start_call_frame<'r>(&'r mut self, verbose: bool) -> CallFrame<'r, 's, S> {
+    pub fn start_call_frame<'t, 'l, 'r, L, M, I>(
+        &'t mut self,
+        verbose: bool,
+        loader: &'l mut L,
+    ) -> CallFrame<'t, 's, 'l, S, L>
+    where
+        L: ScryptoLoader<'l, 'r, M, I>,
+        M: ScryptoModule<'r, I>,
+        I: ScryptoInstance,
+    {
         let signers: BTreeSet<NonFungibleId> = self
             .transaction_signers
             .clone()
@@ -292,6 +303,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             0,
             verbose,
             self,
+            loader,
             Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
             Some(Worktop::new()),
             HashMap::new(),

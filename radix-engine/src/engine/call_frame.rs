@@ -44,6 +44,47 @@ macro_rules! re_warn {
     };
 }
 
+/// A call frame is the basic unit that forms a transaction call stack. It keeps track of the
+/// owned objects by this function.
+///
+/// A call frame can be either native or wasm (when the callee is a blueprint or component).
+///
+/// Radix Engine manages the lifecycle of call frames and enforces the call and move semantics.
+pub struct CallFrame<
+    't, // Track lifetime
+    's, // Substate store lifetime
+    'l, // Scrypto loader lifetime
+    S,  // Substate store generic type
+    L,  // Scrypto loader generic type
+> where
+    S: ReadableSubstateStore,
+{
+    /// The call depth
+    depth: usize,
+    /// Whether to show trace messages
+    trace: bool,
+
+    /// State update track
+    track: &'t mut Track<'s, S>,
+    /// Scrypto loader
+    loader: &'l mut L,
+
+    /// Owned Snodes
+    buckets: HashMap<BucketId, Bucket>,
+    proofs: HashMap<ProofId, Proof>,
+    owned_snodes: ComponentObjects,
+
+    /// Readable/Writable Snodes
+    component: Option<ComponentState<'t>>,
+
+    /// Referenced Snodes
+    worktop: Option<Worktop>,
+    auth_zone: Option<AuthZone>,
+
+    /// The caller's auth zone
+    caller_auth_zone: Option<&'t AuthZone>,
+}
+
 pub enum ConsumedSNodeState {
     Bucket(Bucket),
     Proof(Proof),
@@ -59,50 +100,6 @@ pub enum BorrowedSNodeState {
     Vault(VaultId, Option<ComponentAddress>, Vault),
 }
 
-impl BorrowedSNodeState {
-    fn return_borrowed_state<'r, 'l, L: ReadableSubstateStore>(
-        self,
-        frame: &mut CallFrame<'r, 'l, L>,
-    ) {
-        match self {
-            BorrowedSNodeState::AuthZone(auth_zone) => {
-                frame.auth_zone = Some(auth_zone);
-            }
-            BorrowedSNodeState::Worktop(worktop) => {
-                frame.worktop = Some(worktop);
-            }
-            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
-                if let Some(component_address) = actor.component_address() {
-                    frame.track.return_borrowed_global_mut_value(
-                        component_address,
-                        component_state.unwrap(),
-                    );
-                }
-            }
-            BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                frame
-                    .track
-                    .return_borrowed_global_mut_value(resource_address, resource_manager);
-            }
-            BorrowedSNodeState::Bucket(bucket_id, bucket) => {
-                frame.buckets.insert(bucket_id, bucket);
-            }
-            BorrowedSNodeState::Proof(proof_id, proof) => {
-                frame.proofs.insert(proof_id, proof);
-            }
-            BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
-                if let Some(component_address) = maybe_component_address {
-                    frame
-                        .track
-                        .return_borrowed_vault(&component_address, &vault_id, vault);
-                } else {
-                    frame.owned_snodes.return_borrowed_vault_mut(vault);
-                }
-            }
-        }
-    }
-}
-
 pub enum StaticSNodeState {
     Package,
     Resource,
@@ -113,6 +110,37 @@ pub enum LoadedSNodeState {
     Static(StaticSNodeState),
     Consumed(Option<ConsumedSNodeState>),
     Borrowed(BorrowedSNodeState),
+}
+
+pub enum SNodeState<'a> {
+    SystemStatic,
+    Transaction(&'a mut TransactionProcessor),
+    PackageStatic,
+    AuthZoneRef(&'a mut AuthZone),
+    Worktop(&'a mut Worktop),
+    Scrypto(ScryptoActorInfo, Package, String, Option<&'a mut Component>),
+    ResourceStatic,
+    ResourceRef(ResourceAddress, &'a mut ResourceManager),
+    BucketRef(BucketId, &'a mut Bucket),
+    Bucket(Bucket),
+    ProofRef(ProofId, &'a mut Proof),
+    Proof(Proof),
+    VaultRef(VaultId, Option<ComponentAddress>, &'a mut Vault),
+}
+
+#[derive(Debug)]
+struct ComponentState<'a> {
+    component_address: ComponentAddress,
+    component: &'a mut Component,
+    initial_loaded_object_refs: ComponentObjectRefs,
+    snode_refs: ComponentObjectRefs,
+}
+
+///TODO: Remove
+#[derive(Debug)]
+enum LazyMapState {
+    Uncommitted { root: LazyMapId },
+    Committed { component_address: ComponentAddress },
 }
 
 impl LoadedSNodeState {
@@ -145,37 +173,6 @@ impl LoadedSNodeState {
             },
         }
     }
-}
-
-pub enum SNodeState<'a> {
-    SystemStatic,
-    Transaction(&'a mut TransactionProcessor),
-    PackageStatic,
-    AuthZoneRef(&'a mut AuthZone),
-    Worktop(&'a mut Worktop),
-    Scrypto(ScryptoActorInfo, Package, String, Option<&'a mut Component>),
-    ResourceStatic,
-    ResourceRef(ResourceAddress, &'a mut ResourceManager),
-    BucketRef(BucketId, &'a mut Bucket),
-    Bucket(Bucket),
-    ProofRef(ProofId, &'a mut Proof),
-    Proof(Proof),
-    VaultRef(VaultId, Option<ComponentAddress>, &'a mut Vault),
-}
-
-#[derive(Debug)]
-struct ComponentState<'a> {
-    component_address: ComponentAddress,
-    component: &'a mut Component,
-    initial_loaded_object_refs: ComponentObjectRefs,
-    snode_refs: ComponentObjectRefs,
-}
-
-///TODO: Remove
-#[derive(Debug)]
-enum LazyMapState {
-    Uncommitted { root: LazyMapId },
-    Committed { component_address: ComponentAddress },
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
@@ -214,42 +211,16 @@ pub enum MoveMethod {
     AsArgument,
 }
 
-/// A call frame is the basic unit that forms a transaction call stack. It keeps track of the
-/// owned objects by this function.
-///
-/// A call frame can be either native or wasm (when the callee is a blueprint or component).
-///
-/// Radix Engine manages the lifecycle of call frames and enforces the call and move semantics.
-pub struct CallFrame<'r, 'l, L: ReadableSubstateStore> {
-    /// The call depth
-    depth: usize,
-    /// Whether to show trace messages
-    trace: bool,
-    /// Transactional state updates
-    track: &'r mut Track<'l, L>,
-
-    /// Owned Snodes
-    buckets: HashMap<BucketId, Bucket>,
-    proofs: HashMap<ProofId, Proof>,
-    owned_snodes: ComponentObjects,
-
-    /// Readable/Writable Snodes
-    component: Option<ComponentState<'r>>,
-
-    /// Referenced Snodes
-    worktop: Option<Worktop>,
-    auth_zone: Option<AuthZone>,
-
-    /// The caller's auth zone
-    caller_auth_zone: Option<&'r AuthZone>,
-}
-
-impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
+impl<'t, 's, 'l, S, L> CallFrame<'t, 's, 'l, S, L>
+where
+    S: ReadableSubstateStore,
+{
     /// Create a new call frame, which is not started.
     pub fn new(
         depth: usize,
         trace: bool,
-        track: &'r mut Track<'l, L>,
+        track: &'t mut Track<'s, S>,
+        loader: &'l mut L,
         auth_zone: Option<AuthZone>,
         worktop: Option<Worktop>,
         buckets: HashMap<BucketId, Bucket>,
@@ -259,6 +230,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
             depth,
             trace,
             track,
+            loader,
             buckets,
             proofs,
             owned_snodes: ComponentObjects::new(),
@@ -278,10 +250,10 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run<'s>(
-        &'s mut self,
+    pub fn run<'f>(
+        &'f mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
-        snode: SNodeState<'r>,
+        snode: SNodeState<'t>,
         call_data: ScryptoValue,
     ) -> Result<
         (
@@ -659,6 +631,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
             self.depth + 1,
             self.trace,
             self.track,
+            self.loader,
             process_auth_zone,
             None,
             moving_buckets,
@@ -679,10 +652,47 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
 
         // Return borrowed snodes
         if let Borrowed(borrowed) = loaded_snode {
-            borrowed.return_borrowed_state(self);
+            self.return_borrowed_state(borrowed);
         }
 
         Ok(result)
+    }
+
+    fn return_borrowed_state(&mut self, state: BorrowedSNodeState) {
+        match state {
+            BorrowedSNodeState::AuthZone(auth_zone) => {
+                self.auth_zone = Some(auth_zone);
+            }
+            BorrowedSNodeState::Worktop(worktop) => {
+                self.worktop = Some(worktop);
+            }
+            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
+                if let Some(component_address) = actor.component_address() {
+                    self.track.return_borrowed_global_mut_value(
+                        component_address,
+                        component_state.unwrap(),
+                    );
+                }
+            }
+            BorrowedSNodeState::Resource(resource_address, resource_manager) => {
+                self.track
+                    .return_borrowed_global_mut_value(resource_address, resource_manager);
+            }
+            BorrowedSNodeState::Bucket(bucket_id, bucket) => {
+                self.buckets.insert(bucket_id, bucket);
+            }
+            BorrowedSNodeState::Proof(proof_id, proof) => {
+                self.proofs.insert(proof_id, proof);
+            }
+            BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
+                if let Some(component_address) = maybe_component_address {
+                    self.track
+                        .return_borrowed_vault(&component_address, &vault_id, vault);
+                } else {
+                    self.owned_snodes.return_borrowed_vault_mut(vault);
+                }
+            }
+        }
     }
 
     /// Checks resource leak.
@@ -844,7 +854,10 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
     }
 }
 
-impl<'r, 'l, L: ReadableSubstateStore> SystemApi for CallFrame<'r, 'l, L> {
+impl<'t, 's, 'l, S, L> SystemApi for CallFrame<'t, 's, 'l, S, L>
+where
+    S: ReadableSubstateStore,
+{
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,

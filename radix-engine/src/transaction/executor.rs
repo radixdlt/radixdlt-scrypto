@@ -10,6 +10,7 @@ use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
+use crate::wasm::*;
 
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'l, L: ReadableSubstateStore + WriteableSubstateStore> {
@@ -138,15 +139,21 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             validated.raw_hash.clone(),
             validated.signers.clone(),
         );
-        let mut proc = track.start_call_frame(self.trace);
 
-        let mut txn_process = TransactionProcessor::new(validated.clone());
-        let txn_snode = SNodeState::Transaction(&mut txn_process);
+        #[cfg(feature = "wasmer")]
+        let mut loader = WasmerEngine::new();
+        #[cfg(not(feature = "wasmer"))]
+        let mut loader = WasmiEngine::new();
+
+        let mut proc = track.start_call_frame(self.trace, &mut loader);
+
+        let mut txn_processor = TransactionProcessor::new(validated.clone());
+        let txn_snode = SNodeState::Transaction(&mut txn_processor);
         let error = match proc.run(None, txn_snode, ScryptoValue::from_value(&())) {
             Ok(_) => None,
             Err(e) => Some(e),
         };
-        let outputs = txn_process.outputs().to_vec();
+        let outputs = txn_processor.outputs().to_vec();
 
         let track_receipt = track.to_receipt();
         // commit state updates
