@@ -28,3 +28,6 @@ harness = false
 default = ["std"]
 std = ["sbor/std", "scrypto/std", "wasmi/std"]
 alloc = ["sbor/alloc", "scrypto/alloc"]
+
+# Use `wasmer` as WASM engine, otherwise `wasmi`
+wasmer = []
