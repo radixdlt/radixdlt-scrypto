@@ -1,3 +1,8 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::*;
@@ -6,11 +11,6 @@ use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
-use crate::rust::borrow::ToOwned;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 pub struct LocalComponent {

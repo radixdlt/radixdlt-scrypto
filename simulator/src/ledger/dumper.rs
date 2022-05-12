@@ -2,9 +2,9 @@
 use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
+use sbor::rust::collections::HashSet;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::engine::types::*;
-use scrypto::rust::collections::HashSet;
 use scrypto::values::*;
 use std::collections::VecDeque;
 

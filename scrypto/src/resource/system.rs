@@ -1,9 +1,10 @@
+use sbor::rust::collections::HashMap;
+use sbor::rust::string::String;
+
 use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::resource::*;
-use crate::rust::collections::HashMap;
-use crate::rust::string::String;
 
 /// Represents the Radix Engine resource subsystem.
 ///

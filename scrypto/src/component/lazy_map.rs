@@ -1,16 +1,16 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::marker::PhantomData;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::LazyMapId};
 use crate::misc::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::fmt;
-use crate::rust::marker::PhantomData;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::vec;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// A scalable key-value map which loads entries on demand.

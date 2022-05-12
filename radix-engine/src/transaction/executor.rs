@@ -1,8 +1,8 @@
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 use scrypto::{abi, access_rule_node, call_data, rule};
 

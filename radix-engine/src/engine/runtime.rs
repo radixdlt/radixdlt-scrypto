@@ -1,8 +1,8 @@
+use sbor::rust::str::FromStr;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActorInfo;
 use scrypto::engine::api::*;
-use scrypto::rust::str::FromStr;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::RuntimeError;

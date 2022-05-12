@@ -1,17 +1,17 @@
-use crate::buffer::scrypto_decode;
-use crate::core::SNodeRef;
-use crate::sfunctions;
+use sbor::rust::collections::BTreeSet;
+#[cfg(not(feature = "alloc"))]
+use sbor::rust::fmt;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::buffer::scrypto_decode;
+use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::rust::collections::BTreeSet;
-#[cfg(not(feature = "alloc"))]
-use crate::rust::fmt;
-use crate::rust::string::ToString;
-use crate::rust::vec::Vec;
+use crate::sfunctions;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]

@@ -1,6 +1,6 @@
+use sbor::rust::collections::HashMap;
+use sbor::rust::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::rust::collections::HashMap;
-use scrypto::rust::vec::Vec;
 
 use crate::ledger::traits::{Substate, WriteableSubstateStore};
 use crate::ledger::*;

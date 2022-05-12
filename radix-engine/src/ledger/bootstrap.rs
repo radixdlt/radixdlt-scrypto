@@ -1,3 +1,6 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::collections::*;
+use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::constants::*;
@@ -6,9 +9,6 @@ use scrypto::engine::types::*;
 use scrypto::prelude::rule;
 use scrypto::prelude::LOCKED;
 use scrypto::resource::ResourceMethodAuthKey::Withdraw;
-use scrypto::rust::borrow::ToOwned;
-use scrypto::rust::collections::*;
-use scrypto::rust::vec;
 
 use crate::ledger::{ReadableSubstateStore, SubstateIdGenerator, WriteableSubstateStore};
 

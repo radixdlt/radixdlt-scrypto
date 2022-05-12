@@ -10,7 +10,7 @@ use sbor::*;
 pub fn call_engine<T: Encode, V: Decode>(method: u32, arguments: T) -> V {
     use crate::buffer::*;
     use crate::engine::api::radix_engine;
-    use crate::rust::vec;
+    use sbor::rust::vec;
 
     // TODO: introduce proper method name and encode arguments as array.
     let input = Value::Enum {

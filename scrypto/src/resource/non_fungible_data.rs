@@ -1,6 +1,5 @@
+use sbor::rust::vec::Vec;
 use sbor::{describe::*, *};
-
-use crate::rust::vec::Vec;
 
 /// Represents the data structure of a non-fungible.
 pub trait NonFungibleData {

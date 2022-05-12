@@ -1,3 +1,7 @@
+use sbor::rust::collections::*;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
@@ -7,10 +11,6 @@ use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::resource::{
     ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod, VaultMethod,
 };
-use scrypto::rust::collections::*;
-use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::*;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;

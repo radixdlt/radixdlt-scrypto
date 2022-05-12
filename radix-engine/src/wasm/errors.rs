@@ -1,5 +1,5 @@
-use scrypto::rust::fmt;
-use scrypto::rust::string::String;
+use sbor::rust::fmt;
+use sbor::rust::string::String;
 use scrypto::values::ParseScryptoValueError;
 use wasmi::HostError;
 

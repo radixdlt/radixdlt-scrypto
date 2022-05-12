@@ -1,12 +1,17 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
-
 #[cfg(feature = "alloc")]
 pub use alloc::borrow;
 #[cfg(feature = "alloc")]
 pub use alloc::boxed;
 #[cfg(feature = "alloc")]
+pub use alloc::fmt;
+#[cfg(feature = "alloc")]
+pub use alloc::format;
+#[cfg(feature = "alloc")]
 pub use alloc::rc;
+#[cfg(feature = "alloc")]
+pub use alloc::str;
 #[cfg(feature = "alloc")]
 pub use alloc::string;
 #[cfg(feature = "alloc")]
@@ -18,7 +23,11 @@ pub use core::convert;
 #[cfg(feature = "alloc")]
 pub use core::hash;
 #[cfg(feature = "alloc")]
+pub use core::marker;
+#[cfg(feature = "alloc")]
 pub use core::mem;
+#[cfg(feature = "alloc")]
+pub use core::ops;
 #[cfg(feature = "alloc")]
 pub use core::ptr;
 
@@ -31,32 +40,58 @@ pub use std::cell;
 #[cfg(not(feature = "alloc"))]
 pub use std::convert;
 #[cfg(not(feature = "alloc"))]
+pub use std::fmt;
+#[cfg(not(feature = "alloc"))]
+pub use std::format;
+#[cfg(not(feature = "alloc"))]
 pub use std::hash;
 #[cfg(not(feature = "alloc"))]
+pub use std::marker;
+#[cfg(not(feature = "alloc"))]
 pub use std::mem;
+#[cfg(not(feature = "alloc"))]
+pub use std::ops;
 #[cfg(not(feature = "alloc"))]
 pub use std::ptr;
 #[cfg(not(feature = "alloc"))]
 pub use std::rc;
 #[cfg(not(feature = "alloc"))]
+pub use std::str;
+#[cfg(not(feature = "alloc"))]
 pub use std::string;
 #[cfg(not(feature = "alloc"))]
 pub use std::vec;
 
-/// Rust's standard collection library.
+/// Collection types.
 pub mod collections {
     #[cfg(feature = "alloc")]
     extern crate alloc;
 
     #[cfg(feature = "alloc")]
+    pub use alloc::collections::btree_map;
+    #[cfg(feature = "alloc")]
+    pub use alloc::collections::btree_set;
+    #[cfg(feature = "alloc")]
     pub use alloc::collections::BTreeMap;
     #[cfg(feature = "alloc")]
     pub use alloc::collections::BTreeSet;
+    #[cfg(feature = "alloc")]
+    pub use hashbrown::hash_map;
+    #[cfg(feature = "alloc")]
+    pub use hashbrown::hash_set;
     #[cfg(feature = "alloc")]
     pub use hashbrown::HashMap;
     #[cfg(feature = "alloc")]
     pub use hashbrown::HashSet;
 
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::btree_map;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::btree_set;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::hash_map;
+    #[cfg(not(feature = "alloc"))]
+    pub use std::collections::hash_set;
     #[cfg(not(feature = "alloc"))]
     pub use std::collections::BTreeMap;
     #[cfg(not(feature = "alloc"))]

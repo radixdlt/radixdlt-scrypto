@@ -1,9 +1,9 @@
+use sbor::rust::collections::*;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::*;
-use scrypto::rust::vec::Vec;
 
 pub trait QueryableSubstateStore {
     fn get_lazy_map_entries(

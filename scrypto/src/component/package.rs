@@ -1,13 +1,13 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::*;
 use crate::core::*;
 use crate::misc::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
