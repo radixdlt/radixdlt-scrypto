@@ -2,6 +2,7 @@ use colored::*;
 
 use sbor::path::SborPath;
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::string::String;

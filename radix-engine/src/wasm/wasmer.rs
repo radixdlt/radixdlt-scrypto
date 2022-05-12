@@ -1,3 +1,4 @@
+use sbor::rust::boxed::Box;
 use sbor::rust::ptr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -166,10 +167,6 @@ impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
             .get_function(export_name)
             .map_err(|_| InvokeError::FunctionNotFound)?
             .call(&[Val::I32(pointer as i32)]);
-
-        println!("{:?}", export_name);
-        println!("{:?}", input);
-        println!("{:?}", result);
 
         match result {
             Ok(return_data) => {

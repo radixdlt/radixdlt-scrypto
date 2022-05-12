@@ -1,6 +1,4 @@
-use crate::wasm::constants::*;
-use crate::wasm::errors::*;
-use crate::wasm::traits::*;
+use sbor::rust::boxed::Box;
 use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
@@ -8,6 +6,10 @@ use sbor::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 use wasm_instrument::{gas_metering, inject_stack_limiter, parity_wasm};
 use wasmi::*;
+
+use crate::wasm::constants::*;
+use crate::wasm::errors::*;
+use crate::wasm::traits::*;
 
 pub struct WasmiScryptoModule {
     module: Module,
