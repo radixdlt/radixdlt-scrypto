@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use sbor::rust::boxed::Box;
 use sbor::rust::ptr;
 use sbor::rust::string::String;
@@ -5,6 +7,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 use wasmer::*;
+use wasmer_compiler_singlepass::Singlepass;
 
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
@@ -26,7 +29,7 @@ pub struct WasmerScryptoInstance<'r> {
 #[derive(Clone)]
 pub struct WasmerScryptoInstanceEnv {
     instance: LazyInit<Instance>,
-    runtime_ptr: usize,
+    runtime_ptr: Arc<Mutex<usize>>,
 }
 
 pub struct WasmerEngine {
@@ -109,12 +112,13 @@ impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModul
             env: &WasmerScryptoInstanceEnv,
             input_ptr: i32,
         ) -> Result<i32, RuntimeError> {
+            let ptr = env.runtime_ptr.lock().unwrap();
+            let runtime: &mut Box<dyn ScryptoRuntime> = unsafe { &mut *(*ptr as *mut _) };
             let instance = unsafe { env.instance.get_unchecked() };
+
             let input = read_value(&instance, input_ptr as usize)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            let runtime: &mut Box<dyn ScryptoRuntime> =
-                unsafe { &mut *(env.runtime_ptr as *mut _) };
             let output = runtime
                 .main(input)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
@@ -125,8 +129,9 @@ impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModul
         }
 
         fn use_tbd(env: &WasmerScryptoInstanceEnv, tbd: i32) -> Result<(), RuntimeError> {
-            let runtime: &mut Box<dyn ScryptoRuntime> =
-                unsafe { &mut *(env.runtime_ptr as *mut _) };
+            let ptr = env.runtime_ptr.lock().unwrap();
+            let runtime: &mut Box<dyn ScryptoRuntime> = unsafe { &mut *(*ptr as *mut _) };
+
             runtime
                 .use_tbd(tbd as u32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
@@ -135,7 +140,7 @@ impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModul
         // env
         let env = WasmerScryptoInstanceEnv {
             instance: LazyInit::new(),
-            runtime_ptr: &runtime as *const _ as usize,
+            runtime_ptr: Arc::new(Mutex::new(&runtime as *const _ as usize)),
         };
 
         // imports
@@ -178,7 +183,10 @@ impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
                     .ok_or(InvokeError::InvalidReturnData)?;
                 read_value(&self.instance, ptr as usize)
             }
-            _ => Err(InvokeError::WasmError),
+            Err(e) => match e.downcast::<InvokeError>() {
+                Ok(e) => Err(e),
+                _ => Err(InvokeError::WasmError),
+            },
         }
     }
 
@@ -194,9 +202,9 @@ impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
 
 impl WasmerEngine {
     pub fn new() -> Self {
-        Self {
-            store: Store::default(),
-        }
+        let compiler = Singlepass::new();
+        let store = Store::new(&Universal::new(compiler).engine());
+        Self { store }
     }
 }
 
