@@ -54,7 +54,7 @@ pub trait ScryptoInstrumenter {
 /// Trait for loading scrypto modules.
 pub trait ScryptoLoader<
     'l, /* Loader lifetime */
-    'r, /* Runtime  lifetime */
+    'r, /* Runtime lifetime */
     M,  /* Module generic type */
     I,  /* Instance generic type */
 > where

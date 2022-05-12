@@ -31,7 +31,7 @@ pub enum PackageError {
 impl Package {
     /// Validates and creates a package
     pub fn new(code: Vec<u8>) -> Result<Self, WasmValidationError> {
-        let mut engine = WasmiEngine::new();
+        let mut engine = WasmerEngine::new();
         let runtime = NopScryptoRuntime::new(EXPORT_BLUEPRINT_ABI_TBD_LIMIT); // stateless
 
         // validate wasm
@@ -121,7 +121,7 @@ impl Package {
         call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let mut engine = WasmiEngine::new();
+        let mut engine = WasmerEngine::new();
         let runtime = RadixEngineScryptoRuntime::new(actor, system_api, CALL_FUNCTION_TBD_LIMIT);
         let module = engine.load(self.instrumented_code());
         let mut instance = module.instantiate(Box::new(runtime));

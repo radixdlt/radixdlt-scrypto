@@ -53,7 +53,7 @@ pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, In
         let size = memory.size().bytes().0;
         if size > ptr && size - ptr >= n {
             unsafe {
-                let dest = memory.data_ptr().add(ptr);
+                let dest = memory.data_ptr().add(ptr + 4);
                 ptr::copy(slice.as_ptr(), dest, n);
             }
             return Ok(ptr);
@@ -178,7 +178,7 @@ impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
                     .ok_or(InvokeError::InvalidReturnData)?;
                 read_value(&self.instance, ptr as usize)
             }
-            _ => Err(InvokeError::InvalidReturnData),
+            _ => Err(InvokeError::WasmError),
         }
     }
 
