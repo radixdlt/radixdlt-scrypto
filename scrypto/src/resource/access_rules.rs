@@ -6,7 +6,6 @@ use sbor::rust::string::ToString;
 use sbor::*;
 
 use crate::resource::*;
-use std::iter::*;
 
 /// Method authorization rules for a component
 #[derive(Debug, Clone, PartialEq, Describe, TypeId, Encode, Decode)]
@@ -50,9 +49,9 @@ impl AccessRules {
     }
 
     pub fn contains_dynamic_rules(&self) -> bool {
-        self.iter()
-            .map(|(_, access_rule)| access_rule)
-            .chain(std::iter::once(self.get_default()))
-            .any(|access_rule| access_rule.contains_dynamic_rules())
+            self.get_default().contains_dynamic_rules() || 
+            self.iter()
+                .map(|(_, access_rule)| access_rule)
+                .any(|access_rule| access_rule.contains_dynamic_rules())
     }
 }

@@ -165,7 +165,8 @@ impl ResourceManager {
         // Checking that resource has no dynamic auth.
         let contains_dynamic_rules: bool = auth.values()
             .flat_map(|rule_mutability_tuple| {
-                let mut vec = vec![rule_mutability_tuple.0.clone()];
+                let mut vec = Vec::new();
+                vec.push(rule_mutability_tuple.0.clone());
                 match rule_mutability_tuple.1.clone() {
                     MUTABLE(rule) => vec.push(rule),
                     _ => {}
