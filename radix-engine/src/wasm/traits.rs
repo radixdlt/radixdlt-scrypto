@@ -9,14 +9,14 @@ use crate::wasm::WasmValidationError;
 /// Represents a parsed Scrypto module (may be shared).
 pub trait ScryptoModule<'r, I>
 where
-    I: ScryptoInstance,
+    I: ScryptoInstance<'r>,
 {
     /// Instantiate this module with the given runtime object
     fn instantiate(&self, runtime: Box<dyn ScryptoRuntime + 'r>) -> I;
 }
 
 /// Represents an instantiated, invoke-able scrypto module.
-pub trait ScryptoInstance {
+pub trait ScryptoInstance<'r> {
     /// Invokes an export defined in this module.
     ///
     /// For simplicity, we require the export to have a signature of `f(u32) -> u32` where
@@ -58,7 +58,7 @@ pub trait ScryptoLoader<
     I,  /* Instance generic type */
 > where
     M: ScryptoModule<'r, I>,
-    I: ScryptoInstance,
+    I: ScryptoInstance<'r>,
 {
     fn load(&mut self, code: &[u8]) -> M;
 }

@@ -158,7 +158,7 @@ impl<'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModule {
     }
 }
 
-impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
+impl<'r> ScryptoInstance<'r> for WasmerScryptoInstance<'r> {
     fn invoke_export(
         &mut self,
         export_name: &str,

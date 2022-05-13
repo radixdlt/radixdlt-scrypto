@@ -150,7 +150,7 @@ impl<'r> Externals for WasmiScryptoInstance<'r> {
     }
 }
 
-impl<'r> ScryptoInstance for WasmiScryptoInstance<'r> {
+impl<'r> ScryptoInstance<'r> for WasmiScryptoInstance<'r> {
     fn invoke_export(
         &mut self,
         name: &str,
