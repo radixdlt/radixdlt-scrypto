@@ -6,12 +6,10 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
-use scrypto::constants::*;
 use scrypto::engine::types::*;
 
 use crate::engine::{
-    CallFrame, IdAllocator, IdSpace, SubstateOperation, SubstateOperationsReceipt,
-    ECDSA_TOKEN_BUCKET_ID,
+    ComponentObjects, IdAllocator, IdSpace, SubstateOperation, SubstateOperationsReceipt,
 };
 use crate::ledger::*;
 use crate::model::*;
@@ -219,7 +217,6 @@ pub enum TrackError {
 pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
     transaction_hash: Hash,
-    transaction_signers: Vec<EcdsaPublicKey>,
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
 
@@ -237,15 +234,10 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(
-        substate_store: &'s mut S,
-        transaction_hash: Hash,
-        transaction_signers: Vec<EcdsaPublicKey>,
-    ) -> Self {
+    pub fn new(substate_store: &'s mut S, transaction_hash: Hash) -> Self {
         Self {
             substate_store,
             transaction_hash,
-            transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
 
@@ -261,47 +253,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             vaults: IndexMap::new(),
             borrowed_vaults: HashMap::new(),
         }
-    }
-
-    /// Start a call frame.
-    pub fn start_call_frame<'t, 'l, L>(
-        &'t mut self,
-        verbose: bool,
-        loader: &'l mut L,
-    ) -> CallFrame<'t, 's, 'l, S, L> {
-        let signers: BTreeSet<NonFungibleId> = self
-            .transaction_signers
-            .clone()
-            .into_iter()
-            .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
-            .collect();
-
-        // With the latest change, proof amount can't be zero, thus a virtual proof is created
-        // only if there are signers.
-        //
-        // Transactions that refer to the signature virtual proof will pass static check
-        // but will fail at runtime, if there are no signers.
-        //
-        // TODO: possible to update static check to reject them early?
-        let mut initial_auth_zone_proofs = Vec::new();
-        if !signers.is_empty() {
-            // Proofs can't be zero amount
-            let mut ecdsa_bucket =
-                Bucket::new(ResourceContainer::new_non_fungible(ECDSA_TOKEN, signers));
-            let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
-            initial_auth_zone_proofs.push(ecdsa_proof);
-        }
-
-        CallFrame::new(
-            0,
-            verbose,
-            self,
-            loader,
-            Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
-            Some(Worktop::new()),
-            HashMap::new(),
-            HashMap::new(),
-        )
     }
 
     /// Returns the transaction hash.
@@ -660,6 +611,36 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             borrowed,
             substates,
             logs: self.logs,
+        }
+    }
+}
+
+impl<'s, S: ReadableSubstateStore> Track<'s, S> {
+    pub fn insert_objects_into_component(
+        &mut self,
+        new_objects: ComponentObjects,
+        component_address: ComponentAddress,
+    ) {
+        for (vault_id, vault) in new_objects.vaults {
+            self.insert_new_vault(component_address, vault_id, vault);
+        }
+        for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
+            self.insert_new_lazy_map(component_address, lazy_map_id);
+            for (k, v) in unclaimed.lazy_map {
+                let parent_address = Address::LazyMap(component_address, lazy_map_id);
+                self.set_key_value(parent_address, k, Some(v));
+            }
+
+            for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
+                self.insert_new_lazy_map(component_address, child_lazy_map_id);
+                for (k, v) in child_lazy_map {
+                    let parent_address = Address::LazyMap(component_address, child_lazy_map_id);
+                    self.set_key_value(parent_address, k, Some(v));
+                }
+            }
+            for (vault_id, vault) in unclaimed.descendent_vaults {
+                self.insert_new_vault(component_address, vault_id, vault);
+            }
         }
     }
 }

@@ -1,5 +1,4 @@
 use colored::*;
-
 use sbor::path::SborPath;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
@@ -14,35 +13,11 @@ use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneMethod;
 use scrypto::values::*;
 
-use self::LazyMapState::{Committed, Uncommitted};
-use self::LoadedSNodeState::{Borrowed, Consumed, Static};
+use crate::engine::LazyMapState::{Committed, Uncommitted};
+use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
-
-macro_rules! re_debug {
-    ($proc:expr, $($args: expr),+) => {
-        if $proc.trace {
-            $proc.log(Level::Debug, format!($($args),+));
-        }
-    };
-}
-
-macro_rules! re_info {
-    ($proc:expr, $($args: expr),+) => {
-        if $proc.trace {
-            $proc.log(Level::Info, format!($($args),+));
-        }
-    };
-}
-
-macro_rules! re_warn {
-    ($proc:expr, $($args: expr),+) => {
-        if $proc.trace {
-            $proc.log(Level::Warn, format!($($args),+));
-        }
-    };
-}
 
 /// A call frame is the basic unit that forms a transaction call stack. It keeps track of the
 /// owned objects by this function.
@@ -50,39 +25,33 @@ macro_rules! re_warn {
 /// A call frame can be either native or wasm (when the callee is a blueprint or component).
 ///
 /// Radix Engine manages the lifecycle of call frames and enforces the call and move semantics.
-pub struct CallFrame<
-    't, // Track lifetime
-    's, // Substate store lifetime
-    'l, // Scrypto loader lifetime
-    S,  // Substate store generic type
-    L,  // Scrypto loader generic type
-> where
+pub struct CallFrame<'t, 'w, 's, 'a, S, W>
+where
     S: ReadableSubstateStore,
 {
+    /// The transaction hash
+    transaction_hash: Hash,
     /// The call depth
     depth: usize,
     /// Whether to show trace messages
     trace: bool,
 
-    /// State update track
+    /// State track
     track: &'t mut Track<'s, S>,
-    /// Scrypto loader
-    loader: &'l mut L,
+    /// Wasm engine
+    wasm_engine: &'w mut W,
 
     /// Owned Snodes
     buckets: HashMap<BucketId, Bucket>,
     proofs: HashMap<ProofId, Proof>,
     owned_snodes: ComponentObjects,
 
-    /// Readable/Writable Snodes
-    component: Option<ComponentState<'t>>,
-
     /// Referenced Snodes
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
 
-    /// The caller's auth zone
-    caller_auth_zone: Option<&'t AuthZone>,
+    caller_auth_zone: Option<&'a AuthZone>,
+    component: Option<ComponentState<'a>>,
 }
 
 pub enum ConsumedSNodeState {
@@ -104,6 +73,7 @@ pub enum StaticSNodeState {
     Package,
     Resource,
     System,
+    TransactionProcessor,
 }
 
 pub enum LoadedSNodeState {
@@ -113,8 +83,9 @@ pub enum LoadedSNodeState {
 }
 
 pub enum SNodeState<'a> {
+    Root,
     SystemStatic,
-    Transaction(&'a mut TransactionProcessor),
+    TransactionProcessorStatic,
     PackageStatic,
     AuthZoneRef(&'a mut AuthZone),
     Worktop(&'a mut Worktop),
@@ -129,27 +100,34 @@ pub enum SNodeState<'a> {
 }
 
 #[derive(Debug)]
-struct ComponentState<'a> {
-    component_address: ComponentAddress,
-    component: &'a mut Component,
-    initial_loaded_object_refs: ComponentObjectRefs,
-    snode_refs: ComponentObjectRefs,
+pub struct ComponentState<'a> {
+    pub component_address: ComponentAddress,
+    pub component: &'a mut Component,
+    pub initial_loaded_object_refs: ComponentObjectRefs,
+    pub snode_refs: ComponentObjectRefs,
 }
 
 ///TODO: Remove
 #[derive(Debug)]
-enum LazyMapState {
+pub enum LazyMapState {
     Uncommitted { root: LazyMapId },
     Committed { component_address: ComponentAddress },
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum MoveMethod {
+    AsReturn,
+    AsArgument,
+}
+
 impl LoadedSNodeState {
-    fn to_snode_state(&mut self) -> SNodeState {
+    pub fn to_snode_state(&mut self) -> SNodeState {
         match self {
             Static(static_state) => match static_state {
                 StaticSNodeState::Package => SNodeState::PackageStatic,
                 StaticSNodeState::Resource => SNodeState::ResourceStatic,
                 StaticSNodeState::System => SNodeState::SystemStatic,
+                StaticSNodeState::TransactionProcessor => SNodeState::TransactionProcessorStatic,
             },
             Consumed(ref mut to_consume) => match to_consume.take().unwrap() {
                 ConsumedSNodeState::Proof(proof) => SNodeState::Proof(proof),
@@ -175,85 +153,256 @@ impl LoadedSNodeState {
     }
 }
 
-impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    fn insert_objects_into_component(
-        &mut self,
-        new_objects: ComponentObjects,
-        component_address: ComponentAddress,
-    ) {
-        for (vault_id, vault) in new_objects.vaults {
-            self.insert_new_vault(component_address, vault_id, vault);
-        }
-        for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
-            self.insert_new_lazy_map(component_address, lazy_map_id);
-            for (k, v) in unclaimed.lazy_map {
-                let parent_address = Address::LazyMap(component_address, lazy_map_id);
-                self.set_key_value(parent_address, k, Some(v));
+impl BorrowedSNodeState {
+    fn return_borrowed_state<'t, 'w, 's, 'a, S, W>(
+        self,
+        frame: &mut CallFrame<'t, 'w, 's, 'a, S, W>,
+    ) where
+        S: ReadableSubstateStore,
+    {
+        match self {
+            BorrowedSNodeState::AuthZone(auth_zone) => {
+                frame.auth_zone = Some(auth_zone);
             }
-
-            for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                self.insert_new_lazy_map(component_address, child_lazy_map_id);
-                for (k, v) in child_lazy_map {
-                    let parent_address = Address::LazyMap(component_address, child_lazy_map_id);
-                    self.set_key_value(parent_address, k, Some(v));
+            BorrowedSNodeState::Worktop(worktop) => {
+                frame.worktop = Some(worktop);
+            }
+            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
+                if let Some(component_address) = actor.component_address() {
+                    frame.track.return_borrowed_global_mut_value(
+                        component_address,
+                        component_state.unwrap(),
+                    );
                 }
             }
-            for (vault_id, vault) in unclaimed.descendent_vaults {
-                self.insert_new_vault(component_address, vault_id, vault);
+            BorrowedSNodeState::Resource(resource_address, resource_manager) => {
+                frame
+                    .track
+                    .return_borrowed_global_mut_value(resource_address, resource_manager);
+            }
+            BorrowedSNodeState::Bucket(bucket_id, bucket) => {
+                frame.buckets.insert(bucket_id, bucket);
+            }
+            BorrowedSNodeState::Proof(proof_id, proof) => {
+                frame.proofs.insert(proof_id, proof);
+            }
+            BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
+                if let Some(component_address) = maybe_component_address {
+                    frame
+                        .track
+                        .return_borrowed_vault(&component_address, &vault_id, vault);
+                } else {
+                    frame.owned_snodes.return_borrowed_vault_mut(vault);
+                }
             }
         }
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MoveMethod {
-    AsReturn,
-    AsArgument,
-}
-
-impl<'t, 's, 'l, S, L> CallFrame<'t, 's, 'l, S, L>
+impl<'t, 'w, 's, 'a, S, W> CallFrame<'t, 'w, 's, 'a, S, W>
 where
     S: ReadableSubstateStore,
 {
-    /// Create a new call frame, which is not started.
+    pub fn new_root(
+        verbose: bool,
+        transaction_hash: Hash,
+        transaction_signers: Vec<EcdsaPublicKey>,
+        track: &'t mut Track<'s, S>,
+        wasm_engine: &'w mut W,
+    ) -> Self {
+        let signers: BTreeSet<NonFungibleId> = transaction_signers
+            .clone()
+            .into_iter()
+            .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
+            .collect();
+
+        // With the latest change, proof amount can't be zero, thus a virtual proof is created
+        // only if there are signers.
+        //
+        // Transactions that refer to the signature virtual proof will pass static check
+        // but will fail at runtime, if there are no signers.
+        //
+        // TODO: possible to update static check to reject them early?
+        let mut initial_auth_zone_proofs = Vec::new();
+        if !signers.is_empty() {
+            // Proofs can't be zero amount
+            let mut ecdsa_bucket =
+                Bucket::new(ResourceContainer::new_non_fungible(ECDSA_TOKEN, signers));
+            let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
+            initial_auth_zone_proofs.push(ecdsa_proof);
+        }
+
+        Self::new(
+            transaction_hash,
+            0,
+            verbose,
+            track,
+            wasm_engine,
+            Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
+            Some(Worktop::new()),
+            HashMap::new(),
+            HashMap::new(),
+            None,
+        )
+    }
+
     pub fn new(
+        transaction_hash: Hash,
         depth: usize,
         trace: bool,
         track: &'t mut Track<'s, S>,
-        loader: &'l mut L,
+        wasm_engine: &'w mut W,
         auth_zone: Option<AuthZone>,
         worktop: Option<Worktop>,
         buckets: HashMap<BucketId, Bucket>,
         proofs: HashMap<ProofId, Proof>,
+        caller_auth_zone: Option<&'a AuthZone>,
     ) -> Self {
         Self {
+            transaction_hash,
             depth,
             trace,
             track,
-            loader,
+            wasm_engine,
             buckets,
             proofs,
             owned_snodes: ComponentObjects::new(),
             worktop,
             auth_zone,
-            caller_auth_zone: None,
-            component: None,
+            caller_auth_zone,
+            component: None, // lazily initialized
         }
     }
 
-    fn new_bucket_id(&mut self) -> Result<BucketId, RuntimeError> {
-        Ok(self.track.new_bucket_id())
+    /// Checks resource leak.
+    fn check_resource(&self) -> Result<(), RuntimeError> {
+        let success = self.buckets.is_empty()
+            && self.owned_snodes.vaults.is_empty()
+            && self.owned_snodes.lazy_maps.is_empty()
+            && match &self.worktop {
+                Some(worktop) => worktop.is_empty(),
+                None => true,
+            };
+
+        if success {
+            Ok(())
+        } else {
+            Err(RuntimeError::ResourceCheckFailure)
+        }
     }
 
-    fn new_proof_id(&mut self) -> Result<ProofId, RuntimeError> {
-        Ok(self.track.new_proof_id())
+    fn process_call_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
+        if !validated.lazy_map_ids.is_empty() {
+            return Err(RuntimeError::LazyMapNotAllowed);
+        }
+        if !validated.vault_ids.is_empty() {
+            return Err(RuntimeError::VaultNotAllowed);
+        }
+        Ok(())
     }
 
-    /// Runs the given export within this process.
-    pub fn run<'f>(
-        &'f mut self,
+    fn process_return_data(
+        &mut self,
+        from: Option<SNodeRef>,
+        validated: &ScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        if !validated.lazy_map_ids.is_empty() {
+            return Err(RuntimeError::LazyMapNotAllowed);
+        }
+
+        // Allow vaults to be returned from ResourceStatic
+        // TODO: Should we allow vaults to be returned by any component?
+        if !matches!(from, Some(SNodeRef::ResourceRef(_))) {
+            if !validated.vault_ids.is_empty() {
+                return Err(RuntimeError::VaultNotAllowed);
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Process and parse entry data from any component object (components and maps)
+    fn process_entry_data(data: &[u8]) -> Result<ComponentObjectRefs, RuntimeError> {
+        let validated =
+            ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
+        if !validated.bucket_ids.is_empty() {
+            return Err(RuntimeError::BucketNotAllowed);
+        }
+        if !validated.proof_ids.is_empty() {
+            return Err(RuntimeError::ProofNotAllowed);
+        }
+
+        // lazy map allowed
+        // vaults allowed
+        Ok(ComponentObjectRefs {
+            lazy_map_ids: validated.lazy_map_ids,
+            vault_ids: validated.vault_ids,
+        })
+    }
+
+    /// Sends buckets to another component/blueprint, either as argument or return
+    fn send_buckets(
+        &mut self,
+        bucket_ids: &HashMap<BucketId, SborPath>,
+    ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
+        let mut buckets = HashMap::new();
+        for (bucket_id, _) in bucket_ids {
+            let bucket = self
+                .buckets
+                .remove(bucket_id)
+                .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
+            if bucket.is_locked() {
+                return Err(RuntimeError::CantMoveLockedBucket);
+            }
+            buckets.insert(*bucket_id, bucket);
+        }
+        Ok(buckets)
+    }
+
+    /// Sends proofs to another component/blueprint, either as argument or return
+    fn send_vaults(
+        &mut self,
+        vault_ids: &HashSet<VaultId>,
+    ) -> Result<HashMap<VaultId, Vault>, RuntimeError> {
+        let mut vaults = HashMap::new();
+        for vault_id in vault_ids {
+            let vault = self
+                .owned_snodes
+                .vaults
+                .remove(vault_id)
+                .ok_or(RuntimeError::VaultNotFound(*vault_id))?;
+            vaults.insert(*vault_id, vault);
+        }
+        Ok(vaults)
+    }
+
+    /// Sends proofs to another component/blueprint, either as argument or return
+    fn send_proofs(
+        &mut self,
+        proof_ids: &HashMap<ProofId, SborPath>,
+        method: MoveMethod,
+    ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
+        let mut proofs = HashMap::new();
+        for (proof_id, _) in proof_ids {
+            let mut proof = self
+                .proofs
+                .remove(proof_id)
+                .ok_or(RuntimeError::ProofNotFound(*proof_id))?;
+            if proof.is_restricted() {
+                return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
+            }
+            if matches!(method, MoveMethod::AsArgument) {
+                proof.change_to_restricted();
+            }
+            proofs.insert(*proof_id, proof);
+        }
+        Ok(proofs)
+    }
+
+    pub fn run(
+        &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
-        snode: SNodeState<'t>,
+        snode: SNodeState<'a>,
         call_data: ScryptoValue,
     ) -> Result<
         (
@@ -264,16 +413,19 @@ where
         ),
         RuntimeError,
     > {
-        #[cfg(not(feature = "alloc"))]
-        let now = std::time::Instant::now();
-        re_info!(self, "Run started: snode_ref = {:?}", snode_ref);
-
-        // Execution
         let output = match snode {
+            SNodeState::Root => {
+                panic!("Root is not runnable")
+            }
             SNodeState::SystemStatic => {
                 System::static_main(call_data, self).map_err(RuntimeError::SystemError)
             }
-            SNodeState::Transaction(transaction_process) => transaction_process.main(self),
+            SNodeState::TransactionProcessorStatic => {
+                TransactionProcessor::static_main(call_data, self).map_err(|e| match e {
+                    TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                    TransactionProcessorError::RuntimeError(e) => e,
+                })
+            }
             SNodeState::PackageStatic => {
                 Package::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
@@ -350,24 +502,20 @@ where
         }
         self.check_resource()?;
 
-        #[cfg(not(feature = "alloc"))]
-        re_info!(
-            self,
-            "Run ended: time elapsed = {} ms",
-            now.elapsed().as_millis()
-        );
-        #[cfg(feature = "alloc")]
-        re_info!(self, "Run ended");
-
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
+}
 
-    /// Calls a function/method.
-    pub fn invoke_snode(
+impl<'t, 'w, 's, 'a, S, W> SystemApi for CallFrame<'t, 'w, 's, 'a, S, W>
+where
+    S: ReadableSubstateStore,
+{
+    fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        self.sys_log(Level::Debug, format!("{:?}", snode_ref));
         let function = if let Value::Enum { name, .. } = &call_data.dom {
             name.clone()
         } else {
@@ -376,6 +524,10 @@ where
 
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
+            SNodeRef::TransactionProcessor => {
+                // FIXME: only TransactionExecutor can invoke this function
+                Ok((Static(StaticSNodeState::TransactionProcessor), vec![]))
+            }
             SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
             SNodeRef::SystemStatic => Ok((Static(StaticSNodeState::System), vec![])),
             SNodeRef::AuthZoneRef => {
@@ -410,6 +562,7 @@ where
                             ));
                         }
                         let export_name = format!("{}_main", blueprint_name);
+
                         Ok((
                             Borrowed(BorrowedSNodeState::Scrypto(
                                 ScryptoActorInfo::blueprint(
@@ -456,6 +609,7 @@ where
                             .clone();
 
                         let (_, method_auths) = component.method_authorization(&schema, &function);
+
                         Ok((
                             Borrowed(BorrowedSNodeState::Scrypto(
                                 ScryptoActorInfo::component(
@@ -606,8 +760,6 @@ where
             }
         }
 
-        // Execution
-
         // Figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
@@ -615,33 +767,30 @@ where
         moving_buckets.extend(self.send_buckets(&call_data.bucket_ids)?);
         moving_proofs.extend(self.send_proofs(&call_data.proof_ids, MoveMethod::AsArgument)?);
 
-        let process_auth_zone = if matches!(
-            loaded_snode,
-            Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
-        ) {
-            Some(AuthZone::new())
-        } else {
-            None
-        };
+        // start a new frame
 
-        let snode = loaded_snode.to_snode_state();
-
-        // start a new process
         let mut frame = CallFrame::new(
+            self.transaction_hash,
             self.depth + 1,
             self.trace,
             self.track,
-            self.loader,
-            process_auth_zone,
-            None,
+            self.wasm_engine,
+            match loaded_snode {
+                Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
+                | Static(StaticSNodeState::TransactionProcessor) => Some(AuthZone::new()),
+                _ => None,
+            },
+            match loaded_snode {
+                Static(StaticSNodeState::TransactionProcessor) => Some(Worktop::new()),
+                _ => None,
+            },
             moving_buckets,
             moving_proofs,
+            self.auth_zone.as_ref(),
         );
-        if let Some(auth_zone) = &self.auth_zone {
-            frame.caller_auth_zone = Option::Some(auth_zone);
-        }
 
         // invoke the main function
+        let snode = loaded_snode.to_snode_state();
         let (result, received_buckets, received_proofs, received_vaults) =
             frame.run(Some(snode_ref), snode, call_data)?;
 
@@ -652,218 +801,10 @@ where
 
         // Return borrowed snodes
         if let Borrowed(borrowed) = loaded_snode {
-            self.return_borrowed_state(borrowed);
+            borrowed.return_borrowed_state(self);
         }
 
         Ok(result)
-    }
-
-    fn return_borrowed_state(&mut self, state: BorrowedSNodeState) {
-        match state {
-            BorrowedSNodeState::AuthZone(auth_zone) => {
-                self.auth_zone = Some(auth_zone);
-            }
-            BorrowedSNodeState::Worktop(worktop) => {
-                self.worktop = Some(worktop);
-            }
-            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
-                if let Some(component_address) = actor.component_address() {
-                    self.track.return_borrowed_global_mut_value(
-                        component_address,
-                        component_state.unwrap(),
-                    );
-                }
-            }
-            BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                self.track
-                    .return_borrowed_global_mut_value(resource_address, resource_manager);
-            }
-            BorrowedSNodeState::Bucket(bucket_id, bucket) => {
-                self.buckets.insert(bucket_id, bucket);
-            }
-            BorrowedSNodeState::Proof(proof_id, proof) => {
-                self.proofs.insert(proof_id, proof);
-            }
-            BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
-                if let Some(component_address) = maybe_component_address {
-                    self.track
-                        .return_borrowed_vault(&component_address, &vault_id, vault);
-                } else {
-                    self.owned_snodes.return_borrowed_vault_mut(vault);
-                }
-            }
-        }
-    }
-
-    /// Checks resource leak.
-    fn check_resource(&self) -> Result<(), RuntimeError> {
-        re_debug!(self, "Resource check started");
-        let mut success = true;
-
-        for (bucket_id, bucket) in &self.buckets {
-            re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
-            success = false;
-        }
-        for (vault_id, vault) in &self.owned_snodes.vaults {
-            re_warn!(self, "Dangling vault: {:?}, {:?}", vault_id, vault);
-            success = false;
-        }
-        for (lazy_map_id, lazy_map) in &self.owned_snodes.lazy_maps {
-            re_warn!(self, "Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map);
-            success = false;
-        }
-
-        if let Some(worktop) = &self.worktop {
-            if !worktop.is_empty() {
-                re_warn!(self, "Resource worktop is not empty");
-                success = false;
-            }
-        }
-
-        re_debug!(self, "Resource check ended");
-        if success {
-            Ok(())
-        } else {
-            Err(RuntimeError::ResourceCheckFailure)
-        }
-    }
-
-    /// Logs a message to the console.
-    #[allow(unused_variables)]
-    pub fn log(&self, level: Level, msg: String) {
-        let (l, m) = match level {
-            Level::Error => ("ERROR".red(), msg.red()),
-            Level::Warn => ("WARN".yellow(), msg.yellow()),
-            Level::Info => ("INFO".green(), msg.green()),
-            Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-            Level::Trace => ("TRACE".normal(), msg.normal()),
-        };
-
-        #[cfg(not(feature = "alloc"))]
-        println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
-    }
-
-    fn process_call_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
-        if !validated.lazy_map_ids.is_empty() {
-            return Err(RuntimeError::LazyMapNotAllowed);
-        }
-        if !validated.vault_ids.is_empty() {
-            return Err(RuntimeError::VaultNotAllowed);
-        }
-        Ok(())
-    }
-
-    fn process_return_data(
-        &mut self,
-        from: Option<SNodeRef>,
-        validated: &ScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        if !validated.lazy_map_ids.is_empty() {
-            return Err(RuntimeError::LazyMapNotAllowed);
-        }
-
-        // Allow vaults to be returned from ResourceStatic
-        // TODO: Should we allow vaults to be returned by any component?
-        if !matches!(from, Some(SNodeRef::ResourceRef(_))) {
-            if !validated.vault_ids.is_empty() {
-                return Err(RuntimeError::VaultNotAllowed);
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Process and parse entry data from any component object (components and maps)
-    fn process_entry_data(data: &[u8]) -> Result<ComponentObjectRefs, RuntimeError> {
-        let validated =
-            ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
-        if !validated.bucket_ids.is_empty() {
-            return Err(RuntimeError::BucketNotAllowed);
-        }
-        if !validated.proof_ids.is_empty() {
-            return Err(RuntimeError::ProofNotAllowed);
-        }
-
-        // lazy map allowed
-        // vaults allowed
-        Ok(ComponentObjectRefs {
-            lazy_map_ids: validated.lazy_map_ids,
-            vault_ids: validated.vault_ids,
-        })
-    }
-
-    /// Sends buckets to another component/blueprint, either as argument or return
-    fn send_buckets(
-        &mut self,
-        bucket_ids: &HashMap<BucketId, SborPath>,
-    ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
-        let mut buckets = HashMap::new();
-        for (bucket_id, _) in bucket_ids {
-            let bucket = self
-                .buckets
-                .remove(bucket_id)
-                .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
-            re_debug!(self, "Moving bucket: {}, {:?}", bucket_id, bucket);
-            if bucket.is_locked() {
-                return Err(RuntimeError::CantMoveLockedBucket);
-            }
-            buckets.insert(*bucket_id, bucket);
-        }
-        Ok(buckets)
-    }
-
-    /// Sends proofs to another component/blueprint, either as argument or return
-    fn send_vaults(
-        &mut self,
-        vault_ids: &HashSet<VaultId>,
-    ) -> Result<HashMap<VaultId, Vault>, RuntimeError> {
-        let mut vaults = HashMap::new();
-        for vault_id in vault_ids {
-            let vault = self
-                .owned_snodes
-                .vaults
-                .remove(vault_id)
-                .ok_or(RuntimeError::VaultNotFound(*vault_id))?;
-            vaults.insert(*vault_id, vault);
-        }
-        Ok(vaults)
-    }
-
-    /// Sends proofs to another component/blueprint, either as argument or return
-    fn send_proofs(
-        &mut self,
-        proof_ids: &HashMap<ProofId, SborPath>,
-        method: MoveMethod,
-    ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
-        let mut proofs = HashMap::new();
-        for (proof_id, _) in proof_ids {
-            let mut proof = self
-                .proofs
-                .remove(proof_id)
-                .ok_or(RuntimeError::ProofNotFound(*proof_id))?;
-            re_debug!(self, "Moving proof: {}, {:?}", proof_id, proof);
-            if proof.is_restricted() {
-                return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
-            }
-            if matches!(method, MoveMethod::AsArgument) {
-                proof.change_to_restricted();
-            }
-            proofs.insert(*proof_id, proof);
-        }
-        Ok(proofs)
-    }
-}
-
-impl<'t, 's, 'l, S, L> SystemApi for CallFrame<'t, 's, 'l, S, L>
-where
-    S: ReadableSubstateStore,
-{
-    fn invoke_snode(
-        &mut self,
-        snode_ref: SNodeRef,
-        call_data: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_snode(snode_ref, call_data)
     }
 
     fn get_non_fungible(
@@ -916,7 +857,7 @@ where
     }
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
-        let proof_id = self.new_proof_id()?;
+        let proof_id = self.track.new_proof_id();
         self.proofs.insert(proof_id, proof);
         Ok(proof_id)
     }
@@ -931,7 +872,7 @@ where
     }
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
-        let bucket_id = self.new_bucket_id()?;
+        let bucket_id = self.track.new_bucket_id();
         self.buckets.insert(bucket_id, Bucket::new(container));
         Ok(bucket_id)
     }
@@ -969,14 +910,15 @@ where
 
     fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError> {
         if let Some(ComponentState {
+            component_address,
             component,
             initial_loaded_object_refs,
-            component_address,
             snode_refs,
         }) = &mut self.component
         {
             if addr.eq(component_address) {
                 snode_refs.extend(initial_loaded_object_refs.clone());
+
                 let state = component.state().to_vec();
                 return Ok(state);
             }
@@ -991,9 +933,9 @@ where
         state: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         if let Some(ComponentState {
+            component_address,
             component,
             initial_loaded_object_refs,
-            component_address,
             ..
         }) = &mut self.component
         {
@@ -1160,5 +1102,19 @@ where
 
     fn emit_log(&mut self, level: Level, message: String) {
         self.track.add_log(level, message);
+    }
+
+    #[allow(unused_variables)]
+    fn sys_log(&self, level: Level, msg: String) {
+        let (l, m) = match level {
+            Level::Error => ("ERROR".red(), msg.red()),
+            Level::Warn => ("WARN".yellow(), msg.yellow()),
+            Level::Info => ("INFO".green(), msg.green()),
+            Level::Debug => ("DEBUG".cyan(), msg.cyan()),
+            Level::Trace => ("TRACE".normal(), msg.normal()),
+        };
+
+        #[cfg(not(feature = "alloc"))]
+        println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
     }
 }

@@ -30,7 +30,9 @@ pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
 pub use system::{System, SystemError};
 pub use transaction::{Instruction, SignedTransaction, Transaction};
-pub use transaction_processor::TransactionProcessor;
+pub use transaction_processor::{
+    TransactionProcessor, TransactionProcessorError, TransactionProcessorFunction,
+};
 pub use validated_transaction::{ValidatedInstruction, ValidatedTransaction};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};

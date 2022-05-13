@@ -19,4 +19,5 @@ pub enum SNodeRef {
     ProofRef(ProofId),
     Proof(ProofId),
     VaultRef(VaultId),
+    TransactionProcessor,
 }

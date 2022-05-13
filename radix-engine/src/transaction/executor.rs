@@ -1,5 +1,6 @@
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use scrypto::buffer::*;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
@@ -134,26 +135,32 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        let mut track = Track::new(
-            self.substate_store,
+        // Start Track and Wasm Engine
+        let mut track = Track::new(self.substate_store, validated.raw_hash.clone());
+        #[cfg(feature = "wasmer")]
+        let mut wasm_engine = WasmerEngine::new();
+        #[cfg(not(feature = "wasmer"))]
+        let mut wasm_engine = WasmiEngine::new();
+
+        // Create root call frame.
+        let mut root_frame = CallFrame::new_root(
+            self.trace,
             validated.raw_hash.clone(),
             validated.signers.clone(),
+            &mut track,
+            &mut wasm_engine,
         );
 
-        #[cfg(feature = "wasmer")]
-        let mut loader = WasmerEngine::new();
-        #[cfg(not(feature = "wasmer"))]
-        let mut loader = WasmiEngine::new();
-
-        let mut proc = track.start_call_frame(self.trace, &mut loader);
-
-        let mut txn_processor = TransactionProcessor::new(validated.clone());
-        let txn_snode = SNodeState::Transaction(&mut txn_processor);
-        let error = match proc.run(None, txn_snode, ScryptoValue::from_value(&())) {
-            Ok(_) => None,
-            Err(e) => Some(e),
+        // Invoke the transaction processor
+        // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
+        let result = root_frame.invoke_snode(
+            scrypto::core::SNodeRef::TransactionProcessor,
+            ScryptoValue::from_value(&TransactionProcessorFunction::Run(validated.clone())),
+        );
+        let (outputs, error) = match result {
+            Ok(o) => (scrypto_decode::<Vec<ScryptoValue>>(&o.raw).unwrap(), None),
+            Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
         };
-        let outputs = txn_processor.outputs().to_vec();
 
         let track_receipt = track.to_receipt();
         // commit state updates
@@ -191,7 +198,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
 
         Receipt {
             commit_receipt,
-            validated_transaction: validated.clone(),
+            validated_transaction: validated,
             result: match error {
                 Some(error) => Err(error),
                 None => Ok(()),

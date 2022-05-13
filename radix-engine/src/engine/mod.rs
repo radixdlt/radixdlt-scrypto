@@ -9,7 +9,10 @@ mod substate_receipt;
 mod system_api;
 mod track;
 
-pub use call_frame::{CallFrame, SNodeState};
+pub use call_frame::{
+    BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LazyMapState,
+    LoadedSNodeState, MoveMethod, SNodeState, StaticSNodeState,
+};
 pub use component_objects::*;
 pub use errors::*;
 pub use id_allocator::*;
