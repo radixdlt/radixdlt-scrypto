@@ -49,8 +49,9 @@ impl AccessRules {
     }
 
     pub fn contains_dynamic_rules(&self) -> bool {
-            self.get_default().contains_dynamic_rules() || 
-            self.iter()
+        self.get_default().contains_dynamic_rules()
+            || self
+                .iter()
                 .map(|(_, access_rule)| access_rule)
                 .any(|access_rule| access_rule.contains_dynamic_rules())
     }

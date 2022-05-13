@@ -42,7 +42,7 @@ pub enum ResourceManagerError {
     MethodNotFound(String),
     CouldNotCreateBucket,
     CouldNotCreateVault,
-    DynamicAccessRulesNotSupported
+    DynamicAccessRulesNotSupported,
 }
 
 enum MethodAccessRuleMethod {
@@ -163,7 +163,8 @@ impl ResourceManager {
         }
 
         // Checking that resource has no dynamic auth.
-        let contains_dynamic_rules: bool = auth.values()
+        let contains_dynamic_rules: bool = auth
+            .values()
             .flat_map(|rule_mutability_tuple| {
                 let mut vec = Vec::new();
                 vec.push(rule_mutability_tuple.0.clone());

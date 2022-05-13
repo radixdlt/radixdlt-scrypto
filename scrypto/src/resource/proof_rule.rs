@@ -432,7 +432,7 @@ impl AccessRule {
     pub fn contains_dynamic_rules(&self) -> bool {
         match self {
             Self::AllowAll | Self::DenyAll => false,
-            Self::Protected(access_rule_node) => access_rule_node.contains_dynamic_rules()
+            Self::Protected(access_rule_node) => access_rule_node.contains_dynamic_rules(),
         }
     }
 }

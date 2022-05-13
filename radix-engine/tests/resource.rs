@@ -25,7 +25,7 @@ pub fn test_resource_creation(
                 metadata,
                 resource_auth,
                 Some(MintParams::Fungible { amount: dec!("1") })
-            )]
+            )],
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
@@ -135,15 +135,20 @@ fn mint_too_much_should_fail() {
 
 #[test]
 fn resource_creation_with_static_rules_should_succeed() {
-    let mut resource_auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
-    resource_auth.insert(ResourceMethodAuthKey::Mint, (rule!(require(RADIX_TOKEN)), LOCKED));
+    let mut resource_auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
+        HashMap::new();
+    resource_auth.insert(
+        ResourceMethodAuthKey::Mint,
+        (rule!(require(RADIX_TOKEN)), LOCKED),
+    );
 
     test_resource_creation(resource_auth, false);
 }
 
 #[test]
 fn resource_creation_with_dynamic_behavior_rule_should_fail() {
-    let mut resource_auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
+    let mut resource_auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
+        HashMap::new();
     resource_auth.insert(
         ResourceMethodAuthKey::Mint,
         (rule!(require("some_dynamic_badge")), LOCKED),
@@ -154,7 +159,8 @@ fn resource_creation_with_dynamic_behavior_rule_should_fail() {
 
 #[test]
 fn resource_creation_with_dynamic_mutable_rule_should_fail() {
-    let mut resource_auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
+    let mut resource_auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
+        HashMap::new();
     resource_auth.insert(
         ResourceMethodAuthKey::Mint,
         (
@@ -168,7 +174,8 @@ fn resource_creation_with_dynamic_mutable_rule_should_fail() {
 
 #[test]
 fn resource_creation_with_dynamic_behavior_and_mutable_rule_should_fail() {
-    let mut resource_auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> = HashMap::new();
+    let mut resource_auth: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)> =
+        HashMap::new();
     resource_auth.insert(
         ResourceMethodAuthKey::Mint,
         (
