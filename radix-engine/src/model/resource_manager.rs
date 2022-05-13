@@ -42,6 +42,7 @@ pub enum ResourceManagerError {
     MethodNotFound(String),
     CouldNotCreateBucket,
     CouldNotCreateVault,
+    DynamicAccessRulesNotSupported
 }
 
 enum MethodAccessRuleMethod {
@@ -159,6 +160,21 @@ impl ResourceManager {
         );
         for pub_method in ["non_fungible_exists", "get_non_fungible"] {
             method_table.insert(pub_method.to_string(), Public);
+        }
+
+        // Checking that resource has no dynamic auth.
+        let contains_dynamic_rules: bool = auth.values()
+            .flat_map(|rule_mutability_tuple| {
+                let mut vec = vec![rule_mutability_tuple.0.clone()];
+                match rule_mutability_tuple.1.clone() {
+                    MUTABLE(rule) => vec.push(rule),
+                    _ => {}
+                }
+                vec
+            })
+            .any(|x| x.contains_dynamic_rules());
+        if contains_dynamic_rules {
+            return Err(ResourceManagerError::DynamicAccessRulesNotSupported);
         }
 
         let mut authorization: HashMap<ResourceMethodAuthKey, MethodAccessRule> = HashMap::new();

@@ -16,6 +16,15 @@ pub enum SoftDecimal {
     Dynamic(SchemaPath),
 }
 
+impl SoftDecimal {
+    pub fn is_dynamic(&self) -> bool {
+        match &self {
+            Self::Dynamic(_) => true,
+            Self::Static(_) => false,
+        }
+    }
+}
+
 impl From<Decimal> for SoftDecimal {
     fn from(amount: Decimal) -> Self {
         SoftDecimal::Static(amount)
@@ -39,6 +48,15 @@ impl From<&str> for SoftDecimal {
 pub enum SoftCount {
     Static(u8),
     Dynamic(SchemaPath),
+}
+
+impl SoftCount {
+    pub fn is_dynamic(&self) -> bool {
+        match self {
+            Self::Dynamic(_) => true,
+            Self::Static(_) => false,
+        }
+    }
 }
 
 impl From<u8> for SoftCount {
@@ -66,6 +84,15 @@ pub enum SoftResource {
     Dynamic(SchemaPath),
 }
 
+impl SoftResource {
+    pub fn is_dynamic(&self) -> bool {
+        match self {
+            Self::Dynamic(_) => true,
+            Self::Static(_) => false,
+        }
+    }
+}
+
 impl From<ResourceAddress> for SoftResource {
     fn from(resource_address: ResourceAddress) -> Self {
         SoftResource::Static(resource_address)
@@ -90,6 +117,15 @@ pub enum SoftResourceOrNonFungible {
     StaticNonFungible(NonFungibleAddress),
     StaticResource(ResourceAddress),
     Dynamic(SchemaPath),
+}
+
+impl SoftResourceOrNonFungible {
+    pub fn is_dynamic(&self) -> bool {
+        match self {
+            Self::Dynamic(_) => true,
+            Self::StaticNonFungible(_) | Self::StaticResource(_) => false,
+        }
+    }
 }
 
 impl From<NonFungibleAddress> for SoftResourceOrNonFungible {
@@ -123,6 +159,15 @@ pub enum SoftResourceOrNonFungibleList {
     Dynamic(SchemaPath),
 }
 
+impl SoftResourceOrNonFungibleList {
+    pub fn is_dynamic(&self) -> bool {
+        match self {
+            Self::Static(vec) => vec.iter().any(SoftResourceOrNonFungible::is_dynamic),
+            Self::Dynamic(_) => true,
+        }
+    }
+}
+
 impl From<SchemaPath> for SoftResourceOrNonFungibleList {
     fn from(path: SchemaPath) -> Self {
         SoftResourceOrNonFungibleList::Dynamic(path)
@@ -153,6 +198,26 @@ pub enum ProofRule {
     CountOf(SoftCount, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
+}
+
+impl ProofRule {
+    pub fn contains_dynamic_rules(&self) -> bool {
+        match self {
+            Self::Require(soft_resource_or_non_fungible) => {
+                soft_resource_or_non_fungible.is_dynamic()
+            }
+            Self::AmountOf(soft_decimal, soft_resource) => {
+                soft_decimal.is_dynamic() || soft_resource.is_dynamic()
+            }
+            Self::CountOf(soft_count, soft_resource_or_non_fungible_list) => {
+                soft_count.is_dynamic() || soft_resource_or_non_fungible_list.is_dynamic()
+            }
+            Self::AllOf(soft_resource_or_non_fungible_list)
+            | Self::AnyOf(soft_resource_or_non_fungible_list) => {
+                soft_resource_or_non_fungible_list.is_dynamic()
+            }
+        }
+    }
 }
 
 // FIXME: describe types with cycles
@@ -193,6 +258,17 @@ pub enum AccessRuleNode {
     ProofRule(ProofRule),
     AnyOf(Vec<AccessRuleNode>),
     AllOf(Vec<AccessRuleNode>),
+}
+
+impl AccessRuleNode {
+    pub fn contains_dynamic_rules(&self) -> bool {
+        match self {
+            AccessRuleNode::ProofRule(proof_rule) => proof_rule.contains_dynamic_rules(),
+            AccessRuleNode::AllOf(vec) | AccessRuleNode::AnyOf(vec) => {
+                vec.iter().any(Self::contains_dynamic_rules)
+            }
+        }
+    }
 }
 
 // FIXME: describe types with cycles
@@ -350,6 +426,15 @@ pub enum AccessRule {
     AllowAll,
     DenyAll,
     Protected(AccessRuleNode),
+}
+
+impl AccessRule {
+    pub fn contains_dynamic_rules(&self) -> bool {
+        match self {
+            Self::AllowAll | Self::DenyAll => false,
+            Self::Protected(access_rule_node) => access_rule_node.contains_dynamic_rules()
+        }
+    }
 }
 
 #[macro_export]
