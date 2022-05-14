@@ -10,7 +10,8 @@ use scrypto::prelude::rule;
 use scrypto::prelude::LOCKED;
 use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 
-use crate::ledger::{ReadableSubstateStore, SubstateIdGenerator, WriteableSubstateStore};
+use crate::engine::{Track, TrackReceipt};
+use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -29,72 +30,65 @@ const SYSTEM_COMPONENT_NAME: &str = "System";
 
 use crate::model::*;
 
+fn create_genesis<S: ReadableSubstateStore>(mut track: Track<S>) -> TrackReceipt {
+    let system_package =
+        Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
+    track.create_uuid_value_2(SYSTEM_PACKAGE, system_package);
+    let account_package =
+        Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
+    track.create_uuid_value_2(ACCOUNT_PACKAGE, account_package);
+
+    // Radix token resource address
+    let mut metadata = HashMap::new();
+    metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
+    metadata.insert("name".to_owned(), XRD_NAME.to_owned());
+    metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
+    metadata.insert("url".to_owned(), XRD_URL.to_owned());
+
+    let mut resource_auth = HashMap::new();
+    resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+
+    let mut xrd_resource_manager = ResourceManager::new(
+        ResourceType::Fungible { divisibility: 18 },
+        metadata,
+        resource_auth,
+    )
+    .unwrap();
+    let minted_xrd = xrd_resource_manager
+        .mint_fungible(XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone())
+        .unwrap();
+    track.create_uuid_value_2(RADIX_TOKEN, xrd_resource_manager);
+
+    let mut ecdsa_resource_auth = HashMap::new();
+    ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
+    let ecdsa_token = ResourceManager::new(
+        ResourceType::NonFungible,
+        HashMap::new(),
+        ecdsa_resource_auth,
+    )
+    .unwrap();
+    track.create_uuid_value_2(ECDSA_TOKEN, ecdsa_token);
+
+    let system_vault = Vault::new(minted_xrd);
+    track.create_uuid_value_2((SYSTEM_COMPONENT, XRD_VAULT_ID), system_vault);
+
+    let system_component = Component::new(
+        SYSTEM_PACKAGE,
+        SYSTEM_COMPONENT_NAME.to_owned(),
+        vec![],
+        scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
+    );
+
+    track.create_uuid_value_2(SYSTEM_COMPONENT, system_component);
+
+    track.to_receipt()
+}
+
 pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_store: &mut S) {
-    let package: Option<Package> = substate_store
-        .get_decoded_substate(&SYSTEM_PACKAGE)
-        .map(|(package, _)| package);
-    if package.is_none() {
-        let nonce = substate_store.get_nonce();
-        substate_store.increase_nonce();
-        let tx_hash = hash(nonce.to_le_bytes());
-        let mut id_gen = SubstateIdGenerator::new(tx_hash);
-
-        // System package
-        let system_package =
-            Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
-        substate_store.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, id_gen.next());
-
-        // Account package
-        let account_package =
-            Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
-        substate_store.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, id_gen.next());
-
-        // Radix token resource address
-        let mut metadata = HashMap::new();
-        metadata.insert("symbol".to_owned(), XRD_SYMBOL.to_owned());
-        metadata.insert("name".to_owned(), XRD_NAME.to_owned());
-        metadata.insert("description".to_owned(), XRD_DESCRIPTION.to_owned());
-        metadata.insert("url".to_owned(), XRD_URL.to_owned());
-
-        let mut resource_auth = HashMap::new();
-        resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
-
-        let mut xrd = ResourceManager::new(
-            ResourceType::Fungible { divisibility: 18 },
-            metadata,
-            resource_auth,
-        )
-        .unwrap();
-        substate_store.put_encoded_substate(&RADIX_TOKEN, &xrd, id_gen.next());
-        let minted_xrd = xrd
-            .mint_fungible(XRD_MAX_SUPPLY.into(), RADIX_TOKEN.clone())
-            .unwrap();
-
-        let mut ecdsa_resource_auth = HashMap::new();
-        ecdsa_resource_auth.insert(Withdraw, (rule!(allow_all), LOCKED));
-        let ecdsa_token = ResourceManager::new(
-            ResourceType::NonFungible,
-            HashMap::new(),
-            ecdsa_resource_auth,
-        )
-        .unwrap();
-        substate_store.put_encoded_substate(&ECDSA_TOKEN, &ecdsa_token, id_gen.next());
-
-        // Instantiate system component
-        let system_vault = Vault::new(minted_xrd);
-        substate_store.put_encoded_child_substate(
-            &SYSTEM_COMPONENT,
-            &XRD_VAULT_ID,
-            &system_vault,
-            id_gen.next(),
-        );
-
-        let system_component = Component::new(
-            SYSTEM_PACKAGE,
-            SYSTEM_COMPONENT_NAME.to_owned(),
-            vec![],
-            scrypto_encode(&SystemComponentState { xrd: XRD_VAULT }),
-        );
-        substate_store.put_encoded_substate(&SYSTEM_COMPONENT, &system_component, id_gen.next());
+    let system_substate = substate_store.get_substate(&scrypto_encode(&SYSTEM_PACKAGE));
+    if system_substate.is_none() {
+        let track = Track::new(substate_store, Hash([0u8; 32]), vec![]);
+        let receipt = create_genesis(track);
+        receipt.substates.commit(substate_store);
     }
 }
