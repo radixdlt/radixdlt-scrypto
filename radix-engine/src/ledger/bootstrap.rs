@@ -6,9 +6,9 @@ use scrypto::buffer::*;
 use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::rule;
-use scrypto::prelude::LOCKED;
 use scrypto::resource::ResourceMethodAuthKey::Withdraw;
+use scrypto::resource::LOCKED;
+use scrypto::rule;
 
 use crate::engine::{Track, TrackReceipt};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};

@@ -328,7 +328,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 };
                 self.component = component_state;
 
-                let mut runtime = RadixEngineScryptoRuntime::new(actor, call_data.clone(), self);
+                let mut runtime = RadixEngineScryptoRuntime::new(actor, self);
                 let mut engine = WasmiEngine::new();
                 let module = engine.instantiate(&code);
                 module

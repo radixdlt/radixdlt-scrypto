@@ -23,24 +23,24 @@ impl Runtime {
     /// Returns the running entity, a component if within a call-method context or a
     /// blueprint if within a call-function context.
     pub fn actor() -> ScryptoActorInfo {
-        let input = GetActorInput {};
-        let output: GetActorOutput = call_engine(GET_ACTOR, input);
-        output.actor
+        let input = RadixEngineInput::GetActor();
+        let output: ScryptoActorInfo = call_engine(input);
+        output
     }
 
     /// Returns the package ID.
     pub fn package_address() -> PackageAddress {
-        let input = GetActorInput {};
-        let output: GetActorOutput = call_engine(GET_ACTOR, input);
-        output.actor.to_package_address()
+        let input = RadixEngineInput::GetActor();
+        let output: ScryptoActorInfo = call_engine(input);
+        output.to_package_address()
     }
 
     /// Generates a UUID.
     pub fn generate_uuid() -> u128 {
-        let input = GenerateUuidInput {};
-        let output: GenerateUuidOutput = call_engine(GENERATE_UUID, input);
+        let input = RadixEngineInput::GenerateUuid();
+        let output: u128 = call_engine(input);
 
-        output.uuid
+        output
     }
 
     /// Invokes a function on a blueprint.
@@ -51,16 +51,16 @@ impl Runtime {
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
         let call_data = call_data_bytes_args!(function.as_ref().to_owned(), args);
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Scrypto(ScryptoActor::Blueprint(
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::Scrypto(ScryptoActor::Blueprint(
                 package_address,
                 blueprint_name.as_ref().to_owned(),
             )),
             call_data,
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        );
+        let output: Vec<u8> = call_engine(input);
 
-        output.rtn
+        output
     }
 
     /// Invokes a method on a component.
@@ -78,32 +78,32 @@ impl Runtime {
             fields,
         };
 
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
-            call_data: ::sbor::encode_any(&variant),
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
+            ::sbor::encode_any(&variant),
+        );
+        let output: Vec<u8> = call_engine(input);
 
-        output.rtn
+        output
     }
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::SystemStatic,
-            call_data: scrypto_encode(&SystemFunction::GetTransactionHash()),
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::SystemStatic,
+            scrypto_encode(&SystemFunction::GetTransactionHash()),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
     }
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::SystemStatic,
-            call_data: scrypto_encode(&SystemFunction::GetEpoch()),
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::SystemStatic,
+            scrypto_encode(&SystemFunction::GetEpoch()),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
     }
 }

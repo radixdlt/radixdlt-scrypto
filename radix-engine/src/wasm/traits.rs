@@ -27,7 +27,7 @@ pub trait ScryptoModule {
 
 /// Represents the runtime object that can be invoked by scrypto modules.
 pub trait ScryptoRuntime {
-    fn main(&mut self, name: &str, args: &[ScryptoValue]) -> Result<ScryptoValue, InvokeError>;
+    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError>;
 }
 
 /// Trait for validating scrypto modules.
@@ -49,7 +49,7 @@ pub trait ScryptoWasmExecutor<T: ScryptoModule> {
 pub struct NopScryptoRuntime;
 
 impl ScryptoRuntime for NopScryptoRuntime {
-    fn main(&mut self, _name: &str, _args: &[ScryptoValue]) -> Result<ScryptoValue, InvokeError> {
+    fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         Ok(ScryptoValue::unit())
     }
 }

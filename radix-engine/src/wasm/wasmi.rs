@@ -97,19 +97,11 @@ impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
         let input_ptr: u32 = args.nth_checked(0)?;
         let input = self.module.read_value(input_ptr)?;
 
-        if let sbor::Value::Enum { name, fields } = input.dom {
-            let output = self.runtime.main(
-                name.as_str(),
-                &[ScryptoValue::from_any(&fields[0]).expect("FIXME")],
-            )?;
-
-            self.module
-                .send_value(&output)
-                .map(Option::Some)
-                .map_err(|e| e.into())
-        } else {
-            Err(InvokeError::InvalidCallData.into())
-        }
+        let output = self.runtime.main(input)?;
+        self.module
+            .send_value(&output)
+            .map(Option::Some)
+            .map_err(|e| e.into())
     }
 }
 

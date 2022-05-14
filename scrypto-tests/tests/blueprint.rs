@@ -41,9 +41,9 @@ fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 
 #[test]
 fn test_simple_abi() {
-    let ptr = Simple_abi(core::ptr::null::<u8>());
+    let ptr = Simple_abi(core::ptr::null_mut::<u8>());
     let abi: (Type, Vec<abi::Function>, Vec<abi::Method>) =
-        unsafe { scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap()) };
+        scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap());
 
     assert_json_eq(
         abi,

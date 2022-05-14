@@ -4,7 +4,7 @@ use bencher::Bencher;
 
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
-use scrypto::prelude::*;
+use scrypto::prelude::RADIX_TOKEN;
 
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemorySubstateStore::with_bootstrap();

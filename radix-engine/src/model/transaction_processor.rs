@@ -3,10 +3,10 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::call_data;
 use scrypto::component::PackageFunction;
-use scrypto::core::SNodeRef;
+use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{ConsumingProofMethod, ProofMethod, ScryptoActor};
 use scrypto::resource::{AuthZoneMethod, BucketMethod};
+use scrypto::resource::{ConsumingProofMethod, ProofMethod};
 use scrypto::values::*;
 
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};

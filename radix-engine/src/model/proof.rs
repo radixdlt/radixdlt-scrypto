@@ -7,8 +7,8 @@ use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::ProofMethod;
 use scrypto::resource::ConsumingProofMethod;
+use scrypto::resource::ProofMethod;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;

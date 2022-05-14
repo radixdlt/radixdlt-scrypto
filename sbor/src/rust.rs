@@ -30,6 +30,8 @@ pub use core::mem;
 pub use core::ops;
 #[cfg(feature = "alloc")]
 pub use core::ptr;
+#[cfg(feature = "alloc")]
+pub use core::slice;
 
 #[cfg(not(feature = "alloc"))]
 pub use std::borrow;
@@ -55,6 +57,8 @@ pub use std::ops;
 pub use std::ptr;
 #[cfg(not(feature = "alloc"))]
 pub use std::rc;
+#[cfg(not(feature = "alloc"))]
+pub use std::slice;
 #[cfg(not(feature = "alloc"))]
 pub use std::str;
 #[cfg(not(feature = "alloc"))]

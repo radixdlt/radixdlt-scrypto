@@ -1,8 +1,11 @@
-use sbor::rust::str::FromStr;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
+use scrypto::core::SNodeRef;
 use scrypto::core::ScryptoActorInfo;
-use scrypto::engine::api::*;
+use scrypto::engine::api::RadixEngineInput;
+use scrypto::engine::types::*;
+use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::RuntimeError;
@@ -12,185 +15,146 @@ use crate::wasm::{InvokeError, ScryptoRuntime};
 
 pub struct RadixEngineScryptoRuntime<'a, S: SystemApi> {
     this: ScryptoActorInfo,
-    call_data: ScryptoValue, // TODO: remove this
     system_api: &'a mut S,
 }
 
 impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
-    pub fn new(this: ScryptoActorInfo, call_data: ScryptoValue, system_api: &'a mut S) -> Self {
-        RadixEngineScryptoRuntime {
-            this,
-            call_data,
-            system_api,
-        }
+    pub fn new(this: ScryptoActorInfo, system_api: &'a mut S) -> Self {
+        RadixEngineScryptoRuntime { this, system_api }
     }
 
     // FIXME: limit access to the API
 
-    fn handle_get_call_data(
+    fn handle_invoke_snode(
         &mut self,
-        _input: GetCallDataInput,
-    ) -> Result<GetCallDataOutput, RuntimeError> {
-        Ok(GetCallDataOutput {
-            component: self.this.component_address(),
-            call_data: self.call_data.raw.clone(),
-        })
+        snode_ref: SNodeRef,
+        call_data: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let call_data =
+            ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
+        let result = self.system_api.invoke_snode(snode_ref, call_data)?;
+        Ok(result.raw)
     }
 
     fn handle_create_component(
         &mut self,
-        input: CreateComponentInput,
-    ) -> Result<CreateComponentOutput, RuntimeError> {
+        blueprint_name: String,
+        state: Vec<u8>,
+        access_rules_list: Vec<AccessRules>,
+    ) -> Result<ComponentAddress, RuntimeError> {
         let component = Component::new(
             self.this.package_address().clone(),
-            input.blueprint_name,
-            input.access_rules_list,
-            input.state,
+            blueprint_name,
+            access_rules_list,
+            state,
         );
         let component_address = self.system_api.create_component(component)?;
-        Ok(CreateComponentOutput { component_address })
+        Ok(component_address)
     }
 
     fn handle_get_component_state(
         &mut self,
-        input: GetComponentStateInput,
-    ) -> Result<GetComponentStateOutput, RuntimeError> {
-        let state = self
-            .system_api
-            .read_component_state(input.component_address)?;
-        Ok(GetComponentStateOutput { state })
+        component_address: ComponentAddress,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let state = self.system_api.read_component_state(component_address)?;
+        Ok(state)
     }
 
     fn handle_put_component_state(
         &mut self,
-        input: PutComponentStateInput,
-    ) -> Result<PutComponentStateOutput, RuntimeError> {
+        component_address: ComponentAddress,
+        state: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
         self.system_api
-            .write_component_state(input.component_address, input.state)?;
-        Ok(PutComponentStateOutput {})
+            .write_component_state(component_address, state)?;
+        Ok(())
     }
 
     fn handle_get_component_info(
         &mut self,
-        input: GetComponentInfoInput,
-    ) -> Result<GetComponentInfoOutput, RuntimeError> {
-        let (package_address, blueprint_name) = self
-            .system_api
-            .get_component_info(input.component_address)?;
-        Ok(GetComponentInfoOutput {
-            package_address,
-            blueprint_name,
-        })
+        component_address: ComponentAddress,
+    ) -> Result<(PackageAddress, String), RuntimeError> {
+        let (package_address, blueprint_name) =
+            self.system_api.get_component_info(component_address)?;
+        Ok((package_address, blueprint_name))
     }
 
-    fn handle_create_lazy_map(
-        &mut self,
-        _input: CreateLazyMapInput,
-    ) -> Result<CreateLazyMapOutput, RuntimeError> {
+    fn handle_create_lazy_map(&mut self) -> Result<LazyMapId, RuntimeError> {
         let lazy_map_id = self.system_api.create_lazy_map();
-        Ok(CreateLazyMapOutput { lazy_map_id })
+        Ok(lazy_map_id)
     }
 
     fn handle_get_lazy_map_entry(
         &mut self,
-        input: GetLazyMapEntryInput,
-    ) -> Result<GetLazyMapEntryOutput, RuntimeError> {
-        let value = self
-            .system_api
-            .read_lazy_map_entry(input.lazy_map_id, input.key)?;
-        Ok(GetLazyMapEntryOutput { value })
+        lazy_map_id: LazyMapId,
+        key: Vec<u8>,
+    ) -> Result<Option<Vec<u8>>, RuntimeError> {
+        let value = self.system_api.read_lazy_map_entry(lazy_map_id, key)?;
+        Ok(value)
     }
 
     fn handle_put_lazy_map_entry(
         &mut self,
-        input: PutLazyMapEntryInput,
-    ) -> Result<PutLazyMapEntryOutput, RuntimeError> {
+        lazy_map_id: LazyMapId,
+        key: Vec<u8>,
+        value: Vec<u8>,
+    ) -> Result<(), RuntimeError> {
         self.system_api
-            .write_lazy_map_entry(input.lazy_map_id, input.key, input.value)?;
-        Ok(PutLazyMapEntryOutput {})
+            .write_lazy_map_entry(lazy_map_id, key, value)?;
+        Ok(())
     }
 
-    fn handle_get_actor(&mut self, _input: GetActorInput) -> Result<GetActorOutput, RuntimeError> {
-        return Ok(GetActorOutput {
-            actor: self.this.clone(),
-        });
+    fn handle_get_actor(&mut self) -> Result<ScryptoActorInfo, RuntimeError> {
+        return Ok(self.this.clone());
     }
 
-    fn handle_invoke_snode(
-        &mut self,
-        input: InvokeSNodeInput,
-    ) -> Result<InvokeSNodeOutput, RuntimeError> {
-        let call_data = ScryptoValue::from_slice(&input.call_data)
-            .map_err(RuntimeError::ParseScryptoValueError)?;
-        let result = self.system_api.invoke_snode(input.snode_ref, call_data)?;
-        Ok(InvokeSNodeOutput { rtn: result.raw })
-    }
-
-    fn handle_generate_uuid(
-        &mut self,
-        _input: GenerateUuidInput,
-    ) -> Result<GenerateUuidOutput, RuntimeError> {
+    fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
         let uuid = self.system_api.generate_uuid();
-        Ok(GenerateUuidOutput { uuid })
+        Ok(uuid)
     }
 
-    fn handle_emit_log(&mut self, input: EmitLogInput) -> Result<EmitLogOutput, RuntimeError> {
-        self.system_api.emit_log(input.level, input.message);
-        Ok(EmitLogOutput {})
+    fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.system_api.emit_log(level, message);
+        Ok(())
     }
 }
 
-// TODO: Remove this temporary solutions once wasm ABI is stable.
-fn decode<T: Decode>(args: &[ScryptoValue]) -> T {
-    scrypto_decode(&args[0].raw).unwrap()
-}
-
-// TODO: Remove this temporary solutions once wasm ABI is stable.
 fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_value(&output)
 }
 
 impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
-    fn main(&mut self, name: &str, args: &[ScryptoValue]) -> Result<ScryptoValue, InvokeError> {
-        let code = u32::from_str(name).unwrap(); // FIXME: update method name
-        match code {
-            INVOKE_SNODE => self
-                .handle_invoke_snode(decode::<InvokeSNodeInput>(args))
+    fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
+        let input: RadixEngineInput =
+            scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
+        match input {
+            RadixEngineInput::InvokeSNode(snode_ref, call_data) => {
+                self.handle_invoke_snode(snode_ref, call_data).map(encode)
+            }
+            RadixEngineInput::CreateComponent(blueprint_name, state, access_rules_list) => self
+                .handle_create_component(blueprint_name, state, access_rules_list)
                 .map(encode),
-            GET_CALL_DATA => self
-                .handle_get_call_data(decode::<GetCallDataInput>(args))
+            RadixEngineInput::GetComponentInfo(component_address) => self
+                .handle_get_component_info(component_address)
                 .map(encode),
-            CREATE_COMPONENT => self
-                .handle_create_component(decode::<CreateComponentInput>(args))
+            RadixEngineInput::GetComponentState(component_address) => self
+                .handle_get_component_state(component_address)
                 .map(encode),
-            GET_COMPONENT_INFO => self
-                .handle_get_component_info(decode::<GetComponentInfoInput>(args))
+            RadixEngineInput::PutComponentState(component_address, state) => self
+                .handle_put_component_state(component_address, state)
                 .map(encode),
-            GET_COMPONENT_STATE => self
-                .handle_get_component_state(decode::<GetComponentStateInput>(args))
+            RadixEngineInput::CreateLazyMap() => self.handle_create_lazy_map().map(encode),
+            RadixEngineInput::GetLazyMapEntry(lazy_map_id, key) => {
+                self.handle_get_lazy_map_entry(lazy_map_id, key).map(encode)
+            }
+            RadixEngineInput::PutLazyMapEntry(lazy_map_id, key, value) => self
+                .handle_put_lazy_map_entry(lazy_map_id, key, value)
                 .map(encode),
-            PUT_COMPONENT_STATE => self
-                .handle_put_component_state(decode::<PutComponentStateInput>(args))
-                .map(encode),
-            CREATE_LAZY_MAP => self
-                .handle_create_lazy_map(decode::<CreateLazyMapInput>(args))
-                .map(encode),
-            GET_LAZY_MAP_ENTRY => self
-                .handle_get_lazy_map_entry(decode::<GetLazyMapEntryInput>(args))
-                .map(encode),
-            PUT_LAZY_MAP_ENTRY => self
-                .handle_put_lazy_map_entry(decode::<PutLazyMapEntryInput>(args))
-                .map(encode),
-            GET_ACTOR => self
-                .handle_get_actor(decode::<GetActorInput>(args))
-                .map(encode),
-            GENERATE_UUID => self
-                .handle_generate_uuid(decode::<GenerateUuidInput>(args))
-                .map(encode),
-            EMIT_LOG => self
-                .handle_emit_log(decode::<EmitLogInput>(args))
-                .map(encode),
-            _ => Err(RuntimeError::UnknownMethod(name.to_string())),
+            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
+            RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
+            RadixEngineInput::EmitLog(level, message) => {
+                self.handle_emit_log(level, message).map(encode)
+            }
         }
         .map_err(InvokeError::RuntimeError)
     }

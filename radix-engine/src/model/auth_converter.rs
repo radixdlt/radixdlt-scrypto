@@ -2,7 +2,7 @@ use sbor::any::Value;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AccessRule, AccessRuleNode, SoftResource};
+use scrypto::resource::{AccessRule, AccessRuleNode, SoftResource};
 use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
     SoftResourceOrNonFungibleList,
