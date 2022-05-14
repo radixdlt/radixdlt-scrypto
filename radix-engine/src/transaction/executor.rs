@@ -1,3 +1,6 @@
+use sbor::rust::cell::RefCell;
+use sbor::rust::fmt;
+use sbor::rust::rc::Rc;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
@@ -14,21 +17,30 @@ use crate::transaction::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'l, L: ReadableSubstateStore + WriteableSubstateStore> {
-    substate_store: &'l mut L,
+pub struct TransactionExecutor<'s, S, W>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    W: WasmEngine,
+{
+    substate_store: &'s mut S,
+    wasm_engine: Rc<RefCell<W>>,
     trace: bool,
 }
 
-impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> NonceProvider
-    for TransactionExecutor<'l, L>
+impl<'s, S, W> NonceProvider for TransactionExecutor<'s, S, W>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    W: WasmEngine,
 {
     fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
         self.substate_store.get_nonce()
     }
 }
 
-impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
-    for TransactionExecutor<'l, L>
+impl<'s, S, W> AbiProvider for TransactionExecutor<'s, S, W>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    W: WasmEngine,
 {
     fn export_abi(
         &self,
@@ -46,21 +58,33 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
     }
 }
 
-impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<'l, L> {
-    pub fn new(substate_store: &'l mut L, trace: bool) -> Self {
+impl<'s, S, W> TransactionExecutor<'s, S, W>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    W: WasmEngine,
+{
+    pub fn new(
+        substate_store: &'s mut S,
+        wasm_engine: W,
+        trace: bool,
+    ) -> TransactionExecutor<'s, S, W> {
+        let wasm_engine = Rc::new(RefCell::new(wasm_engine));
+        bootstrap(substate_store, wasm_engine.clone());
+
         Self {
             substate_store,
+            wasm_engine,
             trace,
         }
     }
 
     /// Returns an immutable reference to the ledger.
-    pub fn substate_store(&self) -> &L {
+    pub fn substate_store(&self) -> &S {
         self.substate_store
     }
 
     /// Returns a mutable reference to the ledger.
-    pub fn substate_store_mut(&mut self) -> &mut L {
+    pub fn substate_store_mut(&mut self) -> &mut S {
         self.substate_store
     }
 
@@ -135,20 +159,19 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        // Start Track and Wasm Engine
-        let mut track = Track::new(self.substate_store, validated.raw_hash.clone());
-        #[cfg(feature = "wasmer")]
-        let mut wasm_engine = WasmerEngine::new();
-        #[cfg(not(feature = "wasmer"))]
-        let mut wasm_engine = WasmiEngine::new();
+        // Start state track
+        let track = Rc::new(RefCell::new(Track::new(
+            self.substate_store,
+            validated.raw_hash.clone(),
+        )));
 
         // Create root call frame.
         let mut root_frame = CallFrame::new_root(
             self.trace,
             validated.raw_hash.clone(),
             validated.signers.clone(),
-            &mut track,
-            &mut wasm_engine,
+            track.clone(),
+            self.wasm_engine.clone(),
         );
 
         // Invoke the transaction processor
@@ -162,7 +185,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
         };
 
-        let track_receipt = track.to_receipt();
+        let track_receipt = Rc::try_unwrap(track).unwrap().into_inner().to_receipt();
         // commit state updates
         let commit_receipt = if error.is_none() {
             if !track_receipt.borrowed.is_empty() {

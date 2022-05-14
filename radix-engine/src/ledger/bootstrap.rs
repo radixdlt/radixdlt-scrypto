@@ -1,5 +1,7 @@
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::cell::RefCell;
 use sbor::rust::collections::*;
+use sbor::rust::rc::Rc;
 use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
@@ -28,8 +30,13 @@ const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_I
 const SYSTEM_COMPONENT_NAME: &str = "System";
 
 use crate::model::*;
+use crate::wasm::WasmEngine;
 
-pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_store: &mut S) {
+pub fn bootstrap<S, W>(substate_store: &mut S, wasm_engine: Rc<RefCell<W>>)
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine,
+{
     let package: Option<Package> = substate_store
         .get_decoded_substate(&SYSTEM_PACKAGE)
         .map(|(package, _)| package);
@@ -40,13 +47,19 @@ pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_sto
         let mut id_gen = SubstateIdGenerator::new(tx_hash);
 
         // System package
-        let system_package =
-            Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
+        let system_package = Package::new(
+            include_bytes!("../../../assets/system.wasm").to_vec(),
+            wasm_engine.clone(),
+        )
+        .unwrap();
         substate_store.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, id_gen.next());
 
         // Account package
-        let account_package =
-            Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
+        let account_package = Package::new(
+            include_bytes!("../../../assets/account.wasm").to_vec(),
+            wasm_engine.clone(),
+        )
+        .unwrap();
         substate_store.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, id_gen.next());
 
         // Radix token resource address

@@ -20,8 +20,9 @@ pub struct ExportAbi {
 
 impl ExportAbi {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let mut ledger = RadixEngineDB::new(get_data_dir()?);
+        let wasm_engine = default_wasm_engine();
+        let executor = TransactionExecutor::new(&mut ledger, wasm_engine, self.trace);
         match executor.export_abi(self.package_address, &self.blueprint_name) {
             Ok(a) => {
                 writeln!(

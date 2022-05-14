@@ -1,8 +1,10 @@
 use sbor::rust::boxed::Box;
+use sbor::rust::collections::HashMap;
 use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
 use wasm_instrument::{gas_metering, inject_stack_limiter, parity_wasm};
 use wasmi::*;
@@ -15,15 +17,17 @@ pub struct WasmiScryptoModule {
     module: Module,
 }
 
-pub struct WasmiScryptoInstance<'r> {
-    module_ref: ModuleRef, // Follows reference counting semantics
+pub struct WasmiScryptoInstance<'a, 'r> {
+    module_ref: ModuleRef,
     memory_ref: MemoryRef,
-    runtime: Box<dyn ScryptoRuntime + 'r>,
+    runtime: &'a mut Box<dyn WasmRuntime + 'r>,
 }
 
 pub struct WasmiEnvModule {}
 
-pub struct WasmiEngine {}
+pub struct WasmiEngine {
+    modules: HashMap<Hash, WasmiScryptoModule>,
+}
 
 impl ModuleImportResolver for WasmiEnvModule {
     fn resolve_func(&self, field_name: &str, signature: &Signature) -> Result<FuncRef, Error> {
@@ -60,8 +64,11 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
-impl<'r> ScryptoModule<'r, WasmiScryptoInstance<'r>> for WasmiScryptoModule {
-    fn instantiate(&self, runtime: Box<dyn ScryptoRuntime + 'r>) -> WasmiScryptoInstance<'r> {
+impl WasmiScryptoModule {
+    fn instantiate<'a, 'r>(
+        &self,
+        runtime: &'a mut Box<dyn WasmRuntime + 'r>,
+    ) -> WasmiScryptoInstance<'a, 'r> {
         // link with env module
         let module_ref = ModuleInstance::new(
             &self.module,
@@ -84,7 +91,7 @@ impl<'r> ScryptoModule<'r, WasmiScryptoInstance<'r>> for WasmiScryptoModule {
     }
 }
 
-impl<'r> WasmiScryptoInstance<'r> {
+impl<'a, 'r> WasmiScryptoInstance<'a, 'r> {
     pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, InvokeError> {
         let result = self.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
@@ -122,7 +129,7 @@ impl<'r> WasmiScryptoInstance<'r> {
     }
 }
 
-impl<'r> Externals for WasmiScryptoInstance<'r> {
+impl<'a, 'r> Externals for WasmiScryptoInstance<'a, 'r> {
     fn invoke_index(
         &mut self,
         index: usize,
@@ -150,7 +157,7 @@ impl<'r> Externals for WasmiScryptoInstance<'r> {
     }
 }
 
-impl<'r> ScryptoInstance<'r> for WasmiScryptoInstance<'r> {
+impl<'a, 'r> WasmiScryptoInstance<'a, 'r> {
     fn invoke_export(
         &mut self,
         name: &str,
@@ -176,25 +183,23 @@ impl<'r> ScryptoInstance<'r> for WasmiScryptoInstance<'r> {
             _ => Err(InvokeError::InvalidReturnData),
         }
     }
-
-    fn function_exports(&self) -> Vec<String> {
-        self.module_ref
-            .exports()
-            .iter()
-            .filter(|(_, val)| matches!(val, ExternVal::Func(_)))
-            .map(|(name, _)| name.to_string())
-            .collect()
-    }
 }
 
 impl WasmiEngine {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            modules: HashMap::new(),
+        }
     }
 }
 
-impl ScryptoValidator for WasmiEngine {
+impl WasmEngine for WasmiEngine {
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError> {
+        let code_hash = hash(code);
+        if self.modules.contains_key(&code_hash) {
+            return Ok(());
+        }
+
         // parse wasm module
         let module = Module::from_buffer(code).map_err(|_| WasmValidationError::FailedToParse)?;
 
@@ -241,10 +246,13 @@ impl ScryptoValidator for WasmiEngine {
 
         Ok(())
     }
-}
 
-impl ScryptoInstrumenter for WasmiEngine {
-    fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError> {
+    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError> {
+        let code_hash = hash(code);
+        if self.modules.contains_key(&hash(code)) {
+            return Ok(());
+        }
+
         let mut module =
             parity_wasm::deserialize_buffer(code).expect("Unable to parse wasm module");
 
@@ -258,16 +266,57 @@ impl ScryptoInstrumenter for WasmiEngine {
         module = inject_stack_limiter(module, MAX_STACK_DEPTH)
             .map_err(|_| InstrumentError::FailedToInjectStackLimiter)?;
 
-        module
+        let instrumented = module
             .to_bytes()
-            .map_err(|_| InstrumentError::FailedToExportModule)
+            .map_err(|_| InstrumentError::FailedToExportModule)?;
+        // TODO: cache instrumented code
+
+        self.modules.insert(
+            code_hash,
+            WasmiScryptoModule {
+                module: Module::from_buffer(instrumented).expect("Failed to parse wasm module"),
+            },
+        );
+
+        Ok(())
     }
-}
 
-impl<'r> ScryptoLoader<'r, WasmiScryptoModule, WasmiScryptoInstance<'r>> for WasmiEngine {
-    fn load(&mut self, code: &[u8]) -> WasmiScryptoModule {
-        let module = Module::from_buffer(code).expect("Failed to parse wasm module");
+    fn invoke_export<'r>(
+        &mut self,
+        code: &[u8],
+        name: &str,
+        input: &ScryptoValue,
+        runtime: &mut Box<dyn WasmRuntime + 'r>,
+    ) -> Result<ScryptoValue, InvokeError> {
+        let code_hash = hash(code);
+        if self.modules.contains_key(&code_hash) {
+            self.instrument(code)
+                .expect("Failed to instrument the code");
+        }
+        let module = self.modules.get(&code_hash).unwrap();
 
-        WasmiScryptoModule { module }
+        let mut instance = module.instantiate(runtime);
+        instance.invoke_export(name, input)
+    }
+
+    fn function_exports(&mut self, code: &[u8]) -> Vec<String> {
+        let code_hash = hash(code);
+        if self.modules.contains_key(&code_hash) {
+            self.instrument(code)
+                .expect("Failed to instrument the code");
+        }
+        let module = self.modules.get(&code_hash).unwrap();
+
+        // TODO: change visibility of `wasmi::Module::module()` to `pub` to avoid instantiation.
+        let runtime = NopWasmRuntime::new(0);
+        let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
+        let instance = module.instantiate(&mut runtime_boxed);
+        let export = instance.module_ref.exports();
+
+        export
+            .iter()
+            .filter(|(_, val)| matches!(val, ExternVal::Func(_)))
+            .map(|(name, _)| name.to_string())
+            .collect()
     }
 }

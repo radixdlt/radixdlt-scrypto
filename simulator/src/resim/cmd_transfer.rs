@@ -31,8 +31,9 @@ pub struct Transfer {
 
 impl Transfer {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let mut ledger = RadixEngineDB::new(get_data_dir()?);
+        let wasm_engine = default_wasm_engine();
+        let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, self.trace);
         let transaction = TransactionBuilder::new()
             .withdraw_from_account_by_amount(
                 self.amount,

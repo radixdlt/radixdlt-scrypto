@@ -1,12 +1,14 @@
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
+use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
 fn test_process_and_transaction() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
+    let mut ledger = InMemorySubstateStore::new();
+    let wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "core")))
         .unwrap();
@@ -21,8 +23,9 @@ fn test_process_and_transaction() {
 
 #[test]
 fn test_call() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
+    let mut ledger = InMemorySubstateStore::new();
+    let wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
     let (_, _, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "core")))

@@ -35,8 +35,9 @@ impl Publish {
         .map_err(Error::IOError)?;
 
         if let Some(path) = &self.manifest {
-            let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-            let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+            let mut ledger = RadixEngineDB::new(get_data_dir()?);
+            let wasm_engine = default_wasm_engine();
+            let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, self.trace);
             let transaction = TransactionBuilder::new()
                 .publish_package(code.as_ref())
                 .build_with_no_nonce();
@@ -60,8 +61,9 @@ impl Publish {
     }
 
     pub fn store_package<O: std::io::Write>(&self, out: &mut O, code: &[u8]) -> Result<(), Error> {
-        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let mut ledger = RadixEngineDB::new(get_data_dir()?);
+        let wasm_engine = default_wasm_engine();
+        let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, self.trace);
         match executor.publish_package(code) {
             Ok(package_address) => {
                 writeln!(

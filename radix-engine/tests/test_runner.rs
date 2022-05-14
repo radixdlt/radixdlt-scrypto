@@ -1,16 +1,26 @@
 use radix_engine::ledger::*;
 use radix_engine::model::{Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
+use radix_engine::wasm::WasmEngine;
+use sbor::rust::fmt;
 use scrypto::prelude::*;
 use scrypto::{abi, call_data};
 
-pub struct TestRunner<'l> {
-    executor: TransactionExecutor<'l, InMemorySubstateStore>,
+pub struct TestRunner<'s, S, W>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    W: WasmEngine,
+{
+    executor: TransactionExecutor<'s, S, W>,
 }
 
-impl<'l> TestRunner<'l> {
-    pub fn new(ledger: &'l mut InMemorySubstateStore) -> Self {
-        let executor = TransactionExecutor::new(ledger, true);
+impl<'s, S, W> TestRunner<'s, S, W>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    W: WasmEngine,
+{
+    pub fn new(ledger: &'s mut S, wasm_engine: W) -> Self {
+        let executor = TransactionExecutor::new(ledger, wasm_engine, true);
 
         Self { executor }
     }

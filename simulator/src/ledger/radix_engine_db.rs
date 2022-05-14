@@ -7,6 +7,7 @@ use sbor::Decode;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
 
+#[derive(Debug)]
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
 }
@@ -15,12 +16,6 @@ impl RadixEngineDB {
     pub fn new(root: PathBuf) -> Self {
         let db = DB::open_default(root.as_path()).unwrap();
         Self { db }
-    }
-
-    pub fn with_bootstrap(root: PathBuf) -> Self {
-        let mut ledger = Self::new(root);
-        bootstrap(&mut ledger);
-        ledger
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {

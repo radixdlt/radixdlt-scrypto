@@ -1,10 +1,11 @@
 use std::sync::{Arc, Mutex};
 
 use sbor::rust::boxed::Box;
+use sbor::rust::collections::HashMap;
 use sbor::rust::ptr;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
 use wasmer::*;
 use wasmer_compiler_singlepass::Singlepass;
@@ -17,12 +18,12 @@ pub struct WasmerScryptoModule {
     module: Module,
 }
 
-pub struct WasmerScryptoInstance<'r> {
+pub struct WasmerScryptoInstance<'a, 'r> {
     instance: Instance,
     // This is to keep the trait object live so the runtime pointers
     // are valid as long as this instance is not dropped.
     #[allow(dead_code)]
-    runtime: Box<dyn ScryptoRuntime + 'r>,
+    runtime: &'a mut Box<dyn WasmRuntime + 'r>,
 }
 
 #[derive(Clone)]
@@ -33,6 +34,7 @@ pub struct WasmerScryptoInstanceEnv {
 
 pub struct WasmerEngine {
     store: Store,
+    modules: HashMap<Hash, WasmerScryptoModule>,
 }
 
 pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, InvokeError> {
@@ -104,15 +106,18 @@ impl WasmerEnv for WasmerScryptoInstanceEnv {
     }
 }
 
-impl<'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModule {
-    fn instantiate(&self, runtime: Box<dyn ScryptoRuntime + 'r>) -> WasmerScryptoInstance<'r> {
+impl WasmerScryptoModule {
+    fn instantiate<'a, 'r>(
+        &self,
+        runtime: &'a mut Box<dyn WasmRuntime + 'r>,
+    ) -> WasmerScryptoInstance<'a, 'r> {
         // native functions
         fn radix_engine(
             env: &WasmerScryptoInstanceEnv,
             input_ptr: i32,
         ) -> Result<i32, RuntimeError> {
             let ptr = env.runtime_ptr.lock().unwrap();
-            let runtime: &mut Box<dyn ScryptoRuntime> = unsafe { &mut *(*ptr as *mut _) };
+            let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             let instance = unsafe { env.instance.get_unchecked() };
 
             let input = read_value(&instance, input_ptr as usize)
@@ -129,7 +134,7 @@ impl<'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModule {
 
         fn use_tbd(env: &WasmerScryptoInstanceEnv, tbd: i32) -> Result<(), RuntimeError> {
             let ptr = env.runtime_ptr.lock().unwrap();
-            let runtime: &mut Box<dyn ScryptoRuntime> = unsafe { &mut *(*ptr as *mut _) };
+            let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
 
             runtime
                 .use_tbd(tbd as u32)
@@ -158,7 +163,7 @@ impl<'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModule {
     }
 }
 
-impl<'r> ScryptoInstance<'r> for WasmerScryptoInstance<'r> {
+impl<'a, 'r> WasmerScryptoInstance<'a, 'r> {
     fn invoke_export(
         &mut self,
         export_name: &str,
@@ -188,41 +193,70 @@ impl<'r> ScryptoInstance<'r> for WasmerScryptoInstance<'r> {
             },
         }
     }
-
-    fn function_exports(&self) -> Vec<String> {
-        self.instance
-            .exports
-            .iter()
-            .filter(|e| matches!(e.1, Extern::Function(_)))
-            .map(|e| e.0.to_string())
-            .collect()
-    }
 }
 
 impl WasmerEngine {
     pub fn new() -> Self {
         let compiler = Singlepass::new();
-        let store = Store::new(&Universal::new(compiler).engine());
-        Self { store }
+        Self {
+            store: Store::new(&Universal::new(compiler).engine()),
+            modules: HashMap::new(),
+        }
     }
 }
 
-impl ScryptoValidator for WasmerEngine {
+impl WasmEngine for WasmerEngine {
     fn validate(&mut self, _code: &[u8]) -> Result<(), WasmValidationError> {
         Ok(())
     }
-}
 
-impl ScryptoInstrumenter for WasmerEngine {
-    fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError> {
-        Ok(code.to_vec())
+    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError> {
+        let code_hash = hash(code);
+
+        let instrumented = code;
+
+        self.modules.insert(
+            code_hash,
+            WasmerScryptoModule {
+                module: Module::new(&self.store, instrumented)
+                    .expect("Failed to parse wasm module"),
+            },
+        );
+
+        Ok(())
     }
-}
 
-impl<'r> ScryptoLoader<'r, WasmerScryptoModule, WasmerScryptoInstance<'r>> for WasmerEngine {
-    fn load(&mut self, code: &[u8]) -> WasmerScryptoModule {
-        let module = Module::new(&self.store, code).expect("Failed to parse wasm module");
+    fn invoke_export<'r>(
+        &mut self,
+        code: &[u8],
+        name: &str,
+        input: &ScryptoValue,
+        runtime: &mut Box<dyn WasmRuntime + 'r>,
+    ) -> Result<ScryptoValue, InvokeError> {
+        let code_hash = hash(code);
+        if self.modules.contains_key(&code_hash) {
+            self.instrument(code)
+                .expect("Failed to instrument the code");
+        }
+        let module = self.modules.get(&code_hash).unwrap();
 
-        WasmerScryptoModule { module }
+        let mut instance = module.instantiate(runtime);
+        instance.invoke_export(name, input)
+    }
+
+    fn function_exports(&mut self, code: &[u8]) -> Vec<String> {
+        let code_hash = hash(code);
+        if self.modules.contains_key(&code_hash) {
+            self.instrument(code)
+                .expect("Failed to instrument the code");
+        }
+        let module = self.modules.get(&code_hash).unwrap();
+
+        module
+            .module
+            .exports()
+            .filter(|e| matches!(e.ty(), ExternType::Function(_)))
+            .map(|e| e.name().to_string())
+            .collect()
     }
 }

@@ -11,18 +11,18 @@ use scrypto::values::ScryptoValue;
 use crate::engine::RuntimeError;
 use crate::engine::SystemApi;
 use crate::model::Component;
-use crate::wasm::{InvokeError, ScryptoRuntime};
+use crate::wasm::{InvokeError, WasmRuntime};
 
-pub struct RadixEngineScryptoRuntime<'s, S: SystemApi> {
+pub struct RadixEngineWasmRuntime<'s, S: SystemApi> {
     this: ScryptoActorInfo,
     system_api: &'s mut S,
     tbd_limit: u32,
     tbd_balance: u32,
 }
 
-impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
+impl<'a, S: SystemApi> RadixEngineWasmRuntime<'a, S> {
     pub fn new(this: ScryptoActorInfo, system_api: &'a mut S, tbd_limit: u32) -> Self {
-        RadixEngineScryptoRuntime {
+        RadixEngineWasmRuntime {
             this,
             system_api,
             tbd_limit,
@@ -134,7 +134,7 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_value(&output)
 }
 
-impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
+impl<'a, S: SystemApi> WasmRuntime for RadixEngineWasmRuntime<'a, S> {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;

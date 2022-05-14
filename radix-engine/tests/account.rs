@@ -5,20 +5,17 @@ use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::*;
+use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use scrypto::values::ScryptoValue;
 
 #[test]
-fn test_bootstrap() {
-    InMemorySubstateStore::with_bootstrap();
-}
-
-#[test]
 fn can_withdraw_from_my_account() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
 
@@ -38,8 +35,9 @@ fn can_withdraw_from_my_account() {
 #[test]
 fn can_withdraw_non_fungible_from_my_account() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
@@ -60,8 +58,9 @@ fn can_withdraw_non_fungible_from_my_account() {
 #[test]
 fn cannot_withdraw_from_other_account() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
     let (_, _, account) = test_runner.new_account();
     let (other_pk, other_sk, other_account) = test_runner.new_account();
     let transaction = test_runner
@@ -82,8 +81,9 @@ fn cannot_withdraw_from_other_account() {
 #[test]
 fn account_to_bucket_to_account() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let transaction = test_runner
         .new_transaction_builder()
@@ -109,8 +109,9 @@ fn account_to_bucket_to_account() {
 #[test]
 fn test_account_balance() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let transaction = test_runner
         .new_transaction_builder()
