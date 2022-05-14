@@ -86,7 +86,7 @@ pub trait SystemApi {
 
     fn generate_uuid(&mut self) -> u128;
 
-    fn emit_log(&mut self, level: Level, message: String);
+    fn user_log(&mut self, level: Level, message: String);
 
     fn sys_log(&self, level: Level, msg: String);
 }

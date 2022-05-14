@@ -124,8 +124,8 @@ impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
         Ok(uuid)
     }
 
-    fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.system_api.emit_log(level, message);
+    fn handle_user_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.system_api.user_log(level, message);
         Ok(())
     }
 }
@@ -164,7 +164,7 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
-                self.handle_emit_log(level, message).map(encode)
+                self.handle_user_log(level, message).map(encode)
             }
         }
         .map_err(InvokeError::RuntimeError)

@@ -14,14 +14,35 @@ use crate::engine::{
 use crate::ledger::*;
 use crate::model::*;
 
-// TODO: Replace NonFungible with real re address
-// TODO: Move this logic into application layer
-macro_rules! resource_to_non_fungible_space {
-    ($resource_address:expr) => {{
-        let mut addr = scrypto_encode(&$resource_address);
-        addr.push(0u8);
-        addr
-    }};
+/// An abstraction of transaction execution state.
+///
+/// It acts as the facade of ledger state and keeps track of all temporary state updates,
+/// until the `commit()` method is called.
+///
+/// Typically, a track is shared by all the processes created within a transaction.
+///
+pub struct Track<'s, S: ReadableSubstateStore> {
+    substate_store: &'s mut S,
+    transaction_hash: Hash,
+    id_allocator: IdAllocator,
+    logs: Vec<(Level, String)>,
+
+    new_addresses: Vec<Address>,
+    borrowed_substates: HashSet<Address>,
+    read_substates: IndexMap<Address, SubstateValue>,
+
+    downed_substates: Vec<PhysicalSubstateId>,
+    down_virtual_substates: Vec<VirtualSubstateId>,
+    up_substates: IndexMap<Vec<u8>, SubstateValue>,
+    up_virtual_substate_space: IndexSet<Vec<u8>>,
+
+    vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
+    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
+}
+
+pub enum TrackError {
+    Reentrancy,
+    NotFound,
 }
 
 pub struct BorrowedSNodes {
@@ -63,6 +84,25 @@ pub enum Address {
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
     LazyMap(ComponentAddress, LazyMapId),
+}
+
+#[derive(Debug, Clone)]
+pub enum SubstateValue {
+    Resource(ResourceManager),
+    Component(Component),
+    Package(Package),
+    NonFungible(Option<NonFungible>),
+    LazyMapEntry(Option<Vec<u8>>),
+}
+
+// TODO: Replace NonFungible with real re address
+// TODO: Move this logic into application layer
+macro_rules! resource_to_non_fungible_space {
+    ($resource_address:expr) => {{
+        let mut addr = scrypto_encode(&$resource_address);
+        addr.push(0u8);
+        addr
+    }};
 }
 
 impl Address {
@@ -131,15 +171,6 @@ impl Into<ResourceAddress> for Address {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum SubstateValue {
-    Resource(ResourceManager),
-    Component(Component),
-    Package(Package),
-    NonFungible(Option<NonFungible>),
-    LazyMapEntry(Option<Vec<u8>>),
-}
-
 impl SubstateValue {
     fn encode(&self) -> Vec<u8> {
         match self {
@@ -200,37 +231,6 @@ impl Into<ResourceManager> for SubstateValue {
             panic!("Not a resource manager");
         }
     }
-}
-
-pub enum TrackError {
-    Reentrancy,
-    NotFound,
-}
-
-/// An abstraction of transaction execution state.
-///
-/// It acts as the facade of ledger state and keeps track of all temporary state updates,
-/// until the `commit()` method is called.
-///
-/// Typically, a track is shared by all the processes created within a transaction.
-///
-pub struct Track<'s, S: ReadableSubstateStore> {
-    substate_store: &'s mut S,
-    transaction_hash: Hash,
-    id_allocator: IdAllocator,
-    logs: Vec<(Level, String)>,
-
-    new_addresses: Vec<Address>,
-    borrowed_substates: HashSet<Address>,
-    read_substates: IndexMap<Address, SubstateValue>,
-
-    downed_substates: Vec<PhysicalSubstateId>,
-    down_virtual_substates: Vec<VirtualSubstateId>,
-    up_substates: IndexMap<Vec<u8>, SubstateValue>,
-    up_virtual_substate_space: IndexSet<Vec<u8>>,
-
-    vaults: IndexMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
-    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<PhysicalSubstateId>>,
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
@@ -613,9 +613,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             logs: self.logs,
         }
     }
-}
 
-impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn insert_objects_into_component(
         &mut self,
         new_objects: ComponentObjects,

@@ -121,7 +121,7 @@ pub enum MoveMethod {
 }
 
 impl LoadedSNodeState {
-    pub fn to_snode_state(&mut self) -> SNodeState {
+    fn to_snode_state(&mut self) -> SNodeState {
         match self {
             Static(static_state) => match static_state {
                 StaticSNodeState::Package => SNodeState::PackageStatic,
@@ -740,6 +740,7 @@ where
                 Borrowed(BorrowedSNodeState::Resource(_, _))
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
                 | Borrowed(BorrowedSNodeState::Bucket(_, _))
+                | Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone);
@@ -768,7 +769,6 @@ where
         moving_proofs.extend(self.send_proofs(&call_data.proof_ids, MoveMethod::AsArgument)?);
 
         // start a new frame
-
         let mut frame = CallFrame::new(
             self.transaction_hash,
             self.depth + 1,
@@ -1100,7 +1100,7 @@ where
         self.track.new_uuid()
     }
 
-    fn emit_log(&mut self, level: Level, message: String) {
+    fn user_log(&mut self, level: Level, message: String) {
         self.track.add_log(level, message);
     }
 
