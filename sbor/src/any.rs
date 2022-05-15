@@ -1,3 +1,5 @@
+use sbor::path::MutableSborPath;
+
 use crate::decode::*;
 use crate::encode::*;
 use crate::rust::borrow::Borrow;
@@ -5,7 +7,6 @@ use crate::rust::boxed::Box;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
-use sbor::path::MutableSborPath;
 
 /// Represents a SBOR value.
 #[cfg_attr(
@@ -105,7 +106,20 @@ pub enum Value {
 }
 
 /// Encodes any SBOR value into byte array.
-pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
+pub fn encode_any(value: &Value) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    let mut enc = ::sbor::Encoder::with_type(&mut bytes);
+    encode_any_internal(None, value, &mut enc);
+    bytes
+}
+
+/// Encodes any SBOR value with a given buffer
+pub fn encode_any_with_buffer(value: &Value, buffer: &mut Vec<u8>) {
+    let mut enc = ::sbor::Encoder::with_type(buffer);
+    encode_any_internal(None, value, &mut enc);
+}
+
+fn encode_any_internal(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
     match value {
         // primitive types
         Value::Unit => encode_basic(ty_ctx, TYPE_UNIT, &(), enc),
@@ -128,7 +142,7 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_len(fields.len());
             for field in fields {
-                encode_any(None, field, enc);
+                encode_any_internal(None, field, enc);
             }
         }
         Value::Enum { name, fields } => {
@@ -138,7 +152,7 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             name.encode_value(enc);
             enc.write_len(fields.len());
             for field in fields {
-                encode_any(None, field, enc);
+                encode_any_internal(None, field, enc);
             }
         }
         // composite types
@@ -152,7 +166,7 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
                 }
                 Some(x) => {
                     enc.write_u8(1);
-                    encode_any(None, x, enc);
+                    encode_any_internal(None, x, enc);
                 }
             }
         }
@@ -166,7 +180,7 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*element_type_id);
             enc.write_len(elements.len());
             for e in elements {
-                encode_any(Some(*element_type_id), e, enc);
+                encode_any_internal(Some(*element_type_id), e, enc);
             }
         }
         Value::Tuple { elements } => {
@@ -175,7 +189,7 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             }
             enc.write_len(elements.len());
             for e in elements {
-                encode_any(None, e, enc);
+                encode_any_internal(None, e, enc);
             }
         }
         Value::Result { value } => {
@@ -185,11 +199,11 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             match value.borrow() {
                 Ok(x) => {
                     enc.write_u8(0);
-                    encode_any(None, x, enc);
+                    encode_any_internal(None, x, enc);
                 }
                 Err(x) => {
                     enc.write_u8(1);
-                    encode_any(None, x, enc);
+                    encode_any_internal(None, x, enc);
                 }
             }
         }
@@ -204,7 +218,7 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*element_type_id);
             enc.write_len(elements.len());
             for e in elements {
-                encode_any(Some(*element_type_id), e, enc);
+                encode_any_internal(Some(*element_type_id), e, enc);
             }
         }
         Value::TreeSet {
@@ -217,7 +231,7 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*element_type_id);
             enc.write_len(elements.len());
             for e in elements {
-                encode_any(Some(*element_type_id), e, enc);
+                encode_any_internal(Some(*element_type_id), e, enc);
             }
         }
         Value::HashSet {
@@ -230,7 +244,7 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*element_type_id);
             enc.write_len(elements.len());
             for e in elements {
-                encode_any(Some(*element_type_id), e, enc);
+                encode_any_internal(Some(*element_type_id), e, enc);
             }
         }
         Value::TreeMap {
@@ -245,8 +259,8 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*value_type_id);
             enc.write_len(elements.len() / 2);
             for pair in elements.chunks(2) {
-                encode_any(Some(*key_type_id), &pair[0], enc);
-                encode_any(Some(*value_type_id), &pair[1], enc);
+                encode_any_internal(Some(*key_type_id), &pair[0], enc);
+                encode_any_internal(Some(*value_type_id), &pair[1], enc);
             }
         }
         Value::HashMap {
@@ -261,8 +275,8 @@ pub fn encode_any(ty_ctx: Option<u8>, value: &Value, enc: &mut Encoder) {
             enc.write_type(*value_type_id);
             enc.write_len(elements.len() / 2);
             for pair in elements.chunks(2) {
-                encode_any(Some(*key_type_id), &pair[0], enc);
-                encode_any(Some(*value_type_id), &pair[1], enc);
+                encode_any_internal(Some(*key_type_id), &pair[0], enc);
+                encode_any_internal(Some(*value_type_id), &pair[1], enc);
             }
         }
         // custom
@@ -760,7 +774,7 @@ mod tests {
 
         let mut bytes2 = Vec::new();
         let mut enc = Encoder::with_type(&mut bytes2);
-        encode_any(None, &value, &mut enc);
+        encode_any_internal(None, &value, &mut enc);
         assert_eq!(bytes2, bytes);
     }
 

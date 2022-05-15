@@ -2,10 +2,11 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::errors::RuntimeError;
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::PackageError;
-use radix_engine::wasm::WasmValidationError::NoValidMemoryExport;
+use radix_engine::wasm::InvokeError;
+use radix_engine::wasm::WasmValidationError::NoMemoryExport;
 use scrypto::call_data;
 use scrypto::prelude::*;
 
@@ -38,7 +39,7 @@ fn missing_memory_should_cause_error() {
     let error = receipt.result.expect_err("Should be error.");
     assert_eq!(
         error,
-        RuntimeError::PackageError(PackageError::WasmValidationError(NoValidMemoryExport))
+        RuntimeError::PackageError(PackageError::WasmValidationError(NoMemoryExport))
     );
 }
 
@@ -59,7 +60,10 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
-    assert_eq!(error, RuntimeError::MemoryAccessError);
+    assert_eq!(
+        error,
+        RuntimeError::InvokeError(InvokeError::MemoryAccessError.into())
+    );
 }
 
 #[test]
@@ -79,7 +83,10 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
-    assert_eq!(error, RuntimeError::MemoryAccessError);
+    assert_eq!(
+        error,
+        RuntimeError::InvokeError(InvokeError::MemoryAccessError.into())
+    );
 }
 
 #[test]
@@ -99,7 +106,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
-    if !matches!(error, RuntimeError::ParseScryptoValueError(_)) {
+    if !matches!(error, RuntimeError::InvokeError(_)) {
         panic!("{} should be data validation error", error);
     }
 }

@@ -1,23 +1,20 @@
+use sbor::rust::collections::HashMap;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
-use scrypto::prelude::PackageFunction;
-use scrypto::rust::collections::HashMap;
-use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec;
-use scrypto::rust::vec::Vec;
+use scrypto::component::PackageFunction;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::wasm::{instantiate_module, parse_module, validate_module, WasmValidationError};
-use wasmi::*; // TODO: remove wasmi coupling
+use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ValidatedPackage {
     code: Vec<u8>,
-    blueprints: HashMap<String, Type>,
+    blueprints: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -32,53 +29,34 @@ impl ValidatedPackage {
     /// Validates and creates a package
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, WasmValidationError> {
         let code = package.code();
+        let mut wasm_engine = WasmiEngine::new();
+        wasm_engine.validate(&code)?;
 
-        // Parse
-        let module = parse_module(code)?;
-        let (module_ref, memory_ref) = validate_module(&module)?;
-
-        // TODO: Currently a hack so that we don't require a package_init function.
-        // TODO: Fix this by implement package metadata along with the code during compilation.
-        let exports = module_ref.exports();
-        let blueprint_abi_methods: Vec<String> = exports
-            .iter()
-            .filter(|(name, val)| {
-                name.ends_with("_abi") && name.len() > 4 && matches!(val, ExternVal::Func(_))
-            })
-            .map(|(name, _)| name.to_string())
+        // TODO will replace this with static ABIs
+        let module = wasm_engine.instantiate(&code);
+        let exports: Vec<String> = module
+            .function_exports()
+            .into_iter()
+            .filter(|e| e.ends_with("_abi") && e.len() > 4)
             .collect();
 
         let mut blueprints = HashMap::new();
+        for method_name in exports {
+            let rtn = module
+                .invoke_export(
+                    &method_name,
+                    &ScryptoValue::unit(),
+                    &mut NopScryptoRuntime {},
+                )
+                .map_err(|_| WasmValidationError::UnableToExportBlueprintAbi)?;
 
-        for method_name in blueprint_abi_methods {
-            let rtn = module_ref
-                .invoke_export(&method_name, &[], &mut NopExternals)
-                .map_err(|e| WasmValidationError::NoPackageInitExport(e.into()))?
-                .ok_or(WasmValidationError::InvalidPackageInit)?;
+            let abi: (Type, Vec<Function>, Vec<Method>) =
+                scrypto_decode(&rtn.raw).map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
 
-            let blueprint_type: Type = match rtn {
-                RuntimeValue::I32(ptr) => {
-                    let len: u32 = memory_ref
-                        .get_value(ptr as u32)
-                        .map_err(|_| WasmValidationError::InvalidPackageInit)?;
-
-                    // SECURITY: meter before allocating memory
-                    let mut data = vec![0u8; len as usize];
-                    memory_ref
-                        .get_into((ptr + 4) as u32, &mut data)
-                        .map_err(|_| WasmValidationError::InvalidPackageInit)?;
-
-                    let result: (Type, Vec<Function>, Vec<Method>) = scrypto_decode(&data)
-                        .map_err(|_| WasmValidationError::InvalidPackageInit)?;
-                    Ok(result.0)
-                }
-                _ => Err(WasmValidationError::InvalidPackageInit),
-            }?;
-
-            if let Type::Struct { name, fields: _ } = &blueprint_type {
-                blueprints.insert(name.clone(), blueprint_type);
+            if let Type::Struct { name, fields: _ } = &abi.0 {
+                blueprints.insert(name.clone(), abi);
             } else {
-                return Err(WasmValidationError::InvalidPackageInit);
+                return Err(WasmValidationError::InvalidBlueprintAbi);
             }
         }
 
@@ -92,28 +70,29 @@ impl ValidatedPackage {
         &self.code
     }
 
+    pub fn blueprint_abi(
+        &self,
+        blueprint_name: &str,
+    ) -> Option<&(Type, Vec<Function>, Vec<Method>)> {
+        self.blueprints.get(blueprint_name)
+    }
+
     pub fn contains_blueprint(&self, blueprint_name: &str) -> bool {
         self.blueprints.contains_key(blueprint_name)
     }
 
     pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
-        self.blueprints
-            .get(blueprint_name)
+        self.blueprint_abi(blueprint_name)
+            .map(|v| &v.0)
             .ok_or(PackageError::BlueprintNotFound)
     }
 
-    pub fn load_module(&self) -> Result<(ModuleRef, MemoryRef), PackageError> {
-        let module = parse_module(&self.code).unwrap();
-        let inst = instantiate_module(&module).unwrap();
-        Ok(inst)
-    }
-
     pub fn static_main<S: SystemApi>(
-        arg: ScryptoValue,
+        call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, PackageError> {
         let function: PackageFunction =
-            scrypto_decode(&arg.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
+            scrypto_decode(&call_data.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
         match function {
             PackageFunction::Publish(package) => {
                 let package =

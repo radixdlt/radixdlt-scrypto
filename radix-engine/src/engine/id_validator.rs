@@ -1,5 +1,5 @@
+use sbor::rust::collections::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::*;
 use scrypto::values::*;
 
 use crate::engine::*;

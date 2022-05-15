@@ -40,8 +40,6 @@ pub mod misc;
 pub mod prelude;
 /// Scrypto resource library.
 pub mod resource;
-/// A facade of types in Rust standard library.
-pub mod rust;
 /// Scrypto types.
 pub mod types;
 /// Scrypto values.

@@ -78,7 +78,7 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             Ok(decoded)
                         }
 
-                        fn immutable_data(&self) -> ::scrypto::rust::vec::Vec<u8> {
+                        fn immutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
                             use ::sbor::{type_id::*, *};
 
                             let mut bytes = Vec::with_capacity(512);
@@ -92,9 +92,9 @@ pub fn handle_non_fungible_data(input: TokenStream) -> Result<TokenStream> {
                             bytes
                         }
 
-                        fn mutable_data(&self) -> ::scrypto::rust::vec::Vec<u8> {
+                        fn mutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
                             use ::sbor::{type_id::*, *};
-                            use ::scrypto::rust::vec::Vec;
+                            use ::sbor::rust::vec::Vec;
 
                             let mut bytes = Vec::with_capacity(512);
                         let mut encoder = Encoder::new(&mut bytes, true);
@@ -199,7 +199,7 @@ mod tests {
                         decoder_m.check_end()?;
                         Ok(decoded)
                     }
-                    fn immutable_data(&self) -> ::scrypto::rust::vec::Vec<u8> {
+                    fn immutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
                         use ::sbor::{type_id::*, *};
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = Encoder::new(&mut bytes, true);
@@ -208,9 +208,9 @@ mod tests {
                         self.field_1.encode(&mut encoder);
                         bytes
                     }
-                    fn mutable_data(&self) -> ::scrypto::rust::vec::Vec<u8> {
+                    fn mutable_data(&self) -> ::sbor::rust::vec::Vec<u8> {
                         use ::sbor::{type_id::*, *};
-                        use ::scrypto::rust::vec::Vec;
+                        use ::sbor::rust::vec::Vec;
                         let mut bytes = Vec::with_capacity(512);
                         let mut encoder = Encoder::new(&mut bytes, true);
                         encoder.write_type(TYPE_STRUCT);

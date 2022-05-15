@@ -1,8 +1,8 @@
 use sbor::describe::Type;
+use sbor::rust::string::String;
 use scrypto::engine::types::*;
-use scrypto::rust::string::String;
 
-use crate::errors::RuntimeError;
+use crate::engine::RuntimeError;
 
 /// Represents an error when parsing arguments.
 #[derive(Debug, Clone)]

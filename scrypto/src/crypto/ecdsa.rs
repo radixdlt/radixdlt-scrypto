@@ -1,15 +1,14 @@
 use p256::ecdsa::{signature::Signer, Signature, SigningKey};
 use p256::ecdsa::{signature::Verifier, VerifyingKey};
 use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
-
 use p256::{EncodedPoint, PublicKey, SecretKey};
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::rust::borrow::ToOwned;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
 use crate::types::{scrypto_type, ScryptoType};
 
 /// Represents an ECDSA public key.
