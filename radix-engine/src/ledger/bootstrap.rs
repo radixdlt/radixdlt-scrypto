@@ -1,7 +1,5 @@
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::cell::RefCell;
 use sbor::rust::collections::*;
-use sbor::rust::rc::Rc;
 use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
@@ -30,12 +28,13 @@ const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_I
 const SYSTEM_COMPONENT_NAME: &str = "System";
 
 use crate::model::*;
-use crate::wasm::WasmEngine;
+use crate::wasm::*;
 
-pub fn bootstrap<S, W>(substate_store: &mut S, wasm_engine: Rc<RefCell<W>>)
+pub fn bootstrap<'s, 'w, S, W, I>(substate_store: &'s mut S, wasm_engine: &'w mut W)
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
     let package: Option<Package> = substate_store
         .get_decoded_substate(&SYSTEM_PACKAGE)
@@ -49,7 +48,7 @@ where
         // System package
         let system_package = Package::new(
             include_bytes!("../../../assets/system.wasm").to_vec(),
-            wasm_engine.clone(),
+            wasm_engine,
         )
         .unwrap();
         substate_store.put_encoded_substate(&SYSTEM_PACKAGE, &system_package, id_gen.next());
@@ -57,7 +56,7 @@ where
         // Account package
         let account_package = Package::new(
             include_bytes!("../../../assets/account.wasm").to_vec(),
-            wasm_engine.clone(),
+            wasm_engine,
         )
         .unwrap();
         substate_store.put_encoded_substate(&ACCOUNT_PACKAGE, &account_package, id_gen.next());

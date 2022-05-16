@@ -124,8 +124,8 @@ pub fn run() -> Result<(), Error> {
     }
 }
 
-pub fn process_transaction<'s, S, W, O>(
-    executor: &mut TransactionExecutor<'s, S, W>,
+pub fn process_transaction<'s, 'w, S, W, I, O>(
+    executor: &mut TransactionExecutor<'s, 'w, S, W, I>,
     mut transaction: Transaction,
     signing_keys: &Option<String>,
     manifest_path: &Option<PathBuf>,
@@ -133,7 +133,8 @@ pub fn process_transaction<'s, S, W, O>(
 ) -> Result<(), Error>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine,
+    W: WasmEngine<I>,
+    I: WasmInstance,
     O: std::io::Write,
 {
     match manifest_path {

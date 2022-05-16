@@ -13,28 +13,33 @@ pub trait WasmRuntime {
     fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError>;
 }
 
-/// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
-pub trait WasmEngine {
-    /// Validate a Scrypto module.
-    fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
-
-    /// Instrument a Scrypto module.
-    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError>;
-
+/// Represents an instantiated, invokable Scrypto module.
+pub trait WasmInstance {
     /// Invokes an export defined in this module.
     ///
     /// The export must have a signature of `f(u32) -> u32` where both arguments and return
     ///  are pointers to Scrypto buffer.
     fn invoke_export<'r>(
         &mut self,
-        code: &[u8],
         name: &str,
         input: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError>;
 
     /// Lists all functions exported by this module.
-    fn function_exports(&mut self, code: &[u8]) -> Vec<String>;
+    fn function_exports(&self) -> Vec<String>;
+}
+
+/// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
+pub trait WasmEngine<I: WasmInstance> {
+    /// Validate a Scrypto module.
+    fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
+
+    /// Instrument a Scrypto module.
+    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError>;
+
+    /// Instantiate a Scrypto module.
+    fn instantiate(&mut self, code: &[u8]) -> I;
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.

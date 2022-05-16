@@ -6,8 +6,15 @@ use scrypto::values::*;
 
 use crate::engine::*;
 use crate::model::*;
+use crate::wasm::*;
 
-pub trait SystemApi {
+pub trait SystemApi<W, I>
+where
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    fn wasm_engine(&mut self) -> &mut W;
+
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
@@ -88,5 +95,5 @@ pub trait SystemApi {
 
     fn user_log(&mut self, level: Level, message: String);
 
-    fn sys_log(&self, level: Level, msg: String);
+    fn sys_log(&mut self, level: Level, message: String);
 }

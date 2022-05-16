@@ -1,7 +1,5 @@
 use sbor::rust::boxed::Box;
-use sbor::rust::cell::RefCell;
 use sbor::rust::collections::HashMap;
-use sbor::rust::rc::Rc;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -31,15 +29,11 @@ pub enum PackageError {
 
 impl Package {
     /// Validates and creates a package
-    pub fn new<'w, W>(
-        code: Vec<u8>,
-        wasm_engine: Rc<RefCell<W>>,
-    ) -> Result<Self, WasmValidationError>
+    pub fn new<'w, W, I>(code: Vec<u8>, wasm_engine: &'w mut W) -> Result<Self, WasmValidationError>
     where
-        W: WasmEngine,
+        W: WasmEngine<I>,
+        I: WasmInstance,
     {
-        let mut wasm_engine = wasm_engine.as_ref().borrow_mut();
-
         // stateless runtime
         let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
@@ -56,18 +50,15 @@ impl Package {
         // export blueprint ABI
         let mut blueprint_abis = HashMap::new();
         let exports: Vec<String> = wasm_engine
-            .function_exports(&code)
+            .instantiate(&code)
+            .function_exports()
             .into_iter()
             .filter(|e| e.ends_with("_abi") && e.len() > 4)
             .collect();
         for method_name in exports {
             let return_data = wasm_engine
-                .invoke_export(
-                    &code,
-                    &method_name,
-                    &ScryptoValue::unit(),
-                    &mut runtime_boxed,
-                )
+                .instantiate(&code)
+                .invoke_export(&method_name, &ScryptoValue::unit(), &mut runtime_boxed)
                 .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
 
             let abi: (Type, Vec<Function>, Vec<Method>) = scrypto_decode(&return_data.raw)
@@ -107,44 +98,44 @@ impl Package {
             .ok_or(PackageError::BlueprintNotFound)
     }
 
-    pub fn static_main<'s, 'w, S, W>(
+    pub fn static_main<'s, S, W, I>(
         call_data: ScryptoValue,
         system_api: &'s mut S,
-        wasm_engine: Rc<RefCell<W>>,
     ) -> Result<ScryptoValue, PackageError>
     where
-        S: SystemApi,
-        W: WasmEngine,
+        S: SystemApi<W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
     {
         let function: PackageFunction =
             scrypto_decode(&call_data.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
         match function {
             PackageFunction::Publish(bytes) => {
-                let package =
-                    Package::new(bytes, wasm_engine).map_err(PackageError::WasmValidationError)?;
+                let package = Package::new(bytes, system_api.wasm_engine())
+                    .map_err(PackageError::WasmValidationError)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
             }
         }
     }
 
-    pub fn invoke<'s, 'w, S, W>(
+    pub fn invoke<'s, S, W, I>(
         &self,
         actor: ScryptoActorInfo,
         export_name: String,
         call_data: ScryptoValue,
         system_api: &'s mut S,
-        wasm_engine: Rc<RefCell<W>>,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        S: SystemApi,
-        W: WasmEngine,
+        S: SystemApi<W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
     {
-        let mut wasm_engine = wasm_engine.as_ref().borrow_mut();
+        let mut instance = system_api.wasm_engine().instantiate(self.code());
         let runtime = RadixEngineWasmRuntime::new(actor, system_api, CALL_FUNCTION_TBD_LIMIT);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
-        wasm_engine
-            .invoke_export(self.code(), &export_name, &call_data, &mut runtime_boxed)
+        instance
+            .invoke_export(&export_name, &call_data, &mut runtime_boxed)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,

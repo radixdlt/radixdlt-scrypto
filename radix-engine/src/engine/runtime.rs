@@ -1,3 +1,4 @@
+use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
@@ -11,22 +12,36 @@ use scrypto::values::ScryptoValue;
 use crate::engine::RuntimeError;
 use crate::engine::SystemApi;
 use crate::model::Component;
-use crate::wasm::{InvokeError, WasmRuntime};
+use crate::wasm::*;
 
-pub struct RadixEngineWasmRuntime<'s, S: SystemApi> {
+pub struct RadixEngineWasmRuntime<'s, S, W, I>
+where
+    S: SystemApi<W, I>,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
     this: ScryptoActorInfo,
     system_api: &'s mut S,
     tbd_limit: u32,
     tbd_balance: u32,
+    phantom1: PhantomData<W>,
+    phantom2: PhantomData<I>,
 }
 
-impl<'a, S: SystemApi> RadixEngineWasmRuntime<'a, S> {
-    pub fn new(this: ScryptoActorInfo, system_api: &'a mut S, tbd_limit: u32) -> Self {
+impl<'s, S, W, I> RadixEngineWasmRuntime<'s, S, W, I>
+where
+    S: SystemApi<W, I>,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S, tbd_limit: u32) -> Self {
         RadixEngineWasmRuntime {
             this,
             system_api,
             tbd_limit,
             tbd_balance: tbd_limit,
+            phantom1: PhantomData,
+            phantom2: PhantomData,
         }
     }
 
@@ -134,7 +149,9 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_value(&output)
 }
 
-impl<'a, S: SystemApi> WasmRuntime for RadixEngineWasmRuntime<'a, S> {
+impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'s, S, W, I>
+{
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;

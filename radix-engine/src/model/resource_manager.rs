@@ -17,6 +17,7 @@ use crate::engine::SystemApi;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::NonFungible;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
+use crate::wasm::*;
 
 /// Converts soft authorization rule to a hard authorization rule.
 /// Currently required as all auth is defined by soft authorization rules.
@@ -256,7 +257,7 @@ impl ResourceManager {
         self.total_supply
     }
 
-    fn mint<S: SystemApi>(
+    fn mint<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -315,7 +316,7 @@ impl ResourceManager {
         Ok(validated)
     }
 
-    fn mint_non_fungibles<S: SystemApi>(
+    fn mint_non_fungibles<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
@@ -382,7 +383,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<S: SystemApi>(
+    pub fn static_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
@@ -418,7 +419,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<S: SystemApi>(
+    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         resource_address: ResourceAddress,
         arg: ScryptoValue,

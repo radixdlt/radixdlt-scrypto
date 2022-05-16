@@ -10,8 +10,9 @@ use scrypto::prelude::*;
 
 #[test]
 fn test_loop() {
-    let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "metering")))
         .unwrap();
@@ -26,8 +27,9 @@ fn test_loop() {
 
 #[test]
 fn test_loop_out_of_tbd() {
-    let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "metering")))
         .unwrap();

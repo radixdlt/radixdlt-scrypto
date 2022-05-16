@@ -12,7 +12,8 @@ use scrypto::prelude::*;
 fn cannot_make_cross_component_call_without_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (_, _, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
@@ -67,7 +68,8 @@ fn cannot_make_cross_component_call_without_authorization() {
 fn can_make_cross_component_call_with_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (key, sk, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);

@@ -15,6 +15,7 @@ use crate::engine::SystemApi;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
+use crate::wasm::*;
 
 #[derive(Debug)]
 pub struct Proof {
@@ -327,7 +328,7 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<S: SystemApi>(
+    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         arg: ScryptoValue,
         system_api: &mut S,

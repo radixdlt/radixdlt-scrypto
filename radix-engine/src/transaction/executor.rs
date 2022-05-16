@@ -1,5 +1,4 @@
-use sbor::rust::cell::RefCell;
-use sbor::rust::rc::Rc;
+use sbor::rust::marker::PhantomData;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
@@ -16,30 +15,34 @@ use crate::transaction::*;
 use crate::wasm::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'s, S, W>
+pub struct TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
     substate_store: &'s mut S,
-    wasm_engine: Rc<RefCell<W>>,
+    wasm_engine: &'w mut W,
     trace: bool,
+    phantom: PhantomData<I>,
 }
 
-impl<'s, S, W> NonceProvider for TransactionExecutor<'s, S, W>
+impl<'s, 'w, S, W, I> NonceProvider for TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
     fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
         self.substate_store.get_nonce()
     }
 }
 
-impl<'s, S, W> AbiProvider for TransactionExecutor<'s, S, W>
+impl<'s, 'w, S, W, I> AbiProvider for TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
     fn export_abi(
         &self,
@@ -57,23 +60,24 @@ where
     }
 }
 
-impl<'s, S, W> TransactionExecutor<'s, S, W>
+impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
     pub fn new(
         substate_store: &'s mut S,
-        wasm_engine: W,
+        wasm_engine: &'w mut W,
         trace: bool,
-    ) -> TransactionExecutor<'s, S, W> {
-        let wasm_engine = Rc::new(RefCell::new(wasm_engine));
-        bootstrap(substate_store, wasm_engine.clone());
+    ) -> TransactionExecutor<'s, 'w, S, W, I> {
+        bootstrap(substate_store, wasm_engine);
 
         Self {
             substate_store,
             wasm_engine,
             trace,
+            phantom: PhantomData,
         }
     }
 
@@ -159,37 +163,31 @@ where
         let now = std::time::Instant::now();
 
         // Start state track
-        let track = Rc::new(RefCell::new(Track::new(
-            self.substate_store,
+        let mut track = Track::new(self.substate_store, validated.raw_hash.clone());
+
+        // Create root call frame.
+        let mut root_frame = CallFrame::new_root(
+            self.trace,
             validated.raw_hash.clone(),
-        )));
+            validated.signers.clone(),
+            &mut track,
+            self.wasm_engine,
+        );
 
-        let (outputs, error) = {
-            // Create root call frame.
-            let mut root_frame = CallFrame::new_root(
-                self.trace,
-                validated.raw_hash.clone(),
-                validated.signers.clone(),
-                track.clone(),
-                self.wasm_engine.clone(),
-            );
+        // Invoke the transaction processor
+        // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
+        let result = root_frame.invoke_snode(
+            scrypto::core::SNodeRef::TransactionProcessor,
+            ScryptoValue::from_value(&TransactionProcessorFunction::Run(validated.clone())),
+        );
 
-            // Invoke the transaction processor
-            // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
-            let result = root_frame.invoke_snode(
-                scrypto::core::SNodeRef::TransactionProcessor,
-                ScryptoValue::from_value(&TransactionProcessorFunction::Run(validated.clone())),
-            );
-            match result {
-                Ok(o) => (scrypto_decode::<Vec<ScryptoValue>>(&o.raw).unwrap(), None),
-                Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
-            }
+        let (outputs, error) = match result {
+            Ok(o) => (scrypto_decode::<Vec<ScryptoValue>>(&o.raw).unwrap(), None),
+            Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
         };
 
-        let track_receipt = match Rc::try_unwrap(track) {
-            Ok(r) => r.into_inner().to_receipt(),
-            Err(_) => panic!("Failed to unwrap Rc<Track>"),
-        };
+        let track_receipt = track.to_receipt();
+
         // commit state updates
         let commit_receipt = if error.is_none() {
             if !track_receipt.borrowed.is_empty() {

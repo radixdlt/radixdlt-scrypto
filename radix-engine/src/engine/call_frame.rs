@@ -1,11 +1,9 @@
 use colored::*;
 use sbor::path::SborPath;
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::cell::RefCell;
 use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::marker::*;
-use sbor::rust::rc::Rc;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
@@ -26,13 +24,17 @@ use crate::wasm::*;
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
 pub struct CallFrame<
-    'p, // parent frame lifetime
-    's, // substate store lifetime
-    S,  // substore store type
-    W,  // Scrypto wasm engine type
+    'p, // Parent frame lifetime
+    's, // Substate store lifetime
+    't, // Track lifetime
+    'w, // WASM engine lifetime
+    S,  // Substore store type
+    W,  // WASM engine type
+    I,  // WASM instance type
 > where
     S: ReadableSubstateStore,
-    W: WasmEngine,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
     /// The transaction hash
     transaction_hash: Hash,
@@ -42,9 +44,9 @@ pub struct CallFrame<
     trace: bool,
 
     /// State track
-    track: Rc<RefCell<Track<'s, S>>>,
+    track: &'t mut Track<'s, S>,
     /// Wasm engine
-    wasm_engine: Rc<RefCell<W>>,
+    wasm_engine: &'w mut W,
 
     /// Owned Snodes
     buckets: HashMap<BucketId, Bucket>,
@@ -60,6 +62,8 @@ pub struct CallFrame<
 
     /// Component state, lazily loaded
     component_state: Option<&'p mut ComponentState>,
+
+    phantom: PhantomData<I>,
 }
 
 pub enum ConsumedSNodeState {
@@ -170,10 +174,13 @@ impl LoadedSNodeState {
 }
 
 impl BorrowedSNodeState {
-    fn return_borrowed_state<'p, 's, S, W>(self, frame: &mut CallFrame<'p, 's, S, W>)
-    where
+    fn return_borrowed_state<'p, 's, 't, 'w, S, W, I>(
+        self,
+        frame: &mut CallFrame<'p, 's, 't, 'w, S, W, I>,
+    ) where
         S: ReadableSubstateStore,
-        W: WasmEngine,
+        W: WasmEngine<I>,
+        I: WasmInstance,
     {
         match self {
             BorrowedSNodeState::AuthZone(auth_zone) => {
@@ -184,7 +191,7 @@ impl BorrowedSNodeState {
             }
             BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
                 if let Some(component_address) = actor.component_address() {
-                    frame.track.borrow_mut().return_borrowed_global_mut_value(
+                    frame.track.return_borrowed_global_mut_value(
                         component_address,
                         component_state.unwrap().component, // TODO: how about the refs?
                     );
@@ -193,7 +200,6 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Resource(resource_address, resource_manager) => {
                 frame
                     .track
-                    .borrow_mut()
                     .return_borrowed_global_mut_value(resource_address, resource_manager);
             }
             BorrowedSNodeState::Bucket(bucket_id, bucket) => {
@@ -204,11 +210,9 @@ impl BorrowedSNodeState {
             }
             BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
                 if let Some(component_address) = maybe_component_address {
-                    frame.track.borrow_mut().return_borrowed_vault(
-                        &component_address,
-                        &vault_id,
-                        vault,
-                    );
+                    frame
+                        .track
+                        .return_borrowed_vault(&component_address, &vault_id, vault);
                 } else {
                     frame.owned_snodes.return_borrowed_vault_mut(vault);
                 }
@@ -217,17 +221,18 @@ impl BorrowedSNodeState {
     }
 }
 
-impl<'p, 's, S, W> CallFrame<'p, 's, S, W>
+impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
-    W: WasmEngine,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
     pub fn new_root(
         verbose: bool,
         transaction_hash: Hash,
         transaction_signers: Vec<EcdsaPublicKey>,
-        track: Rc<RefCell<Track<'s, S>>>,
-        wasm_engine: Rc<RefCell<W>>,
+        track: &'t mut Track<'s, S>,
+        wasm_engine: &'w mut W,
     ) -> Self {
         let signers: BTreeSet<NonFungibleId> = transaction_signers
             .clone()
@@ -262,8 +267,8 @@ where
         transaction_hash: Hash,
         depth: usize,
         trace: bool,
-        track: Rc<RefCell<Track<'s, S>>>,
-        wasm_engine: Rc<RefCell<W>>,
+        track: &'t mut Track<'s, S>,
+        wasm_engine: &'w mut W,
         auth_zone: Option<AuthZone>,
         worktop: Option<Worktop>,
         buckets: HashMap<BucketId, Bucket>,
@@ -283,6 +288,7 @@ where
             auth_zone,
             caller_auth_zone,
             component_state: None,
+            phantom: PhantomData,
         }
     }
 
@@ -439,8 +445,7 @@ where
                 })
             }
             SNodeState::PackageStatic => {
-                Package::static_main(call_data, self, self.wasm_engine.clone())
-                    .map_err(RuntimeError::PackageError)
+                Package::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(call_data, self)
@@ -451,13 +456,7 @@ where
             SNodeState::Scrypto(actor, package, export_name, component_state) => {
                 self.component_state = component_state;
 
-                package.invoke(
-                    actor,
-                    export_name,
-                    call_data,
-                    self,
-                    self.wasm_engine.clone(),
-                )
+                package.invoke(actor, export_name, call_data, self)
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
                 .map_err(RuntimeError::ResourceManagerError),
@@ -509,11 +508,16 @@ where
     }
 }
 
-impl<'p, 's, S, W> SystemApi for CallFrame<'p, 's, S, W>
+impl<'p, 's, 't, 'w, S, W, I> SystemApi<W, I> for CallFrame<'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
-    W: WasmEngine,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
+    fn wasm_engine(&mut self) -> &mut W {
+        self.wasm_engine
+    }
+
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
@@ -551,8 +555,8 @@ where
             SNodeRef::Scrypto(actor) => {
                 match actor {
                     ScryptoActor::Blueprint(package_address, blueprint_name) => {
-                        let mut track = self.track.borrow_mut();
-                        let substate_value = track
+                        let substate_value = self
+                            .track
                             .read_value(package_address.clone())
                             .ok_or(RuntimeError::PackageNotFound(*package_address))?;
                         let package = match substate_value {
@@ -585,7 +589,6 @@ where
 
                         let component: Component = self
                             .track
-                            .borrow_mut()
                             .borrow_global_mut_value(component_address)
                             .map_err(|e| match e {
                                 TrackError::NotFound => {
@@ -600,8 +603,8 @@ where
                         let blueprint_name = component.blueprint_name().to_string();
                         let export_name = format!("{}_main", blueprint_name);
 
-                        let mut track = self.track.borrow_mut();
-                        let substate_value = track
+                        let substate_value = self
+                            .track
                             .read_value(package_address)
                             .ok_or(RuntimeError::PackageNotFound(package_address))?;
                         let package = match substate_value {
@@ -650,7 +653,6 @@ where
             SNodeRef::ResourceRef(resource_address) => {
                 let resource_manager: ResourceManager = self
                     .track
-                    .borrow_mut()
                     .borrow_global_mut_value(resource_address.clone())
                     .map_err(|e| match e {
                         TrackError::NotFound => {
@@ -674,8 +676,7 @@ where
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let resource_address = bucket.resource_address();
-                let mut track = self.track.borrow_mut();
-                let substate_value = track.read_value(resource_address.clone()).unwrap();
+                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
                 let resource_manager = match substate_value {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
@@ -726,18 +727,14 @@ where
                         if !snode_refs.vault_ids.contains(vault_id) {
                             return Err(RuntimeError::VaultNotFound(*vault_id));
                         }
-                        let vault = self
-                            .track
-                            .borrow_mut()
-                            .borrow_vault_mut(component_address, vault_id);
+                        let vault = self.track.borrow_vault_mut(component_address, vault_id);
                         (Some(*component_address), vault)
                     } else {
                         panic!("Should never get here");
                     };
 
                 let resource_address = vault.resource_address();
-                let mut track = self.track.borrow_mut();
-                let substate_value = track.read_value(resource_address.clone()).unwrap();
+                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
                 let resource_manager = match substate_value {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
@@ -799,8 +796,8 @@ where
             self.transaction_hash,
             self.depth + 1,
             self.trace,
-            self.track.clone(),
-            self.wasm_engine.clone(),
+            self.track,
+            self.wasm_engine,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
                 | Static(StaticSNodeState::TransactionProcessor) => Some(AuthZone::new()),
@@ -840,7 +837,7 @@ where
         let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
         let key = non_fungible_address.non_fungible_id().to_vec();
         if let SubstateValue::NonFungible(non_fungible) =
-            self.track.borrow_mut().read_key_value(parent_address, key)
+            self.track.read_key_value(parent_address, key)
         {
             non_fungible
         } else {
@@ -855,9 +852,7 @@ where
     ) {
         let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
         let key = non_fungible_address.non_fungible_id().to_vec();
-        self.track
-            .borrow_mut()
-            .set_key_value(parent_address, key, non_fungible)
+        self.track.set_key_value(parent_address, key, non_fungible)
     }
 
     fn borrow_global_mut_resource_manager(
@@ -865,7 +860,6 @@ where
         resource_address: ResourceAddress,
     ) -> Result<ResourceManager, RuntimeError> {
         self.track
-            .borrow_mut()
             .borrow_global_mut_value(resource_address.clone())
             .map(|v| v.into())
             .map_err(|e| match e {
@@ -882,12 +876,11 @@ where
         resource_manager: ResourceManager,
     ) {
         self.track
-            .borrow_mut()
             .return_borrowed_global_mut_value(resource_address, resource_manager)
     }
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
-        let proof_id = self.track.borrow_mut().new_proof_id();
+        let proof_id = self.track.new_proof_id();
         self.proofs.insert(proof_id, proof);
         Ok(proof_id)
     }
@@ -902,13 +895,13 @@ where
     }
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
-        let bucket_id = self.track.borrow_mut().new_bucket_id();
+        let bucket_id = self.track.new_bucket_id();
         self.buckets.insert(bucket_id, Bucket::new(container));
         Ok(bucket_id)
     }
 
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
-        let vault_id = self.track.borrow_mut().new_vault_id();
+        let vault_id = self.track.new_vault_id();
         self.owned_snodes
             .vaults
             .insert(vault_id, Vault::new(container));
@@ -922,22 +915,18 @@ where
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
-        self.track
-            .borrow_mut()
-            .create_uuid_value(resource_manager)
-            .into()
+        self.track.create_uuid_value(resource_manager).into()
     }
 
     fn create_package(&mut self, package: Package) -> PackageAddress {
-        self.track.borrow_mut().create_uuid_value(package).into()
+        self.track.create_uuid_value(package).into()
     }
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
         let data = Self::process_entry_data(component.state())?;
         let new_objects = self.owned_snodes.take(data)?;
-        let address = self.track.borrow_mut().create_uuid_value(component);
+        let address = self.track.create_uuid_value(component);
         self.track
-            .borrow_mut()
             .insert_objects_into_component(new_objects, address.clone().into());
         Ok(address.into())
     }
@@ -977,7 +966,6 @@ where
                 new_set.remove(&initial_loaded_object_refs)?;
                 let new_objects = self.owned_snodes.take(new_set)?;
                 self.track
-                    .borrow_mut()
                     .insert_objects_into_component(new_objects, *component_address);
                 component.set_state(state);
                 return Ok(());
@@ -1004,7 +992,6 @@ where
             if snode_refs.lazy_map_ids.contains(&lazy_map_id) {
                 let substate_value = self
                     .track
-                    .borrow_mut()
                     .read_key_value(Address::LazyMap(*component_address, lazy_map_id), key);
                 let value = match substate_value {
                     SubstateValue::LazyMapEntry(v) => v,
@@ -1040,7 +1027,7 @@ where
                         if !snode_refs.lazy_map_ids.contains(&lazy_map_id) {
                             return Err(RuntimeError::LazyMapNotFound(lazy_map_id));
                         }
-                        let old_substate_value = self.track.borrow_mut().read_key_value(
+                        let old_substate_value = self.track.read_key_value(
                             Address::LazyMap(*component_address, lazy_map_id),
                             key.clone(),
                         );
@@ -1083,13 +1070,12 @@ where
                     .insert_objects_into_map(new_objects, &root);
             }
             Committed { component_address } => {
-                self.track.borrow_mut().set_key_value(
+                self.track.set_key_value(
                     Address::LazyMap(component_address, lazy_map_id),
                     key,
                     SubstateValue::LazyMapEntry(Some(value)),
                 );
                 self.track
-                    .borrow_mut()
                     .insert_objects_into_component(new_objects, component_address);
             }
         }
@@ -1101,8 +1087,8 @@ where
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        let mut track = self.track.borrow_mut();
-        let substate_value = track
+        let substate_value = self
+            .track
             .read_value(component_address)
             .ok_or(RuntimeError::ComponentNotFound(component_address))?;
 
@@ -1117,7 +1103,7 @@ where
     }
 
     fn create_lazy_map(&mut self) -> LazyMapId {
-        let lazy_map_id = self.track.borrow_mut().new_lazy_map_id();
+        let lazy_map_id = self.track.new_lazy_map_id();
         self.owned_snodes
             .lazy_maps
             .insert(lazy_map_id, UnclaimedLazyMap::new());
@@ -1125,29 +1111,29 @@ where
     }
 
     fn get_epoch(&mut self) -> u64 {
-        self.track.borrow().current_epoch()
+        self.track.current_epoch()
     }
 
     fn get_transaction_hash(&mut self) -> Hash {
-        self.track.borrow().transaction_hash()
+        self.track.transaction_hash()
     }
 
     fn generate_uuid(&mut self) -> u128 {
-        self.track.borrow_mut().new_uuid()
+        self.track.new_uuid()
     }
 
     fn user_log(&mut self, level: Level, message: String) {
-        self.track.borrow_mut().add_log(level, message);
+        self.track.add_log(level, message);
     }
 
     #[allow(unused_variables)]
-    fn sys_log(&self, level: Level, msg: String) {
+    fn sys_log(&mut self, level: Level, message: String) {
         let (l, m) = match level {
-            Level::Error => ("ERROR".red(), msg.red()),
-            Level::Warn => ("WARN".yellow(), msg.yellow()),
-            Level::Info => ("INFO".green(), msg.green()),
-            Level::Debug => ("DEBUG".cyan(), msg.cyan()),
-            Level::Trace => ("TRACE".normal(), msg.normal()),
+            Level::Error => ("ERROR".red(), message.red()),
+            Level::Warn => ("WARN".yellow(), message.yellow()),
+            Level::Info => ("INFO".green(), message.green()),
+            Level::Debug => ("DEBUG".cyan(), message.cyan()),
+            Level::Trace => ("TRACE".normal(), message.normal()),
         };
 
         #[cfg(not(feature = "alloc"))]

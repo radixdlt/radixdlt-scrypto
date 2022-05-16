@@ -14,7 +14,7 @@ pub use traits::*;
 
 #[cfg(feature = "wasmer")]
 pub fn default_wasm_engine() -> _ {
-    return WasmerEngine::new();
+    WasmerEngine::new()
 }
 
 #[cfg(not(feature = "wasmer"))]

@@ -13,20 +13,24 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
-pub struct WasmiScryptoModule {
+pub struct WasmiModule {
     module: Module,
 }
 
-pub struct WasmiScryptoInstance<'a, 'r> {
+pub struct WasmiInstance {
     module_ref: ModuleRef,
     memory_ref: MemoryRef,
-    runtime: &'a mut Box<dyn WasmRuntime + 'r>,
+}
+
+pub struct WasmiExternals<'a, 'b, 'r> {
+    instance: &'a WasmiInstance,
+    runtime: &'b mut Box<dyn WasmRuntime + 'r>,
 }
 
 pub struct WasmiEnvModule {}
 
 pub struct WasmiEngine {
-    modules: HashMap<Hash, WasmiScryptoModule>,
+    modules: HashMap<Hash, WasmiModule>,
 }
 
 impl ModuleImportResolver for WasmiEnvModule {
@@ -64,11 +68,8 @@ impl ModuleImportResolver for WasmiEnvModule {
     }
 }
 
-impl WasmiScryptoModule {
-    fn instantiate<'a, 'r>(
-        &self,
-        runtime: &'a mut Box<dyn WasmRuntime + 'r>,
-    ) -> WasmiScryptoInstance<'a, 'r> {
+impl WasmiModule {
+    fn instantiate(&self) -> WasmiInstance {
         // link with env module
         let module_ref = ModuleInstance::new(
             &self.module,
@@ -83,24 +84,28 @@ impl WasmiScryptoModule {
             _ => panic!("Failed to find memory export"),
         };
 
-        WasmiScryptoInstance {
+        WasmiInstance {
             module_ref,
             memory_ref,
-            runtime,
         }
     }
 }
 
-impl<'a, 'r> WasmiScryptoInstance<'a, 'r> {
+impl<'a, 'b, 'r> WasmiExternals<'a, 'b, 'r> {
     pub fn send_value(&mut self, value: &ScryptoValue) -> Result<RuntimeValue, InvokeError> {
-        let result = self.module_ref.clone().invoke_export(
+        let result = self.instance.module_ref.clone().invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.raw.len()) as i32)],
             self,
         );
 
         if let Ok(Some(RuntimeValue::I32(ptr))) = result {
-            if self.memory_ref.set((ptr + 4) as u32, &value.raw).is_ok() {
+            if self
+                .instance
+                .memory_ref
+                .set((ptr + 4) as u32, &value.raw)
+                .is_ok()
+            {
                 return Ok(RuntimeValue::I32(ptr));
             }
         }
@@ -110,6 +115,7 @@ impl<'a, 'r> WasmiScryptoInstance<'a, 'r> {
 
     pub fn read_value(&self, ptr: usize) -> Result<ScryptoValue, InvokeError> {
         let len = self
+            .instance
             .memory_ref
             .get_value::<u32>(ptr as u32)
             .map_err(|_| InvokeError::MemoryAccessError)? as usize;
@@ -119,7 +125,7 @@ impl<'a, 'r> WasmiScryptoInstance<'a, 'r> {
             .checked_add(len)
             .ok_or(InvokeError::MemoryAccessError)?;
 
-        let direct = self.memory_ref.direct_access();
+        let direct = self.instance.memory_ref.direct_access();
         let buffer = direct.as_ref();
         if end > buffer.len().try_into().unwrap() {
             return Err(InvokeError::MemoryAccessError);
@@ -129,7 +135,7 @@ impl<'a, 'r> WasmiScryptoInstance<'a, 'r> {
     }
 }
 
-impl<'a, 'r> Externals for WasmiScryptoInstance<'a, 'r> {
+impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
     fn invoke_index(
         &mut self,
         index: usize,
@@ -139,7 +145,6 @@ impl<'a, 'r> Externals for WasmiScryptoInstance<'a, 'r> {
             RADIX_ENGINE_FUNCTION_INDEX => {
                 let input_ptr = args.nth_checked::<u32>(0)? as usize;
                 let input = self.read_value(input_ptr)?;
-
                 let output = self.runtime.main(input)?;
                 self.send_value(&output)
                     .map(Option::Some)
@@ -157,17 +162,23 @@ impl<'a, 'r> Externals for WasmiScryptoInstance<'a, 'r> {
     }
 }
 
-impl<'a, 'r> WasmiScryptoInstance<'a, 'r> {
-    fn invoke_export(
+impl WasmInstance for WasmiInstance {
+    fn invoke_export<'r>(
         &mut self,
         name: &str,
         input: &ScryptoValue,
+        runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError> {
-        let pointer = self.send_value(input)?;
+        let mut externals = WasmiExternals {
+            instance: self,
+            runtime,
+        };
+
+        let pointer = externals.send_value(input)?;
         let result = self
             .module_ref
             .clone()
-            .invoke_export(name, &[pointer], self);
+            .invoke_export(name, &[pointer], &mut externals);
 
         let rtn = result
             .map_err(|e| {
@@ -179,9 +190,18 @@ impl<'a, 'r> WasmiScryptoInstance<'a, 'r> {
             })?
             .ok_or(InvokeError::MissingReturnData)?;
         match rtn {
-            RuntimeValue::I32(ptr) => self.read_value(ptr as usize),
+            RuntimeValue::I32(ptr) => externals.read_value(ptr as usize),
             _ => Err(InvokeError::InvalidReturnData),
         }
+    }
+
+    fn function_exports(&self) -> Vec<String> {
+        self.module_ref
+            .exports()
+            .iter()
+            .filter(|(_, val)| matches!(val, ExternVal::Func(_)))
+            .map(|(name, _)| name.to_string())
+            .collect()
     }
 }
 
@@ -193,7 +213,7 @@ impl WasmiEngine {
     }
 }
 
-impl WasmEngine for WasmiEngine {
+impl WasmEngine<WasmiInstance> for WasmiEngine {
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError> {
         let code_hash = hash(code);
         if self.modules.contains_key(&code_hash) {
@@ -273,7 +293,7 @@ impl WasmEngine for WasmiEngine {
 
         self.modules.insert(
             code_hash,
-            WasmiScryptoModule {
+            WasmiModule {
                 module: Module::from_buffer(instrumented).expect("Failed to parse wasm module"),
             },
         );
@@ -281,42 +301,13 @@ impl WasmEngine for WasmiEngine {
         Ok(())
     }
 
-    fn invoke_export<'r>(
-        &mut self,
-        code: &[u8],
-        name: &str,
-        input: &ScryptoValue,
-        runtime: &mut Box<dyn WasmRuntime + 'r>,
-    ) -> Result<ScryptoValue, InvokeError> {
+    fn instantiate(&mut self, code: &[u8]) -> WasmiInstance {
         let code_hash = hash(code);
         if !self.modules.contains_key(&code_hash) {
             self.instrument(code)
                 .expect("Failed to instrument the code");
         }
         let module = self.modules.get(&code_hash).unwrap();
-
-        let mut instance = module.instantiate(runtime);
-        instance.invoke_export(name, input)
-    }
-
-    fn function_exports(&mut self, code: &[u8]) -> Vec<String> {
-        let code_hash = hash(code);
-        if !self.modules.contains_key(&code_hash) {
-            self.instrument(code)
-                .expect("Failed to instrument the code");
-        }
-        let module = self.modules.get(&code_hash).unwrap();
-
-        // TODO: change visibility of `wasmi::Module::module()` to `pub` to avoid instantiation.
-        let runtime = NopWasmRuntime::new(0);
-        let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
-        let instance = module.instantiate(&mut runtime_boxed);
-        let export = instance.module_ref.exports();
-
-        export
-            .iter()
-            .filter(|(_, val)| matches!(val, ExternVal::Func(_)))
-            .map(|(name, _)| name.to_string())
-            .collect()
+        module.instantiate()
     }
 }

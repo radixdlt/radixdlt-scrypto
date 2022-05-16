@@ -15,7 +15,8 @@ use scrypto::prelude::*;
 fn missing_memory_should_cause_error() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
 
     // Act
     let code: Vec<u8> = wabt::wat2wasm(
@@ -47,7 +48,8 @@ fn missing_memory_should_cause_error() {
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package = test_runner.publish_package("package");
 
     // Act
@@ -70,7 +72,8 @@ fn large_return_len_should_cause_memory_access_error() {
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package = test_runner.publish_package("package");
 
     // Act
@@ -93,7 +96,8 @@ fn overflow_return_len_should_cause_memory_access_error() {
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package = test_runner.publish_package("package");
 
     // Act

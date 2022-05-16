@@ -14,6 +14,7 @@ use scrypto::values::*;
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
 use crate::model::worktop::WorktopMethod;
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
+use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum TransactionProcessorFunction {
@@ -47,7 +48,7 @@ impl TransactionProcessor {
         Ok(value)
     }
 
-    pub fn static_main<S: SystemApi>(
+    pub fn static_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, TransactionProcessorError> {
