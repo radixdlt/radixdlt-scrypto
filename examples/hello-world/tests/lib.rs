@@ -1,5 +1,6 @@
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
+use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
 use scrypto::prelude::*;
 

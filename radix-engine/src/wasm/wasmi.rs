@@ -289,7 +289,7 @@ impl WasmEngine for WasmiEngine {
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError> {
         let code_hash = hash(code);
-        if self.modules.contains_key(&code_hash) {
+        if !self.modules.contains_key(&code_hash) {
             self.instrument(code)
                 .expect("Failed to instrument the code");
         }
@@ -301,7 +301,7 @@ impl WasmEngine for WasmiEngine {
 
     fn function_exports(&mut self, code: &[u8]) -> Vec<String> {
         let code_hash = hash(code);
-        if self.modules.contains_key(&code_hash) {
+        if !self.modules.contains_key(&code_hash) {
             self.instrument(code)
                 .expect("Failed to instrument the code");
         }
