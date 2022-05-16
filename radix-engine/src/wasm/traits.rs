@@ -1,3 +1,4 @@
+use sbor::rust::boxed::Box;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
