@@ -51,7 +51,6 @@ use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
 use radix_engine::wasm::*;
-use sbor::rust::fmt;
 use scrypto::crypto::*;
 use std::env;
 use std::fs;
@@ -133,7 +132,7 @@ pub fn process_transaction<'s, S, W, O>(
     out: &mut O,
 ) -> Result<(), Error>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
     O: std::io::Write,
 {

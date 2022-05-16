@@ -21,7 +21,6 @@ use crate::model::*;
 ///
 /// Typically, a track is shared by all the processes created within a transaction.
 ///
-#[derive(Debug)]
 pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
     transaction_hash: Hash,

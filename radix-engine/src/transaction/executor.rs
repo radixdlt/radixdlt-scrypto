@@ -1,5 +1,4 @@
 use sbor::rust::cell::RefCell;
-use sbor::rust::fmt;
 use sbor::rust::rc::Rc;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
@@ -19,7 +18,7 @@ use crate::wasm::*;
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'s, S, W>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
     substate_store: &'s mut S,
@@ -29,7 +28,7 @@ where
 
 impl<'s, S, W> NonceProvider for TransactionExecutor<'s, S, W>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
     fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
@@ -39,7 +38,7 @@ where
 
 impl<'s, S, W> AbiProvider for TransactionExecutor<'s, S, W>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
     fn export_abi(
@@ -60,7 +59,7 @@ where
 
 impl<'s, S, W> TransactionExecutor<'s, S, W>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
     pub fn new(
@@ -165,27 +164,32 @@ where
             validated.raw_hash.clone(),
         )));
 
-        // Create root call frame.
-        let mut root_frame = CallFrame::new_root(
-            self.trace,
-            validated.raw_hash.clone(),
-            validated.signers.clone(),
-            track.clone(),
-            self.wasm_engine.clone(),
-        );
+        let (outputs, error) = {
+            // Create root call frame.
+            let mut root_frame = CallFrame::new_root(
+                self.trace,
+                validated.raw_hash.clone(),
+                validated.signers.clone(),
+                track.clone(),
+                self.wasm_engine.clone(),
+            );
 
-        // Invoke the transaction processor
-        // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
-        let result = root_frame.invoke_snode(
-            scrypto::core::SNodeRef::TransactionProcessor,
-            ScryptoValue::from_value(&TransactionProcessorFunction::Run(validated.clone())),
-        );
-        let (outputs, error) = match result {
-            Ok(o) => (scrypto_decode::<Vec<ScryptoValue>>(&o.raw).unwrap(), None),
-            Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
+            // Invoke the transaction processor
+            // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
+            let result = root_frame.invoke_snode(
+                scrypto::core::SNodeRef::TransactionProcessor,
+                ScryptoValue::from_value(&TransactionProcessorFunction::Run(validated.clone())),
+            );
+            match result {
+                Ok(o) => (scrypto_decode::<Vec<ScryptoValue>>(&o.raw).unwrap(), None),
+                Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
+            }
         };
 
-        let track_receipt = Rc::try_unwrap(track).unwrap().into_inner().to_receipt();
+        let track_receipt = match Rc::try_unwrap(track) {
+            Ok(r) => r.into_inner().to_receipt(),
+            Err(_) => panic!("Failed to unwrap Rc<Track>"),
+        };
         // commit state updates
         let commit_receipt = if error.is_none() {
             if !track_receipt.borrowed.is_empty() {

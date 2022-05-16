@@ -63,7 +63,7 @@ pub struct CallFrame<
     caller_auth_zone: Option<&'p AuthZone>,
 
     /// Component state, lazily loaded
-    component_state: Option<ComponentState>,
+    component_state: Option<&'p mut ComponentState>,
 }
 
 pub enum ConsumedSNodeState {
@@ -102,7 +102,12 @@ pub enum SNodeState<'a> {
     AuthZoneRef(&'a mut AuthZone),
     Worktop(&'a mut Worktop),
     // TODO: use reference to the package
-    Scrypto(ScryptoActorInfo, Package, String, Option<ComponentState>),
+    Scrypto(
+        ScryptoActorInfo,
+        Package,
+        String,
+        Option<&'a mut ComponentState>,
+    ),
     ResourceStatic,
     ResourceRef(ResourceAddress, &'a mut ResourceManager),
     BucketRef(BucketId, &'a mut Bucket),
@@ -154,7 +159,7 @@ impl LoadedSNodeState {
                         info.clone(),
                         package.clone(),
                         export_name.clone(),
-                        component_state.take(),
+                        component_state.as_mut(),
                     )
                 }
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
@@ -410,10 +415,10 @@ where
         Ok(proofs)
     }
 
-    pub fn run<'f>(
-        &'f mut self,
+    pub fn run(
+        &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
-        snode: SNodeState<'f>,
+        snode: SNodeState<'p>,
         call_data: ScryptoValue,
     ) -> Result<
         (

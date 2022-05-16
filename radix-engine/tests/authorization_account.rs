@@ -20,7 +20,7 @@ fn test_auth_rule<'s, S, W>(
     sks: &[&EcdsaPrivateKey],
     should_succeed: bool,
 ) where
-    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
     // Arrange

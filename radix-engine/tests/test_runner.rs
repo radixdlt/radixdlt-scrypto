@@ -8,7 +8,7 @@ use scrypto::{abi, call_data};
 
 pub struct TestRunner<'s, S, W>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
     executor: TransactionExecutor<'s, S, W>,
@@ -16,7 +16,7 @@ where
 
 impl<'s, S, W> TestRunner<'s, S, W>
 where
-    S: ReadableSubstateStore + WriteableSubstateStore + fmt::Debug,
+    S: ReadableSubstateStore + WriteableSubstateStore,
     W: WasmEngine,
 {
     pub fn new(ledger: &'s mut S, wasm_engine: W) -> Self {
