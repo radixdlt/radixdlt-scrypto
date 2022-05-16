@@ -7,7 +7,6 @@ use sbor::Decode;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
 
-#[derive(Debug)]
 pub struct RadixEngineDB {
     db: DBWithThreadMode<SingleThreaded>,
 }

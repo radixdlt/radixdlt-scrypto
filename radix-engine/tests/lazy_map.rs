@@ -9,7 +9,7 @@ use scrypto::prelude::*;
 fn dangling_lazy_map_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();
@@ -30,7 +30,7 @@ fn dangling_lazy_map_should_fail() {
 fn can_insert_in_child_nodes() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();
@@ -50,7 +50,7 @@ fn can_insert_in_child_nodes() {
 fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();
@@ -74,7 +74,7 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
 fn cyclic_map_fails_execution() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();
@@ -101,7 +101,7 @@ fn cyclic_map_fails_execution() {
 fn self_cyclic_map_fails_execution() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();
@@ -128,7 +128,7 @@ fn self_cyclic_map_fails_execution() {
 fn cannot_remove_lazy_maps() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();
@@ -162,7 +162,7 @@ fn cannot_remove_lazy_maps() {
 fn cannot_overwrite_lazy_maps() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();
@@ -196,7 +196,7 @@ fn cannot_overwrite_lazy_maps() {
 fn create_lazy_map_and_get() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();
@@ -216,7 +216,7 @@ fn create_lazy_map_and_get() {
 fn create_lazy_map_and_put() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "lazy_map")))
         .unwrap();

@@ -13,7 +13,7 @@ use scrypto::prelude::*;
 #[test]
 fn test_bucket() {
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let (_, _, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "bucket")))
@@ -51,7 +51,7 @@ fn test_bucket() {
 #[test]
 fn test_bucket_of_badges() {
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let (_, _, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "bucket")))

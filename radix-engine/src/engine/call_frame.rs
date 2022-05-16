@@ -23,12 +23,8 @@ use crate::ledger::*;
 use crate::model::*;
 use crate::wasm::*;
 
-/// A call frame is the basic unit that forms a transaction call stack. It keeps track of the
+/// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
-///
-/// A call frame can be either native or wasm (when the callee is a blueprint or component).
-///
-/// Radix Engine manages the lifecycle of call frames and enforces the call and move semantics.
 pub struct CallFrame<
     'p, // parent frame lifetime
     's, // substate store lifetime

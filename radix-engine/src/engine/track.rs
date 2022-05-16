@@ -14,13 +14,7 @@ use crate::engine::{
 use crate::ledger::*;
 use crate::model::*;
 
-/// An abstraction of transaction execution state.
-///
-/// It acts as the facade of ledger state and keeps track of all temporary state updates,
-/// until the `commit()` method is called.
-///
-/// Typically, a track is shared by all the processes created within a transaction.
-///
+/// Facilitates transactional state updates.
 pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
     transaction_hash: Hash,

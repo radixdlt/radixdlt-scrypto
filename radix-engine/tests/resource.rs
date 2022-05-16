@@ -10,7 +10,7 @@ use scrypto::prelude::*;
 fn test_resource_manager() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let (pk, sk, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "resource")))
@@ -40,7 +40,7 @@ fn test_resource_manager() {
 fn mint_with_bad_granularity_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let (pk, sk, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "resource")))
@@ -73,7 +73,7 @@ fn mint_with_bad_granularity_should_fail() {
 fn mint_too_much_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let (pk, sk, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "resource")))

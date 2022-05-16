@@ -5,8 +5,7 @@ use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use crate::ledger::*;
 use crate::ledger::{Substate, WriteableSubstateStore};
 
-/// An in-memory ledger stores all substates in host memory.
-#[derive(Debug, Clone)]
+/// A substate store that stores all substates in host memory.
 pub struct InMemorySubstateStore {
     substates: HashMap<Vec<u8>, Vec<u8>>,
     current_epoch: u64,

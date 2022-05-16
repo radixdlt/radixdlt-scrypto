@@ -80,7 +80,7 @@ fn can_burn_non_fungible() {
 #[test]
 fn test_non_fungible() {
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let (pk, sk, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "non_fungible")))
@@ -129,7 +129,7 @@ fn test_non_fungible() {
 #[test]
 fn test_singleton_non_fungible() {
     let mut ledger = InMemorySubstateStore::new();
-    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), true);
     let (pk, sk, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "non_fungible")))
