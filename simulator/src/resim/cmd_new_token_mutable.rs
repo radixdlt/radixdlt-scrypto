@@ -47,8 +47,7 @@ pub struct NewTokenMutable {
 impl NewTokenMutable {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::new(get_data_dir()?);
-        let wasm_engine = default_wasm_engine();
-        let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, self.trace);
+        let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), self.trace);
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);

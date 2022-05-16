@@ -13,8 +13,7 @@ use scrypto::prelude::*;
 #[test]
 fn test_bucket() {
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let (_, _, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "bucket")))
@@ -52,8 +51,7 @@ fn test_bucket() {
 #[test]
 fn test_bucket_of_badges() {
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let (_, _, account) = executor.new_account();
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "bucket")))
@@ -75,8 +73,7 @@ fn test_bucket_of_badges() {
 fn test_take_with_invalid_granularity() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let package_address = test_runner.publish_package("bucket");
@@ -114,8 +111,7 @@ fn test_take_with_invalid_granularity() {
 fn test_take_with_negative_amount() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let package_address = test_runner.publish_package("bucket");
@@ -153,8 +149,7 @@ fn test_take_with_negative_amount() {
 fn create_empty_bucket() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk, sk, account) = test_runner.new_account();
 
     // Act

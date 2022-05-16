@@ -2,7 +2,6 @@ use radix_engine::ledger::*;
 use radix_engine::model::{Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
 use radix_engine::wasm::WasmEngine;
-use sbor::rust::fmt;
 use scrypto::prelude::*;
 use scrypto::{abi, call_data};
 
@@ -20,7 +19,7 @@ where
     W: WasmEngine,
 {
     pub fn new(ledger: &'s mut S, wasm_engine: W) -> Self {
-        let executor = TransactionExecutor::new(ledger, wasm_engine, true);
+        let executor = TransactionExecutor::new(ledger, wasm_engine, false);
 
         Self { executor }
     }

@@ -20,8 +20,7 @@ enum Action {
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk, sk, account) = test_runner.new_account();
     let (token_address, mint_auth, burn_auth, withdraw_auth, admin_auth) =
         test_runner.create_restricted_token(account);

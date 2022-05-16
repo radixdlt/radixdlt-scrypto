@@ -9,8 +9,7 @@ use scrypto::prelude::*;
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -38,8 +37,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
 fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -69,8 +67,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
 fn non_existent_vault_in_lazy_map_creation_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -98,8 +95,7 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
 fn non_existent_vault_in_committed_lazy_map_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -132,8 +128,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
 fn dangling_vault_should_fail() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -154,8 +149,7 @@ fn dangling_vault_should_fail() {
 fn create_mutable_vault_into_map() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -175,8 +169,7 @@ fn create_mutable_vault_into_map() {
 fn invalid_double_ownership_of_vault() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -204,8 +197,7 @@ fn invalid_double_ownership_of_vault() {
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -229,8 +221,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 fn cannot_overwrite_vault_in_map() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -260,8 +251,7 @@ fn cannot_overwrite_vault_in_map() {
 fn create_mutable_vault_into_vector() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -281,8 +271,7 @@ fn create_mutable_vault_into_vector() {
 fn cannot_remove_vaults() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -312,8 +301,7 @@ fn cannot_remove_vaults() {
 fn can_push_vault_into_vector() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -339,8 +327,7 @@ fn can_push_vault_into_vector() {
 fn create_mutable_vault_with_take() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -360,8 +347,7 @@ fn create_mutable_vault_with_take() {
 fn create_mutable_vault_with_take_non_fungible() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -385,8 +371,7 @@ fn create_mutable_vault_with_take_non_fungible() {
 fn create_mutable_vault_with_get_nonfungible_ids() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -410,8 +395,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 fn create_mutable_vault_with_get_amount() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();
@@ -435,8 +419,7 @@ fn create_mutable_vault_with_get_amount() {
 fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, true);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(&compile_package!(format!("./tests/{}", "vault")))
         .unwrap();

@@ -10,8 +10,7 @@ use scrypto::prelude::*;
 fn test_say_hello() {
     // Set up environment.
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let package = executor
         .publish_package(include_package!("no_std"))
         .unwrap();

@@ -9,8 +9,7 @@ use scrypto::prelude::RADIX_TOKEN;
 
 fn bench_transfer(b: &mut Bencher) {
     let mut ledger = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut ledger, wasm_engine, false);
+    let mut executor = TransactionExecutor::new(&mut ledger, default_wasm_engine(), false);
     let (pk, sk, account1) = executor.new_account();
     let (_, _, account2) = executor.new_account();
     let transaction = TransactionBuilder::new()

@@ -9,7 +9,6 @@ use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::ledger::*;
 use radix_engine::wasm::default_wasm_engine;
 use radix_engine::wasm::WasmEngine;
-use sbor::rust::fmt;
 use scrypto::call_data;
 use scrypto::prelude::*;
 
@@ -48,8 +47,7 @@ fn test_auth_rule<'s, S, W>(
 #[test]
 fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
 
@@ -68,8 +66,7 @@ fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
 #[test]
 fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -94,8 +91,7 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
 #[test]
 fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
 
@@ -108,8 +104,7 @@ fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
 fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (_, _, auth1) = test_runner.new_key_pair_with_pk_address();
 
@@ -120,8 +115,7 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
 #[test]
 fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (_, _, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -138,8 +132,7 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
 #[test]
 fn can_withdraw_from_my_complex_account() {
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -166,8 +159,7 @@ fn can_withdraw_from_my_complex_account() {
 #[test]
 fn cannot_withdraw_from_my_complex_account() {
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (_, _, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -190,8 +182,7 @@ fn cannot_withdraw_from_my_complex_account() {
 #[test]
 fn can_withdraw_from_my_complex_account_2() {
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -221,8 +212,7 @@ fn can_withdraw_from_my_complex_account_2() {
 #[test]
 fn cannot_withdraw_from_my_complex_account_2() {
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -256,8 +246,7 @@ fn cannot_withdraw_from_my_complex_account_2() {
 fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let xrd_auth = rule!(require(RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
@@ -288,8 +277,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let xrd_auth = rule!(require_amount(Decimal(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
@@ -320,8 +308,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
 fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::new();
-    let wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, wasm_engine);
+    let mut test_runner = TestRunner::new(&mut substate_store, default_wasm_engine());
     let xrd_auth = rule!(require_amount(Decimal::from(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
