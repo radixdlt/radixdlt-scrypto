@@ -13,7 +13,7 @@ pub use errors::*;
 pub use traits::*;
 
 #[cfg(feature = "wasmer")]
-pub fn default_wasm_engine() -> _ {
+pub fn default_wasm_engine() -> WasmerEngine {
     WasmerEngine::new()
 }
 

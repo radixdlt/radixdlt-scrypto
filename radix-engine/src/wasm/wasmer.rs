@@ -239,7 +239,7 @@ impl WasmEngine<WasmerInstance> for WasmerEngine {
 
     fn instantiate(&mut self, code: &[u8]) -> WasmerInstance {
         let code_hash = hash(code);
-        if self.modules.contains_key(&code_hash) {
+        if !self.modules.contains_key(&code_hash) {
             self.instrument(code)
                 .expect("Failed to instrument the code");
         }

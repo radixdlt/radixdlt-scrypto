@@ -311,7 +311,7 @@ where
             self.sys_log(Level::Info, format!("Proofs: {:?}", self.proofs));
             self.sys_log(Level::Info, format!("SNodes: {:?}", self.owned_snodes));
             self.sys_log(Level::Info, format!("Worktop: {:?}", self.worktop));
-            self.sys_log(Level::Info, format!("Authzone: {:?}", self.auth_zone));
+            self.sys_log(Level::Info, format!("Auth zone: {:?}", self.auth_zone));
             Err(RuntimeError::ResourceCheckFailure)
         }
     }
