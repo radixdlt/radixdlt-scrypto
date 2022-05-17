@@ -295,6 +295,7 @@ where
     /// Checks resource leak.
     fn check_resource(&self) -> Result<(), RuntimeError> {
         let success = self.buckets.is_empty()
+            && self.proofs.is_empty()
             && self.owned_snodes.vaults.is_empty()
             && self.owned_snodes.lazy_maps.is_empty()
             && match &self.worktop {
@@ -305,6 +306,12 @@ where
         if success {
             Ok(())
         } else {
+            self.sys_log(Level::Info, format!("Resources owned by call frame"));
+            self.sys_log(Level::Info, format!("Buckets: {:?}", self.buckets));
+            self.sys_log(Level::Info, format!("Proofs: {:?}", self.proofs));
+            self.sys_log(Level::Info, format!("SNodes: {:?}", self.owned_snodes));
+            self.sys_log(Level::Info, format!("Worktop: {:?}", self.worktop));
+            self.sys_log(Level::Info, format!("Authzone: {:?}", self.auth_zone));
             Err(RuntimeError::ResourceCheckFailure)
         }
     }
@@ -790,6 +797,11 @@ where
         self.process_call_data(&call_data)?;
         moving_buckets.extend(self.send_buckets(&call_data.bucket_ids)?);
         moving_proofs.extend(self.send_proofs(&call_data.proof_ids, MoveMethod::AsArgument)?);
+        self.sys_log(
+            Level::Debug,
+            format!("Sending buckets: {:?}", moving_buckets),
+        );
+        self.sys_log(Level::Debug, format!("Sending proofs: {:?}", moving_proofs));
 
         // start a new frame
         let mut frame = CallFrame::new(
@@ -818,6 +830,14 @@ where
             frame.run(Some(snode_ref), snode, call_data)?;
 
         // move buckets and proofs to this process.
+        self.sys_log(
+            Level::Debug,
+            format!("Received buckets: {:?}", received_buckets),
+        );
+        self.sys_log(
+            Level::Debug,
+            format!("Received proofs: {:?}", received_proofs),
+        );
         self.buckets.extend(received_buckets);
         self.proofs.extend(received_proofs);
         self.owned_snodes.vaults.extend(received_vaults);
@@ -1127,7 +1147,7 @@ where
     }
 
     #[allow(unused_variables)]
-    fn sys_log(&mut self, level: Level, message: String) {
+    fn sys_log(&self, level: Level, message: String) {
         let (l, m) = match level {
             Level::Error => ("ERROR".red(), message.red()),
             Level::Warn => ("WARN".yellow(), message.yellow()),
@@ -1137,6 +1157,8 @@ where
         };
 
         #[cfg(not(feature = "alloc"))]
-        println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
+        if self.trace {
+            println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
+        }
     }
 }

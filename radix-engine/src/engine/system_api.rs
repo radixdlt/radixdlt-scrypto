@@ -95,5 +95,5 @@ where
 
     fn user_log(&mut self, level: Level, message: String);
 
-    fn sys_log(&mut self, level: Level, message: String);
+    fn sys_log(&self, level: Level, message: String);
 }
