@@ -28,3 +28,8 @@ trace = ["scrypto-derive/trace"]
 
 # Enable serde derives
 serde = ["sbor/serde", "scrypto-abi/serde"]
+
+[profile.release]
+# Enable checking of overflow in Scrypto
+# Do not remove this as all scrypto code depends on overflow safe operations.
+overflow-checks = true
