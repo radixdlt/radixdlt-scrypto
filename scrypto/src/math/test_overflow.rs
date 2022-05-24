@@ -17,7 +17,7 @@ mod tests {
                     fn [<overflow_test_add_$t>]() {
                         let a: $t = 1;
                         let b = <$t>::MAX;
-                        let _c = a + b;         
+                        let _c = a + b;
                     }
 
 
@@ -26,7 +26,7 @@ mod tests {
                     fn [<overflow_test_mul_$t>]() {
                         let a: $t = 2;
                         let b = <$t>::MAX;
-                        let _c = a * b;         
+                        let _c = a * b;
                     }
 
                     #[test]
@@ -34,7 +34,7 @@ mod tests {
                     fn [<overflow_test_pow_$t>]() {
                         let a: $t = 2;
                         let b = <$t>::MAX;
-                        let _c = b.pow(a.try_into().unwrap());         
+                        let _c = b.pow(a.try_into().unwrap());
                     }
 
                     #[test]
@@ -42,7 +42,7 @@ mod tests {
                     fn [<overflow_test_shl_$t>]() {
                         let a: $t = $b + 1;
                         let b: $t = <$t>::MAX;
-                        let _c = b << a;         
+                        let _c = b << a;
                     }
 
                     #[test]
@@ -50,7 +50,7 @@ mod tests {
                     fn [<overflow_test_shr_$t>]() {
                         let a: $t = $b + 1;
                         let b: $t = <$t>::MAX;
-                        let _c = b >> a;         
+                        let _c = b >> a;
                     }
                 }
             )*
@@ -65,13 +65,13 @@ mod tests {
                     fn [<overflow_test_sub_$t>]() {
                         let a: $t = -1;
                         let b = <$t>::MAX;
-                        let _c = b - a;         
+                        let _c = b - a;
                     }
                 }
             )*
         };
     }
 
-    overflow!{ i8, 8, i16, 16, i32, 32, i64, 64, i128, 128, u8, 8, u16, 16, u32, 32, u64, 64, u128, 128 }
-    overflow_signed!{i8, i16, i32, i64, i128}
+    overflow! { i8, 8, i16, 16, i32, 32, i64, 64, i128, 128, u8, 8, u16, 16, u32, 32, u64, 64, u128, 128 }
+    overflow_signed! { i8, i16, i32, i64, i128 }
 }
