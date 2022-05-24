@@ -72,6 +72,23 @@ mod tests {
         };
     }
 
+    macro_rules! underflow_unsigned {
+        ($( $t:ty ),*) => {
+            $(
+                paste::paste! {
+                    #[test]
+                    #[should_panic]
+                    fn [<overflow_test_unsigned_sub_$t>]() {
+                        let a: $t = 1;
+                        let b: $t = 0;
+                        let _c = b - a;
+                    }
+                }
+            )*
+        };
+    }
+
     overflow! { i8, 8, i16, 16, i32, 32, i64, 64, i128, 128, u8, 8, u16, 16, u32, 32, u64, 64, u128, 128 }
     overflow_signed! { i8, i16, i32, i64, i128 }
+    underflow_unsigned!{ u8, u16, u32, u64, u128 }
 }
