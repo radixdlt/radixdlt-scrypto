@@ -140,7 +140,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                         let name = <String>::decode_value(decoder)?;
                         match name.as_str() {
                             #(#match_arms,)*
-                            _ => Err(::sbor::DecodeError::InvalidEnum(name))
+                            _ => Err(::sbor::DecodeError::InvalidEnumVariant(name))
                         }
                     }
                 }
@@ -218,7 +218,7 @@ mod tests {
                                     x: <u8>::decode(decoder)?,
                                 })
                             },
-                            _ => Err(::sbor::DecodeError::InvalidEnum(name))
+                            _ => Err(::sbor::DecodeError::InvalidEnumVariant(name))
                         }
                     }
                 }

@@ -40,6 +40,7 @@ impl Package {
             .map_err(|_| WasmValidationError::FailedToInstrumentCode)?;
 
         // export blueprint ABI
+        // TODO will replace this with static ABIs
         let mut blueprint_abis = HashMap::new();
         let module = wasm_engine.instantiate(&code);
         let exports: Vec<String> = module

@@ -100,12 +100,6 @@ impl ReadableSubstateStore for RadixEngineDB {
         self.read(address).map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn get_child_substate(&self, address: &[u8], key: &[u8]) -> Option<Substate> {
-        let mut id = address.to_vec();
-        id.extend(key.to_vec());
-        self.read(&id).map(|b| scrypto_decode(&b).unwrap())
-    }
-
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
         self.read(&address).map(|b| scrypto_decode(&b).unwrap())
     }
@@ -128,12 +122,6 @@ impl ReadableSubstateStore for RadixEngineDB {
 impl WriteableSubstateStore for RadixEngineDB {
     fn put_substate(&mut self, address: &[u8], substate: Substate) {
         self.write(address, &scrypto_encode(&substate));
-    }
-
-    fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate) {
-        let mut id = address.to_vec();
-        id.extend(key.to_vec());
-        self.write(&id, &scrypto_encode(&substate));
     }
 
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
