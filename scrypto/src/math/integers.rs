@@ -29,13 +29,14 @@ use paste::paste;
 
 macro_rules! types {
     ($($l:literal)*) => {
-
-        #[derive(Clone , Copy , Default , Eq , Hash , Ord , PartialEq , PartialOrd)]
-        #[repr(transparent)]
-       paste!{ 
-        pub struct I[<$l>](pub i[<$l>]);
-        pub struct U[<$l>](pub U[<$l>]);
-       }
+        $(
+            #[derive(Clone , Copy , Default , Eq , Hash , Ord , PartialEq , PartialOrd)]
+            #[repr(transparent)]
+            paste!{ 
+                pub struct I[<$l>](pub i[<$l>]);
+                pub struct U[<$l>](pub U[<$l>]);
+            }
+        )*
     }
 }
 
