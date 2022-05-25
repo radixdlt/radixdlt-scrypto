@@ -25,6 +25,9 @@ pub enum TestEnum {
     C,
 }
 
+#[derive(TypeId, Encode)]
+pub enum EmptyEnum {}
+
 #[test]
 fn test_encode_struct() {
     let a = TestStructNamed { state: 3 };

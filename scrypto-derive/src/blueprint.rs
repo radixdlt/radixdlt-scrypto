@@ -69,29 +69,41 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
     let (arm_guards, arm_bodies) = generate_dispatcher(&method_enum_ident, bp_ident, bp_items)?;
-    let output_dispatcher = quote! {
-        #method_enum
+    let output_dispatcher = if arm_guards.is_empty() {
+        quote! {
+            #method_enum
 
-        #[no_mangle]
-        pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
-            // Set up panic hook
-            ::scrypto::misc::set_up_panic_hook();
-
-            // Set up component and resource subsystems;
-            ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
-            ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
-
-            // Dispatch the call
-            let method = ::scrypto::buffer::scrypto_decode_from_buffer::<#method_enum_ident>(input).unwrap();
-            let rtn;
-            match method {
-                #( #arm_guards => #arm_bodies )*
+            #[no_mangle]
+            pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
+                panic!("No invocation expected")
             }
+        }
+    } else {
+        quote! {
+            #method_enum
 
-            // Return
-            rtn
+            #[no_mangle]
+            pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
+                // Set up panic hook
+                ::scrypto::misc::set_up_panic_hook();
+
+                // Set up component and resource subsystems;
+                ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+                ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+
+                // Dispatch the call
+                let method = ::scrypto::buffer::scrypto_decode_from_buffer::<#method_enum_ident>(input).unwrap();
+                let rtn;
+                match method {
+                    #( #arm_guards => #arm_bodies )*
+                }
+
+                // Return
+                rtn
+            }
         }
     };
+
     trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
 
     let abi_ident = format_ident!("{}_abi", bp_ident);
@@ -168,7 +180,7 @@ fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEn
         #[allow(non_camel_case_types)]
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         enum #method_enum_ident {
-            #(#variants),*,
+            #(#variants),*
         }
     }
 }
@@ -224,8 +236,6 @@ fn generate_dispatcher(
                             let arg_index = if get_state.is_some() { i - 1 } else { i };
                             let arg = format_ident!("arg{}", arg_index);
 
-                            // Generate an `Arg` and a loading `Stmt` for the i-th argument
-                            trace!("Generated stmt: {}", quote! { #stmt });
                             match_args.push(parse_quote! { #arg });
                             dispatch_args.push(parse_quote! { #arg });
                         }
@@ -505,7 +515,7 @@ mod tests {
     #[test]
     fn test_blueprint() {
         let input = TokenStream::from_str(
-            "struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } }",
+            "struct Test {a: u32, admin: ResourceManager} impl Test { pub fn x(&self, i: u32) -> u32 { i + self.a } pub fn y(i: u32) -> u32 { i * 2 } }",
         )
         .unwrap();
         let output = handle_blueprint(input).unwrap();
@@ -526,6 +536,9 @@ mod tests {
                         pub fn x(&self, i: u32) -> u32 {
                             i + self.a
                         }
+                        pub fn y(i: u32) -> u32 {
+                            i * 2
+                        }
                     }
 
                     impl ::scrypto::component::ComponentState for Test {
@@ -542,6 +555,7 @@ mod tests {
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 enum TestMethod {
                     x(u32),
+                    y(u32)
                 }
 
                 #[no_mangle]
@@ -558,6 +572,9 @@ mod tests {
                             let state: blueprint::Test = borrow_component!(component_address).get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, arg0));
                         }
+                        TestMethod::y(arg0) => {
+                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(arg0));
+                        }
                     }
                     rtn
                 }
@@ -568,7 +585,11 @@ mod tests {
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
-                    let functions: Vec<Function> = vec![];
+                    let functions: Vec<Function> = vec![::scrypto::abi::Function {
+                        name: "y".to_owned(),
+                        inputs: vec![<u32>::describe()],
+                        output: <u32>::describe(),
+                    }];
                     let methods: Vec<Method> = vec![::scrypto::abi::Method {
                         name: "x".to_owned(),
                         mutability: ::scrypto::abi::Mutability::Immutable,
@@ -584,10 +605,84 @@ mod tests {
                     component_address: ::scrypto::component::ComponentAddress,
                 }
                 impl Test {
+                    pub fn y(arg0: u32) -> u32 {
+                        let rtn = ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0));
+                        ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
+                    }
                     pub fn x(&self, arg0: u32) -> u32 {
                         let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0));
                         ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                     }
+                }
+                impl From<::scrypto::component::ComponentAddress> for Test {
+                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
+                        Self { component_address }
+                    }
+                }
+                impl From<Test> for ::scrypto::component::ComponentAddress {
+                    fn from(a: Test) -> ::scrypto::component::ComponentAddress {
+                        a.component_address
+                    }
+                }
+            },
+        );
+    }
+
+    #[test]
+    fn test_empty_blueprint() {
+        let input = TokenStream::from_str("struct Test {} impl Test {}").unwrap();
+        let output = handle_blueprint(input).unwrap();
+
+        assert_code_eq(
+            output,
+            quote! {
+                pub mod blueprint {
+                    use super::*;
+
+                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                    pub struct Test {
+                    }
+
+                    impl Test {
+                    }
+
+                    impl ::scrypto::component::ComponentState for Test {
+                        fn instantiate(self) -> ::scrypto::component::LocalComponent {
+                            ::scrypto::component::component_system().to_component_state_with_auth(
+                                "Test",
+                                self
+                            )
+                        }
+                    }
+                }
+
+                #[allow(non_camel_case_types)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                enum TestMethod {
+                }
+
+                #[no_mangle]
+                pub extern "C" fn Test_main(input: *mut u8) -> *mut u8 {
+                    panic!("No invocation expected")
+                }
+                #[no_mangle]
+                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
+                    use ::sbor::{Describe, Type};
+                    use ::scrypto::abi::{Function, Method};
+                    use ::sbor::rust::borrow::ToOwned;
+                    use ::sbor::rust::vec;
+                    use ::sbor::rust::vec::Vec;
+                    let functions: Vec<Function> = vec![];
+                    let methods: Vec<Method> = vec![];
+                    let schema: Type = blueprint::Test::describe();
+                    let output = (schema, functions, methods);
+                    ::scrypto::buffer::scrypto_encode_to_buffer(&output)
+                }
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                pub struct Test {
+                    component_address: ::scrypto::component::ComponentAddress,
+                }
+                impl Test {
                 }
                 impl From<::scrypto::component::ComponentAddress> for Test {
                     fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
