@@ -1,40 +1,22 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use radix_engine::ledger::*;
-use radix_engine::transaction::*;
-use radix_engine::wasm::InvokeError;
-use scrypto::call_data;
-use scrypto::prelude::*;
-
 #[test]
 fn test_loop() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "metering")))
-        .unwrap();
-
-    let transaction = TransactionBuilder::new()
-        .call_function(package, "Metering", call_data!(iterations(10_000u32)))
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
-    receipt.result.expect("It should work");
+    todo!()
 }
 
 #[test]
 fn test_loop_out_of_tbd() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "metering")))
-        .unwrap();
+    todo!()
+}
 
-    let transaction = TransactionBuilder::new()
-        .call_function(package, "Metering", call_data!(iterations(5_000_000u32)))
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. });
+#[test]
+fn test_recursion() {
+    todo!()
+}
+
+#[test]
+fn test_recursion_stack_overflow() {
+    todo!()
 }
