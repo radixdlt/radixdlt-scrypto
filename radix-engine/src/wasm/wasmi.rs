@@ -231,6 +231,8 @@ impl ScryptoWasmInstrumenter for WasmiEngine {
         let mut module =
             parity_wasm::deserialize_buffer(code).expect("Unable to parse wasm module");
 
+        // TODO reject wasm modules that call the `TBD_FUNCTION_INDEX` directly
+
         module = gas_metering::inject(
             module,
             &gas_metering::ConstantCostRules::new(INSTRUCTION_COST, MEMORY_GROW_COST),
