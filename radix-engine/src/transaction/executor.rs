@@ -1,7 +1,7 @@
-use scrypto::buffer::scrypto_encode;
-use scrypto::component::Package;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use scrypto::buffer::scrypto_encode;
+use scrypto::component::Package;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
