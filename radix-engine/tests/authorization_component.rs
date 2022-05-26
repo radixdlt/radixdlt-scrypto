@@ -45,7 +45,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
     let my_component = receipt.new_component_addresses[0];
 
     // Act

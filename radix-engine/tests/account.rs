@@ -29,7 +29,7 @@ fn can_withdraw_from_my_account() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -103,7 +103,7 @@ fn account_to_bucket_to_account() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]

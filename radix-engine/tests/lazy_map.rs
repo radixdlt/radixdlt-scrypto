@@ -45,7 +45,7 @@ fn can_insert_in_child_nodes() {
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -70,7 +70,7 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -217,7 +217,7 @@ fn create_lazy_map_and_get() {
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -238,5 +238,5 @@ fn create_lazy_map_and_put() {
     let receipt = executor.validate_and_execute(&transaction).unwrap();
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }

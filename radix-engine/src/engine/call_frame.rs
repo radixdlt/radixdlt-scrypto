@@ -212,7 +212,7 @@ impl BorrowedSNodeState {
                 if let Some(component_address) = maybe_component_address {
                     frame
                         .track
-                        .return_borrowed_vault(&component_address, &vault_id, vault);
+                        .return_borrowed_global_mut_value((component_address, vault_id), vault);
                 } else {
                     frame.owned_snodes.return_borrowed_vault_mut(vault);
                 }
@@ -722,23 +722,31 @@ where
                 Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
-                let (component, vault) =
-                    if let Some(vault) = self.owned_snodes.borrow_vault_mut(vault_id) {
-                        (None, vault)
-                    } else if let Some(ComponentState {
-                        component_address,
-                        snode_refs,
-                        ..
-                    }) = &self.component_state
-                    {
-                        if !snode_refs.vault_ids.contains(vault_id) {
-                            return Err(RuntimeError::VaultNotFound(*vault_id));
-                        }
-                        let vault = self.track.borrow_vault_mut(component_address, vault_id);
-                        (Some(*component_address), vault)
-                    } else {
-                        panic!("Should never get here");
-                    };
+                let (component, vault) = if let Some(vault) =
+                    self.owned_snodes.borrow_vault_mut(vault_id)
+                {
+                    (None, vault)
+                } else if let Some(ComponentState {
+                    component_address,
+                    snode_refs,
+                    ..
+                }) = &self.component_state
+                {
+                    if !snode_refs.vault_ids.contains(vault_id) {
+                        return Err(RuntimeError::VaultNotFound(*vault_id));
+                    }
+                    let vault: Vault = self
+                        .track
+                        .borrow_global_mut_value((*component_address, *vault_id))
+                        .map_err(|e| match e {
+                            TrackError::NotFound => RuntimeError::VaultNotFound(vault_id.clone()),
+                            TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
+                        })?
+                        .into();
+                    (Some(*component_address), vault)
+                } else {
+                    panic!("Should never get here");
+                };
 
                 let resource_address = vault.resource_address();
                 let substate_value = self.track.read_value(resource_address.clone()).unwrap();

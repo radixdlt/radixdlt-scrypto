@@ -377,7 +377,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -426,7 +426,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -464,7 +464,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -511,5 +511,5 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }

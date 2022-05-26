@@ -1,43 +1,155 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use radix_engine::ledger::*;
-use radix_engine::transaction::*;
-use radix_engine::wasm::default_wasm_engine;
-use radix_engine::wasm::InvokeError;
+use radix_engine::{
+    ledger::InMemorySubstateStore,
+    transaction::{NonceProvider, TransactionBuilder, TransactionExecutor},
+    wasm::{default_wasm_engine, InvokeError},
+};
 use scrypto::call_data;
-use scrypto::prelude::*;
+use test_runner::wat2wasm;
 
 #[test]
 fn test_loop() {
+    // Arrange
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "metering")))
-        .unwrap();
 
+    // Act
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
+    let package_address = executor
+        .publish_package(code)
+        .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
-        .call_function(package, "Metering", call_data!(iterations(10_000u32)))
+        .call_function(package_address, "Test", call_data!(f()))
         .build(executor.get_nonce([]))
         .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert!(receipt.result.is_ok());
+    let receipt = executor
+        .validate_and_execute(&transaction)
+        .expect("Failed to execute transaction");
+
+    // Assert
+    receipt.result.expect("It should work")
 }
 
 #[test]
 fn test_loop_out_of_tbd() {
+    // Arrange
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "metering")))
-        .unwrap();
 
+    // Act
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
+    let package_address = executor
+        .publish_package(code)
+        .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
-        .call_function(package, "Metering", call_data!(iterations(5_000_000u32)))
+        .call_function(package_address, "Test", call_data!(f()))
         .build(executor.get_nonce([]))
         .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. });
+    let receipt = executor
+        .validate_and_execute(&transaction)
+        .expect("Failed to execute transaction");
+
+    // Assert
+    assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. })
+}
+
+#[test]
+fn test_recursion() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
+
+    // Act
+    // In this test case, each call frame costs 4 stack units
+    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
+    let package_address = executor
+        .publish_package(code)
+        .expect("Failed to publish package");
+    let transaction = TransactionBuilder::new()
+        .call_function(package_address, "Test", call_data!(f()))
+        .build(executor.get_nonce([]))
+        .sign([]);
+    let receipt = executor
+        .validate_and_execute(&transaction)
+        .expect("Failed to execute transaction");
+
+    // Assert
+    receipt.result.expect("It should work")
+}
+
+#[test]
+fn test_recursion_stack_overflow() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
+
+    // Act
+    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
+    let package_address = executor
+        .publish_package(code)
+        .expect("Failed to publish package");
+    let transaction = TransactionBuilder::new()
+        .call_function(package_address, "Test", call_data!(f()))
+        .build(executor.get_nonce([]))
+        .sign([]);
+    let receipt = executor
+        .validate_and_execute(&transaction)
+        .expect("Failed to execute transaction");
+
+    // Assert
+    assert_invoke_error!(receipt.result, InvokeError::WasmError { .. })
+}
+
+#[test]
+fn test_grow_memory() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
+
+    // Act
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "99999"));
+    let package_address = executor
+        .publish_package(code)
+        .expect("Failed to publish package");
+    let transaction = TransactionBuilder::new()
+        .call_function(package_address, "Test", call_data!(f()))
+        .build(executor.get_nonce([]))
+        .sign([]);
+    let receipt = executor
+        .validate_and_execute(&transaction)
+        .expect("Failed to execute transaction");
+
+    // Assert
+    receipt.result.expect("It should work")
+}
+
+#[test]
+fn test_grow_memory_out_of_tbd() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
+
+    // Act
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
+    let package_address = executor
+        .publish_package(code)
+        .expect("Failed to publish package");
+    let transaction = TransactionBuilder::new()
+        .call_function(package_address, "Test", call_data!(f()))
+        .build(executor.get_nonce([]))
+        .sign([]);
+    let receipt = executor
+        .validate_and_execute(&transaction)
+        .expect("Failed to execute transaction");
+
+    // Assert
+    assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. })
 }

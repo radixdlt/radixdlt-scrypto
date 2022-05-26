@@ -46,7 +46,7 @@ fn test_bucket() {
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn test_bucket_of_badges() {
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -178,5 +178,5 @@ fn create_empty_bucket() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }

@@ -23,4 +23,5 @@ pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsR
 pub use system_api::SystemApi;
 pub use track::{
     Address, BorrowedSNodes, SubstateParentId, SubstateUpdate, SubstateValue, Track, TrackError,
+    TrackReceipt,
 };

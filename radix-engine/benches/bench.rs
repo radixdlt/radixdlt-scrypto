@@ -21,7 +21,7 @@ fn bench_transfer(b: &mut Bencher) {
 
     b.iter(|| {
         let receipt = executor.validate_and_execute(&transaction).unwrap();
-        assert!(receipt.result.is_ok());
+        receipt.result.expect("It should work");
     });
 }
 
