@@ -119,7 +119,7 @@ pub enum Instruction {
     },
 
     /// Publishes a package.
-    PublishPackage { code: Vec<u8> },
+    PublishPackage { package: Vec<u8> },
 
     /// Specifies transaction nonce
     Nonce {
@@ -328,8 +328,8 @@ impl SignedTransaction {
                         method,
                     });
                 }
-                Instruction::PublishPackage { code } => {
-                    instructions.push(ValidatedInstruction::PublishPackage { code });
+                Instruction::PublishPackage { package } => {
+                    instructions.push(ValidatedInstruction::PublishPackage { package });
                 }
                 Instruction::Nonce { .. } => {
                     // TODO: validate nonce
