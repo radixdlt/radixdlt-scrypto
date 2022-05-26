@@ -9,10 +9,11 @@ use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use forward_ref::*;
 use paste::paste;
 use num_bigint::BigInt;
+use num_traits::Signed;
  
 macro_rules! types_large {
 
-    ($(($I:ident, $b: literal)),*) => {
+    ($((type_ident: $t:ident, bytes_length: $bytes_length: literal)),*) => {
         
         $(
             /// Provides safe integer arithmetic.
@@ -22,31 +23,38 @@ macro_rules! types_large {
             /// wrapping around.
             ///
             /// Integer arithmetic can be achieved either through methods like
-            #[doc = concat!("/// `checked_add`, or through the ", stringify!($I) , "type, which ensures all") ]
+            #[doc = concat!("/// `checked_add`, or through the ", stringify!($t) , "type, which ensures all") ]
             /// standard arithmetic operations on the underlying value to have 
             /// checked semantics.
             ///
             /// The underlying value can be retrieved through the `.0` index of the
-            #[doc = concat!("/// `", stringify!($I), "` tuple.")]
+            #[doc = concat!("/// `", stringify!($t), "` tuple.")]
             ///
             /// # Layout
             ///
-            #[doc = concat!("/// `", stringify!($I), "` will have the same methods and traits as")]
+            #[doc = concat!("/// `", stringify!($t), "` will have the same methods and traits as")]
             /// the built-in counterpart.
             #[derive(Clone , Copy , Eq , Hash , Ord , PartialEq , PartialOrd)]
             #[repr(transparent)]
-            pub struct $I(pub [u8; $b/8]);
+            pub struct $t(pub [u8; $bytes_length]);
 
-            impl std::default::Default for $I {
+            impl std::default::Default for $t {
                 fn default() -> Self {
-                    Self {0: [0; $b/8]}
+                    Self {0: [0; $bytes_length]}
                 }
             }
         )*
     }
 }
 
-types_large! { (I256, 256), (I384, 384), (I512, 512), (U256, 256), (U384, 384), (U512, 512) }
+types_large! { 
+(type_ident: I256, bytes_length: 32), 
+(type_ident: I384, bytes_length: 48), 
+(type_ident: I512, bytes_length: 64), 
+(type_ident: U256, bytes_length: 32), 
+(type_ident: U384, bytes_length: 48), 
+(type_ident: U512, bytes_length: 64) 
+}
 
 macro_rules! impl_i_large {
     ($($t:ty),*) => {
@@ -93,21 +101,21 @@ macro_rules! impl_i_large {
 impl_i_large! { I256, I384, I512, U256, U384, U512 }
 
 macro_rules! impl_bigint_to_i {
-    ($($F:ty, $b:literal ),*) => {
+    ($($t:ty, $bytes_len:literal ),*) => {
         $(
             paste! {
-                fn [<bigint_to_$F:lower>](b: BigInt) -> $F {
+                fn [<bigint_to_$t:lower>](b: BigInt) -> $t {
                     let bytes = b.to_signed_bytes_le();
-                    if bytes.len() > $b/8 {
-                        panic!("Overflow");
+                    if bytes.len() > $bytes_len {
+                        panic!("Overflow"); 
                     } else {
                         let mut buf = if b.is_negative() {
-                            [255u8; $b/8]
+                            [255u8; $bytes_len]
                         } else {
-                            [0u8; $b/8]
+                            [0u8; $bytes_len]
                         };
                         buf[..bytes.len()].copy_from_slice(&bytes);
-                        $F(buf)
+                        $t(buf)
                     }
                 }
             }
@@ -131,141 +139,186 @@ fn big_int_to_i128(v: BigInt) -> i128 {
 }
 
 
-impl_bigint_to_i! { I256, 256, I384, 384, I512, 512 , U256, 256, U384, 384, U512, 512 }
+impl_bigint_to_i! { I256, 32, I384, 48, I512, 64 , U256, 32, U384, 48, U512, 64 }
 
 #[allow(unused_macros)]
-macro_rules! sh_impl_large {
-    ($(to_sh: $T:ty, to_sh_bits: $b:literal, other: $F:ty ),*) => {
-        $(
-            paste! {
-                impl Shl<$F> for $T {
-                    type Output = $T;
+macro_rules! sh_impl_large_signed {
+    (to_sh: $t:ty, to_sh_bits: $b:literal, other: $o:ty ) => {
+        paste! {
+            impl Shl<$o> for $t {
+                type Output = $t;
 
-                    #[inline]
-                    fn shl(self, other: $F) -> $T {
-                        if(other.abs() > $b) {
-                            panic!("overflow");
-                        } else {
-                            let to_shift = BigInt::from_signed_bytes_le(&self.0);
-                            let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
-                            [<bigint_to_$T:lower>](to_shift.shl(shift))
-                        }
+                #[inline]
+                fn shl(self, other: $o) -> $t {
+                    if(other.abs() > $b) {
+                        panic!("overflow");
+                    } else {
+                        let to_shift = BigInt::from_signed_bytes_le(&self.0);
+                        let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
+                        [<bigint_to_$t:lower>](to_shift.shl(shift))
                     }
                 }
-                forward_ref_binop! { impl Shl, shl for $T, $F }
-
-                impl ShlAssign<$F> for $T {
-                    #[inline]
-                    fn shl_assign(&mut self, other: $F) {
-                        *self = *self << other;
-                    }
-                }
-                forward_ref_op_assign! { impl ShlAssign, shl_assign for $T, $F }
-
-                impl Shr<$F> for $T {
-                    type Output = $T;
-
-                    #[inline]
-                    fn shr(self, other: $F) -> $T {
-                        if(other.abs() > $b) {
-                            panic!("overflow");
-                        } else {
-                            let to_shift = BigInt::from_signed_bytes_le(&self.0);
-                            let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
-                            [<bigint_to_$T:lower>](to_shift.shr(shift))
-                        }
-                    }
-                }
-                forward_ref_binop! { impl Shr, shr for $T, $F }
-
-                impl ShrAssign<$F> for $T {
-                    #[inline]
-                    fn shr_assign(&mut self, other: $F) {
-                        *self = *self >> other;
-                    }
-                }
-                forward_ref_op_assign! { impl ShrAssign, shr_assign for $T, $F }
             }
-        )*
+            forward_ref_binop! { impl Shl, shl for $t, $o }
+
+            impl ShlAssign<$o> for $t {
+                #[inline]
+                fn shl_assign(&mut self, other: $o) {
+                    *self = *self << other;
+                }
+            }
+            forward_ref_op_assign! { impl ShlAssign, shl_assign for $t, $o }
+
+            impl Shr<$o> for $t {
+                type Output = $t;
+
+                #[inline]
+                fn shr(self, other: $o) -> $t {
+                    if(other.abs() > $b) {
+                        panic!("overflow");
+                    } else {
+                        let to_shift = BigInt::from_signed_bytes_le(&self.0);
+                        let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
+                        [<bigint_to_$t:lower>](to_shift.shr(shift))
+                    }
+                }
+            }
+            forward_ref_binop! { impl Shr, shr for $t, $o }
+
+            impl ShrAssign<$o> for $t {
+                #[inline]
+                fn shr_assign(&mut self, other: $o) {
+                    *self = *self >> other;
+                }
+            }
+            forward_ref_op_assign! { impl ShrAssign, shr_assign for $t, $o }
+        }
+    };
+}
+
+#[allow(unused_macros)]
+macro_rules! sh_impl_large_unsigned {
+    (to_sh: $t:ty, to_sh_bits: $b:literal, other: $o:ty) => {
+        paste! {
+            impl Shl<$o> for $t {
+                type Output = $t;
+
+                #[inline]
+                fn shl(self, other: $o) -> $t {
+                    let to_shift = BigInt::from_signed_bytes_le(&self.0);
+                    let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
+                    [<bigint_to_$t:lower>](to_shift.shl(shift))
+                }
+            }
+            forward_ref_binop! { impl Shl, shl for $t, $o }
+
+            impl ShlAssign<$o> for $t {
+                #[inline]
+                fn shl_assign(&mut self, other: $o) {
+                    *self = *self << other;
+                }
+            }
+            forward_ref_op_assign! { impl ShlAssign, shl_assign for $t, $o }
+
+            impl Shr<$o> for $t {
+                type Output = $t;
+
+                #[inline]
+                fn shr(self, other: $o) -> $t {
+                    let to_shift = BigInt::from_signed_bytes_le(&self.0);
+                    let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
+                    [<bigint_to_$t:lower>](to_shift.shr(shift))
+                }
+            }
+            forward_ref_binop! { impl Shr, shr for $t, $o }
+
+            impl ShrAssign<$o> for $t {
+                #[inline]
+                fn shr_assign(&mut self, other: $o) {
+                    *self = *self >> other;
+                }
+            }
+            forward_ref_op_assign! { impl ShrAssign, shr_assign for $t, $o }
+        }
     };
 }
 
 
 #[allow(unused_macros)]
 macro_rules! sh_impl_builtin_large {
-    (to_sh: $T:ty, to_sh_bits: $b:literal, other: $f:ty) => {
+    (to_sh: $t:ty, to_sh_bits: $b:literal, other: $f:ty) => {
         paste! {
-        impl Shl<$f> for $T {
-            type Output = $T;
+        impl Shl<$f> for $t {
+            type Output = $t;
 
             #[inline]
-            fn shl(self, other: $f) -> $T {
+            fn shl(self, other: $f) -> $t {
                 if(other > $b) {
                     panic!("overflow");
                 } else {
-                    [<bigint_to_$T:lower>](BigInt::from_signed_bytes_le(&self.0).shl(other))
+                    [<bigint_to_$t:lower>](BigInt::from_signed_bytes_le(&self.0).shl(other))
                 }
             }
         }
-        forward_ref_binop! { impl Shl, shl for $T, $f }
+        forward_ref_binop! { impl Shl, shl for $t, $f }
 
-        impl ShlAssign<$f> for $T {
+        impl ShlAssign<$f> for $t {
             #[inline]
             fn shl_assign(&mut self, other: $f) {
                 *self = *self << other;
             }
         }
-        forward_ref_op_assign! { impl ShlAssign, shl_assign for $T, $f }
+        forward_ref_op_assign! { impl ShlAssign, shl_assign for $t, $f }
 
-        impl Shr<$f> for $T {
-            type Output = $T;
+        impl Shr<$f> for $t {
+            type Output = $t;
 
             #[inline]
-            fn shr(self, other: $f) -> $T {
+            fn shr(self, other: $f) -> $t {
                 if(other > $b) {
                     panic!("overflow");
                 } else {
-                    [<bigint_to_$T:lower>](BigInt::from_signed_bytes_le(&self.0).shr(other))
+                    [<bigint_to_$t:lower>](BigInt::from_signed_bytes_le(&self.0).shr(other))
                 }
             }
         }
-        forward_ref_binop! { impl Shr, shr for $T, $f }
+        forward_ref_binop! { impl Shr, shr for $t, $f }
 
-        impl ShrAssign<$f> for $T {
+        impl ShrAssign<$f> for $t {
             #[inline]
             fn shr_assign(&mut self, other: $f) {
                 *self = *self >> other;
             }
         }
-        forward_ref_op_assign! { impl ShrAssign, shr_assign for $T, $f }
+        forward_ref_op_assign! { impl ShrAssign, shr_assign for $t, $f }
         }
     };
 }
 
 macro_rules! sh_impl_all {
-    ($($T:ty, $b:literal),*) => {
+    ($($t:ty, $b:literal),*) => {
         $(
-            sh_impl_large! { to_sh: $T, to_sh_bits: $b, other: I256}
-            sh_impl_large! { to_sh: $T, to_sh_bits: $b, other: I384}
-            sh_impl_large! { to_sh: $T, to_sh_bits: $b, other: I512}
-            sh_impl_large! { to_sh: $T, to_sh_bits: $b, other: U256}
-            sh_impl_large! { to_sh: $T, to_sh_bits: $b, other: U384}
-            sh_impl_large! { to_sh: $T, to_sh_bits: $b, other: U512}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: i8}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: i16}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: i32}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: i64}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: i128}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: u8}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: u16}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: u32}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: u64}
-            sh_impl_builtin_large! { to_sh: $T, to_sh_bits: $b, other: u128}
+            sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I256}
+//            sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I384}
+//            sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I512}
+//            sh_impl_large_unsigned! { to_sh: $t, to_sh_bits: $b, other: U256}
+//            sh_impl_large_unsigned! { to_sh: $t, to_sh_bits: $b, other: U384}
+//            sh_impl_large_unsigned! { to_sh: $t, to_sh_bits: $b, other: U512}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: i8}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: i16}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: i32}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: i64}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: i128}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: u8}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: u16}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: u32}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: u64}
+            sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: u128}
         )*
     };
 }
 
-sh_impl_all!(I256, 256, I384, 384, I512, 512, U256, 256, U384, 384, U512, 512);
+sh_impl_all!{ I256, 256, I384, 384, I512, 512, U256, 256, U384, 384, U512, 512}
 
 macro_rules! checked_impl {
     ($(($t:ty, $o:ty)),*) => {
@@ -480,9 +533,9 @@ macro_rules! checked_impl_neg {
 checked_impl_neg! { I256, I384, I512 }
 
 macro_rules! checked_int_impl {
-    ($(($I:ident, $i:ident)),*) => {$(
+    ($(($i:ident, $n:ident)),*) => {$(
         paste! {
-            impl $I {
+            impl $i {
                 /// Returns the smallest value that can be represented by this integer type.
                 ///
                 /// # Examples
@@ -490,11 +543,11 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("assert_eq!(<$I>::MIN, $I(", stringify!($n), "::MIN));")]
+                #[doc = concat!("assert_eq!(<$i>::MIN, $i(", stringify!($n), "::MIN));")]
                 /// ```
-                pub const MIN: Self = Self(<$i>::MIN);
+                pub const MIN: Self = Self(0: [255; $n]);
 
                 /// Returns the largest value that can be represented by this integer type.
                 ///
@@ -503,9 +556,9 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("assert_eq!(<$I>::MAX, $I(", stringify!($i), "::MAX));")]
+                #[doc = concat!("assert_eq!(<$i>::MAX, $i(", stringify!($i), "::MAX));")]
                 /// ```
                 pub const MAX: Self = Self(<$i>::MAX);
 
@@ -516,9 +569,9 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("assert_eq!(<$I>::BITS, ", stringify!($i), "::BITS);")]
+                #[doc = concat!("assert_eq!(<$i>::BITS, ", stringify!($i), "::BITS);")]
                 /// ```
                 pub const BITS: u32 = <$i>::BITS;
 
@@ -529,9 +582,9 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("let n = $I(0b01001100", stringify!($i), ");")]
+                #[doc = concat!("let n = $i(0b01001100", stringify!($i), ");")]
                 ///
                 /// assert_eq!(n.count_ones(), 3);
                 /// ```
@@ -551,9 +604,9 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("assert_eq!($I(!0", stringify!($i), ").count_zeros(), 0);")]
+                #[doc = concat!("assert_eq!($i(!0", stringify!($i), ").count_zeros(), 0);")]
                 /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
@@ -569,9 +622,9 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("let n = $I(0b0101000", stringify!($i), ");")]
+                #[doc = concat!("let n = $i(0b0101000", stringify!($i), ");")]
                 ///
                 /// assert_eq!(n.trailing_zeros(), 3);
                 /// ```
@@ -594,10 +647,10 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                /// let n: $I = $I(0x0123456789ABCDEF);
-                /// let m: $I = $I(-0x76543210FEDCBA99);
+                /// let n: $i = $i(0x0123456789ABCDEF);
+                /// let m: $i = $i(-0x76543210FEDCBA99);
                 ///
                 /// assert_eq!(n.rotate_left(32), m);
                 /// ```
@@ -605,7 +658,7 @@ macro_rules! checked_int_impl {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub const fn rotate_left(self, n: u32) -> Self {
-                    $I(self.0.rotate_left(n))
+                    $i(self.0.rotate_left(n))
                 }
 
                 /// Shifts the bits to the right by a specified amount, `n`,
@@ -620,10 +673,10 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                /// let n: $I = $I(0x0123456789ABCDEF);
-                /// let m: $I = $I(-0xFEDCBA987654322);
+                /// let n: $i = $i(0x0123456789ABCDEF);
+                /// let m: $i = $i(-0xFEDCBA987654322);
                 ///
                 /// assert_eq!(n.rotate_right(4), m);
                 /// ```
@@ -631,7 +684,7 @@ macro_rules! checked_int_impl {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub const fn rotate_right(self, n: u32) -> Self {
-                    $I(self.0.rotate_right(n))
+                    $i(self.0.rotate_right(n))
                 }
 
                 /// Reverses the byte order of the integer.
@@ -641,21 +694,21 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                /// let n: $I = $I(0b0000000_01010101);
-                /// assert_eq!(n, $I(85));
+                /// let n: $i = $i(0b0000000_01010101);
+                /// assert_eq!(n, $i(85));
                 ///
                 /// let m = n.swap_bytes();
                 ///
-                /// assert_eq!(m, $I(0b01010101_00000000));
-                /// assert_eq!(m, $I(21760));
+                /// assert_eq!(m, $i(0b01010101_00000000));
+                /// assert_eq!(m, $i(21760));
                 /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub const fn swap_bytes(self) -> Self {
-                    $I(self.0.swap_bytes())
+                    $i(self.0.swap_bytes())
                 }
 
                 /// Reverses the bit pattern of the integer.
@@ -668,21 +721,21 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                /// let n = $I(0b0000000_01010101i16);
-                /// assert_eq!(n, $I(85));
+                /// let n = $i(0b0000000_01010101i16);
+                /// assert_eq!(n, $i(85));
                 ///
                 /// let m = n.reverse_bits();
                 ///
                 /// assert_eq!(m.0 as u16, 0b10101010_00000000);
-                /// assert_eq!(m, $I(-22016));
+                /// assert_eq!(m, $i(-22016));
                 /// ```
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 #[inline]
                 pub const fn reverse_bits(self) -> Self {
-                    $I(self.0.reverse_bits())
+                    $i(self.0.reverse_bits())
                 }
 
                 /// Converts an integer from big endian to the target's endianness.
@@ -695,20 +748,20 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("let n = $I(0x1A", stringify!($i), ");")]
+                #[doc = concat!("let n = $i(0x1A", stringify!($i), ");")]
                 ///
                 /// if cfg!(target_endian = "big") {
-                #[doc = concat!("    assert_eq!(<$I>::from_be(n), n)")]
+                #[doc = concat!("    assert_eq!(<$i>::from_be(n), n)")]
                 /// } else {
-                #[doc = concat!("    assert_eq!(<$I>::from_be(n), n.swap_bytes())")]
+                #[doc = concat!("    assert_eq!(<$i>::from_be(n), n.swap_bytes())")]
                 /// }
                 /// ```
                 #[inline]
                 #[must_use]
                 pub const fn from_be(x: Self) -> Self {
-                    $I(<$i>::from_be(x.0))
+                    $i(<$i>::from_be(x.0))
                 }
 
                 /// Converts an integer from little endian to the target's endianness.
@@ -721,20 +774,20 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("let n = $I(0x1A", stringify!($i), ");")]
+                #[doc = concat!("let n = $i(0x1A", stringify!($i), ");")]
                 ///
                 /// if cfg!(target_endian = "little") {
-                #[doc = concat!("    assert_eq!(<$I>::from_le(n), n)")]
+                #[doc = concat!("    assert_eq!(<$i>::from_le(n), n)")]
                 /// } else {
-                #[doc = concat!("    assert_eq!(<$I>::from_le(n), n.swap_bytes())")]
+                #[doc = concat!("    assert_eq!(<$i>::from_le(n), n.swap_bytes())")]
                 /// }
                 /// ```
                 #[inline]
                 #[must_use]
                 pub const fn from_le(x: Self) -> Self {
-                    $I(<$i>::from_le(x.0))
+                    $i(<$i>::from_le(x.0))
                 }
 
                 /// Converts `self` to big endian from the target's endianness.
@@ -747,9 +800,9 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("let n = $I(0x1A", stringify!($i), ");")]
+                #[doc = concat!("let n = $i(0x1A", stringify!($i), ");")]
                 ///
                 /// if cfg!(target_endian = "big") {
                 ///     assert_eq!(n.to_be(), n)
@@ -761,7 +814,7 @@ macro_rules! checked_int_impl {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub const fn to_be(self) -> Self {
-                    $I(self.0.to_be())
+                    $i(self.0.to_be())
                 }
 
                 /// Converts `self` to little endian from the target's endianness.
@@ -774,9 +827,9 @@ macro_rules! checked_int_impl {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("let n = $I(0x1A", stringify!($i), ");")]
+                #[doc = concat!("let n = $i(0x1A", stringify!($i), ");")]
                 ///
                 /// if cfg!(target_endian = "little") {
                 ///     assert_eq!(n.to_le(), n)
@@ -788,7 +841,7 @@ macro_rules! checked_int_impl {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub const fn to_le(self) -> Self {
-                    $I(self.0.to_le())
+                    $i(self.0.to_le())
                 }
 
                 /// Raises self to the power of `exp`, using exponentiation by squaring.
@@ -797,7 +850,7 @@ macro_rules! checked_int_impl {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub fn pow(self, exp: u32) -> Self {
-                    $I(self.0.checked_pow(exp).unwrap())
+                    $i(self.0.checked_pow(exp).unwrap())
                 }
             }
         }
@@ -808,9 +861,9 @@ checked_int_impl! { (I8, i8), (I16, i16), (I32, i32), (I64, i64), (I128, i128) }
 checked_int_impl! { (U8, u8), (U16, u16), (U32, u32), (U64, u64), (U128, u128) }
 
 macro_rules! checked_int_impl_signed {
-    ($(($I:ident, $i: ident)),*) => ($(
+    ($($t:ident),*) => ($(
         paste! {
-            impl $I {
+            impl $t {
                 /// Returns the number of leading zeros in the binary representation of `self`.
                 ///
                 /// # Examples
@@ -818,9 +871,9 @@ macro_rules! checked_int_impl_signed {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
                 ///
-                #[doc = concat!("let n = $I(", stringify!($i), "::MAX) >> 2;")]
+                #[doc = concat!("let n = $t(", stringify!($t:lower), "::MAX) >> 2;")]
                 ///
                 /// assert_eq!(n.leading_zeros(), 3);
                 /// ```
@@ -828,7 +881,11 @@ macro_rules! checked_int_impl_signed {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub const fn leading_zeros(self) -> u32 {
-                    self.0.leading_zeros()
+                    for i in self.0 {
+                        if i != 0 {
+                            return i.leading_zeros();
+                        }
+                    }
                 }
 
                 /// Computes the absolute value of `self`, with overflow causing panic.
@@ -840,8 +897,8 @@ macro_rules! checked_int_impl_signed {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub fn abs(self) -> $I {
-                    $I(self.0.checked_abs().unwrap())
+                pub fn abs(self) -> $t {
+                    $t(self.0.checked_abs().unwrap())
                 }
 
                 /// Returns a number representing sign of `self`.
@@ -855,17 +912,17 @@ macro_rules! checked_int_impl_signed {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
                 ///
-                #[doc = concat!("assert_eq!($I(10", stringify!($i), ").signum(), $I(1));")]
-                #[doc = concat!("assert_eq!($I(0", stringify!($i), ").signum(), $I(0));")]
-                #[doc = concat!("assert_eq!($I(-10", stringify!($i), ").signum(), $I(-1));")]
+                #[doc = concat!("assert_eq!($t(10", stringify!($t:lower), ").signum(), $t(1));")]
+                #[doc = concat!("assert_eq!($t(0", stringify!($t:lower), ").signum(), $t(0));")]
+                #[doc = concat!("assert_eq!($t(-10", stringify!($t:lower), ").signum(), $t(-1));")]
                 /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub fn signum(self) -> $I {
-                    $I(self.0.signum())
+                pub fn signum(self) -> $t {
+                    $t(self.0.signum())
                 }
 
                 /// Returns `true` if `self` is positive and `false` if the number is zero or
@@ -876,10 +933,10 @@ macro_rules! checked_int_impl_signed {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
                 ///
-                #[doc = concat!("assert!($I(10", stringify!($i), ").is_positive());")]
-                #[doc = concat!("assert!(!$I(-10", stringify!($i), ").is_positive());")]
+                #[doc = concat!("assert!($t(10", stringify!($t:lower), ").is_positive());")]
+                #[doc = concat!("assert!(!$t(-10", stringify!($t:lower), ").is_positive());")]
                 /// ```
                 #[must_use]
                 #[inline]
@@ -895,10 +952,10 @@ macro_rules! checked_int_impl_signed {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($I), ";")]
+                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
                 ///
-                #[doc = concat!("assert!($I(-10", stringify!($i), ").is_negative());")]
-                #[doc = concat!("assert!(!$I(10", stringify!($i), ").is_negative());")]
+                #[doc = concat!("assert!($t(-10", stringify!($t:lower), ").is_negative());")]
+                #[doc = concat!("assert!(!$t(10", stringify!($t:lower), ").is_negative());")]
                 /// ```
                 #[must_use]
                 #[inline]
@@ -910,7 +967,7 @@ macro_rules! checked_int_impl_signed {
     )*)
 }
 
-checked_int_impl_signed! { (I8, i8), (I16, i16), (I32, i32), (I64, i64), (I128, i128) }
+checked_int_impl_signed! { I256, I384, I512 }
 
 macro_rules! checked_int_impl_unsigned {
     ($($t:ty),*) => ($(
@@ -951,33 +1008,71 @@ checked_int_impl_unsigned! { U8, U16, U32, U64, U128 }
 
 
 macro_rules! from_int {
-    ($(($I:ident, $t:ident)),*) => {
-        impl From<$t> for $I {
-            fn from(val: $t) -> Self {
-                Self((val as i128) * Self::ONE.0)
+    ($(($t:ident, $o:ident)),*) => {
+        $(
+        paste! {
+            impl From<$o> for $t {
+                fn from(val: $o) -> Self {
+                    [<bigint_to_$t:lower>](BigInt::from(val))
+                }
             }
         }
+        )*
+    };
+}
+
+macro_rules! from_bigint_to_signed {
+    ($($t:ident),*) => {
+        $(
+            paste! {
+                impl From<BigInt> for $t {
+                    fn from(val: BigInt) -> Self {
+                        [<bigint_to_$t:lower>](val)
+                    }
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! from_bigint_to_unsigned {
+    ($($t:ident),*) => {
+        $(
+            paste! {
+                impl From<BigInt> for $t {
+                    fn from(val: BigInt) -> Self {
+                        if val.is_negative() {
+                            panic!("cannot convert negative BigInt to unsigned type");
+                        }
+                        [<bigint_to_$t:lower>](val)
+                    }
+                }
+            }
+        )*
     };
 }
 
 macro_rules! from_int_type {
-    ($($I:ident),*) => {
+    ($($t:ident),*) => {
         $(
-            from_int!(u8);
-            from_int!(u16);
-            from_int!(u32);
-            from_int!(u64);
-            from_int!(usize);
-            from_int!(i8);
-            from_int!(i16);
-            from_int!(i32);
-            from_int!(i64);
-            from_int!(i128);
-            from_int!(isize);
-        )
+            from_int!{($t, u8), ($t, u16), ($t, u32), ($t, u64), ($t, u128)}
+            from_int!{($t, i8), ($t, i16), ($t, i32), ($t, i64), ($t, i128)}
+        )*
     };
 }
 
+macro_rules! from_uint_type {
+    ($($t:ident),*) => {
+        $(
+            from_int!{($t, u8), ($t, u16), ($t, u32), ($t, u64), ($t, u128)}
+        )*
+    };
+}
+
+from_int_type! { I256, I384, I512 }
+from_uint_type! { U256, U384, U512 }
+from_bigint_to_signed! { I256, I384, I512 }
+from_bigint_to_unsigned! { U256, U384, U512 }
 
 #[cfg(test)]
 mod tests {
