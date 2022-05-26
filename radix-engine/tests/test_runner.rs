@@ -1,5 +1,5 @@
 use radix_engine::ledger::*;
-use radix_engine::model::{Component, Receipt, SignedTransaction};
+use radix_engine::model::{Component, new_extracted_package, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 use scrypto::{abi, call_data};
@@ -47,7 +47,7 @@ impl<'l> TestRunner<'l> {
     }
 
     pub fn publish_package(&mut self, name: &str) -> PackageAddress {
-        let package = scrypto::component::Package::new(Self::compile(name));
+        let package = new_extracted_package(Self::compile(name)).unwrap();
         self.executor.publish_package(package).unwrap()
     }
 

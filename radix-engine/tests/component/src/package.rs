@@ -5,7 +5,7 @@ blueprint! {
 
     impl PackageTest {
         pub fn publish() -> PackageAddress {
-            let package = Package::new(include_bytes!("../../../../assets/system.wasm").to_vec());
+            let package = Package::new(include_bytes!("../../../../assets/system.wasm").to_vec(), Vec::new());
             component_system().publish_package(package)
         }
     }

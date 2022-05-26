@@ -8,8 +8,8 @@ blueprint! {
 
     impl System {
         /// Publishes a package.
-        pub fn publish_package(code: Vec<u8>) -> PackageAddress {
-            let package = Package::new(code);
+        pub fn publish_package(code: Vec<u8>, blueprints: Vec<String>) -> PackageAddress {
+            let package = Package::new(code, blueprints);
             component_system().publish_package(package)
         }
 

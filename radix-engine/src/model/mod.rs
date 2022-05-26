@@ -26,7 +26,7 @@ pub use method_authorization::{
 };
 pub use non_fungible::NonFungible;
 pub use validated_package::{PackageError, ValidatedPackage};
-pub use package_abi_extractor::extract_abi;
+pub use package_abi_extractor::{extract_abi, new_extracted_package};
 pub use proof::*;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
