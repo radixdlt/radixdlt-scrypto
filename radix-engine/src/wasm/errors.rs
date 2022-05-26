@@ -5,7 +5,7 @@ use wasmi::HostError;
 
 use crate::engine::RuntimeError;
 
-/// Represents an error when invoking an export of a scrypto module.
+/// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug, PartialEq, Clone)]
 pub enum InvokeError {
     MemoryAllocError,
@@ -14,7 +14,7 @@ pub enum InvokeError {
 
     InvalidScryptoValue(ParseScryptoValueError),
 
-    WasmError,
+    WasmError(String),
 
     RuntimeError(RuntimeError),
 
@@ -25,22 +25,30 @@ pub enum InvokeError {
     MissingReturnData,
 
     InvalidReturnData,
+
+    OutOfTbd {
+        limit: u32,
+        balance: u32,
+        required: u32,
+    },
 }
 
-impl fmt::Display for InvokeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
+/// Represents an error when instrumenting a Scrypto module.
+#[derive(Debug, PartialEq, Clone)]
+pub enum InstrumentError {
+    FailedToInjectInstructionMetering,
 
-impl HostError for InvokeError {}
+    FailedToInjectStackLimiter,
+
+    FailedToExportModule,
+}
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]
 pub enum WasmValidationError {
     /// Failed to parse.
     FailedToParse,
-    // Failed to instantiate.
+    /// Failed to instantiate.
     FailedToInstantiate(String),
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
@@ -52,16 +60,18 @@ pub enum WasmValidationError {
     NoScryptoAllocExport,
     /// The wasm module does not have the `scrypto_free` export.
     NoScryptoFreeExport,
+    /// Failed to instrument wasm code.
+    FailedToInstrumentCode,
     /// TODO: remove
-    UnableToExportBlueprintAbi,
+    FailedToExportBlueprintAbi,
     // TODO: remove
     InvalidBlueprintAbi,
 }
 
-/// Represents an error when instrumenting a WASM module.
-#[derive(Debug, PartialEq, Clone)]
-pub enum WasmInstrumentationError {}
+impl fmt::Display for InvokeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
 
-/// Represents an error when executing a WASM module.
-#[derive(Debug, PartialEq, Clone)]
-pub enum WasmExecutionError {}
+impl HostError for InvokeError {}

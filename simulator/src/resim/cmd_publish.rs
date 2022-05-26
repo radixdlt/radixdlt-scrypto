@@ -1,7 +1,6 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::transaction::*;
-use scrypto::buffer::scrypto_encode;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -40,7 +39,7 @@ impl Publish {
             let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
             let package = extract_package(code).unwrap();
             let transaction = TransactionBuilder::new()
-                .publish_package(&scrypto_encode(&package))
+                .publish_package(package)
                 .build_with_no_nonce();
             process_transaction(&mut executor, transaction, &None, &Some(path.clone()), out)?;
         } else {

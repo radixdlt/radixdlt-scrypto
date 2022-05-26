@@ -20,15 +20,16 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, (Type, Vec<Function>, Vec<
         .filter(|e| e.ends_with("_abi") && e.len() > 4)
         .collect();
 
+
     let mut blueprints = HashMap::new();
     for method_name in exports {
         let rtn = module
             .invoke_export(
                 &method_name,
                 &ScryptoValue::unit(),
-                &mut NopScryptoRuntime {},
+                &mut NopScryptoRuntime::new(EXPORT_BLUEPRINT_ABI_TBD_LIMIT),
             )
-            .map_err(|_| WasmValidationError::UnableToExportBlueprintAbi)?;
+            .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
 
         let abi: (Type, Vec<Function>, Vec<Method>) =
             scrypto_decode(&rtn.raw).map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;

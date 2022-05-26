@@ -419,9 +419,9 @@ impl TransactionProcessor {
                             ScryptoValue::from_slice(&encoded).unwrap(),
                         )
                     }),
-                ValidatedInstruction::PublishPackage { code } => {
+                ValidatedInstruction::PublishPackage { package } => {
                     let package: Package =
-                        scrypto_decode(code).map_err(|e| RuntimeError::InvalidPackage(e))?;
+                        scrypto_decode(package).map_err(|e| RuntimeError::InvalidPackage(e))?;
                     system_api.invoke_snode(
                         SNodeRef::PackageStatic,
                         ScryptoValue::from_value(&PackageFunction::Publish(package)),

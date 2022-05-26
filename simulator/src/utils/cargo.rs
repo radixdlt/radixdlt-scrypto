@@ -163,6 +163,6 @@ pub fn fmt_package<P: AsRef<Path>>(
             Err(CargoExecutionError::FailedToFormat(status))
         }
     } else {
-        Err(CargoExecutionError::NotCargoPackage)
+        Ok(())
     }
 }

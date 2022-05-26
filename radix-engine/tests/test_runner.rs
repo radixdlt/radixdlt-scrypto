@@ -272,3 +272,29 @@ macro_rules! assert_auth_error {
         }
     }};
 }
+
+#[macro_export]
+macro_rules! assert_invoke_error {
+    ($result:expr, $pattern:pat) => {{
+        let matches = match &$result {
+            Err(radix_engine::engine::RuntimeError::InvokeError(e)) => {
+                matches!(e.as_ref(), $pattern)
+            }
+            _ => false,
+        };
+
+        if !matches {
+            panic!("Expected invoke error but got: {:?}", $result);
+        }
+    }};
+}
+
+pub fn wat2wasm(wat: &str) -> Vec<u8> {
+    wabt::wat2wasm(
+        wat.replace("${memcpy}", include_str!("wasm/snippets/memcpy.wat"))
+            .replace("${memmove}", include_str!("wasm/snippets/memmove.wat"))
+            .replace("${memset}", include_str!("wasm/snippets/memset.wat"))
+            .replace("${buffer}", include_str!("wasm/snippets/buffer.wat")),
+    )
+    .expect("Failed to compiled WAT into WASM")
+}

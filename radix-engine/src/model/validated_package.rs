@@ -14,7 +14,8 @@ use crate::wasm::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ValidatedPackage {
     code: Vec<u8>,
-    blueprints: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
+    instrumented_code: Vec<u8>,
+    blueprint_abis: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -31,9 +32,15 @@ impl ValidatedPackage {
         // TODO: validate should be a function rather than method
         let mut wasm_engine = WasmiEngine::new();
         wasm_engine.validate(&package.code)?;
+        // instrument wasm
+        let instrumented_code = wasm_engine
+            .instrument(&package.code)
+            .map_err(|_| WasmValidationError::FailedToInstrumentCode)?;
+
         Ok(Self {
-            blueprints: package.blueprints,
             code: package.code,
+            instrumented_code,
+            blueprint_abis: package.blueprints,
         })
     }
 
@@ -41,15 +48,19 @@ impl ValidatedPackage {
         &self.code
     }
 
+    pub fn instrumented_code(&self) -> &[u8] {
+        &self.instrumented_code
+    }
+
     pub fn blueprint_abi(
         &self,
         blueprint_name: &str,
     ) -> Option<&(Type, Vec<Function>, Vec<Method>)> {
-        self.blueprints.get(blueprint_name)
+        self.blueprint_abis.get(blueprint_name)
     }
 
     pub fn contains_blueprint(&self, blueprint_name: &str) -> bool {
-        self.blueprints.contains_key(blueprint_name)
+        self.blueprint_abis.contains_key(blueprint_name)
     }
 
     pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
