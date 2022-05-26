@@ -150,7 +150,7 @@ macro_rules! sh_impl_large_signed {
 
                 #[inline]
                 fn shl(self, other: $o) -> $t {
-                    if(other.abs() > $b) {
+                    if BigInt::from_signed_bytes_le(&other.0).abs() > BigInt::from($b) {
                         panic!("overflow");
                     } else {
                         let to_shift = BigInt::from_signed_bytes_le(&self.0);
@@ -174,11 +174,13 @@ macro_rules! sh_impl_large_signed {
 
                 #[inline]
                 fn shr(self, other: $o) -> $t {
-                    if(other.abs() > $b) {
+                    let other_b = BigInt::from_signed_bytes_le(&other.0);
+
+                    if other_b.abs() > BigInt::from($b) {
                         panic!("overflow");
                     } else {
                         let to_shift = BigInt::from_signed_bytes_le(&self.0);
-                        let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
+                        let shift = big_int_to_i128(other_b);
                         [<bigint_to_$t:lower>](to_shift.shr(shift))
                     }
                 }
@@ -253,7 +255,7 @@ macro_rules! sh_impl_builtin_large {
 
             #[inline]
             fn shl(self, other: $f) -> $t {
-                if(other > $b) {
+                if other > $b {
                     panic!("overflow");
                 } else {
                     [<bigint_to_$t:lower>](BigInt::from_signed_bytes_le(&self.0).shl(other))
@@ -275,7 +277,7 @@ macro_rules! sh_impl_builtin_large {
 
             #[inline]
             fn shr(self, other: $f) -> $t {
-                if(other > $b) {
+                if other > $b {
                     panic!("overflow");
                 } else {
                     [<bigint_to_$t:lower>](BigInt::from_signed_bytes_le(&self.0).shr(other))
@@ -295,15 +297,15 @@ macro_rules! sh_impl_builtin_large {
     };
 }
 
-macro_rules! sh_impl_all {
+macro_rules! shift_impl_all {
     ($($t:ty, $b:literal),*) => {
         $(
             sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I256}
-//            sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I384}
-//            sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I512}
-//            sh_impl_large_unsigned! { to_sh: $t, to_sh_bits: $b, other: U256}
-//            sh_impl_large_unsigned! { to_sh: $t, to_sh_bits: $b, other: U384}
-//            sh_impl_large_unsigned! { to_sh: $t, to_sh_bits: $b, other: U512}
+            sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I384}
+            sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I512}
+            sh_impl_large_unsigned! { to_sh: $t, to_sh_bits: $b, other: U256}
+            sh_impl_large_unsigned! { to_sh: $t, to_sh_bits: $b, other: U384}
+            sh_impl_large_unsigned! { to_sh: $t, to_sh_bits: $b, other: U512}
             sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: i8}
             sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: i16}
             sh_impl_builtin_large! { to_sh: $t, to_sh_bits: $b, other: i32}
@@ -318,7 +320,7 @@ macro_rules! sh_impl_all {
     };
 }
 
-sh_impl_all!{ I256, 256, I384, 384, I512, 512, U256, 256, U384, 384, U512, 512}
+shift_impl_all!{ I256, 256, I384, 384, I512, 512, U256, 256, U384, 384, U512, 512}
 
 macro_rules! checked_impl {
     ($(($t:ty, $o:ty)),*) => {
@@ -547,7 +549,7 @@ macro_rules! checked_int_impl {
                 ///
                 #[doc = concat!("assert_eq!(<$i>::MIN, $i(", stringify!($n), "::MIN));")]
                 /// ```
-                pub const MIN: Self = Self(0: [255; $n]);
+                pub const MIN: Self = [0u8; $n];
 
                 /// Returns the largest value that can be represented by this integer type.
                 ///
