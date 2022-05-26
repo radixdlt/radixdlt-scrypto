@@ -14,7 +14,7 @@ pub enum InvokeError {
 
     InvalidScryptoValue(ParseScryptoValueError),
 
-    WasmError,
+    WasmError(String),
 
     RuntimeError(RuntimeError),
 

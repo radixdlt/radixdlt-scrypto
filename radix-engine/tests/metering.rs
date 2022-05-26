@@ -16,7 +16,7 @@ fn test_loop() {
     let mut executor = TransactionExecutor::new(&mut substate_store, true);
 
     // Act
-    let code = wat2wasm(&include_str!("webassembly/loop.wat").replace("${n_minus_one}", "99"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
     let package_address = executor
         .publish_package(code)
         .expect("Failed to publish package");
@@ -39,7 +39,7 @@ fn test_loop_out_of_tbd() {
     let mut executor = TransactionExecutor::new(&mut substate_store, true);
 
     // Act
-    let code = wat2wasm(&include_str!("webassembly/loop.wat").replace("${n_minus_one}", "999999"));
+    let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
     let package_address = executor
         .publish_package(code)
         .expect("Failed to publish package");
@@ -56,7 +56,48 @@ fn test_loop_out_of_tbd() {
 }
 
 #[test]
-fn test_recursion() {}
+fn test_recursion() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut substate_store, true);
+
+    // Act
+    // In this test case, each call frame costs 4 stack units
+    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
+    let package_address = executor
+        .publish_package(code)
+        .expect("Failed to publish package");
+    let transaction = TransactionBuilder::new()
+        .call_function(package_address, "Test", call_data!(f()))
+        .build(executor.get_nonce([]))
+        .sign([]);
+    let receipt = executor
+        .validate_and_execute(&transaction)
+        .expect("Failed to execute transaction");
+
+    // Assert
+    receipt.result.expect("It should work")
+}
 
 #[test]
-fn test_recursion_stack_overflow() {}
+fn test_recursion_stack_overflow() {
+    // Arrange
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut executor = TransactionExecutor::new(&mut substate_store, true);
+
+    // Act
+    let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
+    let package_address = executor
+        .publish_package(code)
+        .expect("Failed to publish package");
+    let transaction = TransactionBuilder::new()
+        .call_function(package_address, "Test", call_data!(f()))
+        .build(executor.get_nonce([]))
+        .sign([]);
+    let receipt = executor
+        .validate_and_execute(&transaction)
+        .expect("Failed to execute transaction");
+
+    // Assert
+    assert_invoke_error!(receipt.result, InvokeError::WasmError { .. })
+}

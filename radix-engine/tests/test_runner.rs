@@ -290,18 +290,10 @@ macro_rules! assert_invoke_error {
 
 pub fn wat2wasm(wat: &str) -> Vec<u8> {
     wabt::wat2wasm(
-        wat.replace(
-            "${builtin_memcpy}",
-            include_str!("webassembly/builtin_memcpy.wat"),
-        )
-        .replace(
-            "${builtin_memmove}",
-            include_str!("webassembly/builtin_memmove.wat"),
-        )
-        .replace(
-            "${builtin_memset}",
-            include_str!("webassembly/builtin_memset.wat"),
-        ),
+        wat.replace("${memcpy}", include_str!("wasm/snippets/memcpy.wat"))
+            .replace("${memmove}", include_str!("wasm/snippets/memmove.wat"))
+            .replace("${memset}", include_str!("wasm/snippets/memset.wat"))
+            .replace("${buffer}", include_str!("wasm/snippets/buffer.wat")),
     )
     .expect("Failed to compiled WAT into WASM")
 }

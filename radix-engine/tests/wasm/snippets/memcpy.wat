@@ -1,3 +1,4 @@
+;; LLVM memcpy builtin
 (func $memcpy (param i32 i32 i32) (result i32)
   (local i32 i32 i32 i32 i32 i32 i32 i32)
   block

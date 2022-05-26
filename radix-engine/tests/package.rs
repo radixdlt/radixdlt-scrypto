@@ -116,7 +116,7 @@ fn test_basic_package() {
     let mut test_runner = TestRunner::new(&mut substate_store);
 
     // Act
-    let code = wat2wasm(include_str!("webassembly/basic_package.wat"));
+    let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let transaction = test_runner
         .new_transaction_builder()
         .publish_package(&code)

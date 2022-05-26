@@ -1,3 +1,4 @@
+;; LLVM memmove builtin
 (func $memmove (param i32 i32 i32) (result i32)
   (local i32 i32 i32 i32 i32 i32 i32 i32)
   block

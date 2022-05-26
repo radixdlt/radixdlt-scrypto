@@ -1,3 +1,4 @@
+;; LLVM memset builtin
 (func $memset (param i32 i32 i32) (result i32)
   (local i32 i32 i32)
   block
