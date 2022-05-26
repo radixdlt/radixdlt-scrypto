@@ -5,6 +5,7 @@ use scrypto::core::SNodeRef;
 use scrypto::core::ScryptoActorInfo;
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
+use scrypto::resource::AccessRule;
 use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
 
@@ -128,6 +129,14 @@ impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
         self.system_api.emit_log(level, message);
         Ok(())
     }
+
+    fn handle_check_access_rule(
+        &mut self,
+        access_rule: AccessRule,
+        proof_ids: Vec<ProofId>,
+    ) -> Result<bool, RuntimeError> {
+        self.system_api.check_access_rule(access_rule, proof_ids)
+    }
 }
 
 fn encode<T: Encode>(output: T) -> ScryptoValue {
@@ -165,6 +174,9 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
                 self.handle_emit_log(level, message).map(encode)
+            }
+            RadixEngineInput::CheckAccessRule(rule, proof_ids) => {
+                self.handle_check_access_rule(rule, proof_ids).map(encode)
             }
         }
         .map_err(InvokeError::RuntimeError)

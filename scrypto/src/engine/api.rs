@@ -1,7 +1,7 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::resource::AccessRules;
+use scrypto::prelude::{AccessRule, AccessRules};
 
 use crate::core::SNodeRef;
 use crate::engine::types::*;
@@ -41,4 +41,16 @@ pub enum RadixEngineInput {
     EmitLog(Level, String),
     GenerateUuid(),
     GetActor(),
+    CheckAccessRule(AccessRule, Vec<ProofId>),
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CheckAccessRuleInput {
+    pub access_rule: AccessRule,
+    pub proof_ids: Vec<ProofId>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct CheckAccessRuleOutput {
+    pub is_authorized: bool,
 }
