@@ -2,6 +2,7 @@
 #![no_std]
 
 use radix_engine::ledger::*;
+use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
@@ -11,7 +12,7 @@ fn test_say_hello() {
     // Set up environment.
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
-    let package = Package::new(include_package!("no_std").to_vec());
+    let package = extract_package(include_package!("no_std").to_vec()).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     // Test the `say_hello` function.

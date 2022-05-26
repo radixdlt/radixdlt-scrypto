@@ -29,47 +29,18 @@ pub enum PackageError {
 impl ValidatedPackage {
     /// Validates and creates a package
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, WasmValidationError> {
-        let code = package.code().to_vec();
         let mut wasm_engine = WasmiEngine::new();
-        wasm_engine.validate(&code)?;
+        wasm_engine.validate(&package.code)?;
 
         // instrument wasm
         let instrumented_code = wasm_engine
-            .instrument(&code)
+            .instrument(&package.code)
             .map_err(|_| WasmValidationError::FailedToInstrumentCode)?;
 
-        // export blueprint ABI
-        // TODO will replace this with static ABIs
-        let mut blueprint_abis = HashMap::new();
-        let module = wasm_engine.instantiate(&code);
-        let exports: Vec<String> = module
-            .function_exports()
-            .into_iter()
-            .filter(|e| e.ends_with("_abi") && e.len() > 4)
-            .collect();
-        for method_name in exports {
-            let rtn = module
-                .invoke_export(
-                    &method_name,
-                    &ScryptoValue::unit(),
-                    &mut NopScryptoRuntime::new(EXPORT_BLUEPRINT_ABI_TBD_LIMIT),
-                )
-                .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
-
-            let abi: (Type, Vec<Function>, Vec<Method>) =
-                scrypto_decode(&rtn.raw).map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
-
-            if let Type::Struct { name, fields: _ } = &abi.0 {
-                blueprint_abis.insert(name.clone(), abi);
-            } else {
-                return Err(WasmValidationError::InvalidBlueprintAbi);
-            }
-        }
-
         Ok(Self {
-            code,
+            code: package.code,
             instrumented_code,
-            blueprint_abis,
+            blueprint_abis: package.blueprints,
         })
     }
 
