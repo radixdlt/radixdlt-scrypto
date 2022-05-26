@@ -17,17 +17,13 @@ pub enum PackageFunction {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Package {
-    code: Vec<u8>,
-    blueprints: Vec<String>,
+    pub code: Vec<u8>,
+    pub blueprints: Vec<String>,
 }
 
 impl Package {
     pub fn new(code: Vec<u8>, blueprints: Vec<String>) -> Self {
         Package { code, blueprints }
-    }
-
-    pub fn code(&self) -> &[u8] {
-        &self.code
     }
 }
 
