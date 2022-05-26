@@ -79,6 +79,6 @@ pub enum ValidatedInstruction {
         method: String,
     },
     PublishPackage {
-        code: Vec<u8>,
+        package: Vec<u8>,
     },
 }

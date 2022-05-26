@@ -9,7 +9,8 @@ blueprint! {
     impl System {
         /// Publishes a package.
         pub fn publish_package(code: Vec<u8>) -> PackageAddress {
-            component_system().publish_package(&code)
+            let package = Package::new(code);
+            component_system().publish_package(package)
         }
 
         /// Creates a resource.

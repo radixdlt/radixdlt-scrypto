@@ -7,6 +7,7 @@ use radix_engine::{
     wasm::InvokeError,
 };
 use scrypto::call_data;
+use scrypto::prelude::Package;
 use test_runner::wat2wasm;
 
 #[test]
@@ -18,7 +19,7 @@ fn test_loop() {
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
     let package_address = executor
-        .publish_package(code)
+        .publish_package(Package::new(code))
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
@@ -41,7 +42,7 @@ fn test_loop_out_of_tbd() {
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
     let package_address = executor
-        .publish_package(code)
+        .publish_package(Package::new(code))
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
@@ -65,7 +66,7 @@ fn test_recursion() {
     // In this test case, each call frame costs 4 stack units
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
     let package_address = executor
-        .publish_package(code)
+        .publish_package(Package::new(code))
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
@@ -88,7 +89,7 @@ fn test_recursion_stack_overflow() {
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
     let package_address = executor
-        .publish_package(code)
+        .publish_package(Package::new(code))
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
@@ -111,7 +112,7 @@ fn test_grow_memory() {
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "99999"));
     let package_address = executor
-        .publish_package(code)
+        .publish_package(Package::new(code))
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
@@ -134,7 +135,7 @@ fn test_grow_memory_out_of_tbd() {
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = executor
-        .publish_package(code)
+        .publish_package(Package::new(code))
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))

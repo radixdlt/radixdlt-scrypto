@@ -26,9 +26,10 @@ fn missing_memory_should_cause_error() {
             )
             "#,
     );
+    let package = Package::new(code);
     let transaction = test_runner
         .new_transaction_builder()
-        .publish_package(&code)
+        .publish_package(package)
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -117,9 +118,10 @@ fn test_basic_package() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
+    let package = Package::new(code);
     let transaction = test_runner
         .new_transaction_builder()
-        .publish_package(&code)
+        .publish_package(package)
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);

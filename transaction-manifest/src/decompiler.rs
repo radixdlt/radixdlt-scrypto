@@ -278,10 +278,10 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     component_address, method
                 ));
             }
-            Instruction::PublishPackage { code } => {
+            Instruction::PublishPackage { package } => {
                 buf.push_str(&format!(
                     "PUBLISH_PACKAGE Bytes(\"{}\");\n",
-                    hex::encode(&code)
+                    hex::encode(&package)
                 ));
             }
             Instruction::Nonce { .. } => {
