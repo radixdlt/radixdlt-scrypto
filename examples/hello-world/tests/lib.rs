@@ -2,7 +2,7 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
-use radix_engine::model::new_extracted_package;
+use radix_engine::model::extract_package;
 
 #[test]
 fn test_hello() {
@@ -10,7 +10,7 @@ fn test_hello() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let (pk, sk, account) = executor.new_account();
-    let package = new_extracted_package(compile_package!()).unwrap();
+    let package = extract_package(compile_package!()).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     // Test the `instantiate_hello` function.

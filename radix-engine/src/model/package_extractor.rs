@@ -42,7 +42,7 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, (Type, Vec<Function>, Vec<
     Ok(blueprints)
 }
 
-pub fn new_extracted_package(code: Vec<u8>) -> Result<Package, WasmValidationError> {
+pub fn extract_package(code: Vec<u8>) -> Result<Package, WasmValidationError> {
     let blueprints = extract_abi(&code)?;
     let package = Package{
         code,

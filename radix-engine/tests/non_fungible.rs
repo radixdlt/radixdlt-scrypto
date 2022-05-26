@@ -6,7 +6,7 @@ use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
-use radix_engine::model::new_extracted_package;
+use radix_engine::model::extract_package;
 
 #[test]
 fn create_non_fungible_mutable() {
@@ -82,7 +82,7 @@ fn test_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = new_extracted_package(compile_package!(format!("./tests/{}", "non_fungible"))).unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "non_fungible"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()
@@ -134,7 +134,7 @@ fn test_singleton_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = new_extracted_package(compile_package!(format!("./tests/{}", "non_fungible"))).unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "non_fungible"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()

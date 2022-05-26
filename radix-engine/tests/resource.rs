@@ -1,6 +1,6 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
-use radix_engine::model::{new_extracted_package, ResourceManagerError};
+use radix_engine::model::{extract_package, ResourceManagerError};
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
@@ -11,7 +11,7 @@ fn test_resource_manager() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = new_extracted_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     // Act
@@ -44,7 +44,7 @@ fn mint_with_bad_granularity_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = new_extracted_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     // Act
@@ -76,7 +76,7 @@ fn mint_too_much_should_fail() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = new_extracted_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     // Act

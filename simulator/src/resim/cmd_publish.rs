@@ -38,7 +38,7 @@ impl Publish {
         if let Some(path) = &self.manifest {
             let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-            let package = new_extracted_package(code).unwrap();
+            let package = extract_package(code).unwrap();
             let transaction = TransactionBuilder::new()
                 .publish_package(&scrypto_encode(&package))
                 .build_with_no_nonce();
@@ -68,7 +68,7 @@ impl Publish {
     ) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        let package = new_extracted_package(code).unwrap();
+        let package = extract_package(code).unwrap();
         match executor.publish_package(package) {
             Ok(package_address) => {
                 writeln!(
