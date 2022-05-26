@@ -301,7 +301,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
             }
             SNodeState::Transaction(transaction_process) => transaction_process.main(self),
             SNodeState::PackageStatic => {
-                Package::static_main(call_data, self).map_err(RuntimeError::PackageError)
+                ValidatedPackage::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(call_data, self)
@@ -960,7 +960,7 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for CallFrame<'r, 'l, L> {
         self.track.create_uuid_value(resource_manager).into()
     }
 
-    fn create_package(&mut self, package: Package) -> PackageAddress {
+    fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress {
         self.track.create_uuid_value(package).into()
     }
 

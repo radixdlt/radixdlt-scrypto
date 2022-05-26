@@ -48,7 +48,7 @@ pub trait SystemApi {
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
-    fn create_package(&mut self, package: Package) -> PackageAddress;
+    fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress;
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
 

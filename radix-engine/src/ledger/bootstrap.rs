@@ -3,6 +3,7 @@ use sbor::rust::collections::*;
 use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
+use scrypto::component::Package;
 use scrypto::constants::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
@@ -31,12 +32,13 @@ const SYSTEM_COMPONENT_NAME: &str = "System";
 use crate::model::*;
 
 fn create_genesis<S: ReadableSubstateStore>(mut track: Track<S>) -> TrackReceipt {
-    let system_package =
-        Package::new(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
-    track.create_uuid_value_2(SYSTEM_PACKAGE, system_package);
-    let account_package =
-        Package::new(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
-    track.create_uuid_value_2(ACCOUNT_PACKAGE, account_package);
+    let system_package = Package::new(include_bytes!("../../../assets/system.wasm").to_vec());
+    let validated_system_package = ValidatedPackage::new(system_package).unwrap();
+    track.create_uuid_value_2(SYSTEM_PACKAGE, validated_system_package);
+
+    let account_package = Package::new(include_bytes!("../../../assets/account.wasm").to_vec());
+    let validated_account_package = ValidatedPackage::new(account_package).unwrap();
+    track.create_uuid_value_2(ACCOUNT_PACKAGE, validated_account_package);
 
     // Radix token resource address
     let mut metadata = HashMap::new();

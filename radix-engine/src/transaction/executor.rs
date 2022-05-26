@@ -1,5 +1,7 @@
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use scrypto::buffer::scrypto_encode;
+use scrypto::component::Package;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
@@ -100,14 +102,11 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
     }
 
     /// Publishes a package.
-    pub fn publish_package<T: AsRef<[u8]>>(
-        &mut self,
-        code: T,
-    ) -> Result<PackageAddress, RuntimeError> {
+    pub fn publish_package(&mut self, package: Package) -> Result<PackageAddress, RuntimeError> {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .publish_package(code.as_ref())
+                    .publish_package(&scrypto_encode(&package))
                     .build(self.get_nonce([]))
                     .sign([]),
             )

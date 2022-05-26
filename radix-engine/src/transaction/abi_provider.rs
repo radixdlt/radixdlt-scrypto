@@ -40,7 +40,7 @@ impl<'l, L: ReadableSubstateStore> AbiProvider for BasicAbiProvider<'l, L> {
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let package: Package = self
+        let package: ValidatedPackage = self
             .substate_store
             .get_decoded_substate(&package_address)
             .map(|(package, _)| package)
