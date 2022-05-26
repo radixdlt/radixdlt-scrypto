@@ -1174,16 +1174,15 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for CallFrame<'r, 'l, L> {
         access_rule: scrypto::resource::AccessRule,
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError> {
-        let proofs = proof_ids
+        let proofs: Vec<Proof> = proof_ids
             .iter()
             .map(|proof_id| {
                 self.proofs
                     .get(&proof_id)
+                    .map(Proof::clone)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))
-                    .unwrap()
-                    .clone()
             })
-            .collect::<Vec<Proof>>();
+            .collect::<Result<Vec<Proof>, RuntimeError>>()?;
         let mut simulated_auth_zone = AuthZone::new_with_proofs(proofs);
 
         let method_authorization = convert(&Type::Unit, &Value::Unit, &access_rule);
