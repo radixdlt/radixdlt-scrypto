@@ -21,8 +21,10 @@ pub struct Package {
 }
 
 impl Package {
-    pub fn new(code: Vec<u8>) -> Self {
-        Package { code }
+    pub fn new<T: AsRef<[u8]>>(code: T) -> Self {
+        Package {
+            code: code.as_ref().to_vec(),
+        }
     }
 
     pub fn code(&self) -> &[u8] {

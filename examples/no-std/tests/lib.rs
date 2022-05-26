@@ -13,7 +13,7 @@ fn test_say_hello() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, false);
-    let package = executor
+    let package_address = executor
         .publish_package(Package::new(include_package!("no_std")))
         .unwrap();
 
