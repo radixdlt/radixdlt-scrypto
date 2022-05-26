@@ -2,9 +2,9 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::*;
+use scrypto::buffer::scrypto_decode;
 use scrypto::call_data;
-use scrypto::component::PackageFunction;
+use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::resource::{AuthZoneMethod, BucketMethod};
@@ -439,10 +439,18 @@ impl TransactionProcessor {
                                     ScryptoValue::from_slice(&encoded).unwrap(),
                                 )
                             }),
-                        ValidatedInstruction::PublishPackage { code } => system_api.invoke_snode(
-                            SNodeRef::PackageStatic,
-                            ScryptoValue::from_value(&PackageFunction::Publish(code.to_vec())),
-                        ),
+                        ValidatedInstruction::PublishPackage { package } => {
+                            scrypto_decode::<Package>(package)
+                                .map_err(|e| RuntimeError::InvalidPackage(e))
+                                .and_then(|package| {
+                                    system_api.invoke_snode(
+                                        SNodeRef::PackageStatic,
+                                        ScryptoValue::from_value(&PackageFunction::Publish(
+                                            package,
+                                        )),
+                                    )
+                                })
+                        }
                     }
                     .map_err(TransactionProcessorError::RuntimeError)?;
                     outputs.push(result);

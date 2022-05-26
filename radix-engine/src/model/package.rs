@@ -14,7 +14,7 @@ use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Package {
+pub struct ValidatedPackage {
     code: Vec<u8>,
     blueprint_abis: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
 }
@@ -27,13 +27,18 @@ pub enum PackageError {
     MethodNotFound(String),
 }
 
-impl Package {
+impl ValidatedPackage {
     /// Validates and creates a package
-    pub fn new<'w, W, I>(code: Vec<u8>, wasm_engine: &'w mut W) -> Result<Self, WasmValidationError>
+    pub fn new<'w, W, I>(
+        package: scrypto::prelude::Package,
+        wasm_engine: &'w mut W,
+    ) -> Result<Self, WasmValidationError>
     where
         W: WasmEngine<I>,
         I: WasmInstance,
     {
+        let code = package.code().to_vec();
+
         // stateless runtime
         let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
@@ -111,7 +116,7 @@ impl Package {
             scrypto_decode(&call_data.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
         match function {
             PackageFunction::Publish(bytes) => {
-                let package = Package::new(bytes, system_api.wasm_engine())
+                let package = ValidatedPackage::new(bytes, system_api.wasm_engine())
                     .map_err(PackageError::WasmValidationError)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))

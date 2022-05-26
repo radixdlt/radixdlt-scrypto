@@ -13,17 +13,20 @@ fn test_resource_manager() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
-        .unwrap();
+    let package = Package::new(compile_package!(format!("./tests/{}", "resource")));
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(package, "ResourceTest", call_data!(create_fungible()))
-        .call_function(package, "ResourceTest", call_data!(query()))
-        .call_function(package, "ResourceTest", call_data!(burn()))
         .call_function(
-            package,
+            package_address,
+            "ResourceTest",
+            call_data!(create_fungible()),
+        )
+        .call_function(package_address, "ResourceTest", call_data!(query()))
+        .call_function(package_address, "ResourceTest", call_data!(burn()))
+        .call_function(
+            package_address,
             "ResourceTest",
             call_data!(update_resource_metadata()),
         )
@@ -44,14 +47,13 @@ fn mint_with_bad_granularity_should_fail() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
-        .unwrap();
+    let package = Package::new(compile_package!(format!("./tests/{}", "resource")));
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
         .call_function(
-            package,
+            package_address,
             "ResourceTest",
             call_data![create_fungible_and_mint(0u8, dec!("0.1"))],
         )
@@ -78,14 +80,13 @@ fn mint_too_much_should_fail() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "resource")))
-        .unwrap();
+    let package = Package::new(compile_package!(format!("./tests/{}", "resource")));
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
         .call_function(
-            package,
+            package_address,
             "ResourceTest",
             call_data![create_fungible_and_mint(0u8, dec!(100_000_000_001i128))],
         )

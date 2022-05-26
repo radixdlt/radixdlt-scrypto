@@ -336,8 +336,8 @@ pub fn generate_instruction(
                 method: generate_string(method)?,
             }
         }
-        ast::Instruction::PublishPackage { code } => Instruction::PublishPackage {
-            code: generate_bytes(code)?,
+        ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
+            package: generate_bytes(package)?,
         },
     })
 }
@@ -777,7 +777,9 @@ mod tests {
     use super::*;
     use crate::lexer::tokenize;
     use crate::parser::Parser;
+    use scrypto::buffer::scrypto_encode;
     use scrypto::call_data;
+    use scrypto::prelude::Package;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1048,6 +1050,7 @@ mod tests {
             0x30, 0x20, 0x28, 0x39, 0x64, 0x31, 0x62, 0x32, 0x31, 0x30, 0x36, 0x65, 0x20, 0x32,
             0x30, 0x32, 0x32, 0x2d, 0x30, 0x32, 0x2d, 0x32, 0x33, 0x29,
         ];
+        let package = scrypto_encode(&Package::new(code));
 
         assert_eq!(
             crate::compile(tx).unwrap(),
@@ -1136,8 +1139,9 @@ mod tests {
                         .unwrap(),
                         method: "deposit_batch".into(),
                     },
-                    Instruction::PublishPackage { code: code.clone() },
-                    Instruction::PublishPackage { code: code.clone() }
+                    Instruction::PublishPackage {
+                        package: package.clone()
+                    },
                 ]
             }
         );

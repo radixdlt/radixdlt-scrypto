@@ -11,11 +11,12 @@ fn test_hello() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, false);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(compile_package!()).unwrap();
+    let package = Package::new(compile_package!());
+    let package_address = executor.publish_package(package).unwrap();
 
     // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new()
-        .call_function(package, "Hello", call_data!(instantiate_hello()))
+        .call_function(package_address, "Hello", call_data!(instantiate_hello()))
         .build(executor.get_nonce([pk]))
         .sign([&sk]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();

@@ -12,6 +12,7 @@ use scrypto::rule;
 
 use crate::engine::{Track, TrackReceipt};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::model::ValidatedPackage;
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -37,14 +38,14 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    let system_package = Package::new(
-        include_bytes!("../../../assets/system.wasm").to_vec(),
+    let system_package = ValidatedPackage::new(
+        scrypto::prelude::Package::new(include_bytes!("../../../assets/system.wasm").to_vec()),
         wasm_engine,
     )
     .unwrap();
     track.create_uuid_value_2(SYSTEM_PACKAGE, system_package);
-    let account_package = Package::new(
-        include_bytes!("../../../assets/account.wasm").to_vec(),
+    let account_package = ValidatedPackage::new(
+        scrypto::prelude::Package::new(include_bytes!("../../../assets/account.wasm").to_vec()),
         wasm_engine,
     )
     .unwrap();

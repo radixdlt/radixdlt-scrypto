@@ -14,12 +14,12 @@ fn test_say_hello() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, false);
     let package = executor
-        .publish_package(include_package!("no_std"))
+        .publish_package(Package::new(include_package!("no_std")))
         .unwrap();
 
     // Test the `say_hello` function.
     let transaction1 = TransactionBuilder::new()
-        .call_function(package, "NoStd", call_data!(say_hello()))
+        .call_function(package_address, "NoStd", call_data!(say_hello()))
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();

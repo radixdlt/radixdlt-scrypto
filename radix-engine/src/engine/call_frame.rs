@@ -74,7 +74,12 @@ pub enum ConsumedSNodeState {
 pub enum BorrowedSNodeState {
     AuthZone(AuthZone),
     Worktop(Worktop),
-    Scrypto(ScryptoActorInfo, Package, String, Option<ComponentState>),
+    Scrypto(
+        ScryptoActorInfo,
+        ValidatedPackage,
+        String,
+        Option<ComponentState>,
+    ),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, Bucket),
     Proof(ProofId, Proof),
@@ -104,7 +109,7 @@ pub enum SNodeState<'a> {
     // TODO: use reference to the package
     Scrypto(
         ScryptoActorInfo,
-        Package,
+        ValidatedPackage,
         String,
         Option<&'a mut ComponentState>,
     ),
@@ -452,7 +457,7 @@ where
                 })
             }
             SNodeState::PackageStatic => {
-                Package::static_main(call_data, self).map_err(RuntimeError::PackageError)
+                ValidatedPackage::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(call_data, self)
@@ -946,7 +951,7 @@ where
         self.track.create_uuid_value(resource_manager).into()
     }
 
-    fn create_package(&mut self, package: Package) -> PackageAddress {
+    fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress {
         self.track.create_uuid_value(package).into()
     }
 

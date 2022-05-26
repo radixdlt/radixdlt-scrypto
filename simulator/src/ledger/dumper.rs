@@ -24,7 +24,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let package: Option<Package> = substate_store
+    let package: Option<ValidatedPackage> = substate_store
         .get_decoded_substate(&package_address)
         .map(|(package, _)| package);
     match package {

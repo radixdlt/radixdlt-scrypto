@@ -2,6 +2,7 @@ use clap::Parser;
 use colored::*;
 use radix_engine::transaction::*;
 use radix_engine::wasm::*;
+use scrypto::prelude::Package;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -41,11 +42,11 @@ impl Publish {
             let mut executor =
                 TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
             let transaction = TransactionBuilder::new()
-                .publish_package(code.as_ref())
+                .publish_package(Package::new(code))
                 .build_with_no_nonce();
             process_transaction(&mut executor, transaction, &None, &Some(path.clone()), out)?;
         } else {
-            self.store_package(out, &code)?;
+            self.store_package(out, code)?;
         }
         Ok(())
     }
@@ -59,15 +60,19 @@ impl Publish {
         println!("Publishing ..");
         let code = fs::read(wasm_file_path).map_err(Error::IOError)?;
         println!("Read code to variable");
-        self.store_package(out, &code)
+        self.store_package(out, code)
     }
 
-    pub fn store_package<O: std::io::Write>(&self, out: &mut O, code: &[u8]) -> Result<(), Error> {
+    pub fn store_package<O: std::io::Write>(
+        &self,
+        out: &mut O,
+        code: Vec<u8>,
+    ) -> Result<(), Error> {
         let mut substate_store = RadixEngineDB::new(get_data_dir()?);
         let mut wasm_engine = default_wasm_engine();
         let mut executor =
             TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
-        match executor.publish_package(code) {
+        match executor.publish_package(Package::new(code)) {
             Ok(package_address) => {
                 writeln!(
                     out,
