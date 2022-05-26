@@ -1,5 +1,5 @@
 use radix_engine::ledger::*;
-use radix_engine::model::{Component, extract_package, Receipt, SignedTransaction};
+use radix_engine::model::{extract_package, Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
 use scrypto::{abi, call_data};

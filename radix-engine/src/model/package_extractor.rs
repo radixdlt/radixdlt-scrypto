@@ -1,6 +1,6 @@
+use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::rust::collections::HashMap;
 use sbor::Type;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
@@ -9,7 +9,9 @@ use scrypto::values::ScryptoValue;
 
 use crate::wasm::*;
 
-fn extract_abi(code: &[u8]) -> Result<HashMap<String, (Type, Vec<Function>, Vec<Method>)>, WasmValidationError> {
+fn extract_abi(
+    code: &[u8],
+) -> Result<HashMap<String, (Type, Vec<Function>, Vec<Method>)>, WasmValidationError> {
     let mut wasm_engine = WasmiEngine::new();
     // TODO: A bit of a code smell to have validation here, remove at some point.
     wasm_engine.validate(code)?;
@@ -19,7 +21,6 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, (Type, Vec<Function>, Vec<
         .into_iter()
         .filter(|e| e.ends_with("_abi") && e.len() > 4)
         .collect();
-
 
     let mut blueprints = HashMap::new();
     for method_name in exports {
@@ -45,9 +46,6 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, (Type, Vec<Function>, Vec<
 
 pub fn extract_package(code: Vec<u8>) -> Result<Package, WasmValidationError> {
     let blueprints = extract_abi(&code)?;
-    let package = Package{
-        code,
-        blueprints
-    };
+    let package = Package { code, blueprints };
     Ok(package)
 }

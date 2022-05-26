@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::*;
 use radix_engine::ledger::*;
-use radix_engine::model::{BucketError, extract_package, ResourceContainerError};
+use radix_engine::model::{extract_package, BucketError, ResourceContainerError};
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;

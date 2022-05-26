@@ -1,13 +1,13 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use radix_engine::model::extract_package;
 use radix_engine::{
     ledger::InMemorySubstateStore,
     transaction::{NonceProvider, TransactionBuilder, TransactionExecutor},
     wasm::InvokeError,
 };
 use scrypto::call_data;
-use radix_engine::model::extract_package;
 use test_runner::wat2wasm;
 
 #[test]

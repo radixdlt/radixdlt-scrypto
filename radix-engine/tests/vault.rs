@@ -1,9 +1,9 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
+use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
-use radix_engine::model::extract_package;
 
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {

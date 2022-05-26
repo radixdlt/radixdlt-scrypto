@@ -3,10 +3,10 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::ledger::*;
+use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
-use radix_engine::model::extract_package;
 
 #[test]
 fn create_non_fungible_mutable() {

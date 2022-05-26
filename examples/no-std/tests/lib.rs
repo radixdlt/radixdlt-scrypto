@@ -2,10 +2,10 @@
 #![no_std]
 
 use radix_engine::ledger::*;
+use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
-use radix_engine::model::extract_package;
 
 #[test]
 fn test_say_hello() {
