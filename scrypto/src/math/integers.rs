@@ -982,32 +982,38 @@ checked_int_impl_unsigned! { U8, U16, U32, U64, U128 }
 
 
 macro_rules! from_int {
-    ($(($I:ident, $t:ident)),*) => {
+    ($($I:ty, $t:ty),*) => {
+        $(
         impl From<$t> for $I {
             fn from(val: $t) -> Self {
-                Self((val as i128) * Self::ONE.0)
+                Self(val.into())
             }
         }
+        )*
     };
 }
 
 macro_rules! from_int_type {
-    ($($I:ident),*) => {
+    ($($I:ty),*) => {
         $(
-            from_int!(u8);
-            from_int!(u16);
-            from_int!(u32);
-            from_int!(u64);
-            from_int!(usize);
-            from_int!(i8);
-            from_int!(i16);
-            from_int!(i32);
-            from_int!(i64);
-            from_int!(i128);
-            from_int!(isize);
-        )
-    };
+            from_int!{ $I, u8 }
+            from_int!{ $I, u16 }
+            from_int!{ $I, u32 }
+            from_int!{ $I, u64 }
+            from_int!{ $I, u128 }
+            from_int!{ $I, usize }
+            from_int!{ $I, i8 }
+            from_int!{ $I, i16 }
+            from_int!{ $I, i32 }
+            from_int!{ $I, i64 }
+            from_int!{ $I, i128 }
+            from_int!{ $I, isize }
 
+        )*
+    };
+}
+
+from_int_type! { I8, I16, I32, I64, I128, U8, U16, U32, U64, U128 } 
 
 #[cfg(test)]
 mod tests {
