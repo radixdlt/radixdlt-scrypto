@@ -12,7 +12,22 @@ use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum PackageFunction {
-    Publish(Vec<u8>),
+    Publish(Package),
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct Package {
+    code: Vec<u8>,
+}
+
+impl Package {
+    pub fn new(code: Vec<u8>) -> Self {
+        Package { code }
+    }
+
+    pub fn code(&self) -> &[u8] {
+        &self.code
+    }
 }
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -23,9 +38,9 @@ impl PackageAddress {}
 
 /// Represents a published package.
 #[derive(Debug)]
-pub struct Package(pub(crate) PackageAddress);
+pub struct BorrowedPackage(pub(crate) PackageAddress);
 
-impl Package {
+impl BorrowedPackage {
     /// Invokes a function on this package.
     pub fn call<T: Decode>(&self, blueprint_name: &str, function: &str, args: Vec<Vec<u8>>) -> T {
         let output = Runtime::call_function(self.0, blueprint_name, function, args);

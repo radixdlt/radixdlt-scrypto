@@ -148,7 +148,7 @@ impl Into<ResourceAddress> for Address {
 pub enum SubstateValue {
     Resource(ResourceManager),
     Component(Component),
-    Package(Package),
+    Package(ValidatedPackage),
     Vault(Vault),
     NonFungible(Option<NonFungible>),
     LazyMapEntry(Option<Vec<u8>>),
@@ -167,7 +167,7 @@ impl SubstateValue {
     }
 }
 
-impl Into<SubstateValue> for Package {
+impl Into<SubstateValue> for ValidatedPackage {
     fn into(self) -> SubstateValue {
         SubstateValue::Package(self)
     }
@@ -396,7 +396,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if let Some(substate) = maybe_substate {
             match address {
                 Address::Package(_) => {
-                    let package: Package = scrypto_decode(&substate.value).unwrap();
+                    let package: ValidatedPackage = scrypto_decode(&substate.value).unwrap();
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Package(package));
                     self.read_substates.get(&address)

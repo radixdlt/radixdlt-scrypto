@@ -1,6 +1,7 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
+use sbor::DecodeError;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -39,6 +40,7 @@ pub enum RuntimeError {
 
     /// Package does not exist.
     PackageNotFound(PackageAddress),
+    InvalidPackage(DecodeError),
 
     PackageError(PackageError),
 
