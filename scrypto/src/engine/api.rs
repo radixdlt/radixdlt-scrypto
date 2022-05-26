@@ -43,14 +43,3 @@ pub enum RadixEngineInput {
     GetActor(),
     CheckAccessRule(AccessRule, Vec<ProofId>),
 }
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CheckAccessRuleInput {
-    pub access_rule: AccessRule,
-    pub proof_ids: Vec<ProofId>,
-}
-
-#[derive(Debug, TypeId, Encode, Decode)]
-pub struct CheckAccessRuleOutput {
-    pub is_authorized: bool,
-}

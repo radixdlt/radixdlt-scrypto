@@ -1174,7 +1174,7 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for CallFrame<'r, 'l, L> {
         access_rule: scrypto::resource::AccessRule,
         proof_ids: Vec<ProofId>,
     ) -> Result<bool, RuntimeError> {
-        let proofs: Vec<Proof> = proof_ids
+        let proofs = proof_ids
             .iter()
             .map(|proof_id| {
                 self.proofs
