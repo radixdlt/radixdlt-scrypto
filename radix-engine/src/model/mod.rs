@@ -4,7 +4,7 @@ mod bucket;
 mod component;
 mod method_authorization;
 mod non_fungible;
-mod package;
+mod validated_package;
 mod proof;
 mod resource;
 mod resource_manager;
@@ -24,7 +24,7 @@ pub use method_authorization::{
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization, MethodAuthorizationError,
 };
 pub use non_fungible::NonFungible;
-pub use package::{PackageError, ValidatedPackage};
+pub use validated_package::{PackageError, ValidatedPackage};
 pub use proof::*;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
