@@ -183,10 +183,13 @@ impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
                     .ok_or(InvokeError::InvalidReturnData)?;
                 read_value(&self.instance, ptr as usize)
             }
-            Err(e) => match e.downcast::<InvokeError>() {
-                Ok(e) => Err(e),
-                _ => Err(InvokeError::WasmError),
-            },
+            Err(e) => {
+                let e_str = format!("{:?}", e);
+                match e.downcast::<InvokeError>() {
+                    Ok(e) => Err(e),
+                    _ => Err(InvokeError::WasmError(e_str)),
+                }
+            }
         }
     }
 

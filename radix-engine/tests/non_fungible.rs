@@ -29,7 +29,7 @@ fn create_non_fungible_mutable() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -122,7 +122,7 @@ fn test_non_fungible() {
         .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     println!("{:?}", receipt);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -145,5 +145,5 @@ fn test_singleton_non_fungible() {
         .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     println!("{:?}", receipt);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }

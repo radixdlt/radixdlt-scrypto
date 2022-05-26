@@ -164,10 +164,11 @@ impl<'r> ScryptoInstance for WasmiScryptoInstance<'r> {
 
         let rtn = result
             .map_err(|e| {
+                let e_str = format!("{:?}", e);
                 match e.into_host_error() {
                     // Pass-through invoke errors
                     Some(host_error) => *host_error.downcast::<InvokeError>().unwrap(),
-                    None => InvokeError::WasmError,
+                    None => InvokeError::WasmError(e_str),
                 }
             })?
             .ok_or(InvokeError::MissingReturnData)?;
@@ -247,6 +248,8 @@ impl ScryptoInstrumenter for WasmiEngine {
     fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError> {
         let mut module =
             parity_wasm::deserialize_buffer(code).expect("Unable to parse wasm module");
+
+        // TODO reject wasm modules that call the `TBD_FUNCTION_INDEX` directly
 
         module = gas_metering::inject(
             module,
