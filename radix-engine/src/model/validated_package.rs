@@ -28,37 +28,12 @@ pub enum PackageError {
 impl ValidatedPackage {
     /// Validates and creates a package
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, WasmValidationError> {
-        let code = package.code;
+        // TODO: validate should be a function rather than method
         let mut wasm_engine = WasmiEngine::new();
-        wasm_engine.validate(&code)?;
-
-        // TODO will replace this with static ABIs
-        let module = wasm_engine.instantiate(&code);
-        let mut blueprints = HashMap::new();
-        for mut method_name in package.blueprints {
-            method_name.push_str("_abi");
-
-            let rtn = module
-                .invoke_export(
-                    &method_name,
-                    &ScryptoValue::unit(),
-                    &mut NopScryptoRuntime {},
-                )
-                .map_err(|_| WasmValidationError::UnableToExportBlueprintAbi)?;
-
-            let abi: (Type, Vec<Function>, Vec<Method>) =
-                scrypto_decode(&rtn.raw).map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
-
-            if let Type::Struct { name, fields: _ } = &abi.0 {
-                blueprints.insert(name.clone(), abi);
-            } else {
-                return Err(WasmValidationError::InvalidBlueprintAbi);
-            }
-        }
-
+        wasm_engine.validate(&package.code)?;
         Ok(Self {
-            blueprints,
-            code,
+            blueprints: package.blueprints,
+            code: package.code,
         })
     }
 
