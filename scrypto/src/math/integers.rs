@@ -9,7 +9,7 @@ use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use forward_ref::*;
 use paste::paste;
 use num_bigint::BigInt;
-use num_traits::Signed;
+use num_traits::{Signed, Zero};
  
 macro_rules! types_large {
 
@@ -880,12 +880,15 @@ macro_rules! checked_int_impl_signed {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub const fn leading_zeros(self) -> u32 {
-                    for i in self.0 {
-                        if i != 0 {
-                            return i.leading_zeros();
+                pub fn leading_zeros(self) -> u32 {
+                    let zeros: u32 = u32::zero();
+                    for i in self.0.into_iter().rev().enumerate() {
+                        if i.1 != 0 {
+                            return zeros + i.1.leading_zeros();
                         }
+                        zeros += 8;
                     }
+                    zeros
                 }
 
                 /// Computes the absolute value of `self`, with overflow causing panic.
@@ -898,7 +901,7 @@ macro_rules! checked_int_impl_signed {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub fn abs(self) -> $t {
-                    $t(self.0.checked_abs().unwrap())
+                    BigInt::from_signed_bytes_le(&self.0).abs().into()
                 }
 
                 /// Returns a number representing sign of `self`.
@@ -922,7 +925,7 @@ macro_rules! checked_int_impl_signed {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub fn signum(self) -> $t {
-                    $t(self.0.signum())
+                    BigInt::from_signed_bytes_le(&self.0).signum().into()
                 }
 
                 /// Returns `true` if `self` is positive and `false` if the number is zero or
@@ -941,7 +944,7 @@ macro_rules! checked_int_impl_signed {
                 #[must_use]
                 #[inline]
                 pub const fn is_positive(self) -> bool {
-                    self.0.is_positive()
+                    BigInt::from_signed_bytes_le(&self.0).is_positive().into()
                 }
 
                 /// Returns `true` if `self` is negative and `false` if the number is zero or
@@ -960,7 +963,7 @@ macro_rules! checked_int_impl_signed {
                 #[must_use]
                 #[inline]
                 pub const fn is_negative(self) -> bool {
-                    self.0.is_negative()
+                    BigInt::from_signed_bytes_le(&self.0).is_negative().into()
                 }
             }
         }
@@ -977,8 +980,15 @@ macro_rules! checked_int_impl_unsigned {
             #[inline]
             #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-            pub const fn leading_zeros(self) -> u32 {
-                self.0.leading_zeros()
+            pub fn leading_zeros(self) -> u32 {
+                let zeros: u32 = u32::zero();
+                for i in self.0.into_iter().rev().enumerate() {
+                    if i.1 != 0 {
+                        return zeros + i.1.leading_zeros();
+                    }
+                    zeros += 8;
+                }
+                zeros
             }
 
             /// Returns `true` if and only if `self == 2^k` for some `k`.
