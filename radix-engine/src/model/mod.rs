@@ -5,6 +5,7 @@ mod component;
 mod method_authorization;
 mod non_fungible;
 mod validated_package;
+mod package_abi_extractor;
 mod proof;
 mod resource;
 mod resource_manager;
@@ -25,6 +26,7 @@ pub use method_authorization::{
 };
 pub use non_fungible::NonFungible;
 pub use validated_package::{PackageError, ValidatedPackage};
+pub use package_abi_extractor::extract_abi;
 pub use proof::*;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};

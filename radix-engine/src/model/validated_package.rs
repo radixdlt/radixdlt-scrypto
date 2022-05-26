@@ -8,6 +8,7 @@ use scrypto::component::PackageFunction;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::model::extract_abi;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -29,19 +30,16 @@ impl ValidatedPackage {
     /// Validates and creates a package
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, WasmValidationError> {
         let code = package.code();
+        let blueprint_names = extract_abi(code)?;
         let mut wasm_engine = WasmiEngine::new();
         wasm_engine.validate(&code)?;
 
         // TODO will replace this with static ABIs
         let module = wasm_engine.instantiate(&code);
-        let exports: Vec<String> = module
-            .function_exports()
-            .into_iter()
-            .filter(|e| e.ends_with("_abi") && e.len() > 4)
-            .collect();
-
         let mut blueprints = HashMap::new();
-        for method_name in exports {
+        for mut method_name in blueprint_names {
+            method_name.push_str("_abi");
+
             let rtn = module
                 .invoke_export(
                     &method_name,
