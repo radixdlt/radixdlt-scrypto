@@ -67,7 +67,7 @@ impl Publish {
     ) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        let package = extract_package(code).unwrap();
+        let package = extract_package(code).map_err(Error::PackageValidationError)?;
         match executor.publish_package(package) {
             Ok(package_address) => {
                 writeln!(

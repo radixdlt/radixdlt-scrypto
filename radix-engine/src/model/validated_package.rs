@@ -29,9 +29,9 @@ pub enum PackageError {
 impl ValidatedPackage {
     /// Validates and creates a package
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, WasmValidationError> {
-        // TODO: validate should be a function rather than method
         let mut wasm_engine = WasmiEngine::new();
         wasm_engine.validate(&package.code)?;
+
         // instrument wasm
         let instrumented_code = wasm_engine
             .instrument(&package.code)
