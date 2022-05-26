@@ -200,7 +200,7 @@ fn generate_dispatcher(
 
         if let ImplItem::Method(ref m) = item {
             if let Visibility::Public(_) = &m.vis {
-                let fn_ident = &m.sig.ident;
+                let ident = &m.sig.ident;
 
                 let mut match_args: Vec<Expr> = vec![];
                 let mut dispatch_args: Vec<Expr> = vec![];
@@ -254,7 +254,7 @@ fn generate_dispatcher(
                 // call the function
                 let stmt: Stmt = parse_quote! {
                     rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
-                        &blueprint::#bp_ident::#fn_ident(#(#dispatch_args),*)
+                        &blueprint::#bp_ident::#ident(#(#dispatch_args),*)
                     );
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
@@ -266,7 +266,7 @@ fn generate_dispatcher(
                     stmts.push(stmt);
                 }
 
-                arm_guards.push(parse_quote! { #method_enum_ident::#fn_ident(#(#match_args),*) });
+                arm_guards.push(parse_quote! { #method_enum_ident::#ident(#(#match_args),*) });
                 arm_bodies.push(Expr::Block(ExprBlock {
                     attrs: vec![],
                     label: None,

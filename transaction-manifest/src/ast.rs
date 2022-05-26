@@ -100,7 +100,7 @@ pub enum Instruction {
     },
 
     PublishPackage {
-        code: Value,
+        package: Value,
     },
 }
 

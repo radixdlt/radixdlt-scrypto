@@ -328,16 +328,20 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 };
                 self.component = component_state;
 
-                let mut runtime = RadixEngineScryptoRuntime::new(actor, self);
                 let mut engine = WasmiEngine::new();
-                let module = engine.instantiate(&code);
-                module
+                let mut runtime =
+                    RadixEngineScryptoRuntime::new(actor, self, CALL_FUNCTION_TBD_LIMIT);
+                let result = engine
+                    .instantiate(&code)
                     .invoke_export(&export_name, &call_data, &mut runtime)
                     .map_err(|e| match e {
                         // Flatten error code for more readable transaction receipt
                         InvokeError::RuntimeError(e) => e,
                         e @ _ => RuntimeError::InvokeError(e.into()),
-                    })
+                    });
+                let tbd_used = runtime.tbd_used();
+                re_debug!(self, "TBD used: {}, result: {:?}", tbd_used, result);
+                result
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
                 .map_err(RuntimeError::ResourceManagerError),
@@ -451,7 +455,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                                     package_address.clone(),
                                     blueprint_name.clone(),
                                 ),
-                                package.code().to_vec(),
+                                package.instrumented_code().to_vec(),
                                 export_name.clone(),
                                 None,
                             )),
@@ -498,7 +502,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                                     blueprint_name,
                                     component_address.clone(),
                                 ),
-                                package.code().to_vec(),
+                                package.instrumented_code().to_vec(),
                                 export_name,
                                 Some(component),
                             )),

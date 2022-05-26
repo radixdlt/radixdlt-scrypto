@@ -11,6 +11,7 @@ use sbor::*;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
+use scrypto::prelude::Package;
 use scrypto::resource::{require, LOCKED};
 use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::types::*;
@@ -409,9 +410,9 @@ impl TransactionBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
+    pub fn publish_package(&mut self, package: Package) -> &mut Self {
         self.add_instruction(Instruction::PublishPackage {
-            code: code.to_vec(),
+            package: scrypto_encode(&package),
         })
         .0
     }

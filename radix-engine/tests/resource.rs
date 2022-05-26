@@ -35,7 +35,7 @@ fn test_resource_manager() {
 
     // Assert
     println!("{:?}", receipt);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]

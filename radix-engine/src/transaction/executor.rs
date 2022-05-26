@@ -1,6 +1,5 @@
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use scrypto::buffer::scrypto_encode;
 use scrypto::component::Package;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
@@ -106,7 +105,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .publish_package(&scrypto_encode(&package))
+                    .publish_package(package)
                     .build(self.get_nonce([]))
                     .sign([]),
             )

@@ -7,6 +7,7 @@ edition = "2021"
 sbor = { path = "../sbor", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
 wasmi = { git = "https://github.com/radixdlt/wasmi", branch = "expose-exports" }
+wasm-instrument = { git = "https://github.com/paritytech/wasm-instrument", rev = "4713aa760f072f30311c4439d3b27b8544ae44fc" }
 colored = { version = "2.0", default-features = false }
 lru = { version = "0.7" }
 bencher = { version = "0.1.5" }

@@ -6,6 +6,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
+use wasm_instrument::{gas_metering, inject_stack_limiter, parity_wasm};
 use wasmi::*;
 
 pub struct WasmiScryptoModule {
@@ -37,8 +38,19 @@ impl ModuleImportResolver for WasmiEnvModule {
                     ENGINE_FUNCTION_INDEX,
                 ))
             }
+            TBD_FUNCTION_NAME => {
+                if signature.params() != [ValueType::I32] || signature.return_type() != None {
+                    return Err(Error::Instantiation(
+                        "Function signature does not match".into(),
+                    ));
+                }
+                Ok(FuncInstance::alloc_host(
+                    signature.clone(),
+                    TBD_FUNCTION_INDEX,
+                ))
+            }
             _ => Err(Error::Instantiation(format!(
-                "Export {} not found",
+                "Function {} not found",
                 field_name
             ))),
         }
@@ -46,11 +58,15 @@ impl ModuleImportResolver for WasmiEnvModule {
 }
 
 impl WasmiScryptoModule {
-    pub fn send_value(&self, value: &ScryptoValue) -> Result<RuntimeValue, InvokeError> {
+    pub fn send_value<T: ScryptoRuntime>(
+        &self,
+        value: &ScryptoValue,
+        externals: &mut WasmiScryptoModuleExternals<T>,
+    ) -> Result<RuntimeValue, InvokeError> {
         let result = self.module_ref.invoke_export(
             EXPORT_SCRYPTO_ALLOC,
             &[RuntimeValue::I32((value.raw.len()) as i32)],
-            &mut NopExternals,
+            externals,
         );
 
         if let Ok(Some(RuntimeValue::I32(ptr))) = result {
@@ -90,18 +106,26 @@ impl<'a, T: ScryptoRuntime> Externals for WasmiScryptoModuleExternals<'a, T> {
         index: usize,
         args: RuntimeArgs,
     ) -> Result<Option<RuntimeValue>, Trap> {
-        if index != ENGINE_FUNCTION_INDEX {
-            return Err(InvokeError::FunctionNotFound.into());
+        match index {
+            ENGINE_FUNCTION_INDEX => {
+                let input_ptr: u32 = args.nth_checked(0)?;
+                let input = self.module.read_value(input_ptr)?;
+
+                let output = self.runtime.main(input)?;
+                self.module
+                    .send_value(&output, self)
+                    .map(Option::Some)
+                    .map_err(|e| e.into())
+            }
+            TBD_FUNCTION_INDEX => {
+                let amount: u32 = args.nth_checked(0)?;
+                self.runtime
+                    .use_tbd(amount)
+                    .map(|_| Option::None)
+                    .map_err(|e| e.into())
+            }
+            _ => Err(InvokeError::FunctionNotFound.into()),
         }
-
-        let input_ptr: u32 = args.nth_checked(0)?;
-        let input = self.module.read_value(input_ptr)?;
-
-        let output = self.runtime.main(input)?;
-        self.module
-            .send_value(&output)
-            .map(Option::Some)
-            .map_err(|e| e.into())
     }
 }
 
@@ -112,21 +136,22 @@ impl ScryptoModule for WasmiScryptoModule {
         input: &ScryptoValue,
         runtime: &mut R,
     ) -> Result<ScryptoValue, InvokeError> {
-        let pointer = self.send_value(input)?;
         let mut externals = WasmiScryptoModuleExternals {
             module: self,
             runtime,
         };
+        let pointer = self.send_value(input, &mut externals)?;
         let result = self
             .module_ref
             .invoke_export(export_name, &[pointer], &mut externals);
 
         let rtn = result
             .map_err(|e| {
+                let e_str = format!("{:?}", e);
                 match e.into_host_error() {
                     // Pass-through invoke errors
                     Some(host_error) => *host_error.downcast::<InvokeError>().unwrap(),
-                    None => InvokeError::WasmError,
+                    None => InvokeError::WasmError(e_str),
                 }
             })?
             .ok_or(InvokeError::MissingReturnData)?;
@@ -202,6 +227,29 @@ impl ScryptoWasmValidator for WasmiEngine {
     }
 }
 
+impl ScryptoWasmInstrumenter for WasmiEngine {
+    fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError> {
+        let mut module =
+            parity_wasm::deserialize_buffer(code).expect("Unable to parse wasm module");
+
+        // TODO reject wasm modules that call the `TBD_FUNCTION_INDEX` directly
+
+        module = gas_metering::inject(
+            module,
+            &gas_metering::ConstantCostRules::new(INSTRUCTION_COST, MEMORY_GROW_COST),
+            MODULE_ENV_NAME,
+        )
+        .map_err(|_| InstrumentError::FailedToInjectInstructionMetering)?;
+
+        module = inject_stack_limiter(module, MAX_STACK_DEPTH)
+            .map_err(|_| InstrumentError::FailedToInjectStackLimiter)?;
+
+        module
+            .to_bytes()
+            .map_err(|_| InstrumentError::FailedToExportModule)
+    }
+}
+
 impl ScryptoWasmExecutor<WasmiScryptoModule> for WasmiEngine {
     fn instantiate(&mut self, code: &[u8]) -> WasmiScryptoModule {
         // parse wasm
@@ -210,7 +258,7 @@ impl ScryptoWasmExecutor<WasmiScryptoModule> for WasmiEngine {
         // link with env module
         let module_ref = ModuleInstance::new(
             &module,
-            &ImportsBuilder::new().with_resolver(EXPORT_ENV, &WasmiEnvModule),
+            &ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule),
         )
         .expect("Failed to instantiate wasm module")
         .assert_no_start();
