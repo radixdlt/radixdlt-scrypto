@@ -9,15 +9,23 @@ use scrypto::values::ScryptoValue;
 
 use crate::wasm::*;
 
+#[derive(Debug)]
+pub enum ExtractAbiError {
+    InvalidWasm(PrepareError),
+    FailedToExportBlueprintAbi,
+    InvalidBlueprintAbi,
+}
+
 fn extract_abi(
     code: &[u8],
-) -> Result<HashMap<String, (Type, Vec<Function>, Vec<Method>)>, WasmValidationError> {
+) -> Result<HashMap<String, (Type, Vec<Function>, Vec<Method>)>, ExtractAbiError> {
     let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
     let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
     let mut wasm_engine = WasmiEngine::new();
     // TODO: A bit of a code smell to have validation here, remove at some point.
-    wasm_engine.validate(code)?;
-    wasm_engine.instrument(code).unwrap();
+    wasm_engine
+        .validate(code)
+        .map_err(ExtractAbiError::InvalidWasm)?;
     let mut instance = wasm_engine.instantiate(code);
     let exports: Vec<String> = instance
         .function_exports()
@@ -29,21 +37,21 @@ fn extract_abi(
     for method_name in exports {
         let rtn = instance
             .invoke_export(&method_name, &ScryptoValue::unit(), &mut runtime_boxed)
-            .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
+            .map_err(|_| ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: (Type, Vec<Function>, Vec<Method>) =
-            scrypto_decode(&rtn.raw).map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
+            scrypto_decode(&rtn.raw).map_err(|_| ExtractAbiError::InvalidBlueprintAbi)?;
 
         if let Type::Struct { name, fields: _ } = &abi.0 {
             blueprints.insert(name.clone(), abi);
         } else {
-            return Err(WasmValidationError::InvalidBlueprintAbi);
+            return Err(ExtractAbiError::InvalidBlueprintAbi);
         }
     }
     Ok(blueprints)
 }
 
-pub fn extract_package(code: Vec<u8>) -> Result<Package, WasmValidationError> {
+pub fn extract_package(code: Vec<u8>) -> Result<Package, ExtractAbiError> {
     let blueprints = extract_abi(&code)?;
     let package = Package { code, blueprints };
     Ok(package)
