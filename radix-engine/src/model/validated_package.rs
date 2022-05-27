@@ -22,8 +22,8 @@ pub struct ValidatedPackage {
 #[derive(Debug, Clone, PartialEq)]
 pub enum PackageError {
     InvalidRequestData(DecodeError),
+    InvalidWasm(PrepareError),
     BlueprintNotFound,
-    ValidateError(PrepareError),
     MethodNotFound(String),
 }
 
@@ -80,7 +80,7 @@ impl ValidatedPackage {
         match function {
             PackageFunction::Publish(bytes) => {
                 let package = ValidatedPackage::new(bytes, system_api.wasm_engine())
-                    .map_err(PackageError::ValidateError)?;
+                    .map_err(PackageError::InvalidWasm)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
             }

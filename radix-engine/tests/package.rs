@@ -44,7 +44,7 @@ fn missing_memory_should_cause_error() {
     let error = receipt.result.expect_err("Should be error.");
     assert_eq!(
         error,
-        RuntimeError::PackageError(PackageError::ValidateError(NoMemoryExport))
+        RuntimeError::PackageError(PackageError::InvalidWasm(NoMemoryExport))
     );
 }
 
