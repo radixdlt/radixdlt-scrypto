@@ -217,7 +217,7 @@ impl WasmEngine<WasmiInstance> for WasmiEngine {
             .reject_start_function()?
             .check_imports()?
             .check_memory()?
-            .enforce_functions_limit()?
+            .enforce_initial_memory_limit()?
             .enforce_functions_limit()?
             .enforce_locals_limit()?
             .inject_instruction_metering()?

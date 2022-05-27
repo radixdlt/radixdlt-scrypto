@@ -1,3 +1,4 @@
+use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;

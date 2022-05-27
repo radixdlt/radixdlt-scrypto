@@ -1,3 +1,5 @@
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use wasm_instrument::parity_wasm::{
     self,
