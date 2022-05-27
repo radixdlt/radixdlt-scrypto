@@ -23,15 +23,13 @@ fn extract_abi(
     let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
     let mut wasm_engine = WasmiEngine::new();
     // TODO: A bit of a code smell to have validation here, remove at some point.
-    wasm_engine
+    let exports: Vec<String> = wasm_engine
         .validate(code)
-        .map_err(ExtractAbiError::InvalidWasm)?;
-    let mut instance = wasm_engine.instantiate(code);
-    let exports: Vec<String> = instance
-        .function_exports()
+        .map_err(ExtractAbiError::InvalidWasm)?
         .into_iter()
         .filter(|e| e.ends_with("_abi") && e.len() > 4)
         .collect();
+    let mut instance = wasm_engine.instantiate(code);
 
     let mut blueprints = HashMap::new();
     for method_name in exports {

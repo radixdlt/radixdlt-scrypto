@@ -25,15 +25,12 @@ pub trait WasmInstance {
         input: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError>;
-
-    /// Lists all functions exported by this module.
-    fn function_exports(&self) -> Vec<String>;
 }
 
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
 pub trait WasmEngine<I: WasmInstance> {
     /// Validate a Scrypto module.
-    fn validate(&mut self, code: &[u8]) -> Result<(), PrepareError>;
+    fn validate(&mut self, code: &[u8]) -> Result<Vec<String>, PrepareError>;
 
     /// Instantiate a Scrypto module.
     fn instantiate(&mut self, code: &[u8]) -> I;

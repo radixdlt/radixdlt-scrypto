@@ -20,8 +20,7 @@ impl ScryptoModule {
             .map_err(|_| PrepareError::DeserializationError)?;
 
         // validate
-        validate_module::<PlainValidator>(&module, ())
-            .map_err(|_| PrepareError::ValidationError)?;
+        validate_module::<PlainValidator>(&module).map_err(|_| PrepareError::ValidationError)?;
 
         Ok(Self { module })
     }
@@ -220,7 +219,20 @@ impl ScryptoModule {
         Ok(self)
     }
 
-    pub fn to_bytes(self) -> Result<Vec<u8>, PrepareError> {
-        parity_wasm::serialize(self.module).map_err(|_| PrepareError::SerializationError)
+    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
+        let function_exports = self
+            .module
+            .export_section()
+            .map(|sec| {
+                sec.entries()
+                    .iter()
+                    .filter(|e| matches!(e.internal(), Internal::Function(_)))
+                    .map(|e| e.field().to_string())
+                    .collect()
+            })
+            .unwrap_or(Vec::new());
+        let code =
+            parity_wasm::serialize(self.module).map_err(|_| PrepareError::SerializationError)?;
+        Ok((code, function_exports))
     }
 }

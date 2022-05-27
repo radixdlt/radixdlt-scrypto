@@ -2,7 +2,6 @@ use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::format;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
@@ -31,7 +30,7 @@ pub struct WasmiExternals<'a, 'b, 'r> {
 pub struct WasmiEnvModule {}
 
 pub struct WasmiEngine {
-    modules: HashMap<Hash, WasmiModule>,
+    modules: HashMap<Hash, (WasmiModule, Vec<String>)>,
 }
 
 impl ModuleImportResolver for WasmiEnvModule {
@@ -196,15 +195,6 @@ impl WasmInstance for WasmiInstance {
             _ => Err(InvokeError::InvalidReturnData),
         }
     }
-
-    fn function_exports(&self) -> Vec<String> {
-        self.module_ref
-            .exports()
-            .iter()
-            .filter(|(_, val)| matches!(val, ExternVal::Func(_)))
-            .map(|(name, _)| name.to_string())
-            .collect()
-    }
 }
 
 impl WasmiEngine {
@@ -216,13 +206,13 @@ impl WasmiEngine {
 }
 
 impl WasmEngine<WasmiInstance> for WasmiEngine {
-    fn validate(&mut self, code: &[u8]) -> Result<(), PrepareError> {
+    fn validate(&mut self, code: &[u8]) -> Result<Vec<String>, PrepareError> {
         let code_hash = hash(code);
-        if self.modules.contains_key(&code_hash) {
-            return Ok(());
+        if let Some(m) = self.modules.get(&code_hash) {
+            return Ok(m.1.clone());
         }
 
-        let validated_code = ScryptoModule::init(code)?
+        let (validated_code, function_exports) = ScryptoModule::init(code)?
             .reject_floating_point()?
             .reject_start_function()?
             .check_imports()?
@@ -238,8 +228,9 @@ impl WasmEngine<WasmiInstance> for WasmiEngine {
             module: Module::from_buffer(validated_code).expect("Failed to parse wasm code"),
         };
 
-        self.modules.insert(code_hash, module);
-        Ok(())
+        self.modules
+            .insert(code_hash, (module, function_exports.clone()));
+        Ok(function_exports)
     }
 
     fn instantiate(&mut self, code: &[u8]) -> WasmiInstance {
@@ -248,6 +239,6 @@ impl WasmEngine<WasmiInstance> for WasmiEngine {
             self.validate(code).expect("Failed to validate wasm code");
         }
         let module = self.modules.get(&code_hash).unwrap();
-        module.instantiate()
+        module.0.instantiate()
     }
 }

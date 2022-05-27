@@ -36,7 +36,7 @@ pub struct WasmerInstanceEnv {
 
 pub struct WasmerEngine {
     store: Store,
-    modules: HashMap<Hash, WasmerModule>,
+    modules: HashMap<Hash, (WasmerModule, Vec<String>)>,
 }
 
 pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, InvokeError> {
@@ -203,15 +203,6 @@ impl WasmInstance for WasmerInstance {
             }
         }
     }
-
-    fn function_exports(&self) -> Vec<String> {
-        self.instance
-            .module()
-            .exports()
-            .filter(|e| matches!(e.ty(), ExternType::Function(_)))
-            .map(|e| e.name().to_string())
-            .collect()
-    }
 }
 
 impl WasmerEngine {
@@ -225,13 +216,13 @@ impl WasmerEngine {
 }
 
 impl WasmEngine<WasmerInstance> for WasmerEngine {
-    fn validate(&mut self, code: &[u8]) -> Result<(), PrepareError> {
+    fn validate(&mut self, code: &[u8]) -> Result<Vec<String>, PrepareError> {
         let code_hash = hash(code);
-        if self.modules.contains_key(&code_hash) {
-            return Ok(());
+        if let Some(m) = self.modules.get(&code_hash) {
+            return Ok(m.1.clone());
         }
 
-        let validated_code = ScryptoModule::init(code)?
+        let (validated_code, function_exports) = ScryptoModule::init(code)?
             .reject_floating_point()?
             .reject_start_function()?
             .check_imports()?
@@ -247,8 +238,9 @@ impl WasmEngine<WasmerInstance> for WasmerEngine {
             module: Module::new(&self.store, validated_code).expect("Failed to parse wasm code"),
         };
 
-        self.modules.insert(code_hash, module);
-        Ok(())
+        self.modules
+            .insert(code_hash, (module, function_exports.clone()));
+        Ok(function_exports)
     }
 
     fn instantiate(&mut self, code: &[u8]) -> WasmerInstance {
@@ -257,6 +249,6 @@ impl WasmEngine<WasmerInstance> for WasmerEngine {
             self.validate(code).expect("Failed to validate wasm code");
         }
         let module = self.modules.get(&code_hash).unwrap();
-        module.instantiate()
+        module.0.instantiate()
     }
 }
