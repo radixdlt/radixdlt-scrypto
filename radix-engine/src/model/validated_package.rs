@@ -31,51 +31,18 @@ pub enum PackageError {
 impl ValidatedPackage {
     /// Validates and creates a package
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, WasmValidationError> {
-        let code = package.code().to_vec();
-
-        #[cfg(feature = "wasmer")]
-        let mut engine = WasmerEngine::new();
-        #[cfg(not(feature = "wasmer"))]
-        let mut engine = WasmiEngine::new();
-        let runtime = NopScryptoRuntime::new(EXPORT_BLUEPRINT_ABI_TBD_LIMIT); // stateless
-
-        // validate wasm
-        engine.validate(&code)?;
+        let mut wasm_engine = WasmiEngine::new();
+        wasm_engine.validate(&package.code)?;
 
         // instrument wasm
-        let instrumented_code = engine
-            .instrument(&code)
+        let instrumented_code = wasm_engine
+            .instrument(&package.code)
             .map_err(|_| WasmValidationError::FailedToInstrumentCode)?;
 
-        // TODO replace this with static ABIs
-        // export blueprint ABI
-        let mut blueprint_abis = HashMap::new();
-        let module = engine.load(&code);
-        let mut instance = module.instantiate(Box::new(runtime));
-        let exports: Vec<String> = instance
-            .function_exports()
-            .into_iter()
-            .filter(|e| e.ends_with("_abi") && e.len() > 4)
-            .collect();
-        for method_name in exports {
-            let return_data = instance
-                .invoke_export(&method_name, &ScryptoValue::unit())
-                .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
-
-            let abi: (Type, Vec<Function>, Vec<Method>) = scrypto_decode(&return_data.raw)
-                .map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
-
-            if let Type::Struct { name, fields: _ } = &abi.0 {
-                blueprint_abis.insert(name.clone(), abi);
-            } else {
-                return Err(WasmValidationError::InvalidBlueprintAbi);
-            }
-        }
-
         Ok(Self {
-            code,
+            code: package.code,
             instrumented_code,
-            blueprint_abis,
+            blueprint_abis: package.blueprints,
         })
     }
 

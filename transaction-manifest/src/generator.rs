@@ -1050,7 +1050,11 @@ mod tests {
             0x30, 0x20, 0x28, 0x39, 0x64, 0x31, 0x62, 0x32, 0x31, 0x30, 0x36, 0x65, 0x20, 0x32,
             0x30, 0x32, 0x32, 0x2d, 0x30, 0x32, 0x2d, 0x32, 0x33, 0x29,
         ];
-        let package = scrypto_encode(&Package::new(code));
+        let package = Package {
+            code,
+            blueprints: HashMap::new(),
+        };
+        let encoded_package = scrypto_encode(&package);
 
         assert_eq!(
             crate::compile(tx).unwrap(),
@@ -1140,7 +1144,7 @@ mod tests {
                         method: "deposit_batch".into(),
                     },
                     Instruction::PublishPackage {
-                        package: package.clone()
+                        package: encoded_package.clone()
                     },
                 ]
             }

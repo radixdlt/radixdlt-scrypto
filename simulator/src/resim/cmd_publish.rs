@@ -1,7 +1,6 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::transaction::*;
-use scrypto::prelude::Package;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -38,7 +37,7 @@ impl Publish {
         if let Some(path) = &self.manifest {
             let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-            let package = Package::new(code);
+            let package = extract_package(code).unwrap();
             let transaction = TransactionBuilder::new()
                 .publish_package(package)
                 .build_with_no_nonce();
@@ -68,7 +67,7 @@ impl Publish {
     ) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        let package = Package::new(code);
+        let package = extract_package(code).map_err(Error::PackageValidationError)?;
         match executor.publish_package(package) {
             Ok(package_address) => {
                 writeln!(

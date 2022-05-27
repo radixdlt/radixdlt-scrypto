@@ -3,7 +3,7 @@ pub mod test_runner;
 
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::model::PackageError;
+use radix_engine::model::{extract_package, PackageError};
 use radix_engine::wasm::InvokeError;
 use radix_engine::wasm::WasmValidationError::NoMemoryExport;
 use scrypto::call_data;
@@ -26,7 +26,10 @@ fn missing_memory_should_cause_error() {
             )
             "#,
     );
-    let package = Package::new(code);
+    let package = Package {
+        code,
+        blueprints: HashMap::new(),
+    };
     let transaction = test_runner
         .new_transaction_builder()
         .publish_package(package)
@@ -118,7 +121,7 @@ fn test_basic_package() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let package = Package::new(code);
+    let package = extract_package(code).unwrap();
     let transaction = test_runner
         .new_transaction_builder()
         .publish_package(package)
