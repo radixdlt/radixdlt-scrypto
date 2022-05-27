@@ -11,6 +11,7 @@ use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
+use crate::transaction::abi_provider::{export_abi, export_abi_by_component};
 
 /// An executor that runs transactions.
 pub struct TransactionExecutor<'l, L: ReadableSubstateStore + WriteableSubstateStore> {
@@ -23,25 +24,6 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> NonceProvider
 {
     fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
         self.substate_store.get_nonce()
-    }
-}
-
-impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
-    for TransactionExecutor<'l, L>
-{
-    fn export_abi(
-        &self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> Result<abi::Blueprint, RuntimeError> {
-        BasicAbiProvider::new(self.substate_store()).export_abi(package_address, blueprint_name)
-    }
-
-    fn export_abi_by_component(
-        &self,
-        component_address: ComponentAddress,
-    ) -> Result<abi::Blueprint, RuntimeError> {
-        BasicAbiProvider::new(self.substate_store()).export_abi_by_component(component_address)
     }
 }
 
@@ -61,6 +43,21 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
     /// Returns a mutable reference to the ledger.
     pub fn substate_store_mut(&mut self) -> &mut L {
         self.substate_store
+    }
+
+    pub fn export_abi(
+        &self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        export_abi(self.substate_store, package_address, blueprint_name)
+    }
+
+    pub fn export_abi_by_component(
+        &self,
+        component_address: ComponentAddress,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        export_abi_by_component(self.substate_store, component_address)
     }
 
     /// Generates a new key pair.
