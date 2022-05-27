@@ -1,21 +1,21 @@
-use crate::engine::SystemApi;
-use crate::model::NonFungible;
+use sbor::rust::collections::*;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::AccessRule::{self, *};
+use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::resource::{
     ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod, VaultMethod,
 };
-use scrypto::rust::collections::*;
-use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::*;
 use scrypto::values::ScryptoValue;
 
+use crate::engine::SystemApi;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
+use crate::model::NonFungible;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
 
 /// Converts soft authorization rule to a hard authorization rule.
@@ -375,7 +375,7 @@ impl ResourceManager {
     fn check_amount(&self, amount: Decimal) -> Result<(), ResourceManagerError> {
         let divisibility = self.resource_type.divisibility();
 
-        if amount.is_negative() || amount.0 % 10i128.pow((18 - divisibility).into()) != 0.into() {
+        if amount.is_negative() || amount.0 % 10i128.pow((18 - divisibility).into()) != 0i128 {
             Err(ResourceManagerError::InvalidAmount(amount, divisibility))
         } else {
             Ok(())

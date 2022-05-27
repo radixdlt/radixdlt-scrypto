@@ -1,18 +1,19 @@
+use sbor::any::Value;
+use sbor::rust::vec::Vec;
+use sbor::*;
+use scrypto::engine::types::*;
+use scrypto::resource::{AccessRule, AccessRuleNode, SoftResource};
+use scrypto::resource::{
+    NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
+    SoftResourceOrNonFungibleList,
+};
+use scrypto::types::ScryptoType;
+
 use crate::model::method_authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
     HardResourceOrNonFungible,
 };
 use crate::model::MethodAuthorization;
-use sbor::any::Value;
-use sbor::*;
-use scrypto::engine::types::*;
-use scrypto::prelude::{AccessRule, AccessRuleNode, SoftResource};
-use scrypto::resource::{
-    NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList,
-};
-use scrypto::rust::vec::Vec;
-use scrypto::types::ScryptoType;
 
 fn soft_to_hard_decimal(schema: &Type, soft_decimal: &SoftDecimal, dom: &Value) -> HardDecimal {
     match soft_decimal {

@@ -2,9 +2,9 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::errors::*;
+use radix_engine::engine::*;
 use radix_engine::ledger::*;
-use radix_engine::model::{BucketError, ResourceContainerError};
+use radix_engine::model::{extract_package, BucketError, ResourceContainerError};
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
@@ -14,29 +14,32 @@ fn test_bucket() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (_, _, account) = executor.new_account();
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "bucket")))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "bucket"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "BucketTest", call_data!(combine()))
-        .call_function(package, "BucketTest", call_data!(split()))
-        .call_function(package, "BucketTest", call_data!(borrow()))
-        .call_function(package, "BucketTest", call_data!(query()))
+        .call_function(package_address, "BucketTest", call_data!(combine()))
+        .call_function(package_address, "BucketTest", call_data!(split()))
+        .call_function(package_address, "BucketTest", call_data!(borrow()))
+        .call_function(package_address, "BucketTest", call_data!(query()))
         .call_function(
-            package,
+            package_address,
             "BucketTest",
             call_data!(test_restricted_transfer()),
         )
-        .call_function(package, "BucketTest", call_data!(test_burn()))
-        .call_function(package, "BucketTest", call_data!(test_burn_freely()))
+        .call_function(package_address, "BucketTest", call_data!(test_burn()))
         .call_function(
-            package,
+            package_address,
+            "BucketTest",
+            call_data!(test_burn_freely()),
+        )
+        .call_function(
+            package_address,
             "BucketTest",
             call_data!(create_empty_bucket_fungible()),
         )
         .call_function(
-            package,
+            package_address,
             "BucketTest",
             call_data!(create_empty_bucket_non_fungible()),
         )
@@ -44,7 +47,7 @@ fn test_bucket() {
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -52,20 +55,19 @@ fn test_bucket_of_badges() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (_, _, account) = executor.new_account();
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "bucket")))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "bucket"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package, "BadgeTest", call_data!(combine()))
-        .call_function(package, "BadgeTest", call_data!(split()))
-        .call_function(package, "BadgeTest", call_data!(borrow()))
-        .call_function(package, "BadgeTest", call_data!(query()))
+        .call_function(package_address, "BadgeTest", call_data!(combine()))
+        .call_function(package_address, "BadgeTest", call_data!(split()))
+        .call_function(package_address, "BadgeTest", call_data!(borrow()))
+        .call_function(package_address, "BadgeTest", call_data!(query()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -172,5 +174,5 @@ fn create_empty_bucket() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }

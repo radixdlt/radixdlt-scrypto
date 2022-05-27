@@ -1,13 +1,13 @@
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
+use scrypto::component::Package;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 use scrypto::{abi, access_rule_node, call_data, rule};
 
 use crate::engine::*;
-use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
@@ -34,34 +34,14 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let package: Package = self
-            .substate_store
-            .get_decoded_substate(&package_address)
-            .map(|(package, _)| package)
-            .ok_or(RuntimeError::PackageNotFound(package_address))?;
-
-        BasicAbiProvider::new()
-            .with_package(&package_address, package)
-            .export_abi(package_address, blueprint_name)
+        BasicAbiProvider::new(self.substate_store()).export_abi(package_address, blueprint_name)
     }
 
     fn export_abi_by_component(
         &self,
         component_address: ComponentAddress,
     ) -> Result<abi::Blueprint, RuntimeError> {
-        let component: Component = self
-            .substate_store
-            .get_decoded_substate(&component_address)
-            .map(|(component, _)| component)
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
-        let package: Package = self
-            .substate_store
-            .get_decoded_substate(&component.package_address())
-            .map(|(package, _)| package)
-            .unwrap();
-        BasicAbiProvider::new()
-            .with_package(&component.package_address(), package)
-            .export_abi(component.package_address(), component.blueprint_name())
+        BasicAbiProvider::new(self.substate_store()).export_abi_by_component(component_address)
     }
 }
 
@@ -121,14 +101,11 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
     }
 
     /// Publishes a package.
-    pub fn publish_package<T: AsRef<[u8]>>(
-        &mut self,
-        code: T,
-    ) -> Result<PackageAddress, RuntimeError> {
+    pub fn publish_package(&mut self, package: Package) -> Result<PackageAddress, RuntimeError> {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .publish_package(code.as_ref())
+                    .publish_package(package)
                     .build(self.get_nonce([]))
                     .sign([]),
             )
@@ -159,9 +136,9 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
             validated.raw_hash.clone(),
             validated.signers.clone(),
         );
-        let mut proc = track.start_process(self.trace);
+        let mut proc = track.start_call_frame(self.trace);
 
-        let mut txn_process = TransactionProcess::new(validated.clone());
+        let mut txn_process = TransactionProcessor::new(validated.clone());
         let txn_snode = SNodeState::Transaction(&mut txn_process);
         let error = match proc.run(None, txn_snode, ScryptoValue::from_value(&())) {
             Ok(_) => None,

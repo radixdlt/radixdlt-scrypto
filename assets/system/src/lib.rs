@@ -7,11 +7,6 @@ blueprint! {
     }
 
     impl System {
-        /// Publishes a package.
-        pub fn publish_package(code: Vec<u8>) -> PackageAddress {
-            component_system().publish_package(&code)
-        }
-
         /// Creates a resource.
         pub fn new_resource(
             resource_type: ResourceType,

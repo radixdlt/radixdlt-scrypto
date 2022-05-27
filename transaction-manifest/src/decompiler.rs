@@ -1,8 +1,8 @@
 use radix_engine::engine::*;
 use radix_engine::model::*;
+use sbor::rust::collections::*;
 use sbor::{encode_any, Value};
 use scrypto::engine::types::*;
-use scrypto::rust::collections::*;
 use scrypto::values::*;
 
 #[derive(Debug, Clone)]
@@ -222,9 +222,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                         package_address, blueprint_name, name
                     ));
                     for field in fields {
-                        let mut bytes = Vec::new();
-                        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-                        encode_any(None, &field, &mut enc);
+                        let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
                             .map_err(DecompileError::ParseScryptoValueError)?;
                         id_validator
@@ -252,9 +250,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     ));
 
                     for field in fields {
-                        let mut bytes = Vec::new();
-                        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-                        encode_any(None, &field, &mut enc);
+                        let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
                             .map_err(DecompileError::ParseScryptoValueError)?;
                         id_validator
@@ -282,10 +278,10 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     component_address, method
                 ));
             }
-            Instruction::PublishPackage { code } => {
+            Instruction::PublishPackage { package } => {
                 buf.push_str(&format!(
                     "PUBLISH_PACKAGE Bytes(\"{}\");\n",
-                    hex::encode(&code)
+                    hex::encode(&package)
                 ));
             }
             Instruction::Nonce { .. } => {

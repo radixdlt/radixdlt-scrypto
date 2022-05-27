@@ -1,59 +1,80 @@
-use scrypto::rust::string::String;
-use wasmi::*;
+use sbor::rust::fmt;
+use sbor::rust::string::String;
+use scrypto::values::ParseScryptoValueError;
+use wasmi::HostError;
 
-/// Error coming from WASMI module which maps to wasmi:Error but is cloneable
+use crate::engine::RuntimeError;
+
+/// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug, PartialEq, Clone)]
-pub enum WasmiError {
-    /// Module validation error. Might occur only at load time.
-    Validation(String),
-    /// Error while instantiating a module. Might occur when provided
-    /// with incorrect exports (i.e. linkage failure).
-    Instantiation(String),
-    /// Function-level error.
-    Function(String),
-    /// Table-level error.
-    Table(String),
-    /// Memory-level error.
-    Memory(String),
-    /// Global-level error.
-    Global(String),
-    /// Value-level error.
-    Value(String),
-    /// Trap.
-    Trap,
-    /// Custom embedder error.
-    Host,
+pub enum InvokeError {
+    MemoryAllocError,
+
+    MemoryAccessError,
+
+    InvalidScryptoValue(ParseScryptoValueError),
+
+    WasmError(String),
+
+    RuntimeError(RuntimeError),
+
+    FunctionNotFound,
+
+    InvalidCallData,
+
+    MissingReturnData,
+
+    InvalidReturnData,
+
+    OutOfTbd {
+        limit: u32,
+        balance: u32,
+        required: u32,
+    },
 }
 
-impl From<wasmi::Error> for WasmiError {
-    fn from(e: Error) -> Self {
-        match e {
-            Error::Validation(e) => WasmiError::Validation(e),
-            Error::Instantiation(e) => WasmiError::Instantiation(e),
-            Error::Function(e) => WasmiError::Function(e),
-            Error::Table(e) => WasmiError::Table(e),
-            Error::Memory(e) => WasmiError::Memory(e),
-            Error::Global(e) => WasmiError::Global(e),
-            Error::Value(e) => WasmiError::Value(e),
-            Error::Trap(_) => WasmiError::Trap,
-            Error::Host(_) => WasmiError::Host,
-        }
-    }
+/// Represents an error when instrumenting a Scrypto module.
+#[derive(Debug, PartialEq, Clone)]
+pub enum InstrumentError {
+    FailedToInjectInstructionMetering,
+
+    FailedToInjectStackLimiter,
+
+    FailedToExportModule,
 }
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]
 pub enum WasmValidationError {
-    /// The wasm module is invalid.
-    InvalidModule,
+    /// Failed to parse.
+    FailedToParse,
+    /// Failed to instantiate.
+    FailedToInstantiate(String),
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
     /// The wasm module uses float points.
     FloatingPointNotAllowed,
-    /// The wasm module does not have memory export.
-    NoValidMemoryExport,
-    /// package_init function does not exist in module
-    NoPackageInitExport(WasmiError),
-    /// package_init function is not the correct interface
-    InvalidPackageInit,
+    /// The wasm module does not have the `memory` export.
+    NoMemoryExport,
+    /// The wasm module does not have the `scrypto_alloc` export.
+    NoScryptoAllocExport,
+    /// The wasm module does not have the `scrypto_free` export.
+    NoScryptoFreeExport,
+    /// Failed to instrument wasm code.
+    FailedToInstrumentCode,
+    /// TODO: remove
+    FailedToExportBlueprintAbi,
+    // TODO: remove
+    InvalidBlueprintAbi,
 }
+
+impl fmt::Display for InvokeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl HostError for InvokeError {}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for InvokeError {}

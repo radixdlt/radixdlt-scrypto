@@ -1,5 +1,5 @@
-use crate::rust::borrow::ToOwned;
-use crate::rust::string::String;
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::string::String;
 
 /// A macro to help create a Scrypto-specific type.
 macro_rules! scrypto_type {

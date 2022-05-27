@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::ledger::*;
+use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
@@ -29,7 +30,7 @@ fn create_non_fungible_mutable() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -81,39 +82,42 @@ fn test_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "non_fungible")))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "non_fungible"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()
         .call_function(
-            package,
+            package_address,
             "NonFungibleTest",
             call_data!(create_non_fungible_fixed()),
         )
         .call_function(
-            package,
+            package_address,
             "NonFungibleTest",
             call_data!(update_and_get_non_fungible()),
         )
         .call_function(
-            package,
+            package_address,
             "NonFungibleTest",
             call_data!(non_fungible_exists()),
         )
         .call_function(
-            package,
+            package_address,
             "NonFungibleTest",
             call_data!(take_and_put_bucket()),
         )
-        .call_function(package, "NonFungibleTest", call_data!(take_and_put_vault()))
         .call_function(
-            package,
+            package_address,
+            "NonFungibleTest",
+            call_data!(take_and_put_vault()),
+        )
+        .call_function(
+            package_address,
             "NonFungibleTest",
             call_data!(get_non_fungible_ids_bucket()),
         )
         .call_function(
-            package,
+            package_address,
             "NonFungibleTest",
             call_data!(get_non_fungible_ids_vault()),
         )
@@ -122,7 +126,7 @@ fn test_non_fungible() {
         .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     println!("{:?}", receipt);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -130,13 +134,12 @@ fn test_singleton_non_fungible() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, true);
     let (pk, sk, account) = executor.new_account();
-    let package = executor
-        .publish_package(&compile_package!(format!("./tests/{}", "non_fungible")))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "non_fungible"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()
         .call_function(
-            package,
+            package_address,
             "NonFungibleTest",
             call_data!(singleton_non_fungible()),
         )
@@ -145,5 +148,5 @@ fn test_singleton_non_fungible() {
         .sign([&sk]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
     println!("{:?}", receipt);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }

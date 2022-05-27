@@ -2,6 +2,7 @@ use scrypto::call_data;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
 use scrypto::prelude::*;
+use radix_engine::model::extract_package;
 
 #[test]
 fn test_hello() {
@@ -9,11 +10,12 @@ fn test_hello() {
     let mut ledger = InMemorySubstateStore::with_bootstrap();
     let mut executor = TransactionExecutor::new(&mut ledger, false);
     let (pk, sk, account) = executor.new_account();
-    let package = executor.publish_package(compile_package!()).unwrap();
+    let package = extract_package(compile_package!()).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new()
-        .call_function(package, "Hello", call_data!(instantiate_hello()))
+        .call_function(package_address, "Hello", call_data!(instantiate_hello()))
         .build(executor.get_nonce([pk]))
         .sign([&sk]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();

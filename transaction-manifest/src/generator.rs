@@ -1,16 +1,16 @@
-use crate::ast;
 use radix_engine::engine::*;
 use radix_engine::model::*;
 use sbor::any::{encode_any, Value};
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::HashMap;
+use sbor::rust::str::FromStr;
 use sbor::type_id::*;
-use sbor::Encoder;
 use scrypto::call_data_any_args;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::collections::HashMap;
-use scrypto::rust::str::FromStr;
 use scrypto::types::*;
 use scrypto::values::*;
+
+use crate::ast;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -317,9 +317,7 @@ pub fn generate_instruction(
                 name: generate_string(method)?,
                 fields,
             };
-            let mut bytes = Vec::new();
-            let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-            ::sbor::encode_any(None, &variant, &mut enc);
+            let bytes = ::sbor::encode_any(&variant);
 
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address)?,
@@ -338,8 +336,8 @@ pub fn generate_instruction(
                 method: generate_string(method)?,
             }
         }
-        ast::Instruction::PublishPackage { code } => Instruction::PublishPackage {
-            code: generate_bytes(code)?,
+        ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
+            package: generate_bytes(package)?,
         },
     })
 }
@@ -362,10 +360,7 @@ fn generate_args(
     for v in values {
         let value = generate_value(v, None, resolver)?;
 
-        let mut bytes = Vec::new();
-        let mut enc = Encoder::with_type(&mut bytes);
-        encode_any(None, &value, &mut enc);
-        result.push(bytes);
+        result.push(encode_any(&value));
     }
     Ok(result)
 }
@@ -782,7 +777,9 @@ mod tests {
     use super::*;
     use crate::lexer::tokenize;
     use crate::parser::Parser;
+    use scrypto::buffer::scrypto_encode;
     use scrypto::call_data;
+    use scrypto::prelude::Package;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1053,6 +1050,11 @@ mod tests {
             0x30, 0x20, 0x28, 0x39, 0x64, 0x31, 0x62, 0x32, 0x31, 0x30, 0x36, 0x65, 0x20, 0x32,
             0x30, 0x32, 0x32, 0x2d, 0x30, 0x32, 0x2d, 0x32, 0x33, 0x29,
         ];
+        let package = Package {
+            code,
+            blueprints: HashMap::new(),
+        };
+        let encoded_package = scrypto_encode(&package);
 
         assert_eq!(
             crate::compile(tx).unwrap(),
@@ -1141,8 +1143,9 @@ mod tests {
                         .unwrap(),
                         method: "deposit_batch".into(),
                     },
-                    Instruction::PublishPackage { code: code.clone() },
-                    Instruction::PublishPackage { code: code.clone() }
+                    Instruction::PublishPackage {
+                        package: encoded_package.clone()
+                    },
                 ]
             }
         );

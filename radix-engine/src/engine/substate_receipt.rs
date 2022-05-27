@@ -1,11 +1,11 @@
 use crate::engine::track::VirtualSubstateId;
 use crate::engine::SubstateParentId;
+use sbor::rust::collections::*;
+use sbor::rust::ops::RangeFull;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::hash;
-use scrypto::rust::collections::*;
-use scrypto::rust::ops::RangeFull;
-use scrypto::rust::vec::Vec;
 
 use crate::ledger::*;
 
@@ -88,7 +88,8 @@ impl SubstateOperationsReceipt {
                 SubstateOperation::Up(key, value) => {
                     let phys_id = id_gen.next();
                     receipt.up(phys_id.clone());
-                    store.put_keyed_substate(&key, value, phys_id);
+                    let substate = Substate { value, phys_id };
+                    store.put_substate(&key, substate);
                 }
             }
         }

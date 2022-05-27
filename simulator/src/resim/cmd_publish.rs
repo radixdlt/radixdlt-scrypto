@@ -37,12 +37,13 @@ impl Publish {
         if let Some(path) = &self.manifest {
             let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+            let package = extract_package(code).unwrap();
             let transaction = TransactionBuilder::new()
-                .publish_package(code.as_ref())
+                .publish_package(package)
                 .build_with_no_nonce();
             process_transaction(&mut executor, transaction, &None, &Some(path.clone()), out)?;
         } else {
-            self.store_package(out, &code)?;
+            self.store_package(out, code)?;
         }
         Ok(())
     }
@@ -56,13 +57,18 @@ impl Publish {
         println!("Publishing ..");
         let code = fs::read(wasm_file_path).map_err(Error::IOError)?;
         println!("Read code to variable");
-        self.store_package(out, &code)
+        self.store_package(out, code)
     }
 
-    pub fn store_package<O: std::io::Write>(&self, out: &mut O, code: &[u8]) -> Result<(), Error> {
+    pub fn store_package<O: std::io::Write>(
+        &self,
+        out: &mut O,
+        code: Vec<u8>,
+    ) -> Result<(), Error> {
         let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
-        match executor.publish_package(code) {
+        let package = extract_package(code).map_err(Error::PackageValidationError)?;
+        match executor.publish_package(package) {
             Ok(package_address) => {
                 writeln!(
                     out,

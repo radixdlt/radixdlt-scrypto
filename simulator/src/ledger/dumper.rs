@@ -2,9 +2,9 @@
 use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
+use sbor::rust::collections::HashSet;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::engine::types::*;
-use scrypto::rust::collections::HashSet;
 use scrypto::values::*;
 use std::collections::VecDeque;
 
@@ -24,7 +24,7 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let package: Option<Package> = substate_store
+    let package: Option<ValidatedPackage> = substate_store
         .get_decoded_substate(&package_address)
         .map(|(package, _)| package);
     match package {
@@ -142,11 +142,10 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault: Vault = substate_store
-            .get_decoded_child_substate(&component_address, vault_id)
-            .unwrap()
-            .0;
-
+        let mut vault_address = scrypto_encode(&component_address);
+        vault_address.extend(scrypto_encode(vault_id));
+        let substate = substate_store.get_substate(&vault_address).unwrap();
+        let vault: Vault = scrypto_decode(&substate.value).unwrap();
         let amount = vault.total_amount();
         let resource_address = vault.resource_address();
         let resource_manager: ResourceManager = substate_store

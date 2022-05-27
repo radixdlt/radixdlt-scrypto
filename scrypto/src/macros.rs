@@ -9,11 +9,11 @@
 #[macro_export]
 macro_rules! args {
     () => {
-        ::scrypto::rust::vec::Vec::new()
+        ::sbor::rust::vec::Vec::new()
     };
     ($($args: expr),+) => {
         {
-            let mut args = ::scrypto::rust::vec::Vec::new();
+            let mut args = ::sbor::rust::vec::Vec::new();
             $(args.push(scrypto::buffer::scrypto_encode(&$args));)+
             args
         }
@@ -27,7 +27,7 @@ macro_rules! call_data_any_args {
             name: $name,
             fields: $args,
         };
-        ::sbor::encode_any_with_type!(&variant)
+        ::sbor::encode_any(&variant)
     }};
 }
 
@@ -48,7 +48,7 @@ macro_rules! call_data {
         {
             let mut fields = Vec::new();
             $(
-                let encoded = ::scrypto::prelude::scrypto_encode(&$args);
+                let encoded = ::scrypto::buffer::scrypto_encode(&$args);
                 fields.push(::sbor::decode_any(&encoded).unwrap());
             )*
             ::scrypto::call_data_any_args!($name, fields)
@@ -58,7 +58,7 @@ macro_rules! call_data {
         {
             let mut fields = Vec::new();
             $(
-                let encoded = ::scrypto::prelude::scrypto_encode(&$args);
+                let encoded = ::scrypto::buffer::scrypto_encode(&$args);
                 fields.push(::sbor::decode_any(&encoded).unwrap());
             )*
             ::scrypto::call_data_any_args!(stringify!($name).to_string(), fields)
@@ -77,7 +77,7 @@ macro_rules! call_data {
 #[macro_export]
 macro_rules! error {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Error, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::core::Level::Error, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -92,7 +92,7 @@ macro_rules! error {
 #[macro_export]
 macro_rules! warn {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Warn, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::core::Level::Warn, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -107,7 +107,7 @@ macro_rules! warn {
 #[macro_export]
 macro_rules! info {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Info, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::core::Level::Info, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -122,7 +122,7 @@ macro_rules! info {
 #[macro_export]
 macro_rules! debug {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Debug, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::core::Level::Debug, ::sbor::rust::format!($($args),+));
     }};
 }
 
@@ -137,7 +137,7 @@ macro_rules! debug {
 #[macro_export]
 macro_rules! trace {
     ($($args: expr),+) => {{
-        ::scrypto::core::Logger::log(scrypto::core::Level::Trace, ::scrypto::rust::format!($($args),+));
+        ::scrypto::core::Logger::log(scrypto::core::Level::Trace, ::sbor::rust::format!($($args),+));
     }};
 }
 

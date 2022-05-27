@@ -1,6 +1,6 @@
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::rust::vec::Vec;
 
 use crate::model::method_authorization::MethodAuthorizationError::NotAuthorized;
 use crate::model::{AuthZone, Proof};

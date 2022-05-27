@@ -1,15 +1,15 @@
 use colored::*;
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::format;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
-use scrypto::rust::borrow::ToOwned;
-use scrypto::rust::fmt;
-use scrypto::rust::format;
-use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
 use crate::engine::CommitReceipt;
-use crate::errors::*;
+use crate::engine::RuntimeError;
 use crate::model::*;
 
 /// Represents a transaction receipt.

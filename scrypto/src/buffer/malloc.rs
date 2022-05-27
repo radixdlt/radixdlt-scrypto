@@ -1,6 +1,6 @@
-use crate::rust::mem::forget;
-use crate::rust::ptr::copy;
-use crate::rust::vec::Vec;
+use sbor::rust::mem::forget;
+use sbor::rust::ptr::copy;
+use sbor::rust::vec::Vec;
 
 /// Allocates a chunk of memory that is not tracked by Rust ownership system.
 ///
@@ -16,29 +16,31 @@ pub unsafe extern "C" fn scrypto_alloc(len: u32) -> *mut u8 {
     ptr
 }
 
-/// Wraps a byte array into a pointer.
-///
-/// This function assumes the input byte array has the layout specified by `scrypto_alloc`.
-pub fn scrypto_wrap(mut buf: Vec<u8>) -> *mut u8 {
-    let ptr = buf.as_mut_ptr();
-    forget(buf);
-    ptr
+/// Allocates a buffer with initial values.
+pub fn scrypto_alloc_initialized(bytes: Vec<u8>) -> *mut u8 {
+    unsafe {
+        let ptr = scrypto_alloc(bytes.len() as u32);
+        copy(bytes.as_ptr(), ptr.add(4), bytes.len());
+        ptr
+    }
 }
 
-/// Consumes a memory chunk.
+/// Consumes a buffer.
 ///
 /// # Safety
 /// The memory pointer must be obtained from `scrypto_alloc` or `scrypto_wrap`.
-pub unsafe fn scrypto_consume<T>(ptr: *mut u8, f: fn(slice: &[u8]) -> T) -> T {
-    let mut len = [0u8; 4];
-    copy(ptr, len.as_mut_ptr(), 4);
+pub fn scrypto_consume<T>(ptr: *mut u8, f: fn(slice: &[u8]) -> T) -> T {
+    unsafe {
+        let mut len = [0u8; 4];
+        copy(ptr, len.as_mut_ptr(), 4);
 
-    let cap = (u32::from_le_bytes(len) + 4) as usize;
-    let buf = Vec::<u8>::from_raw_parts(ptr, cap, cap);
-    f(&buf[4..])
+        let cap = (u32::from_le_bytes(len) + 4) as usize;
+        let buf = Vec::<u8>::from_raw_parts(ptr, cap, cap);
+        f(&buf[4..])
+    }
 }
 
-/// Releases an allocated memory.
+/// Releases a buffer.
 ///
 /// # Safety
 /// The memory pointer must be obtained from `scrypto_alloc` or `scrypto_wrap`.

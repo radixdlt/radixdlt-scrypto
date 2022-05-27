@@ -1,18 +1,19 @@
 use sbor::describe::*;
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::*;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::prelude::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
+use scrypto::prelude::Package;
 use scrypto::resource::{require, LOCKED};
-use scrypto::rust::borrow::ToOwned;
-use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::collections::*;
-use scrypto::rust::fmt;
-use scrypto::rust::str::FromStr;
-use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
+use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::types::*;
 use scrypto::values::*;
 use scrypto::*;
@@ -333,9 +334,7 @@ impl TransactionBuilder {
             name: function.to_owned(),
             fields,
         };
-        let mut bytes = Vec::new();
-        let mut enc = ::sbor::Encoder::with_type(&mut bytes);
-        ::sbor::encode_any(None, &variant, &mut enc);
+        let bytes = ::sbor::encode_any(&variant);
 
         Ok(self
             .add_instruction(Instruction::CallFunction {
@@ -411,9 +410,9 @@ impl TransactionBuilder {
     }
 
     /// Publishes a package.
-    pub fn publish_package(&mut self, code: &[u8]) -> &mut Self {
+    pub fn publish_package(&mut self, package: Package) -> &mut Self {
         self.add_instruction(Instruction::PublishPackage {
-            code: code.to_vec(),
+            package: scrypto_encode(&package),
         })
         .0
     }

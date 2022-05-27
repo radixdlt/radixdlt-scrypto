@@ -1,6 +1,7 @@
+use sbor::rust::string::String;
+
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
-use crate::rust::string::String;
 
 /// A utility for logging messages.
 #[derive(Debug)]
@@ -9,8 +10,8 @@ pub struct Logger {}
 impl Logger {
     /// Emits a log to console.
     pub fn log(level: Level, message: String) {
-        let input = EmitLogInput { level, message };
-        let _: EmitLogOutput = call_engine(EMIT_LOG, input);
+        let input = RadixEngineInput::EmitLog(level, message);
+        let _: () = call_engine(input);
     }
 
     /// Emits a trace message.

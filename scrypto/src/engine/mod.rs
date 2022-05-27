@@ -3,37 +3,25 @@ pub mod api;
 /// Types and functions shared by both Scrypto and Radix Engine.
 pub mod types;
 
-use crate::buffer::*;
-use api::*;
-use sbor::*;
+use sbor::Decode;
+
+use crate::engine::api::RadixEngineInput;
 
 /// Utility function for making a radix engine call.
 #[cfg(target_arch = "wasm32")]
-pub fn call_engine<T: Encode, V: Decode>(op: u32, input: T) -> V {
+pub fn call_engine<V: Decode>(input: RadixEngineInput) -> V {
+    use crate::buffer::{scrypto_decode_from_buffer, *};
+    use crate::engine::api::radix_engine;
+
     unsafe {
-        // 1. serialize the input
-        let input_bytes = scrypto_encode(&input);
-
-        // 2. make a radix engine call
-        let output_ptr = radix_engine(op, input_bytes.as_ptr(), input_bytes.len());
-
-        // 3. deserialize the output
-        scrypto_consume(output_ptr, |slice| scrypto_decode::<V>(slice).unwrap())
+        let input_ptr = scrypto_encode_to_buffer(&input);
+        let output_ptr = radix_engine(input_ptr);
+        scrypto_decode_from_buffer::<V>(output_ptr).unwrap()
     }
 }
 
 /// Utility function for making a radix engine call.
 #[cfg(not(target_arch = "wasm32"))]
-pub fn call_engine<T: Encode, V: Decode>(op: u32, input: T) -> V {
-    if op == EMIT_LOG {
-        let input_bytes = scrypto_encode(&input);
-        #[allow(unused_variables)]
-        let input_value = scrypto_decode::<EmitLogInput>(&input_bytes).unwrap();
-        #[cfg(feature = "std")]
-        println!("{}", input_value.message);
-        let output_bytes = scrypto_encode(&EmitLogOutput {});
-        scrypto_decode::<V>(&output_bytes).unwrap()
-    } else {
-        todo!()
-    }
+pub fn call_engine<V: Decode>(_input: RadixEngineInput) -> V {
+    todo!()
 }

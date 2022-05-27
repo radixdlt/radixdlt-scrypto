@@ -1,11 +1,12 @@
-use crate::resource::AccessRuleNode::{AllOf, AnyOf};
-use crate::resource::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::string::ToString;
-use crate::rust::vec;
-use crate::rust::vec::Vec;
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::string::ToString;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
+
+use crate::resource::AccessRuleNode::{AllOf, AnyOf};
+use crate::resource::*;
 
 /// TODO: add documentation for public types once they're stable.
 

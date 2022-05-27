@@ -1,6 +1,6 @@
+use sbor::rust::ops::Range;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
-use scrypto::rust::ops::Range;
 
 pub const ECDSA_TOKEN_BUCKET_ID: BucketId = 0;
 

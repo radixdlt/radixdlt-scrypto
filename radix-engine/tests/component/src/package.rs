@@ -5,7 +5,11 @@ blueprint! {
 
     impl PackageTest {
         pub fn publish() -> PackageAddress {
-            component_system().publish_package(include_bytes!("../../../../assets/system.wasm"))
+            let package = Package {
+                code: include_bytes!("../../../../assets/system.wasm").to_vec(),
+                blueprints: HashMap::new(),
+            };
+            component_system().publish_package(package)
         }
     }
 }

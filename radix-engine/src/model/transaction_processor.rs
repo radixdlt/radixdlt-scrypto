@@ -1,20 +1,20 @@
-use crate::engine::{IdAllocator, IdSpace, SystemApi};
-use crate::errors::RuntimeError;
-use crate::errors::RuntimeError::ProofNotFound;
-use crate::model::worktop::WorktopMethod;
-use crate::model::{ValidatedInstruction, ValidatedTransaction};
+use sbor::rust::collections::HashMap;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
+use scrypto::buffer::scrypto_decode;
 use scrypto::call_data;
-use scrypto::component::PackageFunction;
-use scrypto::core::SNodeRef;
+use scrypto::component::{Package, PackageFunction};
+use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{ConsumingProofMethod, ProofMethod, ScryptoActor};
 use scrypto::resource::{AuthZoneMethod, BucketMethod};
-use scrypto::rust::collections::HashMap;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
+use scrypto::resource::{ConsumingProofMethod, ProofMethod};
 use scrypto::values::*;
 
-pub struct TransactionProcess {
+use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
+use crate::model::worktop::WorktopMethod;
+use crate::model::{ValidatedInstruction, ValidatedTransaction};
+
+pub struct TransactionProcessor {
     transaction: ValidatedTransaction,
     proof_id_mapping: HashMap<ProofId, ProofId>,
     bucket_id_mapping: HashMap<BucketId, BucketId>,
@@ -22,7 +22,7 @@ pub struct TransactionProcess {
     id_allocator: IdAllocator,
 }
 
-impl TransactionProcess {
+impl TransactionProcessor {
     pub fn new(transaction: ValidatedTransaction) -> Self {
         Self {
             transaction,
@@ -419,10 +419,14 @@ impl TransactionProcess {
                             ScryptoValue::from_slice(&encoded).unwrap(),
                         )
                     }),
-                ValidatedInstruction::PublishPackage { code } => system_api.invoke_snode(
-                    SNodeRef::PackageStatic,
-                    ScryptoValue::from_value(&PackageFunction::Publish(code.to_vec())),
-                ),
+                ValidatedInstruction::PublishPackage { package } => {
+                    let package: Package =
+                        scrypto_decode(package).map_err(|e| RuntimeError::InvalidPackage(e))?;
+                    system_api.invoke_snode(
+                        SNodeRef::PackageStatic,
+                        ScryptoValue::from_value(&PackageFunction::Publish(package)),
+                    )
+                }
             }?;
             self.outputs.push(result);
         }

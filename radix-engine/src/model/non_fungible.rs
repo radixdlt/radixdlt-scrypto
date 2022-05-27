@@ -1,5 +1,5 @@
+use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::rust::vec::Vec;
 
 /// A non-fungible is a piece of data that is uniquely identified within a resource.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

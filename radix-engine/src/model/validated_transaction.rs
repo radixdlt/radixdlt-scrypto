@@ -1,8 +1,8 @@
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::string::String;
-use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
 /// Represents a validated transaction
@@ -79,6 +79,6 @@ pub enum ValidatedInstruction {
         method: String,
     },
     PublishPackage {
-        code: Vec<u8>,
+        package: Vec<u8>,
     },
 }

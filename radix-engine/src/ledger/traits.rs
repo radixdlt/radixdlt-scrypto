@@ -1,9 +1,9 @@
+use sbor::rust::collections::*;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::*;
-use scrypto::rust::vec::Vec;
 
 pub trait QueryableSubstateStore {
     fn get_lazy_map_entries(
@@ -43,7 +43,6 @@ impl SubstateIdGenerator {
 /// A ledger stores all transactions and substates.
 pub trait ReadableSubstateStore {
     fn get_substate(&self, address: &[u8]) -> Option<Substate>;
-    fn get_child_substate(&self, address: &[u8], key: &[u8]) -> Option<Substate>;
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId>;
 
     // Temporary Encoded/Decoded interface
@@ -52,16 +51,6 @@ pub trait ReadableSubstateStore {
         address: &A,
     ) -> Option<(T, PhysicalSubstateId)> {
         self.get_substate(&scrypto_encode(address))
-            .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
-    }
-
-    fn get_decoded_child_substate<A: Encode, K: Encode, T: Decode>(
-        &self,
-        address: &A,
-        key: &K,
-    ) -> Option<(T, PhysicalSubstateId)> {
-        let child_key = &scrypto_encode(key);
-        self.get_child_substate(&scrypto_encode(address), child_key)
             .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
     }
 
@@ -75,46 +64,7 @@ pub trait ReadableSubstateStore {
 
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, address: &[u8], substate: Substate);
-    fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate);
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId);
-
-    fn put_keyed_substate(&mut self, address: &[u8], value: Vec<u8>, phys_id: PhysicalSubstateId) {
-        self.put_substate(address, Substate { value, phys_id });
-    }
-
-    fn put_encoded_substate<A: Encode, V: Encode>(
-        &mut self,
-        address: &A,
-        value: &V,
-        phys_id: PhysicalSubstateId,
-    ) {
-        self.put_substate(
-            &scrypto_encode(address),
-            Substate {
-                value: scrypto_encode(value),
-                phys_id,
-            },
-        );
-    }
-
-    fn put_encoded_child_substate<A: Encode, K: Encode, V: Encode>(
-        &mut self,
-        address: &A,
-        key: &K,
-        value: &V,
-        phys_id: PhysicalSubstateId,
-    ) {
-        self.put_child_substate(
-            &scrypto_encode(address),
-            &scrypto_encode(key),
-            Substate {
-                value: scrypto_encode(value),
-                phys_id,
-            },
-        );
-    }
-
     fn set_epoch(&mut self, epoch: u64);
-
     fn increase_nonce(&mut self);
 }

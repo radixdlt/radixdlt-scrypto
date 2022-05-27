@@ -2,12 +2,17 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::errors::RuntimeError;
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::*;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use scrypto::values::ScryptoValue;
+
+#[test]
+fn test_bootstrap() {
+    InMemorySubstateStore::with_bootstrap();
+}
 
 #[test]
 fn can_withdraw_from_my_account() {
@@ -27,7 +32,7 @@ fn can_withdraw_from_my_account() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
@@ -98,7 +103,7 @@ fn account_to_bucket_to_account() {
     let receipt = test_runner.validate_and_execute(&transaction);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]

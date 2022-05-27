@@ -1,11 +1,11 @@
 #[cfg(feature = "alloc")]
 extern crate alloc;
 #[cfg(feature = "alloc")]
-pub use alloc::string::String;
+use alloc::string::String;
 #[cfg(feature = "alloc")]
-pub use alloc::string::ToString;
+use alloc::string::ToString;
 #[cfg(feature = "alloc")]
-pub use alloc::vec::Vec;
+use alloc::vec::Vec;
 
 use sbor::describe::*;
 use sbor::{Decode, Encode, TypeId};

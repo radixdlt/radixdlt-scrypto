@@ -1,6 +1,6 @@
+use sbor::rust::collections::HashMap;
+use sbor::rust::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::rust::collections::HashMap;
-use scrypto::rust::vec::Vec;
 
 use crate::ledger::traits::{Substate, WriteableSubstateStore};
 use crate::ledger::*;
@@ -42,14 +42,6 @@ impl ReadableSubstateStore for InMemorySubstateStore {
             .map(|bytes| scrypto_decode(bytes).unwrap())
     }
 
-    fn get_child_substate(&self, address: &[u8], key: &[u8]) -> Option<Substate> {
-        let mut id = address.to_vec();
-        id.extend(key.to_vec());
-        self.substates
-            .get(&id)
-            .map(|bytes| scrypto_decode(bytes).unwrap())
-    }
-
     fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
         self.substates
             .get(address)
@@ -74,12 +66,6 @@ impl WriteableSubstateStore for InMemorySubstateStore {
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
         self.substates
             .insert(address.to_vec(), scrypto_encode(&phys_id));
-    }
-
-    fn put_child_substate(&mut self, address: &[u8], key: &[u8], substate: Substate) {
-        let mut id = address.to_vec();
-        id.extend(key.to_vec());
-        self.substates.insert(id, scrypto_encode(&substate));
     }
 
     fn set_epoch(&mut self, epoch: u64) {
