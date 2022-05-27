@@ -13,9 +13,9 @@ use crate::engine::SystemApi;
 use crate::model::Component;
 use crate::wasm::{InvokeError, ScryptoRuntime};
 
-pub struct RadixEngineScryptoRuntime<'a, S: SystemApi> {
+pub struct RadixEngineScryptoRuntime<'s, S: SystemApi> {
     this: ScryptoActorInfo,
-    system_api: &'a mut S,
+    system_api: &'s mut S,
     tbd_limit: u32,
     tbd_balance: u32,
 }
@@ -170,16 +170,16 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
         .map_err(InvokeError::RuntimeError)
     }
 
-    fn use_tbd(&mut self, amount: u32) -> Result<(), InvokeError> {
-        if self.tbd_balance >= amount {
-            self.tbd_balance -= amount;
+    fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError> {
+        if self.tbd_balance >= tbd {
+            self.tbd_balance -= tbd;
             Ok(())
         } else {
             self.tbd_balance = 0;
             Err(InvokeError::OutOfTbd {
                 limit: self.tbd_limit,
                 balance: self.tbd_balance,
-                required: amount,
+                required: tbd,
             })
         }
     }

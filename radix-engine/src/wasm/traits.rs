@@ -1,3 +1,4 @@
+use sbor::rust::boxed::Box;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
@@ -5,17 +6,25 @@ use scrypto::values::ScryptoValue;
 use crate::wasm::errors::*;
 use crate::wasm::WasmValidationError;
 
+/// Represents a parsed Scrypto module (may be shared).
+pub trait ScryptoModule<'r, I>
+where
+    I: ScryptoInstance,
+{
+    /// Instantiate this module with the given runtime object
+    fn instantiate(&self, runtime: Box<dyn ScryptoRuntime + 'r>) -> I;
+}
+
 /// Represents an instantiated, invoke-able scrypto module.
-pub trait ScryptoModule {
+pub trait ScryptoInstance {
     /// Invokes an export defined in this module.
     ///
     /// For simplicity, we require the export to have a signature of `f(u32) -> u32` where
     /// both argument and return are a pointer to a `ScryptoValue`.
-    fn invoke_export<R: ScryptoRuntime>(
-        &self,
+    fn invoke_export(
+        &mut self,
         name: &str,
         input: &ScryptoValue,
-        runtime: &mut R,
     ) -> Result<ScryptoValue, InvokeError>;
 
     /// Lists all functions exported by this module.
@@ -29,22 +38,30 @@ pub trait ScryptoModule {
 pub trait ScryptoRuntime {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError>;
 
-    fn use_tbd(&mut self, amount: u32) -> Result<(), InvokeError>;
+    fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError>;
 }
 
 /// Trait for validating scrypto modules.
-pub trait ScryptoWasmValidator {
+pub trait ScryptoValidator {
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
 }
 
 /// Trait for instrumenting, a.k.a. metering, scrypto modules.
-pub trait ScryptoWasmInstrumenter {
+pub trait ScryptoInstrumenter {
     fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError>;
 }
 
-/// Trait for instantiating scrypto modules.
-pub trait ScryptoWasmExecutor<T: ScryptoModule> {
-    fn instantiate(&mut self, code: &[u8]) -> T;
+/// Trait for loading scrypto modules.
+pub trait ScryptoLoader<
+    'l, /* Loader lifetime */
+    'r, /* Runtime lifetime */
+    M,  /* Module generic type */
+    I,  /* Instance generic type */
+> where
+    M: ScryptoModule<'r, I>,
+    I: ScryptoInstance,
+{
+    fn load(&'l mut self, code: &[u8]) -> M;
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
@@ -67,16 +84,16 @@ impl ScryptoRuntime for NopScryptoRuntime {
         Ok(ScryptoValue::unit())
     }
 
-    fn use_tbd(&mut self, amount: u32) -> Result<(), InvokeError> {
-        if self.tbd_balance >= amount {
-            self.tbd_balance -= amount;
+    fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError> {
+        if self.tbd_balance >= tbd {
+            self.tbd_balance -= tbd;
             Ok(())
         } else {
             self.tbd_balance = 0;
             Err(InvokeError::OutOfTbd {
                 limit: self.tbd_limit,
                 balance: self.tbd_balance,
-                required: amount,
+                required: tbd,
             })
         }
     }

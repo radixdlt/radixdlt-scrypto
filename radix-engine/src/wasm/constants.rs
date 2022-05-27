@@ -1,7 +1,7 @@
-pub const ENGINE_FUNCTION_INDEX: usize = 0;
-pub const ENGINE_FUNCTION_NAME: &str = "radix_engine";
-pub const TBD_FUNCTION_INDEX: usize = 1;
-pub const TBD_FUNCTION_NAME: &str = "gas";
+pub const RADIX_ENGINE_FUNCTION_INDEX: usize = 0;
+pub const RADIX_ENGINE_FUNCTION_NAME: &str = "radix_engine";
+pub const USE_TBD_FUNCTION_INDEX: usize = 1;
+pub const USE_TBD_FUNCTION_NAME: &str = "gas";
 
 pub const MODULE_ENV_NAME: &str = "env";
 

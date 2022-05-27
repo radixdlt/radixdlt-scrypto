@@ -75,3 +75,6 @@ impl fmt::Display for InvokeError {
 }
 
 impl HostError for InvokeError {}
+
+#[cfg(not(feature = "alloc"))]
+impl std::error::Error for InvokeError {}

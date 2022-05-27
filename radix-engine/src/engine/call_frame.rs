@@ -19,7 +19,6 @@ use self::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
-use crate::wasm::*;
 
 macro_rules! re_debug {
     ($proc:expr, $($args: expr),+) => {
@@ -53,7 +52,12 @@ pub enum ConsumedSNodeState {
 pub enum BorrowedSNodeState {
     AuthZone(AuthZone),
     Worktop(Worktop),
-    Scrypto(ScryptoActorInfo, Vec<u8>, String, Option<Component>),
+    Scrypto(
+        ScryptoActorInfo,
+        ValidatedPackage,
+        String,
+        Option<Component>,
+    ),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, Bucket),
     Proof(ProofId, Proof),
@@ -131,9 +135,12 @@ impl LoadedSNodeState {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                BorrowedSNodeState::Scrypto(info, code, export_name, s) => {
-                    SNodeState::Scrypto(info.clone(), code.clone(), export_name.clone(), s.as_mut())
-                }
+                BorrowedSNodeState::Scrypto(info, package, export_name, s) => SNodeState::Scrypto(
+                    info.clone(),
+                    package.clone(),
+                    export_name.clone(),
+                    s.as_mut(),
+                ),
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
@@ -151,7 +158,12 @@ pub enum SNodeState<'a> {
     PackageStatic,
     AuthZoneRef(&'a mut AuthZone),
     Worktop(&'a mut Worktop),
-    Scrypto(ScryptoActorInfo, Vec<u8>, String, Option<&'a mut Component>),
+    Scrypto(
+        ScryptoActorInfo,
+        ValidatedPackage,
+        String,
+        Option<&'a mut Component>,
+    ),
     ResourceStatic,
     ResourceRef(ResourceAddress, &'a mut ResourceManager),
     BucketRef(BucketId, &'a mut Bucket),
@@ -276,8 +288,8 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
     }
 
     /// Runs the given export within this process.
-    pub fn run(
-        &mut self,
+    pub fn run<'s>(
+        &'s mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'r>,
         call_data: ScryptoValue,
@@ -309,7 +321,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
             SNodeState::Worktop(worktop) => worktop
                 .main(call_data, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, code, export_name, component_state) => {
+            SNodeState::Scrypto(actor, package, export_name, component_state) => {
                 let component_state = if let Some(component) = component_state {
                     let component_address = actor.component_address().unwrap().clone();
                     let data = ScryptoValue::from_slice(component.state()).unwrap();
@@ -328,20 +340,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 };
                 self.component = component_state;
 
-                let mut engine = WasmiEngine::new();
-                let mut runtime =
-                    RadixEngineScryptoRuntime::new(actor, self, CALL_FUNCTION_TBD_LIMIT);
-                let result = engine
-                    .instantiate(&code)
-                    .invoke_export(&export_name, &call_data, &mut runtime)
-                    .map_err(|e| match e {
-                        // Flatten error code for more readable transaction receipt
-                        InvokeError::RuntimeError(e) => e,
-                        e @ _ => RuntimeError::InvokeError(e.into()),
-                    });
-                let tbd_used = runtime.tbd_used();
-                re_debug!(self, "TBD used: {}, result: {:?}", tbd_used, result);
-                result
+                package.invoke(actor, export_name, call_data, self)
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
                 .map_err(RuntimeError::ResourceManagerError),
@@ -455,7 +454,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                                     package_address.clone(),
                                     blueprint_name.clone(),
                                 ),
-                                package.instrumented_code().to_vec(),
+                                package.clone(),
                                 export_name.clone(),
                                 None,
                             )),
@@ -502,7 +501,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                                     blueprint_name,
                                     component_address.clone(),
                                 ),
-                                package.instrumented_code().to_vec(),
+                                package.clone(),
                                 export_name,
                                 Some(component),
                             )),
