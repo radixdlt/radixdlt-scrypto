@@ -231,7 +231,7 @@ impl WasmEngine<WasmiInstance> for WasmiEngine {
             .enforce_functions_limit()?
             .enforce_functions_limit()?
             .enforce_locals_limit()?
-            .inject_computation_metering()?
+            .inject_instruction_metering()?
             .inject_stack_metering()?
             .to_bytes()?;
 

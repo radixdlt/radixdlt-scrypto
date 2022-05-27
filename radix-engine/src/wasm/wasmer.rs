@@ -22,6 +22,9 @@ pub struct WasmerModule {
 
 pub struct WasmerInstance {
     instance: Instance,
+    // Runtime pointer is shared by the instance and every function that requires `env`.
+    // It is updated every time the `invoke_export` is called and `Arc` ensures that the
+    // update applies to all the owners.
     runtime_ptr: Arc<Mutex<usize>>,
 }
 
@@ -109,16 +112,17 @@ impl WasmerModule {
     fn instantiate(&self) -> WasmerInstance {
         // native functions
         fn radix_engine(env: &WasmerInstanceEnv, input_ptr: i32) -> Result<i32, RuntimeError> {
-            let ptr = env.runtime_ptr.lock().unwrap();
-            let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             let instance = unsafe { env.instance.get_unchecked() };
-
             let input = read_value(&instance, input_ptr as usize)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            let output = runtime
-                .main(input)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+            let output = {
+                let ptr = env.runtime_ptr.lock().unwrap();
+                let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+                runtime
+                    .main(input)
+                    .map_err(|e| RuntimeError::user(Box::new(e)))?
+            };
 
             send_value(&instance, &output)
                 .map(|ptr| ptr as i32)
@@ -128,7 +132,6 @@ impl WasmerModule {
         fn use_tbd(env: &WasmerInstanceEnv, tbd: i32) -> Result<(), RuntimeError> {
             let ptr = env.runtime_ptr.lock().unwrap();
             let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
-
             runtime
                 .use_tbd(tbd as u32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
@@ -237,7 +240,7 @@ impl WasmEngine<WasmerInstance> for WasmerEngine {
             .enforce_functions_limit()?
             .enforce_functions_limit()?
             .enforce_locals_limit()?
-            .inject_computation_metering()?
+            .inject_instruction_metering()?
             .inject_stack_metering()?
             .to_bytes()?;
 

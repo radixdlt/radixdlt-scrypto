@@ -162,7 +162,7 @@ impl ScryptoValidator {
         Ok(self)
     }
 
-    pub fn inject_computation_metering(mut self) -> Result<Self, ValidateError> {
+    pub fn inject_instruction_metering(mut self) -> Result<Self, ValidateError> {
         self.module = gas_metering::inject(
             self.module,
             &gas_metering::ConstantCostRules::new(INSTRUCTION_COST, MEMORY_GROW_COST),
