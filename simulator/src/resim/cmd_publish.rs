@@ -41,6 +41,7 @@ impl Publish {
             let mut wasm_engine = default_wasm_engine();
             let mut executor =
                 TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
+            let package = extract_package(code).unwrap();
             let transaction = TransactionBuilder::new()
                 .publish_package(Package::new(code))
                 .build_with_no_nonce();
@@ -72,7 +73,8 @@ impl Publish {
         let mut wasm_engine = default_wasm_engine();
         let mut executor =
             TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
-        match executor.publish_package(Package::new(code)) {
+        let package = extract_package(code).map_err(Error::PackageValidationError)?;
+        match executor.publish_package(package) {
             Ok(package_address) => {
                 writeln!(
                     out,

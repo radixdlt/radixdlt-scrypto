@@ -1,9 +1,11 @@
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto_abi::{Function, Method};
 
 use crate::buffer::*;
 use crate::core::*;
@@ -17,19 +19,8 @@ pub enum PackageFunction {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Package {
-    code: Vec<u8>,
-}
-
-impl Package {
-    pub fn new<T: AsRef<[u8]>>(code: T) -> Self {
-        Package {
-            code: code.as_ref().to_vec(),
-        }
-    }
-
-    pub fn code(&self) -> &[u8] {
-        &self.code
-    }
+    pub code: Vec<u8>,
+    pub blueprints: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.

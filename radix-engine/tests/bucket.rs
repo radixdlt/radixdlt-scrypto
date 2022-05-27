@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::*;
 use radix_engine::ledger::*;
-use radix_engine::model::{BucketError, ResourceContainerError};
+use radix_engine::model::{extract_package, BucketError, ResourceContainerError};
 use radix_engine::transaction::*;
 use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
@@ -16,7 +16,7 @@ fn test_bucket() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (_, _, account) = executor.new_account();
-    let package = Package::new(compile_package!(format!("./tests/{}", "bucket")));
+    let package = extract_package(compile_package!(format!("./tests/{}", "bucket"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()
@@ -58,7 +58,7 @@ fn test_bucket_of_badges() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (_, _, account) = executor.new_account();
-    let package = Package::new(compile_package!(format!("./tests/{}", "bucket")));
+    let package = extract_package(compile_package!(format!("./tests/{}", "bucket"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()

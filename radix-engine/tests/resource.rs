@@ -1,6 +1,6 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
-use radix_engine::model::ResourceManagerError;
+use radix_engine::model::{extract_package, ResourceManagerError};
 use radix_engine::transaction::*;
 use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
@@ -13,7 +13,7 @@ fn test_resource_manager() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (pk, sk, account) = executor.new_account();
-    let package = Package::new(compile_package!(format!("./tests/{}", "resource")));
+    let package = extract_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     // Act
@@ -47,7 +47,7 @@ fn mint_with_bad_granularity_should_fail() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (pk, sk, account) = executor.new_account();
-    let package = Package::new(compile_package!(format!("./tests/{}", "resource")));
+    let package = extract_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     // Act
@@ -80,7 +80,7 @@ fn mint_too_much_should_fail() {
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (pk, sk, account) = executor.new_account();
-    let package = Package::new(compile_package!(format!("./tests/{}", "resource")));
+    let package = extract_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
 
     // Act

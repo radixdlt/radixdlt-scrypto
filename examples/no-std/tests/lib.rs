@@ -2,6 +2,7 @@
 #![no_std]
 
 use radix_engine::ledger::*;
+use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
 use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
@@ -12,10 +13,9 @@ fn test_say_hello() {
     // Set up environment.
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, false);
-    let package_address = executor
-        .publish_package(Package::new(include_package!("no_std")))
-        .unwrap();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
+    let package = extract_package(include_package!("no_std").to_vec()).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     // Test the `say_hello` function.
     let transaction1 = TransactionBuilder::new()

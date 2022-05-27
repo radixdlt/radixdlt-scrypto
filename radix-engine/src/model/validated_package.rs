@@ -37,48 +37,17 @@ impl ValidatedPackage {
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        let code = package.code().to_vec();
-
-        // stateless runtime
-        let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
-        let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
-
         // validate wasm
-        wasm_engine.validate(&code)?;
+        wasm_engine.validate(&package.code)?;
 
         // instrument wasm
         wasm_engine
-            .instrument(&code)
+            .instrument(&package.code)
             .map_err(|_| WasmValidationError::FailedToInstrumentCode)?;
 
-        // TODO replace this with static ABIs
-        // export blueprint ABI
-        let mut blueprint_abis = HashMap::new();
-        let exports: Vec<String> = wasm_engine
-            .instantiate(&code)
-            .function_exports()
-            .into_iter()
-            .filter(|e| e.ends_with("_abi") && e.len() > 4)
-            .collect();
-        for method_name in exports {
-            let return_data = wasm_engine
-                .instantiate(&code)
-                .invoke_export(&method_name, &ScryptoValue::unit(), &mut runtime_boxed)
-                .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
-
-            let abi: (Type, Vec<Function>, Vec<Method>) = scrypto_decode(&return_data.raw)
-                .map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
-
-            if let Type::Struct { name, fields: _ } = &abi.0 {
-                blueprint_abis.insert(name.clone(), abi);
-            } else {
-                return Err(WasmValidationError::InvalidBlueprintAbi);
-            }
-        }
-
         Ok(Self {
-            code,
-            blueprint_abis,
+            code: package.code,
+            blueprint_abis: package.blueprints,
         })
     }
 

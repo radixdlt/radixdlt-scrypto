@@ -38,18 +38,15 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    let system_package = ValidatedPackage::new(
-        scrypto::prelude::Package::new(include_bytes!("../../../assets/system.wasm").to_vec()),
-        wasm_engine,
-    )
-    .unwrap();
-    track.create_uuid_value_2(SYSTEM_PACKAGE, system_package);
-    let account_package = ValidatedPackage::new(
-        scrypto::prelude::Package::new(include_bytes!("../../../assets/account.wasm").to_vec()),
-        wasm_engine,
-    )
-    .unwrap();
-    track.create_uuid_value_2(ACCOUNT_PACKAGE, account_package);
+    let system_package =
+        extract_package(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
+    let validated_system_package = ValidatedPackage::new(system_package, wasm_engine).unwrap();
+    track.create_uuid_value_2(SYSTEM_PACKAGE, validated_system_package);
+
+    let account_package =
+        extract_package(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
+    let validated_account_package = ValidatedPackage::new(account_package, wasm_engine).unwrap();
+    track.create_uuid_value_2(ACCOUNT_PACKAGE, validated_account_package);
 
     // Radix token resource address
     let mut metadata = HashMap::new();

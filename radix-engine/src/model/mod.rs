@@ -4,13 +4,14 @@ mod bucket;
 mod component;
 mod method_authorization;
 mod non_fungible;
-mod package;
+mod package_extractor;
 mod proof;
 mod resource;
 mod resource_manager;
 mod system;
 mod transaction;
 mod transaction_processor;
+mod validated_package;
 mod validated_transaction;
 mod vault;
 mod worktop;
@@ -24,7 +25,7 @@ pub use method_authorization::{
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization, MethodAuthorizationError,
 };
 pub use non_fungible::NonFungible;
-pub use package::{PackageError, ValidatedPackage};
+pub use package_extractor::extract_package;
 pub use proof::*;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
@@ -33,6 +34,7 @@ pub use transaction::{Instruction, SignedTransaction, Transaction};
 pub use transaction_processor::{
     TransactionProcessor, TransactionProcessorError, TransactionProcessorFunction,
 };
+pub use validated_package::{PackageError, ValidatedPackage};
 pub use validated_transaction::{ValidatedInstruction, ValidatedTransaction};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};

@@ -1,5 +1,5 @@
 use radix_engine::ledger::*;
-use radix_engine::model::{Component, Receipt, SignedTransaction};
+use radix_engine::model::{extract_package, Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
 use radix_engine::wasm::WasmEngine;
 use radix_engine::wasm::WasmInstance;
@@ -59,7 +59,7 @@ where
     }
 
     pub fn publish_package(&mut self, name: &str) -> PackageAddress {
-        let package = scrypto::component::Package::new(Self::compile(name));
+        let package = extract_package(Self::compile(name)).unwrap();
         self.executor.publish_package(package).unwrap()
     }
 

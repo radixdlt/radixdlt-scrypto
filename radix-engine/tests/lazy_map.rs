@@ -1,5 +1,6 @@
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
+use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
 use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
@@ -11,12 +12,8 @@ fn dangling_lazy_map_should_fail() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package_address = executor
-        .publish_package(Package::new(compile_package!(format!(
-            "./tests/{}",
-            "lazy_map"
-        ))))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -40,12 +37,8 @@ fn can_insert_in_child_nodes() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package_address = executor
-        .publish_package(Package::new(compile_package!(format!(
-            "./tests/{}",
-            "lazy_map"
-        ))))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -64,12 +57,8 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package_address = executor
-        .publish_package(Package::new(compile_package!(format!(
-            "./tests/{}",
-            "lazy_map"
-        ))))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -92,12 +81,8 @@ fn cyclic_map_fails_execution() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package_address = executor
-        .publish_package(Package::new(compile_package!(format!(
-            "./tests/{}",
-            "lazy_map"
-        ))))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -123,12 +108,8 @@ fn self_cyclic_map_fails_execution() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package_address = executor
-        .publish_package(Package::new(compile_package!(format!(
-            "./tests/{}",
-            "lazy_map"
-        ))))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -154,12 +135,8 @@ fn cannot_remove_lazy_maps() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package_address = executor
-        .publish_package(Package::new(compile_package!(format!(
-            "./tests/{}",
-            "lazy_map"
-        ))))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
     let transaction = TransactionBuilder::new()
         .call_function(
             package_address,
@@ -192,12 +169,8 @@ fn cannot_overwrite_lazy_maps() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package_address = executor
-        .publish_package(Package::new(compile_package!(format!(
-            "./tests/{}",
-            "lazy_map"
-        ))))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
     let transaction = TransactionBuilder::new()
         .call_function(
             package_address,
@@ -230,12 +203,8 @@ fn create_lazy_map_and_get() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package_address = executor
-        .publish_package(Package::new(compile_package!(format!(
-            "./tests/{}",
-            "lazy_map"
-        ))))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
@@ -258,12 +227,8 @@ fn create_lazy_map_and_put() {
     let mut substate_store = InMemorySubstateStore::new();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package_address = executor
-        .publish_package(Package::new(compile_package!(format!(
-            "./tests/{}",
-            "lazy_map"
-        ))))
-        .unwrap();
+    let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
+    let package_address = executor.publish_package(package).unwrap();
 
     // Act
     let transaction = TransactionBuilder::new()
