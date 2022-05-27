@@ -7,7 +7,7 @@ use radix_engine::model::extract_package;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::default_wasm_engine;
 use radix_engine::wasm::InvokeError;
-use radix_engine::wasm::WasmValidationError::NoMemoryExport;
+use radix_engine::wasm::ValidateError::NoMemoryExport;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use test_runner::{wat2wasm, TestRunner};
@@ -44,7 +44,7 @@ fn missing_memory_should_cause_error() {
     let error = receipt.result.expect_err("Should be error.");
     assert_eq!(
         error,
-        RuntimeError::PackageError(PackageError::WasmValidationError(NoMemoryExport))
+        RuntimeError::PackageError(PackageError::ValidateError(NoMemoryExport))
     );
 }
 

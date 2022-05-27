@@ -14,6 +14,8 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
+use super::ScryptoValidator;
+
 pub struct WasmerModule {
     module: Module,
 }
@@ -220,31 +222,37 @@ impl WasmerEngine {
 }
 
 impl WasmEngine<WasmerInstance> for WasmerEngine {
-    fn validate(&mut self, _code: &[u8]) -> Result<(), WasmValidationError> {
-        Ok(())
-    }
-
-    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError> {
+    fn validate(&mut self, code: &[u8]) -> Result<(), ValidateError> {
         let code_hash = hash(code);
+        if self.modules.contains_key(&code_hash) {
+            return Ok(());
+        }
 
-        let instrumented = code;
+        let validated_code = ScryptoValidator::init(code)?
+            .reject_floating_point()?
+            .reject_start_function()?
+            .check_imports()?
+            .check_exports()?
+            .check_memory()?
+            .enforce_functions_limit()?
+            .enforce_functions_limit()?
+            .enforce_locals_limit()?
+            .inject_computation_metering()?
+            .inject_stack_metering()?
+            .to_bytes()?;
 
-        self.modules.insert(
-            code_hash,
-            WasmerModule {
-                module: Module::new(&self.store, instrumented)
-                    .expect("Failed to parse wasm module"),
-            },
-        );
+        let module = WasmerModule {
+            module: Module::new(&self.store, validated_code).expect("Failed to parse wasm code"),
+        };
 
+        self.modules.insert(code_hash, module);
         Ok(())
     }
 
     fn instantiate(&mut self, code: &[u8]) -> WasmerInstance {
         let code_hash = hash(code);
         if !self.modules.contains_key(&code_hash) {
-            self.instrument(code)
-                .expect("Failed to instrument the code");
+            self.validate(code).expect("Failed to validate wasm code");
         }
         let module = self.modules.get(&code_hash).unwrap();
         module.instantiate()

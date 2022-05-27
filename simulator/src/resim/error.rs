@@ -25,7 +25,7 @@ pub enum Error {
 
     CargoError(CargoExecutionError),
 
-    PackageValidationError(WasmValidationError),
+    PackageValidationError(ValidateError),
 
     TransactionConstructionError(CallWithAbiError),
 

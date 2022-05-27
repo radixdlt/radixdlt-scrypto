@@ -23,7 +23,7 @@ pub struct ValidatedPackage {
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     BlueprintNotFound,
-    WasmValidationError(WasmValidationError),
+    ValidateError(ValidateError),
     MethodNotFound(String),
 }
 
@@ -32,18 +32,13 @@ impl ValidatedPackage {
     pub fn new<'w, W, I>(
         package: scrypto::prelude::Package,
         wasm_engine: &'w mut W,
-    ) -> Result<Self, WasmValidationError>
+    ) -> Result<Self, ValidateError>
     where
         W: WasmEngine<I>,
         I: WasmInstance,
     {
         // validate wasm
         wasm_engine.validate(&package.code)?;
-
-        // instrument wasm
-        wasm_engine
-            .instrument(&package.code)
-            .map_err(|_| WasmValidationError::FailedToInstrumentCode)?;
 
         Ok(Self {
             code: package.code,
@@ -86,7 +81,7 @@ impl ValidatedPackage {
         match function {
             PackageFunction::Publish(bytes) => {
                 let package = ValidatedPackage::new(bytes, system_api.wasm_engine())
-                    .map_err(PackageError::WasmValidationError)?;
+                    .map_err(PackageError::ValidateError)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
             }
