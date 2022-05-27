@@ -41,5 +41,9 @@ pub fn export_abi_by_component<S: ReadableSubstateStore>(
         .get_decoded_substate(&component_address)
         .map(|(component, _)| component)
         .ok_or(RuntimeError::ComponentNotFound(component_address))?;
-    export_abi(substate_store, component.package_address(), component.blueprint_name())
+    export_abi(
+        substate_store,
+        component.package_address(),
+        component.blueprint_name(),
+    )
 }
