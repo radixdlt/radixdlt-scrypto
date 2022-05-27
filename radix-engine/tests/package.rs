@@ -7,7 +7,7 @@ use radix_engine::model::extract_package;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::default_wasm_engine;
 use radix_engine::wasm::InvokeError;
-use radix_engine::wasm::ValidateError::NoMemoryExport;
+use radix_engine::wasm::PrepareError::NoMemoryExport;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use test_runner::{wat2wasm, TestRunner};

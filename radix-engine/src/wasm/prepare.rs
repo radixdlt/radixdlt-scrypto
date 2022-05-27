@@ -1,25 +1,32 @@
 use sbor::rust::vec::Vec;
 use wasm_instrument::parity_wasm::{
     self,
-    elements::{Instruction::*, Module, Type, ValueType},
+    elements::{External, Instruction::*, Internal, Module, Type, ValueType},
 };
 use wasm_instrument::{gas_metering, inject_stack_limiter};
+use wasmi_validation::{validate_module, PlainValidator};
 
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 
-pub struct ScryptoValidator {
+pub struct ScryptoModule {
     module: Module,
 }
 
-impl ScryptoValidator {
-    pub fn init(code: &[u8]) -> Result<Self, ValidateError> {
+impl ScryptoModule {
+    pub fn init(code: &[u8]) -> Result<Self, PrepareError> {
+        // deserialize
         let module = parity_wasm::deserialize_buffer(code)
-            .map_err(|_| ValidateError::DeserializationError)?;
+            .map_err(|_| PrepareError::DeserializationError)?;
+
+        // validate
+        validate_module::<PlainValidator>(&module, ())
+            .map_err(|_| PrepareError::ValidationError)?;
+
         Ok(Self { module })
     }
 
-    pub fn reject_floating_point(self) -> Result<Self, ValidateError> {
+    pub fn reject_floating_point(self) -> Result<Self, PrepareError> {
         if let Some(code) = self.module.code_section() {
             for op in code.bodies().iter().flat_map(|body| body.code().elements()) {
                 match op {
@@ -91,7 +98,7 @@ impl ScryptoValidator {
                     | I64TruncUF64
                     | I32ReinterpretF32
                     | I64ReinterpretF64 => {
-                        return Err(ValidateError::FloatingPointNotAllowed);
+                        return Err(PrepareError::FloatingPointNotAllowed);
                     }
                     _ => {}
                 }
@@ -113,7 +120,7 @@ impl ScryptoValidator {
                                 .chain(func.results())
                                 .any(|&typ| typ == ValueType::F32 || typ == ValueType::F64)
                             {
-                                return Err(ValidateError::FloatingPointNotAllowed);
+                                return Err(PrepareError::FloatingPointNotAllowed);
                             }
                         }
                     }
@@ -124,62 +131,96 @@ impl ScryptoValidator {
         Ok(self)
     }
 
-    pub fn reject_start_function(self) -> Result<Self, ValidateError> {
+    pub fn reject_start_function(self) -> Result<Self, PrepareError> {
         if self.module.start_section().is_some() {
-            Err(ValidateError::StartFunctionNotAllowed)
+            Err(PrepareError::StartFunctionNotAllowed)
         } else {
             Ok(self)
         }
     }
 
-    pub fn check_imports(self) -> Result<Self, ValidateError> {
+    pub fn check_imports(self) -> Result<Self, PrepareError> {
+        // only allow `env::radix_engine` import
+
+        if let Some(sec) = self.module.import_section() {
+            if sec.entries().len() > 1 {
+                return Err(PrepareError::InvalidImports);
+            }
+
+            if let Some(entry) = sec.entries().get(0) {
+                if entry.module() != MODULE_ENV_NAME
+                    || entry.field() != RADIX_ENGINE_FUNCTION_NAME
+                    || !matches!(entry.external(), External::Function(_))
+                {
+                    return Err(PrepareError::InvalidImports);
+                }
+            }
+        }
+
+        Ok(self)
+    }
+
+    pub fn check_memory(self) -> Result<Self, PrepareError> {
+        // Must have exactly 1 memory definition
+        // TODO: consider if we can benefit from shared external memory instead of internal ones.
+        let memory_section = self.module.memory_section().ok_or(PrepareError::NoMemory)?;
+
+        let memory = match memory_section.entries().len() {
+            0 => Err(PrepareError::NoMemory),
+            1 => Ok(memory_section.entries()[0]),
+            _ => Err(PrepareError::TooManyMemories),
+        }?;
+        if memory.limits().initial() != 0 && memory.limits().maximum().is_some() {
+            return Err(PrepareError::NonStandardMemory);
+        }
+
+        if !self
+            .module
+            .export_section()
+            .ok_or(PrepareError::NoMemoryExport)?
+            .entries()
+            .iter()
+            .any(|e| e.field() == EXPORT_MEMORY && e.internal() == &Internal::Memory(0))
+        {
+            return Err(PrepareError::NoMemoryExport);
+        }
+
+        Ok(self)
+    }
+
+    pub fn enforce_initial_memory_limit(self) -> Result<Self, PrepareError> {
         // TODO
         Ok(self)
     }
 
-    pub fn check_exports(self) -> Result<Self, ValidateError> {
+    pub fn enforce_functions_limit(self) -> Result<Self, PrepareError> {
         // TODO
         Ok(self)
     }
 
-    pub fn check_memory(self) -> Result<Self, ValidateError> {
+    pub fn enforce_locals_limit(self) -> Result<Self, PrepareError> {
         // TODO
         Ok(self)
     }
 
-    pub fn enforce_initial_memory_limit(self) -> Result<Self, ValidateError> {
-        // TODO
-        Ok(self)
-    }
-
-    pub fn enforce_functions_limit(self) -> Result<Self, ValidateError> {
-        // TODO
-        Ok(self)
-    }
-
-    pub fn enforce_locals_limit(self) -> Result<Self, ValidateError> {
-        // TODO
-        Ok(self)
-    }
-
-    pub fn inject_instruction_metering(mut self) -> Result<Self, ValidateError> {
+    pub fn inject_instruction_metering(mut self) -> Result<Self, PrepareError> {
         self.module = gas_metering::inject(
             self.module,
             &gas_metering::ConstantCostRules::new(INSTRUCTION_COST, MEMORY_GROW_COST),
             MODULE_ENV_NAME,
         )
-        .map_err(|_| ValidateError::FailedToInjectInstructionMetering)?;
+        .map_err(|_| PrepareError::FailedToInjectInstructionMetering)?;
 
         Ok(self)
     }
 
-    pub fn inject_stack_metering(mut self) -> Result<Self, ValidateError> {
+    pub fn inject_stack_metering(mut self) -> Result<Self, PrepareError> {
         self.module = inject_stack_limiter(self.module, MAX_STACK_DEPTH)
-            .map_err(|_| ValidateError::FailedToInjectStackMetering)?;
+            .map_err(|_| PrepareError::FailedToInjectStackMetering)?;
         Ok(self)
     }
 
-    pub fn to_bytes(self) -> Result<Vec<u8>, ValidateError> {
-        parity_wasm::serialize(self.module).map_err(|_| ValidateError::SerializationError)
+    pub fn to_bytes(self) -> Result<Vec<u8>, PrepareError> {
+        parity_wasm::serialize(self.module).map_err(|_| PrepareError::SerializationError)
     }
 }

@@ -4,7 +4,7 @@ use sbor::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
 use crate::wasm::errors::*;
-use crate::wasm::ValidateError;
+use crate::wasm::PrepareError;
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {
@@ -33,7 +33,7 @@ pub trait WasmInstance {
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
 pub trait WasmEngine<I: WasmInstance> {
     /// Validate a Scrypto module.
-    fn validate(&mut self, code: &[u8]) -> Result<(), ValidateError>;
+    fn validate(&mut self, code: &[u8]) -> Result<(), PrepareError>;
 
     /// Instantiate a Scrypto module.
     fn instantiate(&mut self, code: &[u8]) -> I;

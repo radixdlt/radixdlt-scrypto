@@ -14,7 +14,7 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
-use super::ScryptoValidator;
+use super::ScryptoModule;
 
 pub struct WasmerModule {
     module: Module,
@@ -225,17 +225,16 @@ impl WasmerEngine {
 }
 
 impl WasmEngine<WasmerInstance> for WasmerEngine {
-    fn validate(&mut self, code: &[u8]) -> Result<(), ValidateError> {
+    fn validate(&mut self, code: &[u8]) -> Result<(), PrepareError> {
         let code_hash = hash(code);
         if self.modules.contains_key(&code_hash) {
             return Ok(());
         }
 
-        let validated_code = ScryptoValidator::init(code)?
+        let validated_code = ScryptoModule::init(code)?
             .reject_floating_point()?
             .reject_start_function()?
             .check_imports()?
-            .check_exports()?
             .check_memory()?
             .enforce_functions_limit()?
             .enforce_functions_limit()?

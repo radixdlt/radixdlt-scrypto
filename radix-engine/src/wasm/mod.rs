@@ -1,7 +1,7 @@
 mod constants;
 mod errors;
+mod prepare;
 mod traits;
-mod validate;
 #[cfg(not(feature = "alloc"))]
 mod wasmer;
 mod wasmi;
@@ -11,8 +11,8 @@ pub use self::wasmer::*;
 pub use self::wasmi::*;
 pub use constants::*;
 pub use errors::*;
+pub use prepare::*;
 pub use traits::*;
-pub use validate::*;
 
 #[cfg(feature = "wasmer")]
 pub fn default_wasm_engine() -> WasmerEngine {

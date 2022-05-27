@@ -23,7 +23,7 @@ pub struct ValidatedPackage {
 pub enum PackageError {
     InvalidRequestData(DecodeError),
     BlueprintNotFound,
-    ValidateError(ValidateError),
+    ValidateError(PrepareError),
     MethodNotFound(String),
 }
 
@@ -32,12 +32,11 @@ impl ValidatedPackage {
     pub fn new<'w, W, I>(
         package: scrypto::prelude::Package,
         wasm_engine: &'w mut W,
-    ) -> Result<Self, ValidateError>
+    ) -> Result<Self, PrepareError>
     where
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        // validate wasm
         wasm_engine.validate(&package.code)?;
 
         Ok(Self {

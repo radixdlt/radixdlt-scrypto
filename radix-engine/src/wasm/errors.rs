@@ -7,15 +7,27 @@ use crate::engine::RuntimeError;
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]
-pub enum ValidateError {
+pub enum PrepareError {
     /// Failed to deserialize.
+    /// See https://webassembly.github.io/spec/core/syntax/index.html
     DeserializationError,
+    /// Failed to validate
+    /// See https://webassembly.github.io/spec/core/valid/index.html
+    ValidationError,
     /// Failed to serialize.
     SerializationError,
     /// The wasm module contains a start function.
     StartFunctionNotAllowed,
     /// The wasm module uses float points.
     FloatingPointNotAllowed,
+    /// Invalid imports
+    InvalidImports,
+    /// The wasm module has no memory definition.
+    NoMemory,
+    /// The wasm module has too many memory definitions.
+    TooManyMemories,
+    /// Invalid memory definition.
+    NonStandardMemory,
     /// The wasm module does not have the `memory` export.
     NoMemoryExport,
     /// The wasm module does not have the `scrypto_alloc` export.
@@ -28,7 +40,7 @@ pub enum ValidateError {
     FailedToInjectStackMetering,
     /// TODO: remove
     FailedToExportBlueprintAbi,
-    // TODO: remove
+    /// TODO: remove
     InvalidBlueprintAbi,
 }
 
