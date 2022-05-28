@@ -9,7 +9,7 @@ use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::resource::{
-    ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod, VaultMethod,
+    ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod,
 };
 use scrypto::values::ScryptoValue;
 
@@ -186,13 +186,8 @@ impl ResourceManager {
         Ok(resource_manager)
     }
 
-    pub fn get_vault_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
-        let method: VaultMethod = match scrypto_decode(&arg.raw) {
-            Ok(m) => m,
-            Err(_) => return &MethodAuthorization::Unsupported,
-        };
-
-        match self.vault_method_table.get(method.name()) {
+    pub fn get_vault_auth(&self, method_name: &str) -> &MethodAuthorization {
+        match self.vault_method_table.get(method_name) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
             Some(Protected(auth_key)) => {

@@ -18,9 +18,17 @@ use crate::sfunctions;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultPutInput {
+    pub bucket: Bucket
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultTakeInput {
+    pub amount: Decimal
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum VaultMethod {
-    Put(Bucket),
-    Take(Decimal),
     TakeNonFungibles(BTreeSet<NonFungibleId>),
     CreateProof(),
     CreateProofByAmount(Decimal),
@@ -33,8 +41,6 @@ pub enum VaultMethod {
 impl VaultMethod {
     pub fn name(&self) -> &str {
         match self {
-            VaultMethod::Put(_) => "put",
-            VaultMethod::Take(_) => "take",
             VaultMethod::TakeNonFungibles(_) => "take_non_fungibles",
             VaultMethod::CreateProof() => "create_proof",
             VaultMethod::CreateProofByAmount(_) => "create_proof_by_amount",
@@ -68,14 +74,28 @@ impl Vault {
         vault
     }
 
+    pub fn put(&mut self, bucket: Bucket) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::VaultRef(self.0),
+            "put".to_string(),
+            scrypto_encode(&VaultPutInput { bucket }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    fn take_internal(&mut self, amount: Decimal) -> Bucket {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::VaultRef(self.0),
+            "take".to_string(),
+            scrypto_encode(&VaultTakeInput { amount }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
     sfunctions! {
         SNodeRef::VaultRef(self.0) => {
-            pub fn put(&mut self, bucket: Bucket) -> () {
-                VaultMethod::Put(bucket)
-            }
-            fn take_internal(&mut self, amount: Decimal) -> Bucket {
-                VaultMethod::Take(amount)
-            }
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
                 VaultMethod::TakeNonFungibles(non_fungible_ids.clone())
             }

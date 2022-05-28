@@ -11,6 +11,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
+use scrypto::prelude::{scrypto_decode, VaultMethod};
 use scrypto::resource::AuthZoneMethod;
 use scrypto::values::*;
 
@@ -292,6 +293,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
         &'s mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'r>,
+        method_name: &str,
         call_data: ScryptoValue,
     ) -> Result<
         (
@@ -304,7 +306,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
     > {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(self, "Run started: snode_ref = {:?}", snode_ref);
+        re_info!(self, "Run started: snode_ref = {:?} method_name = {}", snode_ref, method_name);
 
         // Execution
         let output = match snode {
@@ -364,7 +366,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 .main_consume(call_data)
                 .map_err(RuntimeError::ProofError),
             SNodeState::VaultRef(vault_id, _, vault) => vault
-                .main(vault_id, call_data, self)
+                .main(vault_id, method_name, call_data, self)
                 .map_err(RuntimeError::VaultError),
         }?;
 
@@ -383,6 +385,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
         if let Some(_) = &mut self.auth_zone {
             self.invoke_snode(
                 SNodeRef::AuthZoneRef,
+                "clear",
                 ScryptoValue::from_value(&AuthZoneMethod::Clear()),
             )?;
         }
@@ -404,12 +407,13 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
     pub fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
+        method_name: &str,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         let function = if let Value::Enum { name, .. } = &call_data.dom {
             name.clone()
         } else {
-            return Err(RuntimeError::InvalidInvocation);
+            method_name.to_string()
         };
 
         // Authorization and state load
@@ -608,7 +612,20 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
-                let method_auth = resource_manager.get_vault_auth(&call_data);
+
+                let method_name = match method_name {
+                    "" => {
+                        let method: VaultMethod = match scrypto_decode(&call_data.raw) {
+                            Ok(m) => m,
+                            Err(_) => panic!("should not get here"),
+                        };
+
+                        method.name().to_string()
+                    },
+                    _ => method_name.to_string(),
+                };
+
+                let method_auth = resource_manager.get_vault_auth(&method_name);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(
                         vault_id.clone(),
@@ -688,7 +705,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
 
         // invoke the main function
         let (result, received_buckets, received_proofs, received_vaults) =
-            frame.run(Some(snode_ref), snode, call_data)?;
+            frame.run(Some(snode_ref), snode, &method_name, call_data)?;
 
         // move buckets and proofs to this process.
         self.buckets.extend(received_buckets);
@@ -868,7 +885,16 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for CallFrame<'r, 'l, L> {
         snode_ref: SNodeRef,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_snode(snode_ref, call_data)
+        self.invoke_snode(snode_ref, "", call_data)
+    }
+
+    fn invoke_snode2(
+        &mut self,
+        snode_ref: SNodeRef,
+        method_name: String,
+        call_data: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        self.invoke_snode(snode_ref, &method_name, call_data)
     }
 
     fn get_non_fungible(

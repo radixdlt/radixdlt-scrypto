@@ -5,6 +5,7 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
+use scrypto::prelude::{VaultPutInput, VaultTakeInput};
 use scrypto::resource::VaultMethod;
 use scrypto::values::ScryptoValue;
 
@@ -155,30 +156,41 @@ impl Vault {
     pub fn main<S: SystemApi>(
         &mut self,
         vault_id: VaultId,
+        method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, VaultError> {
+
+        match method_name {
+            "put" => {
+                let input: VaultPutInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let bucket = system_api
+                    .take_bucket(input.bucket.0)
+                    .map_err(|_| VaultError::CouldNotTakeBucket)?;
+                self.put(bucket)
+                    .map_err(VaultError::ResourceContainerError)?;
+                return Ok(ScryptoValue::from_value(&()));
+            },
+            "take" => {
+                let input: VaultTakeInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let container = self.take(input.amount)?;
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| VaultError::CouldNotCreateBucket)?;
+                return Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )));
+
+            },
+            _ => { },
+        }
+
         let method: VaultMethod =
             scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
         match method {
-            VaultMethod::Put(bucket) => {
-                let bucket = system_api
-                    .take_bucket(bucket.0)
-                    .map_err(|_| VaultError::CouldNotTakeBucket)?;
-                self.put(bucket)
-                    .map_err(VaultError::ResourceContainerError)?;
-                Ok(ScryptoValue::from_value(&()))
-            }
-            VaultMethod::Take(amount) => {
-                let container = self.take(amount)?;
-                let bucket_id = system_api
-                    .create_bucket(container)
-                    .map_err(|_| VaultError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                    bucket_id,
-                )))
-            }
             VaultMethod::TakeNonFungibles(non_fungible_ids) => {
                 let container = self.take_non_fungibles(&non_fungible_ids)?;
                 let bucket_id = system_api

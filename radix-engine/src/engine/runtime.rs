@@ -47,6 +47,18 @@ impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
         Ok(result.raw)
     }
 
+    fn handle_invoke_snode2(
+        &mut self,
+        snode_ref: SNodeRef,
+        method_name: String,
+        call_data: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let call_data =
+            ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
+        let result = self.system_api.invoke_snode2(snode_ref, method_name, call_data)?;
+        Ok(result.raw)
+    }
+
     fn handle_create_component(
         &mut self,
         blueprint_name: String,
@@ -141,6 +153,9 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
         match input {
             RadixEngineInput::InvokeSNode(snode_ref, call_data) => {
                 self.handle_invoke_snode(snode_ref, call_data).map(encode)
+            }
+            RadixEngineInput::InvokeSNode2(snode_ref, method_name, call_data) => {
+                self.handle_invoke_snode2(snode_ref, method_name, call_data).map(encode)
             }
             RadixEngineInput::CreateComponent(blueprint_name, state, access_rules_list) => self
                 .handle_create_component(blueprint_name, state, access_rules_list)
