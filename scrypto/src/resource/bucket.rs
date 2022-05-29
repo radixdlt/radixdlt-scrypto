@@ -19,9 +19,14 @@ pub enum ConsumingBucketMethod {
     Burn(),
 }
 
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketTakeInput {
+    pub amount: Decimal,
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum BucketMethod {
-    Take(Decimal),
     TakeNonFungibles(BTreeSet<NonFungibleId>),
     Put(scrypto::resource::Bucket),
     GetNonFungibleIds(),
@@ -53,13 +58,20 @@ impl Bucket {
         }
     }
 
+    fn take_internal(&mut self, amount: Decimal) -> Self {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::BucketRef(self.0),
+            "take".to_string(),
+            scrypto_encode(&BucketTakeInput { amount }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
     sfunctions! {
         SNodeRef::BucketRef(self.0) => {
             pub fn put(&mut self, other: Self) -> () {
                 BucketMethod::Put(other)
-            }
-            fn take_internal(&mut self, amount: Decimal) -> Self {
-                BucketMethod::Take(amount)
             }
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketMethod::TakeNonFungibles(non_fungible_ids.clone())

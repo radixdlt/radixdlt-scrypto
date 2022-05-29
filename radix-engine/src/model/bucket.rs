@@ -5,6 +5,7 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
+use scrypto::prelude::BucketTakeInput;
 use scrypto::resource::{BucketMethod, ConsumingBucketMethod};
 use scrypto::values::ScryptoValue;
 
@@ -155,24 +156,30 @@ impl Bucket {
     pub fn main<S: SystemApi>(
         &mut self,
         bucket_id: BucketId,
+        method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, BucketError> {
-        let method: BucketMethod =
-            scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
-
-        match method {
-            BucketMethod::Take(amount) => {
+        match method_name {
+            "take" => {
+                let input: BucketTakeInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let container = self
-                    .take(amount)
+                    .take(input.amount)
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| BucketError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                return Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
-                )))
-            }
+                )));
+            },
+            _ => {}
+        }
+        let method: BucketMethod =
+            scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+
+        match method {
             BucketMethod::TakeNonFungibles(ids) => {
                 let container = self
                     .take_non_fungibles(&ids)

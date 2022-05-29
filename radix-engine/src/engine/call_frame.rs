@@ -358,7 +358,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 Ok(return_value)
             }
             SNodeState::BucketRef(bucket_id, bucket) => bucket
-                .main(bucket_id, call_data, self)
+                .main(bucket_id, method_name, call_data, self)
                 .map_err(RuntimeError::BucketError),
             SNodeState::Bucket(bucket) => bucket
                 .consuming_main(call_data, self)
