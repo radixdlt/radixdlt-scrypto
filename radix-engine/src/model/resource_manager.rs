@@ -5,7 +5,7 @@ use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ResourceManagerCreateBucketInput, ResourceManagerCreateVaultInput, ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerUpdateAuthInput};
+use scrypto::prelude::{ResourceManagerCreateBucketInput, ResourceManagerCreateVaultInput, ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerUpdateAuthInput, ResourceManagerUpdateMetadataInput};
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
@@ -475,6 +475,12 @@ impl ResourceManager {
                     scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 return Ok(ScryptoValue::from_value(&self.total_supply));
             }
+            "update_metadata" => {
+                let input: ResourceManagerUpdateMetadataInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                self.update_metadata(input.metadata)?;
+                return Ok(ScryptoValue::from_value(&()));
+            }
             _ => {}
         }
 
@@ -482,10 +488,6 @@ impl ResourceManager {
             scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
         match method {
-            ResourceManagerMethod::UpdateMetadata(new_metadata) => {
-                self.update_metadata(new_metadata)?;
-                Ok(ScryptoValue::from_value(&()))
-            }
             ResourceManagerMethod::UpdateNonFungibleData(non_fungible_id, new_mutable_data) => {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);

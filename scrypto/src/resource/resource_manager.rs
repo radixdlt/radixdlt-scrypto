@@ -74,11 +74,15 @@ pub struct ResourceManagerGetResourceTypeInput {}
 pub struct ResourceManagerGetTotalSupplyInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerUpdateMetadataInput {
+    pub metadata: HashMap<String, String>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum ResourceManagerMethod {
     GetNonFungible(NonFungibleId),
     NonFungibleExists(NonFungibleId),
     UpdateNonFungibleData(NonFungibleId, Vec<u8>),
-    UpdateMetadata(HashMap<String, String>),
 }
 
 impl ResourceManagerMethod {
@@ -87,7 +91,6 @@ impl ResourceManagerMethod {
             ResourceManagerMethod::GetNonFungible(_) => "get_non_fungible",
             ResourceManagerMethod::NonFungibleExists(_) => "non_fungible_exists",
             ResourceManagerMethod::UpdateNonFungibleData(_, _) => "update_non_fungible_data",
-            ResourceManagerMethod::UpdateMetadata(_) => "update_metadata",
         }
     }
 }
@@ -278,6 +281,11 @@ impl ResourceManager {
             pub fn total_supply(&self) -> Decimal {
                 ResourceManagerGetTotalSupplyInput {}
             }
+            pub fn update_metadata(&mut self, metadata: HashMap<String, String>) -> () {
+                ResourceManagerUpdateMetadataInput {
+                    metadata
+                }
+            }
         }
     }
 
@@ -291,9 +299,6 @@ impl ResourceManager {
             }
             pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
                 ResourceManagerMethod::NonFungibleExists(id.clone())
-            }
-            pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>) -> () {
-                ResourceManagerMethod::UpdateMetadata(new_metadata)
             }
         }
     }
