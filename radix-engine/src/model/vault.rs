@@ -5,7 +5,7 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{VaultGetAmountInput, VaultPutInput, VaultTakeInput};
+use scrypto::prelude::{VaultGetAmountInput, VaultGetNonFungibleIdsInput, VaultPutInput, VaultTakeInput};
 use scrypto::resource::{VaultGetResourceAddressInput, VaultMethod, VaultTakeNonFungiblesInput};
 use scrypto::values::ScryptoValue;
 
@@ -207,6 +207,14 @@ impl Vault {
                 let resource_address = self.resource_address();
                 return Ok(ScryptoValue::from_value(&resource_address));
             },
+            "get_non_fungible_ids" => {
+                let _: VaultGetNonFungibleIdsInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let ids = self
+                    .total_ids()
+                    .map_err(VaultError::ResourceContainerError)?;
+                return Ok(ScryptoValue::from_value(&ids));
+            }
             _ => { },
         }
 
@@ -214,12 +222,6 @@ impl Vault {
             scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
         match method {
-            VaultMethod::GetNonFungibleIds() => {
-                let ids = self
-                    .total_ids()
-                    .map_err(VaultError::ResourceContainerError)?;
-                Ok(ScryptoValue::from_value(&ids))
-            }
             VaultMethod::CreateProof() => {
                 let proof = self
                     .create_proof(ResourceContainerId::Vault(vault_id))

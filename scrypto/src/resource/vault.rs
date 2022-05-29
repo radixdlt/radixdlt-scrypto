@@ -40,13 +40,15 @@ pub struct VaultGetAmountInput {
 pub struct VaultGetResourceAddressInput {
 }
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultGetNonFungibleIdsInput {
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum VaultMethod {
     CreateProof(),
     CreateProofByAmount(Decimal),
     CreateProofByIds(BTreeSet<NonFungibleId>),
-    GetNonFungibleIds(),
 }
 
 impl VaultMethod {
@@ -55,7 +57,6 @@ impl VaultMethod {
             VaultMethod::CreateProof() => "create_proof",
             VaultMethod::CreateProofByAmount(_) => "create_proof_by_amount",
             VaultMethod::CreateProofByIds(_) => "create_proof_by_ids",
-            VaultMethod::GetNonFungibleIds() => "get_non_fungible_ids",
         }
     }
 }
@@ -132,6 +133,16 @@ impl Vault {
         scrypto_decode(&output).unwrap()
     }
 
+    pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::VaultRef(self.0),
+            "get_non_fungible_ids".to_string(),
+            scrypto_encode(&VaultGetNonFungibleIdsInput { }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
     sfunctions! {
         SNodeRef::VaultRef(self.0) => {
             pub fn create_proof(&self) -> Proof {
@@ -142,9 +153,6 @@ impl Vault {
             }
             pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
                 VaultMethod::CreateProofByIds(ids.clone())
-            }
-            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                VaultMethod::GetNonFungibleIds()
             }
         }
     }
