@@ -11,7 +11,7 @@ use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
 
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
-use crate::model::worktop::{WorktopAssertContainsAmountInput, WorktopAssertContainsInput, WorktopAssertContainsNonFungiblesInput, WorktopMethod, WorktopPutInput, WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput};
+use crate::model::worktop::{WorktopAssertContainsAmountInput, WorktopAssertContainsInput, WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput, WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput};
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
 
 pub struct TransactionProcessor {
@@ -424,9 +424,10 @@ impl TransactionProcessor {
                                 )
                                 .unwrap();
                         }
-                        system_api.invoke_snode(
+                        system_api.invoke_snode2(
                             SNodeRef::WorktopRef,
-                            ScryptoValue::from_value(&WorktopMethod::Drain()),
+                            "drain".to_string(),
+                            ScryptoValue::from_value(&WorktopDrainInput {}),
                         )
                     })
                     .and_then(|result| {
