@@ -5,7 +5,7 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{VaultGetAmountInput, VaultGetNonFungibleIdsInput, VaultPutInput, VaultTakeInput};
+use scrypto::prelude::{VaultCreateProofInput, VaultGetAmountInput, VaultGetNonFungibleIdsInput, VaultPutInput, VaultTakeInput};
 use scrypto::resource::{VaultGetResourceAddressInput, VaultMethod, VaultTakeNonFungiblesInput};
 use scrypto::values::ScryptoValue;
 
@@ -214,7 +214,20 @@ impl Vault {
                     .total_ids()
                     .map_err(VaultError::ResourceContainerError)?;
                 return Ok(ScryptoValue::from_value(&ids));
-            }
+            },
+            "create_proof" => {
+                let _: VaultCreateProofInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let proof = self
+                    .create_proof(ResourceContainerId::Vault(vault_id))
+                    .map_err(VaultError::ProofError)?;
+                let proof_id = system_api
+                    .create_proof(proof)
+                    .map_err(|_| VaultError::CouldNotCreateProof)?;
+                return Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                    proof_id,
+                )));
+            },
             _ => { },
         }
 
@@ -222,17 +235,6 @@ impl Vault {
             scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
         match method {
-            VaultMethod::CreateProof() => {
-                let proof = self
-                    .create_proof(ResourceContainerId::Vault(vault_id))
-                    .map_err(VaultError::ProofError)?;
-                let proof_id = system_api
-                    .create_proof(proof)
-                    .map_err(|_| VaultError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
-                    proof_id,
-                )))
-            }
             VaultMethod::CreateProofByAmount(amount) => {
                 let proof = self
                     .create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id))
