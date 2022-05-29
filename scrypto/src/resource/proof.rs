@@ -20,14 +20,20 @@ pub enum ConsumingProofMethod {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofAmountInput {
+pub struct ProofGetAmountInput {
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ProofGetNonFungibleIdsInput {
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ProofGetResourceAddressInput {
 }
 
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ProofMethod {
-    ResourceAddress(),
-    NonFungibleIds(),
     Clone(),
 }
 
@@ -47,15 +53,14 @@ impl Proof {
     sfunctions2! {
         SNodeRef::ProofRef(self.0) => {
             pub fn amount(&self) -> Decimal {
-                ProofAmountInput {}
+                ProofGetAmountInput {}
             }
-        }
-    }
-
-    sfunctions! {
-        SNodeRef::ProofRef(self.0) => {
-            pub fn resource_address(&self) -> ResourceAddress { ProofMethod::ResourceAddress() }
-            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> { ProofMethod::NonFungibleIds() }
+            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                ProofGetNonFungibleIdsInput {}
+            }
+            pub fn resource_address(&self) -> ResourceAddress {
+                ProofGetResourceAddressInput {}
+            }
         }
     }
 

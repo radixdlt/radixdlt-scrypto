@@ -7,7 +7,7 @@ use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::ProofAmountInput;
+use scrypto::prelude::{ProofGetAmountInput, ProofGetNonFungibleIdsInput, ProofGetResourceAddressInput};
 use scrypto::resource::ConsumingProofMethod;
 use scrypto::resource::ProofMethod;
 use scrypto::values::ScryptoValue;
@@ -336,9 +336,20 @@ impl Proof {
     ) -> Result<ScryptoValue, ProofError> {
         match method_name {
             "amount" => {
-                let _: ProofAmountInput =
+                let _: ProofGetAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 return Ok(ScryptoValue::from_value(&self.total_amount()));
+            }
+            "non_fungible_ids" => {
+                let _: ProofGetNonFungibleIdsInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                let ids = self.total_ids()?;
+                return Ok(ScryptoValue::from_value(&ids))
+            }
+            "resource_address" => {
+                let _: ProofGetResourceAddressInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                return Ok(ScryptoValue::from_value(&self.resource_address()));
             }
             _ => {}
         }
@@ -347,13 +358,6 @@ impl Proof {
             scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
 
         match method {
-            ProofMethod::NonFungibleIds() => {
-                let ids = self.total_ids()?;
-                Ok(ScryptoValue::from_value(&ids))
-            }
-            ProofMethod::ResourceAddress() => {
-                Ok(ScryptoValue::from_value(&self.resource_address()))
-            }
             ProofMethod::Clone() => {
                 let cloned_proof = self.clone();
                 let proof_id = system_api
