@@ -18,43 +18,39 @@ use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultPutInput {
-    pub bucket: Bucket
+    pub bucket: Bucket,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultTakeInput {
-    pub amount: Decimal
+    pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultTakeNonFungiblesInput {
-    pub non_fungible_ids: BTreeSet<NonFungibleId>
+    pub non_fungible_ids: BTreeSet<NonFungibleId>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetAmountInput {
-}
+pub struct VaultGetAmountInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetResourceAddressInput {
-}
+pub struct VaultGetResourceAddressInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultGetNonFungibleIdsInput {
-}
+pub struct VaultGetNonFungibleIdsInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct VaultCreateProofInput {
-}
+pub struct VaultCreateProofInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultCreateProofByAmountInput {
-    pub amount: Decimal
+    pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultCreateProofByIdsInput {
-    pub ids: BTreeSet<NonFungibleId>
+    pub ids: BTreeSet<NonFungibleId>,
 }
 
 /// Represents a persistent resource container on ledger state.
@@ -103,7 +99,9 @@ impl Vault {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::VaultRef(self.0),
             "take_non_fungibles".to_string(),
-            scrypto_encode(&VaultTakeNonFungiblesInput { non_fungible_ids: non_fungible_ids.clone() }),
+            scrypto_encode(&VaultTakeNonFungiblesInput {
+                non_fungible_ids: non_fungible_ids.clone(),
+            }),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
@@ -113,7 +111,7 @@ impl Vault {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::VaultRef(self.0),
             "get_amount".to_string(),
-            scrypto_encode(&VaultGetAmountInput { }),
+            scrypto_encode(&VaultGetAmountInput {}),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
@@ -123,7 +121,7 @@ impl Vault {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::VaultRef(self.0),
             "get_resource_address".to_string(),
-            scrypto_encode(&VaultGetResourceAddressInput { }),
+            scrypto_encode(&VaultGetResourceAddressInput {}),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
@@ -133,7 +131,7 @@ impl Vault {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::VaultRef(self.0),
             "get_non_fungible_ids".to_string(),
-            scrypto_encode(&VaultGetNonFungibleIdsInput { }),
+            scrypto_encode(&VaultGetNonFungibleIdsInput {}),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
@@ -143,7 +141,7 @@ impl Vault {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::VaultRef(self.0),
             "create_proof".to_string(),
-            scrypto_encode(&VaultCreateProofInput { }),
+            scrypto_encode(&VaultCreateProofInput {}),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()

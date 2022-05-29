@@ -305,7 +305,12 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
     > {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
-        re_info!(self, "Run started: snode_ref = {:?} method_name = {}", snode_ref, method_name);
+        re_info!(
+            self,
+            "Run started: snode_ref = {:?} method_name = {}",
+            snode_ref,
+            method_name
+        );
 
         // Execution
         let output = match snode {

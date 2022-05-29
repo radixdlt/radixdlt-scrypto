@@ -8,9 +8,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
-use scrypto::resource::{
-    ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod,
-};
+use scrypto::resource::{ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
