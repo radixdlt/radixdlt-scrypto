@@ -5,7 +5,7 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{VaultPutInput, VaultTakeInput};
+use scrypto::prelude::{VaultGetAmountInput, VaultPutInput, VaultTakeInput};
 use scrypto::resource::{VaultMethod, VaultTakeNonFungiblesInput};
 use scrypto::values::ScryptoValue;
 
@@ -195,6 +195,12 @@ impl Vault {
                     bucket_id,
                 )));
             },
+            "get_amount" => {
+                let _: VaultGetAmountInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let amount = self.total_amount();
+                return Ok(ScryptoValue::from_value(&amount));
+            }
             _ => { },
         }
 
@@ -202,10 +208,6 @@ impl Vault {
             scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
         match method {
-            VaultMethod::GetAmount() => {
-                let amount = self.total_amount();
-                Ok(ScryptoValue::from_value(&amount))
-            }
             VaultMethod::GetResourceAddress() => {
                 let resource_address = self.resource_address();
                 Ok(ScryptoValue::from_value(&resource_address))
