@@ -325,7 +325,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 .main(method_name, call_data, self)
                 .map_err(RuntimeError::AuthZoneError),
             SNodeState::Worktop(worktop) => worktop
-                .main(call_data, self)
+                .main(method_name, call_data, self)
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, package, export_name, component_state) => {
                 let component_state = if let Some(component) = component_state {
