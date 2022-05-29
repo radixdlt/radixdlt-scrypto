@@ -11,7 +11,7 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions2;
+use crate::sfunctions;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -60,7 +60,7 @@ impl Bucket {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::Bucket(self.0) => {
            pub fn burn(self) -> () {
                 ConsumingBucketBurnInput {}
@@ -78,7 +78,7 @@ impl Bucket {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::BucketRef(self.0) => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketTakeNonFungiblesInput {

@@ -14,22 +14,6 @@ extern "C" {
 
 #[macro_export]
 macro_rules! sfunctions {
-    ($snode_ref:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $method_enum:expr })* } ) => {
-        $(
-            $vis $fn $method_name $s -> $rtn {
-                let input = RadixEngineInput::InvokeSNode(
-                    $snode_ref,
-                    scrypto::buffer::scrypto_encode(&$method_enum)
-                );
-                let output: sbor::rust::vec::Vec<u8> = call_engine(input);
-                scrypto_decode(&output).unwrap()
-            }
-        )+
-    };
-}
-
-#[macro_export]
-macro_rules! sfunctions2 {
     ($snode_ref:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $arg:expr })* } ) => {
         $(
             $vis $fn $method_name $s -> $rtn {

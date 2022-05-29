@@ -14,7 +14,7 @@ use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions2;
+use crate::sfunctions;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -87,7 +87,7 @@ impl Vault {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::VaultRef(self.0) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultPutInput {

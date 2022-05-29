@@ -13,7 +13,7 @@ use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions2;
+use crate::sfunctions;
 use crate::types::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
@@ -293,7 +293,7 @@ impl ResourceManager {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::ResourceRef(self.0) => {
             pub fn metadata(&self) -> HashMap<String, String> {
                 ResourceManagerGetMetadataInput {}
