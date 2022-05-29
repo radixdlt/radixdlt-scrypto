@@ -5,8 +5,8 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{BucketGetNonFungibleIdsInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput};
-use scrypto::resource::{BucketMethod, ConsumingBucketMethod};
+use scrypto::prelude::{BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput, BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput};
+use scrypto::resource::ConsumingBucketMethod;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -23,6 +23,7 @@ pub enum BucketError {
     ResourceContainerError(ResourceContainerError),
     ProofError(ProofError),
     CouldNotCreateProof,
+    MethodNotFound,
 }
 
 /// A transient resource container.
@@ -170,9 +171,9 @@ impl Bucket {
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| BucketError::CouldNotCreateBucket)?;
-                return Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
-                )));
+                )))
             },
             "take_non_fungibles" => {
                 let input: BucketTakeNonFungiblesInput =
@@ -183,9 +184,9 @@ impl Bucket {
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| BucketError::CouldNotCreateBucket)?;
-                return Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
-                )));
+                )))
             },
             "non_fungible_ids" => {
                 let _: BucketGetNonFungibleIdsInput =
@@ -193,29 +194,31 @@ impl Bucket {
                 let ids = self
                     .total_ids()
                     .map_err(BucketError::ResourceContainerError)?;
-                return Ok(ScryptoValue::from_value(&ids));
+                Ok(ScryptoValue::from_value(&ids))
             },
             "put" => {
                 let input: BucketPutInput =
-                scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let bucket = system_api
-                .take_bucket(input.bucket.0)
-                .map_err(|_| BucketError::CouldNotTakeBucket)?;
+                    .take_bucket(input.bucket.0)
+                    .map_err(|_| BucketError::CouldNotTakeBucket)?;
                 self.put(bucket)
-                .map_err(BucketError::ResourceContainerError)?;
-                return Ok(ScryptoValue::from_value(&()));
+                    .map_err(BucketError::ResourceContainerError)?;
+                Ok(ScryptoValue::from_value(&()))
             },
-            _ => {}
-        }
-        let method: BucketMethod =
-            scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
-
-        match method {
-            BucketMethod::GetAmount() => Ok(ScryptoValue::from_value(&self.total_amount())),
-            BucketMethod::GetResourceAddress() => {
+            "amount" => {
+                let _: BucketGetAmountInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                Ok(ScryptoValue::from_value(&self.total_amount()))
+            },
+            "resource_address" => {
+                let _: BucketGetResourceAddressInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_value(&self.resource_address()))
-            }
-            BucketMethod::CreateProof() => {
+            },
+            "create_proof" => {
+                let _: BucketCreateProofInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let proof = self
                     .create_proof(bucket_id)
                     .map_err(BucketError::ProofError)?;
@@ -226,6 +229,7 @@ impl Bucket {
                     proof_id,
                 )))
             }
+            _ => Err(BucketError::MethodNotFound)
         }
     }
 

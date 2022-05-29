@@ -39,12 +39,16 @@ pub struct BucketTakeNonFungiblesInput {
 pub struct BucketGetNonFungibleIdsInput {
 }
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketGetAmountInput {
+}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum BucketMethod {
-    GetAmount(),
-    GetResourceAddress(),
-    CreateProof(),
+pub struct BucketGetResourceAddressInput {
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketCreateProofInput {
 }
 
 /// Represents a transient resource container.
@@ -96,19 +100,17 @@ impl Bucket {
                 BucketGetNonFungibleIdsInput {
                 }
             }
-        }
-    }
-
-    sfunctions! {
-        SNodeRef::BucketRef(self.0) => {
-            pub fn create_proof(&self) -> scrypto::resource::Proof {
-                BucketMethod::CreateProof()
-            }
             pub fn amount(&self) -> Decimal {
-                BucketMethod::GetAmount()
+                BucketGetAmountInput {
+                }
             }
             pub fn resource_address(&self) -> ResourceAddress {
-                BucketMethod::GetResourceAddress()
+                BucketGetResourceAddressInput {
+                }
+            }
+            pub fn create_proof(&self) -> scrypto::resource::Proof {
+                BucketCreateProofInput {
+                }
             }
         }
     }
