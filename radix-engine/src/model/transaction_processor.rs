@@ -6,7 +6,7 @@ use scrypto::call_data;
 use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{BucketCreateProofInput, ProofCloneInput};
+use scrypto::prelude::{AuthZonePushInput, BucketCreateProofInput, ProofCloneInput};
 use scrypto::resource::{AuthZoneMethod, AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
 
@@ -182,11 +182,12 @@ impl TransactionProcessor {
                     .remove(proof_id)
                     .ok_or(RuntimeError::ProofNotFound(*proof_id))
                     .and_then(|real_id| {
-                        system_api.invoke_snode(
+                        system_api.invoke_snode2(
                             SNodeRef::AuthZoneRef,
-                            ScryptoValue::from_value(&AuthZoneMethod::Push(
-                                scrypto::resource::Proof(real_id),
-                            )),
+                            "push".to_string(),
+                            ScryptoValue::from_value(&AuthZonePushInput {
+                                proof: scrypto::resource::Proof(real_id)
+                            }),
                         )
                     }),
                 ValidatedInstruction::CreateProofFromAuthZone { resource_address } => self
@@ -328,11 +329,12 @@ impl TransactionProcessor {
                             // Auto move into auth_zone
                             for (proof_id, _) in &result.proof_ids {
                                 system_api
-                                    .invoke_snode(
+                                    .invoke_snode2(
                                         SNodeRef::AuthZoneRef,
-                                        ScryptoValue::from_value(&AuthZoneMethod::Push(
-                                            scrypto::resource::Proof(*proof_id),
-                                        )),
+                                        "push".to_string(),
+                                        ScryptoValue::from_value(&AuthZonePushInput {
+                                            proof: scrypto::resource::Proof(*proof_id)
+                                        }),
                                     )
                                     .unwrap(); // TODO: Remove unwrap
                             }
@@ -365,11 +367,12 @@ impl TransactionProcessor {
                             // Auto move into auth_zone
                             for (proof_id, _) in &result.proof_ids {
                                 system_api
-                                    .invoke_snode(
+                                    .invoke_snode2(
                                         SNodeRef::AuthZoneRef,
-                                        ScryptoValue::from_value(&AuthZoneMethod::Push(
-                                            scrypto::resource::Proof(*proof_id),
-                                        )),
+                                        "push".to_string(),
+                                        ScryptoValue::from_value(&AuthZonePushInput {
+                                            proof: scrypto::resource::Proof(*proof_id)
+                                        }),
                                     )
                                     .unwrap();
                             }

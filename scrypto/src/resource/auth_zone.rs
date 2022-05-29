@@ -14,8 +14,12 @@ use crate::{sfunctions, sfunctions2};
 pub struct AuthZonePopInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct AuthZonePushInput {
+    pub proof: Proof,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum AuthZoneMethod {
-    Push(Proof),
     Clear(),
     CreateProof(ResourceAddress),
     CreateProofByAmount(Decimal, ResourceAddress),
@@ -35,14 +39,15 @@ impl ComponentAuthZone {
             pub fn pop() -> Proof {
                 AuthZonePopInput {}
             }
+
+            pub fn push(proof: Proof) -> () {
+                AuthZonePushInput { proof }
+            }
         }
     }
 
     sfunctions! {
         SNodeRef::AuthZoneRef => {
-            pub fn push(proof: Proof) -> () {
-                AuthZoneMethod::Push(proof)
-            }
 
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {
                 AuthZoneMethod::CreateProof(resource_address)

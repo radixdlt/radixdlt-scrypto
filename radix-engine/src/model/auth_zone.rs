@@ -3,6 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
+use scrypto::prelude::AuthZonePushInput;
 use scrypto::resource::{AuthZoneMethod, AuthZonePopInput};
 use scrypto::values::ScryptoValue;
 
@@ -104,6 +105,19 @@ impl AuthZone {
                     proof_id,
                 )));
             }
+            "push" => {
+                let input: AuthZonePushInput =
+                    scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+                let mut proof = system_api
+                    .take_proof(input.proof.0)
+                    .map_err(|_| AuthZoneError::CouldNotGetProof)?;
+                // FIXME: this is a hack for now until we can get snode_state into process
+                // FIXME: and be able to determine which snode the proof is going into
+                proof.change_to_unrestricted();
+
+                self.push(proof);
+                return Ok(ScryptoValue::from_value(&()));
+            }
             _ => {}
         }
 
@@ -111,17 +125,6 @@ impl AuthZone {
             scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
 
         match method {
-            AuthZoneMethod::Push(proof) => {
-                let mut proof = system_api
-                    .take_proof(proof.0)
-                    .map_err(|_| AuthZoneError::CouldNotGetProof)?;
-                // FIXME: this is a hack for now until we can get snode_state into process
-                // FIXME: and be able to determine which snode the proof is going into
-                proof.change_to_unrestricted();
-
-                self.push(proof);
-                Ok(ScryptoValue::from_value(&()))
-            }
             AuthZoneMethod::CreateProof(resource_address) => {
                 let resource_manager: ResourceManager = system_api
                     .borrow_global_mut_resource_manager(resource_address)
