@@ -11,7 +11,7 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
+use crate::{sfunctions, sfunctions2};
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -26,8 +26,12 @@ pub struct BucketTakeInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketTakeNonFungiblesInput {
+    pub ids: BTreeSet<NonFungibleId>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum BucketMethod {
-    TakeNonFungibles(BTreeSet<NonFungibleId>),
     Put(scrypto::resource::Bucket),
     GetNonFungibleIds(),
     GetAmount(),
@@ -68,13 +72,20 @@ impl Bucket {
         scrypto_decode(&output).unwrap()
     }
 
+    sfunctions2! {
+        SNodeRef::BucketRef(self.0) => {
+            pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
+                BucketTakeNonFungiblesInput {
+                    ids: non_fungible_ids.clone()
+                }
+            }
+        }
+    }
+
     sfunctions! {
         SNodeRef::BucketRef(self.0) => {
             pub fn put(&mut self, other: Self) -> () {
                 BucketMethod::Put(other)
-            }
-            pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
-                BucketMethod::TakeNonFungibles(non_fungible_ids.clone())
             }
             pub fn create_proof(&self) -> scrypto::resource::Proof {
                 BucketMethod::CreateProof()
