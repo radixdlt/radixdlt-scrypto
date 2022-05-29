@@ -347,7 +347,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
 
                     package.invoke(actor, export_name, call_data, self)
                 }
-                SNodeState::ResourceStatic => ResourceManager::static_main(call_data, self)
+                SNodeState::ResourceStatic => ResourceManager::static_main(method_name, call_data, self)
                     .map_err(RuntimeError::ResourceManagerError),
                 SNodeState::ResourceRef(resource_address, resource_manager) => {
                     let return_value = resource_manager

@@ -33,13 +33,11 @@ pub enum Mutability {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ResourceManagerFunction {
-    Create(
-        ResourceType,
-        HashMap<String, String>,
-        HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
-        Option<MintParams>,
-    ),
+pub struct ResourceManagerCreateInput {
+    pub resource_type: ResourceType,
+    pub metadata: HashMap<String, String>,
+    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    pub mint_params: Option<MintParams>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

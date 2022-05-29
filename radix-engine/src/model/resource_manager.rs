@@ -5,11 +5,11 @@ use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ResourceManagerCreateBucketInput, ResourceManagerCreateVaultInput, ResourceManagerGetNonFungibleInput, ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerNonFungibleExistsInput, ResourceManagerUpdateAuthInput, ResourceManagerUpdateMetadataInput, ResourceManagerUpdateNonFungibleDataInput};
+use scrypto::prelude::{ResourceManagerCreateBucketInput, ResourceManagerCreateInput, ResourceManagerCreateVaultInput, ResourceManagerGetNonFungibleInput, ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerNonFungibleExistsInput, ResourceManagerUpdateAuthInput, ResourceManagerUpdateMetadataInput, ResourceManagerUpdateNonFungibleDataInput};
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
-use scrypto::resource::{ResourceManagerFunction, ResourceManagerGetMetadataInput};
+use scrypto::resource::ResourceManagerGetMetadataInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -372,18 +372,18 @@ impl ResourceManager {
     }
 
     pub fn static_main<S: SystemApi>(
+        method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
-        let function: ResourceManagerFunction =
-            scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+        match method_name {
+            "create" => {
+                let input: ResourceManagerCreateInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
-        match function {
-            ResourceManagerFunction::Create(resource_type, metadata, auth, mint_params_maybe) => {
-                let resource_manager = ResourceManager::new(resource_type, metadata, auth)?;
+                let resource_manager = ResourceManager::new(input.resource_type, input.metadata, input.access_rules)?;
                 let resource_address = system_api.create_resource(resource_manager);
-
-                let bucket_id = if let Some(mint_params) = mint_params_maybe {
+                let bucket_id = if let Some(mint_params) = input.mint_params {
                     let mut resource_manager = system_api
                         .borrow_global_mut_resource_manager(resource_address)
                         .unwrap();
@@ -404,6 +404,7 @@ impl ResourceManager {
 
                 Ok(ScryptoValue::from_value(&(resource_address, bucket_id)))
             }
+            _ => Err(InvalidMethod)
         }
     }
 
