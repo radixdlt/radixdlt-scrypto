@@ -31,10 +31,8 @@ pub struct ProofGetNonFungibleIdsInput {
 pub struct ProofGetResourceAddressInput {
 }
 
-
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ProofMethod {
-    Clone(),
+pub struct ProofCloneInput {
 }
 
 /// Represents a proof of owning some resource.
@@ -42,9 +40,11 @@ pub enum ProofMethod {
 pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
-    sfunctions! {
+    sfunctions2! {
         SNodeRef::ProofRef(self.0) => {
-            fn clone(&self) -> Self { ProofMethod::Clone() }
+            fn clone(&self) -> Self {
+                ProofCloneInput {}
+            }
         }
     }
 }

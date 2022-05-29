@@ -6,9 +6,9 @@ use scrypto::call_data;
 use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::BucketCreateProofInput;
+use scrypto::prelude::{BucketCreateProofInput, ProofCloneInput};
 use scrypto::resource::AuthZoneMethod;
-use scrypto::resource::{ConsumingProofMethod, ProofMethod};
+use scrypto::resource::ConsumingProofMethod;
 use scrypto::values::*;
 
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
@@ -285,9 +285,10 @@ impl TransactionProcessor {
                             .cloned()
                             .map(|real_id| {
                                 system_api
-                                    .invoke_snode(
+                                    .invoke_snode2(
                                         SNodeRef::ProofRef(real_id),
-                                        ScryptoValue::from_value(&ProofMethod::Clone()),
+                                        "clone".to_string(),
+                                        ScryptoValue::from_value(&ProofCloneInput {}),
                                     )
                                     .map(|v| {
                                         let cloned_proof_id = v.proof_ids.iter().next().unwrap().0;
