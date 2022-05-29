@@ -26,6 +26,11 @@ pub struct BucketTakeInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketPutInput {
+    pub bucket: scrypto::resource::Bucket,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeNonFungiblesInput {
     pub ids: BTreeSet<NonFungibleId>,
 }
@@ -37,7 +42,6 @@ pub struct BucketGetNonFungibleIdsInput {
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum BucketMethod {
-    Put(scrypto::resource::Bucket),
     GetAmount(),
     GetResourceAddress(),
     CreateProof(),
@@ -83,6 +87,11 @@ impl Bucket {
                     ids: non_fungible_ids.clone()
                 }
             }
+            pub fn put(&mut self, other: Self) -> () {
+                BucketPutInput {
+                    bucket: other
+                }
+            }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
                 BucketGetNonFungibleIdsInput {
                 }
@@ -92,9 +101,6 @@ impl Bucket {
 
     sfunctions! {
         SNodeRef::BucketRef(self.0) => {
-            pub fn put(&mut self, other: Self) -> () {
-                BucketMethod::Put(other)
-            }
             pub fn create_proof(&self) -> scrypto::resource::Proof {
                 BucketMethod::CreateProof()
             }
