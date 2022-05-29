@@ -26,7 +26,7 @@ pub enum BucketError {
     ResourceContainerError(ResourceContainerError),
     ProofError(ProofError),
     CouldNotCreateProof,
-    MethodNotFound,
+    MethodNotFound(String),
 }
 
 /// A transient resource container.
@@ -232,7 +232,9 @@ impl Bucket {
                     proof_id,
                 )))
             }
-            _ => Err(BucketError::MethodNotFound),
+            _ => {
+                Err(BucketError::MethodNotFound(method_name.to_string()))
+            },
         }
     }
 
