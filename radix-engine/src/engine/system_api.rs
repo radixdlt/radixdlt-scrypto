@@ -2,6 +2,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
+use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
 use crate::engine::*;
@@ -87,4 +88,10 @@ pub trait SystemApi {
     fn generate_uuid(&mut self) -> u128;
 
     fn emit_log(&mut self, level: Level, message: String);
+
+    fn check_access_rule(
+        &mut self,
+        access_rule: AccessRule,
+        proof_ids: Vec<ProofId>,
+    ) -> Result<bool, RuntimeError>;
 }

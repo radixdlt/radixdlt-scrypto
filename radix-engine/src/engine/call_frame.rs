@@ -9,6 +9,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::call_data;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneMethod;
@@ -1165,5 +1166,33 @@ impl<'r, 'l, L: ReadableSubstateStore> SystemApi for CallFrame<'r, 'l, L> {
 
     fn emit_log(&mut self, level: Level, message: String) {
         self.track.add_log(level, message);
+    }
+
+    fn check_access_rule(
+        &mut self,
+        access_rule: scrypto::resource::AccessRule,
+        proof_ids: Vec<ProofId>,
+    ) -> Result<bool, RuntimeError> {
+        let proofs = proof_ids
+            .iter()
+            .map(|proof_id| {
+                self.proofs
+                    .get(&proof_id)
+                    .map(Proof::clone)
+                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))
+            })
+            .collect::<Result<Vec<Proof>, RuntimeError>>()?;
+        let mut simulated_auth_zone = AuthZone::new_with_proofs(proofs);
+
+        let method_authorization = convert(&Type::Unit, &Value::Unit, &access_rule);
+        let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
+        simulated_auth_zone
+            .main(
+                ScryptoValue::from_slice(&call_data!(clear())).unwrap(),
+                self,
+            )
+            .map_err(RuntimeError::AuthZoneError)?;
+
+        Ok(is_authorized)
     }
 }
