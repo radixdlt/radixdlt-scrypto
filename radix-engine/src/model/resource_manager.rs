@@ -5,17 +5,18 @@ use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ResourceManagerCreateBucketInput, ResourceManagerCreateVaultInput, ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerUpdateAuthInput, ResourceManagerUpdateMetadataInput};
+use scrypto::prelude::{ResourceManagerCreateBucketInput, ResourceManagerCreateVaultInput, ResourceManagerGetNonFungibleInput, ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerNonFungibleExistsInput, ResourceManagerUpdateAuthInput, ResourceManagerUpdateMetadataInput, ResourceManagerUpdateNonFungibleDataInput};
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
-use scrypto::resource::{ResourceManagerFunction, ResourceManagerGetMetadataInput, ResourceManagerMethod};
+use scrypto::resource::{ResourceManagerFunction, ResourceManagerGetMetadataInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::NonFungible;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
+use crate::model::ResourceManagerError::InvalidMethod;
 
 /// Converts soft authorization rule to a hard authorization rule.
 /// Currently required as all auth is defined by soft authorization rules.
@@ -41,6 +42,7 @@ pub enum ResourceManagerError {
     MethodNotFound(String),
     CouldNotCreateBucket,
     CouldNotCreateVault,
+    InvalidMethod,
 }
 
 enum MethodAccessRuleMethod {
@@ -417,13 +419,13 @@ impl ResourceManager {
                 let input: ResourceManagerUpdateAuthInput =
                     scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let method_entry = self.authorization.get_mut(&input.method).unwrap();
-                return method_entry.main(MethodAccessRuleMethod::Update(input.access_rule));
+                method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
             }
             "lock_auth" => {
                 let input: ResourceManagerLockAuthInput =
                     scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let method_entry = self.authorization.get_mut(&input.method).unwrap();
-                return method_entry.main(MethodAccessRuleMethod::Lock());
+                method_entry.main(MethodAccessRuleMethod::Lock())
             }
             "create_vault" => {
                 let _: ResourceManagerCreateVaultInput =
@@ -433,9 +435,9 @@ impl ResourceManager {
                 let vault_id = system_api
                     .create_vault(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateVault)?;
-                return Ok(ScryptoValue::from_value(&scrypto::resource::Vault(
+                Ok(ScryptoValue::from_value(&scrypto::resource::Vault(
                     vault_id,
-                )));
+                )))
             }
             "create_bucket" => {
                 let _: ResourceManagerCreateBucketInput =
@@ -445,9 +447,9 @@ impl ResourceManager {
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
-                return Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
-                )));
+                )))
             }
             "mint" => {
                 let input: ResourceManagerMintInput =
@@ -456,42 +458,37 @@ impl ResourceManager {
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
-                return Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
-                )));
+                )))
             }
             "metadata" => {
                 let _: ResourceManagerGetMetadataInput =
                     scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                return Ok(ScryptoValue::from_value(&self.metadata));
+                Ok(ScryptoValue::from_value(&self.metadata))
             }
             "resource_type" => {
                 let _: ResourceManagerGetResourceTypeInput =
                     scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                return Ok(ScryptoValue::from_value(&self.resource_type));
+                Ok(ScryptoValue::from_value(&self.resource_type))
             }
             "total_supply" => {
                 let _: ResourceManagerGetTotalSupplyInput =
                     scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                return Ok(ScryptoValue::from_value(&self.total_supply));
+                Ok(ScryptoValue::from_value(&self.total_supply))
             }
             "update_metadata" => {
                 let input: ResourceManagerUpdateMetadataInput =
                     scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 self.update_metadata(input.metadata)?;
-                return Ok(ScryptoValue::from_value(&()));
+                Ok(ScryptoValue::from_value(&()))
             }
-            _ => {}
-        }
-
-        let method: ResourceManagerMethod =
-            scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-
-        match method {
-            ResourceManagerMethod::UpdateNonFungibleData(non_fungible_id, new_mutable_data) => {
+            "update_non_fungible_data" => {
+                let input: ResourceManagerUpdateNonFungibleDataInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let non_fungible_address =
-                    NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
-                let data = Self::process_non_fungible_data(&new_mutable_data)?;
+                    NonFungibleAddress::new(resource_address.clone(), input.id);
+                let data = Self::process_non_fungible_data(&input.data)?;
                 let mut non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
                     ResourceManagerError::NonFungibleNotFound(non_fungible_address.clone()),
                 )?;
@@ -500,15 +497,19 @@ impl ResourceManager {
 
                 Ok(ScryptoValue::from_value(&()))
             }
-            ResourceManagerMethod::NonFungibleExists(non_fungible_id) => {
+            "non_fungible_exists" => {
+                let input: ResourceManagerNonFungibleExistsInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let non_fungible_address =
-                    NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
+                    NonFungibleAddress::new(resource_address.clone(), input.id);
                 let non_fungible = system_api.get_non_fungible(&non_fungible_address);
                 Ok(ScryptoValue::from_value(&non_fungible.is_some()))
             }
-            ResourceManagerMethod::GetNonFungible(non_fungible_id) => {
+            "non_fungible_data" => {
+                let input: ResourceManagerGetNonFungibleInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let non_fungible_address =
-                    NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
+                    NonFungibleAddress::new(resource_address.clone(), input.id);
                 let non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
                     ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                 )?;
@@ -517,6 +518,7 @@ impl ResourceManager {
                     non_fungible.mutable_data(),
                 ]))
             }
+            _ => Err(InvalidMethod)
         }
     }
 }

@@ -13,7 +13,7 @@ use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::{sfunctions, sfunctions2};
+use crate::sfunctions2;
 use crate::types::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
@@ -79,20 +79,19 @@ pub struct ResourceManagerUpdateMetadataInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ResourceManagerMethod {
-    GetNonFungible(NonFungibleId),
-    NonFungibleExists(NonFungibleId),
-    UpdateNonFungibleData(NonFungibleId, Vec<u8>),
+pub struct ResourceManagerUpdateNonFungibleDataInput {
+    pub id: NonFungibleId,
+    pub data: Vec<u8>,
 }
 
-impl ResourceManagerMethod {
-    pub fn name(&self) -> &str {
-        match self {
-            ResourceManagerMethod::GetNonFungible(_) => "get_non_fungible",
-            ResourceManagerMethod::NonFungibleExists(_) => "non_fungible_exists",
-            ResourceManagerMethod::UpdateNonFungibleData(_, _) => "update_non_fungible_data",
-        }
-    }
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerNonFungibleExistsInput {
+    pub id: NonFungibleId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerGetNonFungibleInput {
+    pub id: NonFungibleId,
 }
 
 /// Represents a resource address.
@@ -270,6 +269,30 @@ impl ResourceManager {
     }
 
 
+    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "update_non_fungible_data".to_string(),
+            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput {
+                id, data,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "non_fungible_data".to_string(),
+            scrypto_encode(&ResourceManagerGetNonFungibleInput {
+                id,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
     sfunctions2! {
         SNodeRef::ResourceRef(self.0) => {
             pub fn metadata(&self) -> HashMap<String, String> {
@@ -286,19 +309,10 @@ impl ResourceManager {
                     metadata
                 }
             }
-        }
-    }
-
-    sfunctions! {
-        SNodeRef::ResourceRef(self.0) => {
-            fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
-                ResourceManagerMethod::GetNonFungible(id)
-            }
-            fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, new_data: Vec<u8>) -> () {
-                ResourceManagerMethod::UpdateNonFungibleData(id, new_data)
-            }
             pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
-                ResourceManagerMethod::NonFungibleExists(id.clone())
+                ResourceManagerNonFungibleExistsInput {
+                    id: id.clone()
+                }
             }
         }
     }

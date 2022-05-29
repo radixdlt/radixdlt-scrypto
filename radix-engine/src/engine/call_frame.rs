@@ -9,10 +9,8 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::scrypto_decode;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::ResourceManagerMethod;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 
@@ -532,18 +530,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                     })?
                     .into();
 
-                let name = match method_name {
-                    "" => {
-                        let method: ResourceManagerMethod = match scrypto_decode(&call_data.raw) {
-                            Ok(m) => m,
-                            Err(_) => panic!("oops"),
-                        };
-                        method.name().to_string()
-                    }
-                    _ => method_name.to_string()
-                };
-
-                let method_auth = resource_manager.get_auth(&name, &call_data).clone();
+                let method_auth = resource_manager.get_auth(method_name, &call_data).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(
                         resource_address.clone(),
