@@ -53,6 +53,8 @@ pub struct ResourceManagerLockAuthInput {
     pub method: ResourceMethodAuthKey,
 }
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerCreateVaultInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ResourceManagerMethod {
@@ -64,7 +66,6 @@ pub enum ResourceManagerMethod {
     NonFungibleExists(NonFungibleId),
     UpdateNonFungibleData(NonFungibleId, Vec<u8>),
     UpdateMetadata(HashMap<String, String>),
-    CreateVault(),
     CreateBucket(),
 }
 
@@ -79,7 +80,6 @@ impl ResourceManagerMethod {
             ResourceManagerMethod::NonFungibleExists(_) => "non_fungible_exists",
             ResourceManagerMethod::UpdateNonFungibleData(_, _) => "update_non_fungible_data",
             ResourceManagerMethod::UpdateMetadata(_) => "update_metadata",
-            ResourceManagerMethod::CreateVault() => "create_vault",
             ResourceManagerMethod::CreateBucket() => "create_bucket",
         }
     }

@@ -5,7 +5,7 @@ use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ResourceManagerLockAuthInput, ResourceManagerUpdateAuthInput};
+use scrypto::prelude::{ResourceManagerCreateVaultInput, ResourceManagerLockAuthInput, ResourceManagerUpdateAuthInput};
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
@@ -425,6 +425,18 @@ impl ResourceManager {
                 let method_entry = self.authorization.get_mut(&input.method).unwrap();
                 return method_entry.main(MethodAccessRuleMethod::Lock());
             }
+            "create_vault" => {
+                let _: ResourceManagerCreateVaultInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let container =
+                    ResourceContainer::new_empty(resource_address, self.resource_type());
+                let vault_id = system_api
+                    .create_vault(container)
+                    .map_err(|_| ResourceManagerError::CouldNotCreateVault)?;
+                return Ok(ScryptoValue::from_value(&scrypto::resource::Vault(
+                    vault_id,
+                )));
+            }
             _ => {}
         }
 
@@ -432,16 +444,6 @@ impl ResourceManager {
             scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
         match method {
-            ResourceManagerMethod::CreateVault() => {
-                let container =
-                    ResourceContainer::new_empty(resource_address, self.resource_type());
-                let vault_id = system_api
-                    .create_vault(container)
-                    .map_err(|_| ResourceManagerError::CouldNotCreateVault)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Vault(
-                    vault_id,
-                )))
-            }
             ResourceManagerMethod::CreateBucket() => {
                 let container =
                     ResourceContainer::new_empty(resource_address, self.resource_type());
