@@ -14,7 +14,6 @@ use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -49,18 +48,13 @@ pub struct VaultCreateProofInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum VaultMethod {
-    CreateProofByAmount(Decimal),
-    CreateProofByIds(BTreeSet<NonFungibleId>),
+pub struct VaultCreateProofByAmountInput {
+    pub amount: Decimal
 }
 
-impl VaultMethod {
-    pub fn name(&self) -> &str {
-        match self {
-            VaultMethod::CreateProofByAmount(_) => "create_proof_by_amount",
-            VaultMethod::CreateProofByIds(_) => "create_proof_by_ids",
-        }
-    }
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultCreateProofByIdsInput {
+    pub ids: BTreeSet<NonFungibleId>
 }
 
 /// Represents a persistent resource container on ledger state.
@@ -155,15 +149,24 @@ impl Vault {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions! {
-        SNodeRef::VaultRef(self.0) => {
-            pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-                VaultMethod::CreateProofByAmount(amount)
-            }
-            pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-                VaultMethod::CreateProofByIds(ids.clone())
-            }
-        }
+    pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::VaultRef(self.0),
+            "create_proof_by_amount".to_string(),
+            scrypto_encode(&VaultCreateProofByAmountInput { amount }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::VaultRef(self.0),
+            "create_proof_by_ids".to_string(),
+            scrypto_encode(&VaultCreateProofByIdsInput { ids: ids.clone() }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
     }
 
     /// Takes some amount of resource from this vault into a bucket.

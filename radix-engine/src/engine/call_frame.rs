@@ -11,7 +11,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{scrypto_decode, VaultMethod};
 use scrypto::resource::AuthZoneMethod;
 use scrypto::values::*;
 
@@ -611,18 +610,6 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 let resource_manager = match substate_value {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
-                };
-
-                let method_name = match method_name {
-                    "" => {
-                        let method: VaultMethod = match scrypto_decode(&call_data.raw) {
-                            Ok(m) => m,
-                            Err(_) => panic!("should not get here"),
-                        };
-
-                        method.name().to_string()
-                    },
-                    _ => method_name.to_string(),
                 };
 
                 let method_auth = resource_manager.get_vault_auth(&method_name);
