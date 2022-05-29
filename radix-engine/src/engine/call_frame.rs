@@ -322,7 +322,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 ValidatedPackage::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
-                .main(call_data, self)
+                .main(method_name, call_data, self)
                 .map_err(RuntimeError::AuthZoneError),
             SNodeState::Worktop(worktop) => worktop
                 .main(call_data, self)

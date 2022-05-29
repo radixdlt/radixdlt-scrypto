@@ -7,12 +7,15 @@ use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::resource::*;
-use crate::sfunctions;
+use crate::{sfunctions, sfunctions2};
+
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct AuthZonePopInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum AuthZoneMethod {
     Push(Proof),
-    Pop(),
     Clear(),
     CreateProof(ResourceAddress),
     CreateProofByAmount(Decimal, ResourceAddress),
@@ -27,14 +30,18 @@ pub enum AuthZoneMethod {
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
+    sfunctions2! {
+        SNodeRef::AuthZoneRef => {
+            pub fn pop() -> Proof {
+                AuthZonePopInput {}
+            }
+        }
+    }
+
     sfunctions! {
         SNodeRef::AuthZoneRef => {
             pub fn push(proof: Proof) -> () {
                 AuthZoneMethod::Push(proof)
-            }
-
-            pub fn pop() -> Proof {
-                AuthZoneMethod::Pop()
             }
 
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {

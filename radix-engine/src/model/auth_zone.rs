@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::resource::AuthZoneMethod;
+use scrypto::resource::{AuthZoneMethod, AuthZonePopInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -88,22 +88,29 @@ impl AuthZone {
 
     pub fn main<S: SystemApi>(
         &mut self,
-        call_data: ScryptoValue,
+        method_name: &str,
+        arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, AuthZoneError> {
-        let method: AuthZoneMethod =
-            scrypto_decode(&call_data.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-
-        match method {
-            AuthZoneMethod::Pop() => {
+        match method_name {
+            "pop" => {
+                let _: AuthZonePopInput =
+                    scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let proof = self.pop()?;
                 let proof_id = system_api
                     .create_proof(proof)
                     .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                return Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
                     proof_id,
-                )))
+                )));
             }
+            _ => {}
+        }
+
+        let method: AuthZoneMethod =
+            scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+
+        match method {
             AuthZoneMethod::Push(proof) => {
                 let mut proof = system_api
                     .take_proof(proof.0)

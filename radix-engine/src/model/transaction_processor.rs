@@ -7,7 +7,7 @@ use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::{BucketCreateProofInput, ProofCloneInput};
-use scrypto::resource::{AuthZoneMethod, ConsumingProofDropInput};
+use scrypto::resource::{AuthZoneMethod, AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
 
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
@@ -159,9 +159,10 @@ impl TransactionProcessor {
                     .map_err(RuntimeError::IdAllocatorError)
                     .and_then(|new_id| {
                         system_api
-                            .invoke_snode(
+                            .invoke_snode2(
                                 SNodeRef::AuthZoneRef,
-                                ScryptoValue::from_value(&AuthZoneMethod::Pop()),
+                                "pop".to_string(),
+                                ScryptoValue::from_value(&AuthZonePopInput {}),
                             )
                             .map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
