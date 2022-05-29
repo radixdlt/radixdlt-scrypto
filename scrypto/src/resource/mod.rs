@@ -23,7 +23,7 @@ pub use non_fungible::NonFungible;
 pub use non_fungible_address::{NonFungibleAddress, ParseNonFungibleAddressError};
 pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
-pub use proof::{ConsumingProofMethod, ParseProofError, Proof, ProofMethod};
+pub use proof::*;
 pub use proof_rule::{
     require, require_all_of, require_amount, require_any_of, require_n_of, AccessRule,
     AccessRuleNode, ProofRule, SoftCount, SoftDecimal, SoftResource, SoftResourceOrNonFungible,

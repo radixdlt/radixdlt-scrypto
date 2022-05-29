@@ -7,6 +7,7 @@ use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
+use scrypto::prelude::ProofAmountInput;
 use scrypto::resource::ConsumingProofMethod;
 use scrypto::resource::ProofMethod;
 use scrypto::values::ScryptoValue;
@@ -329,14 +330,23 @@ impl Proof {
 
     pub fn main<S: SystemApi>(
         &mut self,
+        method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
+        match method_name {
+            "amount" => {
+                let _: ProofAmountInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                return Ok(ScryptoValue::from_value(&self.total_amount()));
+            }
+            _ => {}
+        }
+
         let method: ProofMethod =
             scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
 
         match method {
-            ProofMethod::Amount() => Ok(ScryptoValue::from_value(&self.total_amount())),
             ProofMethod::NonFungibleIds() => {
                 let ids = self.total_ids()?;
                 Ok(ScryptoValue::from_value(&ids))

@@ -11,7 +11,7 @@ use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
+use crate::{sfunctions, sfunctions2};
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -20,8 +20,12 @@ pub enum ConsumingProofMethod {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct ProofAmountInput {
+}
+
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum ProofMethod {
-    Amount(),
     ResourceAddress(),
     NonFungibleIds(),
     Clone(),
@@ -40,9 +44,16 @@ impl Clone for Proof {
 }
 
 impl Proof {
+    sfunctions2! {
+        SNodeRef::ProofRef(self.0) => {
+            pub fn amount(&self) -> Decimal {
+                ProofAmountInput {}
+            }
+        }
+    }
+
     sfunctions! {
         SNodeRef::ProofRef(self.0) => {
-            pub fn amount(&self) -> Decimal { ProofMethod::Amount() }
             pub fn resource_address(&self) -> ResourceAddress { ProofMethod::ResourceAddress() }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> { ProofMethod::NonFungibleIds() }
         }

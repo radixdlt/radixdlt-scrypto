@@ -364,7 +364,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 .consuming_main(method_name, call_data, self)
                 .map_err(RuntimeError::BucketError),
             SNodeState::ProofRef(_, proof) => proof
-                .main(call_data, self)
+                .main(method_name, call_data, self)
                 .map_err(RuntimeError::ProofError),
             SNodeState::Proof(proof) => proof
                 .main_consume(call_data)
