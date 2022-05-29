@@ -6,7 +6,11 @@ use scrypto::call_data;
 use scrypto::component::Package;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput, AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, PackagePublishInput, ProofCloneInput};
+use scrypto::prelude::{
+    AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput,
+    AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, PackagePublishInput,
+    ProofCloneInput,
+};
 use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
 
@@ -454,7 +458,7 @@ impl TransactionProcessor {
                     system_api.invoke_snode2(
                         SNodeRef::PackageStatic,
                         "publish".to_string(),
-                        ScryptoValue::from_value(&PackagePublishInput {package}),
+                        ScryptoValue::from_value(&PackagePublishInput { package }),
                     )
                 }
             }?;

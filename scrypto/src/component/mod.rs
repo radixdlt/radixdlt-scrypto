@@ -8,6 +8,6 @@ pub use component::{
 };
 pub use lazy_map::{LazyMap, ParseLazyMapError};
 pub use package::{
-    BorrowedPackage, Package, PackageAddress, ParsePackageAddressError, PackagePublishInput
+    BorrowedPackage, Package, PackageAddress, PackagePublishInput, ParsePackageAddressError,
 };
 pub use system::{component_system, init_component_system, ComponentSystem};

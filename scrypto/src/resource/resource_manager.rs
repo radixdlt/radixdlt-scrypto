@@ -253,27 +253,21 @@ impl ResourceManager {
         scrypto_decode(&output).unwrap()
     }
 
-
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::ResourceRef(self.0),
             "mint".to_string(),
-            scrypto_encode(&ResourceManagerMintInput {
-                mint_params
-            }),
+            scrypto_encode(&ResourceManagerMintInput { mint_params }),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
     }
 
-
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::ResourceRef(self.0),
             "update_non_fungible_data".to_string(),
-            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput {
-                id, data,
-            }),
+            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data }),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
@@ -283,9 +277,7 @@ impl ResourceManager {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::ResourceRef(self.0),
             "non_fungible_data".to_string(),
-            scrypto_encode(&ResourceManagerGetNonFungibleInput {
-                id,
-            }),
+            scrypto_encode(&ResourceManagerGetNonFungibleInput { id }),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()

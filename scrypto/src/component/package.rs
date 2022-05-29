@@ -12,7 +12,6 @@ use crate::core::*;
 use crate::misc::*;
 use crate::types::*;
 
-
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct PackagePublishInput {
     pub package: Package,
