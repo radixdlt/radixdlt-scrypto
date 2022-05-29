@@ -10,8 +10,8 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::model::{Bucket, ResourceContainer, ResourceContainerError, ResourceManager};
 use crate::model::WorktopError::InvalidMethod;
+use crate::model::{Bucket, ResourceContainer, ResourceContainerError, ResourceManager};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct WorktopPutInput {
@@ -350,7 +350,7 @@ impl Worktop {
                 }
                 Ok(ScryptoValue::from_value(&buckets))
             }
-            _ => Err(InvalidMethod)
+            _ => Err(InvalidMethod),
         }
     }
 }

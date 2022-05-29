@@ -6,12 +6,19 @@ use scrypto::call_data;
 use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput, AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, ProofCloneInput};
+use scrypto::prelude::{
+    AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput,
+    AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, ProofCloneInput,
+};
 use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
 
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
-use crate::model::worktop::{WorktopAssertContainsAmountInput, WorktopAssertContainsInput, WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput, WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput};
+use crate::model::worktop::{
+    WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
+    WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
+    WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
+};
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
 
 pub struct TransactionProcessor {
@@ -196,7 +203,7 @@ impl TransactionProcessor {
                             SNodeRef::AuthZoneRef,
                             "push".to_string(),
                             ScryptoValue::from_value(&AuthZonePushInput {
-                                proof: scrypto::resource::Proof(real_id)
+                                proof: scrypto::resource::Proof(real_id),
                             }),
                         )
                     }),
@@ -346,7 +353,7 @@ impl TransactionProcessor {
                                         SNodeRef::AuthZoneRef,
                                         "push".to_string(),
                                         ScryptoValue::from_value(&AuthZonePushInput {
-                                            proof: scrypto::resource::Proof(*proof_id)
+                                            proof: scrypto::resource::Proof(*proof_id),
                                         }),
                                     )
                                     .unwrap(); // TODO: Remove unwrap
@@ -385,7 +392,7 @@ impl TransactionProcessor {
                                         SNodeRef::AuthZoneRef,
                                         "push".to_string(),
                                         ScryptoValue::from_value(&AuthZonePushInput {
-                                            proof: scrypto::resource::Proof(*proof_id)
+                                            proof: scrypto::resource::Proof(*proof_id),
                                         }),
                                     )
                                     .unwrap();

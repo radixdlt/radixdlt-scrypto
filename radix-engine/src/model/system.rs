@@ -32,7 +32,7 @@ impl System {
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_value(&system_api.get_transaction_hash()))
             }
-            _ => Err(InvalidMethod)
+            _ => Err(InvalidMethod),
         }
     }
 }
