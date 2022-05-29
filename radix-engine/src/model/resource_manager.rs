@@ -158,7 +158,7 @@ impl ResourceManager {
             "update_non_fungible_data".to_string(),
             Protected(UpdateNonFungibleData),
         );
-        for pub_method in ["non_fungible_exists", "get_non_fungible"] {
+        for pub_method in ["non_fungible_exists", "non_fungible_data"] {
             method_table.insert(pub_method.to_string(), Public);
         }
 
