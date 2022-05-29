@@ -200,19 +200,19 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            "get_amount" => {
+            "amount" => {
                 let _: VaultGetAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let amount = self.total_amount();
                 Ok(ScryptoValue::from_value(&amount))
             }
-            "get_resource_address" => {
+            "resource_address" => {
                 let _: VaultGetResourceAddressInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let resource_address = self.resource_address();
                 Ok(ScryptoValue::from_value(&resource_address))
             }
-            "get_non_fungible_ids" => {
+            "non_fungible_ids" => {
                 let _: VaultGetNonFungibleIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let ids = self

@@ -14,6 +14,7 @@ use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
+use crate::sfunctions2;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -75,96 +76,50 @@ impl Vault {
         vault
     }
 
-    pub fn put(&mut self, bucket: Bucket) -> () {
-        let input = RadixEngineInput::InvokeSNode2(
-            SNodeRef::VaultRef(self.0),
-            "put".to_string(),
-            scrypto_encode(&VaultPutInput { bucket }),
-        );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
-    }
+    sfunctions2! {
+        SNodeRef::VaultRef(self.0) => {
+            pub fn put(&mut self, bucket: Bucket) -> () {
+                VaultPutInput {
+                    bucket
+                }
+            }
 
-    fn take_internal(&mut self, amount: Decimal) -> Bucket {
-        let input = RadixEngineInput::InvokeSNode2(
-            SNodeRef::VaultRef(self.0),
-            "take".to_string(),
-            scrypto_encode(&VaultTakeInput { amount }),
-        );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
-    }
+            fn take_internal(&mut self, amount: Decimal) -> Bucket {
+                VaultTakeInput {
+                    amount
+                }
+            }
 
-    pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
-        let input = RadixEngineInput::InvokeSNode2(
-            SNodeRef::VaultRef(self.0),
-            "take_non_fungibles".to_string(),
-            scrypto_encode(&VaultTakeNonFungiblesInput {
-                non_fungible_ids: non_fungible_ids.clone(),
-            }),
-        );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
-    }
+            pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+                VaultTakeNonFungiblesInput {
+                    non_fungible_ids: non_fungible_ids.clone(),
+                }
+            }
 
-    pub fn amount(&self) -> Decimal {
-        let input = RadixEngineInput::InvokeSNode2(
-            SNodeRef::VaultRef(self.0),
-            "get_amount".to_string(),
-            scrypto_encode(&VaultGetAmountInput {}),
-        );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
-    }
+            pub fn amount(&self) -> Decimal {
+                VaultGetAmountInput {}
+            }
 
-    pub fn resource_address(&self) -> ResourceAddress {
-        let input = RadixEngineInput::InvokeSNode2(
-            SNodeRef::VaultRef(self.0),
-            "get_resource_address".to_string(),
-            scrypto_encode(&VaultGetResourceAddressInput {}),
-        );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
-    }
+            pub fn resource_address(&self) -> ResourceAddress {
+                VaultGetResourceAddressInput {}
+            }
 
-    pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-        let input = RadixEngineInput::InvokeSNode2(
-            SNodeRef::VaultRef(self.0),
-            "get_non_fungible_ids".to_string(),
-            scrypto_encode(&VaultGetNonFungibleIdsInput {}),
-        );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
-    }
+            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                VaultGetNonFungibleIdsInput {}
+            }
 
-    pub fn create_proof(&self) -> Proof {
-        let input = RadixEngineInput::InvokeSNode2(
-            SNodeRef::VaultRef(self.0),
-            "create_proof".to_string(),
-            scrypto_encode(&VaultCreateProofInput {}),
-        );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
-    }
+            pub fn create_proof(&self) -> Proof {
+                VaultCreateProofInput {}
+            }
 
-    pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-        let input = RadixEngineInput::InvokeSNode2(
-            SNodeRef::VaultRef(self.0),
-            "create_proof_by_amount".to_string(),
-            scrypto_encode(&VaultCreateProofByAmountInput { amount }),
-        );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
-    }
+            pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+                VaultCreateProofByAmountInput { amount }
+            }
 
-    pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-        let input = RadixEngineInput::InvokeSNode2(
-            SNodeRef::VaultRef(self.0),
-            "create_proof_by_ids".to_string(),
-            scrypto_encode(&VaultCreateProofByIdsInput { ids: ids.clone() }),
-        );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+            pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+                VaultCreateProofByIdsInput { ids: ids.clone() }
+            }
+        }
     }
 
     /// Takes some amount of resource from this vault into a bucket.

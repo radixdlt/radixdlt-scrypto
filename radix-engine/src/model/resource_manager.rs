@@ -124,9 +124,9 @@ impl ResourceManager {
         vault_method_table.insert("take".to_string(), Protected(Withdraw));
         vault_method_table.insert("put".to_string(), Protected(Deposit));
         for pub_method in [
-            "get_amount",
-            "get_resource_address",
-            "get_non_fungible_ids",
+            "amount",
+            "resource_address",
+            "non_fungible_ids",
             "create_proof",
             "create_proof_by_amount",
             "create_proof_by_ids",

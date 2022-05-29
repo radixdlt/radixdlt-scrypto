@@ -28,6 +28,23 @@ macro_rules! sfunctions {
     };
 }
 
+#[macro_export]
+macro_rules! sfunctions2 {
+    ($snode_ref:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $arg:expr })* } ) => {
+        $(
+            $vis $fn $method_name $s -> $rtn {
+                let input = RadixEngineInput::InvokeSNode2(
+                    $snode_ref,
+                    stringify!($method_name).to_string(),
+                    scrypto::buffer::scrypto_encode(&$arg)
+                );
+                let output: sbor::rust::vec::Vec<u8> = call_engine(input);
+                scrypto_decode(&output).unwrap()
+            }
+        )+
+    };
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
     InvokeSNode(SNodeRef, Vec<u8>),
