@@ -267,7 +267,7 @@ impl TransactionProcessor {
                             .invoke_snode2(
                                 SNodeRef::BucketRef(real_bucket_id),
                                 "create_proof".to_string(),
-                                ScryptoValue::from_value(&BucketCreateProofInput { }),
+                                ScryptoValue::from_value(&BucketCreateProofInput {}),
                             )
                             .map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;

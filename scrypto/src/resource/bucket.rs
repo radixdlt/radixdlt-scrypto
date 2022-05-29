@@ -11,14 +11,13 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::{sfunctions, sfunctions2};
 use crate::types::*;
+use crate::{sfunctions, sfunctions2};
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum ConsumingBucketMethod {
     Burn(),
 }
-
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeInput {
@@ -36,20 +35,16 @@ pub struct BucketTakeNonFungiblesInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetNonFungibleIdsInput {
-}
+pub struct BucketGetNonFungibleIdsInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetAmountInput {
-}
+pub struct BucketGetAmountInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketGetResourceAddressInput {
-}
+pub struct BucketGetResourceAddressInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct BucketCreateProofInput {
-}
+pub struct BucketCreateProofInput {}
 
 /// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]

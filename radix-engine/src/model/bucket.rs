@@ -5,7 +5,10 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput, BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput};
+use scrypto::prelude::{
+    BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput,
+    BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput,
+};
 use scrypto::resource::ConsumingBucketMethod;
 use scrypto::values::ScryptoValue;
 
@@ -174,7 +177,7 @@ impl Bucket {
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
-            },
+            }
             "take_non_fungibles" => {
                 let input: BucketTakeNonFungiblesInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
@@ -187,7 +190,7 @@ impl Bucket {
                 Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
-            },
+            }
             "non_fungible_ids" => {
                 let _: BucketGetNonFungibleIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
@@ -195,7 +198,7 @@ impl Bucket {
                     .total_ids()
                     .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&ids))
-            },
+            }
             "put" => {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
@@ -205,17 +208,17 @@ impl Bucket {
                 self.put(bucket)
                     .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&()))
-            },
+            }
             "amount" => {
                 let _: BucketGetAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_value(&self.total_amount()))
-            },
+            }
             "resource_address" => {
                 let _: BucketGetResourceAddressInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_value(&self.resource_address()))
-            },
+            }
             "create_proof" => {
                 let _: BucketCreateProofInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
@@ -229,7 +232,7 @@ impl Bucket {
                     proof_id,
                 )))
             }
-            _ => Err(BucketError::MethodNotFound)
+            _ => Err(BucketError::MethodNotFound),
         }
     }
 
