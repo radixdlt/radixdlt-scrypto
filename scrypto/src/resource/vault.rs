@@ -76,17 +76,21 @@ impl Vault {
         vault
     }
 
+    fn take_internal(&mut self, amount: Decimal) -> Bucket {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::VaultRef(self.0),
+            "take".to_string(),
+            scrypto_encode(&VaultTakeInput { amount }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
     sfunctions2! {
         SNodeRef::VaultRef(self.0) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultPutInput {
                     bucket
-                }
-            }
-
-            fn take_internal(&mut self, amount: Decimal) -> Bucket {
-                VaultTakeInput {
-                    amount
                 }
             }
 
