@@ -6,7 +6,7 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::{VaultGetAmountInput, VaultPutInput, VaultTakeInput};
-use scrypto::resource::{VaultMethod, VaultTakeNonFungiblesInput};
+use scrypto::resource::{VaultGetResourceAddressInput, VaultMethod, VaultTakeNonFungiblesInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -200,7 +200,13 @@ impl Vault {
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let amount = self.total_amount();
                 return Ok(ScryptoValue::from_value(&amount));
-            }
+            },
+            "get_resource_address" => {
+                let _: VaultGetResourceAddressInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let resource_address = self.resource_address();
+                return Ok(ScryptoValue::from_value(&resource_address));
+            },
             _ => { },
         }
 
@@ -208,10 +214,6 @@ impl Vault {
             scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
         match method {
-            VaultMethod::GetResourceAddress() => {
-                let resource_address = self.resource_address();
-                Ok(ScryptoValue::from_value(&resource_address))
-            }
             VaultMethod::GetNonFungibleIds() => {
                 let ids = self
                     .total_ids()

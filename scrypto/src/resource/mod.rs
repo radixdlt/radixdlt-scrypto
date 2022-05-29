@@ -39,5 +39,4 @@ pub use resource_manager::{
 pub use resource_type::ResourceType;
 pub use schema_path::SchemaPath;
 pub use system::{init_resource_system, resource_system, ResourceSystem};
-pub use vault::{ParseVaultError, Vault, VaultMethod,
-                VaultPutInput, VaultTakeInput, VaultTakeNonFungiblesInput, VaultGetAmountInput};
+pub use vault::*;
