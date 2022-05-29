@@ -35,10 +35,24 @@ pub struct WorktopTakeAllInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct WorktopAssertContainsInput {
+    pub resource_address: ResourceAddress,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct WorktopAssertContainsAmountInput {
+    pub resource_address: ResourceAddress,
+    pub amount: Decimal,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct WorktopAssertContainsNonFungiblesInput {
+    pub resource_address: ResourceAddress,
+    pub ids: BTreeSet<NonFungibleId>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum WorktopMethod {
-    AssertContains(ResourceAddress),
-    AssertContainsAmount(Decimal, ResourceAddress),
-    AssertContainsNonFungibles(BTreeSet<NonFungibleId>, ResourceAddress),
     Drain(),
 }
 
@@ -287,6 +301,37 @@ impl Worktop {
                     bucket_id,
                 )));
             }
+            "assert_contains" => {
+                let input: WorktopAssertContainsInput =
+                    scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+                if self.total_amount(input.resource_address).is_zero() {
+                    return Err(WorktopError::AssertionFailed);
+                } else {
+                    return Ok(ScryptoValue::from_value(&()));
+                }
+            }
+            "assert_contains_amount" => {
+                let input: WorktopAssertContainsAmountInput =
+                    scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+                if self.total_amount(input.resource_address) < input.amount {
+                    return Err(WorktopError::AssertionFailed);
+                } else {
+                    return Ok(ScryptoValue::from_value(&()));
+                }
+            }
+            "assert_contains_non_fungibles" => {
+                let input: WorktopAssertContainsNonFungiblesInput =
+                    scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
+                if !self
+                    .total_ids(input.resource_address)
+                    .map_err(WorktopError::ResourceContainerError)?
+                    .is_superset(&input.ids)
+                {
+                    return Err(WorktopError::AssertionFailed);
+                } else {
+                    return Ok(ScryptoValue::from_value(&()));
+                }
+            }
             _ => {}
         }
 
@@ -294,31 +339,6 @@ impl Worktop {
             scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
 
         match method {
-            WorktopMethod::AssertContains(resource_address) => {
-                if self.total_amount(resource_address).is_zero() {
-                    Err(WorktopError::AssertionFailed)
-                } else {
-                    Ok(ScryptoValue::from_value(&()))
-                }
-            }
-            WorktopMethod::AssertContainsAmount(amount, resource_address) => {
-                if self.total_amount(resource_address) < amount {
-                    Err(WorktopError::AssertionFailed)
-                } else {
-                    Ok(ScryptoValue::from_value(&()))
-                }
-            }
-            WorktopMethod::AssertContainsNonFungibles(ids, resource_address) => {
-                if !self
-                    .total_ids(resource_address)
-                    .map_err(WorktopError::ResourceContainerError)?
-                    .is_superset(&ids)
-                {
-                    Err(WorktopError::AssertionFailed)
-                } else {
-                    Ok(ScryptoValue::from_value(&()))
-                }
-            }
             WorktopMethod::Drain() => {
                 let mut buckets = Vec::new();
                 for (_, container) in self.containers.drain() {

@@ -11,7 +11,7 @@ use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
 
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
-use crate::model::worktop::{WorktopMethod, WorktopPutInput, WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput};
+use crate::model::worktop::{WorktopAssertContainsAmountInput, WorktopAssertContainsInput, WorktopAssertContainsNonFungiblesInput, WorktopMethod, WorktopPutInput, WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput};
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
 
 pub struct TransactionProcessor {
@@ -133,29 +133,34 @@ impl TransactionProcessor {
                     })
                     .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id))),
                 ValidatedInstruction::AssertWorktopContains { resource_address } => system_api
-                    .invoke_snode(
+                    .invoke_snode2(
                         SNodeRef::WorktopRef,
-                        ScryptoValue::from_value(&WorktopMethod::AssertContains(*resource_address)),
+                        "assert_contains".to_string(),
+                        ScryptoValue::from_value(&WorktopAssertContainsInput {
+                            resource_address: *resource_address,
+                        }),
                     ),
                 ValidatedInstruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
-                } => system_api.invoke_snode(
+                } => system_api.invoke_snode2(
                     SNodeRef::WorktopRef,
-                    ScryptoValue::from_value(&WorktopMethod::AssertContainsAmount(
-                        *amount,
-                        *resource_address,
-                    )),
+                    "assert_contains_amount".to_string(),
+                    ScryptoValue::from_value(&WorktopAssertContainsAmountInput {
+                        resource_address: *resource_address,
+                        amount: *amount,
+                    }),
                 ),
                 ValidatedInstruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
-                } => system_api.invoke_snode(
+                } => system_api.invoke_snode2(
                     SNodeRef::WorktopRef,
-                    ScryptoValue::from_value(&WorktopMethod::AssertContainsNonFungibles(
-                        ids.clone(),
-                        *resource_address,
-                    )),
+                    "assert_contains_non_fungibles".to_string(),
+                    ScryptoValue::from_value(&WorktopAssertContainsNonFungiblesInput {
+                        resource_address: *resource_address,
+                        ids: ids.clone(),
+                    }),
                 ),
                 ValidatedInstruction::PopFromAuthZone {} => self
                     .id_allocator
