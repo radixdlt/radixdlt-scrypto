@@ -11,7 +11,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::resource::AuthZoneMethod;
+use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 
 use self::LazyMapState::{Committed, Uncommitted};
@@ -390,7 +390,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
             self.invoke_snode(
                 SNodeRef::AuthZoneRef,
                 "clear",
-                ScryptoValue::from_value(&AuthZoneMethod::Clear()),
+                ScryptoValue::from_value(&AuthZoneClearInput {}),
             )?;
         }
         self.check_resource()?;

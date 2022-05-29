@@ -6,8 +6,8 @@ use scrypto::call_data;
 use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput, AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, ProofCloneInput};
-use scrypto::resource::{AuthZoneMethod, AuthZonePopInput, ConsumingProofDropInput};
+use scrypto::prelude::{AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput, AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, ProofCloneInput};
+use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
 
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
@@ -172,9 +172,10 @@ impl TransactionProcessor {
                     }),
                 ValidatedInstruction::ClearAuthZone => {
                     self.proof_id_mapping.clear();
-                    system_api.invoke_snode(
+                    system_api.invoke_snode2(
                         SNodeRef::AuthZoneRef,
-                        ScryptoValue::from_value(&AuthZoneMethod::Clear()),
+                        "clear".to_string(),
+                        ScryptoValue::from_value(&AuthZoneClearInput {}),
                     )
                 }
                 ValidatedInstruction::PushToAuthZone { proof_id } => self
@@ -397,9 +398,10 @@ impl TransactionProcessor {
                     component_address,
                     method,
                 } => system_api
-                    .invoke_snode(
+                    .invoke_snode2(
                         SNodeRef::AuthZoneRef,
-                        ScryptoValue::from_value(&AuthZoneMethod::Clear()),
+                        "clear".to_string(),
+                        ScryptoValue::from_value(&AuthZoneClearInput {}),
                     )
                     .and_then(|_| {
                         for (_, real_id) in self.proof_id_mapping.drain() {
