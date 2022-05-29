@@ -198,9 +198,7 @@ impl ResourceManager {
         match self.method_table.get(method_name) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
-            Some(Protected(method)) => {
-                self.authorization.get(method).unwrap().get_method_auth()
-            }
+            Some(Protected(method)) => self.authorization.get(method).unwrap().get_method_auth(),
         }
     }
 

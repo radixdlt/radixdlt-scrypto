@@ -5,7 +5,11 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput, BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput, ConsumingBucketBurnInput};
+use scrypto::prelude::{
+    BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput,
+    BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput,
+    ConsumingBucketBurnInput,
+};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -228,7 +232,7 @@ impl Bucket {
                     proof_id,
                 )))
             }
-            _ => Err(BucketError::MethodNotFound(method_name.to_string()))
+            _ => Err(BucketError::MethodNotFound(method_name.to_string())),
         }
     }
 
@@ -259,7 +263,7 @@ impl Bucket {
 
                 Ok(ScryptoValue::from_value(&()))
             }
-            _ => Err(BucketError::MethodNotFound(method_name.to_string()))
+            _ => Err(BucketError::MethodNotFound(method_name.to_string())),
         }
     }
 }

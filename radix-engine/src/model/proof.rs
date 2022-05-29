@@ -7,15 +7,17 @@ use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ProofCloneInput, ProofGetAmountInput, ProofGetNonFungibleIdsInput, ProofGetResourceAddressInput};
+use scrypto::prelude::{
+    ProofCloneInput, ProofGetAmountInput, ProofGetNonFungibleIdsInput, ProofGetResourceAddressInput,
+};
 use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
-use crate::model::ProofError::UnknownMethod;
 
 #[derive(Debug)]
 pub struct Proof {
@@ -345,7 +347,7 @@ impl Proof {
                 let _: ProofGetNonFungibleIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let ids = self.total_ids()?;
-                return Ok(ScryptoValue::from_value(&ids))
+                return Ok(ScryptoValue::from_value(&ids));
             }
             "resource_address" => {
                 let _: ProofGetResourceAddressInput =
@@ -363,11 +365,15 @@ impl Proof {
                     proof_id,
                 )))
             }
-            _ => Err(UnknownMethod)
+            _ => Err(UnknownMethod),
         }
     }
 
-    pub fn main_consume(self, method_name: &str, arg: ScryptoValue) -> Result<ScryptoValue, ProofError> {
+    pub fn main_consume(
+        self,
+        method_name: &str,
+        arg: ScryptoValue,
+    ) -> Result<ScryptoValue, ProofError> {
         match method_name {
             "drop" => {
                 let _: ConsumingProofDropInput =
@@ -375,7 +381,7 @@ impl Proof {
                 self.drop();
                 Ok(ScryptoValue::from_value(&()))
             }
-            _ => Err(UnknownMethod)
+            _ => Err(UnknownMethod),
         }
     }
 }

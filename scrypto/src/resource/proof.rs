@@ -15,24 +15,19 @@ use crate::sfunctions2;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ConsumingProofDropInput {
-}
+pub struct ConsumingProofDropInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetAmountInput {
-}
+pub struct ProofGetAmountInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetNonFungibleIdsInput {
-}
+pub struct ProofGetNonFungibleIdsInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofGetResourceAddressInput {
-}
+pub struct ProofGetResourceAddressInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ProofCloneInput {
-}
+pub struct ProofCloneInput {}
 
 /// Represents a proof of owning some resource.
 #[derive(Debug, PartialEq, Eq, Hash)]
