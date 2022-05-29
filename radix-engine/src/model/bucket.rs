@@ -5,11 +5,7 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{
-    BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput,
-    BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput,
-};
-use scrypto::resource::ConsumingBucketMethod;
+use scrypto::prelude::{BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput, BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput, ConsumingBucketBurnInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -232,21 +228,20 @@ impl Bucket {
                     proof_id,
                 )))
             }
-            _ => {
-                Err(BucketError::MethodNotFound(method_name.to_string()))
-            },
+            _ => Err(BucketError::MethodNotFound(method_name.to_string()))
         }
     }
 
     pub fn consuming_main<S: SystemApi>(
         self,
+        method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, BucketError> {
-        let method: ConsumingBucketMethod =
-            scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
-        match method {
-            ConsumingBucketMethod::Burn() => {
+        match method_name {
+            "burn" => {
+                let _: ConsumingBucketBurnInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 // Notify resource manager, TODO: Should not need to notify manually
                 let resource_address = self.resource_address();
                 let mut resource_manager = system_api
@@ -264,6 +259,7 @@ impl Bucket {
 
                 Ok(ScryptoValue::from_value(&()))
             }
+            _ => Err(BucketError::MethodNotFound(method_name.to_string()))
         }
     }
 }

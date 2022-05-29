@@ -12,11 +12,10 @@ use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::types::*;
-use crate::{sfunctions, sfunctions2};
+use crate::sfunctions2;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ConsumingBucketMethod {
-    Burn(),
+pub struct ConsumingBucketBurnInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -61,10 +60,10 @@ impl Bucket {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions! {
+    sfunctions2! {
         SNodeRef::Bucket(self.0) => {
            pub fn burn(self) -> () {
-                ConsumingBucketMethod::Burn()
+                ConsumingBucketBurnInput {}
             }
         }
     }

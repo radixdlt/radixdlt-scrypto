@@ -361,7 +361,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 .main(bucket_id, method_name, call_data, self)
                 .map_err(RuntimeError::BucketError),
             SNodeState::Bucket(bucket) => bucket
-                .consuming_main(call_data, self)
+                .consuming_main(method_name, call_data, self)
                 .map_err(RuntimeError::BucketError),
             SNodeState::ProofRef(_, proof) => proof
                 .main(call_data, self)
@@ -550,7 +550,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
-                let method_auth = resource_manager.get_consuming_bucket_auth(&call_data);
+                let method_auth = resource_manager.get_consuming_bucket_auth(method_name);
                 Ok((
                     Consumed(Some(ConsumedSNodeState::Bucket(bucket))),
                     vec![method_auth.clone()],
