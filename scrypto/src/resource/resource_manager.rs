@@ -49,9 +49,14 @@ pub struct ResourceManagerUpdateAuthInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerLockAuthInput {
+    pub method: ResourceMethodAuthKey,
+}
+
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum ResourceManagerMethod {
     Mint(MintParams),
-    LockAuth(ResourceMethodAuthKey),
     GetResourceType(),
     GetMetadata(),
     GetTotalSupply(),
@@ -67,7 +72,6 @@ impl ResourceManagerMethod {
     pub fn name(&self) -> &str {
         match self {
             ResourceManagerMethod::Mint(_) => "mint",
-            ResourceManagerMethod::LockAuth(_) => "lock_auth",
             ResourceManagerMethod::GetResourceType() => "get_resource_type",
             ResourceManagerMethod::GetMetadata() => "get_metadata",
             ResourceManagerMethod::GetTotalSupply() => "get_total_supply",
@@ -170,28 +174,82 @@ impl ResourceManager {
         scrypto_decode(&output).unwrap()
     }
 
+    pub fn lock_mintable(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Mint,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_burnable(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Burn,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_withdrawable(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Withdraw,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_depositable(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Deposit,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_updateable_metadata(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::UpdateMetadata,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_updateable_non_fungible_data(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::UpdateNonFungibleData,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
     sfunctions! {
         SNodeRef::ResourceRef(self.0) => {
             fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
                 ResourceManagerMethod::Mint(mint_params)
-            }
-            pub fn lock_mintable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Mint)
-            }
-            pub fn lock_burnable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Burn)
-            }
-            pub fn lock_withdrawable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Withdraw)
-            }
-            pub fn lock_depositable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Deposit)
-            }
-            pub fn lock_updateable_metadata(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::UpdateMetadata)
-            }
-            pub fn lock_updateable_non_fungible_data(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::UpdateNonFungibleData)
             }
             pub fn metadata(&self) -> HashMap<String, String> {
                 ResourceManagerMethod::GetMetadata()

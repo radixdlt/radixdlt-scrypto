@@ -5,7 +5,7 @@ use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::ResourceManagerUpdateAuthInput;
+use scrypto::prelude::{ResourceManagerLockAuthInput, ResourceManagerUpdateAuthInput};
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
@@ -215,13 +215,10 @@ impl ResourceManager {
                 }
             }
             "lock_auth" => {
-                let input: ResourceManagerMethod = scrypto_decode(&arg.raw).unwrap();
-                match input {
-                    ResourceManagerMethod::LockAuth(method) => match self.authorization.get(&method) {
-                        None => &MethodAuthorization::Unsupported,
-                        Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
-                    },
-                    _ => panic!("oops")
+                let input: ResourceManagerLockAuthInput = scrypto_decode(&arg.raw).unwrap();
+                match self.authorization.get(&input.method) {
+                    None => &MethodAuthorization::Unsupported,
+                    Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
                 }
             }
             _ => match self.method_table.get(method_name) {
@@ -422,6 +419,12 @@ impl ResourceManager {
                 let method_entry = self.authorization.get_mut(&input.method).unwrap();
                 return method_entry.main(MethodAccessRuleMethod::Update(input.access_rule));
             }
+            "lock_auth" => {
+                let input: ResourceManagerLockAuthInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let method_entry = self.authorization.get_mut(&input.method).unwrap();
+                return method_entry.main(MethodAccessRuleMethod::Lock());
+            }
             _ => {}
         }
 
@@ -429,10 +432,6 @@ impl ResourceManager {
             scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
         match method {
-            ResourceManagerMethod::LockAuth(method) => {
-                let method_entry = self.authorization.get_mut(&method).unwrap();
-                method_entry.main(MethodAccessRuleMethod::Lock())
-            }
             ResourceManagerMethod::CreateVault() => {
                 let container =
                     ResourceContainer::new_empty(resource_address, self.resource_type());
