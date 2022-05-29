@@ -318,7 +318,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 SNodeState::SystemStatic => System::static_main(method_name, call_data, self)
                     .map_err(RuntimeError::SystemError),
                 SNodeState::Transaction(transaction_process) => transaction_process.main(self),
-                SNodeState::PackageStatic => ValidatedPackage::static_main(call_data, self)
+                SNodeState::PackageStatic => ValidatedPackage::static_main(method_name, call_data, self)
                     .map_err(RuntimeError::PackageError),
                 SNodeState::AuthZoneRef(auth_zone) => auth_zone
                     .main(method_name, call_data, self)

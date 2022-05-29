@@ -12,9 +12,10 @@ use crate::core::*;
 use crate::misc::*;
 use crate::types::*;
 
+
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum PackageFunction {
-    Publish(Package),
+pub struct PackagePublishInput {
+    pub package: Package,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
