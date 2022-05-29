@@ -5,7 +5,7 @@ use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ResourceManagerCreateVaultInput, ResourceManagerLockAuthInput, ResourceManagerUpdateAuthInput};
+use scrypto::prelude::{ResourceManagerCreateBucketInput, ResourceManagerCreateVaultInput, ResourceManagerLockAuthInput, ResourceManagerUpdateAuthInput};
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
@@ -437,6 +437,18 @@ impl ResourceManager {
                     vault_id,
                 )));
             }
+            "create_bucket" => {
+                let _: ResourceManagerCreateBucketInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let container =
+                    ResourceContainer::new_empty(resource_address, self.resource_type());
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                return Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )));
+            }
             _ => {}
         }
 
@@ -444,16 +456,6 @@ impl ResourceManager {
             scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
         match method {
-            ResourceManagerMethod::CreateBucket() => {
-                let container =
-                    ResourceContainer::new_empty(resource_address, self.resource_type());
-                let bucket_id = system_api
-                    .create_bucket(container)
-                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                    bucket_id,
-                )))
-            }
             ResourceManagerMethod::Mint(mint_params) => {
                 let container = self.mint(mint_params, resource_address, system_api)?;
                 let bucket_id = system_api

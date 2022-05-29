@@ -51,9 +51,10 @@ pub struct Bucket(pub BucketId);
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeSNode(
+        let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::ResourceRef(resource_address),
-            scrypto_encode(&ResourceManagerMethod::CreateBucket()),
+            "create_bucket".to_string(),
+            scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
