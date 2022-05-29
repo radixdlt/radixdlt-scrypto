@@ -28,8 +28,13 @@ pub struct VaultTakeInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultTakeNonFungiblesInput {
+    pub non_fungible_ids: BTreeSet<NonFungibleId>
+}
+
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum VaultMethod {
-    TakeNonFungibles(BTreeSet<NonFungibleId>),
     CreateProof(),
     CreateProofByAmount(Decimal),
     CreateProofByIds(BTreeSet<NonFungibleId>),
@@ -41,7 +46,6 @@ pub enum VaultMethod {
 impl VaultMethod {
     pub fn name(&self) -> &str {
         match self {
-            VaultMethod::TakeNonFungibles(_) => "take_non_fungibles",
             VaultMethod::CreateProof() => "create_proof",
             VaultMethod::CreateProofByAmount(_) => "create_proof_by_amount",
             VaultMethod::CreateProofByIds(_) => "create_proof_by_ids",
@@ -94,11 +98,18 @@ impl Vault {
         scrypto_decode(&output).unwrap()
     }
 
+    pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::VaultRef(self.0),
+            "take_non_fungibles".to_string(),
+            scrypto_encode(&VaultTakeNonFungiblesInput { non_fungible_ids: non_fungible_ids.clone() }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
     sfunctions! {
         SNodeRef::VaultRef(self.0) => {
-            pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
-                VaultMethod::TakeNonFungibles(non_fungible_ids.clone())
-            }
             pub fn create_proof(&self) -> Proof {
                 VaultMethod::CreateProof()
             }

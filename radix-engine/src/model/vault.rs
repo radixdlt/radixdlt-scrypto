@@ -6,7 +6,7 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::{VaultPutInput, VaultTakeInput};
-use scrypto::resource::VaultMethod;
+use scrypto::resource::{VaultMethod, VaultTakeNonFungiblesInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -184,6 +184,17 @@ impl Vault {
                 )));
 
             },
+            "take_non_fungibles" => {
+                let input: VaultTakeNonFungiblesInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let container = self.take_non_fungibles(&input.non_fungible_ids)?;
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| VaultError::CouldNotCreateBucket)?;
+                return Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )));
+            },
             _ => { },
         }
 
@@ -191,15 +202,6 @@ impl Vault {
             scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
 
         match method {
-            VaultMethod::TakeNonFungibles(non_fungible_ids) => {
-                let container = self.take_non_fungibles(&non_fungible_ids)?;
-                let bucket_id = system_api
-                    .create_bucket(container)
-                    .map_err(|_| VaultError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                    bucket_id,
-                )))
-            }
             VaultMethod::GetAmount() => {
                 let amount = self.total_amount();
                 Ok(ScryptoValue::from_value(&amount))
