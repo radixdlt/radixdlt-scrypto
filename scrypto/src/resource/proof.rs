@@ -11,12 +11,11 @@ use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::{sfunctions, sfunctions2};
+use crate::sfunctions2;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ConsumingProofMethod {
-    Drop(),
+pub struct ConsumingProofDropInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -64,9 +63,11 @@ impl Proof {
         }
     }
 
-    sfunctions! {
+    sfunctions2! {
         SNodeRef::Proof(self.0) => {
-            pub fn drop(self) -> () { ConsumingProofMethod::Drop() }
+            pub fn drop(self) -> () {
+                ConsumingProofDropInput {}
+            }
         }
     }
 

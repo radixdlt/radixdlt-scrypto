@@ -367,7 +367,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                 .main(method_name, call_data, self)
                 .map_err(RuntimeError::ProofError),
             SNodeState::Proof(proof) => proof
-                .main_consume(call_data)
+                .main_consume(method_name, call_data)
                 .map_err(RuntimeError::ProofError),
             SNodeState::VaultRef(vault_id, _, vault) => vault
                 .main(vault_id, method_name, call_data, self)

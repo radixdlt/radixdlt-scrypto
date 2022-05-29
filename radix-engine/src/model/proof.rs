@@ -8,7 +8,7 @@ use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::prelude::{ProofCloneInput, ProofGetAmountInput, ProofGetNonFungibleIdsInput, ProofGetResourceAddressInput};
-use scrypto::resource::ConsumingProofMethod;
+use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -367,15 +367,15 @@ impl Proof {
         }
     }
 
-    pub fn main_consume(self, arg: ScryptoValue) -> Result<ScryptoValue, ProofError> {
-        let method: ConsumingProofMethod =
-            scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-
-        match method {
-            ConsumingProofMethod::Drop() => {
+    pub fn main_consume(self, method_name: &str, arg: ScryptoValue) -> Result<ScryptoValue, ProofError> {
+        match method_name {
+            "drop" => {
+                let _: ConsumingProofDropInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 self.drop();
                 Ok(ScryptoValue::from_value(&()))
             }
+            _ => Err(UnknownMethod)
         }
     }
 }

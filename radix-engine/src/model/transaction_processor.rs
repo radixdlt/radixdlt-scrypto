@@ -7,8 +7,7 @@ use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::{BucketCreateProofInput, ProofCloneInput};
-use scrypto::resource::AuthZoneMethod;
-use scrypto::resource::ConsumingProofMethod;
+use scrypto::resource::{AuthZoneMethod, ConsumingProofDropInput};
 use scrypto::values::*;
 
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
@@ -302,9 +301,10 @@ impl TransactionProcessor {
                     .proof_id_mapping
                     .remove(proof_id)
                     .map(|real_id| {
-                        system_api.invoke_snode(
+                        system_api.invoke_snode2(
                             SNodeRef::Proof(real_id),
-                            ScryptoValue::from_value(&ConsumingProofMethod::Drop()),
+                            "drop".to_string(),
+                            ScryptoValue::from_value(&ConsumingProofDropInput {}),
                         )
                     })
                     .unwrap_or(Err(ProofNotFound(*proof_id))),
@@ -397,9 +397,10 @@ impl TransactionProcessor {
                     .and_then(|_| {
                         for (_, real_id) in self.proof_id_mapping.drain() {
                             system_api
-                                .invoke_snode(
+                                .invoke_snode2(
                                     SNodeRef::Proof(real_id),
-                                    ScryptoValue::from_value(&ConsumingProofMethod::Drop()),
+                                    "drop".to_string(),
+                                    ScryptoValue::from_value(&ConsumingProofDropInput {}),
                                 )
                                 .unwrap();
                         }
