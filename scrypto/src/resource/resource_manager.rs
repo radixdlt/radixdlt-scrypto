@@ -13,7 +13,7 @@ use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
+use crate::{sfunctions, sfunctions2};
 use crate::types::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
@@ -60,11 +60,21 @@ pub struct ResourceManagerCreateVaultInput {}
 pub struct ResourceManagerCreateBucketInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerMintInput {
+    pub mint_params: MintParams,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerGetMetadataInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerGetResourceTypeInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerGetTotalSupplyInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum ResourceManagerMethod {
-    Mint(MintParams),
-    GetResourceType(),
-    GetMetadata(),
-    GetTotalSupply(),
     GetNonFungible(NonFungibleId),
     NonFungibleExists(NonFungibleId),
     UpdateNonFungibleData(NonFungibleId, Vec<u8>),
@@ -74,10 +84,6 @@ pub enum ResourceManagerMethod {
 impl ResourceManagerMethod {
     pub fn name(&self) -> &str {
         match self {
-            ResourceManagerMethod::Mint(_) => "mint",
-            ResourceManagerMethod::GetResourceType() => "get_resource_type",
-            ResourceManagerMethod::GetMetadata() => "get_metadata",
-            ResourceManagerMethod::GetTotalSupply() => "get_total_supply",
             ResourceManagerMethod::GetNonFungible(_) => "get_non_fungible",
             ResourceManagerMethod::NonFungibleExists(_) => "non_fungible_exists",
             ResourceManagerMethod::UpdateNonFungibleData(_, _) => "update_non_fungible_data",
@@ -247,17 +253,36 @@ impl ResourceManager {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions! {
+
+    fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "mint".to_string(),
+            scrypto_encode(&ResourceManagerMintInput {
+                mint_params
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+
+    sfunctions2! {
         SNodeRef::ResourceRef(self.0) => {
-            fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-                ResourceManagerMethod::Mint(mint_params)
-            }
             pub fn metadata(&self) -> HashMap<String, String> {
-                ResourceManagerMethod::GetMetadata()
+                ResourceManagerGetMetadataInput {}
+            }
+            pub fn resource_type(&self) -> () {
+                ResourceManagerGetResourceTypeInput {}
             }
             pub fn total_supply(&self) -> Decimal {
-                ResourceManagerMethod::GetTotalSupply()
+                ResourceManagerGetTotalSupplyInput {}
             }
+        }
+    }
+
+    sfunctions! {
+        SNodeRef::ResourceRef(self.0) => {
             fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
                 ResourceManagerMethod::GetNonFungible(id)
             }
@@ -269,9 +294,6 @@ impl ResourceManager {
             }
             pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>) -> () {
                 ResourceManagerMethod::UpdateMetadata(new_metadata)
-            }
-            pub fn resource_type(&self) -> () {
-                ResourceManagerMethod::GetResourceType()
             }
         }
     }

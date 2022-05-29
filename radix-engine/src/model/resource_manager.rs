@@ -5,11 +5,11 @@ use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::{ResourceManagerCreateBucketInput, ResourceManagerCreateVaultInput, ResourceManagerLockAuthInput, ResourceManagerUpdateAuthInput};
+use scrypto::prelude::{ResourceManagerCreateBucketInput, ResourceManagerCreateVaultInput, ResourceManagerGetResourceTypeInput, ResourceManagerGetTotalSupplyInput, ResourceManagerLockAuthInput, ResourceManagerMintInput, ResourceManagerUpdateAuthInput};
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
-use scrypto::resource::{ResourceManagerFunction, ResourceManagerMethod};
+use scrypto::resource::{ResourceManagerFunction, ResourceManagerGetMetadataInput, ResourceManagerMethod};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -143,9 +143,9 @@ impl ResourceManager {
         method_table.insert("update_metadata".to_string(), Protected(UpdateMetadata));
         for pub_method in [
             "create_bucket",
-            "get_metadata",
+            "metadata",
             "get_resource_type",
-            "get_total_supply",
+            "total_supply",
             "create_vault",
         ] {
             method_table.insert(pub_method.to_string(), Public);
@@ -449,6 +449,32 @@ impl ResourceManager {
                     bucket_id,
                 )));
             }
+            "mint" => {
+                let input: ResourceManagerMintInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let container = self.mint(input.mint_params, resource_address, system_api)?;
+                let bucket_id = system_api
+                    .create_bucket(container)
+                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                return Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                    bucket_id,
+                )));
+            }
+            "metadata" => {
+                let _: ResourceManagerGetMetadataInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                return Ok(ScryptoValue::from_value(&self.metadata));
+            }
+            "resource_type" => {
+                let _: ResourceManagerGetResourceTypeInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                return Ok(ScryptoValue::from_value(&self.resource_type));
+            }
+            "total_supply" => {
+                let _: ResourceManagerGetTotalSupplyInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                return Ok(ScryptoValue::from_value(&self.total_supply));
+            }
             _ => {}
         }
 
@@ -456,22 +482,6 @@ impl ResourceManager {
             scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
         match method {
-            ResourceManagerMethod::Mint(mint_params) => {
-                let container = self.mint(mint_params, resource_address, system_api)?;
-                let bucket_id = system_api
-                    .create_bucket(container)
-                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
-                    bucket_id,
-                )))
-            }
-            ResourceManagerMethod::GetMetadata() => Ok(ScryptoValue::from_value(&self.metadata)),
-            ResourceManagerMethod::GetResourceType() => {
-                Ok(ScryptoValue::from_value(&self.resource_type))
-            }
-            ResourceManagerMethod::GetTotalSupply() => {
-                Ok(ScryptoValue::from_value(&self.total_supply))
-            }
             ResourceManagerMethod::UpdateMetadata(new_metadata) => {
                 self.update_metadata(new_metadata)?;
                 Ok(ScryptoValue::from_value(&()))
