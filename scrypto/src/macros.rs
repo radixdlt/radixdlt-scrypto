@@ -206,7 +206,7 @@ macro_rules! include_package {
 Generates a bridge/stub to make package calls to a blueprint.
 
 You can also use this to make calls to the component itself.
-If you just wish to make calls to an instantiated component, see the [component_bridge]! macro.
+If you just wish to make calls to an instantiated component, see the [external_component]! macro.
 
 # Examples
 ```
@@ -219,7 +219,7 @@ enum DepositResult {
     Failure
 }
 
-blueprint_bridge! {
+external_blueprint! {
     {
         package: "000000000000000000000000000000000000000000000000000001",
         blueprint: "CustomAccount"
@@ -250,11 +250,11 @@ fn bridge_to_existing_account() {
 # Related
 
 - Replaces the import! macro for importing an abi, using a more concise, readable syntax.
-- Similar to the [component_bridge]! macro, which is used for making cross-component calls to an already-instantiated component.
+- Similar to the [external_component]! macro, which is used for making cross-component calls to an already-instantiated component.
 
 */
 #[macro_export]
-macro_rules! blueprint_bridge {
+macro_rules! external_blueprint {
     (
         $blueprint_context:tt,
         $blueprint_ident:ident {
@@ -267,7 +267,7 @@ macro_rules! blueprint_bridge {
             component_address: ::scrypto::component::ComponentAddress,
         }
 
-        // We allow dead code because it's often used for interfaces
+        // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint_ident {
             ::scrypto::bridge_blueprint_interface_members!(
@@ -306,7 +306,7 @@ enum DepositResult {
     Failure
 }
 
-component_bridge! {
+external_component! {
     AccountInterface {
         fn deposit(&mut self, b: Bucket) -> DepositResult;
         fn deposit_no_return(&mut self, b: Bucket);
@@ -323,11 +323,11 @@ fn bridge_to_existing_account() {
 
 # Related
 
-- Similar to the [blueprint_bridge] macro, but the component_bridge can be used without knowing the package and blueprint addresses.
+- Similar to the [external_blueprint] macro, but the external_component can be used without knowing the package and blueprint addresses.
 
 */
 #[macro_export]
-macro_rules! component_bridge {
+macro_rules! external_component {
     (
         $component_ident:ident {
             $($component_methods:tt)*
@@ -339,7 +339,7 @@ macro_rules! component_bridge {
             component_address: ::scrypto::component::ComponentAddress,
         }
 
-        // We allow dead code because it's often used for interfaces
+        // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
             ::scrypto::bridge_blueprint_interface_members!((), $($component_methods)*);
@@ -485,7 +485,7 @@ macro_rules! package_address_from_context {
         $package_address
     };
     () => {
-        compile_error!("Cannot call package functions (ie without &self or &mut self) on a component_bridge - use a blueprint_bridge instead.");
+        compile_error!("Cannot call package functions (ie without &self or &mut self) on a external_component - use a external_blueprint instead.");
     };
     (
         $blueprint_context:tt
@@ -505,7 +505,7 @@ macro_rules! blueprint_name_from_context {
         $blueprint_logical_name
     };
     () => {
-        compile_error!("Cannot call package functions (ie without &self or &mut self) on a component_bridge - use a blueprint_bridge instead.");
+        compile_error!("Cannot call package functions (ie without &self or &mut self) on a external_component - use a external_blueprint instead.");
     };
     (
         $blueprint_context:tt

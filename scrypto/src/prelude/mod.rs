@@ -10,7 +10,7 @@ pub use crate::{
     access_and_or, access_rule_node, args, blueprint, borrow_component, borrow_package,
     borrow_resource_manager, compile_package, debug, dec, error, import, include_package, info,
     resource_list, rule, trace, warn, Decode, Describe, Encode, NonFungibleData, TypeId,
-    blueprint_bridge, component_bridge,
+    external_blueprint, external_component,
 };
 
 pub use sbor::rust::borrow::ToOwned;
