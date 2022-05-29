@@ -9,8 +9,10 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::buffer::scrypto_decode;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
+use scrypto::prelude::ResourceManagerMethod;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 
@@ -351,7 +353,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                     .map_err(RuntimeError::ResourceManagerError),
                 SNodeState::ResourceRef(resource_address, resource_manager) => {
                     let return_value = resource_manager
-                        .main(resource_address, call_data, self)
+                        .main(resource_address, method_name, call_data, self)
                         .map_err(RuntimeError::ResourceManagerError)?;
 
                     Ok(return_value)
@@ -529,7 +531,19 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
                         TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
                     })?
                     .into();
-                let method_auth = resource_manager.get_auth(&call_data).clone();
+
+                let name = match method_name {
+                    "" => {
+                        let method: ResourceManagerMethod = match scrypto_decode(&call_data.raw) {
+                            Ok(m) => m,
+                            Err(_) => panic!("oops"),
+                        };
+                        method.name().to_string()
+                    }
+                    _ => method_name.to_string()
+                };
+
+                let method_auth = resource_manager.get_auth(&name, &call_data).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(
                         resource_address.clone(),

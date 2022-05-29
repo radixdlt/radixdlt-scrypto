@@ -5,6 +5,7 @@ use sbor::rust::vec::*;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
+use scrypto::prelude::ResourceManagerUpdateAuthInput;
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
@@ -202,26 +203,28 @@ impl ResourceManager {
         }
     }
 
-    pub fn get_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
-        let method: ResourceManagerMethod = match scrypto_decode(&arg.raw) {
-            Ok(m) => m,
-            Err(_) => return &MethodAuthorization::Unsupported,
-        };
-
-        match method {
-            ResourceManagerMethod::UpdateAuth(method, method_auth) => {
-                match self.authorization.get(&method) {
+    pub fn get_auth(&self, method_name: &str, arg: &ScryptoValue) -> &MethodAuthorization {
+        match method_name {
+            "update_auth" => {
+                let input: ResourceManagerUpdateAuthInput = scrypto_decode(&arg.raw).unwrap();
+                match self.authorization.get(&input.method) {
                     None => &MethodAuthorization::Unsupported,
                     Some(entry) => {
-                        entry.get_update_auth(MethodAccessRuleMethod::Update(method_auth))
+                        entry.get_update_auth(MethodAccessRuleMethod::Update(input.access_rule))
                     }
                 }
             }
-            ResourceManagerMethod::LockAuth(method) => match self.authorization.get(&method) {
-                None => &MethodAuthorization::Unsupported,
-                Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
-            },
-            method => match self.method_table.get(method.name()) {
+            "lock_auth" => {
+                let input: ResourceManagerMethod = scrypto_decode(&arg.raw).unwrap();
+                match input {
+                    ResourceManagerMethod::LockAuth(method) => match self.authorization.get(&method) {
+                        None => &MethodAuthorization::Unsupported,
+                        Some(entry) => entry.get_update_auth(MethodAccessRuleMethod::Lock()),
+                    },
+                    _ => panic!("oops")
+                }
+            }
+            _ => match self.method_table.get(method_name) {
                 None => &MethodAuthorization::Unsupported,
                 Some(Public) => &MethodAuthorization::AllowAll,
                 Some(Protected(method)) => {
@@ -408,17 +411,24 @@ impl ResourceManager {
     pub fn main<S: SystemApi>(
         &mut self,
         resource_address: ResourceAddress,
+        method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
+        match method_name {
+            "update_auth" => {
+                let input: ResourceManagerUpdateAuthInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
+                let method_entry = self.authorization.get_mut(&input.method).unwrap();
+                return method_entry.main(MethodAccessRuleMethod::Update(input.access_rule));
+            }
+            _ => {}
+        }
+
         let method: ResourceManagerMethod =
             scrypto_decode(&arg.raw).map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
         match method {
-            ResourceManagerMethod::UpdateAuth(method, method_auth) => {
-                let method_entry = self.authorization.get_mut(&method).unwrap();
-                method_entry.main(MethodAccessRuleMethod::Update(method_auth))
-            }
             ResourceManagerMethod::LockAuth(method) => {
                 let method_entry = self.authorization.get_mut(&method).unwrap();
                 method_entry.main(MethodAccessRuleMethod::Lock())
