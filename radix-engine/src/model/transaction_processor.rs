@@ -6,7 +6,7 @@ use scrypto::call_data;
 use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthZonePushInput, BucketCreateProofInput, ProofCloneInput};
+use scrypto::prelude::{AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput, AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, ProofCloneInput};
 use scrypto::resource::{AuthZoneMethod, AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
 
@@ -196,11 +196,12 @@ impl TransactionProcessor {
                     .map_err(RuntimeError::IdAllocatorError)
                     .and_then(|new_id| {
                         system_api
-                            .invoke_snode(
+                            .invoke_snode2(
                                 SNodeRef::AuthZoneRef,
-                                ScryptoValue::from_value(&AuthZoneMethod::CreateProof(
-                                    *resource_address,
-                                )),
+                                "create_proof".to_string(),
+                                ScryptoValue::from_value(&AuthZoneCreateProofInput {
+                                    resource_address: *resource_address,
+                                }),
                             )
                             .map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
@@ -217,12 +218,13 @@ impl TransactionProcessor {
                     .map_err(RuntimeError::IdAllocatorError)
                     .and_then(|new_id| {
                         system_api
-                            .invoke_snode(
+                            .invoke_snode2(
                                 SNodeRef::AuthZoneRef,
-                                ScryptoValue::from_value(&AuthZoneMethod::CreateProofByAmount(
-                                    *amount,
-                                    *resource_address,
-                                )),
+                                "create_proof_by_amount".to_string(),
+                                ScryptoValue::from_value(&AuthZoneCreateProofByAmountInput {
+                                    amount: *amount,
+                                    resource_address: *resource_address,
+                                }),
                             )
                             .map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
@@ -239,12 +241,13 @@ impl TransactionProcessor {
                     .map_err(RuntimeError::IdAllocatorError)
                     .and_then(|new_id| {
                         system_api
-                            .invoke_snode(
+                            .invoke_snode2(
                                 SNodeRef::AuthZoneRef,
-                                ScryptoValue::from_value(&AuthZoneMethod::CreateProofByIds(
-                                    ids.clone(),
-                                    *resource_address,
-                                )),
+                                "create_proof_by_ids".to_string(),
+                                ScryptoValue::from_value(&AuthZoneCreateProofByIdsInput {
+                                    ids: ids.clone(),
+                                    resource_address: *resource_address,
+                                }),
                             )
                             .map(|rtn| {
                                 let proof_id = *rtn.proof_ids.iter().next().unwrap().0;

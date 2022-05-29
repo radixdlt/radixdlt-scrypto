@@ -7,7 +7,7 @@ use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::resource::*;
-use crate::{sfunctions, sfunctions2};
+use crate::sfunctions2;
 
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -19,11 +19,25 @@ pub struct AuthZonePushInput {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct AuthZoneCreateProofInput {
+    pub resource_address: ResourceAddress,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct AuthZoneCreateProofByAmountInput {
+    pub amount: Decimal,
+    pub resource_address: ResourceAddress,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct AuthZoneCreateProofByIdsInput {
+    pub ids: BTreeSet<NonFungibleId>,
+    pub resource_address: ResourceAddress,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub enum AuthZoneMethod {
     Clear(),
-    CreateProof(ResourceAddress),
-    CreateProofByAmount(Decimal, ResourceAddress),
-    CreateProofByIds(BTreeSet<NonFungibleId>, ResourceAddress),
 }
 
 /// Represents the auth zone, which is used by system for checking
@@ -43,22 +57,24 @@ impl ComponentAuthZone {
             pub fn push(proof: Proof) -> () {
                 AuthZonePushInput { proof }
             }
-        }
-    }
-
-    sfunctions! {
-        SNodeRef::AuthZoneRef => {
 
             pub fn create_proof(resource_address: ResourceAddress) -> Proof {
-                AuthZoneMethod::CreateProof(resource_address)
+                AuthZoneCreateProofInput {
+                    resource_address
+                }
             }
 
             pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-                AuthZoneMethod::CreateProofByAmount(amount, resource_address)
+                AuthZoneCreateProofByAmountInput {
+                    amount, resource_address
+                }
             }
 
             pub fn create_proof_by_ids(ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress) -> Proof {
-                AuthZoneMethod::CreateProofByIds(ids.clone(), resource_address)
+                AuthZoneCreateProofByIdsInput {
+                    ids: ids.clone(),
+                    resource_address
+                }
             }
         }
     }
