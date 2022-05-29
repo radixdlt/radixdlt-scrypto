@@ -315,7 +315,7 @@ impl<'r, 'l, L: ReadableSubstateStore> CallFrame<'r, 'l, L> {
         // Execution
         let output = match snode {
             SNodeState::SystemStatic => {
-                System::static_main(call_data, self).map_err(RuntimeError::SystemError)
+                System::static_main(method_name, call_data, self).map_err(RuntimeError::SystemError)
             }
             SNodeState::Transaction(transaction_process) => transaction_process.main(self),
             SNodeState::PackageStatic => {

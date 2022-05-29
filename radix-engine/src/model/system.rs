@@ -1,32 +1,38 @@
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::SystemFunction;
+use scrypto::core::{SystemGetCurrentEpochInput, SystemGetTransactionHashInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::model::SystemError::InvalidMethod;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SystemError {
     InvalidRequestData(DecodeError),
+    InvalidMethod,
 }
 
 pub struct System {}
 
 impl System {
     pub fn static_main<S: SystemApi>(
-        call_data: ScryptoValue,
+        method_name: &str,
+        arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, SystemError> {
-        let function: SystemFunction =
-            scrypto_decode(&call_data.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
-        match function {
-            SystemFunction::GetEpoch() => {
+        match method_name {
+            "current_epoch" => {
+                let _: SystemGetCurrentEpochInput =
+                    scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 // TODO: Make this stateful
                 Ok(ScryptoValue::from_value(&system_api.get_epoch()))
             }
-            SystemFunction::GetTransactionHash() => {
+            "transaction_hash" => {
+                let _: SystemGetTransactionHashInput =
+                    scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_value(&system_api.get_transaction_hash()))
             }
+            _ => Err(InvalidMethod)
         }
     }
 }
