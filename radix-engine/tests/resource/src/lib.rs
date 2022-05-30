@@ -1,6 +1,6 @@
 use scrypto::prelude::*;
 
-mod blueprint {
+blueprint! {
     struct ResourceTest;
 
     impl ResourceTest {
