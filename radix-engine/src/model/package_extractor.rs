@@ -24,7 +24,9 @@ fn extract_abi(
     let function_exports = ScryptoModule::init(code)
         .and_then(ScryptoModule::to_bytes)
         .map_err(ExtractAbiError::InvalidWasm)?
-        .1;
+        .1
+        .into_iter()
+        .filter(|s| s.ends_with("_abi"));
 
     let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
     let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
