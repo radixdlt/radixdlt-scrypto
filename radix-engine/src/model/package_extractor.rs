@@ -21,8 +21,8 @@ fn extract_abi(
     code: &[u8],
 ) -> Result<HashMap<String, (Type, Vec<Function>, Vec<Method>)>, ExtractAbiError> {
     // TODO: A bit of a code smell to have validation here, remove at some point.
-    let function_exports = ScryptoModule::init(code)
-        .and_then(ScryptoModule::to_bytes)
+    let function_exports = WasmModule::init(code)
+        .and_then(WasmModule::to_bytes)
         .map_err(ExtractAbiError::InvalidWasm)?
         .1
         .into_iter()

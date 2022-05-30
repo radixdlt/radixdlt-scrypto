@@ -13,7 +13,7 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
-use super::ScryptoModule;
+use super::WasmModule;
 
 pub struct WasmerModule {
     module: Module,
@@ -218,10 +218,10 @@ impl WasmEngine<WasmerInstance> for WasmerEngine {
     fn instantiate(&mut self, code: &[u8]) -> WasmerInstance {
         let code_hash = hash(code);
         if !self.modules.contains_key(&code_hash) {
-            let instrumented_code = ScryptoModule::init(code)
-                .and_then(ScryptoModule::inject_instruction_metering)
-                .and_then(ScryptoModule::inject_stack_metering)
-                .and_then(ScryptoModule::to_bytes)
+            let instrumented_code = WasmModule::init(code)
+                .and_then(WasmModule::inject_instruction_metering)
+                .and_then(WasmModule::inject_stack_metering)
+                .and_then(WasmModule::to_bytes)
                 .expect("Failed to produce instrumented code")
                 .0;
 

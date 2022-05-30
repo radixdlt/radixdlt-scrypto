@@ -11,11 +11,11 @@ use wasmi_validation::{validate_module, PlainValidator};
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 
-pub struct ScryptoModule {
+pub struct WasmModule {
     module: Module,
 }
 
-impl ScryptoModule {
+impl WasmModule {
     pub fn init(code: &[u8]) -> Result<Self, PrepareError> {
         // deserialize
         let module = parity_wasm::deserialize_buffer(code)

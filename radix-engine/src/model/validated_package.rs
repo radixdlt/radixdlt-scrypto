@@ -29,7 +29,7 @@ pub enum PackageError {
 
 impl ValidatedPackage {
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, PrepareError> {
-        ScryptoModule::init(&package.code)?
+        WasmModule::init(&package.code)?
             .reject_floating_point()?
             .reject_start_function()?
             .check_imports()?
