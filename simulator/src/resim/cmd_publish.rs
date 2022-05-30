@@ -2,7 +2,6 @@ use clap::Parser;
 use colored::*;
 use radix_engine::transaction::*;
 use radix_engine::wasm::*;
-use scrypto::prelude::Package;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -43,7 +42,7 @@ impl Publish {
                 TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
             let package = extract_package(code).unwrap();
             let transaction = TransactionBuilder::new()
-                .publish_package(Package::new(code))
+                .publish_package(package)
                 .build_with_no_nonce();
             process_transaction(&mut executor, transaction, &None, &Some(path.clone()), out)?;
         } else {
