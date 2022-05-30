@@ -100,14 +100,20 @@ macro_rules! impl_i_large {
 
 impl_i_large! { I256, I384, I512, U256, U384, U512 }
 
+#[derive(Debug)]
+pub enum ParseBigIntError{
+    NegativeToUnsigned,
+    Overflow,
+}
+
 macro_rules! impl_bigint_to_i {
     ($($t:ty, $bytes_len:literal ),*) => {
         $(
             paste! {
-                fn [<bigint_to_$t:lower>](b: BigInt) -> $t {
+                fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseBigIntError> {
                     let bytes = b.to_signed_bytes_le();
                     if bytes.len() > $bytes_len {
-                        panic!("Overflow"); 
+                        return Err(ParseBigIntError::Overflow);
                     } else {
                         let mut buf = if b.is_negative() {
                             [255u8; $bytes_len]
@@ -115,7 +121,7 @@ macro_rules! impl_bigint_to_i {
                             [0u8; $bytes_len]
                         };
                         buf[..bytes.len()].copy_from_slice(&bytes);
-                        $t(buf)
+                        Ok($t(buf))
                     }
                 }
             }
@@ -155,7 +161,7 @@ macro_rules! sh_impl_large_signed {
                     } else {
                         let to_shift = BigInt::from_signed_bytes_le(&self.0);
                         let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
-                        [<bigint_to_$t:lower>](to_shift.shl(shift))
+                        to_shift.shl(shift).try_into().unwrap()
                     }
                 }
             }
@@ -181,7 +187,7 @@ macro_rules! sh_impl_large_signed {
                     } else {
                         let to_shift = BigInt::from_signed_bytes_le(&self.0);
                         let shift = big_int_to_i128(other_b);
-                        [<bigint_to_$t:lower>](to_shift.shr(shift))
+                        to_shift.shr(shift).try_into().unwrap()
                     }
                 }
             }
@@ -209,7 +215,7 @@ macro_rules! sh_impl_large_unsigned {
                 fn shl(self, other: $o) -> $t {
                     let to_shift = BigInt::from_signed_bytes_le(&self.0);
                     let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
-                    [<bigint_to_$t:lower>](to_shift.shl(shift))
+                    to_shift.shl(shift).try_into().unwrap()
                 }
             }
             forward_ref_binop! { impl Shl, shl for $t, $o }
@@ -229,7 +235,7 @@ macro_rules! sh_impl_large_unsigned {
                 fn shr(self, other: $o) -> $t {
                     let to_shift = BigInt::from_signed_bytes_le(&self.0);
                     let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
-                    [<bigint_to_$t:lower>](to_shift.shr(shift))
+                    to_shift.shr(shift).try_into().unwrap()
                 }
             }
             forward_ref_binop! { impl Shr, shr for $t, $o }
@@ -258,7 +264,7 @@ macro_rules! sh_impl_builtin_large {
                 if other > $b {
                     panic!("overflow");
                 } else {
-                    BigInt::from_signed_bytes_le(&self.0).shl(other).into()
+                    BigInt::from_signed_bytes_le(&self.0).shl(other).try_into().unwrap()
                 }
             }
         }
@@ -280,7 +286,7 @@ macro_rules! sh_impl_builtin_large {
                 if other > $b {
                     panic!("overflow");
                 } else {
-                    BigInt::from_signed_bytes_le(&self.0).shr(other).into()
+                    BigInt::from_signed_bytes_le(&self.0).shr(other).try_into().unwrap()
                 }
             }
         }
@@ -331,7 +337,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn add(self, other: $o) -> $t {
-                        BigInt::from_signed_bytes_le(&self.0).add(other).into()
+                        BigInt::from_signed_bytes_le(&self.0).add(other).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Add, add for $t, $o }
@@ -349,7 +355,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn sub(self, other: $o) -> $t {
-                        BigInt::from_signed_bytes_le(&self.0).sub(other).into()
+                        BigInt::from_signed_bytes_le(&self.0).sub(other).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Sub, sub for $t, $o }
@@ -367,7 +373,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn mul(self, other: $o) -> $t {
-                        BigInt::from_signed_bytes_le(&self.0).mul(other).into()
+                        BigInt::from_signed_bytes_le(&self.0).mul(other).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Mul, mul for $t, $o }
@@ -385,7 +391,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn div(self, other: $o) -> $t {
-                        BigInt::from_signed_bytes_le(&self.0).div(other).into()
+                        BigInt::from_signed_bytes_le(&self.0).div(other).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Div, div for $t, $o }
@@ -403,7 +409,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn rem(self, other: $o) -> $t {
-                        BigInt::from_signed_bytes_le(&self.0).rem(other).into()
+                        BigInt::from_signed_bytes_le(&self.0).rem(other).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Rem, rem for $t, $o }
@@ -422,7 +428,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn bitxor(self, other: $o) -> $t {
-                        BigInt::from_signed_bytes_le(&self.0).bitxor(BigInt::from(other)).into()
+                        BigInt::from_signed_bytes_le(&self.0).bitxor(BigInt::from(other)).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl BitXor, bitxor for $t, $o }
@@ -440,7 +446,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn bitor(self, other: $o) -> $t {
-                        BigInt::from_signed_bytes_le(&self.0).bitor(BigInt::from(other)).into()
+                        BigInt::from_signed_bytes_le(&self.0).bitor(BigInt::from(other)).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl BitOr, bitor for $t, $o }
@@ -458,7 +464,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn bitand(self, other: $o) -> $t {
-                        BigInt::from_signed_bytes_le(&self.0).bitand(BigInt::from(other)).into()
+                        BigInt::from_signed_bytes_le(&self.0).bitand(BigInt::from(other)).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl BitAnd, bitand for $t, $o }
@@ -503,7 +509,7 @@ macro_rules! checked_impl_not {
 
                 #[inline]
                 fn not(self) -> $i {
-                    BigInt::from_signed_bytes_le(&self.0).not().into()
+                    BigInt::from_signed_bytes_le(&self.0).not().try_into().unwrap()
                 }
             }
             forward_ref_unop! { impl Not, not for $i }
@@ -520,7 +526,7 @@ macro_rules! checked_impl_neg {
                 type Output = Self;
                 #[inline]
                 fn neg(self) -> Self {
-                    BigInt::from_signed_bytes_le(&self.0).neg().into()
+                    BigInt::from_signed_bytes_le(&self.0).neg().try_into().unwrap()
                 }
             }
             forward_ref_unop! { impl Neg, neg for $i }
@@ -530,7 +536,7 @@ macro_rules! checked_impl_neg {
 checked_impl_neg! { I256, I384, I512 }
 
 macro_rules! checked_int_impl {
-    ($(($i:ident, $n:literal)),*) => {$(
+    (type_id: $i:ident, bytes_len: $bytes_len:literal, MIN: $min: expr, MAX: $max: expr) => {
         paste! {
             impl $i {
                 /// Returns the smallest value that can be represented by this integer type.
@@ -542,9 +548,9 @@ macro_rules! checked_int_impl {
                 /// ```
                 #[doc = concat!("use scrypto::math::" ,stringify!($i), ";")]
                 ///
-                #[doc = concat!("assert_eq!(<$i>::MIN, $i(", stringify!($n), "::MIN));")]
+                #[doc = concat!("assert_eq!(<$i>::MIN, $i(", stringify!($bytes_len), "::MIN));")]
                 /// ```
-                pub const MIN: Self = vec![0; $n - 1].push(0x80).into();
+                pub const MIN: Self = $min;
 
                 /// Returns the largest value that can be represented by this integer type.
                 ///
@@ -557,7 +563,7 @@ macro_rules! checked_int_impl {
                 ///
                 #[doc = concat!("assert_eq!(<$i>::MAX, $i(", stringify!($i), "::MAX));")]
                 /// ```
-                pub const MAX: Self = vec![0xff; $n - 1].push(0x7f).into();
+                pub const MAX: Self = $max;
 
                 /// Returns the size of this integer type in bits.
                 ///
@@ -570,7 +576,7 @@ macro_rules! checked_int_impl {
                 ///
                 #[doc = concat!("assert_eq!(<$i>::BITS, ", stringify!($i), "::BITS);")]
                 /// ```
-                pub const BITS: u32 = $n;
+                pub const BITS: u32 = $bytes_len * 8;
 
                 /// Returns the number of ones in the binary representation of `self`.
                 ///
@@ -590,7 +596,7 @@ macro_rules! checked_int_impl {
                 #[doc(alias = "popcnt")]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub const fn count_ones(self) -> u32 {
+                pub fn count_ones(self) -> u32 {
                     self.0.to_vec().iter().map(|&x| x.count_ones()).sum()
                 }
 
@@ -608,7 +614,7 @@ macro_rules! checked_int_impl {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub const fn count_zeros(self) -> u32 {
+                pub fn count_zeros(self) -> u32 {
                     self.0.to_vec().iter().map(|&x| x.count_zeros()).sum()
                 }
 
@@ -629,7 +635,7 @@ macro_rules! checked_int_impl {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub fn trailing_zeros(self) -> u32 {
-                    let zeros: u32 = 0;
+                    let mut zeros: u32 = 0;
                     for byte in self.0.to_vec().iter() {
                         let x = byte.trailing_zeros();
                         if x != 8 {
@@ -662,11 +668,11 @@ macro_rules! checked_int_impl {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub const fn rotate_left(self, n: u32) -> Self {
+                pub fn rotate_left(self, n: u32) -> Self {
                     let rot: u32 = n % Self::BITS;
-                    let big: BigInt = self.into();
-                    let big_rot = big.shl(rot);
-                    big_rot.bitor(big.shr(Self::BITS - rot)).into()
+                    let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
+                    let big_rot = big.clone().shl(rot);
+                    big_rot.bitor(big.shr(Self::BITS - rot)).try_into().unwrap()
                 }
 
                 /// Shifts the bits to the right by a specified amount, `n`,
@@ -691,11 +697,11 @@ macro_rules! checked_int_impl {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub const fn rotate_right(self, n: u32) -> Self {
+                pub fn rotate_right(self, n: u32) -> Self {
                     let rot: u32 = n % Self::BITS;
-                    let big: BigInt = self.into();
-                    let big_rot = big.shr(rot);
-                    big_rot.bitor(big.shl(Self::BITS - rot)).into()
+                    let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
+                    let big_rot = big.clone().shr(rot);
+                    big_rot.bitor(big.shl(Self::BITS - rot)).try_into().unwrap()
                 }
 
                 /// Reverses the byte order of the integer.
@@ -718,8 +724,8 @@ macro_rules! checked_int_impl {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub const fn swap_bytes(self) -> Self {
-                    $i(self.0.to_vec().rev().into())
+                pub fn swap_bytes(self) -> Self {
+                    $i(self.0.into_iter().rev().collect::<Vec<u8>>().try_into().unwrap())
                 }
 
                 /// Reverses the bit pattern of the integer.
@@ -745,8 +751,8 @@ macro_rules! checked_int_impl {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 #[inline]
-                pub const fn reverse_bits(self) -> Self {
-                    $i(self.0.to_vec().rev().map(|x| x.reverse_bits()).into())
+                pub fn reverse_bits(self) -> Self {
+                    $i(self.0.into_iter().rev().map(|x| x.reverse_bits()).collect::<Vec<u8>>().try_into().unwrap())
                 }
 
                 /// Converts an integer from big endian to the target's endianness.
@@ -771,8 +777,12 @@ macro_rules! checked_int_impl {
                 /// ```
                 #[inline]
                 #[must_use]
-                pub const fn from_be(x: Self) -> Self {
-                    $i(<$i>::from_be(x.0))
+                pub fn from_be(x: Self) -> Self {
+                    if cfg!(target_endian = "big") {
+                        $i(x.0)
+                    } else {
+                        $i(x.0.into_iter().rev().collect::<Vec<u8>>().try_into().unwrap())
+                    }
                 }
 
                 /// Converts an integer from little endian to the target's endianness.
@@ -797,8 +807,12 @@ macro_rules! checked_int_impl {
                 /// ```
                 #[inline]
                 #[must_use]
-                pub const fn from_le(x: Self) -> Self {
-                    $i(<$i>::from_le(x.0))
+                pub fn from_le(x: Self) -> Self {
+                    if cfg!(target_endian = "little") {
+                        $i(x.0)
+                    } else {
+                        $i(x.0.into_iter().rev().collect::<Vec<u8>>().try_into().unwrap())
+                    }
                 }
 
                 /// Converts `self` to big endian from the target's endianness.
@@ -824,8 +838,12 @@ macro_rules! checked_int_impl {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub const fn to_be(self) -> Self {
-                    $i(self.0.to_be())
+                pub fn to_be(self) -> Self {
+                    if cfg!(target_endian = "big") {
+                        $i(self.0)
+                    } else {
+                        $i(self.0.into_iter().rev().collect::<Vec<u8>>().try_into().unwrap())
+                    }
                 }
 
                 /// Converts `self` to little endian from the target's endianness.
@@ -851,8 +869,12 @@ macro_rules! checked_int_impl {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub const fn to_le(self) -> Self {
-                    $i(self.0.to_le())
+                pub fn to_le(self) -> Self {
+                    if cfg!(target_endian = "little") {
+                        $i(self.0)
+                    } else {
+                        $i(self.0.into_iter().rev().collect::<Vec<u8>>().try_into().unwrap())
+                    }
                 }
 
                 /// Raises self to the power of `exp`, using exponentiation by squaring.
@@ -861,15 +883,58 @@ macro_rules! checked_int_impl {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub fn pow(self, exp: u32) -> Self {
-                    $i(self.0.checked_pow(exp).unwrap())
+                    BigInt::from_signed_bytes_le(&self.0).pow(exp).try_into().unwrap()
                 }
             }
         }
-    )*}
+    }
 }
 
-checked_int_impl! { (I8, 1), (I16, 2), (I32, 4), (I64, 8), (I128, 16) }
-checked_int_impl! { (U8, 1), (U16, 2), (U32, 4), (U64, 8), (U128, 16) }
+macro_rules! checked_unsigned {
+    ($($t:ident, $bytes_len:literal),*) => {
+        $(
+            checked_int_impl! { 
+                type_id: $t,
+                bytes_len: $bytes_len,
+                MIN: $t([0u8; $bytes_len]),
+                MAX: $t([0xffu8; $bytes_len])
+            }
+        )*
+    }
+}
+
+macro_rules! checked_signed {
+    ( $($t:ident, $bytes_len:literal),* ) => {
+        $(
+            checked_int_impl! { 
+                type_id: $t,
+                bytes_len: $bytes_len,
+                MIN: {
+                    let mut arr = [0u8; $bytes_len];
+                    arr[$bytes_len - 1] = 0x80;
+                    $t(arr)
+                },
+                MAX: {
+                    let mut arr = [0xff; $bytes_len];
+                    arr[$bytes_len - 1] = 0x7f;
+                    $t(arr)
+                }
+            }
+        )*
+    }
+}
+
+checked_signed! {
+    I256, 32,
+    I384, 48,
+    I512, 64
+}
+
+checked_unsigned! {
+    U256, 32,
+    U384, 48,
+    U512, 64
+}
 
 macro_rules! checked_int_impl_signed {
     ($($t:ident),*) => ($(
@@ -892,7 +957,7 @@ macro_rules! checked_int_impl_signed {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub fn leading_zeros(self) -> u32 {
-                    let zeros: u32 = u32::zero();
+                    let mut zeros: u32 = u32::zero();
                     for i in self.0.into_iter().rev().enumerate() {
                         if i.1 != 0 {
                             return zeros + i.1.leading_zeros();
@@ -912,7 +977,7 @@ macro_rules! checked_int_impl_signed {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub fn abs(self) -> $t {
-                    BigInt::from_signed_bytes_le(&self.0).abs().into()
+                    BigInt::from_signed_bytes_le(&self.0).abs().try_into().unwrap()
                 }
 
                 /// Returns a number representing sign of `self`.
@@ -936,7 +1001,7 @@ macro_rules! checked_int_impl_signed {
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub fn signum(self) -> $t {
-                    BigInt::from_signed_bytes_le(&self.0).signum().into()
+                    BigInt::from_signed_bytes_le(&self.0).signum().try_into().unwrap()
                 }
 
                 /// Returns `true` if `self` is positive and `false` if the number is zero or
@@ -954,8 +1019,8 @@ macro_rules! checked_int_impl_signed {
                 /// ```
                 #[must_use]
                 #[inline]
-                pub const fn is_positive(self) -> bool {
-                    BigInt::from_signed_bytes_le(&self.0).is_positive().into()
+                pub fn is_positive(self) -> bool {
+                    BigInt::from_signed_bytes_le(&self.0).is_positive().try_into().unwrap()
                 }
 
                 /// Returns `true` if `self` is negative and `false` if the number is zero or
@@ -973,8 +1038,8 @@ macro_rules! checked_int_impl_signed {
                 /// ```
                 #[must_use]
                 #[inline]
-                pub const fn is_negative(self) -> bool {
-                    BigInt::from_signed_bytes_le(&self.0).is_negative().into()
+                pub fn is_negative(self) -> bool {
+                   self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 == 1
                 }
             }
         }
@@ -992,7 +1057,7 @@ macro_rules! checked_int_impl_unsigned {
             #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
             pub fn leading_zeros(self) -> u32 {
-                let zeros: u32 = u32::zero();
+                let mut zeros: u32 = u32::zero();
                 for i in self.0.into_iter().rev().enumerate() {
                     if i.1 != 0 {
                         return zeros + i.1.leading_zeros();
@@ -1007,7 +1072,11 @@ macro_rules! checked_int_impl_unsigned {
             #[must_use]
             #[inline]
             pub fn is_power_of_two(self) -> bool {
-                self.0.is_power_of_two()
+                if self.0.iter().map(|x| x.count_ones()).sum::<u32>() == 1 {
+                    true
+                } else {
+                    false
+                }
             }
 
             /// Returns the smallest power of two greater than or equal to `self`.
@@ -1019,13 +1088,13 @@ macro_rules! checked_int_impl_unsigned {
             #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
             pub fn next_power_of_two(self) -> Self {
-                Self(self.0.checked_next_power_of_two().unwrap())
+                (Self::BITS - self.leading_zeros()).into()
             }
         }
     )*)
 }
 
-checked_int_impl_unsigned! { U8, U16, U32, U64, U128 }
+checked_int_impl_unsigned! { U256, U384, U512 }
 
 
 macro_rules! from_int {
@@ -1034,7 +1103,7 @@ macro_rules! from_int {
         paste! {
             impl From<$o> for $t {
                 fn from(val: $o) -> Self {
-                    [<bigint_to_$t:lower>](BigInt::from(val))
+                    (BigInt::from(val)).try_into().unwrap()
                 }
             }
         }
@@ -1046,8 +1115,9 @@ macro_rules! from_bigint_to_signed {
     ($($t:ident),*) => {
         $(
             paste! {
-                impl From<BigInt> for $t {
-                    fn from(val: BigInt) -> Self {
+                impl TryFrom<BigInt> for $t {
+                    type Error = ParseBigIntError;
+                    fn try_from(val: BigInt) -> Result<$t, ParseBigIntError> {
                         [<bigint_to_$t:lower>](val)
                     }
                 }
@@ -1060,10 +1130,12 @@ macro_rules! from_bigint_to_unsigned {
     ($($t:ident),*) => {
         $(
             paste! {
-                impl From<BigInt> for $t {
-                    fn from(val: BigInt) -> Self {
+                impl TryFrom<BigInt> for $t {
+                    type Error = ParseBigIntError;
+
+                    fn try_from(val: BigInt) -> Result<Self, Self::Error>  {
                         if val.is_negative() {
-                            panic!("cannot convert negative BigInt to unsigned type");
+                            return Err(ParseBigIntError::NegativeToUnsigned);
                         }
                         [<bigint_to_$t:lower>](val)
                     }
@@ -1087,6 +1159,7 @@ macro_rules! from_array {
     };
 }
 
+#[derive(Debug)]
 pub enum ParseSliceError {
     InvalidLength,
 }
