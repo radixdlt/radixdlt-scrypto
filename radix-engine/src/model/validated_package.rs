@@ -28,16 +28,18 @@ pub enum PackageError {
 }
 
 impl ValidatedPackage {
-    /// Validates and creates a package
-    pub fn new<'w, W, I>(
-        package: scrypto::prelude::Package,
-        wasm_engine: &'w mut W,
-    ) -> Result<Self, PrepareError>
-    where
-        W: WasmEngine<I>,
-        I: WasmInstance,
-    {
-        wasm_engine.validate(&package.code)?;
+    pub fn new(package: scrypto::prelude::Package) -> Result<Self, PrepareError> {
+        ScryptoModule::init(&package.code)?
+            .reject_floating_point()?
+            .reject_start_function()?
+            .check_imports()?
+            .check_memory()?
+            .enforce_initial_memory_limit()?
+            .enforce_functions_limit()?
+            .enforce_locals_limit()?
+            .inject_instruction_metering()?
+            .inject_stack_metering()?
+            .to_bytes()?;
 
         Ok(Self {
             code: package.code,
@@ -79,8 +81,7 @@ impl ValidatedPackage {
             scrypto_decode(&call_data.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
         match function {
             PackageFunction::Publish(bytes) => {
-                let package = ValidatedPackage::new(bytes, system_api.wasm_engine())
-                    .map_err(PackageError::InvalidWasm)?;
+                let package = ValidatedPackage::new(bytes).map_err(PackageError::InvalidWasm)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
             }

@@ -35,13 +35,9 @@ pub enum PrepareError {
     /// The wasm module does not have the `scrypto_free` export.
     NoScryptoFreeExport,
     /// Failed to inject instruction metering
-    FailedToInjectInstructionMetering,
+    RejectedByInstructionMetering,
     /// Failed to inject stack metering
-    FailedToInjectStackMetering,
-    /// TODO: remove
-    FailedToExportBlueprintAbi,
-    /// TODO: remove
-    InvalidBlueprintAbi,
+    RejectedByStackMetering,
 }
 
 /// Represents an error when invoking an export of a Scrypto module.

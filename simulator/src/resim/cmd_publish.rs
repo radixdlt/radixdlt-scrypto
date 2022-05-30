@@ -41,7 +41,7 @@ impl Publish {
                 .publish_package(package)
                 .build_with_no_nonce();
 
-            let mut substate_store = RadixEngineDB::new(get_data_dir()?);
+            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut wasm_engine = default_wasm_engine();
             let mut executor =
                 TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
@@ -69,7 +69,7 @@ impl Publish {
         out: &mut O,
         code: Vec<u8>,
     ) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::new(get_data_dir()?);
+        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = default_wasm_engine();
         let mut executor =
             TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);

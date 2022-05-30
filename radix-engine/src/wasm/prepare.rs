@@ -210,14 +210,14 @@ impl ScryptoModule {
             &gas_metering::ConstantCostRules::new(INSTRUCTION_COST, MEMORY_GROW_COST),
             MODULE_ENV_NAME,
         )
-        .map_err(|_| PrepareError::FailedToInjectInstructionMetering)?;
+        .map_err(|_| PrepareError::RejectedByInstructionMetering)?;
 
         Ok(self)
     }
 
     pub fn inject_stack_metering(mut self) -> Result<Self, PrepareError> {
         self.module = inject_stack_limiter(self.module, MAX_STACK_DEPTH)
-            .map_err(|_| PrepareError::FailedToInjectStackMetering)?;
+            .map_err(|_| PrepareError::RejectedByStackMetering)?;
         Ok(self)
     }
 

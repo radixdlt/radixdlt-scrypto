@@ -1,8 +1,6 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::format;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
 use wasmi::*;
@@ -30,7 +28,7 @@ pub struct WasmiExternals<'a, 'b, 'r> {
 pub struct WasmiEnvModule {}
 
 pub struct WasmiEngine {
-    modules: HashMap<Hash, (WasmiModule, Vec<String>)>,
+    modules: HashMap<Hash, WasmiModule>,
 }
 
 impl ModuleImportResolver for WasmiEnvModule {
@@ -206,39 +204,23 @@ impl WasmiEngine {
 }
 
 impl WasmEngine<WasmiInstance> for WasmiEngine {
-    fn validate(&mut self, code: &[u8]) -> Result<Vec<String>, PrepareError> {
-        let code_hash = hash(code);
-        if let Some(m) = self.modules.get(&code_hash) {
-            return Ok(m.1.clone());
-        }
-
-        let (validated_code, function_exports) = ScryptoModule::init(code)?
-            .reject_floating_point()?
-            .reject_start_function()?
-            .check_imports()?
-            .check_memory()?
-            .enforce_initial_memory_limit()?
-            .enforce_functions_limit()?
-            .enforce_locals_limit()?
-            .inject_instruction_metering()?
-            .inject_stack_metering()?
-            .to_bytes()?;
-
-        let module = WasmiModule {
-            module: Module::from_buffer(validated_code).expect("Failed to parse wasm code"),
-        };
-
-        self.modules
-            .insert(code_hash, (module, function_exports.clone()));
-        Ok(function_exports)
-    }
-
     fn instantiate(&mut self, code: &[u8]) -> WasmiInstance {
         let code_hash = hash(code);
         if !self.modules.contains_key(&code_hash) {
-            self.validate(code).expect("Failed to validate wasm code");
+            let instrumented_code = ScryptoModule::init(code)
+                .and_then(ScryptoModule::inject_instruction_metering)
+                .and_then(ScryptoModule::inject_stack_metering)
+                .and_then(ScryptoModule::to_bytes)
+                .expect("Failed to produce instrumented code")
+                .0;
+
+            let module = WasmiModule {
+                module: Module::from_buffer(instrumented_code).expect("Failed to parse wasm code"),
+            };
+
+            self.modules.insert(code_hash, module);
         }
         let module = self.modules.get(&code_hash).unwrap();
-        module.0.instantiate()
+        module.instantiate()
     }
 }

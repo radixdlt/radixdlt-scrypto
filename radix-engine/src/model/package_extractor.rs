@@ -20,20 +20,18 @@ pub enum ExtractAbiError {
 fn extract_abi(
     code: &[u8],
 ) -> Result<HashMap<String, (Type, Vec<Function>, Vec<Method>)>, ExtractAbiError> {
+    // TODO: A bit of a code smell to have validation here, remove at some point.
+    let function_exports = ScryptoModule::init(code)
+        .and_then(ScryptoModule::to_bytes)
+        .map_err(ExtractAbiError::InvalidWasm)?
+        .1;
+
     let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
     let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
     let mut wasm_engine = WasmiEngine::new();
-    // TODO: A bit of a code smell to have validation here, remove at some point.
-    let exports: Vec<String> = wasm_engine
-        .validate(code)
-        .map_err(ExtractAbiError::InvalidWasm)?
-        .into_iter()
-        .filter(|e| e.ends_with("_abi") && e.len() > 4)
-        .collect();
     let mut instance = wasm_engine.instantiate(code);
-
     let mut blueprints = HashMap::new();
-    for method_name in exports {
+    for method_name in function_exports {
         let rtn = instance
             .invoke_export(&method_name, &ScryptoValue::unit(), &mut runtime_boxed)
             .map_err(|_| ExtractAbiError::FailedToExportBlueprintAbi)?;

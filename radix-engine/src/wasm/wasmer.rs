@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex};
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::ptr;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
@@ -36,7 +35,7 @@ pub struct WasmerInstanceEnv {
 
 pub struct WasmerEngine {
     store: Store,
-    modules: HashMap<Hash, (WasmerModule, Vec<String>)>,
+    modules: HashMap<Hash, WasmerModule>,
 }
 
 pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, InvokeError> {
@@ -216,39 +215,23 @@ impl WasmerEngine {
 }
 
 impl WasmEngine<WasmerInstance> for WasmerEngine {
-    fn validate(&mut self, code: &[u8]) -> Result<Vec<String>, PrepareError> {
-        let code_hash = hash(code);
-        if let Some(m) = self.modules.get(&code_hash) {
-            return Ok(m.1.clone());
-        }
-
-        let (validated_code, function_exports) = ScryptoModule::init(code)?
-            .reject_floating_point()?
-            .reject_start_function()?
-            .check_imports()?
-            .check_memory()?
-            .enforce_initial_memory_limit()?
-            .enforce_functions_limit()?
-            .enforce_locals_limit()?
-            .inject_instruction_metering()?
-            .inject_stack_metering()?
-            .to_bytes()?;
-
-        let module = WasmerModule {
-            module: Module::new(&self.store, validated_code).expect("Failed to parse wasm code"),
-        };
-
-        self.modules
-            .insert(code_hash, (module, function_exports.clone()));
-        Ok(function_exports)
-    }
-
     fn instantiate(&mut self, code: &[u8]) -> WasmerInstance {
         let code_hash = hash(code);
         if !self.modules.contains_key(&code_hash) {
-            self.validate(code).expect("Failed to validate wasm code");
+            let instrumented_code = ScryptoModule::init(code)
+                .and_then(ScryptoModule::inject_instruction_metering)
+                .and_then(ScryptoModule::inject_stack_metering)
+                .and_then(ScryptoModule::to_bytes)
+                .expect("Failed to produce instrumented code")
+                .0;
+
+            let module = WasmerModule {
+                module: Module::new(&self.store, instrumented_code)
+                    .expect("Failed to parse wasm code"),
+            };
+            self.modules.insert(code_hash, module);
         }
         let module = self.modules.get(&code_hash).unwrap();
-        module.0.instantiate()
+        module.instantiate()
     }
 }
