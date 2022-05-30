@@ -480,6 +480,9 @@ macro_rules! checked_impl {
         }
     };
 }
+
+// TODO: impl checked_impl for U256, U384, U512, I256, I384, I512
+
 macro_rules! checked_int_ops {
     ($($t:ident),*) => {
         $(
