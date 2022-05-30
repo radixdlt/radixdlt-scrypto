@@ -697,23 +697,28 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
     fn check_resource(&self) -> Result<(), RuntimeError> {
         re_debug!(self, "Resource check started");
         let mut success = true;
+        let mut resource = ResourceFailure::Unknown;
 
         for (bucket_id, bucket) in &self.buckets {
             re_warn!(self, "Dangling bucket: {}, {:?}", bucket_id, bucket);
+            resource = ResourceFailure::Resource(bucket.resource_address());
             success = false;
         }
         for (vault_id, vault) in &self.owned_snodes.vaults {
             re_warn!(self, "Dangling vault: {:?}, {:?}", vault_id, vault);
+            resource = ResourceFailure::Resource(vault.resource_address());
             success = false;
         }
         for (lazy_map_id, lazy_map) in &self.owned_snodes.lazy_maps {
             re_warn!(self, "Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map);
+            resource = ResourceFailure::UnclaimedLazyMap;
             success = false;
         }
 
         if let Some(worktop) = &self.worktop {
             if !worktop.is_empty() {
                 re_warn!(self, "Resource worktop is not empty");
+                resource = ResourceFailure::Resources(worktop.resource_addresses());
                 success = false;
             }
         }
@@ -722,7 +727,7 @@ impl<'r, 'l, L: SubstateStore> Process<'r, 'l, L> {
         if success {
             Ok(())
         } else {
-            Err(RuntimeError::ResourceCheckFailure)
+            Err(RuntimeError::ResourceCheckFailure(resource))
         }
     }
 

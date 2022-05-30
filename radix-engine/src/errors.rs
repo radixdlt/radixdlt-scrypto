@@ -75,6 +75,14 @@ pub enum TransactionValidationError {
     InvalidSignature,
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum ResourceFailure {
+    Resource(ResourceAddress),
+    Resources(Vec<ResourceAddress>),
+    UnclaimedLazyMap,
+    Unknown
+}
+
 /// Represents an error when executing a transaction.
 #[derive(Debug, PartialEq, Clone)]
 pub enum RuntimeError {
@@ -209,7 +217,7 @@ pub enum RuntimeError {
     InvalidLevel,
 
     /// Resource check failure.
-    ResourceCheckFailure,
+    ResourceCheckFailure(ResourceFailure),
 
     /// AuthZone error
     AuthZoneError(AuthZoneError),

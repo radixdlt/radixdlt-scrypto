@@ -1,3 +1,4 @@
+use radix_engine::errors::ResourceFailure;
 use radix_engine::errors::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
@@ -21,7 +22,7 @@ fn dangling_lazy_map_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::ResourceCheckFailure);
+    assert_eq!(runtime_error, RuntimeError::ResourceCheckFailure(ResourceFailure::UnclaimedLazyMap));
 }
 
 #[test]
