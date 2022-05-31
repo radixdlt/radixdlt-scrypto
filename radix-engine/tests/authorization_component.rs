@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::call_data;
+use scrypto::to_struct;
 use scrypto::prelude::*;
 
 #[test]
@@ -25,7 +25,8 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            call_data!(create_component_with_auth(authorization)),
+            "create_component_with_auth",
+            to_struct!(authorization)
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -38,7 +39,8 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            call_data!(create_component()),
+            "create_component",
+            to_struct!()
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -51,7 +53,8 @@ fn cannot_make_cross_component_call_without_authorization() {
         .new_transaction_builder()
         .call_method(
             my_component,
-            call_data!(cross_component_call(secured_component)),
+            "cross_component_call",
+            to_struct!(secured_component)
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -80,7 +83,8 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            call_data!(create_component_with_auth(authorization)),
+            "create_component_with_auth",
+            to_struct!(authorization)
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -93,7 +97,8 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            call_data!(create_component()),
+            "create_component",
+            to_struct!()
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -115,7 +120,8 @@ fn can_make_cross_component_call_with_authorization() {
         .new_transaction_builder()
         .call_method(
             my_component,
-            call_data!(cross_component_call(secured_component)),
+            "cross_component_call",
+            to_struct!(secured_component)
         )
         .build(test_runner.get_nonce([]))
         .sign([]);

@@ -461,7 +461,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "new_resource".to_string(),
-            arg: any_list_to_struct!(
+            arg: to_struct!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 resource_auth,
@@ -484,7 +484,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "new_resource".to_string(),
-            arg: any_list_to_struct!(
+            arg: to_struct!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 resource_auth,
@@ -519,7 +519,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "new_resource".to_string(),
-            arg: any_list_to_struct!(
+            arg: to_struct!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
                 resource_auth,
@@ -542,7 +542,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "new_resource".to_string(),
-            arg: any_list_to_struct!(
+            arg: to_struct!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
                 resource_auth,
@@ -560,7 +560,7 @@ impl TransactionBuilder {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
             method_name: "mint".to_string(),
-            arg: any_list_to_struct!(amount, resource_address),
+            arg: to_struct!(amount, resource_address),
         });
         self
     }
@@ -573,7 +573,7 @@ impl TransactionBuilder {
                     package_address: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
                     method_name: "burn".to_string(),
-                    arg: any_list_to_struct!(scrypto::resource::Bucket(bucket_id)),
+                    arg: to_struct!(scrypto::resource::Bucket(bucket_id)),
                 })
                 .0
         })
@@ -591,7 +591,7 @@ impl TransactionBuilder {
                         package_address: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
                         method_name: "burn".to_string(),
-                        arg: any_list_to_struct!(scrypto::resource::Bucket(bucket_id)),
+                        arg: to_struct!(scrypto::resource::Bucket(bucket_id)),
                     })
                     .0
             },
@@ -604,7 +604,7 @@ impl TransactionBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             method_name: "new".to_string(),
-            arg: any_list_to_struct!(withdraw_auth.clone()),
+            arg: to_struct!(withdraw_auth.clone()),
         })
         .0
     }
@@ -619,7 +619,7 @@ impl TransactionBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             method_name: "new_with_resource".to_string(),
-            arg: any_list_to_struct!(
+            arg: to_struct!(
                 withdraw_auth.clone(),
                 scrypto::resource::Bucket(bucket_id)
             ),
@@ -636,7 +636,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "withdraw".to_string(),
-            arg: any_list_to_struct!(resource_address),
+            arg: to_struct!(resource_address),
         })
         .0
     }
@@ -651,7 +651,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "withdraw_by_amount".to_string(),
-            arg: any_list_to_struct!(amount, resource_address),
+            arg: to_struct!(amount, resource_address),
         })
         .0
     }
@@ -666,7 +666,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "withdraw_by_ids".to_string(),
-            arg: any_list_to_struct!(ids.clone(), resource_address),
+            arg: to_struct!(ids.clone(), resource_address),
         })
         .0
     }
@@ -680,7 +680,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "create_proof".to_string(),
-            arg: any_list_to_struct!(resource_address),
+            arg: to_struct!(resource_address),
         })
         .0
     }
@@ -695,7 +695,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "create_proof_by_amount".to_string(),
-            arg: any_list_to_struct!(amount, resource_address),
+            arg: to_struct!(amount, resource_address),
         })
         .0
     }
@@ -710,7 +710,7 @@ impl TransactionBuilder {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
             method_name: "create_proof_by_ids".to_string(),
-            arg: any_list_to_struct!(ids.clone(), resource_address),
+            arg: to_struct!(ids.clone(), resource_address),
         })
         .0
     }

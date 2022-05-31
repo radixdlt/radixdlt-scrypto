@@ -5,7 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
-use scrypto::call_data;
+use scrypto::to_struct;
 use scrypto::prelude::*;
 
 #[test]
@@ -22,7 +22,8 @@ fn create_non_fungible_mutable() {
         .call_function(
             package,
             "NonFungibleTest",
-            call_data!(create_non_fungible_mutable()),
+            "create_non_fungible_mutable",
+            to_struct!()
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([]))
@@ -45,7 +46,8 @@ fn can_burn_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
-            call_data!(create_burnable_non_fungible()),
+            "create_burnable_non_fungible",
+            to_struct!()
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([]))
@@ -66,7 +68,8 @@ fn can_burn_non_fungible() {
         .call_function(
             package,
             "NonFungibleTest",
-            call_data![verify_does_not_exist(non_fungible_address)],
+            "verify_does_not_exist",
+            to_struct!(non_fungible_address)
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
@@ -89,37 +92,44 @@ fn test_non_fungible() {
         .call_function(
             package_address,
             "NonFungibleTest",
-            call_data!(create_non_fungible_fixed()),
+            "create_non_fungible_fixed",
+            to_struct!()
         )
         .call_function(
             package_address,
             "NonFungibleTest",
-            call_data!(update_and_get_non_fungible()),
+            "update_and_get_non_fungible",
+            to_struct!()
         )
         .call_function(
             package_address,
             "NonFungibleTest",
-            call_data!(non_fungible_exists()),
+            "non_fungible_exists",
+            to_struct!()
         )
         .call_function(
             package_address,
             "NonFungibleTest",
-            call_data!(take_and_put_bucket()),
+            "take_and_put_bucket",
+            to_struct!()
         )
         .call_function(
             package_address,
             "NonFungibleTest",
-            call_data!(take_and_put_vault()),
+            "take_and_put_vault",
+            to_struct!()
         )
         .call_function(
             package_address,
             "NonFungibleTest",
-            call_data!(get_non_fungible_ids_bucket()),
+            "get_non_fungible_ids_bucket",
+            to_struct!()
         )
         .call_function(
             package_address,
             "NonFungibleTest",
-            call_data!(get_non_fungible_ids_vault()),
+            "get_non_fungible_ids_vault",
+            to_struct!()
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
@@ -141,7 +151,8 @@ fn test_singleton_non_fungible() {
         .call_function(
             package_address,
             "NonFungibleTest",
-            call_data!(singleton_non_fungible()),
+            "singleton_non_fungible",
+            to_struct!()
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))

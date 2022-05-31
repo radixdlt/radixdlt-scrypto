@@ -1,7 +1,7 @@
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
-use scrypto::call_data;
+use scrypto::to_struct;
 use scrypto::prelude::*;
 
 #[test]
@@ -12,7 +12,7 @@ fn test_process_and_transaction() {
     let package_address = executor.publish_package(package).unwrap();
 
     let transaction1 = TransactionBuilder::new()
-        .call_function(package_address, "CoreTest", call_data![query()])
+        .call_function(package_address, "CoreTest", "query", to_struct![])
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
@@ -28,8 +28,8 @@ fn test_call() {
     let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(package_address, "MoveTest", call_data![move_bucket()])
-        .call_function(package_address, "MoveTest", call_data![move_proof()])
+        .call_function(package_address, "MoveTest", "move_bucket", to_struct![])
+        .call_function(package_address, "MoveTest", "move_proof", to_struct![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);

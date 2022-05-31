@@ -6,7 +6,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::call_data;
+use scrypto::to_struct;
 use scrypto::prelude::*;
 
 enum Action {
@@ -75,7 +75,8 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .take_from_worktop(token_address, |builder, bucket_id| {
                 builder.call_method(
                     account,
-                    call_data![deposit(scrypto::resource::Bucket(bucket_id))],
+                    "deposit",
+                    to_struct!(scrypto::resource::Bucket(bucket_id))
                 )
             })
             .call_method_with_all_resources(account, "deposit_batch"),

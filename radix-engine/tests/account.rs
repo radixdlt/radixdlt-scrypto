@@ -5,7 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::*;
-use scrypto::call_data;
+use scrypto::to_struct;
 use scrypto::prelude::*;
 use scrypto::values::ScryptoValue;
 
@@ -92,7 +92,8 @@ fn account_to_bucket_to_account() {
             builder
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
-                    call_data: call_data!(deposit(scrypto::resource::Bucket(bucket_id))),
+                    method_name: "deposit".to_string(),
+                    arg: to_struct!(scrypto::resource::Bucket(bucket_id))
                 })
                 .0
         })
@@ -114,7 +115,11 @@ fn test_account_balance() {
     let (pk, sk, account) = test_runner.new_account();
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(account, call_data![balance(RADIX_TOKEN)])
+        .call_method(
+            account,
+            "balance",
+            to_struct!(RADIX_TOKEN)
+        )
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
 

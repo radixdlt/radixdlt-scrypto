@@ -5,7 +5,7 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
-use scrypto::any_vec_to_struct;
+use scrypto::vec_to_struct;
 use scrypto::engine::types::*;
 use scrypto::types::*;
 use scrypto::values::*;
@@ -296,7 +296,7 @@ pub fn generate_instruction(
                 package_address: generate_package_address(package_address)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 method_name: generate_string(function)?,
-                arg: any_vec_to_struct!(fields),
+                arg: vec_to_struct!(fields),
             }
         }
         ast::Instruction::CallMethod {
@@ -317,7 +317,7 @@ pub fn generate_instruction(
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address)?,
                 method_name: generate_string(method)?,
-                arg: any_vec_to_struct!(fields),
+                arg: vec_to_struct!(fields),
             }
         }
         ast::Instruction::CallMethodWithAllResources {
@@ -774,7 +774,7 @@ mod tests {
     use crate::lexer::tokenize;
     use crate::parser::Parser;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::{any_list_to_struct, call_data};
+    use scrypto::{to_struct, call_data};
     use scrypto::prelude::Package;
 
     #[macro_export]
@@ -1062,7 +1062,7 @@ mod tests {
                         )
                         .unwrap(),
                         method_name: "withdraw_by_amount".to_string(),
-                        arg: any_list_to_struct!(
+                        arg: to_struct!(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
                                 "030000000000000000000000000000000000000000000000000004"
@@ -1083,7 +1083,7 @@ mod tests {
                         )
                         .unwrap(),
                         method_name: "buy_gumball".to_string(),
-                        arg: any_list_to_struct!(scrypto::resource::Bucket(512))
+                        arg: to_struct!(scrypto::resource::Bucket(512))
                     },
                     Instruction::AssertWorktopContainsByAmount {
                         amount: Decimal::from(3),
@@ -1114,7 +1114,7 @@ mod tests {
                         )
                         .unwrap(),
                         method_name: "create_proof_by_amount".to_string(),
-                        arg: any_list_to_struct!(
+                        arg: to_struct!(
                             Decimal::from(5u32),
                             ResourceAddress::from_str(
                                 "030000000000000000000000000000000000000000000000000004"

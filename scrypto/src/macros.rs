@@ -43,7 +43,7 @@ macro_rules! call_data_bytes_args {
 }
 
 #[macro_export]
-macro_rules! any_list_to_struct {
+macro_rules! to_struct {
     ($($args: expr),*) => {{
         let mut fields = Vec::new();
         $(
@@ -58,7 +58,7 @@ macro_rules! any_list_to_struct {
 }
 
 #[macro_export]
-macro_rules! any_vec_to_struct {
+macro_rules! vec_to_struct {
     ($args: expr) => {{
         let input_struct = ::sbor::Value::Struct {
             fields: $args,

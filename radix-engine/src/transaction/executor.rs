@@ -4,7 +4,7 @@ use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::values::ScryptoValue;
-use scrypto::{abi, access_rule_node, any_list_to_struct, rule};
+use scrypto::{abi, access_rule_node, to_struct, rule};
 
 use crate::engine::*;
 use crate::ledger::*;
@@ -76,7 +76,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .call_method(SYSTEM_COMPONENT, "free_xrd", any_list_to_struct!())
+                    .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })
