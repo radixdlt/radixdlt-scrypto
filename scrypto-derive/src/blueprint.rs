@@ -175,12 +175,12 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
                 }
             }
 
-            let struct_name = format_ident!("{}_{}_Input", bp_ident, method.sig.ident);
+            let input_struct_name = format_ident!("{}_{}_Input", bp_ident, method.sig.ident);
 
             let method_input_struct: ItemStruct = parse_quote! {
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct #struct_name {
+                pub struct #input_struct_name {
                     #(#args),*
                 }
             };
@@ -242,10 +242,16 @@ fn generate_dispatcher(
                             let arg = format_ident!("arg{}", arg_index);
 
                             match_args.push(parse_quote! { #arg });
-                            dispatch_args.push(parse_quote! { #arg });
+                            dispatch_args.push(parse_quote! { input.#arg });
                         }
                     }
                 }
+
+                // parse input
+                let input_struct_name = format_ident!("{}_{}_Input", bp_ident, ident);
+                stmts.push(parse_quote!{
+                    let input: #input_struct_name = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                });
 
                 // load state if needed
                 if let Some(stmt) = get_state {
@@ -574,12 +580,14 @@ mod tests {
                     let rtn;
                     match method {
                         "x" => {
+                            let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                             let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
                             let state: blueprint::Test = borrow_component!(component_address).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, arg0));
+                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, input.arg0));
                         }
                         "y" => {
-                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(arg0));
+                            let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(input.arg0));
                         }
                     }
                     rtn
