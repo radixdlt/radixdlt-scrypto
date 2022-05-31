@@ -58,7 +58,7 @@ fn test_component() {
             package,
             "ComponentTest",
             "get_component_info",
-            to_struct!()
+            to_struct!(component)
         )
         .call_method(
             component,

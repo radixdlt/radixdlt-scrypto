@@ -774,7 +774,7 @@ mod tests {
     use crate::lexer::tokenize;
     use crate::parser::Parser;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::{to_struct, call_data};
+    use scrypto::to_struct;
     use scrypto::prelude::Package;
 
     #[macro_export]
@@ -1002,7 +1002,8 @@ mod tests {
                 )
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
-                call_data: call_data!(new(500u32, HashMap::from([("key", 1u8),])))
+                method_name: "new".to_string(),
+                arg: to_struct!(500u32, HashMap::from([("key", 1u8),]))
             }
         );
         generate_instruction_ok!(
@@ -1012,7 +1013,8 @@ mod tests {
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
-                call_data: call_data!(refill())
+                method_name: "refill".to_string(),
+                arg: to_struct!()
             }
         );
         generate_instruction_ok!(

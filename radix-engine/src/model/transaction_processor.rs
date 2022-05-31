@@ -2,7 +2,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::scrypto_decode;
-use scrypto::call_data;
+use scrypto::to_struct;
 use scrypto::component::Package;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
@@ -450,9 +450,10 @@ impl TransactionProcessor {
                         for (_, real_id) in self.bucket_id_mapping.drain() {
                             buckets.push(scrypto::resource::Bucket(real_id));
                         }
-                        let encoded = call_data!(method.to_string(), buckets);
-                        system_api.invoke_snode(
+                        let encoded = to_struct!(buckets);
+                        system_api.invoke_snode2(
                             SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
+                            method.to_string(),
                             ScryptoValue::from_slice(&encoded).unwrap(),
                         )
                     }),
