@@ -1,8 +1,9 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
 use syn::spanned::Spanned;
-use syn::token::Brace;
+use syn::token::{Brace};
 use syn::*;
+use syn::parse::Parser;
 
 use crate::ast;
 
@@ -65,13 +66,13 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     };
     trace!("Generated mod: \n{}", quote! { #output_mod });
     let method_enum_ident = format_ident!("{}Method", bp_ident);
-    let method_enum = generate_method_enum(&method_enum_ident, bp_items);
+    let method_input_structs = generate_method_input_structs(bp_ident, bp_items);
 
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
     let (arm_guards, arm_bodies) = generate_dispatcher(&method_enum_ident, bp_ident, bp_items)?;
     let output_dispatcher = if arm_guards.is_empty() {
         quote! {
-            #method_enum
+            #(#method_input_structs)*
 
             #[no_mangle]
             pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
@@ -80,7 +81,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     } else {
         quote! {
-            #method_enum
+            #(#method_input_structs)*
 
             #[no_mangle]
             pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
@@ -92,7 +93,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                 // Dispatch the call
-                let method = ::scrypto::buffer::scrypto_decode_from_buffer::<#method_enum_ident>(input).unwrap();
+                let method: String = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(input).unwrap();
                 let rtn;
                 match method {
                     #( #arm_guards => #arm_bodies )*
@@ -149,8 +150,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     Ok(output)
 }
 
-fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEnum {
-    let mut variants = Vec::new();
+fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<ItemStruct> {
+    let mut method_input_structs = Vec::new();
 
     for item in items {
         if let ImplItem::Method(method) = item {
@@ -158,31 +159,36 @@ fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEn
                 continue;
             }
 
-            let mut fields = Vec::new();
+            let mut args = Vec::new();
+            let mut index: usize = 0;
             for input in (&method.sig.inputs).into_iter() {
                 match input {
                     FnArg::Receiver(_) => {}
                     FnArg::Typed(ref t) => {
-                        fields.push(t.ty.as_ref());
+                        let arg_ident = format_ident!("arg{}", index);
+                        index += 1;
+                        let arg_type = t.ty.as_ref();
+                        let arg: Field = Field::parse_named.parse2(quote! {
+                            #arg_ident : #arg_type
+                        }).unwrap();
+                        args.push(arg)
                     }
                 }
             }
 
-            let method_ident = method.sig.ident.clone();
-            let variant: Variant = parse_quote! {
-                #method_ident(#(#fields),*)
-            };
-            variants.push(variant);
-        }
-    }
+            let struct_name = format_ident!("{}_{}_Input", bp_ident, method.sig.ident);
 
-    parse_quote! {
-        #[allow(non_camel_case_types)]
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-        enum #method_enum_ident {
-            #(#variants),*
+            let method_input_struct: ItemStruct = parse_quote! {
+                #[allow(non_camel_case_types)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                pub struct #struct_name {
+                    #(#args),*
+                }
+            };
+            method_input_structs.push(method_input_struct);
         }
     }
+    method_input_structs
 }
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
@@ -553,10 +559,11 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                enum TestMethod {
-                    x(u32),
-                    y(u32)
-                }
+                pub struct Test_x_Input { arg0 : u32 }
+
+                #[allow(non_camel_case_types)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
                 pub extern "C" fn Test_main(input: *mut u8) -> *mut u8 {
@@ -564,7 +571,7 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let method = ::scrypto::buffer::scrypto_decode_from_buffer::<TestMethod>(input).unwrap();
+                    let method: String = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(input).unwrap();
                     let rtn;
                     match method {
                         TestMethod::x(arg0) => {
@@ -654,11 +661,6 @@ mod tests {
                             )
                         }
                     }
-                }
-
-                #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                enum TestMethod {
                 }
 
                 #[no_mangle]
