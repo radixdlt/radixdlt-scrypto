@@ -40,7 +40,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         let mut func_types = Vec::<Type>::new();
         let mut func_args = Vec::<Ident>::new();
 
-        for (i, input) in function.inputs.iter().enumerate() {
+        for (i, input) in function.input.iter().enumerate() {
             let ident = format_ident!("arg{}", i);
             let (new_type, new_structs) = get_native_type(input)?;
             func_args.push(parse_quote! { #ident });
@@ -72,7 +72,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         let mut method_types = Vec::<Type>::new();
         let mut method_args = Vec::<Ident>::new();
 
-        for (i, input) in method.inputs.iter().enumerate() {
+        for (i, input) in method.input.iter().enumerate() {
             let ident = format_ident!("arg{}", i);
             let (new_type, new_structs) = get_native_type(input)?;
             method_args.push(parse_quote! { #ident });

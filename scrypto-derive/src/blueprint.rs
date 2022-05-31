@@ -349,7 +349,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<
                         functions.push(parse_quote! {
                             ::scrypto::abi::Function {
                                 name: #name.to_owned(),
-                                inputs: vec![#(#inputs),*],
+                                input: vec![#(#inputs),*],
                                 output: #output,
                             }
                         });
@@ -358,7 +358,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<
                             ::scrypto::abi::Method {
                                 name: #name.to_owned(),
                                 mutability: #mutability,
-                                inputs: vec![#(#inputs),*],
+                                input: vec![#(#inputs),*],
                                 output: #output,
                             }
                         });
@@ -608,7 +608,7 @@ mod tests {
                     let methods: Vec<Method> = vec![::scrypto::abi::Method {
                         name: "x".to_owned(),
                         mutability: ::scrypto::abi::Mutability::Immutable,
-                        inputs: vec![<u32>::describe()],
+                        input: vec![<u32>::describe()],
                         output: <u32>::describe(),
                     }];
                     let schema: Type = blueprint::Test::describe();

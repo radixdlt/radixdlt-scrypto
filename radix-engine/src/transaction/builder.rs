@@ -324,7 +324,7 @@ impl TransactionBuilder {
             .ok_or_else(|| CallWithAbiError::FunctionNotFound(function.to_owned()))?;
 
         let arguments = self
-            .parse_args(&abi.inputs, args, account)
+            .parse_args(&abi.input, args, account)
             .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
 
         let mut fields = Vec::new();
@@ -382,7 +382,7 @@ impl TransactionBuilder {
             .ok_or_else(|| CallWithAbiError::MethodNotFound(method.to_owned()))?;
 
         let arguments = self
-            .parse_args(&abi.inputs, args, account)
+            .parse_args(&abi.input, args, account)
             .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
 
         Ok(self
