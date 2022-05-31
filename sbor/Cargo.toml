@@ -5,8 +5,8 @@ edition = "2021"
 
 [dependencies]
 sbor-derive = { path = "../sbor-derive" }
-hashbrown = { version = "0.12", optional = true }
-serde = { version = "1.0", default-features = false, optional = true, features=["derive"] }
+hashbrown = { version = "0.12.1", optional = true }
+serde = { version = "1.0.137", default-features = false, optional = true, features=["derive"] }
 hex = { version = "0.4.3", default-features = false, optional = true }
 
 [features]

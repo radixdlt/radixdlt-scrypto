@@ -11,6 +11,7 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError, ResourceManager};
+use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum WorktopMethod {
@@ -171,7 +172,7 @@ impl Worktop {
             .insert(resource_address, Rc::new(RefCell::new(container)));
     }
 
-    pub fn main<S: SystemApi>(
+    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         arg: ScryptoValue,
         system_api: &mut S,

@@ -17,6 +17,8 @@ pub enum IdAllocatorError {
 }
 
 /// An ID allocator defines how identities are generated.
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
     available: Range<u32>,
 }
