@@ -65,17 +65,16 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_mod });
-    let method_enum_ident = format_ident!("{}Method", bp_ident);
     let method_input_structs = generate_method_input_structs(bp_ident, bp_items);
 
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
-    let (arm_guards, arm_bodies) = generate_dispatcher(&method_enum_ident, bp_ident, bp_items)?;
+    let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items)?;
     let output_dispatcher = if arm_guards.is_empty() {
         quote! {
             #(#method_input_structs)*
 
             #[no_mangle]
-            pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
+            pub extern "C" fn #dispatcher_ident(method_ptr: *mut u8) -> *mut u8 {
                 panic!("No invocation expected")
             }
         }
@@ -84,7 +83,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #(#method_input_structs)*
 
             #[no_mangle]
-            pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
+            pub extern "C" fn #dispatcher_ident(method_ptr: *mut u8) -> *mut u8 {
                 // Set up panic hook
                 ::scrypto::misc::set_up_panic_hook();
 
@@ -93,7 +92,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                 // Dispatch the call
-                let method: String = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(input).unwrap();
+                let method: String = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
                 let rtn;
                 match method {
                     #( #arm_guards => #arm_bodies )*
@@ -194,7 +193,6 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
 fn generate_dispatcher(
-    method_enum_ident: &Ident,
     bp_ident: &Ident,
     items: &[ImplItem],
 ) -> Result<(Vec<Expr>, Vec<Expr>)> {
@@ -206,6 +204,7 @@ fn generate_dispatcher(
 
         if let ImplItem::Method(ref m) = item {
             if let Visibility::Public(_) = &m.vis {
+                let fn_name = &m.sig.ident.to_string();
                 let ident = &m.sig.ident;
 
                 let mut match_args: Vec<Expr> = vec![];
@@ -272,7 +271,7 @@ fn generate_dispatcher(
                     stmts.push(stmt);
                 }
 
-                arm_guards.push(parse_quote! { #method_enum_ident::#ident(#(#match_args),*) });
+                arm_guards.push(parse_quote! { #fn_name });
                 arm_bodies.push(Expr::Block(ExprBlock {
                     attrs: vec![],
                     label: None,
@@ -566,20 +565,20 @@ mod tests {
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_main(input: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_main(method_ptr: *mut u8) -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let method: String = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(input).unwrap();
+                    let method: String = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
                     let rtn;
                     match method {
-                        TestMethod::x(arg0) => {
+                        "x" => {
                             let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
                             let state: blueprint::Test = borrow_component!(component_address).get_state();
                             rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, arg0));
                         }
-                        TestMethod::y(arg0) => {
+                        "y" => {
                             rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(arg0));
                         }
                     }
@@ -664,7 +663,7 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_main(input: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_main(method_ptr: *mut u8) -> *mut u8 {
                     panic!("No invocation expected")
                 }
                 #[no_mangle]
