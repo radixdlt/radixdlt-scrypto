@@ -2,8 +2,8 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 #[test]
 fn dangling_lazy_map_should_fail() {
@@ -19,7 +19,7 @@ fn dangling_lazy_map_should_fail() {
             package_address,
             "LazyMapTest",
             "dangling_lazy_map",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -40,12 +40,7 @@ fn can_insert_in_child_nodes() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "SuperLazyMap",
-            "new",
-            to_struct!()
-        )
+        .call_function(package_address, "SuperLazyMap", "new", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -68,7 +63,7 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
             package_address,
             "LazyMapTest",
             "new_lazy_map_into_map_then_get",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -88,12 +83,7 @@ fn cyclic_map_fails_execution() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "CyclicMap",
-            "new",
-            to_struct!()
-        )
+        .call_function(package_address, "CyclicMap", "new", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -123,7 +113,7 @@ fn self_cyclic_map_fails_execution() {
             package_address,
             "CyclicMap",
             "new_self_cyclic",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -152,7 +142,7 @@ fn cannot_remove_lazy_maps() {
             package_address,
             "LazyMapTest",
             "new_lazy_map_into_vector",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -161,11 +151,7 @@ fn cannot_remove_lazy_maps() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_method(
-            component_address,
-            "clear_vector",
-            to_struct!()
-        )
+        .call_method(component_address, "clear_vector", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -190,7 +176,7 @@ fn cannot_overwrite_lazy_maps() {
             package_address,
             "LazyMapTest",
             "new_lazy_map_into_lazy_map",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -199,11 +185,7 @@ fn cannot_overwrite_lazy_maps() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_method(
-            component_address,
-            "overwrite_lazy_map",
-            to_struct!()
-        )
+        .call_method(component_address, "overwrite_lazy_map", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -230,7 +212,7 @@ fn create_lazy_map_and_get() {
             package_address,
             "LazyMapTest",
             "new_lazy_map_with_get",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -254,7 +236,7 @@ fn create_lazy_map_and_put() {
             package_address,
             "LazyMapTest",
             "new_lazy_map_with_put",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);

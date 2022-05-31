@@ -6,8 +6,8 @@ use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::{extract_package, BucketError, ResourceContainerError};
 use radix_engine::transaction::*;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 #[test]
 fn test_bucket() {
@@ -18,59 +18,34 @@ fn test_bucket() {
     let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "BucketTest",
-            "combine",
-            to_struct!()
-        )
-        .call_function(
-            package_address,
-            "BucketTest",
-            "split",
-            to_struct!()
-        )
-        .call_function(
-            package_address,
-            "BucketTest",
-            "borrow",
-            to_struct!()
-        )
-        .call_function(
-            package_address,
-            "BucketTest",
-            "query",
-            to_struct!()
-        )
+        .call_function(package_address, "BucketTest", "combine", to_struct!())
+        .call_function(package_address, "BucketTest", "split", to_struct!())
+        .call_function(package_address, "BucketTest", "borrow", to_struct!())
+        .call_function(package_address, "BucketTest", "query", to_struct!())
         .call_function(
             package_address,
             "BucketTest",
             "test_restricted_transfer",
-            to_struct!()
+            to_struct!(),
         )
-        .call_function(
-            package_address,
-            "BucketTest",
-            "test_burn",
-            to_struct!()
-        )
+        .call_function(package_address, "BucketTest", "test_burn", to_struct!())
         .call_function(
             package_address,
             "BucketTest",
             "test_burn_freely",
-            to_struct!()
+            to_struct!(),
         )
         .call_function(
             package_address,
             "BucketTest",
             "create_empty_bucket_fungible",
-            to_struct!()
+            to_struct!(),
         )
         .call_function(
             package_address,
             "BucketTest",
             "create_empty_bucket_non_fungible",
-            to_struct!()
+            to_struct!(),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
@@ -88,30 +63,10 @@ fn test_bucket_of_badges() {
     let package_address = executor.publish_package(package).unwrap();
 
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "BadgeTest",
-            "combine",
-            to_struct!()
-        )
-        .call_function(
-            package_address,
-            "BadgeTest",
-            "split",
-            to_struct!()
-        )
-        .call_function(
-            package_address,
-            "BadgeTest",
-            "borrow",
-            to_struct!()
-        )
-        .call_function(
-            package_address,
-            "BadgeTest",
-            "query",
-            to_struct!()
-        )
+        .call_function(package_address, "BadgeTest", "combine", to_struct!())
+        .call_function(package_address, "BadgeTest", "split", to_struct!())
+        .call_function(package_address, "BadgeTest", "borrow", to_struct!())
+        .call_function(package_address, "BadgeTest", "query", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([]))
         .sign([]);

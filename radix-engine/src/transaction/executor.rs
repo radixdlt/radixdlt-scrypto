@@ -4,7 +4,7 @@ use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::values::ScryptoValue;
-use scrypto::{abi, access_rule_node, to_struct, rule};
+use scrypto::{abi, access_rule_node, rule, to_struct};
 
 use crate::engine::*;
 use crate::ledger::*;

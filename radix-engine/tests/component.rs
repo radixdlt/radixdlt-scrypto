@@ -4,8 +4,8 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 #[test]
 fn test_package() {
@@ -15,12 +15,7 @@ fn test_package() {
 
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "PackageTest",
-            "publish",
-            to_struct!()
-        )
+        .call_function(package, "PackageTest", "publish", to_struct!())
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -37,12 +32,7 @@ fn test_component() {
     // Create component
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "ComponentTest",
-            "create_component",
-            to_struct!()
-        )
+        .call_function(package, "ComponentTest", "create_component", to_struct!())
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -58,18 +48,10 @@ fn test_component() {
             package,
             "ComponentTest",
             "get_component_info",
-            to_struct!(component)
+            to_struct!(component),
         )
-        .call_method(
-            component,
-            "get_component_state",
-            to_struct!()
-        )
-        .call_method(
-            component,
-            "put_component_state",
-            to_struct!()
-        )
+        .call_method(component, "get_component_state", to_struct!())
+        .call_method(component, "put_component_state", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
@@ -91,7 +73,7 @@ fn invalid_blueprint_name_should_cause_error() {
             package_address,
             "NonExistentBlueprint",
             "create_component",
-            to_struct!()
+            to_struct!(),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -113,12 +95,7 @@ fn reentrancy_should_not_be_possible() {
     let package_address = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
-        .call_function(
-            package_address,
-            "ReentrantComponent",
-            "new",
-            to_struct!()
-        )
+        .call_function(package_address, "ReentrantComponent", "new", to_struct!())
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -128,11 +105,7 @@ fn reentrancy_should_not_be_possible() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(
-            component_address,
-            "call_self",
-            to_struct!()
-        )
+        .call_method(component_address, "call_self", to_struct!())
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
@@ -155,11 +128,7 @@ fn missing_component_address_should_cause_error() {
     // Act
     let transaction = test_runner
         .new_transaction_builder()
-        .call_method(
-            component_address,
-            "get_component_state",
-            to_struct!()
-        )
+        .call_method(component_address, "get_component_state", to_struct!())
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);

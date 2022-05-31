@@ -1,8 +1,8 @@
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 #[test]
 fn test_hello() {
@@ -15,12 +15,7 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let transaction1 = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "Hello",
-            "instantiate_hello",
-            to_struct!()
-        )
+        .call_function(package_address, "Hello", "instantiate_hello", to_struct!())
         .build(executor.get_nonce([pk]))
         .sign([&sk]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();
@@ -30,11 +25,7 @@ fn test_hello() {
     // Test the `free_token` method.
     let component = receipt1.new_component_addresses[0];
     let transaction2 = TransactionBuilder::new()
-        .call_method(
-            component,
-            "free_token",
-            to_struct!()
-        )
+        .call_method(component, "free_token", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
         .sign([&sk]);

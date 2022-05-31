@@ -4,8 +4,8 @@
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 #[test]
 fn test_say_hello() {
@@ -17,12 +17,7 @@ fn test_say_hello() {
 
     // Test the `say_hello` function.
     let transaction1 = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "NoStd",
-            "say_hello",
-            to_struct!()
-        )
+        .call_function(package_address, "NoStd", "say_hello", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt1 = executor.validate_and_execute(&transaction1).unwrap();

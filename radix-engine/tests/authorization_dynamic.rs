@@ -4,8 +4,8 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 fn test_dynamic_auth(
     num_keys: usize,
@@ -55,7 +55,7 @@ fn test_dynamic_auth(
             .call_method(
                 component,
                 "update_auth",
-                to_struct!(addresses.get(next_auth).unwrap().clone())
+                to_struct!(addresses.get(next_auth).unwrap().clone()),
             )
             .build(test_runner.get_nonce([]))
             .sign([]);
@@ -68,11 +68,7 @@ fn test_dynamic_auth(
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(
-            component,
-            "get_secret",
-            to_struct!()
-        )
+        .call_method(component, "get_secret", to_struct!())
         .build(test_runner.get_nonce(pks))
         .sign(sks);
     let receipt2 = test_runner.validate_and_execute(&transaction2);
@@ -120,7 +116,7 @@ fn test_dynamic_authlist(
             package,
             "AuthListComponent",
             "create_component",
-            to_struct!(2u8, list, authorization)
+            to_struct!(2u8, list, authorization),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -131,11 +127,7 @@ fn test_dynamic_authlist(
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(
-            component,
-            "get_secret",
-            to_struct!()
-        )
+        .call_method(component, "get_secret", to_struct!())
         .build(test_runner.get_nonce(pks))
         .sign(sks);
     let receipt = test_runner.validate_and_execute(&transaction2);
@@ -248,12 +240,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "Chess",
-            "create_game",
-            to_struct!(players)
-        )
+        .call_function(package, "Chess", "create_game", to_struct!(players))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -263,11 +250,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Act
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(
-            component,
-            "make_move",
-            to_struct!()
-        )
+        .call_method(component, "make_move", to_struct!())
         .build(test_runner.get_nonce([other_pk]))
         .sign([&other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction2);
@@ -292,12 +275,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let players = [non_fungible_address, other_non_fungible_address];
     let transaction1 = test_runner
         .new_transaction_builder()
-        .call_function(
-            package,
-            "Chess",
-            "create_game",
-            to_struct!(players)
-        )
+        .call_function(package, "Chess", "create_game", to_struct!(players))
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt1 = test_runner.validate_and_execute(&transaction1);
@@ -305,11 +283,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let component = receipt1.new_component_addresses[0];
     let transaction2 = test_runner
         .new_transaction_builder()
-        .call_method(
-            component,
-            "make_move",
-            to_struct!()
-        )
+        .call_method(component, "make_move", to_struct!())
         .build(test_runner.get_nonce([pk]))
         .sign([&sk]);
     test_runner
@@ -320,11 +294,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     // Act
     let transaction3 = test_runner
         .new_transaction_builder()
-        .call_method(
-            component,
-            "make_move",
-            to_struct!()
-        )
+        .call_method(component, "make_move", to_struct!())
         .build(test_runner.get_nonce([other_pk]))
         .sign([&other_sk]);
     let receipt = test_runner.validate_and_execute(&transaction3);

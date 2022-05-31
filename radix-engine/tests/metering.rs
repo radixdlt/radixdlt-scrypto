@@ -22,12 +22,7 @@ fn test_loop() {
         .publish_package(extract_package(code).unwrap())
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "Test",
-            "f",
-            to_struct!()
-        )
+        .call_function(package_address, "Test", "f", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor
@@ -50,12 +45,7 @@ fn test_loop_out_of_tbd() {
         .publish_package(extract_package(code).unwrap())
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "Test",
-            "f",
-            to_struct!()
-        )
+        .call_function(package_address, "Test", "f", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor
@@ -79,12 +69,7 @@ fn test_recursion() {
         .publish_package(extract_package(code).unwrap())
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "Test",
-            "f",
-            to_struct!()
-        )
+        .call_function(package_address, "Test", "f", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor
@@ -107,12 +92,7 @@ fn test_recursion_stack_overflow() {
         .publish_package(extract_package(code).unwrap())
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "Test",
-            "f",
-            to_struct!()
-        )
+        .call_function(package_address, "Test", "f", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor
@@ -135,12 +115,7 @@ fn test_grow_memory() {
         .publish_package(extract_package(code).unwrap())
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "Test",
-            "f",
-            to_struct!()
-        )
+        .call_function(package_address, "Test", "f", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor
@@ -163,12 +138,7 @@ fn test_grow_memory_out_of_tbd() {
         .publish_package(extract_package(code).unwrap())
         .expect("Failed to publish package");
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "Test",
-            "f",
-            to_struct!()
-        )
+        .call_function(package_address, "Test", "f", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor

@@ -1,9 +1,9 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
-use syn::spanned::Spanned;
-use syn::token::{Brace};
-use syn::*;
 use syn::parse::Parser;
+use syn::spanned::Spanned;
+use syn::token::Brace;
+use syn::*;
 
 use crate::ast;
 
@@ -168,9 +168,11 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
                         let arg_ident = format_ident!("arg{}", index);
                         index += 1;
                         let arg_type = t.ty.as_ref();
-                        let arg: Field = Field::parse_named.parse2(quote! {
-                            #arg_ident : #arg_type
-                        }).unwrap();
+                        let arg: Field = Field::parse_named
+                            .parse2(quote! {
+                                #arg_ident : #arg_type
+                            })
+                            .unwrap();
                         args.push(arg)
                     }
                 }
@@ -193,10 +195,7 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(
-    bp_ident: &Ident,
-    items: &[ImplItem],
-) -> Result<(Vec<Expr>, Vec<Expr>)> {
+fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>)> {
     let mut arm_guards = Vec::<Expr>::new();
     let mut arm_bodies = Vec::<Expr>::new();
 

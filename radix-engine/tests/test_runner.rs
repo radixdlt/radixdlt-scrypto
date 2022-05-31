@@ -98,7 +98,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 function,
-                to_struct!(token, set_auth)
+                to_struct!(token, set_auth),
             )
             .call_method_with_all_resources(account.2, "deposit_batch")
             .build(self.executor.get_nonce([account.0.clone()]))
@@ -132,12 +132,7 @@ impl<'l> TestRunner<'l> {
                 package,
                 "ResourceCreator",
                 "create_restricted_token",
-                to_struct!(
-                    mint_auth,
-                    burn_auth,
-                    withdraw_auth,
-                    admin_auth
-                ),
+                to_struct!(mint_auth, burn_auth, withdraw_auth, admin_auth),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))

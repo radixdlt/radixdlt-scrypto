@@ -60,9 +60,7 @@ macro_rules! to_struct {
 #[macro_export]
 macro_rules! vec_to_struct {
     ($args: expr) => {{
-        let input_struct = ::sbor::Value::Struct {
-            fields: $args,
-        };
+        let input_struct = ::sbor::Value::Struct { fields: $args };
         ::sbor::encode_any(&input_struct)
     }};
 }
@@ -74,9 +72,7 @@ macro_rules! bytes_vec_to_struct {
         for arg in $args {
             fields.push(::sbor::decode_any(&arg).unwrap());
         }
-        let input_struct = ::sbor::Value::Struct {
-            fields,
-        };
+        let input_struct = ::sbor::Value::Struct { fields };
         ::sbor::encode_any(&input_struct)
     }};
 }

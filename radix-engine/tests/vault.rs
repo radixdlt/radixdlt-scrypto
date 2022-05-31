@@ -2,8 +2,8 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::transaction::*;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {
@@ -98,11 +98,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "NonExistentVault",
-            "new",
-            to_struct!())
+        .call_function(package_address, "NonExistentVault", "new", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -113,7 +109,8 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
         .call_method(
             component_address,
             "create_non_existent_vault_in_lazy_map",
-            to_struct!())
+            to_struct!(),
+        )
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -136,11 +133,7 @@ fn dangling_vault_should_fail() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_function(
-            package_address,
-            "VaultTest",
-            "dangling_vault",
-            to_struct!())
+        .call_function(package_address, "VaultTest", "dangling_vault", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -238,7 +231,7 @@ fn cannot_overwrite_vault_in_map() {
             package_address,
             "VaultTest",
             "new_vault_into_map",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -247,10 +240,7 @@ fn cannot_overwrite_vault_in_map() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_method(
-            component_address,
-            "overwrite_vault_in_map",
-            to_struct!())
+        .call_method(component_address, "overwrite_vault_in_map", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -299,7 +289,7 @@ fn cannot_remove_vaults() {
             package_address,
             "VaultTest",
             "new_vault_into_vector",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -308,10 +298,7 @@ fn cannot_remove_vaults() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_method(
-            component_address,
-            "clear_vector",
-            to_struct!())
+        .call_method(component_address, "clear_vector", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -336,7 +323,7 @@ fn can_push_vault_into_vector() {
             package_address,
             "VaultTest",
             "new_vault_into_vector",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -345,10 +332,7 @@ fn can_push_vault_into_vector() {
 
     // Act
     let transaction = TransactionBuilder::new()
-        .call_method(
-            component_address,
-            "push_vault_into_vector",
-            to_struct!())
+        .call_method(component_address, "push_vault_into_vector", to_struct!())
         .build(executor.get_nonce([]))
         .sign([]);
     let receipt = executor.validate_and_execute(&transaction).unwrap();
@@ -371,7 +355,7 @@ fn create_mutable_vault_with_take() {
             package_address,
             "VaultTest",
             "new_vault_with_take",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -395,7 +379,7 @@ fn create_mutable_vault_with_take_non_fungible() {
             package_address,
             "VaultTest",
             "new_vault_with_take_non_fungible",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -419,7 +403,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
             package_address,
             "VaultTest",
             "new_vault_with_get_non_fungible_ids",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -443,7 +427,7 @@ fn create_mutable_vault_with_get_amount() {
             package_address,
             "VaultTest",
             "new_vault_with_get_amount",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);
@@ -467,7 +451,7 @@ fn create_mutable_vault_with_get_resource_manager() {
             package_address,
             "VaultTest",
             "new_vault_with_get_resource_manager",
-            to_struct!()
+            to_struct!(),
         )
         .build(executor.get_nonce([]))
         .sign([]);

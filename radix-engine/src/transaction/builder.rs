@@ -92,8 +92,7 @@ impl TransactionBuilder {
             Instruction::DropProof { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
-            Instruction::CallFunction { arg, .. }
-            | Instruction::CallMethod { arg, .. } => {
+            Instruction::CallFunction { arg, .. } | Instruction::CallMethod { arg, .. } => {
                 let scrypt_value = ScryptoValue::from_slice(&arg).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
@@ -332,9 +331,7 @@ impl TransactionBuilder {
         for arg in arguments {
             fields.push(::sbor::decode_any(&arg).unwrap());
         }
-        let input_struct = ::sbor::Value::Struct {
-            fields,
-        };
+        let input_struct = ::sbor::Value::Struct { fields };
         let bytes = ::sbor::encode_any(&input_struct);
 
         Ok(self
@@ -619,10 +616,7 @@ impl TransactionBuilder {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
             method_name: "new_with_resource".to_string(),
-            arg: to_struct!(
-                withdraw_auth.clone(),
-                scrypto::resource::Bucket(bucket_id)
-            ),
+            arg: to_struct!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
         })
         .0
     }

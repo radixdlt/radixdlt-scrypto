@@ -4,8 +4,8 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
@@ -62,7 +62,7 @@ fn can_create_clone_and_drop_vault_proof() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof",
-            to_struct!(Decimal::one())
+            to_struct!(Decimal::one()),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -142,7 +142,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         .call_method(
             component_address,
             "create_clone_drop_vault_proof_by_ids",
-            to_struct!(total_ids, proof_ids)
+            to_struct!(total_ids, proof_ids),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -319,7 +319,7 @@ fn can_compose_bucket_and_vault_proof() {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof",
-                to_struct!(Bucket(bucket_id))
+                to_struct!(Bucket(bucket_id)),
             )
         })
         .build(test_runner.get_nonce([pk]))
@@ -358,7 +358,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             builder.call_method(
                 component_address,
                 "compose_vault_and_bucket_proof_by_amount",
-                to_struct!(Bucket(bucket_id), Decimal::from(2))
+                to_struct!(Bucket(bucket_id), Decimal::from(2)),
             )
         })
         .build(test_runner.get_nonce([pk]))

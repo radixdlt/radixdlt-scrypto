@@ -2,8 +2,8 @@ use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::{extract_package, ResourceManagerError};
 use radix_engine::transaction::*;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 #[test]
 fn test_resource_manager() {
@@ -20,25 +20,15 @@ fn test_resource_manager() {
             package_address,
             "ResourceTest",
             "create_fungible",
-            to_struct!()
+            to_struct!(),
         )
-        .call_function(
-            package_address,
-            "ResourceTest",
-            "query",
-            to_struct!()
-        )
-        .call_function(
-            package_address,
-            "ResourceTest",
-            "burn",
-            to_struct!()
-        )
+        .call_function(package_address, "ResourceTest", "query", to_struct!())
+        .call_function(package_address, "ResourceTest", "burn", to_struct!())
         .call_function(
             package_address,
             "ResourceTest",
             "update_resource_metadata",
-            to_struct!()
+            to_struct!(),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
@@ -65,7 +55,7 @@ fn mint_with_bad_granularity_should_fail() {
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
-            to_struct!(0u8, dec!("0.1"))
+            to_struct!(0u8, dec!("0.1")),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))
@@ -98,7 +88,7 @@ fn mint_too_much_should_fail() {
             package_address,
             "ResourceTest",
             "create_fungible_and_mint",
-            to_struct!(0u8, dec!(100_000_000_001i128))
+            to_struct!(0u8, dec!(100_000_000_001i128)),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build(executor.get_nonce([pk]))

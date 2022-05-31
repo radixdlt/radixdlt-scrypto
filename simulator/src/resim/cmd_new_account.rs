@@ -1,8 +1,8 @@
 use clap::Parser;
 use colored::*;
 use rand::Rng;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 use crate::resim::*;
 
@@ -33,11 +33,7 @@ impl NewAccount {
             );
             let withdraw_auth = rule!(require(auth_address));
             let transaction = TransactionBuilder::new()
-                .call_method(
-                    SYSTEM_COMPONENT,
-                    "free_xrd",
-                    to_struct!()
-                )
+                .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
                 .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                     builder.new_account_with_resource(&withdraw_auth, bucket_id)
                 })

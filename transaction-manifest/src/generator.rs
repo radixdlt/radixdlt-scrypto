@@ -5,10 +5,10 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
-use scrypto::vec_to_struct;
 use scrypto::engine::types::*;
 use scrypto::types::*;
 use scrypto::values::*;
+use scrypto::vec_to_struct;
 
 use crate::ast;
 
@@ -774,8 +774,8 @@ mod tests {
     use crate::lexer::tokenize;
     use crate::parser::Parser;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::to_struct;
     use scrypto::prelude::Package;
+    use scrypto::to_struct;
 
     #[macro_export]
     macro_rules! generate_value_ok {

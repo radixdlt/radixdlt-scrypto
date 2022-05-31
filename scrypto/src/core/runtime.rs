@@ -72,7 +72,7 @@ impl Runtime {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             method.as_ref().to_string(),
-            bytes_vec_to_struct!(args)
+            bytes_vec_to_struct!(args),
         );
         let output: Vec<u8> = call_engine(input);
 

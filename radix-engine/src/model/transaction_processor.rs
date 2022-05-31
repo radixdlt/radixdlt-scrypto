@@ -2,7 +2,6 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::scrypto_decode;
-use scrypto::to_struct;
 use scrypto::component::Package;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
@@ -12,6 +11,7 @@ use scrypto::prelude::{
     ProofCloneInput,
 };
 use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
+use scrypto::to_struct;
 use scrypto::values::*;
 
 use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};

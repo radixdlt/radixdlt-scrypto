@@ -4,8 +4,8 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
@@ -26,7 +26,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            to_struct!(authorization)
+            to_struct!(authorization),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -40,7 +40,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            to_struct!()
+            to_struct!(),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -54,7 +54,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            to_struct!(secured_component)
+            to_struct!(secured_component),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -84,7 +84,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component_with_auth",
-            to_struct!(authorization)
+            to_struct!(authorization),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -98,7 +98,7 @@ fn can_make_cross_component_call_with_authorization() {
             package_address,
             "CrossComponent",
             "create_component",
-            to_struct!()
+            to_struct!(),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -121,7 +121,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method(
             my_component,
             "cross_component_call",
-            to_struct!(secured_component)
+            to_struct!(secured_component),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
