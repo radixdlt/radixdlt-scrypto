@@ -2,6 +2,7 @@ use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
+use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 use wasmi::*;
 
