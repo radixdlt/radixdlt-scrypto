@@ -270,7 +270,7 @@ macro_rules! external_blueprint {
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $blueprint_ident {
-            ::scrypto::bridge_blueprint_interface_members!(
+            ::scrypto::external_interface_members!(
                 $blueprint_context,
                 $($blueprint_contents)*
             );
@@ -342,7 +342,7 @@ macro_rules! external_component {
         // We allow dead code because it's used for importing interfaces, and not all the interface might be used
         #[allow(dead_code, unused_imports)]
         impl $component_ident {
-            ::scrypto::bridge_blueprint_interface_members!((), $($component_methods)*);
+            ::scrypto::external_interface_members!((), $($component_methods)*);
         }
 
         impl From<::scrypto::component::ComponentAddress> for $component_ident {
@@ -363,7 +363,7 @@ macro_rules! external_component {
 
 // This is a TT-Muncher, a useful guide for this type of use case is here: https://adventures.michaelfbryan.com/posts/non-trivial-macros/
 #[macro_export]
-macro_rules! bridge_blueprint_interface_members {
+macro_rules! external_interface_members {
     (
         $blueprint_context:tt,
         fn $method_name:ident(&self$(, $method_args:ident: $method_types:ty)*) -> $method_output:ty;
@@ -483,6 +483,10 @@ macro_rules! package_address_from_context {
     ) => {
         $package_address
     };
+    // This macro is only called when used for blueprint function calls (instead of component method calls)
+    //    () is the context passed into the external_interface_members macro by the external_component macro,
+    //    which doesn't support function calls. So when we detect a () parameter, then we assume we're
+    //    being called from the external_component macro, and can give a more useful error message.
     () => {
         compile_error!("Cannot call package functions (ie without &self or &mut self) on a external_component - use a external_blueprint instead.");
     };
@@ -503,6 +507,10 @@ macro_rules! blueprint_name_from_context {
     ) => {
         $blueprint_logical_name
     };
+    // This macro is only called when used for blueprint function calls (instead of component method calls)
+    //    () is the context passed into the external_interface_members macro by the external_component macro,
+    //    which doesn't support function calls. So when we detect a () parameter, then we assume we're
+    //    being called from the external_component macro, and can give a more useful error message.
     () => {
         compile_error!("Cannot call package functions (ie without &self or &mut self) on a external_component - use a external_blueprint instead.");
     };
