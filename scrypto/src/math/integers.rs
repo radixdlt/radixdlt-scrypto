@@ -11,64 +11,53 @@ use paste::paste;
 use num_bigint::BigInt;
 use num_traits::{Signed, Zero};
  
+macro_rules! incl {
+    (on, $tt:tt) => {
+        $tt
+    };
+    (off, $tt:tt) => {
+    };
+}
+
 macro_rules! types_large {
 
-    ($((type_ident: $t:ident, wrapped: $wrap:ty, default: $default:expr)),*) => {
-        
-        $(
-            /// Provides safe integer arithmetic.
-            ///
-            /// Operations like `+`, '-', '*', or '/' sometimes produce overflow 
-            /// which is detected and results in a panic, instead of silently
-            /// wrapping around.
-            ///
-            /// Integer arithmetic can be achieved either through methods like
-            #[doc = concat!("/// `checked_add`, or through the ", stringify!($t) , "type, which ensures all") ]
-            /// standard arithmetic operations on the underlying value to have 
-            /// checked semantics.
-            ///
-            /// The underlying value can be retrieved through the `.0` index of the
-            #[doc = concat!("/// `", stringify!($t), "` tuple.")]
-            ///
-            /// # Layout
-            ///
-            #[doc = concat!("/// `", stringify!($t), "` will have the same methods and traits as")]
-            /// the built-in counterpart.
-            #[derive(Clone , Copy , Eq , Hash , Ord , PartialEq , PartialOrd)]
-            #[repr(transparent)]
-            pub struct $t(pub $wrap);
+    ($(( 
+        $t:ident ( $wrap:ty ),
+        default: $default:expr,
+        self: $self:ident,
+        self_expr: $self_expr:expr,
+        )
+      ),*) => {
+        paste!{
+            $(
+                /// Provides safe integer arithmetic.
+                ///
+                /// Operations like `+`, '-', '*', or '/' sometimes produce overflow 
+                /// which is detected and results in a panic, instead of silently
+                /// wrapping around.
+                ///
+                /// Integer arithmetic can be achieved either through methods like
+                #[doc = concat!("/// `checked_add`, or through the ", stringify!($t) , "type, which ensures all") ]
+                /// standard arithmetic operations on the underlying value to have 
+                /// checked semantics.
+                ///
+                /// The underlying value can be retrieved through the `.0` index of the
+                #[doc = concat!("/// `", stringify!($t), "` tuple.")]
+                ///
+                /// # Layout
+                ///
+                #[doc = concat!("/// `", stringify!($t), "` will have the same methods and traits as")]
+                /// the built-in counterpart.
+                #[derive(Clone , Copy , Eq , Hash , Ord , PartialEq , PartialOrd)]
+                #[repr(transparent)]
+                pub struct $t(pub $wrap);
 
             impl std::default::Default for $t {
                 fn default() -> Self {
                     Self($default)
                 }
             }
-        )*
-    }
-}
 
-types_large! { 
-    (type_ident: U8, wrapped: u8, default: 0),
-    (type_ident: U16, wrapped: u16, default: 0),
-    (type_ident: U32, wrapped: u32, default: 0),
-    (type_ident: U64, wrapped: u64, default: 0),
-    (type_ident: U128, wrapped: u128, default: 0),
-    (type_ident: U256, wrapped: [u8; 32], default: [0u8; 32]),
-    (type_ident: U384, wrapped: [u8; 48], default: [0u8; 48]),
-    (type_ident: U512, wrapped: [u8; 64], default: [0u8; 64]),
-    (type_ident: I8, wrapped: i8, default: 0),
-    (type_ident: I16, wrapped: i16, default: 0),
-    (type_ident: I32, wrapped: i32, default: 0),
-    (type_ident: I64, wrapped: i64, default: 0),
-    (type_ident: I128, wrapped: i128, default: 0),
-    (type_ident: I256, wrapped: [u8; 32], default: [0u8; 32]),
-    (type_ident: I384, wrapped: [u8; 48], default: [0u8; 48]),
-    (type_ident: I512, wrapped: [u8; 64], default: [0u8; 64])
-}
-
-macro_rules! impl_i_large {
-    ($($t:ty, $self:ident, $self_expr:expr),*) => {
-        $(
             impl fmt::Debug for $t {
                 fn fmt(&$self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                     $self_expr.fmt(f)
@@ -104,28 +93,44 @@ macro_rules! impl_i_large {
                     $self_expr.fmt(f)
                 }
             }
-        )*
+
+            fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseBigIntError> {
+                let bytes = b.to_signed_bytes_le();
+                if bytes.len() > $bytes_len {
+                    return Err(ParseBigIntError::Overflow);
+                } else {
+                    let mut buf = if b.is_negative() {
+                        [255u8; $bytes_len]
+                    } else {
+                        [0u8; $bytes_len]
+                    };
+                    buf[..bytes.len()].copy_from_slice(&bytes);
+                    Ok($t(buf))
+                }
+            }
+            )*
+        }
     }
 }
 
-impl_i_large! { 
-    U8, self, self.0,
-    U16, self, self.0,
-    U32, self, self.0,
-    U64, self, self.0,
-    U128, self, self.0,
-    U256, self, BigInt::from_signed_bytes_le(&self.0),
-    U384, self, BigInt::from_signed_bytes_le(&self.0),
-    U512, self, BigInt::from_signed_bytes_le(&self.0),
-    I8, self, self.0,
-    I16, self, self.0,
-    I32, self, self.0,
-    I64, self, self.0,
-    I128, self, self.0,
-    I256, self, BigInt::from_signed_bytes_le(&self.0),
-    I384, self, BigInt::from_signed_bytes_le(&self.0),
-    I512, self, BigInt::from_signed_bytes_le(&self.0)
-    }
+types_large! { 
+    (U8(u8), default: 0, self: self, self_expr: self.0, bytes_len: 1),
+    (U16(u16), default: 0, self: self, self_expr: self.0, bytes_len: 2),
+    (U32(u32), default: 0, self: self, self_expr: self.0, bytes_len: 4),
+    (U64(u64), default: 0, self: self, self_expr: self.0, bytes_len: 8),
+    (U128(u128), default: 0, self: self, self_expr: self.0, bytes_len: 16),
+    (U256([u8; 32]), default: [0u8; 32], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 32),
+    (U384([u8; 48]), default: [0u8; 48], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 48),
+    (U512([u8; 64]), default: [0u8; 64], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 64),
+    (I8(i8), default: 0, self: self, self_expr: self.0, bytes_len: 1),
+    (I16(i16), default: 0, self: self, self_expr: self.0, bytes_len: 2),
+    (I32(i32), default: 0, self: self, self_expr: self.0, bytes_len: 4),
+    (I64(i64), default: 0, self: self, self_expr: self.0, bytes_len: 8),
+    (I128(i128), default: 0, self: self, self_expr: self.0, bytes_len: 16),
+    (I256([u8; 32]), default: [0u8; 32], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 32),
+    (I384([u8; 48]), default: [0u8; 48], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 48),
+    (I512([u8; 64]), default: [0u8; 64], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 64)
+}
 
 #[derive(Debug)]
 pub enum ParseBigIntError{
@@ -170,7 +175,6 @@ fn big_int_to_i128(v: BigInt) -> i128 {
         i128::from_le_bytes(buf)
     }
 }
-
 
 impl_bigint_to_i! { I256, 32, I384, 48, I512, 64 , U256, 32, U384, 48, U512, 64 }
 
@@ -537,14 +541,14 @@ macro_rules! checked_int_ops {
                 ($t, U32, other, other.0),
                 ($t, U64, other, other.0),
                 ($t, U128, other, other.0),
+                ($t, U256, other, BigInt::from_signed_bytes_le(&other.0)),
+                ($t, U384, other, BigInt::from_signed_bytes_le(&other.0)),
+                ($t, U512, other, BigInt::from_signed_bytes_le(&other.0)),
                 ($t, I8, other, other.0),
                 ($t, I16, other, other.0),
                 ($t, I32, other, other.0),
                 ($t, I64, other, other.0),
                 ($t, I128, other, other.0),
-                ($t, U256, other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, U384, other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, U512, other, BigInt::from_signed_bytes_le(&other.0)),
                 ($t, I256, other, BigInt::from_signed_bytes_le(&other.0)),
                 ($t, I384, other, BigInt::from_signed_bytes_le(&other.0)),
                 ($t, I512, other, BigInt::from_signed_bytes_le(&other.0))
@@ -990,36 +994,34 @@ checked_unsigned! {
     U512, 64
 }
 
+macro_rules! leading_zeros {
+
+    () => { 
+            /// Returns the number of leading zeros in the binary representation of `self`.
+            ///
+            #[inline]
+            #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+            pub fn leading_zeros(self) -> u32 {
+                let mut zeros: u32 = u32::zero();
+                for i in self.0.into_iter().rev().enumerate() {
+                    if i.1 != 0 {
+                        return zeros + i.1.leading_zeros();
+                    }
+                    zeros += 8;
+                }
+                zeros
+            }
+    };
+
+}
+
 macro_rules! checked_int_impl_signed {
     ($($t:ident),*) => ($(
         paste! {
             impl $t {
-                /// Returns the number of leading zeros in the binary representation of `self`.
-                ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
-                ///
-                #[doc = concat!("let n = $t(", stringify!($t:lower), "::MAX) >> 2;")]
-                ///
-                /// assert_eq!(n.leading_zeros(), 3);
-                /// ```
-                #[inline]
-                #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                pub fn leading_zeros(self) -> u32 {
-                    let mut zeros: u32 = u32::zero();
-                    for i in self.0.into_iter().rev().enumerate() {
-                        if i.1 != 0 {
-                            return zeros + i.1.leading_zeros();
-                        }
-                        zeros += 8;
-                    }
-                    zeros
-                }
+
+                leading_zeros!();
 
                 /// Computes the absolute value of `self`, with overflow causing panic.
                 ///
@@ -1105,21 +1107,7 @@ checked_int_impl_signed! { I256, I384, I512 }
 macro_rules! checked_int_impl_unsigned {
     ($($t:ty),*) => ($(
         impl $t {
-            /// Returns the number of leading zeros in the binary representation of `self`.
-            ///
-            #[inline]
-            #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-            pub fn leading_zeros(self) -> u32 {
-                let mut zeros: u32 = u32::zero();
-                for i in self.0.into_iter().rev().enumerate() {
-                    if i.1 != 0 {
-                        return zeros + i.1.leading_zeros();
-                    }
-                    zeros += 8;
-                }
-                zeros
-            }
+            leading_zeros!();
 
             /// Returns `true` if and only if `self == 2^k` for some `k`.
             ///
