@@ -442,7 +442,6 @@ macro_rules! bridge_blueprint_interface_members {
         $($rest:tt)*
     ) => {
         pub fn $func_name($($func_args: $func_types),*) -> $func_output {
-            use ::scrypto::rust::str::FromStr;
             let rtn = ::scrypto::core::Runtime::call_function(
                 ::scrypto::component::PackageAddress::from_str(::scrypto::package_address_from_context!($blueprint_context)).unwrap(),
                 ::scrypto::blueprint_name_from_context!($blueprint_context),
