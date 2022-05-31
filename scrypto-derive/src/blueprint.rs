@@ -92,10 +92,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                 // Dispatch the call
-                let method: String = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
+                let method = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
                 let rtn;
-                match method {
+                match method.as_str() {
                     #( #arm_guards => #arm_bodies )*
+                    _ => panic!("Invalid method")
                 }
 
                 // Return
@@ -576,9 +577,9 @@ mod tests {
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let method: String = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
+                    let method = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
                     let rtn;
-                    match method {
+                    match method.as_str() {
                         "x" => {
                             let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                             let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
@@ -589,6 +590,7 @@ mod tests {
                             let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                             rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(input.arg0));
                         }
+                        _ => panic!("Invalid method")
                     }
                     rtn
                 }
