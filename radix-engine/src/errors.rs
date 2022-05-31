@@ -2,6 +2,7 @@ use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::rust::fmt;
 use scrypto::rust::string::String;
+use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 use wasmi::*;
 
@@ -73,6 +74,14 @@ pub enum TransactionValidationError {
     VaultNotAllowed(VaultId),
     LazyMapNotAllowed(LazyMapId),
     InvalidSignature,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum ResourceFailure {
+    Resource(ResourceAddress),
+    Resources(Vec<ResourceAddress>),
+    UnclaimedLazyMap,
+    Unknown
 }
 
 /// Represents an error when executing a transaction.
@@ -209,7 +218,7 @@ pub enum RuntimeError {
     InvalidLevel,
 
     /// Resource check failure.
-    ResourceCheckFailure,
+    ResourceCheckFailure(ResourceFailure),
 
     /// AuthZone error
     AuthZoneError(AuthZoneError),
