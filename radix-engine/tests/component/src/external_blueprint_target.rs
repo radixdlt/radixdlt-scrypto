@@ -2,24 +2,26 @@ use scrypto::prelude::*;
 
 #[derive(TypeId, Encode, Decode, Describe, Clone)]
 pub struct ExtraStruct {
-    field_one: String
+    field_one: String,
 }
 
 #[derive(TypeId, Encode, Decode, Describe, Clone)]
 pub enum ExtraEnum {
     EntryOne,
-    EntryTwo
+    EntryTwo,
 }
 
 blueprint! {
     struct ExternalBlueprintTarget {
-        some_field: ExtraStruct
+        some_field: ExtraStruct,
     }
 
     impl ExternalBlueprintTarget {
         pub fn create() -> ComponentAddress {
             Self {
-                some_field: ExtraStruct { field_one: String::from("test_1") }
+                some_field: ExtraStruct {
+                    field_one: String::from("test_1"),
+                },
             }
             .instantiate()
             .globalize()
