@@ -42,6 +42,21 @@ macro_rules! call_data_bytes_args {
     }};
 }
 
+
+#[macro_export]
+macro_rules! input_args {
+    ($args: expr) => {{
+        let mut fields = Vec::new();
+        for arg in $args {
+            fields.push(::sbor::decode_any(&arg).unwrap());
+        }
+        let input_struct = ::sbor::Value::Struct {
+            fields,
+        };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
+
 #[macro_export]
 macro_rules! call_data {
     ($name:expr, $($args: expr),*) => {

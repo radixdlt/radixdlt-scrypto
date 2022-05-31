@@ -36,17 +36,6 @@ impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
 
     // FIXME: limit access to the API
 
-    fn handle_invoke_snode(
-        &mut self,
-        snode_ref: SNodeRef,
-        call_data: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let call_data =
-            ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
-        let result = self.system_api.invoke_snode(snode_ref, call_data)?;
-        Ok(result.raw)
-    }
-
     fn handle_invoke_snode2(
         &mut self,
         snode_ref: SNodeRef,
@@ -153,9 +142,6 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
         match input {
-            RadixEngineInput::InvokeSNode(snode_ref, call_data) => {
-                self.handle_invoke_snode(snode_ref, call_data).map(encode)
-            }
             RadixEngineInput::InvokeSNode2(snode_ref, method_name, call_data) => self
                 .handle_invoke_snode2(snode_ref, method_name, call_data)
                 .map(encode),
