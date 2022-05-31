@@ -21,12 +21,13 @@ macro_rules! incl {
 
 macro_rules! types_large {
 
-    ($(( 
-        $t:ident ( $wrap:ty ),
-        default: $default:expr,
-        self: $self:ident,
-        self_expr: $self_expr:expr,
-        )
+    ($(
+            { 
+                type: $t:ident ( $wrap:ty ),
+                default: $default:expr,
+                self: $self:ident,
+                self_expr: $self_expr:expr
+            }
       ),*) => {
         paste!{
             $(
@@ -94,42 +95,108 @@ macro_rules! types_large {
                 }
             }
 
-            fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseBigIntError> {
-                let bytes = b.to_signed_bytes_le();
-                if bytes.len() > $bytes_len {
-                    return Err(ParseBigIntError::Overflow);
-                } else {
-                    let mut buf = if b.is_negative() {
-                        [255u8; $bytes_len]
-                    } else {
-                        [0u8; $bytes_len]
-                    };
-                    buf[..bytes.len()].copy_from_slice(&bytes);
-                    Ok($t(buf))
-                }
-            }
             )*
         }
     }
 }
 
 types_large! { 
-    (U8(u8), default: 0, self: self, self_expr: self.0, bytes_len: 1),
-    (U16(u16), default: 0, self: self, self_expr: self.0, bytes_len: 2),
-    (U32(u32), default: 0, self: self, self_expr: self.0, bytes_len: 4),
-    (U64(u64), default: 0, self: self, self_expr: self.0, bytes_len: 8),
-    (U128(u128), default: 0, self: self, self_expr: self.0, bytes_len: 16),
-    (U256([u8; 32]), default: [0u8; 32], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 32),
-    (U384([u8; 48]), default: [0u8; 48], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 48),
-    (U512([u8; 64]), default: [0u8; 64], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 64),
-    (I8(i8), default: 0, self: self, self_expr: self.0, bytes_len: 1),
-    (I16(i16), default: 0, self: self, self_expr: self.0, bytes_len: 2),
-    (I32(i32), default: 0, self: self, self_expr: self.0, bytes_len: 4),
-    (I64(i64), default: 0, self: self, self_expr: self.0, bytes_len: 8),
-    (I128(i128), default: 0, self: self, self_expr: self.0, bytes_len: 16),
-    (I256([u8; 32]), default: [0u8; 32], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 32),
-    (I384([u8; 48]), default: [0u8; 48], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 48),
-    (I512([u8; 64]), default: [0u8; 64], self: self, self_expr: BigInt::from_signed_bytes_le(&self.0), bytes_len: 64)
+    {
+        type: U8(u8),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: U16(u16),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: U32(u32),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: U64(u64),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: U128(u128),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: U256([u8; 32]),
+        default: [0u8; 32],
+        self: self,
+        self_expr: BigInt::from_signed_bytes_le(&self.0)
+    },
+    {
+        type: U384([u8; 48]),
+        default: [0u8; 48],
+        self: self,
+        self_expr: BigInt::from_signed_bytes_le(&self.0)
+    },
+    {
+        type: U512([u8; 64]),
+        default: [0u8; 64],
+        self: self,
+        self_expr: BigInt::from_signed_bytes_le(&self.0)
+    },
+    {
+        type: I8(i8),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: I16(i16),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: I32(i32),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: I64(i64),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: I128(i128),
+        default: 0,
+        self: self,
+        self_expr: self.0
+    },
+    {
+        type: I256([u8; 32]),
+        default: [0u8; 32],
+        self: self,
+        self_expr: BigInt::from_signed_bytes_le(&self.0)
+    },
+    {
+        type: I384([u8; 48]),
+        default: [0u8; 48],
+        self: self,
+        self_expr: BigInt::from_signed_bytes_le(&self.0)
+    },
+    {
+        type: I512([u8; 64]),
+        default: [0u8; 64],
+        self: self,
+        self_expr: BigInt::from_signed_bytes_le(&self.0)
+    }
 }
 
 #[derive(Debug)]
@@ -178,7 +245,48 @@ fn big_int_to_i128(v: BigInt) -> i128 {
 
 impl_bigint_to_i! { I256, 32, I384, 48, I512, 64 , U256, 32, U384, 48, U512, 64 }
 
-#[allow(unused_macros)]
+macro_rules! sh_impl {
+    (to_sh: $t:ty, to_sh_bits: $b:literal, other: $o:ty, other_var: $other:ident, self_var: $self:ident, shl_expr: $shl_expr:expr, shr_expr: $shr_expr:expr ) => {
+        paste! {
+            impl Shl<$o> for $t {
+                type Output = $t;
+
+                #[inline]
+                fn shl($self, $other: $o) -> $t {
+                    $shl_expr
+                }
+            }
+            forward_ref_binop! { impl Shl, shl for $t, $o }
+
+            impl ShlAssign<$o> for $t {
+                #[inline]
+                fn shl_assign(&mut self, $other: $o) {
+                    *self = *self << $other;
+                }
+            }
+            forward_ref_op_assign! { impl ShlAssign, shl_assign for $t, $o }
+
+            impl Shr<$o> for $t {
+                type Output = $t;
+
+                #[inline]
+                fn shr($self, $other: $o) -> $t {
+                    $shr_expr
+                }
+            }
+            forward_ref_binop! { impl Shr, shr for $t, $o }
+
+            impl ShrAssign<$o> for $t {
+                #[inline]
+                fn shr_assign(&mut self, $other: $o) {
+                    *self = *self >> $other;
+                }
+            }
+            forward_ref_op_assign! { impl ShrAssign, shr_assign for $t, $o }
+        }
+    };
+}
+
 macro_rules! sh_impl_large_signed {
     (to_sh: $t:ty, to_sh_bits: $b:literal, other: $o:ty ) => {
         paste! {
@@ -246,6 +354,8 @@ macro_rules! sh_impl_large_unsigned {
                 fn shl(self, other: $o) -> $t {
                     let to_shift = BigInt::from_signed_bytes_le(&self.0);
                     let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
+                    // FIXME: line below creates error even if shl would be successful, as Bigint
+                    // bytes will be larger than large type
                     to_shift.shl(shift).try_into().unwrap()
                 }
             }
@@ -337,6 +447,29 @@ macro_rules! sh_impl_builtin_large {
 macro_rules! shift_impl_all {
     ($($t:ty, $b:literal),*) => {
         $(
+
+            sh_impl!{to_sh: $t, to_sh_bits: $b, other: I256, other_var: other, self_var: self, 
+                shl_expr: 
+                    if BigInt::from_signed_bytes_le(&other.0).abs() > BigInt::from($b) {
+                        panic!("overflow");
+                    } else {
+                        let to_shift = BigInt::from_signed_bytes_le(&self.0);
+                        let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&other.0));
+                        to_shift.shl(shift).try_into().unwrap()
+                    }
+                , shr_expr: 
+                {
+                    let other_b = BigInt::from_signed_bytes_le(&other.0);
+
+                    if other_b.abs() > BigInt::from($b) {
+                        panic!("overflow");
+                    } else {
+                        let to_shift = BigInt::from_signed_bytes_le(&self.0);
+                        let shift = big_int_to_i128(other_b);
+                        to_shift.shr(shift).try_into().unwrap()
+                    }
+                }
+            }
             sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I256}
             sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I384}
             sh_impl_large_signed! { to_sh: $t, to_sh_bits: $b, other: I512}
@@ -363,9 +496,6 @@ macro_rules! shift_impl_all_small {
 }
 
 shift_impl_all!{ I256, 256, I384, 384, I512, 512, U256, 256, U384, 384, U512, 512}
-macro_rules! nope {
-    ($t:tt) => {}
-}
 
 macro_rules! checked_impl {
     ($(($t:ty, $o:ty, $other:ident, $oexpr:expr)),*) => {
