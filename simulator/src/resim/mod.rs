@@ -50,6 +50,7 @@ use clap::{Parser, Subcommand};
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::transaction::*;
+use radix_engine::wasm::*;
 use scrypto::crypto::*;
 use std::env;
 use std::fs;
@@ -123,13 +124,19 @@ pub fn run() -> Result<(), Error> {
     }
 }
 
-pub fn process_transaction<L: ReadableSubstateStore + WriteableSubstateStore, O: std::io::Write>(
-    executor: &mut TransactionExecutor<L>,
+pub fn process_transaction<'s, 'w, S, W, I, O>(
+    executor: &mut TransactionExecutor<'s, 'w, S, W, I>,
     mut transaction: Transaction,
     signing_keys: &Option<String>,
     manifest_path: &Option<PathBuf>,
     out: &mut O,
-) -> Result<(), Error> {
+) -> Result<(), Error>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+    O: std::io::Write,
+{
     match manifest_path {
         Some(path) => {
             if env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {

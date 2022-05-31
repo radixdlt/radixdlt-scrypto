@@ -1,19 +1,20 @@
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use sbor::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
 /// Represents a validated transaction
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub struct ValidatedTransaction {
     pub raw_hash: Hash,
     pub instructions: Vec<ValidatedInstruction>,
     pub signers: Vec<EcdsaPublicKey>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub enum ValidatedInstruction {
     TakeFromWorktop {
         resource_address: ResourceAddress,
