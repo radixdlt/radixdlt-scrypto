@@ -333,6 +333,11 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<
                         }
                     }
 
+                    let input_struct_name = format_ident!("{}_{}_Input", bp_ident, m.sig.ident);
+                    let input = quote! {
+                        #input_struct_name::describe()
+                    };
+
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
                             ::sbor::describe::Type::Unit
@@ -349,7 +354,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<
                         functions.push(parse_quote! {
                             ::scrypto::abi::Function {
                                 name: #name.to_owned(),
-                                input: vec![#(#inputs),*],
+                                input: #input,
                                 output: #output,
                             }
                         });
@@ -358,7 +363,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<
                             ::scrypto::abi::Method {
                                 name: #name.to_owned(),
                                 mutability: #mutability,
-                                input: vec![#(#inputs),*],
+                                input: #input,
                                 output: #output,
                             }
                         });
@@ -602,13 +607,13 @@ mod tests {
                     use ::sbor::rust::vec::Vec;
                     let functions: Vec<Function> = vec![::scrypto::abi::Function {
                         name: "y".to_owned(),
-                        inputs: vec![<u32>::describe()],
+                        input: Test_y_Input::describe(),
                         output: <u32>::describe(),
                     }];
                     let methods: Vec<Method> = vec![::scrypto::abi::Method {
                         name: "x".to_owned(),
                         mutability: ::scrypto::abi::Mutability::Immutable,
-                        input: vec![<u32>::describe()],
+                        input: Test_x_Input::describe(),
                         output: <u32>::describe(),
                     }];
                     let schema: Type = blueprint::Test::describe();

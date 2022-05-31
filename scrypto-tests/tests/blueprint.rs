@@ -64,7 +64,14 @@ fn test_simple_abi() {
             [
                 {
                     "name": "new",
-                    "inputs": [],
+                    "input": {
+                        "type": "Struct",
+                        "name": "Simple_new_Input",
+                        "fields": {
+                            "type": "Named",
+                            "named": []
+                        }
+                    },
                     "output": {
                         "type": "Custom",
                         "name": "ComponentAddress",
@@ -73,7 +80,14 @@ fn test_simple_abi() {
                 },
                 {
                     "name": "custom_types",
-                    "inputs": [],
+                    "input": {
+                        "type": "Struct",
+                        "name": "Simple_custom_types_Input",
+                        "fields": {
+                            "type": "Named",
+                            "named": []
+                        }
+                    },
                     "output": {
                         "type": "Tuple",
                         "elements": [
@@ -127,7 +141,14 @@ fn test_simple_abi() {
                 {
                     "name": "get_state",
                     "mutability": "Immutable",
-                    "inputs": [],
+                    "input": {
+                        "type": "Struct",
+                        "name": "Simple_get_state_Input",
+                        "fields": {
+                            "type": "Named",
+                            "named": []
+                        }
+                    },
                     "output": {
                         "type": "U32"
                     }
@@ -135,11 +156,21 @@ fn test_simple_abi() {
                 {
                     "name": "set_state",
                     "mutability": "Mutable",
-                    "inputs": [
-                        {
-                            "type": "U32"
+                    "input": {
+                        "type": "Struct",
+                        "name": "Simple_set_state_Input",
+                        "fields": {
+                            "type": "Named",
+                            "named": [
+                                [
+                                    "arg0",
+                                    {
+                                        "type": "U32"
+                                    }
+                                ]
+                            ]
                         }
-                    ],
+                    },
                     "output": {
                         "type": "Unit"
                     }

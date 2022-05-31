@@ -40,13 +40,19 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         let mut func_types = Vec::<Type>::new();
         let mut func_args = Vec::<Ident>::new();
 
-        for (i, input) in function.input.iter().enumerate() {
-            let ident = format_ident!("arg{}", i);
-            let (new_type, new_structs) = get_native_type(input)?;
-            func_args.push(parse_quote! { #ident });
-            func_types.push(parse_quote! { #new_type });
-            structs.extend(new_structs);
+        match &function.input {
+            sbor::Type::Struct { name: _, fields: sbor::describe::Fields::Named { named } } => {
+                for (i, (_, input)) in named.iter().enumerate() {
+                    let ident = format_ident!("arg{}", i);
+                    let (new_type, new_structs) = get_native_type(input)?;
+                    func_args.push(parse_quote! { #ident });
+                    func_types.push(parse_quote! { #new_type });
+                    structs.extend(new_structs);
+                }
+            }
+            _ => panic!("Cannot construct abi")
         }
+
         let (func_output, new_structs) = get_native_type(&function.output)?;
         structs.extend(new_structs);
 
@@ -72,13 +78,19 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         let mut method_types = Vec::<Type>::new();
         let mut method_args = Vec::<Ident>::new();
 
-        for (i, input) in method.input.iter().enumerate() {
-            let ident = format_ident!("arg{}", i);
-            let (new_type, new_structs) = get_native_type(input)?;
-            method_args.push(parse_quote! { #ident });
-            method_types.push(parse_quote! { #new_type });
-            structs.extend(new_structs);
+        match &method.input {
+            sbor::Type::Struct { name: _, fields: sbor::describe::Fields::Named { named } } => {
+                for (i, (_, input)) in named.iter().enumerate() {
+                    let ident = format_ident!("arg{}", i);
+                    let (new_type, new_structs) = get_native_type(input)?;
+                    method_args.push(parse_quote! { #ident });
+                    method_types.push(parse_quote! { #new_type });
+                    structs.extend(new_structs);
+                }
+            }
+            _ => panic!("Cannot construct abi")
         }
+
         let (method_output, new_structs) = get_native_type(&method.output)?;
         structs.extend(new_structs);
 
@@ -380,7 +392,14 @@ mod tests {
                     "functions": [
                         {
                             "name": "new",
-                            "inputs": [],
+                            "input": {
+                                "type": "Struct",
+                                "name": "",
+                                "fields": {
+                                    "type": "Named",
+                                    "named": []
+                                }
+                            },
                             "output": {
                                 "type": "Custom",
                                 "name": "ComponentAddress",
@@ -392,8 +411,14 @@ mod tests {
                         {
                             "name": "free_token",
                             "mutability": "Mutable",
-                            "inputs": [
-                            ],
+                            "input": {
+                                "type": "Struct",
+                                "name": "",
+                                "fields": {
+                                    "type": "Named",
+                                    "named": []
+                                }
+                            },
                             "output": {
                                 "type": "Custom",
                                 "name": "Bucket",

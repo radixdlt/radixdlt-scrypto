@@ -17,62 +17,100 @@ r#"
     "functions": [
         {
             "name": "stateless_func",
-            "inputs": [],
+            "input": {
+                "type": "Struct",
+                "name": "",
+                "fields": {
+                    "type": "Named",
+                    "named": []
+                }
+            },
             "output": {
                 "type": "U32"
             }
         },
         {
             "name": "test_custom_types",
-            "inputs": [
-                {
-                    "type": "Custom",
-                    "name": "Decimal",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "PackageAddress",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "ComponentAddress",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "LazyMap",
-                    "generics": [
-                        {
-                            "type": "String"
-                        },
-                        {
-                            "type": "String"
-                        }
+            "input": {
+                "type": "Struct",
+                "name": "",
+                "fields": {
+                    "type": "Named",
+                    "named": [
+                        [
+                            "arg0",
+                            {
+                                "type": "Custom",
+                                "name": "Decimal",
+                                "generics": []
+                            }
+                        ],
+                        [
+                            "arg1",
+                            {
+                                "type": "Custom",
+                                "name": "PackageAddress",
+                                "generics": []
+                            }
+                        ],
+                        [
+                            "arg2",
+                            {
+                                "type": "Custom",
+                                "name": "ComponentAddress",
+                                "generics": []
+                            }
+                        ],
+                        [
+                            "arg3",
+                            {
+                                "type": "Custom",
+                                "name": "LazyMap",
+                                "generics": [
+                                    {
+                                        "type": "String"
+                                    },
+                                    {
+                                        "type": "String"
+                                    }
+                                ]
+                            }
+                        ],
+                        [
+                            "arg4",
+                            {
+                                "type": "Custom",
+                                "name": "Bucket",
+                                "generics": []
+                            }
+                        ],
+                        [
+                            "arg5",
+                            {
+                                "type": "Custom",
+                                "name": "Proof",
+                                "generics": []
+                            }
+                        ],
+                        [
+                            "arg6",
+                            {
+                                "type": "Custom",
+                                "name": "Vault",
+                                "generics": []
+                            }
+                        ],
+                        [
+                            "arg7",
+                            {
+                                "type": "Custom",
+                                "name": "ResourceAddress",
+                                "generics": []
+                            }
+                        ]
                     ]
-                },
-                {
-                    "type": "Custom",
-                    "name": "Bucket",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "Proof",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "Vault",
-                    "generics": []
-                },
-                {
-                    "type": "Custom",
-                    "name": "ResourceAddress",
-                    "generics": []
                 }
-            ],
+            },
             "output": {
                 "type": "Custom",
                 "name": "Bucket",
@@ -84,93 +122,118 @@ r#"
         {
             "name": "calculate_volume",
             "mutability": "Immutable",
-            "inputs": [
-                {
-                    "type": "Struct",
-                    "name": "Floor",
-                    "fields": {
-                        "type": "Named",
-                        "named": [
-                            [
-                                "x",
-                                {
-                                    "type": "U32"
-                                }
-                            ],
-                            [
-                                "y",
-                                {
-                                    "type": "U32"
-                                }
-                            ]
-                        ]
-                    }
-                },
-                {
-                    "type": "Tuple",
-                    "elements": [
-                        {
-                            "type": "U8"
-                        },
-                        {
-                            "type": "U16"
-                        }
-                    ]
-                },
-                {
-                    "type": "Vec",
-                    "element": {
-                        "type": "String"
-                    }
-                },
-                {
-                    "type": "U32"
-                },
-                {
-                    "type": "Enum",
-                    "name": "Hello",
-                    "variants": [
-                        {
-                            "name": "A",
-                            "fields": {
-                                "type": "Named",
-                                "named": [
-                                    [
-                                        "x",
-                                        {
-                                            "type": "U32"
-                                        }
+            "input": {
+                "type": "Struct",
+                "name": "",
+                "fields": {
+                    "type": "Named",
+                    "named": [
+                        [
+                            "arg0",
+                            {
+                                "type": "Struct",
+                                "name": "Floor",
+                                "fields": {
+                                    "type": "Named",
+                                    "named": [
+                                        [
+                                            "x",
+                                            {
+                                                "type": "U32"
+                                            }
+                                        ],
+                                        [
+                                            "y",
+                                            {
+                                                "type": "U32"
+                                            }
+                                        ]
                                     ]
-                                ]
+                                }
                             }
-                        },
-                        {
-                            "name": "B",
-                            "fields": {
-                                "type": "Unnamed",
-                                "unnamed": [
+                        ],
+                        [
+                            "arg1",
+                            {
+                                "type": "Tuple",
+                                "elements": [
                                     {
-                                        "type": "U32"
+                                        "type": "U8"
+                                    },
+                                    {
+                                        "type": "U16"
                                     }
                                 ]
                             }
-                        },
-                        {
-                            "name": "C",
-                            "fields": {
-                                "type": "Unit"
+                        ],
+                        [
+                            "arg2",
+                            {
+                                "type": "Vec",
+                                "element": {
+                                    "type": "String"
+                                }
                             }
-                        }
+                        ],
+                        [
+                            "arg3",
+                            {
+                                "type": "U32"
+                            }
+                        ],
+                        [
+                            "arg4",
+                            {
+                                "type": "Enum",
+                                "name": "Hello",
+                                "variants": [
+                                    {
+                                        "name": "A",
+                                        "fields": {
+                                            "type": "Named",
+                                            "named": [
+                                                [
+                                                    "x",
+                                                    {
+                                                        "type": "U32"
+                                                    }
+                                                ]
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "B",
+                                        "fields": {
+                                            "type": "Unnamed",
+                                            "unnamed": [
+                                                {
+                                                    "type": "U32"
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "C",
+                                        "fields": {
+                                            "type": "Unit"
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        [
+                            "arg5",
+                            {
+                                "type": "Array",
+                                "element": {
+                                    "type": "String"
+                                },
+                                "length": 2
+                            }
+                        ]
                     ]
-                },
-                {
-                    "type": "Array",
-                    "element": {
-                        "type": "String"
-                    },
-                    "length": 2
                 }
-            ],
+            },
             "output": {
                 "type": "U32"
             }

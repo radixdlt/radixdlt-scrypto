@@ -715,34 +715,40 @@ impl TransactionBuilder {
 
     fn parse_args(
         &mut self,
-        types: &[Type],
+        arg_type: &Type,
         args: Vec<String>,
         account: Option<ComponentAddress>,
     ) -> Result<Vec<Vec<u8>>, BuildArgsError> {
         let mut encoded = Vec::new();
 
-        for (i, t) in types.iter().enumerate() {
-            let arg = args
-                .get(i)
-                .ok_or_else(|| BuildArgsError::MissingArgument(i, t.clone()))?;
-            let res = match t {
-                Type::Bool => self.parse_basic_ty::<bool>(i, t, arg),
-                Type::I8 => self.parse_basic_ty::<i8>(i, t, arg),
-                Type::I16 => self.parse_basic_ty::<i16>(i, t, arg),
-                Type::I32 => self.parse_basic_ty::<i32>(i, t, arg),
-                Type::I64 => self.parse_basic_ty::<i64>(i, t, arg),
-                Type::I128 => self.parse_basic_ty::<i128>(i, t, arg),
-                Type::U8 => self.parse_basic_ty::<u8>(i, t, arg),
-                Type::U16 => self.parse_basic_ty::<u16>(i, t, arg),
-                Type::U32 => self.parse_basic_ty::<u32>(i, t, arg),
-                Type::U64 => self.parse_basic_ty::<u64>(i, t, arg),
-                Type::U128 => self.parse_basic_ty::<u128>(i, t, arg),
-                Type::String => self.parse_basic_ty::<String>(i, t, arg),
-                Type::Custom { name, .. } => self.parse_custom_ty(i, t, arg, name, account),
-                _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
-            };
-            encoded.push(res?);
-        }
+        match arg_type {
+            sbor::Type::Struct { name: _, fields: Fields::Named { named } } => {
+                for (i, (_, t)) in named.iter().enumerate() {
+                    let arg = args
+                        .get(i)
+                        .ok_or_else(|| BuildArgsError::MissingArgument(i, t.clone()))?;
+                    let res = match t {
+                        Type::Bool => self.parse_basic_ty::<bool>(i, t, arg),
+                        Type::I8 => self.parse_basic_ty::<i8>(i, t, arg),
+                        Type::I16 => self.parse_basic_ty::<i16>(i, t, arg),
+                        Type::I32 => self.parse_basic_ty::<i32>(i, t, arg),
+                        Type::I64 => self.parse_basic_ty::<i64>(i, t, arg),
+                        Type::I128 => self.parse_basic_ty::<i128>(i, t, arg),
+                        Type::U8 => self.parse_basic_ty::<u8>(i, t, arg),
+                        Type::U16 => self.parse_basic_ty::<u16>(i, t, arg),
+                        Type::U32 => self.parse_basic_ty::<u32>(i, t, arg),
+                        Type::U64 => self.parse_basic_ty::<u64>(i, t, arg),
+                        Type::U128 => self.parse_basic_ty::<u128>(i, t, arg),
+                        Type::String => self.parse_basic_ty::<String>(i, t, arg),
+                        Type::Custom { name, .. } => self.parse_custom_ty(i, t, arg, name, account),
+                        _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
+                    };
+                    encoded.push(res?);
+                }
+                Ok(())
+            }
+            _ => Err(BuildArgsError::UnsupportedRootType(arg_type.clone()))
+        }?;
 
         Ok(encoded)
     }
