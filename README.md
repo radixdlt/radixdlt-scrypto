@@ -95,7 +95,7 @@ scrypto test
 - `scrypto-derive`: Derives for defining and importing Scrypto blueprints.
 - `radix-engine`: The Scrypto execution engine.
 - `simulator`: A simulator that run Scrypto code on a filesystem based ledger.
-- `transaction-manifest`: Radix transaction manifest compiler.
+- `transaction`: Radix transaction manifest compiler.
 
 ## Contribute
 
