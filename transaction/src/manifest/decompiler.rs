@@ -296,11 +296,11 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compile;
+    use crate::manifest::compile;
 
     #[test]
     fn test_decompile() {
-        let tx = compile(include_str!("../examples/complex.rtm")).unwrap();
+        let tx = compile(include_str!("../../examples/complex.rtm")).unwrap();
 
         let manifest = &decompile(&tx).unwrap();
         println!("{}", manifest);

@@ -10,7 +10,7 @@ use scrypto::engine::types::*;
 use scrypto::types::*;
 use scrypto::values::*;
 
-use crate::ast;
+use crate::manifest::ast;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -775,8 +775,8 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lexer::tokenize;
-    use crate::parser::Parser;
+    use crate::manifest::lexer::tokenize;
+    use crate::manifest::parser::Parser;
     use scrypto::buffer::scrypto_encode;
     use scrypto::call_data;
     use scrypto::prelude::Package;

@@ -37,7 +37,7 @@ impl Run {
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
         let transaction =
-            transaction_manifest::compile(&pre_processed_manifest).map_err(Error::CompileError)?;
+            transaction::manifest::compile(&pre_processed_manifest).map_err(Error::CompileError)?;
         process_transaction(&mut executor, transaction, &self.signing_keys, &None, out)
     }
 }
