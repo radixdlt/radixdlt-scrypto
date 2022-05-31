@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::{scrypto_decode, scrypto_encode};
-use crate::input_args;
+use crate::bytes_vec_to_struct;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
@@ -56,7 +56,7 @@ impl Runtime {
                 blueprint_name.as_ref().to_owned(),
             )),
             function.as_ref().to_string(),
-            input_args!(args),
+            bytes_vec_to_struct!(args),
         );
         let output: Vec<u8> = call_engine(input);
 
@@ -72,7 +72,7 @@ impl Runtime {
         let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             method.as_ref().to_string(),
-            input_args!(args)
+            bytes_vec_to_struct!(args)
         );
         let output: Vec<u8> = call_engine(input);
 

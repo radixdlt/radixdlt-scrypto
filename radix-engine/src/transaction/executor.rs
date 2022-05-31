@@ -1,11 +1,10 @@
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::component::Package;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::values::ScryptoValue;
-use scrypto::{abi, access_rule_node, call_data, rule};
+use scrypto::{abi, access_rule_node, any_list_to_struct, rule};
 
 use crate::engine::*;
 use crate::ledger::*;
@@ -77,7 +76,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .call_method(SYSTEM_COMPONENT, call_data!(free_xrd()))
+                    .call_method(SYSTEM_COMPONENT, "free_xrd", any_list_to_struct!())
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })

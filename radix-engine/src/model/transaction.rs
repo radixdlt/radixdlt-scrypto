@@ -101,7 +101,8 @@ pub enum Instruction {
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
-        call_data: Vec<u8>,
+        method_name: String,
+        arg: Vec<u8>,
     },
 
     /// Calls a component method.
@@ -109,7 +110,8 @@ pub enum Instruction {
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
         component_address: ComponentAddress,
-        call_data: Vec<u8>,
+        method_name: String,
+        arg: Vec<u8>,
     },
 
     /// Calls a component method with all resources owned by the transaction.
@@ -299,21 +301,25 @@ impl SignedTransaction {
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    call_data,
+                    method_name,
+                    arg,
                 } => {
                     instructions.push(ValidatedInstruction::CallFunction {
                         package_address,
                         blueprint_name,
-                        call_data: Self::validate_call_data(call_data, &mut id_validator)?,
+                        method_name,
+                        arg: Self::validate_arg(arg, &mut id_validator)?,
                     });
                 }
                 Instruction::CallMethod {
                     component_address,
-                    call_data,
+                    method_name,
+                    arg,
                 } => {
                     instructions.push(ValidatedInstruction::CallMethod {
                         component_address,
-                        call_data: Self::validate_call_data(call_data, &mut id_validator)?,
+                        method_name,
+                        arg: Self::validate_arg(arg, &mut id_validator)?,
                     });
                 }
                 Instruction::CallMethodWithAllResources {
@@ -344,7 +350,7 @@ impl SignedTransaction {
         })
     }
 
-    fn validate_call_data(
+    fn validate_arg(
         call_data: Vec<u8>,
         id_validator: &mut IdValidator,
     ) -> Result<ScryptoValue, TransactionValidationError> {
@@ -381,7 +387,8 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        call_data: scrypto_encode(&scrypto::resource::Vault((Hash([2u8; 32]), 0,))),
+                        method_name: "some_method".to_string(),
+                        arg: scrypto_encode(&scrypto::resource::Vault((Hash([2u8; 32]), 0,))),
                     }],
                 },
                 signatures: Vec::new(),
@@ -401,7 +408,8 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        call_data: scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
+                        method_name: "some_method".to_string(),
+                        arg: scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
                             id: (Hash([2u8; 32]), 0,),
                             key: PhantomData,
                             value: PhantomData,

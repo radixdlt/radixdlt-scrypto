@@ -68,11 +68,13 @@ pub enum ValidatedInstruction {
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
-        call_data: ScryptoValue,
+        method_name: String,
+        arg: ScryptoValue,
     },
     CallMethod {
         component_address: ComponentAddress,
-        call_data: ScryptoValue,
+        method_name: String,
+        arg: ScryptoValue,
     },
     CallMethodWithAllResources {
         component_address: ComponentAddress,

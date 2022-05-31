@@ -42,9 +42,33 @@ macro_rules! call_data_bytes_args {
     }};
 }
 
+#[macro_export]
+macro_rules! any_list_to_struct {
+    ($($args: expr),*) => {{
+        let mut fields = Vec::new();
+        $(
+            let encoded = ::scrypto::buffer::scrypto_encode(&$args);
+            fields.push(::sbor::decode_any(&encoded).unwrap());
+        )*
+        let input_struct = ::sbor::Value::Struct {
+            fields,
+        };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
 
 #[macro_export]
-macro_rules! input_args {
+macro_rules! any_vec_to_struct {
+    ($args: expr) => {{
+        let input_struct = ::sbor::Value::Struct {
+            fields: $args,
+        };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
+
+#[macro_export]
+macro_rules! bytes_vec_to_struct {
     ($args: expr) => {{
         let mut fields = Vec::new();
         for arg in $args {

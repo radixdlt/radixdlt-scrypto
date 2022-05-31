@@ -334,16 +334,18 @@ impl TransactionProcessor {
                 ValidatedInstruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    call_data,
+                    method_name,
+                    arg,
                 } => {
-                    self.replace_ids(call_data.clone())
-                        .and_then(|call_data| {
-                            system_api.invoke_snode(
+                    self.replace_ids(arg.clone())
+                        .and_then(|arg| {
+                            system_api.invoke_snode2(
                                 SNodeRef::Scrypto(ScryptoActor::Blueprint(
                                     *package_address,
                                     blueprint_name.to_string(),
                                 )),
-                                call_data,
+                                method_name.to_string(),
+                                arg,
                             )
                         })
                         .and_then(|result| {
@@ -376,13 +378,15 @@ impl TransactionProcessor {
                 }
                 ValidatedInstruction::CallMethod {
                     component_address,
-                    call_data,
+                    method_name,
+                    arg,
                 } => {
-                    self.replace_ids(call_data.clone())
-                        .and_then(|call_data| {
-                            system_api.invoke_snode(
+                    self.replace_ids(arg.clone())
+                        .and_then(|arg| {
+                            system_api.invoke_snode2(
                                 SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
-                                call_data,
+                                method_name.to_string(),
+                                arg,
                             )
                         })
                         .and_then(|result| {
