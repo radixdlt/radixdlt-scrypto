@@ -8,9 +8,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
-use scrypto::resource::{
-    ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod, VaultMethod,
-};
+use scrypto::resource::{ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -127,9 +125,9 @@ impl ResourceManager {
         vault_method_table.insert("take".to_string(), Protected(Withdraw));
         vault_method_table.insert("put".to_string(), Protected(Deposit));
         for pub_method in [
-            "get_amount",
-            "get_resource_address",
-            "get_non_fungible_ids",
+            "amount",
+            "resource_address",
+            "non_fungible_ids",
             "create_proof",
             "create_proof_by_amount",
             "create_proof_by_ids",
@@ -187,13 +185,8 @@ impl ResourceManager {
         Ok(resource_manager)
     }
 
-    pub fn get_vault_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
-        let method: VaultMethod = match scrypto_decode(&arg.raw) {
-            Ok(m) => m,
-            Err(_) => return &MethodAuthorization::Unsupported,
-        };
-
-        match self.vault_method_table.get(method.name()) {
+    pub fn get_vault_auth(&self, method_name: &str) -> &MethodAuthorization {
+        match self.vault_method_table.get(method_name) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
             Some(Protected(auth_key)) => {
