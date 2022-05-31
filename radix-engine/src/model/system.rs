@@ -4,6 +4,7 @@ use scrypto::core::SystemFunction;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SystemError {
@@ -13,7 +14,7 @@ pub enum SystemError {
 pub struct System {}
 
 impl System {
-    pub fn static_main<S: SystemApi>(
+    pub fn static_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, SystemError> {

@@ -11,12 +11,11 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::types::*;
 use crate::sfunctions2;
+use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub struct ConsumingBucketBurnInput {
-}
+pub struct ConsumingBucketBurnInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct BucketTakeInput {

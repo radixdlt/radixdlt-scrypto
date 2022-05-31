@@ -9,13 +9,16 @@ mod substate_receipt;
 mod system_api;
 mod track;
 
-pub use call_frame::{CallFrame, SNodeState};
+pub use call_frame::{
+    BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LazyMapState,
+    LoadedSNodeState, MoveMethod, SNodeState, StaticSNodeState,
+};
 pub use component_objects::*;
 pub use errors::*;
 pub use id_allocator::*;
 pub use id_validator::*;
 pub use receipt::*;
-pub use runtime::RadixEngineScryptoRuntime;
+pub use runtime::RadixEngineWasmRuntime;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
 pub use system_api::SystemApi;
 pub use track::{
