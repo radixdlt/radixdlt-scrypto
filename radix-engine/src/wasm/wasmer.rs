@@ -163,15 +163,18 @@ impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
     fn invoke_export(
         &mut self,
         export_name: &str,
-        input: &ScryptoValue,
+        method_name: &str,
+        arg: &ScryptoValue,
     ) -> Result<ScryptoValue, InvokeError> {
-        let pointer = send_value(&self.instance, input)?;
+        let method_name_value = ScryptoValue::from_value(&method_name.to_string());
+        let method_name_ptr = send_value(&self.instance, &method_name_value)?;
+        let pointer = send_value(&self.instance, arg)?;
         let result = self
             .instance
             .exports
             .get_function(export_name)
             .map_err(|_| InvokeError::FunctionNotFound)?
-            .call(&[Val::I32(pointer as i32)]);
+            .call(&[Val::I32(method_name_ptr as i32), Val::I32(pointer as i32)]);
 
         match result {
             Ok(return_data) => {

@@ -154,13 +154,16 @@ impl<'r> ScryptoInstance for WasmiScryptoInstance<'r> {
     fn invoke_export(
         &mut self,
         name: &str,
-        input: &ScryptoValue,
+        method_name: &str,
+        arg: &ScryptoValue,
     ) -> Result<ScryptoValue, InvokeError> {
-        let pointer = self.send_value(input)?;
+        let method_name_value = ScryptoValue::from_value(&method_name.to_string());
+        let method_name_ptr = self.send_value(&method_name_value)?;
+        let pointer = self.send_value(arg)?;
         let result = self
             .module_ref
             .clone()
-            .invoke_export(name, &[pointer], self);
+            .invoke_export(name, &[method_name_ptr, pointer], self);
 
         let rtn = result
             .map_err(|e| {

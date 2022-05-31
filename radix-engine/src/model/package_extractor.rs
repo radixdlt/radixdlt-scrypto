@@ -27,7 +27,7 @@ fn extract_abi(
     let mut blueprints = HashMap::new();
     for method_name in exports {
         let rtn = instance
-            .invoke_export(&method_name, &ScryptoValue::unit())
+            .invoke_export(&method_name, "", &ScryptoValue::unit())
             .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
 
         let abi: (Type, Vec<Function>, Vec<Method>) =

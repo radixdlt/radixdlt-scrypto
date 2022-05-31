@@ -94,6 +94,7 @@ impl ValidatedPackage {
         &self,
         actor: ScryptoActorInfo,
         export_name: String,
+        method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, RuntimeError> {
@@ -105,7 +106,7 @@ impl ValidatedPackage {
         let module = engine.load(self.instrumented_code());
         let mut instance = module.instantiate(Box::new(runtime));
         instance
-            .invoke_export(&export_name, &call_data)
+            .invoke_export(&export_name, method_name, &call_data)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,

@@ -24,7 +24,8 @@ pub trait ScryptoInstance {
     fn invoke_export(
         &mut self,
         name: &str,
-        input: &ScryptoValue,
+        method_name: &str,
+        arg: &ScryptoValue,
     ) -> Result<ScryptoValue, InvokeError>;
 
     /// Lists all functions exported by this module.
