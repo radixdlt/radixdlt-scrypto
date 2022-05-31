@@ -83,7 +83,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             #(#method_input_structs)*
 
             #[no_mangle]
-            pub extern "C" fn #dispatcher_ident(method_ptr: *mut u8) -> *mut u8 {
+            pub extern "C" fn #dispatcher_ident(method_ptr: *mut u8, method_arg: *mut u8) -> *mut u8 {
                 // Set up panic hook
                 ::scrypto::misc::set_up_panic_hook();
 
@@ -565,7 +565,7 @@ mod tests {
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_main(method_ptr: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_main(method_ptr: *mut u8, method_arg: *mut u8) -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
