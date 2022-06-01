@@ -49,7 +49,7 @@ impl ResourceSystem {
         access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
-        let input = RadixEngineInput::InvokeSNode2(
+        let input = RadixEngineInput::InvokeSNode(
             SNodeRef::ResourceStatic,
             "create".to_string(),
             scrypto_encode(&ResourceManagerCreateInput {

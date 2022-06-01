@@ -52,7 +52,7 @@ where
 
     // FIXME: limit access to the API
 
-    fn handle_invoke_snode2(
+    fn handle_invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
         method_name: String,
@@ -168,8 +168,8 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
         match input {
-            RadixEngineInput::InvokeSNode2(snode_ref, method_name, call_data) => self
-                .handle_invoke_snode2(snode_ref, method_name, call_data)
+            RadixEngineInput::InvokeSNode(snode_ref, method_name, call_data) => self
+                .handle_invoke_snode(snode_ref, method_name, call_data)
                 .map(encode),
             RadixEngineInput::CreateComponent(blueprint_name, state, access_rules_list) => self
                 .handle_create_component(blueprint_name, state, access_rules_list)
