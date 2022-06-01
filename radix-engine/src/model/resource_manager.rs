@@ -8,15 +8,14 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
-use scrypto::resource::{
-    ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod, VaultMethod,
-};
+use scrypto::resource::{ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::NonFungible;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
+use crate::wasm::*;
 
 /// Converts soft authorization rule to a hard authorization rule.
 /// Currently required as all auth is defined by soft authorization rules.
@@ -126,9 +125,9 @@ impl ResourceManager {
         vault_method_table.insert("take".to_string(), Protected(Withdraw));
         vault_method_table.insert("put".to_string(), Protected(Deposit));
         for pub_method in [
-            "get_amount",
-            "get_resource_address",
-            "get_non_fungible_ids",
+            "amount",
+            "resource_address",
+            "non_fungible_ids",
             "create_proof",
             "create_proof_by_amount",
             "create_proof_by_ids",
@@ -186,13 +185,8 @@ impl ResourceManager {
         Ok(resource_manager)
     }
 
-    pub fn get_vault_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
-        let method: VaultMethod = match scrypto_decode(&arg.raw) {
-            Ok(m) => m,
-            Err(_) => return &MethodAuthorization::Unsupported,
-        };
-
-        match self.vault_method_table.get(method.name()) {
+    pub fn get_vault_auth(&self, method_name: &str) -> &MethodAuthorization {
+        match self.vault_method_table.get(method_name) {
             None => &MethodAuthorization::Unsupported,
             Some(Public) => &MethodAuthorization::AllowAll,
             Some(Protected(auth_key)) => {
@@ -256,7 +250,7 @@ impl ResourceManager {
         self.total_supply
     }
 
-    fn mint<S: SystemApi>(
+    fn mint<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -315,7 +309,7 @@ impl ResourceManager {
         Ok(validated)
     }
 
-    fn mint_non_fungibles<S: SystemApi>(
+    fn mint_non_fungibles<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
@@ -382,7 +376,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<S: SystemApi>(
+    pub fn static_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
@@ -418,7 +412,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<S: SystemApi>(
+    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         resource_address: ResourceAddress,
         arg: ScryptoValue,

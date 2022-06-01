@@ -1,7 +1,7 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::resource::AccessRules;
+use scrypto::prelude::{AccessRule, AccessRules};
 
 use crate::core::SNodeRef;
 use crate::engine::types::*;
@@ -28,9 +28,27 @@ macro_rules! sfunctions {
     };
 }
 
+#[macro_export]
+macro_rules! sfunctions2 {
+    ($snode_ref:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $arg:expr })* } ) => {
+        $(
+            $vis $fn $method_name $s -> $rtn {
+                let input = RadixEngineInput::InvokeSNode2(
+                    $snode_ref,
+                    stringify!($method_name).to_string(),
+                    scrypto::buffer::scrypto_encode(&$arg)
+                );
+                let output: sbor::rust::vec::Vec<u8> = call_engine(input);
+                scrypto_decode(&output).unwrap()
+            }
+        )+
+    };
+}
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
     InvokeSNode(SNodeRef, Vec<u8>),
+    InvokeSNode2(SNodeRef, String, Vec<u8>),
     CreateComponent(String, Vec<u8>, Vec<AccessRules>),
     GetComponentInfo(ComponentAddress),
     GetComponentState(ComponentAddress),
@@ -41,4 +59,5 @@ pub enum RadixEngineInput {
     EmitLog(Level, String),
     GenerateUuid(),
     GetActor(),
+    CheckAccessRule(AccessRule, Vec<ProofId>),
 }
