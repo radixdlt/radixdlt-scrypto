@@ -8,6 +8,7 @@ sbor = { path = "../../sbor" }
 scrypto = { path = "../../scrypto" }
 
 [dev-dependencies]
+transaction = { path = "../../transaction" }
 radix-engine = { path = "../../radix-engine" }
 
 [profile.release]

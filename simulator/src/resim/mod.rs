@@ -55,7 +55,6 @@ use scrypto::crypto::*;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use transaction::builder::NonceProvider;
 use transaction::builder::TransactionBuilder;
 use transaction::manifest::decompile;
 use transaction::model::Transaction;
