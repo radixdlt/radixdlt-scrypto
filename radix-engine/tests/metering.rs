@@ -1,23 +1,26 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use sbor::Type;
-use scrypto::abi::BlueprintAbi;
-use scrypto::prelude::{HashMap, Package};
 use radix_engine::{
     ledger::InMemorySubstateStore,
     transaction::{NonceProvider, TransactionBuilder, TransactionExecutor},
     wasm::{default_wasm_engine, InvokeError},
 };
+use sbor::Type;
+use scrypto::abi::BlueprintAbi;
+use scrypto::prelude::{HashMap, Package};
 use scrypto::to_struct;
 use test_runner::wat2wasm;
 
 fn mocked_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
     let mut blueprint_abis = HashMap::new();
-    blueprint_abis.insert(blueprint_name, BlueprintAbi {
-        value: Type::Unit,
-        functions: Vec::new(),
-    });
+    blueprint_abis.insert(
+        blueprint_name,
+        BlueprintAbi {
+            value: Type::Unit,
+            functions: Vec::new(),
+        },
+    );
     blueprint_abis
 }
 

@@ -21,13 +21,13 @@ use crate::model::worktop::{
     WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
     WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
 };
-use crate::model::{ValidatedInstruction, ValidatedTransaction};
 use crate::model::TransactionProcessorError::InvalidMethod;
+use crate::model::{ValidatedInstruction, ValidatedTransaction};
 use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {
-    pub transaction: ValidatedTransaction
+    pub transaction: ValidatedTransaction,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -211,7 +211,7 @@ impl TransactionProcessor {
                                     SNodeRef::AuthZoneRef,
                                     "push".to_string(),
                                     ScryptoValue::from_value(&AuthZonePushInput {
-                                        proof: scrypto::resource::Proof(real_id)
+                                        proof: scrypto::resource::Proof(real_id),
                                     }),
                                 )
                             }),
@@ -248,10 +248,12 @@ impl TransactionProcessor {
                                     .invoke_snode(
                                         SNodeRef::AuthZoneRef,
                                         "create_proof_by_amount".to_string(),
-                                        ScryptoValue::from_value(&AuthZoneCreateProofByAmountInput {
-                                            amount: *amount,
-                                            resource_address: *resource_address,
-                                        }),
+                                        ScryptoValue::from_value(
+                                            &AuthZoneCreateProofByAmountInput {
+                                                amount: *amount,
+                                                resource_address: *resource_address,
+                                            },
+                                        ),
                                     )
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
@@ -455,7 +457,7 @@ impl TransactionProcessor {
                                 system_api.invoke_snode(
                                     SNodeRef::WorktopRef,
                                     "drain".to_string(),
-                                    ScryptoValue::from_value(&WorktopDrainInput {})
+                                    ScryptoValue::from_value(&WorktopDrainInput {}),
                                 )
                             })
                             .and_then(|result| {
@@ -491,7 +493,7 @@ impl TransactionProcessor {
 
                 Ok(ScryptoValue::from_value(&outputs))
             }
-            _ => Err(InvalidMethod)
+            _ => Err(InvalidMethod),
         }
     }
 }

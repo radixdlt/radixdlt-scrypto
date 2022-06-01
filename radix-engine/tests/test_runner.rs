@@ -85,7 +85,10 @@ where
             .unwrap()
     }
 
-    pub fn export_abi_by_component(&self, component_address: ComponentAddress) -> abi::BlueprintAbi {
+    pub fn export_abi_by_component(
+        &self,
+        component_address: ComponentAddress,
+    ) -> abi::BlueprintAbi {
         self.executor
             .export_abi_by_component(component_address)
             .unwrap()

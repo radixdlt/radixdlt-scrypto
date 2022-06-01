@@ -41,8 +41,7 @@ fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 #[test]
 fn test_simple_abi() {
     let ptr = Simple_abi(core::ptr::null_mut::<u8>(), core::ptr::null_mut::<u8>());
-    let abi: BlueprintAbi =
-        scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap());
+    let abi: BlueprintAbi = scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap());
 
     assert_json_eq(
         abi,

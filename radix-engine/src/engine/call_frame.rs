@@ -452,14 +452,16 @@ where
                 System::static_main(method_name, call_data, self).map_err(RuntimeError::SystemError)
             }
             SNodeState::TransactionProcessorStatic => {
-                TransactionProcessor::static_main(method_name, call_data, self).map_err(|e| match e {
+                TransactionProcessor::static_main(method_name, call_data, self).map_err(|e| match e
+                {
                     TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
                     TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
                     TransactionProcessorError::RuntimeError(e) => e,
                 })
             }
             SNodeState::PackageStatic => {
-                ValidatedPackage::static_main(method_name, call_data, self).map_err(RuntimeError::PackageError)
+                ValidatedPackage::static_main(method_name, call_data, self)
+                    .map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(method_name, call_data, self)
@@ -471,8 +473,10 @@ where
                 self.component_state = component_state;
                 package.invoke(actor, export_name, method_name, call_data, self)
             }
-            SNodeState::ResourceStatic => ResourceManager::static_main(method_name, call_data, self)
-                .map_err(RuntimeError::ResourceManagerError),
+            SNodeState::ResourceStatic => {
+                ResourceManager::static_main(method_name, call_data, self)
+                    .map_err(RuntimeError::ResourceManagerError)
+            }
             SNodeState::ResourceRef(resource_address, resource_manager) => {
                 let return_value = resource_manager
                     .main(resource_address, method_name, call_data, self)

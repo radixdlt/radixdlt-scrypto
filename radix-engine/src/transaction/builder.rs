@@ -722,7 +722,10 @@ impl TransactionBuilder {
         let mut encoded = Vec::new();
 
         match arg_type {
-            sbor::Type::Struct { name: _, fields: Fields::Named { named } } => {
+            sbor::Type::Struct {
+                name: _,
+                fields: Fields::Named { named },
+            } => {
                 for (i, (_, t)) in named.iter().enumerate() {
                     let arg = args
                         .get(i)
@@ -747,7 +750,7 @@ impl TransactionBuilder {
                 }
                 Ok(())
             }
-            _ => Err(BuildArgsError::UnsupportedRootType(arg_type.clone()))
+            _ => Err(BuildArgsError::UnsupportedRootType(arg_type.clone())),
         }?;
 
         Ok(encoded)

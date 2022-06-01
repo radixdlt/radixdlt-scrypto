@@ -41,7 +41,10 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         let mut func_args = Vec::<Ident>::new();
 
         match &function.input {
-            sbor::Type::Struct { name: _, fields: sbor::describe::Fields::Named { named } } => {
+            sbor::Type::Struct {
+                name: _,
+                fields: sbor::describe::Fields::Named { named },
+            } => {
                 for (i, (_, input)) in named.iter().enumerate() {
                     let ident = format_ident!("arg{}", i);
                     let (new_type, new_structs) = get_native_type(input)?;
@@ -50,7 +53,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
                     structs.extend(new_structs);
                 }
             }
-            _ => panic!("Cannot construct abi")
+            _ => panic!("Cannot construct abi"),
         }
 
         let (func_output, new_structs) = get_native_type(&function.output)?;

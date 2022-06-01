@@ -10,9 +10,7 @@ use scrypto::values::ScryptoValue;
 
 use crate::wasm::*;
 
-fn extract_abi(
-    code: &[u8],
-) -> Result<HashMap<String, BlueprintAbi>, WasmValidationError> {
+fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, WasmValidationError> {
     let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
     let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
     let mut wasm_engine = WasmiEngine::new();

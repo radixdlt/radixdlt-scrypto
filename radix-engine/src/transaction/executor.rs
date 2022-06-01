@@ -1,5 +1,6 @@
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
+use sbor::rust::string::ToString;
 use scrypto::buffer::*;
 use scrypto::component::Package;
 use scrypto::crypto::hash;
@@ -171,7 +172,7 @@ where
             scrypto::core::SNodeRef::TransactionProcessor,
             "run".to_string(),
             ScryptoValue::from_value(&TransactionProcessorRunInput {
-                transaction: validated.clone()
+                transaction: validated.clone(),
             }),
         );
 

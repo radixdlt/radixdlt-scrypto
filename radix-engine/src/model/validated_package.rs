@@ -56,10 +56,7 @@ impl ValidatedPackage {
         &self.code
     }
 
-    pub fn blueprint_abi(
-        &self,
-        blueprint_name: &str,
-    ) -> Option<&BlueprintAbi> {
+    pub fn blueprint_abi(&self, blueprint_name: &str) -> Option<&BlueprintAbi> {
         self.blueprint_abis.get(blueprint_name)
     }
 

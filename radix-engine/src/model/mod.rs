@@ -32,7 +32,7 @@ pub use resource_manager::{ResourceManager, ResourceManagerError};
 pub use system::{System, SystemError};
 pub use transaction::{Instruction, SignedTransaction, Transaction};
 pub use transaction_processor::{
-    TransactionProcessor, TransactionProcessorError, TransactionProcessorRunInput
+    TransactionProcessor, TransactionProcessorError, TransactionProcessorRunInput,
 };
 pub use validated_package::{PackageError, ValidatedPackage};
 pub use validated_transaction::{ValidatedInstruction, ValidatedTransaction};
