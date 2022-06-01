@@ -122,9 +122,7 @@ r#"
                     "name": "Bucket",
                     "generics": []
                 }
-            }
-        ],
-        "methods": [
+            },
             {
                 "name": "calculate_volume",
                 "mutability": "Immutable",

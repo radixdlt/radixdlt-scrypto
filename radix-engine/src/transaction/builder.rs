@@ -375,7 +375,7 @@ impl TransactionBuilder {
         blueprint_abi: &abi::BlueprintAbi,
     ) -> Result<&mut Self, CallWithAbiError> {
         let abi = blueprint_abi
-            .methods
+            .functions
             .iter()
             .find(|m| m.name == method)
             .map(Clone::clone)

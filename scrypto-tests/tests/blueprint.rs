@@ -63,6 +63,7 @@ fn test_simple_abi() {
             "functions": [
                 {
                     "name": "new",
+                    "mutability": null,
                     "input": {
                         "type": "Struct",
                         "name": "Simple_new_Input",
@@ -77,8 +78,47 @@ fn test_simple_abi() {
                         "generics": []
                     }
                 },
+
+                {
+                    "name": "get_state",
+                    "mutability": "Immutable",
+                    "input": {
+                        "type": "Struct",
+                        "name": "Simple_get_state_Input",
+                        "fields": {
+                            "type": "Named",
+                            "named": []
+                        }
+                    },
+                    "output": {
+                        "type": "U32"
+                    }
+                },
+                {
+                    "name": "set_state",
+                    "mutability": "Mutable",
+                    "input": {
+                        "type": "Struct",
+                        "name": "Simple_set_state_Input",
+                        "fields": {
+                            "type": "Named",
+                            "named": [
+                                [
+                                    "arg0",
+                                    {
+                                        "type": "U32"
+                                    }
+                                ]
+                            ]
+                        }
+                    },
+                    "output": {
+                        "type": "Unit"
+                    }
+                },
                 {
                     "name": "custom_types",
+                    "mutability": null,
                     "input": {
                         "type": "Struct",
                         "name": "Simple_custom_types_Input",
@@ -133,45 +173,6 @@ fn test_simple_abi() {
                                 "generics": []
                             }
                         ]
-                    }
-                }
-            ],
-            "methods": [
-                {
-                    "name": "get_state",
-                    "mutability": "Immutable",
-                    "input": {
-                        "type": "Struct",
-                        "name": "Simple_get_state_Input",
-                        "fields": {
-                            "type": "Named",
-                            "named": []
-                        }
-                    },
-                    "output": {
-                        "type": "U32"
-                    }
-                },
-                {
-                    "name": "set_state",
-                    "mutability": "Mutable",
-                    "input": {
-                        "type": "Struct",
-                        "name": "Simple_set_state_Input",
-                        "fields": {
-                            "type": "Named",
-                            "named": [
-                                [
-                                    "arg0",
-                                    {
-                                        "type": "U32"
-                                    }
-                                ]
-                            ]
-                        }
-                    },
-                    "output": {
-                        "type": "Unit"
                     }
                 }
             ]

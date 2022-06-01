@@ -24,7 +24,6 @@ pub struct Blueprint {
 pub struct BlueprintAbi {
     pub value: Type,
     pub functions: Vec<Function>,
-    pub methods: Vec<Method>,
 }
 
 /// Represents a function.
@@ -32,16 +31,7 @@ pub struct BlueprintAbi {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Function {
     pub name: String,
-    pub input: Type,
-    pub output: Type,
-}
-
-/// Represents a method.
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-#[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Method {
-    pub name: String,
-    pub mutability: Mutability,
+    pub mutability: Option<Mutability>,
     pub input: Type,
     pub output: Type,
 }

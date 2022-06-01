@@ -31,7 +31,6 @@ pub extern "C" fn LargeReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut
     let abi = BlueprintAbi {
         value,
         functions: vec![],
-        methods: vec![],
     };
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
 }
@@ -45,7 +44,6 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
     let abi = BlueprintAbi {
         value,
         functions: vec![],
-        methods: vec![],
     };
 
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
@@ -60,7 +58,6 @@ pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut 
     let abi = BlueprintAbi {
         value,
         functions: vec![],
-        methods: vec![],
     };
 
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
