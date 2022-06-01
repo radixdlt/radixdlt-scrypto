@@ -22,17 +22,19 @@ use crate::model::worktop::{
     WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
 };
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
+use crate::model::TransactionProcessorError::InvalidMethod;
 use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum TransactionProcessorFunction {
-    Run(ValidatedTransaction),
+pub struct TransactionProcessorRunInput {
+    pub transaction: ValidatedTransaction
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TransactionProcessorError {
     InvalidRequestData(DecodeError),
     RuntimeError(RuntimeError),
+    InvalidMethod,
 }
 
 pub struct TransactionProcessor {}
@@ -57,20 +59,20 @@ impl TransactionProcessor {
     }
 
     pub fn static_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+        function_name: &str,
         call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, TransactionProcessorError> {
-        let function: TransactionProcessorFunction = scrypto_decode(&call_data.raw)
-            .map_err(|e| TransactionProcessorError::InvalidRequestData(e))?;
-
-        match function {
-            TransactionProcessorFunction::Run(transaction) => {
+        match function_name {
+            "run" => {
+                let input: TransactionProcessorRunInput = scrypto_decode(&call_data.raw)
+                    .map_err(|e| TransactionProcessorError::InvalidRequestData(e))?;
                 let mut proof_id_mapping = HashMap::new();
                 let mut bucket_id_mapping = HashMap::new();
                 let mut outputs = Vec::new();
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
-                for inst in &transaction.instructions.clone() {
+                for inst in &input.transaction.instructions.clone() {
                     let result = match inst {
                         ValidatedInstruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()
@@ -489,6 +491,7 @@ impl TransactionProcessor {
 
                 Ok(ScryptoValue::from_value(&outputs))
             }
+            _ => Err(InvalidMethod)
         }
     }
 }

@@ -167,9 +167,12 @@ where
 
         // Invoke the transaction processor
         // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
-        let result = root_frame.invoke_snode(
+        let result = root_frame.invoke_snode2(
             scrypto::core::SNodeRef::TransactionProcessor,
-            ScryptoValue::from_value(&TransactionProcessorFunction::Run(validated.clone())),
+            "run".to_string(),
+            ScryptoValue::from_value(&TransactionProcessorRunInput {
+                transaction: validated.clone()
+            }),
         );
 
         let (outputs, error) = match result {

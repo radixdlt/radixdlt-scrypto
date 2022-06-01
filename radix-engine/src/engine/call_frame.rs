@@ -452,8 +452,9 @@ where
                 System::static_main(method_name, call_data, self).map_err(RuntimeError::SystemError)
             }
             SNodeState::TransactionProcessorStatic => {
-                TransactionProcessor::static_main(call_data, self).map_err(|e| match e {
+                TransactionProcessor::static_main(method_name, call_data, self).map_err(|e| match e {
                     TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                    TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
                     TransactionProcessorError::RuntimeError(e) => e,
                 })
             }

@@ -17,7 +17,7 @@ macro_rules! sfunctions {
     ($snode_ref:expr => { $($vis:vis $fn:ident $method_name:ident $s:tt -> $rtn:ty { $arg:expr })* } ) => {
         $(
             $vis $fn $method_name $s -> $rtn {
-                let input = RadixEngineInput::InvokeSNode2(
+                let input = RadixEngineInput::InvokeSNode(
                     $snode_ref,
                     stringify!($method_name).to_string(),
                     scrypto::buffer::scrypto_encode(&$arg)
