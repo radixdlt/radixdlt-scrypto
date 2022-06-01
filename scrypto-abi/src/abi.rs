@@ -22,6 +22,7 @@ pub struct Blueprint {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct BlueprintAbi {
+    pub value: Type,
     pub functions: Vec<Function>,
     pub methods: Vec<Method>,
 }

@@ -58,6 +58,7 @@ impl<'l, L: ReadableSubstateStore> AbiProvider for BasicAbiProvider<'l, L> {
             package_address: package_address.to_string(),
             blueprint_name: blueprint_name.to_owned(),
             abi: abi::BlueprintAbi {
+                value: abi.0.clone(),
                 functions: abi.1.clone(),
                 methods: abi.2.clone(),
             }
