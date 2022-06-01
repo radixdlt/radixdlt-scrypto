@@ -129,7 +129,7 @@ fn test_basic_package() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let package = Package {
         code,
-        blueprints: HashMap::new()
+        blueprints: HashMap::new(),
     };
     let transaction = test_runner
         .new_transaction_builder()

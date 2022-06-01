@@ -20,7 +20,11 @@ pub struct ScryptoActorInfo {
 }
 
 impl ScryptoActorInfo {
-    pub fn blueprint(package_address: PackageAddress, blueprint_name: String, blueprint_abi: BlueprintAbi) -> Self {
+    pub fn blueprint(
+        package_address: PackageAddress,
+        blueprint_name: String,
+        blueprint_abi: BlueprintAbi,
+    ) -> Self {
         Self {
             package_address,
             blueprint_name,
