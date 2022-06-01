@@ -62,7 +62,7 @@ where
             ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
         let result = self
             .system_api
-            .invoke_snode2(snode_ref, method_name, call_data)?;
+            .invoke_snode(snode_ref, method_name, call_data)?;
         Ok(result.raw)
     }
 

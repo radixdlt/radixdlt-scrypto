@@ -510,7 +510,7 @@ where
         }
 
         if let Some(_) = &mut self.auth_zone {
-            self.invoke_snode2(
+            self.invoke_snode(
                 SNodeRef::AuthZoneRef,
                 "clear".to_string(),
                 ScryptoValue::from_value(&AuthZoneClearInput {}),
@@ -533,14 +533,6 @@ where
     }
 
     fn invoke_snode(
-        &mut self,
-        snode_ref: SNodeRef,
-        call_data: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_snode2(snode_ref, "".to_string(), call_data)
-    }
-
-    fn invoke_snode2(
         &mut self,
         snode_ref: SNodeRef,
         method_name: String,

@@ -19,12 +19,6 @@ where
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        call_data: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError>;
-
-    fn invoke_snode2(
-        &mut self,
-        snode_ref: SNodeRef,
         method_name: String,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
