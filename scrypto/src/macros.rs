@@ -377,7 +377,7 @@ macro_rules! external_interface_members {
             );
             ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
         }
-        ::scrypto::bridge_blueprint_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
     (
         $blueprint_context:tt,
@@ -391,7 +391,7 @@ macro_rules! external_interface_members {
                 ::scrypto::args!($($method_args),*)
             );
         }
-        ::scrypto::bridge_blueprint_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
     (
         $blueprint_context:tt,
@@ -406,7 +406,7 @@ macro_rules! external_interface_members {
             );
             ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
         }
-        ::scrypto::bridge_blueprint_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
     (
         $blueprint_context:tt,
@@ -420,7 +420,7 @@ macro_rules! external_interface_members {
                 ::scrypto::args!($($method_args),*)
             );
         }
-        ::scrypto::bridge_blueprint_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
     (
         $blueprint_context:tt,
@@ -450,7 +450,7 @@ macro_rules! external_interface_members {
             );
             ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
         }
-        ::scrypto::bridge_blueprint_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
     (
         $blueprint_context:tt,
@@ -466,7 +466,7 @@ macro_rules! external_interface_members {
                 ::scrypto::args!($($func_args),*)
             );
         }
-        ::scrypto::bridge_blueprint_interface_members!($blueprint_context, $($rest)*);
+        ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
     (
         $blueprint_context:tt,
