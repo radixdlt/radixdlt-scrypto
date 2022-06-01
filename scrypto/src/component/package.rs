@@ -5,7 +5,7 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto_abi::{Function, Method};
+use scrypto_abi::BlueprintAbi;
 
 use crate::buffer::*;
 use crate::core::*;
@@ -20,7 +20,7 @@ pub struct PackagePublishInput {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct Package {
     pub code: Vec<u8>,
-    pub blueprints: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
+    pub blueprints: HashMap<String, BlueprintAbi>,
 }
 
 /// A collection of blueprints, compiled and published as a single unit.

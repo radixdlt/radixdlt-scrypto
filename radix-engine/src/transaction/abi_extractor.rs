@@ -1,7 +1,6 @@
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::ToString;
 use scrypto::abi;
-use scrypto::abi::BlueprintAbi;
 use scrypto::engine::types::*;
 
 use crate::engine::*;
@@ -23,17 +22,14 @@ pub fn export_abi<S: ReadableSubstateStore>(
         .ok_or(RuntimeError::BlueprintNotFound(
             package_address,
             blueprint_name.to_owned(),
-        ))?;
+        ))?
+        .clone();
 
     // Return ABI
     Ok(abi::Blueprint {
         package_address: package_address.to_string(),
         blueprint_name: blueprint_name.to_owned(),
-        abi: BlueprintAbi {
-            value: abi.0.clone(),
-            functions: abi.1.clone(),
-            methods: abi.2.clone(),
-        }
+        abi
     })
 }
 

@@ -3,7 +3,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::Type;
-use scrypto::abi::{Function, Method};
+use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
 use scrypto::prelude::Package;
 use scrypto::values::ScryptoValue;
@@ -12,7 +12,7 @@ use crate::wasm::*;
 
 fn extract_abi(
     code: &[u8],
-) -> Result<HashMap<String, (Type, Vec<Function>, Vec<Method>)>, WasmValidationError> {
+) -> Result<HashMap<String, BlueprintAbi>, WasmValidationError> {
     let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
     let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
     let mut wasm_engine = WasmiEngine::new();
@@ -32,10 +32,10 @@ fn extract_abi(
             .invoke_export(&method_name, "", &ScryptoValue::unit(), &mut runtime_boxed)
             .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
 
-        let abi: (Type, Vec<Function>, Vec<Method>) =
+        let abi: BlueprintAbi =
             scrypto_decode(&rtn.raw).map_err(|_| WasmValidationError::InvalidBlueprintAbi)?;
 
-        if let Type::Struct { name, fields: _ } = &abi.0 {
+        if let Type::Struct { name, fields: _ } = &abi.value {
             blueprints.insert(name.clone(), abi);
         } else {
             return Err(WasmValidationError::InvalidBlueprintAbi);

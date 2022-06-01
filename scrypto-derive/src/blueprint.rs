@@ -113,15 +113,19 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         #[no_mangle]
         pub extern "C" fn #abi_ident(input: *mut u8, input2: *mut u8) -> *mut u8 {
             use ::sbor::{Describe, Type};
-            use ::scrypto::abi::{Function, Method};
+            use ::scrypto::abi::{BlueprintAbi, Function, Method};
             use ::sbor::rust::borrow::ToOwned;
             use ::sbor::rust::vec;
             use ::sbor::rust::vec::Vec;
 
             let functions: Vec<Function> = vec![ #(#abi_functions),* ];
             let methods: Vec<Method> = vec![ #(#abi_methods),* ];
-            let schema: Type = blueprint::#bp_ident::describe();
-            let output = (schema, functions, methods);
+            let value: Type = blueprint::#bp_ident::describe();
+            let output = BlueprintAbi {
+                value,
+                functions,
+                methods,
+            };
 
             ::scrypto::buffer::scrypto_encode_to_buffer(&output)
         }
@@ -601,7 +605,7 @@ mod tests {
                 #[no_mangle]
                 pub extern "C" fn Test_abi(input: *mut u8, input2: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
-                    use ::scrypto::abi::{Function, Method};
+                    use ::scrypto::abi::{BlueprintAbi, Function, Method};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
@@ -616,8 +620,12 @@ mod tests {
                         input: Test_x_Input::describe(),
                         output: <u32>::describe(),
                     }];
-                    let schema: Type = blueprint::Test::describe();
-                    let output = (schema, functions, methods);
+                    let value: Type = blueprint::Test::describe();
+                    let output = BlueprintAbi {
+                        value,
+                        functions,
+                        methods,
+                    };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
@@ -683,14 +691,18 @@ mod tests {
                 #[no_mangle]
                 pub extern "C" fn Test_abi(input: *mut u8, input2: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
-                    use ::scrypto::abi::{Function, Method};
+                    use ::scrypto::abi::{BlueprintAbi, Function, Method};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
                     let functions: Vec<Function> = vec![];
                     let methods: Vec<Method> = vec![];
-                    let schema: Type = blueprint::Test::describe();
-                    let output = (schema, functions, methods);
+                    let value: Type = blueprint::Test::describe();
+                    let output = BlueprintAbi {
+                        value,
+                        functions,
+                        methods,
+                    };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
