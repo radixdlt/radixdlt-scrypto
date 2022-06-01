@@ -1,3 +1,4 @@
+use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
@@ -12,22 +13,36 @@ use scrypto::values::ScryptoValue;
 use crate::engine::RuntimeError;
 use crate::engine::SystemApi;
 use crate::model::Component;
-use crate::wasm::{InvokeError, ScryptoRuntime};
+use crate::wasm::*;
 
-pub struct RadixEngineScryptoRuntime<'s, S: SystemApi> {
+pub struct RadixEngineWasmRuntime<'s, S, W, I>
+where
+    S: SystemApi<W, I>,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
     this: ScryptoActorInfo,
     system_api: &'s mut S,
     tbd_limit: u32,
     tbd_balance: u32,
+    phantom1: PhantomData<W>,
+    phantom2: PhantomData<I>,
 }
 
-impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
-    pub fn new(this: ScryptoActorInfo, system_api: &'a mut S, tbd_limit: u32) -> Self {
-        RadixEngineScryptoRuntime {
+impl<'s, S, W, I> RadixEngineWasmRuntime<'s, S, W, I>
+where
+    S: SystemApi<W, I>,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S, tbd_limit: u32) -> Self {
+        RadixEngineWasmRuntime {
             this,
             system_api,
             tbd_limit,
             tbd_balance: tbd_limit,
+            phantom1: PhantomData,
+            phantom2: PhantomData,
         }
     }
 
@@ -45,6 +60,20 @@ impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
         let call_data =
             ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
         let result = self.system_api.invoke_snode(snode_ref, call_data)?;
+        Ok(result.raw)
+    }
+
+    fn handle_invoke_snode2(
+        &mut self,
+        snode_ref: SNodeRef,
+        method_name: String,
+        call_data: Vec<u8>,
+    ) -> Result<Vec<u8>, RuntimeError> {
+        let call_data =
+            ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
+        let result = self
+            .system_api
+            .invoke_snode2(snode_ref, method_name, call_data)?;
         Ok(result.raw)
     }
 
@@ -125,8 +154,8 @@ impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
         Ok(uuid)
     }
 
-    fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.system_api.emit_log(level, message);
+    fn handle_user_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.system_api.user_log(level, message);
         Ok(())
     }
 
@@ -143,7 +172,9 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_value(&output)
 }
 
-impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
+impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'s, S, W, I>
+{
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
@@ -151,6 +182,9 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
             RadixEngineInput::InvokeSNode(snode_ref, call_data) => {
                 self.handle_invoke_snode(snode_ref, call_data).map(encode)
             }
+            RadixEngineInput::InvokeSNode2(snode_ref, method_name, call_data) => self
+                .handle_invoke_snode2(snode_ref, method_name, call_data)
+                .map(encode),
             RadixEngineInput::CreateComponent(blueprint_name, state, access_rules_list) => self
                 .handle_create_component(blueprint_name, state, access_rules_list)
                 .map(encode),
@@ -173,7 +207,7 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
-                self.handle_emit_log(level, message).map(encode)
+                self.handle_user_log(level, message).map(encode)
             }
             RadixEngineInput::CheckAccessRule(rule, proof_ids) => {
                 self.handle_check_access_rule(rule, proof_ids).map(encode)

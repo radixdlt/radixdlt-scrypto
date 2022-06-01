@@ -13,11 +13,13 @@ use crate::wasm::*;
 fn extract_abi(
     code: &[u8],
 ) -> Result<HashMap<String, (Type, Vec<Function>, Vec<Method>)>, WasmValidationError> {
-    let runtime = NopScryptoRuntime::new(EXPORT_BLUEPRINT_ABI_TBD_LIMIT);
+    let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
+    let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
     let mut wasm_engine = WasmiEngine::new();
     // TODO: A bit of a code smell to have validation here, remove at some point.
     wasm_engine.validate(code)?;
-    let mut instance = wasm_engine.load(code).instantiate(Box::new(runtime));
+    wasm_engine.instrument(code).unwrap();
+    let mut instance = wasm_engine.instantiate(code);
     let exports: Vec<String> = instance
         .function_exports()
         .into_iter()
@@ -27,7 +29,7 @@ fn extract_abi(
     let mut blueprints = HashMap::new();
     for method_name in exports {
         let rtn = instance
-            .invoke_export(&method_name, &ScryptoValue::unit())
+            .invoke_export(&method_name, &ScryptoValue::unit(), &mut runtime_boxed)
             .map_err(|_| WasmValidationError::FailedToExportBlueprintAbi)?;
 
         let abi: (Type, Vec<Function>, Vec<Method>) =

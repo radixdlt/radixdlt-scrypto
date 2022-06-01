@@ -1,10 +1,11 @@
 use std::sync::{Arc, Mutex};
 
 use sbor::rust::boxed::Box;
+use sbor::rust::collections::HashMap;
 use sbor::rust::ptr;
 use sbor::rust::string::String;
-use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
 use wasmer::*;
 use wasmer_compiler_singlepass::Singlepass;
@@ -13,27 +14,24 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
-pub struct WasmerScryptoModule<'l> {
+pub struct WasmerModule {
     module: Module,
-    store: &'l Store,
 }
 
-pub struct WasmerScryptoInstance<'r> {
+pub struct WasmerInstance {
     instance: Instance,
-    // This is to keep the trait object live so the runtime pointers
-    // are valid as long as this instance is not dropped.
-    #[allow(dead_code)]
-    runtime: Box<dyn ScryptoRuntime + 'r>,
+    runtime_ptr: Arc<Mutex<usize>>,
 }
 
 #[derive(Clone)]
-pub struct WasmerScryptoInstanceEnv {
+pub struct WasmerInstanceEnv {
     instance: LazyInit<Instance>,
     runtime_ptr: Arc<Mutex<usize>>,
 }
 
 pub struct WasmerEngine {
     store: Store,
+    modules: HashMap<Hash, WasmerModule>,
 }
 
 pub fn send_value(instance: &Instance, value: &ScryptoValue) -> Result<usize, InvokeError> {
@@ -98,22 +96,19 @@ pub fn read_value(instance: &Instance, ptr: usize) -> Result<ScryptoValue, Invok
     Err(InvokeError::MemoryAccessError)
 }
 
-impl WasmerEnv for WasmerScryptoInstanceEnv {
+impl WasmerEnv for WasmerInstanceEnv {
     fn init_with_instance(&mut self, instance: &Instance) -> Result<(), HostEnvInitError> {
         self.instance.initialize(instance.clone());
         Ok(())
     }
 }
 
-impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModule<'l> {
-    fn instantiate(&self, runtime: Box<dyn ScryptoRuntime + 'r>) -> WasmerScryptoInstance<'r> {
+impl WasmerModule {
+    fn instantiate(&self) -> WasmerInstance {
         // native functions
-        fn radix_engine(
-            env: &WasmerScryptoInstanceEnv,
-            input_ptr: i32,
-        ) -> Result<i32, RuntimeError> {
+        fn radix_engine(env: &WasmerInstanceEnv, input_ptr: i32) -> Result<i32, RuntimeError> {
             let ptr = env.runtime_ptr.lock().unwrap();
-            let runtime: &mut Box<dyn ScryptoRuntime> = unsafe { &mut *(*ptr as *mut _) };
+            let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             let instance = unsafe { env.instance.get_unchecked() };
 
             let input = read_value(&instance, input_ptr as usize)
@@ -128,9 +123,9 @@ impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModul
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
-        fn use_tbd(env: &WasmerScryptoInstanceEnv, tbd: i32) -> Result<(), RuntimeError> {
+        fn use_tbd(env: &WasmerInstanceEnv, tbd: i32) -> Result<(), RuntimeError> {
             let ptr = env.runtime_ptr.lock().unwrap();
-            let runtime: &mut Box<dyn ScryptoRuntime> = unsafe { &mut *(*ptr as *mut _) };
+            let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
 
             runtime
                 .use_tbd(tbd as u32)
@@ -138,16 +133,16 @@ impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModul
         }
 
         // env
-        let env = WasmerScryptoInstanceEnv {
+        let env = WasmerInstanceEnv {
             instance: LazyInit::new(),
-            runtime_ptr: Arc::new(Mutex::new(&runtime as *const _ as usize)),
+            runtime_ptr: Arc::new(Mutex::new(0)),
         };
 
         // imports
         let import_object = imports! {
             MODULE_ENV_NAME => {
-                RADIX_ENGINE_FUNCTION_NAME => Function::new_native_with_env(&self.store, env.clone(), radix_engine),
-                USE_TBD_FUNCTION_NAME => Function::new_native_with_env(&self.store, env, use_tbd),
+                RADIX_ENGINE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), radix_engine),
+                USE_TBD_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), use_tbd),
             }
         };
 
@@ -155,21 +150,32 @@ impl<'l, 'r> ScryptoModule<'r, WasmerScryptoInstance<'r>> for WasmerScryptoModul
         let instance =
             Instance::new(&self.module, &import_object).expect("Failed to instantiate module");
 
-        WasmerScryptoInstance { instance, runtime }
+        WasmerInstance {
+            instance,
+            runtime_ptr: env.runtime_ptr,
+        }
     }
 }
 
-impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
-    fn invoke_export(
+impl WasmInstance for WasmerInstance {
+    fn invoke_export<'r>(
         &mut self,
-        export_name: &str,
+        name: &str,
         input: &ScryptoValue,
+        runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError> {
+        {
+            // set up runtime pointer
+            let mut guard = self.runtime_ptr.lock().unwrap();
+            *guard = runtime as *mut _ as usize;
+        }
+
         let pointer = send_value(&self.instance, input)?;
+
         let result = self
             .instance
             .exports
-            .get_function(export_name)
+            .get_function(name)
             .map_err(|_| InvokeError::FunctionNotFound)?
             .call(&[Val::I32(pointer as i32)]);
 
@@ -195,10 +201,10 @@ impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
 
     fn function_exports(&self) -> Vec<String> {
         self.instance
-            .exports
-            .iter()
-            .filter(|e| matches!(e.1, Extern::Function(_)))
-            .map(|e| e.0.to_string())
+            .module()
+            .exports()
+            .filter(|e| matches!(e.ty(), ExternType::Function(_)))
+            .map(|e| e.name().to_string())
             .collect()
     }
 }
@@ -206,32 +212,41 @@ impl<'r> ScryptoInstance for WasmerScryptoInstance<'r> {
 impl WasmerEngine {
     pub fn new() -> Self {
         let compiler = Singlepass::new();
-        let store = Store::new(&Universal::new(compiler).engine());
-        Self { store }
+        Self {
+            store: Store::new(&Universal::new(compiler).engine()),
+            modules: HashMap::new(),
+        }
     }
 }
 
-impl ScryptoValidator for WasmerEngine {
+impl WasmEngine<WasmerInstance> for WasmerEngine {
     fn validate(&mut self, _code: &[u8]) -> Result<(), WasmValidationError> {
         Ok(())
     }
-}
 
-impl ScryptoInstrumenter for WasmerEngine {
-    fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError> {
-        Ok(code.to_vec())
+    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError> {
+        let code_hash = hash(code);
+
+        let instrumented = code;
+
+        self.modules.insert(
+            code_hash,
+            WasmerModule {
+                module: Module::new(&self.store, instrumented)
+                    .expect("Failed to parse wasm module"),
+            },
+        );
+
+        Ok(())
     }
-}
 
-impl<'l, 'r> ScryptoLoader<'l, 'r, WasmerScryptoModule<'l>, WasmerScryptoInstance<'r>>
-    for WasmerEngine
-{
-    fn load(&'l mut self, code: &[u8]) -> WasmerScryptoModule<'l> {
-        let module = Module::new(&self.store, code).expect("Failed to parse wasm module");
-
-        WasmerScryptoModule {
-            module,
-            store: &self.store,
+    fn instantiate(&mut self, code: &[u8]) -> WasmerInstance {
+        let code_hash = hash(code);
+        if !self.modules.contains_key(&code_hash) {
+            self.instrument(code)
+                .expect("Failed to instrument the code");
         }
+        let module = self.modules.get(&code_hash).unwrap();
+        module.instantiate()
     }
 }

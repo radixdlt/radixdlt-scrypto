@@ -14,36 +14,44 @@ use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
+use crate::sfunctions2;
 use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum VaultMethod {
-    Put(Bucket),
-    Take(Decimal),
-    TakeNonFungibles(BTreeSet<NonFungibleId>),
-    CreateProof(),
-    CreateProofByAmount(Decimal),
-    CreateProofByIds(BTreeSet<NonFungibleId>),
-    GetAmount(),
-    GetResourceAddress(),
-    GetNonFungibleIds(),
+pub struct VaultPutInput {
+    pub bucket: Bucket,
 }
 
-impl VaultMethod {
-    pub fn name(&self) -> &str {
-        match self {
-            VaultMethod::Put(_) => "put",
-            VaultMethod::Take(_) => "take",
-            VaultMethod::TakeNonFungibles(_) => "take_non_fungibles",
-            VaultMethod::CreateProof() => "create_proof",
-            VaultMethod::CreateProofByAmount(_) => "create_proof_by_amount",
-            VaultMethod::CreateProofByIds(_) => "create_proof_by_ids",
-            VaultMethod::GetAmount() => "get_amount",
-            VaultMethod::GetResourceAddress() => "get_resource_address",
-            VaultMethod::GetNonFungibleIds() => "get_non_fungible_ids",
-        }
-    }
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultTakeInput {
+    pub amount: Decimal,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultTakeNonFungiblesInput {
+    pub non_fungible_ids: BTreeSet<NonFungibleId>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultGetAmountInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultGetResourceAddressInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultGetNonFungibleIdsInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultCreateProofInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultCreateProofByAmountInput {
+    pub amount: Decimal,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct VaultCreateProofByIdsInput {
+    pub ids: BTreeSet<NonFungibleId>,
 }
 
 /// Represents a persistent resource container on ledger state.
@@ -68,34 +76,52 @@ impl Vault {
         vault
     }
 
-    sfunctions! {
+    fn take_internal(&mut self, amount: Decimal) -> Bucket {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::VaultRef(self.0),
+            "take".to_string(),
+            scrypto_encode(&VaultTakeInput { amount }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    sfunctions2! {
         SNodeRef::VaultRef(self.0) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
-                VaultMethod::Put(bucket)
+                VaultPutInput {
+                    bucket
+                }
             }
-            fn take_internal(&mut self, amount: Decimal) -> Bucket {
-                VaultMethod::Take(amount)
-            }
+
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Bucket {
-                VaultMethod::TakeNonFungibles(non_fungible_ids.clone())
+                VaultTakeNonFungiblesInput {
+                    non_fungible_ids: non_fungible_ids.clone(),
+                }
             }
-            pub fn create_proof(&self) -> Proof {
-                VaultMethod::CreateProof()
-            }
-            pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
-                VaultMethod::CreateProofByAmount(amount)
-            }
-            pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
-                VaultMethod::CreateProofByIds(ids.clone())
-            }
+
             pub fn amount(&self) -> Decimal {
-                VaultMethod::GetAmount()
+                VaultGetAmountInput {}
             }
+
             pub fn resource_address(&self) -> ResourceAddress {
-                VaultMethod::GetResourceAddress()
+                VaultGetResourceAddressInput {}
             }
+
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                VaultMethod::GetNonFungibleIds()
+                VaultGetNonFungibleIdsInput {}
+            }
+
+            pub fn create_proof(&self) -> Proof {
+                VaultCreateProofInput {}
+            }
+
+            pub fn create_proof_by_amount(&self, amount: Decimal) -> Proof {
+                VaultCreateProofByAmountInput { amount }
+            }
+
+            pub fn create_proof_by_ids(&self, ids: &BTreeSet<NonFungibleId>) -> Proof {
+                VaultCreateProofByIdsInput { ids: ids.clone() }
             }
         }
     }
