@@ -79,13 +79,13 @@ where
         &self,
         package_address: PackageAddress,
         blueprint_name: &str,
-    ) -> abi::Blueprint {
+    ) -> abi::BlueprintAbi {
         self.executor
             .export_abi(package_address, blueprint_name)
             .unwrap()
     }
 
-    pub fn export_abi_by_component(&self, component_address: ComponentAddress) -> abi::Blueprint {
+    pub fn export_abi_by_component(&self, component_address: ComponentAddress) -> abi::BlueprintAbi {
         self.executor
             .export_abi_by_component(component_address)
             .unwrap()

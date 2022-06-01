@@ -74,14 +74,14 @@ where
         &self,
         package_address: PackageAddress,
         blueprint_name: &str,
-    ) -> Result<abi::Blueprint, RuntimeError> {
+    ) -> Result<abi::BlueprintAbi, RuntimeError> {
         export_abi(self.substate_store, package_address, blueprint_name)
     }
 
     pub fn export_abi_by_component(
         &self,
         component_address: ComponentAddress,
-    ) -> Result<abi::Blueprint, RuntimeError> {
+    ) -> Result<abi::BlueprintAbi, RuntimeError> {
         export_abi_by_component(self.substate_store, component_address)
     }
 

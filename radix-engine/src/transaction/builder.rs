@@ -314,10 +314,9 @@ impl TransactionBuilder {
         function: &str,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-        blueprint_abi: &abi::Blueprint,
+        blueprint_abi: &abi::BlueprintAbi,
     ) -> Result<&mut Self, CallWithAbiError> {
         let abi = blueprint_abi
-            .abi
             .functions
             .iter()
             .find(|f| f.name == function)
@@ -373,10 +372,9 @@ impl TransactionBuilder {
         method: &str,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-        blueprint_abi: &abi::Blueprint,
+        blueprint_abi: &abi::BlueprintAbi,
     ) -> Result<&mut Self, CallWithAbiError> {
         let abi = blueprint_abi
-            .abi
             .methods
             .iter()
             .find(|m| m.name == method)

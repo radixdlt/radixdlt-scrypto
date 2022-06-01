@@ -1,5 +1,4 @@
 use sbor::rust::borrow::ToOwned;
-use sbor::rust::string::ToString;
 use scrypto::abi;
 use scrypto::engine::types::*;
 
@@ -11,7 +10,7 @@ pub fn export_abi<S: ReadableSubstateStore>(
     substate_store: &S,
     package_address: PackageAddress,
     blueprint_name: &str,
-) -> Result<abi::Blueprint, RuntimeError> {
+) -> Result<abi::BlueprintAbi, RuntimeError> {
     let package: ValidatedPackage = substate_store
         .get_decoded_substate(&package_address)
         .map(|(package, _)| package)
@@ -24,19 +23,13 @@ pub fn export_abi<S: ReadableSubstateStore>(
             blueprint_name.to_owned(),
         ))?
         .clone();
-
-    // Return ABI
-    Ok(abi::Blueprint {
-        package_address: package_address.to_string(),
-        blueprint_name: blueprint_name.to_owned(),
-        abi
-    })
+    Ok(abi)
 }
 
 pub fn export_abi_by_component<S: ReadableSubstateStore>(
     substate_store: &S,
     component_address: ComponentAddress,
-) -> Result<abi::Blueprint, RuntimeError> {
+) -> Result<abi::BlueprintAbi, RuntimeError> {
     let component: Component = substate_store
         .get_decoded_substate(&component_address)
         .map(|(component, _)| component)
