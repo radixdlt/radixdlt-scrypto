@@ -6,71 +6,49 @@ use scrypto::values::ScryptoValue;
 use crate::wasm::errors::*;
 use crate::wasm::WasmValidationError;
 
-/// Represents a parsed Scrypto module (may be shared).
-pub trait ScryptoModule<'r, I>
-where
-    I: ScryptoInstance,
-{
-    /// Instantiate this module with the given runtime object
-    fn instantiate(&self, runtime: Box<dyn ScryptoRuntime + 'r>) -> I;
-}
-
-/// Represents an instantiated, invoke-able scrypto module.
-pub trait ScryptoInstance {
-    /// Invokes an export defined in this module.
-    ///
-    /// For simplicity, we require the export to have a signature of `f(u32) -> u32` where
-    /// both argument and return are a pointer to a `ScryptoValue`.
-    fn invoke_export(
-        &mut self,
-        name: &str,
-        input: &ScryptoValue,
-    ) -> Result<ScryptoValue, InvokeError>;
-
-    /// Lists all functions exported by this module.
-    ///
-    /// TODO: Currently a hack so that we don't require a package_init function.
-    /// TODO: Remove this by implementing package metadata along with the code during compilation.
-    fn function_exports(&self) -> Vec<String>;
-}
-
-/// Represents the runtime object that can be invoked by scrypto modules.
-pub trait ScryptoRuntime {
+/// Represents the runtime that can be invoked by Scrypto modules.
+pub trait WasmRuntime {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError>;
 
     fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError>;
 }
 
-/// Trait for validating scrypto modules.
-pub trait ScryptoValidator {
+/// Represents an instantiated, invokable Scrypto module.
+pub trait WasmInstance {
+    /// Invokes an export defined in this module.
+    ///
+    /// The export must have a signature of `f(u32) -> u32` where both arguments and return
+    ///  are pointers to Scrypto buffer.
+    fn invoke_export<'r>(
+        &mut self,
+        name: &str,
+        input: &ScryptoValue,
+        runtime: &mut Box<dyn WasmRuntime + 'r>,
+    ) -> Result<ScryptoValue, InvokeError>;
+
+    /// Lists all functions exported by this module.
+    fn function_exports(&self) -> Vec<String>;
+}
+
+/// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
+pub trait WasmEngine<I: WasmInstance> {
+    /// Validate a Scrypto module.
     fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
-}
 
-/// Trait for instrumenting, a.k.a. metering, scrypto modules.
-pub trait ScryptoInstrumenter {
-    fn instrument(&mut self, code: &[u8]) -> Result<Vec<u8>, InstrumentError>;
-}
+    /// Instrument a Scrypto module.
+    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError>;
 
-/// Trait for loading scrypto modules.
-pub trait ScryptoLoader<
-    'l, /* Loader lifetime */
-    'r, /* Runtime lifetime */
-    M,  /* Module generic type */
-    I,  /* Instance generic type */
-> where
-    M: ScryptoModule<'r, I>,
-    I: ScryptoInstance,
-{
-    fn load(&'l mut self, code: &[u8]) -> M;
+    /// Instantiate a Scrypto module.
+    fn instantiate(&mut self, code: &[u8]) -> I;
 }
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
-pub struct NopScryptoRuntime {
+pub struct NopWasmRuntime {
     tbd_limit: u32,
     tbd_balance: u32,
 }
 
-impl NopScryptoRuntime {
+impl NopWasmRuntime {
     pub fn new(tbd_limit: u32) -> Self {
         Self {
             tbd_limit,
@@ -79,7 +57,7 @@ impl NopScryptoRuntime {
     }
 }
 
-impl ScryptoRuntime for NopScryptoRuntime {
+impl WasmRuntime for NopWasmRuntime {
     fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         Ok(ScryptoValue::unit())
     }

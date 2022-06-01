@@ -19,6 +19,7 @@ use crate::model::VaultError::MethodNotFound;
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
+use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum VaultError {
@@ -160,7 +161,7 @@ impl Vault {
         self.container.borrow_mut()
     }
 
-    pub fn main<S: SystemApi>(
+    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         vault_id: VaultId,
         method_name: &str,
