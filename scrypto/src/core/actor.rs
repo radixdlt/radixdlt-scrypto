@@ -47,6 +47,10 @@ impl ScryptoActorInfo {
         self.component_address
     }
 
+    pub fn blueprint_abi(&self) -> &BlueprintAbi {
+        &self.blueprint_abi
+    }
+
     pub fn actor(&self) -> ScryptoActor {
         if let Some(addr) = self.component_address {
             ScryptoActor::Component(addr)
