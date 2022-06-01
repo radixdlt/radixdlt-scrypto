@@ -5,7 +5,7 @@ use radix_engine::model::extract_package;
 use radix_engine::{
     ledger::InMemorySubstateStore,
     transaction::{NonceProvider, TransactionBuilder, TransactionExecutor},
-    wasm::InvokeError,
+    wasm::{default_wasm_engine, InvokeError},
 };
 use scrypto::to_struct;
 use test_runner::wat2wasm;
@@ -13,8 +13,9 @@ use test_runner::wat2wasm;
 #[test]
 fn test_loop() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut substate_store, true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
@@ -36,8 +37,9 @@ fn test_loop() {
 #[test]
 fn test_loop_out_of_tbd() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut substate_store, true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
@@ -59,8 +61,9 @@ fn test_loop_out_of_tbd() {
 #[test]
 fn test_recursion() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut substate_store, true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
     // Act
     // In this test case, each call frame costs 4 stack units
@@ -83,8 +86,9 @@ fn test_recursion() {
 #[test]
 fn test_recursion_stack_overflow() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut substate_store, true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
@@ -106,8 +110,9 @@ fn test_recursion_stack_overflow() {
 #[test]
 fn test_grow_memory() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut substate_store, true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "99999"));
@@ -129,8 +134,9 @@ fn test_grow_memory() {
 #[test]
 fn test_grow_memory_out_of_tbd() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut substate_store, true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));

@@ -4,13 +4,15 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::wasm::default_wasm_engine;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 
 #[test]
 fn test_package() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package = test_runner.publish_package("component");
 
     let transaction1 = test_runner
@@ -24,8 +26,9 @@ fn test_package() {
 
 #[test]
 fn test_component() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let package = test_runner.publish_package("component");
 
@@ -62,8 +65,9 @@ fn test_component() {
 #[test]
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package_address = test_runner.publish_package("component");
 
     // Act
@@ -90,8 +94,9 @@ fn invalid_blueprint_name_should_cause_error() {
 #[test]
 fn reentrancy_should_not_be_possible() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package_address = test_runner.publish_package("component");
     let transaction = test_runner
         .new_transaction_builder()
@@ -118,8 +123,9 @@ fn reentrancy_should_not_be_possible() {
 #[test]
 fn missing_component_address_should_cause_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let _ = test_runner.publish_package("component");
     let component_address =
         ComponentAddress::from_str("0200000000000000000000000000000000000000000000deadbeef")

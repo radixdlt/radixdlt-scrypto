@@ -1,4 +1,6 @@
+use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
+use scrypto::buffer::*;
 use scrypto::component::Package;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
@@ -10,23 +12,37 @@ use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::transaction::*;
+use crate::wasm::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'l, L: ReadableSubstateStore + WriteableSubstateStore> {
-    substate_store: &'l mut L,
+pub struct TransactionExecutor<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    substate_store: &'s mut S,
+    wasm_engine: &'w mut W,
     trace: bool,
+    phantom: PhantomData<I>,
 }
 
-impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> NonceProvider
-    for TransactionExecutor<'l, L>
+impl<'s, 'w, S, W, I> NonceProvider for TransactionExecutor<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
     fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
         self.substate_store.get_nonce()
     }
 }
 
-impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
-    for TransactionExecutor<'l, L>
+impl<'s, 'w, S, W, I> AbiProvider for TransactionExecutor<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
 {
     fn export_abi(
         &self,
@@ -44,21 +60,34 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> AbiProvider
     }
 }
 
-impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<'l, L> {
-    pub fn new(substate_store: &'l mut L, trace: bool) -> Self {
+impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    pub fn new(
+        substate_store: &'s mut S,
+        wasm_engine: &'w mut W,
+        trace: bool,
+    ) -> TransactionExecutor<'s, 'w, S, W, I> {
+        bootstrap(substate_store, wasm_engine);
+
         Self {
             substate_store,
+            wasm_engine,
             trace,
+            phantom: PhantomData,
         }
     }
 
     /// Returns an immutable reference to the ledger.
-    pub fn substate_store(&self) -> &L {
+    pub fn substate_store(&self) -> &S {
         self.substate_store
     }
 
     /// Returns a mutable reference to the ledger.
-    pub fn substate_store_mut(&mut self) -> &mut L {
+    pub fn substate_store_mut(&mut self) -> &mut S {
         self.substate_store
     }
 
@@ -130,22 +159,32 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        let mut track = Track::new(
-            self.substate_store,
+        // Start state track
+        let mut track = Track::new(self.substate_store, validated.raw_hash.clone());
+
+        // Create root call frame.
+        let mut root_frame = CallFrame::new_root(
+            self.trace,
             validated.raw_hash.clone(),
             validated.signers.clone(),
+            &mut track,
+            self.wasm_engine,
         );
-        let mut proc = track.start_call_frame(self.trace);
 
-        let mut txn_process = TransactionProcessor::new(validated.clone());
-        let txn_snode = SNodeState::Transaction(&mut txn_process);
-        let error = match proc.run(None, txn_snode, "", ScryptoValue::from_value(&())) {
-            Ok(_) => None,
-            Err(e) => Some(e),
+        // Invoke the transaction processor
+        // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
+        let result = root_frame.invoke_snode(
+            scrypto::core::SNodeRef::TransactionProcessor,
+            ScryptoValue::from_value(&TransactionProcessorFunction::Run(validated.clone())),
+        );
+
+        let (outputs, error) = match result {
+            Ok(o) => (scrypto_decode::<Vec<ScryptoValue>>(&o.raw).unwrap(), None),
+            Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
         };
-        let outputs = txn_process.outputs().to_vec();
 
         let track_receipt = track.to_receipt();
+
         // commit state updates
         let commit_receipt = if error.is_none() {
             if !track_receipt.borrowed.is_empty() {
@@ -181,7 +220,7 @@ impl<'l, L: ReadableSubstateStore + WriteableSubstateStore> TransactionExecutor<
 
         Receipt {
             commit_receipt,
-            validated_transaction: validated.clone(),
+            validated_transaction: validated,
             result: match error {
                 Some(error) => Err(error),
                 None => Ok(()),
