@@ -1,8 +1,6 @@
 mod call_frame;
 mod component_objects;
 mod errors;
-mod id_allocator;
-mod id_validator;
 mod receipt;
 mod runtime;
 mod substate_receipt;
@@ -15,8 +13,6 @@ pub use call_frame::{
 };
 pub use component_objects::*;
 pub use errors::*;
-pub use id_allocator::*;
-pub use id_validator::*;
 pub use receipt::*;
 pub use runtime::RadixEngineWasmRuntime;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};

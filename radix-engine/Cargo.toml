@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
+transaction = { path = "../transaction", default-features = false }
 colored = { version = "2.0.0", default-features = false }
 lru = { version = "0.7.5" }
 bencher = { version = "0.1.5" }

@@ -10,10 +10,11 @@ use scrypto::engine::types::*;
 use scrypto::resource::{AuthZoneMethod, BucketMethod};
 use scrypto::resource::{ConsumingProofMethod, ProofMethod};
 use scrypto::values::*;
+use transaction::model::*;
+use transaction::validation::*;
 
-use crate::engine::{IdAllocator, IdSpace, RuntimeError, RuntimeError::ProofNotFound, SystemApi};
+use crate::engine::{RuntimeError, RuntimeError::ProofNotFound, SystemApi};
 use crate::model::worktop::WorktopMethod;
-use crate::model::{ValidatedInstruction, ValidatedTransaction};
 use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]

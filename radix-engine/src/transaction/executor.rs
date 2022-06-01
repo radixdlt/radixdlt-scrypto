@@ -8,6 +8,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::values::ScryptoValue;
 use scrypto::{abi, access_rule_node, call_data, rule};
+use transaction::errors::*;
+use transaction::model::*;
 
 use crate::engine::*;
 use crate::ledger::*;

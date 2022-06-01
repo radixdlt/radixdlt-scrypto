@@ -17,9 +17,9 @@ use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::types::*;
 use scrypto::values::*;
 use scrypto::*;
+use transaction::model::*;
+use transaction::validation::*;
 
-use crate::engine::*;
-use crate::model::*;
 use crate::transaction::*;
 
 /// Utility for building transaction.

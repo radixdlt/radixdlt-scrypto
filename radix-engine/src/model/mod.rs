@@ -9,10 +9,8 @@ mod proof;
 mod resource;
 mod resource_manager;
 mod system;
-mod transaction;
 mod transaction_processor;
 mod validated_package;
-mod validated_transaction;
 mod vault;
 mod worktop;
 
@@ -30,11 +28,9 @@ pub use proof::*;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
 pub use system::{System, SystemError};
-pub use transaction::{Instruction, SignedTransaction, Transaction};
 pub use transaction_processor::{
     TransactionProcessor, TransactionProcessorError, TransactionProcessorFunction,
 };
 pub use validated_package::{PackageError, ValidatedPackage};
-pub use validated_transaction::{ValidatedInstruction, ValidatedTransaction};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
