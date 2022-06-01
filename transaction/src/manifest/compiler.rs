@@ -1,6 +1,6 @@
 use crate::manifest::*;
 
-use radix_engine::model::Transaction;
+use crate::model::Transaction;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompileError {

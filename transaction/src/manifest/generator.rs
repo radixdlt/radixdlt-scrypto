@@ -1,5 +1,3 @@
-use radix_engine::engine::*;
-use radix_engine::model::*;
 use sbor::any::{encode_any, Value};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
@@ -10,7 +8,10 @@ use scrypto::engine::types::*;
 use scrypto::types::*;
 use scrypto::values::*;
 
+use crate::errors::*;
 use crate::manifest::ast;
+use crate::model::*;
+use crate::validation::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {

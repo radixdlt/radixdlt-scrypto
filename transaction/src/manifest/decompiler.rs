@@ -1,9 +1,11 @@
-use radix_engine::engine::*;
-use radix_engine::model::*;
 use sbor::rust::collections::*;
 use sbor::{encode_any, Value};
 use scrypto::engine::types::*;
 use scrypto::values::*;
+
+use crate::errors::*;
+use crate::model::*;
+use crate::validation::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
