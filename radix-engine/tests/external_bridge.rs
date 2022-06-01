@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::wasm::default_wasm_engine;
 use scrypto::{call_data, prelude::*};
 
 /// This tests the external_blueprint! and external_component! macros
@@ -10,7 +11,8 @@ use scrypto::{call_data, prelude::*};
 fn test_external_bridges() {
     // ARRANGE
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
 
     // Part 1 - Upload the target and caller packages
     let target_package_address = test_runner.publish_package("component");
