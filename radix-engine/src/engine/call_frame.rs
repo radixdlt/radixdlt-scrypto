@@ -582,12 +582,10 @@ where
                             SubstateValue::Package(package) => package,
                             _ => panic!("Value is not a package"),
                         };
-                        if !package.contains_blueprint(blueprint_name) {
-                            return Err(RuntimeError::BlueprintNotFound(
-                                package_address.clone(),
-                                blueprint_name.clone(),
-                            ));
-                        }
+                        let abi = package.blueprint_abi(blueprint_name).ok_or(RuntimeError::BlueprintNotFound(
+                            package_address.clone(),
+                            blueprint_name.clone(),
+                        ))?;
                         let export_name = format!("{}_main", blueprint_name);
 
                         Ok((
@@ -595,6 +593,7 @@ where
                                 ScryptoActorInfo::blueprint(
                                     package_address.clone(),
                                     blueprint_name.clone(),
+                                    abi.clone()
                                 ),
                                 package.clone(),
                                 export_name.clone(),
@@ -630,14 +629,8 @@ where
                             SubstateValue::Package(package) => package,
                             _ => panic!("Value is not a package"),
                         };
-
-                        // TODO: Remove clone
-                        let schema = package
-                            .load_blueprint_schema(&blueprint_name)
-                            .unwrap()
-                            .clone();
-
-                        let (_, method_auths) = component.method_authorization(&schema, &function);
+                        let abi = package.blueprint_abi(&blueprint_name).expect("Blueprint not found for existing component");
+                        let (_, method_auths) = component.method_authorization(&abi.value, &function);
 
                         // set up component state
                         let data = ScryptoValue::from_slice(component.state()).unwrap();
@@ -652,6 +645,7 @@ where
                                 ScryptoActorInfo::component(
                                     package_address,
                                     blueprint_name,
+                                    abi.clone(),
                                     component_address,
                                 ),
                                 package.clone(),

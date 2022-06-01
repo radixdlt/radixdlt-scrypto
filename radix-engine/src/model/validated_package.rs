@@ -60,16 +60,6 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn contains_blueprint(&self, blueprint_name: &str) -> bool {
-        self.blueprint_abis.contains_key(blueprint_name)
-    }
-
-    pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
-        self.blueprint_abi(blueprint_name)
-            .map(|v| &v.value)
-            .ok_or(PackageError::BlueprintNotFound)
-    }
-
     pub fn static_main<'s, S, W, I>(
         method_name: &str,
         call_data: ScryptoValue,
