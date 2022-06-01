@@ -1,3 +1,4 @@
+use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
@@ -143,7 +144,12 @@ fn dangling_vault_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::ResourceCheckFailure);
+    assert_eq!(
+        runtime_error,
+        RuntimeError::ResourceCheckFailure(ResourceFailure::Resource(
+            receipt.new_resource_addresses[0]
+        ))
+    );
 }
 
 #[test]

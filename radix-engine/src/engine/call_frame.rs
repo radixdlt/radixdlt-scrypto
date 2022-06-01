@@ -300,25 +300,48 @@ where
 
     /// Checks resource leak.
     fn check_resource(&self) -> Result<(), RuntimeError> {
-        let success = self.buckets.is_empty()
-            && self.proofs.is_empty()
-            && self.owned_snodes.vaults.is_empty()
-            && self.owned_snodes.lazy_maps.is_empty()
-            && match &self.worktop {
-                Some(worktop) => worktop.is_empty(),
-                None => true,
-            };
+        self.sys_log(Level::Info, "Resource check started".to_string());
+        let mut success = true;
+        let mut resource = ResourceFailure::Unknown;
 
+        for (bucket_id, bucket) in &self.buckets {
+            self.sys_log(
+                Level::Warn,
+                format!("Dangling bucket: {}, {:?}", bucket_id, bucket),
+            );
+            resource = ResourceFailure::Resource(bucket.resource_address());
+            success = false;
+        }
+        for (vault_id, vault) in &self.owned_snodes.vaults {
+            self.sys_log(
+                Level::Warn,
+                format!("Dangling vault: {:?}, {:?}", vault_id, vault),
+            );
+            resource = ResourceFailure::Resource(vault.resource_address());
+            success = false;
+        }
+        for (lazy_map_id, lazy_map) in &self.owned_snodes.lazy_maps {
+            self.sys_log(
+                Level::Warn,
+                format!("Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map),
+            );
+            resource = ResourceFailure::UnclaimedLazyMap;
+            success = false;
+        }
+
+        if let Some(worktop) = &self.worktop {
+            if !worktop.is_empty() {
+                self.sys_log(Level::Warn, "Resource worktop is not empty".to_string());
+                resource = ResourceFailure::Resources(worktop.resource_addresses());
+                success = false;
+            }
+        }
+
+        self.sys_log(Level::Info, "Resource check ended".to_string());
         if success {
             Ok(())
         } else {
-            self.sys_log(Level::Info, format!("Resources owned by call frame"));
-            self.sys_log(Level::Info, format!("Buckets: {:?}", self.buckets));
-            self.sys_log(Level::Info, format!("Proofs: {:?}", self.proofs));
-            self.sys_log(Level::Info, format!("SNodes: {:?}", self.owned_snodes));
-            self.sys_log(Level::Info, format!("Worktop: {:?}", self.worktop));
-            self.sys_log(Level::Info, format!("Auth zone: {:?}", self.auth_zone));
-            Err(RuntimeError::ResourceCheckFailure)
+            Err(RuntimeError::ResourceCheckFailure(resource))
         }
     }
 
@@ -434,6 +457,7 @@ where
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'p>,
+        method_name: &str,
         call_data: ScryptoValue,
     ) -> Result<
         (
@@ -493,7 +517,7 @@ where
                 .main_consume(call_data)
                 .map_err(RuntimeError::ProofError),
             SNodeState::VaultRef(vault_id, _, vault) => vault
-                .main(vault_id, call_data, self)
+                .main(vault_id, method_name, call_data, self)
                 .map_err(RuntimeError::VaultError),
         }?;
 
@@ -510,8 +534,9 @@ where
         }
 
         if let Some(_) = &mut self.auth_zone {
-            self.invoke_snode(
+            self.invoke_snode2(
                 SNodeRef::AuthZoneRef,
+                "clear".to_string(),
                 ScryptoValue::from_value(&AuthZoneMethod::Clear()),
             )?;
         }
@@ -536,11 +561,20 @@ where
         snode_ref: SNodeRef,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        self.invoke_snode2(snode_ref, "".to_string(), call_data)
+    }
+
+    fn invoke_snode2(
+        &mut self,
+        snode_ref: SNodeRef,
+        method_name: String,
+        call_data: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
         self.sys_log(Level::Debug, format!("{:?}", snode_ref));
         let function = if let Value::Enum { name, .. } = &call_data.dom {
             name.clone()
         } else {
-            return Err(RuntimeError::InvalidInvocation);
+            method_name.to_string()
         };
 
         // Authorization and state load
@@ -760,7 +794,8 @@ where
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
-                let method_auth = resource_manager.get_vault_auth(&call_data);
+
+                let method_auth = resource_manager.get_vault_auth(&method_name);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(
                         vault_id.clone(),
@@ -841,7 +876,7 @@ where
         // invoke the main function
         let snode = loaded_snode.to_snode_state();
         let (result, received_buckets, received_proofs, received_vaults) =
-            frame.run(Some(snode_ref), snode, call_data)?;
+            frame.run(Some(snode_ref), snode, &method_name, call_data)?;
 
         // move buckets and proofs to this process.
         self.sys_log(
