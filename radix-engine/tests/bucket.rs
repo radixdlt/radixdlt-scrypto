@@ -6,13 +6,15 @@ use radix_engine::engine::*;
 use radix_engine::ledger::*;
 use radix_engine::model::{extract_package, BucketError, ResourceContainerError};
 use radix_engine::transaction::*;
+use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
 fn test_bucket() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (_, _, account) = executor.new_account();
     let package = extract_package(compile_package!(format!("./tests/{}", "bucket"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
@@ -52,8 +54,9 @@ fn test_bucket() {
 
 #[test]
 fn test_bucket_of_badges() {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, true);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (_, _, account) = executor.new_account();
     let package = extract_package(compile_package!(format!("./tests/{}", "bucket"))).unwrap();
     let package_address = executor.publish_package(package).unwrap();
@@ -73,8 +76,9 @@ fn test_bucket_of_badges() {
 #[test]
 fn test_take_with_invalid_granularity() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let package_address = test_runner.publish_package("bucket");
@@ -111,8 +115,9 @@ fn test_take_with_invalid_granularity() {
 #[test]
 fn test_take_with_negative_amount() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let package_address = test_runner.publish_package("bucket");
@@ -149,8 +154,9 @@ fn test_take_with_negative_amount() {
 #[test]
 fn create_empty_bucket() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
 
     // Act

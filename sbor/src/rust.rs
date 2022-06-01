@@ -23,6 +23,8 @@ pub use core::convert;
 #[cfg(feature = "alloc")]
 pub use core::hash;
 #[cfg(feature = "alloc")]
+pub use core::iter;
+#[cfg(feature = "alloc")]
 pub use core::marker;
 #[cfg(feature = "alloc")]
 pub use core::mem;
@@ -47,6 +49,8 @@ pub use std::fmt;
 pub use std::format;
 #[cfg(not(feature = "alloc"))]
 pub use std::hash;
+#[cfg(not(feature = "alloc"))]
+pub use std::iter;
 #[cfg(not(feature = "alloc"))]
 pub use std::marker;
 #[cfg(not(feature = "alloc"))]

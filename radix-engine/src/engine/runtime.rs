@@ -1,3 +1,4 @@
+use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
@@ -5,28 +6,43 @@ use scrypto::core::SNodeRef;
 use scrypto::core::ScryptoActorInfo;
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
+use scrypto::resource::AccessRule;
 use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::RuntimeError;
 use crate::engine::SystemApi;
 use crate::model::Component;
-use crate::wasm::{InvokeError, ScryptoRuntime};
+use crate::wasm::*;
 
-pub struct RadixEngineScryptoRuntime<'s, S: SystemApi> {
+pub struct RadixEngineWasmRuntime<'s, S, W, I>
+where
+    S: SystemApi<W, I>,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
     this: ScryptoActorInfo,
     system_api: &'s mut S,
     tbd_limit: u32,
     tbd_balance: u32,
+    phantom1: PhantomData<W>,
+    phantom2: PhantomData<I>,
 }
 
-impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
-    pub fn new(this: ScryptoActorInfo, system_api: &'a mut S, tbd_limit: u32) -> Self {
-        RadixEngineScryptoRuntime {
+impl<'s, S, W, I> RadixEngineWasmRuntime<'s, S, W, I>
+where
+    S: SystemApi<W, I>,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S, tbd_limit: u32) -> Self {
+        RadixEngineWasmRuntime {
             this,
             system_api,
             tbd_limit,
             tbd_balance: tbd_limit,
+            phantom1: PhantomData,
+            phantom2: PhantomData,
         }
     }
 
@@ -138,9 +154,17 @@ impl<'a, S: SystemApi> RadixEngineScryptoRuntime<'a, S> {
         Ok(uuid)
     }
 
-    fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.system_api.emit_log(level, message);
+    fn handle_user_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.system_api.user_log(level, message);
         Ok(())
+    }
+
+    fn handle_check_access_rule(
+        &mut self,
+        access_rule: AccessRule,
+        proof_ids: Vec<ProofId>,
+    ) -> Result<bool, RuntimeError> {
+        self.system_api.check_access_rule(access_rule, proof_ids)
     }
 }
 
@@ -148,7 +172,9 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_value(&output)
 }
 
-impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
+impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'s, S, W, I>
+{
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
@@ -181,7 +207,10 @@ impl<'a, S: SystemApi> ScryptoRuntime for RadixEngineScryptoRuntime<'a, S> {
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
-                self.handle_emit_log(level, message).map(encode)
+                self.handle_user_log(level, message).map(encode)
+            }
+            RadixEngineInput::CheckAccessRule(rule, proof_ids) => {
+                self.handle_check_access_rule(rule, proof_ids).map(encode)
             }
         }
         .map_err(InvokeError::RuntimeError)
