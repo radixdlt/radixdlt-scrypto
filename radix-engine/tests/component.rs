@@ -10,7 +10,7 @@ use scrypto::prelude::*;
 
 #[test]
 fn test_package() {
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package = test_runner.publish_package("component");
@@ -26,7 +26,7 @@ fn test_package() {
 
 #[test]
 fn test_component() {
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -64,7 +64,7 @@ fn test_component() {
 #[test]
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package_address = test_runner.publish_package("component");
@@ -92,7 +92,7 @@ fn invalid_blueprint_name_should_cause_error() {
 #[test]
 fn reentrancy_should_not_be_possible() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package_address = test_runner.publish_package("component");
@@ -121,7 +121,7 @@ fn reentrancy_should_not_be_possible() {
 #[test]
 fn missing_component_address_should_cause_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let _ = test_runner.publish_package("component");
