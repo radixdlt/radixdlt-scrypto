@@ -300,25 +300,48 @@ where
 
     /// Checks resource leak.
     fn check_resource(&self) -> Result<(), RuntimeError> {
-        let success = self.buckets.is_empty()
-            && self.proofs.is_empty()
-            && self.owned_snodes.vaults.is_empty()
-            && self.owned_snodes.lazy_maps.is_empty()
-            && match &self.worktop {
-                Some(worktop) => worktop.is_empty(),
-                None => true,
-            };
+        self.sys_log(Level::Info, "Resource check started".to_string());
+        let mut success = true;
+        let mut resource = ResourceFailure::Unknown;
 
+        for (bucket_id, bucket) in &self.buckets {
+            self.sys_log(
+                Level::Warn,
+                format!("Dangling bucket: {}, {:?}", bucket_id, bucket),
+            );
+            resource = ResourceFailure::Resource(bucket.resource_address());
+            success = false;
+        }
+        for (vault_id, vault) in &self.owned_snodes.vaults {
+            self.sys_log(
+                Level::Warn,
+                format!("Dangling vault: {:?}, {:?}", vault_id, vault),
+            );
+            resource = ResourceFailure::Resource(vault.resource_address());
+            success = false;
+        }
+        for (lazy_map_id, lazy_map) in &self.owned_snodes.lazy_maps {
+            self.sys_log(
+                Level::Warn,
+                format!("Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map),
+            );
+            resource = ResourceFailure::UnclaimedLazyMap;
+            success = false;
+        }
+
+        if let Some(worktop) = &self.worktop {
+            if !worktop.is_empty() {
+                self.sys_log(Level::Warn, "Resource worktop is not empty".to_string());
+                resource = ResourceFailure::Resources(worktop.resource_addresses());
+                success = false;
+            }
+        }
+
+        self.sys_log(Level::Info, "Resource check ended".to_string());
         if success {
             Ok(())
         } else {
-            self.sys_log(Level::Info, format!("Resources owned by call frame"));
-            self.sys_log(Level::Info, format!("Buckets: {:?}", self.buckets));
-            self.sys_log(Level::Info, format!("Proofs: {:?}", self.proofs));
-            self.sys_log(Level::Info, format!("SNodes: {:?}", self.owned_snodes));
-            self.sys_log(Level::Info, format!("Worktop: {:?}", self.worktop));
-            self.sys_log(Level::Info, format!("Auth zone: {:?}", self.auth_zone));
-            Err(RuntimeError::ResourceCheckFailure)
+            Err(RuntimeError::ResourceCheckFailure(resource))
         }
     }
 
