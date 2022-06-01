@@ -6,6 +6,7 @@ mod runtime;
 mod substate_receipt;
 mod system_api;
 mod track;
+mod transaction_executor;
 
 pub use call_frame::{
     BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LazyMapState,
@@ -21,3 +22,4 @@ pub use track::{
     Address, BorrowedSNodes, SubstateParentId, SubstateUpdate, SubstateValue, Track, TrackError,
     TrackReceipt,
 };
+pub use transaction_executor::TransactionExecutor;
