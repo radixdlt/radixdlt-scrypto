@@ -1,45 +1,15 @@
-use bincode_core::{deserialize, serialize, BufferWriterError, CoreWrite, DefaultOptions};
+use bincode::{config, Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-struct GrowableBufferWriter {
-    buffer: Vec<u8>,
+pub fn bincode_encode<T: Encode>(v: &T) -> Vec<u8> {
+    let config = config::standard();
+    bincode::encode_to_vec(v, config).unwrap()
 }
 
-impl GrowableBufferWriter {
-    pub fn new() -> Self {
-        Self {
-            buffer: Vec::<u8>::with_capacity(256),
-        }
-    }
-}
-
-impl CoreWrite for &'_ mut GrowableBufferWriter {
-    type Error = BufferWriterError;
-
-    fn write(&mut self, val: u8) -> Result<(), Self::Error> {
-        self.buffer.push(val);
-        Ok(())
-    }
-}
-
-impl CoreWrite for GrowableBufferWriter {
-    type Error = BufferWriterError;
-    fn write(&mut self, val: u8) -> Result<(), Self::Error> {
-        self.buffer.push(val);
-        Ok(())
-    }
-}
-
-pub fn bincode_encode<T: Serialize>(v: &T) -> Vec<u8> {
-    let mut writer = GrowableBufferWriter::new();
-    let options = DefaultOptions::new();
-    serialize(v, &mut writer, options).unwrap();
-    writer.buffer
-}
-
-pub fn bincode_decode<'de, T: Deserialize<'de>>(buf: &'de [u8]) -> Result<T, String> {
-    let options = DefaultOptions::new();
-    deserialize(buf, options).map_err(|e| e.to_string())
+pub fn bincode_decode<T: Decode>(buf: &[u8]) -> Result<T, String> {
+    let config = config::standard();
+    let (decoded, _len): (T, usize) = bincode::decode_from_slice(buf, config).unwrap();
+    Ok(decoded)
 }
 
 pub fn json_encode<T: Serialize>(v: &T) -> Vec<u8> {

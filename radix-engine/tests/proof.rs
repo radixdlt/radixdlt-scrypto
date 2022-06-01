@@ -4,14 +4,16 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::wasm::default_wasm_engine;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -41,8 +43,9 @@ fn can_create_clone_and_drop_bucket_proof() {
 #[test]
 fn can_create_clone_and_drop_vault_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -76,8 +79,9 @@ fn can_create_clone_and_drop_vault_proof() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -115,8 +119,9 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_ids() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -156,8 +161,9 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
 #[test]
 fn can_use_bucket_for_authorization() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
@@ -191,8 +197,9 @@ fn can_use_bucket_for_authorization() {
 #[test]
 fn can_use_vault_for_authorization() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
@@ -230,8 +237,9 @@ fn can_use_vault_for_authorization() {
 #[test]
 fn can_create_proof_from_account_and_pass_on() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -261,8 +269,9 @@ fn can_create_proof_from_account_and_pass_on() {
 #[test]
 fn cant_move_restricted_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -295,8 +304,9 @@ fn cant_move_restricted_proof() {
 #[test]
 fn can_compose_bucket_and_vault_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -334,8 +344,9 @@ fn can_compose_bucket_and_vault_proof() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -373,8 +384,9 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_ids() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -422,8 +434,9 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 #[test]
 fn can_create_vault_proof_by_amount_from_non_fungibles() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -457,8 +470,9 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
 #[test]
 fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut substate_store = InMemorySubstateStore::new();
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");

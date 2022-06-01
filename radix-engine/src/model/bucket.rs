@@ -16,6 +16,7 @@ use crate::engine::SystemApi;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
+use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BucketError {
@@ -157,7 +158,7 @@ impl Bucket {
         self.container.borrow_mut()
     }
 
-    pub fn main<S: SystemApi>(
+    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         bucket_id: BucketId,
         method_name: &str,
@@ -236,7 +237,7 @@ impl Bucket {
         }
     }
 
-    pub fn consuming_main<S: SystemApi>(
+    pub fn consuming_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         self,
         method_name: &str,
         arg: ScryptoValue,

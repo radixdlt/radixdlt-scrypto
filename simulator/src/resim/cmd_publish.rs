@@ -1,6 +1,7 @@
 use clap::Parser;
 use colored::*;
 use radix_engine::transaction::*;
+use radix_engine::wasm::*;
 use std::ffi::OsStr;
 use std::fs;
 use std::path::PathBuf;
@@ -35,8 +36,10 @@ impl Publish {
         .map_err(Error::IOError)?;
 
         if let Some(path) = &self.manifest {
-            let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-            let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+            let mut substate_store = RadixEngineDB::new(get_data_dir()?);
+            let mut wasm_engine = default_wasm_engine();
+            let mut executor =
+                TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
             let package = extract_package(code).unwrap();
             let transaction = TransactionBuilder::new()
                 .publish_package(package)
@@ -65,8 +68,10 @@ impl Publish {
         out: &mut O,
         code: Vec<u8>,
     ) -> Result<(), Error> {
-        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let mut substate_store = RadixEngineDB::new(get_data_dir()?);
+        let mut wasm_engine = default_wasm_engine();
+        let mut executor =
+            TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
         let package = extract_package(code).map_err(Error::PackageValidationError)?;
         match executor.publish_package(package) {
             Ok(package_address) => {

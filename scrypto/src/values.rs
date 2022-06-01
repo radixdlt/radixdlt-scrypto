@@ -41,6 +41,27 @@ pub struct ScryptoValue {
     pub lazy_map_ids: HashSet<LazyMapId>,
 }
 
+// FIXME: encode as the original type, rather than Vec<u8>
+
+impl TypeId for ScryptoValue {
+    fn type_id() -> u8 {
+        Vec::<u8>::type_id()
+    }
+}
+
+impl Encode for ScryptoValue {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.raw.encode_value(encoder);
+    }
+}
+
+impl Decode for ScryptoValue {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        Ok(Self::from_slice(&Vec::<u8>::decode_value(decoder)?)
+            .expect("FIXME support untrusted ScryptoValue decoding"))
+    }
+}
+
 impl ScryptoValue {
     pub fn unit() -> Self {
         Self::from_value(&())
