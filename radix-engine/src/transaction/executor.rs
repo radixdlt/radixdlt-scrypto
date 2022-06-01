@@ -12,7 +12,7 @@ use scrypto::{abi, access_rule_node, call_data, rule};
 use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
-use crate::transaction::abi_provider::{export_abi, export_abi_by_component};
+use crate::transaction::abi_extractor::{export_abi, export_abi_by_component};
 use crate::transaction::*;
 use crate::wasm::*;
 

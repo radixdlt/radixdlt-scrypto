@@ -1,4 +1,4 @@
-mod abi_provider;
+mod abi_extractor;
 mod builder;
 mod error;
 mod executor;
