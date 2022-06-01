@@ -25,7 +25,7 @@ pub use method_authorization::{
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization, MethodAuthorizationError,
 };
 pub use non_fungible::NonFungible;
-pub use package_extractor::extract_package;
+pub use package_extractor::{extract_package, ExtractAbiError};
 pub use proof::*;
 pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};

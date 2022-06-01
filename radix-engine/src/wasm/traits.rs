@@ -1,10 +1,7 @@
 use sbor::rust::boxed::Box;
-use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 use scrypto::values::ScryptoValue;
 
 use crate::wasm::errors::*;
-use crate::wasm::WasmValidationError;
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {
@@ -18,26 +15,20 @@ pub trait WasmInstance {
     /// Invokes an export defined in this module.
     ///
     /// The export must have a signature of `f(u32) -> u32` where both arguments and return
-    ///  are pointers to Scrypto buffer.
+    /// are pointers to a Scrypto buffer.
+    ///
+    /// Note that trait objects are "fat pointer" (16 bytes). We wrap it with a `Box` so
+    /// to be able to store them in `usize`.
     fn invoke_export<'r>(
         &mut self,
         name: &str,
         input: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError>;
-
-    /// Lists all functions exported by this module.
-    fn function_exports(&self) -> Vec<String>;
 }
 
 /// A Scrypto WASM engine validates, instruments and runs Scrypto modules.
 pub trait WasmEngine<I: WasmInstance> {
-    /// Validate a Scrypto module.
-    fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError>;
-
-    /// Instrument a Scrypto module.
-    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError>;
-
     /// Instantiate a Scrypto module.
     fn instantiate(&mut self, code: &[u8]) -> I;
 }

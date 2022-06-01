@@ -72,8 +72,6 @@ where
         wasm_engine: &'w mut W,
         trace: bool,
     ) -> TransactionExecutor<'s, 'w, S, W, I> {
-        bootstrap(substate_store, wasm_engine);
-
         Self {
             substate_store,
             wasm_engine,
