@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
-serde = { version = "1.0", default-features = false, optional = true }
+serde = { version = "1.0.137", default-features = false, optional = true }
 
 [features]
 # You should enable either `std` or `alloc`

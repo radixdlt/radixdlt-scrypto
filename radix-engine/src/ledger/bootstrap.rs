@@ -12,6 +12,7 @@ use scrypto::rule;
 
 use crate::engine::{Track, TrackReceipt};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
+use crate::model::ValidatedPackage;
 
 #[derive(TypeId, Encode, Decode)]
 struct SystemComponentState {
@@ -29,16 +30,22 @@ const XRD_VAULT: scrypto::resource::Vault = scrypto::resource::Vault(XRD_VAULT_I
 const SYSTEM_COMPONENT_NAME: &str = "System";
 
 use crate::model::*;
+use crate::wasm::*;
 
-fn create_genesis<S: ReadableSubstateStore>(mut track: Track<S>) -> TrackReceipt {
+fn create_genesis<'s, 'w, S, W, I>(mut track: Track<'s, S>, wasm_engine: &'w mut W) -> TrackReceipt
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
     let system_package =
         extract_package(include_bytes!("../../../assets/system.wasm").to_vec()).unwrap();
-    let validated_system_package = ValidatedPackage::new(system_package).unwrap();
+    let validated_system_package = ValidatedPackage::new(system_package, wasm_engine).unwrap();
     track.create_uuid_value_2(SYSTEM_PACKAGE, validated_system_package);
 
     let account_package =
         extract_package(include_bytes!("../../../assets/account.wasm").to_vec()).unwrap();
-    let validated_account_package = ValidatedPackage::new(account_package).unwrap();
+    let validated_account_package = ValidatedPackage::new(account_package, wasm_engine).unwrap();
     track.create_uuid_value_2(ACCOUNT_PACKAGE, validated_account_package);
 
     // Radix token resource address
@@ -87,11 +94,16 @@ fn create_genesis<S: ReadableSubstateStore>(mut track: Track<S>) -> TrackReceipt
     track.to_receipt()
 }
 
-pub fn bootstrap<S: ReadableSubstateStore + WriteableSubstateStore>(substate_store: &mut S) {
+pub fn bootstrap<'s, 'w, S, W, I>(substate_store: &'s mut S, wasm_engine: &'w mut W)
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
     let system_substate = substate_store.get_substate(&scrypto_encode(&SYSTEM_PACKAGE));
     if system_substate.is_none() {
-        let track = Track::new(substate_store, Hash([0u8; 32]), vec![]);
-        let receipt = create_genesis(track);
+        let track = Track::new(substate_store, Hash([0u8; 32]));
+        let receipt = create_genesis(track, wasm_engine);
         receipt.substates.commit(substate_store);
     }
 }

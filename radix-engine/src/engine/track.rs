@@ -1,7 +1,3 @@
-use crate::engine::{
-    CallFrame, IdAllocator, IdSpace, SubstateOperation, SubstateOperationsReceipt,
-    ECDSA_TOKEN_BUCKET_ID,
-};
 use indexmap::{IndexMap, IndexSet};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
@@ -10,20 +6,34 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
-use scrypto::constants::*;
 use scrypto::engine::types::*;
 
+use crate::engine::{
+    ComponentObjects, IdAllocator, IdSpace, SubstateOperation, SubstateOperationsReceipt,
+};
 use crate::ledger::*;
 use crate::model::*;
 
-// TODO: Replace NonFungible with real re address
-// TODO: Move this logic into application layer
-macro_rules! resource_to_non_fungible_space {
-    ($resource_address:expr) => {{
-        let mut addr = scrypto_encode(&$resource_address);
-        addr.push(0u8);
-        addr
-    }};
+/// Facilitates transactional state updates.
+pub struct Track<'s, S: ReadableSubstateStore> {
+    substate_store: &'s mut S,
+    transaction_hash: Hash,
+    id_allocator: IdAllocator,
+    logs: Vec<(Level, String)>,
+
+    new_addresses: Vec<Address>,
+    borrowed_substates: HashSet<Address>,
+    read_substates: IndexMap<Address, SubstateValue>,
+
+    downed_substates: Vec<PhysicalSubstateId>,
+    down_virtual_substates: Vec<VirtualSubstateId>,
+    up_substates: IndexMap<Vec<u8>, SubstateValue>,
+    up_virtual_substate_space: IndexSet<Vec<u8>>,
+}
+
+pub enum TrackError {
+    Reentrancy,
+    NotFound,
 }
 
 pub struct BorrowedSNodes {
@@ -43,6 +53,7 @@ pub struct TrackReceipt {
     pub substates: SubstateOperationsReceipt,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SubstateUpdate<T> {
     pub prev_id: Option<PhysicalSubstateId>,
     pub value: T,
@@ -65,6 +76,26 @@ pub enum Address {
     NonFungibleSet(ResourceAddress),
     LazyMap(ComponentAddress, LazyMapId),
     Vault(ComponentAddress, VaultId),
+}
+
+#[derive(Debug)]
+pub enum SubstateValue {
+    Resource(ResourceManager),
+    Component(Component),
+    Package(ValidatedPackage),
+    Vault(Vault),
+    NonFungible(Option<NonFungible>),
+    LazyMapEntry(Option<Vec<u8>>),
+}
+
+// TODO: Replace NonFungible with real re address
+// TODO: Move this logic into application layer
+macro_rules! resource_to_non_fungible_space {
+    ($resource_address:expr) => {{
+        let mut addr = scrypto_encode(&$resource_address);
+        addr.push(0u8);
+        addr
+    }};
 }
 
 impl Address {
@@ -142,16 +173,6 @@ impl Into<ResourceAddress> for Address {
             panic!("Address is not a resource address");
         }
     }
-}
-
-#[derive(Debug)]
-pub enum SubstateValue {
-    Resource(ResourceManager),
-    Component(Component),
-    Package(ValidatedPackage),
-    Vault(Vault),
-    NonFungible(Option<NonFungible>),
-    LazyMapEntry(Option<Vec<u8>>),
 }
 
 impl SubstateValue {
@@ -233,45 +254,11 @@ impl Into<Vault> for SubstateValue {
     }
 }
 
-pub enum TrackError {
-    Reentrancy,
-    NotFound,
-}
-
-/// An abstraction of transaction execution state.
-///
-/// It acts as the facade of ledger state and keeps track of all temporary state updates,
-/// until the `commit()` method is called.
-///
-/// Typically, a track is shared by all the processes created within a transaction.
-///
-pub struct Track<'s, S: ReadableSubstateStore> {
-    substate_store: &'s mut S,
-    transaction_hash: Hash,
-    transaction_signers: Vec<EcdsaPublicKey>,
-    id_allocator: IdAllocator,
-    logs: Vec<(Level, String)>,
-
-    new_addresses: Vec<Address>,
-    borrowed_substates: HashSet<Address>,
-    read_substates: IndexMap<Address, SubstateValue>,
-
-    downed_substates: Vec<PhysicalSubstateId>,
-    down_virtual_substates: Vec<VirtualSubstateId>,
-    up_substates: IndexMap<Vec<u8>, SubstateValue>,
-    up_virtual_substate_space: IndexSet<Vec<u8>>,
-}
-
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(
-        substate_store: &'s mut S,
-        transaction_hash: Hash,
-        transaction_signers: Vec<EcdsaPublicKey>,
-    ) -> Self {
+    pub fn new(substate_store: &'s mut S, transaction_hash: Hash) -> Self {
         Self {
             substate_store,
             transaction_hash,
-            transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
 
@@ -284,42 +271,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             up_substates: IndexMap::new(),
             up_virtual_substate_space: IndexSet::new(),
         }
-    }
-
-    /// Start a call frame.
-    pub fn start_call_frame<'r>(&'r mut self, verbose: bool) -> CallFrame<'r, 's, S> {
-        let signers: BTreeSet<NonFungibleId> = self
-            .transaction_signers
-            .clone()
-            .into_iter()
-            .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
-            .collect();
-
-        // With the latest change, proof amount can't be zero, thus a virtual proof is created
-        // only if there are signers.
-        //
-        // Transactions that refer to the signature virtual proof will pass static check
-        // but will fail at runtime, if there are no signers.
-        //
-        // TODO: possible to update static check to reject them early?
-        let mut initial_auth_zone_proofs = Vec::new();
-        if !signers.is_empty() {
-            // Proofs can't be zero amount
-            let mut ecdsa_bucket =
-                Bucket::new(ResourceContainer::new_non_fungible(ECDSA_TOKEN, signers));
-            let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
-            initial_auth_zone_proofs.push(ecdsa_proof);
-        }
-
-        CallFrame::new(
-            0,
-            verbose,
-            self,
-            Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
-            Some(Worktop::new()),
-            HashMap::new(),
-            HashMap::new(),
-        )
     }
 
     /// Returns the transaction hash.
@@ -618,6 +569,34 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             borrowed,
             substates,
             logs: self.logs,
+        }
+    }
+
+    pub fn insert_objects_into_component(
+        &mut self,
+        new_objects: ComponentObjects,
+        component_address: ComponentAddress,
+    ) {
+        for (vault_id, vault) in new_objects.vaults {
+            self.create_uuid_value_2((component_address, vault_id), vault);
+        }
+        for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
+            self.create_key_space(component_address, lazy_map_id);
+            for (k, v) in unclaimed.lazy_map {
+                let parent_address = Address::LazyMap(component_address, lazy_map_id);
+                self.set_key_value(parent_address, k, Some(v));
+            }
+
+            for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
+                self.create_key_space(component_address, child_lazy_map_id);
+                for (k, v) in child_lazy_map {
+                    let parent_address = Address::LazyMap(component_address, child_lazy_map_id);
+                    self.set_key_value(parent_address, k, Some(v));
+                }
+            }
+            for (vault_id, vault) in unclaimed.descendent_vaults {
+                self.create_uuid_value_2((component_address, vault_id), vault);
+            }
         }
     }
 }

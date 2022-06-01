@@ -2,11 +2,10 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 
-use crate::ledger::traits::{Substate, WriteableSubstateStore};
 use crate::ledger::*;
+use crate::ledger::{Substate, WriteableSubstateStore};
 
-/// An in-memory ledger stores all substates in host memory.
-#[derive(Debug, Clone)]
+/// A substate store that stores all substates in host memory.
 pub struct InMemorySubstateStore {
     substates: HashMap<Vec<u8>, Vec<u8>>,
     current_epoch: u64,
@@ -20,12 +19,6 @@ impl InMemorySubstateStore {
             current_epoch: 0,
             nonce: 0,
         }
-    }
-
-    pub fn with_bootstrap() -> Self {
-        let mut ledger = Self::new();
-        bootstrap(&mut ledger);
-        ledger
     }
 }
 

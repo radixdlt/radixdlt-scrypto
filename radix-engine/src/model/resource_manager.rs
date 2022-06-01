@@ -23,6 +23,7 @@ use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::NonFungible;
 use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
+use crate::wasm::*;
 
 /// Converts soft authorization rule to a hard authorization rule.
 /// Currently required as all auth is defined by soft authorization rules.
@@ -251,7 +252,7 @@ impl ResourceManager {
         self.total_supply
     }
 
-    fn mint<S: SystemApi>(
+    fn mint<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
@@ -310,7 +311,7 @@ impl ResourceManager {
         Ok(validated)
     }
 
-    fn mint_non_fungibles<S: SystemApi>(
+    fn mint_non_fungibles<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
@@ -322,7 +323,7 @@ impl ResourceManager {
         }
 
         // check amount
-        let amount = entries.len().into();
+        let amount: Decimal = entries.len().into();
         self.check_amount(amount)?;
 
         // It takes `1,701,411,835` mint operations to reach `Decimal::MAX`,
@@ -377,7 +378,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<S: SystemApi>(
+    pub fn static_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
@@ -415,7 +416,7 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<S: SystemApi>(
+    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         resource_address: ResourceAddress,
         method_name: &str,

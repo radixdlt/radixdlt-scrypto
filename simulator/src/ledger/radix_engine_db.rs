@@ -17,12 +17,6 @@ impl RadixEngineDB {
         Self { db }
     }
 
-    pub fn with_bootstrap(root: PathBuf) -> Self {
-        let mut ledger = Self::new(root);
-        bootstrap(&mut ledger);
-        ledger
-    }
-
     pub fn list_packages(&self) -> Vec<PackageAddress> {
         let start = &scrypto_encode(&PackageAddress([0; 26]));
         let end = &scrypto_encode(&PackageAddress([255; 26]));

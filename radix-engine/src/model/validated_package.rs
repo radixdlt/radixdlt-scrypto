@@ -17,7 +17,6 @@ use crate::wasm::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ValidatedPackage {
     code: Vec<u8>,
-    instrumented_code: Vec<u8>,
     blueprint_abis: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
 }
 
@@ -31,28 +30,30 @@ pub enum PackageError {
 
 impl ValidatedPackage {
     /// Validates and creates a package
-    pub fn new(package: scrypto::prelude::Package) -> Result<Self, WasmValidationError> {
-        let mut wasm_engine = WasmiEngine::new();
+    pub fn new<'w, W, I>(
+        package: scrypto::prelude::Package,
+        wasm_engine: &'w mut W,
+    ) -> Result<Self, WasmValidationError>
+    where
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    {
+        // validate wasm
         wasm_engine.validate(&package.code)?;
 
         // instrument wasm
-        let instrumented_code = wasm_engine
+        wasm_engine
             .instrument(&package.code)
             .map_err(|_| WasmValidationError::FailedToInstrumentCode)?;
 
         Ok(Self {
             code: package.code,
-            instrumented_code,
             blueprint_abis: package.blueprints,
         })
     }
 
     pub fn code(&self) -> &[u8] {
         &self.code
-    }
-
-    pub fn instrumented_code(&self) -> &[u8] {
-        &self.instrumented_code
     }
 
     pub fn blueprint_abi(
@@ -72,16 +73,21 @@ impl ValidatedPackage {
             .ok_or(PackageError::BlueprintNotFound)
     }
 
-    pub fn static_main<S: SystemApi>(
+    pub fn static_main<'s, S, W, I>(
         method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut S,
-    ) -> Result<ScryptoValue, PackageError> {
+    ) -> Result<ScryptoValue, PackageError>
+    where
+        S: SystemApi<W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    {
         match method_name {
             "publish" => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| PackageError::InvalidRequestData(e))?;
-                let package = ValidatedPackage::new(input.package)
+                let package = ValidatedPackage::new(input.package, system_api.wasm_engine())
                     .map_err(PackageError::WasmValidationError)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
@@ -90,22 +96,23 @@ impl ValidatedPackage {
         }
     }
 
-    pub fn invoke<S: SystemApi>(
+    pub fn invoke<'s, S, W, I>(
         &self,
         actor: ScryptoActorInfo,
         export_name: String,
         call_data: ScryptoValue,
-        system_api: &mut S,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        #[cfg(feature = "wasmer")]
-        let mut engine = WasmerEngine::new();
-        #[cfg(not(feature = "wasmer"))]
-        let mut engine = WasmiEngine::new();
-        let runtime = RadixEngineScryptoRuntime::new(actor, system_api, CALL_FUNCTION_TBD_LIMIT);
-        let module = engine.load(self.instrumented_code());
-        let mut instance = module.instantiate(Box::new(runtime));
+        system_api: &'s mut S,
+    ) -> Result<ScryptoValue, RuntimeError>
+    where
+        S: SystemApi<W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    {
+        let mut instance = system_api.wasm_engine().instantiate(self.code());
+        let runtime = RadixEngineWasmRuntime::new(actor, system_api, CALL_FUNCTION_TBD_LIMIT);
+        let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
         instance
-            .invoke_export(&export_name, &call_data)
+            .invoke_export(&export_name, &call_data, &mut runtime_boxed)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,
