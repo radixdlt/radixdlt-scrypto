@@ -7,7 +7,8 @@ use scrypto::call_data;
 use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::resource::{AuthZoneMethod, BucketMethod};
+use scrypto::prelude::BucketCreateProofInput;
+use scrypto::resource::AuthZoneMethod;
 use scrypto::resource::{ConsumingProofMethod, ProofMethod};
 use scrypto::values::*;
 
@@ -274,9 +275,10 @@ impl TransactionProcessor {
                             })
                             .and_then(|(new_id, real_bucket_id)| {
                                 system_api
-                                    .invoke_snode(
+                                    .invoke_snode2(
                                         SNodeRef::BucketRef(real_bucket_id),
-                                        ScryptoValue::from_value(&BucketMethod::CreateProof()),
+                                        "create_proof".to_string(),
+                                        ScryptoValue::from_value(&BucketCreateProofInput {}),
                                     )
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
