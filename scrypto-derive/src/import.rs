@@ -32,7 +32,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     let mut structs: Vec<Item> = vec![];
 
     let mut functions = Vec::<ItemFn>::new();
-    for function in &blueprint.functions {
+    for function in &blueprint.abi.functions {
         trace!("Processing function: {:?}", function);
 
         let func_name = &function.name;
@@ -70,7 +70,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     }
 
     let mut methods = Vec::<ItemFn>::new();
-    for method in &blueprint.methods {
+    for method in &blueprint.abi.methods {
         trace!("Processing method: {:?}", method);
 
         let method_name = &method.name;
@@ -389,43 +389,45 @@ mod tests {
                 {
                     "package_address": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
                     "blueprint_name": "Simple",
-                    "functions": [
-                        {
-                            "name": "new",
-                            "input": {
-                                "type": "Struct",
-                                "name": "",
-                                "fields": {
-                                    "type": "Named",
-                                    "named": []
+                    "abi": {
+                        "functions": [
+                            {
+                                "name": "new",
+                                "input": {
+                                    "type": "Struct",
+                                    "name": "",
+                                    "fields": {
+                                        "type": "Named",
+                                        "named": []
+                                    }
+                                },
+                                "output": {
+                                    "type": "Custom",
+                                    "name": "ComponentAddress",
+                                    "generics": []
                                 }
-                            },
-                            "output": {
-                                "type": "Custom",
-                                "name": "ComponentAddress",
-                                "generics": []
                             }
-                        }
-                    ],
-                    "methods": [
-                        {
-                            "name": "free_token",
-                            "mutability": "Mutable",
-                            "input": {
-                                "type": "Struct",
-                                "name": "",
-                                "fields": {
-                                    "type": "Named",
-                                    "named": []
+                        ],
+                        "methods": [
+                            {
+                                "name": "free_token",
+                                "mutability": "Mutable",
+                                "input": {
+                                    "type": "Struct",
+                                    "name": "",
+                                    "fields": {
+                                        "type": "Named",
+                                        "named": []
+                                    }
+                                },
+                                "output": {
+                                    "type": "Custom",
+                                    "name": "Bucket",
+                                    "generics": []
                                 }
-                            },
-                            "output": {
-                                "type": "Custom",
-                                "name": "Bucket",
-                                "generics": []
                             }
-                        }
-                    ]
+                        ]
+                    }
                 }
                 "#
             "###,
