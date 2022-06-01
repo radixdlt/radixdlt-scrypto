@@ -22,6 +22,13 @@ where
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
+    fn invoke_snode2(
+        &mut self,
+        snode_ref: SNodeRef,
+        method_name: String,
+        call_data: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError>;
+
     fn get_non_fungible(
         &mut self,
         non_fungible_address: &NonFungibleAddress,

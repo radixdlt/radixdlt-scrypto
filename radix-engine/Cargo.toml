@@ -6,12 +6,11 @@ edition = "2021"
 [dependencies]
 sbor = { path = "../sbor", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
-colored = { version = "2.0", default-features = false }
-lru = { version = "0.7" }
+colored = { version = "2.0.0", default-features = false }
+lru = { version = "0.7.5" }
 bencher = { version = "0.1.5" }
-hex = { version = "0.4", default-features = false }
-indexmap = { git = "https://github.com/bluss/indexmap", tag = "1.8.1" }
-
+hex = { version = "0.4.3", default-features = false }
+indexmap = { version = "1.8.1" }
 
 # Wasm validatin 
 # 
@@ -27,8 +26,6 @@ wasm-instrument = { git = "https://github.com/paritytech/wasm-instrument", rev =
 # Wasmi is a WASM interpreter that supports WebAssembly MVP;
 # Wasmer supports multiple JIT backends: `singlepass` (linear time), `LLVM` and `cranelift`
 wasmi = { version = "0.11.0" }
-wasmer = { version = "2.2.1" }
-wasmer-compiler-singlepass = { version = "2.2.1" }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }

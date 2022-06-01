@@ -434,6 +434,7 @@ where
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'p>,
+        method_name: &str,
         call_data: ScryptoValue,
     ) -> Result<
         (
@@ -493,7 +494,7 @@ where
                 .main_consume(call_data)
                 .map_err(RuntimeError::ProofError),
             SNodeState::VaultRef(vault_id, _, vault) => vault
-                .main(vault_id, call_data, self)
+                .main(vault_id, method_name, call_data, self)
                 .map_err(RuntimeError::VaultError),
         }?;
 
@@ -510,8 +511,9 @@ where
         }
 
         if let Some(_) = &mut self.auth_zone {
-            self.invoke_snode(
+            self.invoke_snode2(
                 SNodeRef::AuthZoneRef,
+                "clear".to_string(),
                 ScryptoValue::from_value(&AuthZoneMethod::Clear()),
             )?;
         }
@@ -536,11 +538,20 @@ where
         snode_ref: SNodeRef,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        self.invoke_snode2(snode_ref, "".to_string(), call_data)
+    }
+
+    fn invoke_snode2(
+        &mut self,
+        snode_ref: SNodeRef,
+        method_name: String,
+        call_data: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
         self.sys_log(Level::Debug, format!("{:?}", snode_ref));
         let function = if let Value::Enum { name, .. } = &call_data.dom {
             name.clone()
         } else {
-            return Err(RuntimeError::InvalidInvocation);
+            method_name.to_string()
         };
 
         // Authorization and state load
@@ -760,7 +771,8 @@ where
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
-                let method_auth = resource_manager.get_vault_auth(&call_data);
+
+                let method_auth = resource_manager.get_vault_auth(&method_name);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(
                         vault_id.clone(),
@@ -841,7 +853,7 @@ where
         // invoke the main function
         let snode = loaded_snode.to_snode_state();
         let (result, received_buckets, received_proofs, received_vaults) =
-            frame.run(Some(snode_ref), snode, call_data)?;
+            frame.run(Some(snode_ref), snode, &method_name, call_data)?;
 
         // move buckets and proofs to this process.
         self.sys_log(
