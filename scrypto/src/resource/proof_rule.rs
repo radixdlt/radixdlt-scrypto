@@ -146,23 +146,13 @@ where
 }
 
 /// Resource Proof Rules
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(SoftDecimal, SoftResource),
     CountOf(SoftCount, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
-}
-
-// FIXME: describe types with cycles
-impl Describe for ProofRule {
-    fn describe() -> sbor::describe::Type {
-        sbor::describe::Type::Custom {
-            name: "ProofRule".to_owned(),
-            generics: vec![],
-        }
-    }
 }
 
 impl From<NonFungibleAddress> for ProofRule {
