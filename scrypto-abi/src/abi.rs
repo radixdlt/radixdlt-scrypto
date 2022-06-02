@@ -27,13 +27,17 @@ pub struct BlueprintAbi {
 }
 
 impl BlueprintAbi {
-    pub fn contains_function(&self, function_name: &str) -> bool {
+    pub fn get_function_abi(&self, function_name: &str) -> Option<&Function> {
         for func in &self.functions {
             if func.name.eq(function_name) {
-                return true;
+                return Option::Some(func);
             }
         }
-        return false;
+        Option::None
+    }
+
+    pub fn contains_function(&self, function_name: &str) -> bool {
+        self.get_function_abi(function_name).is_some()
     }
 }
 

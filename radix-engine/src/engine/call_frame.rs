@@ -583,6 +583,13 @@ where
                                 blueprint_name.clone(),
                             ),
                         )?;
+                        let function_abi = abi.get_function_abi(&function_name)
+                            .ok_or(RuntimeError::MethodDoesNotExist(function_name.clone()))?;
+                        if !function_abi.input.matches(&call_data.dom) {
+                            return Err(RuntimeError::InvalidMethodArgument {
+                                function_name
+                            });
+                        }
                         let export_name = format!("{}_main", blueprint_name);
 
                         Ok((
@@ -626,9 +633,17 @@ where
                             SubstateValue::Package(package) => package,
                             _ => panic!("Value is not a package"),
                         };
+
                         let abi = package
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint not found for existing component");
+                        let function_abi = abi.get_function_abi(&function_name)
+                            .ok_or(RuntimeError::MethodDoesNotExist(function_name.clone()))?;
+                        if !function_abi.input.matches(&call_data.dom) {
+                            return Err(RuntimeError::InvalidMethodArgument {
+                                function_name
+                            });
+                        }
                         let (_, method_auths) =
                             component.method_authorization(&abi.value, &function_name);
 

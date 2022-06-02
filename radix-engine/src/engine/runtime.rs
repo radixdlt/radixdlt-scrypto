@@ -11,7 +11,7 @@ use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::RuntimeError;
-use crate::engine::RuntimeError::{BlueprintFunctionDoesNotExist, ComponentValueDoesNotMatchAbi};
+use crate::engine::RuntimeError::{BlueprintFunctionDoesNotExist};
 use crate::engine::SystemApi;
 use crate::model::Component;
 use crate::wasm::*;
@@ -85,10 +85,6 @@ where
                     return Err(BlueprintFunctionDoesNotExist(func_name.to_string()));
                 }
             }
-        }
-        let component_value = decode_any(&state).map_err(RuntimeError::ComponentDecodeError)?;
-        if !self.this.blueprint_abi().value.matches(&component_value) {
-            return Err(ComponentValueDoesNotMatchAbi);
         }
 
         // Create component

@@ -36,7 +36,10 @@ pub enum RuntimeError {
     IdAllocatorError(IdAllocatorError),
 
     /// Invalid request code.
-    UnknownMethod(String),
+    MethodDoesNotExist(String),
+    InvalidMethodArgument {
+        function_name: String,
+    },
 
     /// Package does not exist.
     PackageNotFound(PackageAddress),
@@ -56,7 +59,6 @@ pub enum RuntimeError {
 
     BlueprintFunctionDoesNotExist(String),
     ComponentDecodeError(DecodeError),
-    ComponentValueDoesNotMatchAbi,
 
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
