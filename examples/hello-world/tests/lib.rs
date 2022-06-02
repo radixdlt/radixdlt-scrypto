@@ -8,7 +8,7 @@ use scrypto::to_struct;
 #[test]
 fn test_hello() {
     // Set up environment.
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, false);
     let (pk, sk, account) = executor.new_account();

@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex};
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::ptr;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
@@ -14,12 +13,17 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
+use super::WasmModule;
+
 pub struct WasmerModule {
     module: Module,
 }
 
 pub struct WasmerInstance {
     instance: Instance,
+    // Runtime pointer is shared by the instance and every function that requires `env`.
+    // It is updated every time the `invoke_export` is called and `Arc` ensures that the
+    // update applies to all the owners.
     runtime_ptr: Arc<Mutex<usize>>,
 }
 
@@ -107,16 +111,17 @@ impl WasmerModule {
     fn instantiate(&self) -> WasmerInstance {
         // native functions
         fn radix_engine(env: &WasmerInstanceEnv, input_ptr: i32) -> Result<i32, RuntimeError> {
-            let ptr = env.runtime_ptr.lock().unwrap();
-            let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             let instance = unsafe { env.instance.get_unchecked() };
-
             let input = read_value(&instance, input_ptr as usize)
                 .map_err(|e| RuntimeError::user(Box::new(e)))?;
 
-            let output = runtime
-                .main(input)
-                .map_err(|e| RuntimeError::user(Box::new(e)))?;
+            let output = {
+                let ptr = env.runtime_ptr.lock().unwrap();
+                let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
+                runtime
+                    .main(input)
+                    .map_err(|e| RuntimeError::user(Box::new(e)))?
+            };
 
             send_value(&instance, &output)
                 .map(|ptr| ptr as i32)
@@ -126,7 +131,6 @@ impl WasmerModule {
         fn use_tbd(env: &WasmerInstanceEnv, tbd: i32) -> Result<(), RuntimeError> {
             let ptr = env.runtime_ptr.lock().unwrap();
             let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
-
             runtime
                 .use_tbd(tbd as u32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
@@ -200,15 +204,6 @@ impl WasmInstance for WasmerInstance {
             }
         }
     }
-
-    fn function_exports(&self) -> Vec<String> {
-        self.instance
-            .module()
-            .exports()
-            .filter(|e| matches!(e.ty(), ExternType::Function(_)))
-            .map(|e| e.name().to_string())
-            .collect()
-    }
 }
 
 impl WasmerEngine {
@@ -222,31 +217,21 @@ impl WasmerEngine {
 }
 
 impl WasmEngine<WasmerInstance> for WasmerEngine {
-    fn validate(&mut self, _code: &[u8]) -> Result<(), WasmValidationError> {
-        Ok(())
-    }
-
-    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError> {
-        let code_hash = hash(code);
-
-        let instrumented = code;
-
-        self.modules.insert(
-            code_hash,
-            WasmerModule {
-                module: Module::new(&self.store, instrumented)
-                    .expect("Failed to parse wasm module"),
-            },
-        );
-
-        Ok(())
-    }
-
     fn instantiate(&mut self, code: &[u8]) -> WasmerInstance {
         let code_hash = hash(code);
         if !self.modules.contains_key(&code_hash) {
-            self.instrument(code)
-                .expect("Failed to instrument the code");
+            let instrumented_code = WasmModule::init(code)
+                .and_then(WasmModule::inject_instruction_metering)
+                .and_then(WasmModule::inject_stack_metering)
+                .and_then(WasmModule::to_bytes)
+                .expect("Failed to produce instrumented code")
+                .0;
+
+            let module = WasmerModule {
+                module: Module::new(&self.store, instrumented_code)
+                    .expect("Failed to parse wasm code"),
+            };
+            self.modules.insert(code_hash, module);
         }
         let module = self.modules.get(&code_hash).unwrap();
         module.instantiate()

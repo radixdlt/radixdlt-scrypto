@@ -1,17 +1,15 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::format;
-use sbor::rust::string::String;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
 use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
-use wasm_instrument::{gas_metering, inject_stack_limiter, parity_wasm};
 use wasmi::*;
 
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
+
+use super::WasmModule;
 
 pub struct WasmiModule {
     module: Module,
@@ -199,15 +197,6 @@ impl WasmInstance for WasmiInstance {
             _ => Err(InvokeError::InvalidReturnData),
         }
     }
-
-    fn function_exports(&self) -> Vec<String> {
-        self.module_ref
-            .exports()
-            .iter()
-            .filter(|(_, val)| matches!(val, ExternVal::Func(_)))
-            .map(|(name, _)| name.to_string())
-            .collect()
-    }
 }
 
 impl WasmiEngine {
@@ -219,100 +208,21 @@ impl WasmiEngine {
 }
 
 impl WasmEngine<WasmiInstance> for WasmiEngine {
-    fn validate(&mut self, code: &[u8]) -> Result<(), WasmValidationError> {
-        let code_hash = hash(code);
-        if self.modules.contains_key(&code_hash) {
-            return Ok(());
-        }
-
-        // parse wasm module
-        let module = Module::from_buffer(code).map_err(|_| WasmValidationError::FailedToParse)?;
-
-        // check floating point
-        module
-            .deny_floating_point()
-            .map_err(|_| WasmValidationError::FloatingPointNotAllowed)?;
-
-        // Instantiate
-        let instance = ModuleInstance::new(
-            &module,
-            &ImportsBuilder::new().with_resolver("env", &WasmiEnvModule {}),
-        )
-        .map_err(|e| WasmValidationError::FailedToInstantiate(e.to_string()))?;
-
-        // Check start function
-        if instance.has_start() {
-            return Err(WasmValidationError::StartFunctionNotAllowed);
-        }
-        let module_ref = instance.assert_no_start();
-
-        // Check memory export
-        match module_ref.export_by_name(EXPORT_MEMORY) {
-            Some(ExternVal::Memory(_)) => {}
-            _ => {
-                return Err(WasmValidationError::NoMemoryExport);
-            }
-        }
-
-        // Check scrypto abi
-        match module_ref.export_by_name(EXPORT_SCRYPTO_ALLOC) {
-            Some(ExternVal::Func(_)) => {}
-            _ => {
-                return Err(WasmValidationError::NoScryptoAllocExport);
-            }
-        }
-        match module_ref.export_by_name(EXPORT_SCRYPTO_FREE) {
-            // TODO: check if this is indeed needed
-            Some(ExternVal::Func(_)) => {}
-            _ => {
-                return Err(WasmValidationError::NoScryptoFreeExport);
-            }
-        }
-
-        Ok(())
-    }
-
-    fn instrument(&mut self, code: &[u8]) -> Result<(), InstrumentError> {
-        let code_hash = hash(code);
-        if self.modules.contains_key(&hash(code)) {
-            return Ok(());
-        }
-
-        let mut module =
-            parity_wasm::deserialize_buffer(code).expect("Unable to parse wasm module");
-
-        // TODO reject wasm modules that call the `TBD_FUNCTION_INDEX` directly
-
-        module = gas_metering::inject(
-            module,
-            &gas_metering::ConstantCostRules::new(INSTRUCTION_COST, MEMORY_GROW_COST),
-            MODULE_ENV_NAME,
-        )
-        .map_err(|_| InstrumentError::FailedToInjectInstructionMetering)?;
-
-        module = inject_stack_limiter(module, MAX_STACK_DEPTH)
-            .map_err(|_| InstrumentError::FailedToInjectStackLimiter)?;
-
-        let instrumented = module
-            .to_bytes()
-            .map_err(|_| InstrumentError::FailedToExportModule)?;
-        // TODO: cache instrumented code
-
-        self.modules.insert(
-            code_hash,
-            WasmiModule {
-                module: Module::from_buffer(instrumented).expect("Failed to parse wasm module"),
-            },
-        );
-
-        Ok(())
-    }
-
     fn instantiate(&mut self, code: &[u8]) -> WasmiInstance {
         let code_hash = hash(code);
         if !self.modules.contains_key(&code_hash) {
-            self.instrument(code)
-                .expect("Failed to instrument the code");
+            let instrumented_code = WasmModule::init(code)
+                .and_then(WasmModule::inject_instruction_metering)
+                .and_then(WasmModule::inject_stack_metering)
+                .and_then(WasmModule::to_bytes)
+                .expect("Failed to produce instrumented code")
+                .0;
+
+            let module = WasmiModule {
+                module: Module::from_buffer(instrumented_code).expect("Failed to parse wasm code"),
+            };
+
+            self.modules.insert(code_hash, module);
         }
         let module = self.modules.get(&code_hash).unwrap();
         module.instantiate()
