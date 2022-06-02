@@ -36,14 +36,15 @@ impl Publish {
         .map_err(Error::IOError)?;
 
         if let Some(path) = &self.manifest {
-            let mut substate_store = RadixEngineDB::new(get_data_dir()?);
-            let mut wasm_engine = default_wasm_engine();
-            let mut executor =
-                TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
             let package = extract_package(code).unwrap();
             let transaction = TransactionBuilder::new()
                 .publish_package(package)
                 .build_with_no_nonce();
+
+            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+            let mut wasm_engine = default_wasm_engine();
+            let mut executor =
+                TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
             process_transaction(&mut executor, transaction, &None, &Some(path.clone()), out)?;
         } else {
             self.store_package(out, code)?;
@@ -68,11 +69,11 @@ impl Publish {
         out: &mut O,
         code: Vec<u8>,
     ) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::new(get_data_dir()?);
+        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = default_wasm_engine();
         let mut executor =
             TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
-        let package = extract_package(code).map_err(Error::PackageValidationError)?;
+        let package = extract_package(code).map_err(Error::PackageError)?;
         match executor.publish_package(package) {
             Ok(package_address) => {
                 writeln!(

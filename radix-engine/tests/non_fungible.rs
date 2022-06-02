@@ -12,7 +12,7 @@ use scrypto::prelude::*;
 #[test]
 fn create_non_fungible_mutable() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (_, _, account) = test_runner.new_account();
@@ -38,7 +38,7 @@ fn create_non_fungible_mutable() {
 #[test]
 fn can_burn_non_fungible() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -82,7 +82,7 @@ fn can_burn_non_fungible() {
 
 #[test]
 fn test_non_fungible() {
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (pk, sk, account) = executor.new_account();
@@ -135,7 +135,7 @@ fn test_non_fungible() {
 
 #[test]
 fn test_singleton_non_fungible() {
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (pk, sk, account) = executor.new_account();
