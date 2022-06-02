@@ -31,7 +31,7 @@ macro_rules! scrypto_type {
         impl Describe for $t {
             fn describe() -> sbor::describe::Type {
                 sbor::describe::Type::Custom {
-                    name: $ct.name(),
+                    type_id: $ct.id(),
                     generics: $generics,
                 }
             }
@@ -68,19 +68,19 @@ pub enum ScryptoType {
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
 const MAPPING: [(ScryptoType, u8, &str); 13] = [
-    (ScryptoType::PackageAddress, 0x80, "PackageAddress"),
-    (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"),
-    (ScryptoType::LazyMap, 0x82, "LazyMap"),
-    (ScryptoType::Hash, 0x90, "Hash"),
+    (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
+    (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
+    (ScryptoType::LazyMap, 0x82, "LazyMap"), // 130
+    (ScryptoType::Hash, 0x90, "Hash"), // 144
     (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"),
     (ScryptoType::EcdsaSignature, 0x93, "EcdsaSignature"),
-    (ScryptoType::Decimal, 0xa1, "Decimal"),
-    (ScryptoType::Bucket, 0xb1, "Bucket"),
-    (ScryptoType::Proof, 0xb2, "Proof"),
-    (ScryptoType::Vault, 0xb3, "Vault"),
-    (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"),
-    (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"),
-    (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"),
+    (ScryptoType::Decimal, 0xa1, "Decimal"), // 161
+    (ScryptoType::Bucket, 0xb1, "Bucket"), // 177
+    (ScryptoType::Proof, 0xb2, "Proof"), // 178
+    (ScryptoType::Vault, 0xb3, "Vault"), // 179
+    (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"), // 180
+    (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"), // 181
+    (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"), // 182
 ];
 
 impl ScryptoType {

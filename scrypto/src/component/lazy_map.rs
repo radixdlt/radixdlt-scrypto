@@ -130,7 +130,7 @@ impl<K: Encode + Decode, V: Encode + Decode> Decode for LazyMap<K, V> {
 impl<K: Encode + Decode + Describe, V: Encode + Decode + Describe> Describe for LazyMap<K, V> {
     fn describe() -> Type {
         Type::Custom {
-            name: ScryptoType::LazyMap.name(),
+            type_id: ScryptoType::LazyMap.id(),
             generics: vec![K::describe(), V::describe()],
         }
     }

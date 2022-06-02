@@ -725,7 +725,7 @@ impl TransactionBuilder {
                 Type::U64 => self.parse_basic_ty::<u64>(i, t, arg),
                 Type::U128 => self.parse_basic_ty::<u128>(i, t, arg),
                 Type::String => self.parse_basic_ty::<String>(i, t, arg),
-                Type::Custom { name, .. } => self.parse_custom_ty(i, t, arg, name, account),
+                Type::Custom { type_id, .. } => self.parse_custom_ty(i, t, arg, *type_id, account),
                 _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
             };
             encoded.push(res?);
@@ -755,10 +755,10 @@ impl TransactionBuilder {
         i: usize,
         ty: &Type,
         arg: &str,
-        name: &str,
+        type_id: u8,
         account: Option<ComponentAddress>,
     ) -> Result<Vec<u8>, BuildArgsError> {
-        match ScryptoType::from_name(name).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
+        match ScryptoType::from_id(type_id).ok_or(BuildArgsError::UnsupportedType(i, ty.clone()))? {
             ScryptoType::Decimal => {
                 let value = arg
                     .parse::<Decimal>()
