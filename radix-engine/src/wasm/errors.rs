@@ -5,6 +5,41 @@ use wasmi::HostError;
 
 use crate::engine::RuntimeError;
 
+/// Represents an error when validating a WASM file.
+#[derive(Debug, PartialEq, Clone)]
+pub enum PrepareError {
+    /// Failed to deserialize.
+    /// See https://webassembly.github.io/spec/core/syntax/index.html
+    DeserializationError,
+    /// Failed to validate
+    /// See https://webassembly.github.io/spec/core/valid/index.html
+    ValidationError,
+    /// Failed to serialize.
+    SerializationError,
+    /// The wasm module contains a start function.
+    StartFunctionNotAllowed,
+    /// The wasm module uses float points.
+    FloatingPointNotAllowed,
+    /// Invalid imports
+    InvalidImports,
+    /// The wasm module has no memory definition.
+    NoMemory,
+    /// The wasm module has too many memory definitions.
+    TooManyMemories,
+    /// Invalid memory definition.
+    NonStandardMemory,
+    /// The wasm module does not have the `memory` export.
+    NoMemoryExport,
+    /// The wasm module does not have the `scrypto_alloc` export.
+    NoScryptoAllocExport,
+    /// The wasm module does not have the `scrypto_free` export.
+    NoScryptoFreeExport,
+    /// Failed to inject instruction metering
+    RejectedByInstructionMetering,
+    /// Failed to inject stack metering
+    RejectedByStackMetering,
+}
+
 /// Represents an error when invoking an export of a Scrypto module.
 #[derive(Debug, PartialEq, Clone)]
 pub enum InvokeError {
@@ -31,41 +66,6 @@ pub enum InvokeError {
         balance: u32,
         required: u32,
     },
-}
-
-/// Represents an error when instrumenting a Scrypto module.
-#[derive(Debug, PartialEq, Clone)]
-pub enum InstrumentError {
-    FailedToInjectInstructionMetering,
-
-    FailedToInjectStackLimiter,
-
-    FailedToExportModule,
-}
-
-/// Represents an error when validating a WASM file.
-#[derive(Debug, PartialEq, Clone)]
-pub enum WasmValidationError {
-    /// Failed to parse.
-    FailedToParse,
-    /// Failed to instantiate.
-    FailedToInstantiate(String),
-    /// The wasm module contains a start function.
-    StartFunctionNotAllowed,
-    /// The wasm module uses float points.
-    FloatingPointNotAllowed,
-    /// The wasm module does not have the `memory` export.
-    NoMemoryExport,
-    /// The wasm module does not have the `scrypto_alloc` export.
-    NoScryptoAllocExport,
-    /// The wasm module does not have the `scrypto_free` export.
-    NoScryptoFreeExport,
-    /// Failed to instrument wasm code.
-    FailedToInstrumentCode,
-    /// TODO: remove
-    FailedToExportBlueprintAbi,
-    // TODO: remove
-    InvalidBlueprintAbi,
 }
 
 impl fmt::Display for InvokeError {

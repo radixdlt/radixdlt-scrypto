@@ -15,6 +15,7 @@ cd "$(dirname "$0")"
 (cd transaction-manifest; cargo build)
 
 echo "Building assets and examples..."
-(cd assets; ./update-assets.sh)
+(cd assets/account; cargo build --target wasm32-unknown-unknown --release)
+(cd assets/system; cargo build --target wasm32-unknown-unknown --release)
 (cd examples/hello-world; cargo build --target wasm32-unknown-unknown --release)
 (cd examples/no-std; cargo build --target wasm32-unknown-unknown --release)

@@ -12,6 +12,7 @@ use scrypto::{abi, access_rule_node, call_data, rule};
 use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
+use crate::transaction::abi_extractor::{export_abi, export_abi_by_component};
 use crate::transaction::*;
 use crate::wasm::*;
 
@@ -39,28 +40,6 @@ where
     }
 }
 
-impl<'s, 'w, S, W, I> AbiProvider for TransactionExecutor<'s, 'w, S, W, I>
-where
-    S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
-{
-    fn export_abi(
-        &self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> Result<abi::Blueprint, RuntimeError> {
-        BasicAbiProvider::new(self.substate_store()).export_abi(package_address, blueprint_name)
-    }
-
-    fn export_abi_by_component(
-        &self,
-        component_address: ComponentAddress,
-    ) -> Result<abi::Blueprint, RuntimeError> {
-        BasicAbiProvider::new(self.substate_store()).export_abi_by_component(component_address)
-    }
-}
-
 impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
@@ -72,8 +51,6 @@ where
         wasm_engine: &'w mut W,
         trace: bool,
     ) -> TransactionExecutor<'s, 'w, S, W, I> {
-        bootstrap(substate_store, wasm_engine);
-
         Self {
             substate_store,
             wasm_engine,
@@ -90,6 +67,21 @@ where
     /// Returns a mutable reference to the ledger.
     pub fn substate_store_mut(&mut self) -> &mut S {
         self.substate_store
+    }
+
+    pub fn export_abi(
+        &self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        export_abi(self.substate_store, package_address, blueprint_name)
+    }
+
+    pub fn export_abi_by_component(
+        &self,
+        component_address: ComponentAddress,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        export_abi_by_component(self.substate_store, component_address)
     }
 
     /// Generates a new key pair.

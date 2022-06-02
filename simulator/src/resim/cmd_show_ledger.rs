@@ -11,7 +11,7 @@ pub struct ShowLedger {}
 
 impl ShowLedger {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let ledger = RadixEngineDB::new(get_data_dir()?);
+        let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
         for (last, package_address) in ledger.list_packages().iter().identify_last() {
