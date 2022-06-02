@@ -539,15 +539,10 @@ where
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        method_name: String,
+        function_name: String,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.sys_log(Level::Debug, format!("{:?}", snode_ref));
-        let function = if let Value::Enum { name, .. } = &call_data.dom {
-            name.clone()
-        } else {
-            method_name.to_string()
-        };
+        self.sys_log(Level::Debug, format!("{:?} {:?}", snode_ref, &function_name));
 
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
@@ -635,7 +630,7 @@ where
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint not found for existing component");
                         let (_, method_auths) =
-                            component.method_authorization(&abi.value, &function);
+                            component.method_authorization(&abi.value, &function_name);
 
                         // set up component state
                         let data = ScryptoValue::from_slice(component.state()).unwrap();
@@ -680,7 +675,7 @@ where
                     })?
                     .into();
 
-                let method_auth = resource_manager.get_auth(&method_name, &call_data).clone();
+                let method_auth = resource_manager.get_auth(&function_name, &call_data).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(
                         resource_address.clone(),
@@ -700,7 +695,7 @@ where
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
-                let method_auth = resource_manager.get_consuming_bucket_auth(&method_name);
+                let method_auth = resource_manager.get_consuming_bucket_auth(&function_name);
                 Ok((
                     Consumed(Some(ConsumedSNodeState::Bucket(bucket))),
                     vec![method_auth.clone()],
@@ -767,7 +762,7 @@ where
                     _ => panic!("Value is not a resource manager"),
                 };
 
-                let method_auth = resource_manager.get_vault_auth(&method_name);
+                let method_auth = resource_manager.get_vault_auth(&function_name);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(
                         vault_id.clone(),
@@ -804,7 +799,7 @@ where
             for method_auth in method_auths {
                 method_auth.check(&auth_zones).map_err(|error| {
                     RuntimeError::AuthorizationError {
-                        function: function.clone(),
+                        function: function_name.clone(),
                         authorization: method_auth,
                         error,
                     }
@@ -848,7 +843,7 @@ where
         // invoke the main function
         let snode = loaded_snode.to_snode_state();
         let (result, received_buckets, received_proofs, received_vaults) =
-            frame.run(Some(snode_ref), snode, &method_name, call_data)?;
+            frame.run(Some(snode_ref), snode, &function_name, call_data)?;
 
         // move buckets and proofs to this process.
         self.sys_log(
