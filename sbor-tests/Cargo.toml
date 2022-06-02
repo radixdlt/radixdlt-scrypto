@@ -1,6 +1,6 @@
 [package]
 name = "sbor-tests"
-version = "0.4.0"
+version = "0.5.0"
 edition = "2021"
 
 [dependencies]
@@ -9,7 +9,7 @@ sbor = { path = "../sbor", default-features = false }
 [dev-dependencies]
 serde = { version = "1.0", default-features = false, features = ["derive"] }
 serde_json = { version = "1.0", default-features = false }
-bincode_core = { version = "0.1", git = "https://github.com/bincode-org/bincode-core.git", default-features = false }
+bincode = { git = "https://github.com/bincode-org/bincode", tag = "v2.0.0-rc.1", default-features = false, features = ["derive"] }
 bencher = { version = "0.1.5" }
 
 [[bench]]
@@ -18,5 +18,5 @@ harness = false
 
 [features]
 default = ["std"]
-std = ["serde/std", "serde_json/std", "bincode_core/std", "sbor/std", "sbor/std", "sbor/serde"]
-alloc = ["serde/alloc", "serde_json/alloc", "bincode_core/alloc", "sbor/alloc", "sbor/alloc", "sbor/serde"]
+std = ["serde/std", "serde_json/std", "bincode/std", "sbor/std", "sbor/std", "sbor/serde"]
+alloc = ["serde/alloc", "serde_json/alloc", "bincode/alloc", "sbor/alloc", "sbor/alloc", "sbor/serde"]

@@ -1,7 +1,8 @@
 use clap::Parser;
 use radix_engine::transaction::*;
+use radix_engine::wasm::*;
+use sbor::rust::collections::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::*;
 
 use crate::resim::*;
 
@@ -46,8 +47,10 @@ pub struct NewBadgeFixed {
 
 impl NewBadgeFixed {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut executor = TransactionExecutor::new(&mut ledger, self.trace);
+        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        let mut wasm_engine = default_wasm_engine();
+        let mut executor =
+            TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
         let default_account = get_default_account()?;
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {

@@ -2,15 +2,17 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::errors::RuntimeError;
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::wasm::default_wasm_engine;
 use scrypto::prelude::*;
 
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
     let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
@@ -33,7 +35,8 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
     let (auth_resource_address, token_resource_address) =

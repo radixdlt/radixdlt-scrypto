@@ -7,16 +7,11 @@ blueprint! {
     }
 
     impl System {
-        /// Publishes a package.
-        pub fn publish_package(code: Vec<u8>) -> PackageAddress {
-            component_system().publish_package(&code)
-        }
-
         /// Creates a resource.
         pub fn new_resource(
             resource_type: ResourceType,
             metadata: HashMap<String, String>,
-            access_rules: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+            access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
             initial_supply: Option<MintParams>,
         ) -> (ResourceAddress, Option<Bucket>) {
             resource_system().new_resource(resource_type, metadata, access_rules, initial_supply)

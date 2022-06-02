@@ -1,130 +1,276 @@
-use indexmap::IndexMap;
-use scrypto::constants::*;
+use indexmap::{IndexMap, IndexSet};
+use sbor::rust::collections::*;
+use sbor::rust::ops::RangeFull;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
+use sbor::*;
+use scrypto::buffer::scrypto_decode;
+use scrypto::buffer::scrypto_encode;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::*;
-use scrypto::rust::string::String;
-use scrypto::rust::vec::Vec;
 
-use crate::engine::*;
-use crate::errors::RuntimeError;
+use crate::engine::{
+    ComponentObjects, IdAllocator, IdSpace, SubstateOperation, SubstateOperationsReceipt,
+};
 use crate::ledger::*;
 use crate::model::*;
 
-pub struct CommitReceipt {
-    pub down_substates: HashSet<(Hash, u32)>,
-    pub up_substates: Vec<(Hash, u32)>,
-}
-
-impl CommitReceipt {
-    fn new() -> Self {
-        CommitReceipt {
-            down_substates: HashSet::new(),
-            up_substates: Vec::new(),
-        }
-    }
-
-    fn down(&mut self, id: (Hash, u32)) {
-        self.down_substates.insert(id);
-    }
-
-    fn up(&mut self, id: (Hash, u32)) {
-        self.up_substates.push(id);
-    }
-}
-
-struct SubstateUpdate<T> {
-    prev_id: Option<(Hash, u32)>,
-    value: T,
-}
-
-/// An abstraction of transaction execution state.
-///
-/// It acts as the facade of ledger state and keeps track of all temporary state updates,
-/// until the `commit()` method is called.
-///
-/// Typically, a track is shared by all the processes created within a transaction.
-///
-pub struct Track<'s, S: SubstateStore> {
+/// Facilitates transactional state updates.
+pub struct Track<'s, S: ReadableSubstateStore> {
     substate_store: &'s mut S,
     transaction_hash: Hash,
-    transaction_signers: Vec<EcdsaPublicKey>,
     id_allocator: IdAllocator,
     logs: Vec<(Level, String)>,
 
-    packages: IndexMap<PackageAddress, SubstateUpdate<Package>>,
+    new_addresses: Vec<Address>,
+    borrowed_substates: HashSet<Address>,
+    read_substates: IndexMap<Address, SubstateValue>,
 
-    components: IndexMap<ComponentAddress, SubstateUpdate<Component>>,
-    borrowed_components: HashMap<ComponentAddress, Option<(Hash, u32)>>,
-
-    resource_managers: IndexMap<ResourceAddress, SubstateUpdate<ResourceManager>>,
-    borrowed_resource_managers: HashMap<ResourceAddress, Option<(Hash, u32)>>,
-
-    vaults: HashMap<(ComponentAddress, VaultId), SubstateUpdate<Vault>>,
-    borrowed_vaults: HashMap<(ComponentAddress, VaultId), Option<(Hash, u32)>>,
-
-    non_fungibles: HashMap<NonFungibleAddress, SubstateUpdate<Option<NonFungible>>>,
-
-    lazy_map_entries: HashMap<(ComponentAddress, LazyMapId, Vec<u8>), SubstateUpdate<Vec<u8>>>,
+    downed_substates: Vec<PhysicalSubstateId>,
+    down_virtual_substates: Vec<VirtualSubstateId>,
+    up_substates: IndexMap<Vec<u8>, SubstateValue>,
+    up_virtual_substate_space: IndexSet<Vec<u8>>,
 }
 
-impl<'s, S: SubstateStore> Track<'s, S> {
-    pub fn new(
-        substate_store: &'s mut S,
-        transaction_hash: Hash,
-        transaction_signers: Vec<EcdsaPublicKey>,
-    ) -> Self {
+pub enum TrackError {
+    Reentrancy,
+    NotFound,
+}
+
+pub struct BorrowedSNodes {
+    borrowed_substates: HashSet<Address>,
+}
+
+impl BorrowedSNodes {
+    pub fn is_empty(&self) -> bool {
+        self.borrowed_substates.is_empty()
+    }
+}
+
+pub struct TrackReceipt {
+    pub borrowed: BorrowedSNodes,
+    pub new_addresses: Vec<Address>,
+    pub logs: Vec<(Level, String)>,
+    pub substates: SubstateOperationsReceipt,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SubstateUpdate<T> {
+    pub prev_id: Option<PhysicalSubstateId>,
+    pub value: T,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub enum SubstateParentId {
+    Exists(PhysicalSubstateId),
+    New(usize),
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Address {
+    Resource(ResourceAddress),
+    Component(ComponentAddress),
+    Package(PackageAddress),
+    NonFungibleSet(ResourceAddress),
+    LazyMap(ComponentAddress, LazyMapId),
+    Vault(ComponentAddress, VaultId),
+}
+
+#[derive(Debug)]
+pub enum SubstateValue {
+    Resource(ResourceManager),
+    Component(Component),
+    Package(ValidatedPackage),
+    Vault(Vault),
+    NonFungible(Option<NonFungible>),
+    LazyMapEntry(Option<Vec<u8>>),
+}
+
+// TODO: Replace NonFungible with real re address
+// TODO: Move this logic into application layer
+macro_rules! resource_to_non_fungible_space {
+    ($resource_address:expr) => {{
+        let mut addr = scrypto_encode(&$resource_address);
+        addr.push(0u8);
+        addr
+    }};
+}
+
+impl Address {
+    fn encode(&self) -> Vec<u8> {
+        match self {
+            Address::Resource(resource_address) => scrypto_encode(resource_address),
+            Address::Component(component_address) => scrypto_encode(component_address),
+            Address::Package(package_address) => scrypto_encode(package_address),
+            Address::Vault(component_address, vault_id) => {
+                let mut vault_address = scrypto_encode(component_address);
+                vault_address.extend(scrypto_encode(vault_id));
+                vault_address
+            }
+            Address::NonFungibleSet(resource_address) => {
+                resource_to_non_fungible_space!(resource_address.clone())
+            }
+            Address::LazyMap(component_address, lazy_map_id) => {
+                let mut entry_address = scrypto_encode(component_address);
+                entry_address.extend(scrypto_encode(lazy_map_id));
+                entry_address
+            }
+        }
+    }
+}
+
+impl Into<Address> for PackageAddress {
+    fn into(self) -> Address {
+        Address::Package(self)
+    }
+}
+
+impl Into<Address> for ComponentAddress {
+    fn into(self) -> Address {
+        Address::Component(self)
+    }
+}
+
+impl Into<Address> for ResourceAddress {
+    fn into(self) -> Address {
+        Address::Resource(self)
+    }
+}
+
+impl Into<Address> for (ComponentAddress, VaultId) {
+    fn into(self) -> Address {
+        Address::Vault(self.0, self.1)
+    }
+}
+
+impl Into<PackageAddress> for Address {
+    fn into(self) -> PackageAddress {
+        if let Address::Package(package_address) = self {
+            return package_address;
+        } else {
+            panic!("Address is not a package address");
+        }
+    }
+}
+
+impl Into<ComponentAddress> for Address {
+    fn into(self) -> ComponentAddress {
+        if let Address::Component(component_address) = self {
+            return component_address;
+        } else {
+            panic!("Address is not a component address");
+        }
+    }
+}
+
+impl Into<ResourceAddress> for Address {
+    fn into(self) -> ResourceAddress {
+        if let Address::Resource(resource_address) = self {
+            return resource_address;
+        } else {
+            panic!("Address is not a resource address");
+        }
+    }
+}
+
+impl SubstateValue {
+    fn encode(&self) -> Vec<u8> {
+        match self {
+            SubstateValue::Resource(resource_manager) => scrypto_encode(resource_manager),
+            SubstateValue::Package(package) => scrypto_encode(package),
+            SubstateValue::Component(component) => scrypto_encode(component),
+            SubstateValue::Vault(vault) => scrypto_encode(vault),
+            SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
+            SubstateValue::LazyMapEntry(value) => scrypto_encode(value),
+        }
+    }
+}
+
+impl Into<SubstateValue> for ValidatedPackage {
+    fn into(self) -> SubstateValue {
+        SubstateValue::Package(self)
+    }
+}
+
+impl Into<SubstateValue> for Component {
+    fn into(self) -> SubstateValue {
+        SubstateValue::Component(self)
+    }
+}
+
+impl Into<SubstateValue> for ResourceManager {
+    fn into(self) -> SubstateValue {
+        SubstateValue::Resource(self)
+    }
+}
+
+impl Into<SubstateValue> for Vault {
+    fn into(self) -> SubstateValue {
+        SubstateValue::Vault(self)
+    }
+}
+
+impl Into<SubstateValue> for Option<NonFungible> {
+    fn into(self) -> SubstateValue {
+        SubstateValue::NonFungible(self)
+    }
+}
+
+impl Into<SubstateValue> for Option<Vec<u8>> {
+    fn into(self) -> SubstateValue {
+        SubstateValue::LazyMapEntry(self)
+    }
+}
+
+impl Into<Component> for SubstateValue {
+    fn into(self) -> Component {
+        if let SubstateValue::Component(component) = self {
+            component
+        } else {
+            panic!("Not a component");
+        }
+    }
+}
+
+impl Into<ResourceManager> for SubstateValue {
+    fn into(self) -> ResourceManager {
+        if let SubstateValue::Resource(resource_manager) = self {
+            resource_manager
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+}
+
+impl Into<Vault> for SubstateValue {
+    fn into(self) -> Vault {
+        if let SubstateValue::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+}
+
+impl<'s, S: ReadableSubstateStore> Track<'s, S> {
+    pub fn new(substate_store: &'s mut S, transaction_hash: Hash) -> Self {
         Self {
             substate_store,
             transaction_hash,
-            transaction_signers,
             id_allocator: IdAllocator::new(IdSpace::Application),
             logs: Vec::new(),
-            packages: IndexMap::new(),
-            components: IndexMap::new(),
-            borrowed_components: HashMap::new(),
-            resource_managers: IndexMap::new(),
-            borrowed_resource_managers: HashMap::new(),
-            lazy_map_entries: HashMap::new(),
-            vaults: HashMap::new(),
-            borrowed_vaults: HashMap::new(),
-            non_fungibles: HashMap::new(),
+
+            new_addresses: Vec::new(),
+            borrowed_substates: HashSet::new(),
+            read_substates: IndexMap::new(),
+
+            downed_substates: Vec::new(),
+            down_virtual_substates: Vec::new(),
+            up_substates: IndexMap::new(),
+            up_virtual_substate_space: IndexSet::new(),
         }
-    }
-
-    /// Start a process.
-    pub fn start_process<'r>(&'r mut self, verbose: bool) -> Process<'r, 's, S> {
-        let signers: BTreeSet<NonFungibleId> = self
-            .transaction_signers
-            .clone()
-            .into_iter()
-            .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
-            .collect();
-
-        // With the latest change, proof amount can't be zero, thus a virtual proof is created
-        // only if there are signers.
-        //
-        // Transactions that refer to the signature virtual proof will pass static check
-        // but will fail at runtime, if there are no signers.
-        //
-        // TODO: possible to update static check to reject them early?
-        let mut initial_auth_zone_proofs = Vec::new();
-        if !signers.is_empty() {
-            // Proofs can't be zero amount
-            let mut ecdsa_bucket =
-                Bucket::new(ResourceContainer::new_non_fungible(ECDSA_TOKEN, signers));
-            let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
-            initial_auth_zone_proofs.push(ecdsa_proof);
-        }
-
-        Process::new(
-            0,
-            verbose,
-            self,
-            Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
-            Some(Worktop::new()),
-            HashMap::new(),
-            HashMap::new(),
-        )
     }
 
     /// Returns the transaction hash.
@@ -137,438 +283,205 @@ impl<'s, S: SubstateStore> Track<'s, S> {
         self.substate_store.get_epoch()
     }
 
-    /// Returns the logs collected so far.
-    pub fn logs(&self) -> &Vec<(Level, String)> {
-        &self.logs
-    }
-
-    /// Returns new packages created so far.
-    pub fn new_package_addresses(&self) -> Vec<PackageAddress> {
-        let mut package_addresses = Vec::new();
-        for (package_address, update) in self.packages.iter() {
-            if let None = update.prev_id {
-                package_addresses.push(package_address.clone());
-            }
-        }
-        package_addresses
-    }
-
-    /// Returns new components created so far.
-    pub fn new_component_addresses(&self) -> Vec<ComponentAddress> {
-        let mut component_addresses = Vec::new();
-        for (component_address, update) in self.components.iter() {
-            if let None = update.prev_id {
-                component_addresses.push(component_address.clone());
-            }
-        }
-        component_addresses
-    }
-
-    /// Returns new resource addresses created so far.
-    pub fn new_resource_addresses(&self) -> Vec<ResourceAddress> {
-        let mut resource_addresses = Vec::new();
-        for (resource_address, update) in self.resource_managers.iter() {
-            if let None = update.prev_id {
-                resource_addresses.push(resource_address.clone());
-            }
-        }
-        resource_addresses
-    }
-
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.logs.push((level, message));
     }
 
-    /// Returns an immutable reference to a package, if exists.
-    pub fn get_package(&mut self, package_address: &PackageAddress) -> Option<&Package> {
-        if self.packages.contains_key(package_address) {
-            return self.packages.get(package_address).map(|p| &p.value);
-        }
+    /// Creates a new uuid key with a given value
+    pub fn create_uuid_value<T: Into<SubstateValue>>(&mut self, value: T) -> Address {
+        let substate_value = value.into();
+        let address = match substate_value {
+            SubstateValue::Package(_) => {
+                let package_address = self.new_package_address();
+                Address::Package(package_address)
+            }
+            SubstateValue::Component(_) => {
+                let component_address = self.new_component_address();
+                Address::Component(component_address)
+            }
+            SubstateValue::Resource(ref resource_manager) => {
+                let resource_address = self.new_resource_address();
+                // TODO: Move this into application layer
+                if let ResourceType::NonFungible = resource_manager.resource_type() {
+                    let space_address = resource_to_non_fungible_space!(resource_address);
+                    self.up_virtual_substate_space.insert(space_address);
+                }
+                Address::Resource(resource_address)
+            }
+            _ => panic!("Trying to create uuid value with invalid value"),
+        };
 
-        if let Some((package, phys_id)) = self.substate_store.get_decoded_substate(package_address)
-        {
-            self.packages.insert(
-                package_address.clone(),
-                SubstateUpdate {
-                    prev_id: Some(phys_id),
-                    value: package,
-                },
-            );
-            self.packages.get(package_address).map(|p| &p.value)
-        } else {
-            None
-        }
+        self.new_addresses.push(address.clone());
+        self.up_substates.insert(address.encode(), substate_value);
+        address
     }
 
-    /// Inserts a new package.
-    pub fn create_package(&mut self, package: Package) -> PackageAddress {
-        let package_address = self.new_package_address();
-        self.packages.insert(
-            package_address,
-            SubstateUpdate {
-                prev_id: None,
-                value: package,
-            },
-        );
-        package_address
-    }
-
-    pub fn borrow_global_mut_component(
+    pub fn create_uuid_value_2<A: Into<Address>, V: Into<SubstateValue>>(
         &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<Component, RuntimeError> {
-        let maybe_component = self.components.remove(&component_address);
-        if let Some(SubstateUpdate { value, prev_id }) = maybe_component {
-            self.borrowed_components.insert(component_address, prev_id);
-            Ok(value)
-        } else if self.borrowed_components.contains_key(&component_address) {
-            Err(RuntimeError::ComponentReentrancy(component_address))
-        } else if let Some((component, phys_id)) =
-            self.substate_store.get_decoded_substate(&component_address)
-        {
-            self.borrowed_components
-                .insert(component_address, Some(phys_id));
-            Ok(component)
-        } else {
-            Err(RuntimeError::ComponentNotFound(component_address))
-        }
-    }
-
-    pub fn return_borrowed_global_component(
-        &mut self,
-        component_address: ComponentAddress,
-        component: Component,
+        addr: A,
+        value: V,
     ) {
-        if let Some(prev_id) = self.borrowed_components.remove(&component_address) {
-            self.components.insert(
-                component_address,
-                SubstateUpdate {
-                    prev_id,
-                    value: component,
-                },
-            );
-        } else {
-            panic!("Component was never borrowed");
-        }
+        self.up_substates.insert(addr.into().encode(), value.into());
     }
 
-    /// Returns an immutable reference to a component, if exists.
-    pub fn get_component(&mut self, component_address: ComponentAddress) -> Option<&Component> {
-        if self.components.contains_key(&component_address) {
-            return self.components.get(&component_address).map(|c| &c.value);
-        }
-
-        if let Some((component, phys_id)) =
-            self.substate_store.get_decoded_substate(&component_address)
-        {
-            self.components.insert(
-                component_address,
-                SubstateUpdate {
-                    prev_id: Some(phys_id),
-                    value: component,
-                },
-            );
-            self.components.get(&component_address).map(|c| &c.value)
-        } else {
-            None
-        }
-    }
-
-    /// Inserts a new component.
-    pub fn create_component(&mut self, component: Component) -> ComponentAddress {
-        let component_address = self.new_component_address();
-        self.components.insert(
-            component_address,
-            SubstateUpdate {
-                prev_id: None,
-                value: component,
-            },
-        );
-        component_address
-    }
-
-    /// Returns an immutable reference to a non-fungible, if exists.
-    pub fn get_non_fungible(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<&NonFungible> {
-        if self.non_fungibles.contains_key(non_fungible_address) {
-            return self
-                .non_fungibles
-                .get(non_fungible_address)
-                .map(|s| s.value.as_ref())
-                .unwrap_or(Option::None);
-        }
-
-        if let Some((non_fungible, phys_id)) = self.substate_store.get_decoded_child_substate(
-            &non_fungible_address.resource_address(),
-            &non_fungible_address.non_fungible_id(),
-        ) {
-            self.non_fungibles.insert(
-                non_fungible_address.clone(),
-                SubstateUpdate {
-                    prev_id: Some(phys_id),
-                    value: non_fungible,
-                },
-            );
-            self.non_fungibles
-                .get(non_fungible_address)
-                .map(|s| s.value.as_ref())
-                .unwrap()
-        } else {
-            None
-        }
-    }
-
-    /// Sets a non-fungible.
-    pub fn set_non_fungible(
-        &mut self,
-        non_fungible_address: NonFungibleAddress,
-        non_fungible: Option<NonFungible>,
-    ) {
-        let cur: Option<(Option<NonFungible>, (Hash, u32))> =
-            self.substate_store.get_decoded_child_substate(
-                &non_fungible_address.resource_address(),
-                &non_fungible_address.non_fungible_id(),
-            );
-        let prev_id = cur.map(|(_, cur_id)| cur_id);
-
-        self.non_fungibles.insert(
-            non_fungible_address,
-            SubstateUpdate {
-                prev_id,
-                value: non_fungible,
-            },
-        );
-    }
-
-    pub fn get_lazy_map_entry(
-        &mut self,
-        component_address: ComponentAddress,
-        lazy_map_id: &LazyMapId,
-        key: &[u8],
-    ) -> Option<Vec<u8>> {
-        let canonical_id = (component_address.clone(), lazy_map_id.clone(), key.to_vec());
-
-        if self.lazy_map_entries.contains_key(&canonical_id) {
-            return Some(
-                self.lazy_map_entries
-                    .get(&canonical_id)
-                    .map(|r| r.value.clone())
-                    .unwrap(),
-            );
-        }
-
-        let grand_child_key = key.to_vec();
-        let value = self.substate_store.get_decoded_grand_child_substate(
-            &component_address,
-            lazy_map_id,
-            &grand_child_key,
-        );
-        if let Some((ref entry_bytes, phys_id)) = value {
-            self.lazy_map_entries.insert(
-                canonical_id,
-                SubstateUpdate {
-                    prev_id: Some(phys_id),
-                    value: entry_bytes.clone(),
-                },
-            );
-        }
-        value.map(|r| r.0)
-    }
-
-    pub fn put_lazy_map_entry(
+    pub fn create_key_space(
         &mut self,
         component_address: ComponentAddress,
         lazy_map_id: LazyMapId,
-        key: Vec<u8>,
-        value: Vec<u8>,
     ) {
-        let canonical_id = (component_address.clone(), lazy_map_id.clone(), key.clone());
-
-        if !self.lazy_map_entries.contains_key(&canonical_id) {
-            let entry = self.substate_store.get_decoded_grand_child_substate(
-                &component_address,
-                &lazy_map_id,
-                &key,
-            );
-            if let Some((_, phys_id)) = entry {
-                self.lazy_map_entries.insert(
-                    canonical_id,
-                    SubstateUpdate {
-                        prev_id: Some(phys_id),
-                        value,
-                    },
-                );
-                return;
-            }
-        }
-
-        if let Some(entry) = self.lazy_map_entries.get_mut(&canonical_id) {
-            entry.value = value;
-        } else {
-            // TODO: Virtual Down
-            self.lazy_map_entries.insert(
-                canonical_id,
-                SubstateUpdate {
-                    prev_id: None,
-                    value,
-                },
-            );
-        }
+        let mut space_address = scrypto_encode(&component_address);
+        space_address.extend(scrypto_encode(&lazy_map_id));
+        self.up_virtual_substate_space.insert(space_address);
     }
 
-    /// Returns an immutable reference to a resource manager, if exists.
-    pub fn get_resource_manager(
-        &mut self,
-        resource_address: &ResourceAddress,
-    ) -> Option<&ResourceManager> {
-        if self.resource_managers.contains_key(resource_address) {
-            return self
-                .resource_managers
-                .get(resource_address)
-                .map(|r| &r.value);
+    /// Returns an immutable reference to a value, if exists.
+    pub fn read_value<A: Into<Address>>(&mut self, addr: A) -> Option<&SubstateValue> {
+        let address: Address = addr.into();
+
+        if let Some(v) = self.up_substates.get(&address.encode()) {
+            return Some(v);
         }
 
-        if let Some((resource_manager, phys_id)) =
-            self.substate_store.get_decoded_substate(resource_address)
-        {
-            self.resource_managers.insert(
-                resource_address.clone(),
-                SubstateUpdate {
-                    prev_id: Some(phys_id),
-                    value: resource_manager,
-                },
-            );
-            self.resource_managers
-                .get(resource_address)
-                .map(|r| &r.value)
+        let maybe_substate = self.substate_store.get_substate(&address.encode());
+        if let Some(substate) = maybe_substate {
+            match address {
+                Address::Package(_) => {
+                    let package: ValidatedPackage = scrypto_decode(&substate.value).unwrap();
+                    self.read_substates
+                        .insert(address.clone(), SubstateValue::Package(package));
+                    self.read_substates.get(&address)
+                }
+                Address::Component(_) => {
+                    let component: Component = scrypto_decode(&substate.value).unwrap();
+                    self.read_substates
+                        .insert(address.clone(), SubstateValue::Component(component));
+                    self.read_substates.get(&address)
+                }
+                Address::Resource(_) => {
+                    let resource_manager: ResourceManager =
+                        scrypto_decode(&substate.value).unwrap();
+                    self.read_substates
+                        .insert(address.clone(), SubstateValue::Resource(resource_manager));
+                    self.read_substates.get(&address)
+                }
+                _ => panic!("Reading value of invalid address"),
+            }
         } else {
             None
         }
     }
 
-    pub fn borrow_global_mut_resource_manager(
+    // TODO: Add checks to see verify that immutable values aren't being borrowed
+    pub fn borrow_global_mut_value<A: Into<Address>>(
         &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ResourceManager, RuntimeError> {
-        let maybe_resource = self.resource_managers.remove(&resource_address);
-        if self
-            .borrowed_resource_managers
-            .contains_key(&resource_address)
-        {
-            panic!("Invalid resource manager reentrancy");
-        } else if let Some(SubstateUpdate { value, prev_id }) = maybe_resource {
-            self.borrowed_resource_managers
-                .insert(resource_address, prev_id);
+        addr: A,
+    ) -> Result<SubstateValue, TrackError> {
+        let address = addr.into();
+        let maybe_value = self.up_substates.remove(&address.encode());
+        if let Some(value) = maybe_value {
+            self.borrowed_substates.insert(address);
             Ok(value)
-        } else if let Some((resource_manager, phys_id)) =
-            self.substate_store.get_decoded_substate(&resource_address)
-        {
-            self.borrowed_resource_managers
-                .insert(resource_address, Some(phys_id));
-            Ok(resource_manager)
+        } else if self.borrowed_substates.contains(&address) {
+            Err(TrackError::Reentrancy)
+        } else if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
+            self.downed_substates.push(substate.phys_id);
+            self.borrowed_substates.insert(address.clone());
+            match address {
+                Address::Component(_) => {
+                    let component = scrypto_decode(&substate.value).unwrap();
+                    Ok(SubstateValue::Component(component))
+                }
+                Address::Resource(_) => {
+                    let resource_manager = scrypto_decode(&substate.value).unwrap();
+                    Ok(SubstateValue::Resource(resource_manager))
+                }
+                Address::Vault(..) => {
+                    let vault = scrypto_decode(&substate.value).unwrap();
+                    Ok(SubstateValue::Vault(vault))
+                }
+                _ => panic!("Attempting to borrow unsupported value"),
+            }
         } else {
-            Err(RuntimeError::ResourceManagerNotFound(resource_address))
+            Err(TrackError::NotFound)
         }
     }
 
-    pub fn return_borrowed_global_resource_manager(
+    pub fn return_borrowed_global_mut_value<A: Into<Address>, V: Into<SubstateValue>>(
         &mut self,
-        resource_address: ResourceAddress,
-        resource_manager: ResourceManager,
+        addr: A,
+        value: V,
     ) {
-        if let Some(prev_id) = self.borrowed_resource_managers.remove(&resource_address) {
-            self.resource_managers.insert(
-                resource_address,
-                SubstateUpdate {
-                    prev_id,
-                    value: resource_manager,
-                },
-            );
+        let address = addr.into();
+        if !self.borrowed_substates.remove(&address) {
+            panic!("Value was never borrowed");
+        }
+        self.up_substates.insert(address.encode(), value.into());
+    }
+
+    /// Returns the value of a key value pair
+    pub fn read_key_value(&mut self, parent_address: Address, key: Vec<u8>) -> SubstateValue {
+        let mut address = parent_address.encode();
+        address.extend(key);
+        if let Some(cur) = self.up_substates.get(&address) {
+            match cur {
+                SubstateValue::LazyMapEntry(e) => return SubstateValue::LazyMapEntry(e.clone()),
+                SubstateValue::NonFungible(n) => return SubstateValue::NonFungible(n.clone()),
+                _ => panic!("Unsupported key value"),
+            }
+        }
+        match parent_address {
+            Address::NonFungibleSet(_) => self
+                .substate_store
+                .get_substate(&address)
+                .map(|r| {
+                    let non_fungible = scrypto_decode(&r.value).unwrap();
+                    SubstateValue::NonFungible(non_fungible)
+                })
+                .unwrap_or(SubstateValue::NonFungible(None)),
+            Address::LazyMap(..) => self
+                .substate_store
+                .get_substate(&address)
+                .map(|r| {
+                    let lazy_map_entry = scrypto_decode(&r.value).unwrap();
+                    SubstateValue::LazyMapEntry(lazy_map_entry)
+                })
+                .unwrap_or(SubstateValue::LazyMapEntry(None)),
+            _ => panic!("Invalid keyed value address"),
+        }
+    }
+
+    /// Sets a key value
+    pub fn set_key_value<V: Into<SubstateValue>>(
+        &mut self,
+        parent_address: Address,
+        key: Vec<u8>,
+        value: V,
+    ) {
+        let mut address = parent_address.encode();
+        address.extend(key.clone());
+
+        if self.up_substates.remove(&address).is_none() {
+            let cur: Option<Substate> = self.substate_store.get_substate(&address);
+            if let Some(Substate { value: _, phys_id }) = cur {
+                self.downed_substates.push(phys_id);
+            } else {
+                let parent_id = self.get_substate_parent_id(&parent_address.encode());
+                let virtual_substate_id = VirtualSubstateId(parent_id, key);
+                self.down_virtual_substates.push(virtual_substate_id);
+            }
+        };
+
+        self.up_substates.insert(address, value.into());
+    }
+
+    fn get_substate_parent_id(&mut self, space_address: &[u8]) -> SubstateParentId {
+        if let Some(index) = self.up_virtual_substate_space.get_index_of(space_address) {
+            SubstateParentId::New(index)
         } else {
-            panic!("Resource manager was never borrowed");
+            let substate_id = self.substate_store.get_space(space_address).unwrap();
+            SubstateParentId::Exists(substate_id)
         }
-    }
-
-    /// Inserts a new resource manager.
-    pub fn create_resource_manager(
-        &mut self,
-        resource_manager: ResourceManager,
-    ) -> ResourceAddress {
-        let resource_address = self.new_resource_address();
-        self.resource_managers.insert(
-            resource_address,
-            SubstateUpdate {
-                prev_id: None,
-                value: resource_manager,
-            },
-        );
-        resource_address
-    }
-
-    pub fn borrow_vault_mut(
-        &mut self,
-        component_address: &ComponentAddress,
-        vid: &VaultId,
-    ) -> Vault {
-        let canonical_id = (component_address.clone(), vid.clone());
-        if self.borrowed_vaults.contains_key(&canonical_id) {
-            panic!("Invalid vault reentrancy");
-        }
-
-        if let Some(SubstateUpdate { value, prev_id }) = self.vaults.remove(&canonical_id) {
-            self.borrowed_vaults.insert(canonical_id, prev_id);
-            return value;
-        }
-
-        if let Some((vault, phys_id)) = self
-            .substate_store
-            .get_decoded_child_substate(component_address, vid)
-        {
-            self.borrowed_vaults.insert(canonical_id, Some(phys_id));
-            return vault;
-        }
-
-        panic!("Should not get here");
-    }
-
-    pub fn return_borrowed_vault(
-        &mut self,
-        component_address: &ComponentAddress,
-        vid: &VaultId,
-        vault: Vault,
-    ) {
-        let canonical_id = (component_address.clone(), vid.clone());
-        if let Some(prev_id) = self.borrowed_vaults.remove(&canonical_id) {
-            self.vaults.insert(
-                canonical_id,
-                SubstateUpdate {
-                    prev_id,
-                    value: vault,
-                },
-            );
-        } else {
-            panic!("Vault was never borrowed");
-        }
-    }
-
-    /// Inserts a new vault.
-    pub fn put_vault(
-        &mut self,
-        component_address: ComponentAddress,
-        vault_id: VaultId,
-        vault: Vault,
-    ) {
-        let canonical_id = (component_address, vault_id);
-        self.vaults.insert(
-            canonical_id,
-            SubstateUpdate {
-                prev_id: None,
-                value: vault,
-            },
-        );
     }
 
     /// Creates a new package ID.
@@ -630,123 +543,60 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
     /// Commits changes to the underlying ledger.
     /// Currently none of these objects are deleted so all commits are puts
-    pub fn commit(&mut self) -> CommitReceipt {
-        // Sanity check
-        if !self.borrowed_components.is_empty() {
-            panic!("Borrowed components should be empty by end of transaction.");
+    pub fn to_receipt(mut self) -> TrackReceipt {
+        let mut store_instructions = Vec::new();
+        for substate_id in self.downed_substates {
+            store_instructions.push(SubstateOperation::Down(substate_id));
         }
-        if !self.borrowed_resource_managers.is_empty() {
-            panic!("Borrowed resource managers should be empty by end of transaction.");
+        for virtual_substate_id in self.down_virtual_substates {
+            store_instructions.push(SubstateOperation::VirtualDown(virtual_substate_id));
         }
-        if !self.borrowed_vaults.is_empty() {
-            panic!("Borrowed vaults should be empty by end of transaction.");
+        for (address, value) in self.up_substates.drain(RangeFull) {
+            store_instructions.push(SubstateOperation::Up(address, value.encode()));
+        }
+        for space_address in self.up_virtual_substate_space.drain(RangeFull) {
+            store_instructions.push(SubstateOperation::VirtualUp(space_address));
         }
 
-        let mut receipt = CommitReceipt::new();
-        let mut id_gen = SubstateIdGenerator::new(self.transaction_hash());
+        let substates = SubstateOperationsReceipt {
+            substate_operations: store_instructions,
+        };
+        let borrowed = BorrowedSNodes {
+            borrowed_substates: self.borrowed_substates,
+        };
+        TrackReceipt {
+            new_addresses: self.new_addresses,
+            borrowed,
+            substates,
+            logs: self.logs,
+        }
+    }
 
-        let package_addresses: Vec<PackageAddress> = self.packages.keys().cloned().collect();
-        for package_address in package_addresses {
-            let package = self.packages.remove(&package_address).unwrap();
-
-            if let Some(prev_id) = package.prev_id {
-                receipt.down(prev_id);
+    pub fn insert_objects_into_component(
+        &mut self,
+        new_objects: ComponentObjects,
+        component_address: ComponentAddress,
+    ) {
+        for (vault_id, vault) in new_objects.vaults {
+            self.create_uuid_value_2((component_address, vault_id), vault);
+        }
+        for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
+            self.create_key_space(component_address, lazy_map_id);
+            for (k, v) in unclaimed.lazy_map {
+                let parent_address = Address::LazyMap(component_address, lazy_map_id);
+                self.set_key_value(parent_address, k, Some(v));
             }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
 
-            self.substate_store
-                .put_encoded_substate(&package_address, &package.value, phys_id);
-        }
-
-        let component_addresses: Vec<ComponentAddress> = self.components.keys().cloned().collect();
-        for component_address in component_addresses {
-            let component = self.components.remove(&component_address).unwrap();
-
-            if let Some(prev_id) = component.prev_id {
-                receipt.down(prev_id);
+            for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
+                self.create_key_space(component_address, child_lazy_map_id);
+                for (k, v) in child_lazy_map {
+                    let parent_address = Address::LazyMap(component_address, child_lazy_map_id);
+                    self.set_key_value(parent_address, k, Some(v));
+                }
             }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            self.substate_store
-                .put_encoded_substate(&component_address, &component.value, phys_id);
-        }
-
-        let resource_addresses: Vec<ResourceAddress> =
-            self.resource_managers.keys().cloned().collect();
-        for resource_address in resource_addresses {
-            let resource_manager = self.resource_managers.remove(&resource_address).unwrap();
-
-            if let Some(prev_id) = resource_manager.prev_id {
-                receipt.down(prev_id);
+            for (vault_id, vault) in unclaimed.descendent_vaults {
+                self.create_uuid_value_2((component_address, vault_id), vault);
             }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            self.substate_store.put_encoded_substate(
-                &resource_address,
-                &resource_manager.value,
-                phys_id,
-            );
         }
-
-        let entry_ids: Vec<(ComponentAddress, LazyMapId, Vec<u8>)> =
-            self.lazy_map_entries.keys().cloned().collect();
-        for entry_id in entry_ids {
-            let entry = self.lazy_map_entries.remove(&entry_id).unwrap();
-            if let Some(prev_id) = entry.prev_id {
-                receipt.down(prev_id);
-            }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            let (component_address, lazy_map_id, key) = entry_id;
-            self.substate_store.put_encoded_grand_child_substate(
-                &component_address,
-                &lazy_map_id,
-                &key,
-                &entry.value,
-                phys_id,
-            );
-        }
-
-        let vault_ids: Vec<(ComponentAddress, VaultId)> = self.vaults.keys().cloned().collect();
-        for vault_id in vault_ids {
-            let vault = self.vaults.remove(&vault_id).unwrap();
-            if let Some(prev_id) = vault.prev_id {
-                receipt.down(prev_id);
-            }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            let (component_address, vault_id) = vault_id;
-            self.substate_store.put_encoded_child_substate(
-                &component_address,
-                &vault_id,
-                &vault.value,
-                phys_id,
-            );
-        }
-
-        let non_fungible_addresses: Vec<NonFungibleAddress> =
-            self.non_fungibles.keys().cloned().collect();
-        for non_fungible_address in non_fungible_addresses {
-            let non_fungible = self.non_fungibles.remove(&non_fungible_address).unwrap();
-            if let Some(prev_id) = non_fungible.prev_id {
-                receipt.down(prev_id);
-            }
-            let phys_id = id_gen.next();
-            receipt.up(phys_id);
-
-            self.substate_store.put_encoded_child_substate(
-                &non_fungible_address.resource_address(),
-                &non_fungible_address.non_fungible_id(),
-                &non_fungible.value,
-                phys_id,
-            );
-        }
-
-        receipt
     }
 }

@@ -1,24 +1,24 @@
-use crate::engine::SystemApi;
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::vec::Vec;
 use sbor::DecodeError;
+use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::prelude::scrypto_decode;
-use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
+use scrypto::resource::AuthZoneMethod;
 use scrypto::values::ScryptoValue;
 
+use crate::engine::SystemApi;
 use crate::model::{Proof, ProofError, ResourceManager};
+use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum AuthZoneError {
     EmptyAuthZone,
     ProofError(ProofError),
     CouldNotCreateProof,
-    MethodNotFound(String),
     InvalidRequestData(DecodeError),
     CouldNotGetProof,
     CouldNotGetResource,
+    NoMethodSpecified,
 }
 
 /// A transient resource container.
@@ -36,7 +36,7 @@ impl AuthZone {
         Self { proofs: Vec::new() }
     }
 
-    pub fn pop(&mut self) -> Result<Proof, AuthZoneError> {
+    fn pop(&mut self) -> Result<Proof, AuthZoneError> {
         if self.proofs.is_empty() {
             return Err(AuthZoneError::EmptyAuthZone);
         }
@@ -87,18 +87,16 @@ impl AuthZone {
             .map_err(AuthZoneError::ProofError)
     }
 
-    pub fn main<S: SystemApi>(
+    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
-        function: &str,
-        args: Vec<ScryptoValue>,
+        call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, AuthZoneError> {
-        match function {
-            "clear" => {
-                self.clear();
-                Ok(ScryptoValue::from_value(&()))
-            }
-            "pop" => {
+        let method: AuthZoneMethod =
+            scrypto_decode(&call_data.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+
+        match method {
+            AuthZoneMethod::Pop() => {
                 let proof = self.pop()?;
                 let proof_id = system_api
                     .create_proof(proof)
@@ -107,11 +105,9 @@ impl AuthZone {
                     proof_id,
                 )))
             }
-            "push" => {
-                let proof_id: scrypto::resource::Proof = scrypto_decode(&args[0].raw)
-                    .map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+            AuthZoneMethod::Push(proof) => {
                 let mut proof = system_api
-                    .take_proof(proof_id.0)
+                    .take_proof(proof.0)
                     .map_err(|_| AuthZoneError::CouldNotGetProof)?;
                 // FIXME: this is a hack for now until we can get snode_state into process
                 // FIXME: and be able to determine which snode the proof is going into
@@ -120,9 +116,7 @@ impl AuthZone {
                 self.push(proof);
                 Ok(ScryptoValue::from_value(&()))
             }
-            "create_proof" => {
-                let resource_address = scrypto_decode(&args[0].raw)
-                    .map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+            AuthZoneMethod::CreateProof(resource_address) => {
                 let resource_manager: ResourceManager = system_api
                     .borrow_global_mut_resource_manager(resource_address)
                     .map_err(|_| AuthZoneError::CouldNotGetResource)?;
@@ -137,11 +131,7 @@ impl AuthZone {
                     proof_id,
                 )))
             }
-            "create_proof_by_amount" => {
-                let amount = scrypto_decode(&args[0].raw)
-                    .map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let resource_address = scrypto_decode(&args[1].raw)
-                    .map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+            AuthZoneMethod::CreateProofByAmount(amount, resource_address) => {
                 let resource_manager: ResourceManager = system_api
                     .borrow_global_mut_resource_manager(resource_address)
                     .map_err(|_| AuthZoneError::CouldNotGetResource)?;
@@ -156,11 +146,7 @@ impl AuthZone {
                     proof_id,
                 )))
             }
-            "create_proof_by_ids" => {
-                let ids = scrypto_decode(&args[0].raw)
-                    .map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let resource_address = scrypto_decode(&args[1].raw)
-                    .map_err(|e| AuthZoneError::InvalidRequestData(e))?;
+            AuthZoneMethod::CreateProofByIds(ids, resource_address) => {
                 let resource_manager: ResourceManager = system_api
                     .borrow_global_mut_resource_manager(resource_address)
                     .map_err(|_| AuthZoneError::CouldNotGetResource)?;
@@ -175,7 +161,10 @@ impl AuthZone {
                     proof_id,
                 )))
             }
-            _ => Err(AuthZoneError::MethodNotFound(function.to_string())),
+            AuthZoneMethod::Clear() => {
+                self.clear();
+                Ok(ScryptoValue::from_value(&()))
+            }
         }
     }
 }

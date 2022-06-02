@@ -2,15 +2,18 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::errors::RuntimeError;
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::wasm::default_wasm_engine;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -41,7 +44,8 @@ fn can_create_clone_and_drop_bucket_proof() {
 fn can_create_clone_and_drop_vault_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -60,8 +64,7 @@ fn can_create_clone_and_drop_vault_proof() {
         .new_transaction_builder()
         .call_method(
             component_address,
-            "create_clone_drop_vault_proof",
-            vec![scrypto_encode(&Decimal::one())],
+            call_data!(create_clone_drop_vault_proof(Decimal::one())),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -76,7 +79,8 @@ fn can_create_clone_and_drop_vault_proof() {
 fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -115,7 +119,8 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 fn can_create_clone_and_drop_vault_proof_by_ids() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -140,8 +145,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         .new_transaction_builder()
         .call_method(
             component_address,
-            "create_clone_drop_vault_proof_by_ids",
-            args![total_ids, proof_ids],
+            call_data!(create_clone_drop_vault_proof_by_ids(total_ids, proof_ids)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -156,7 +160,8 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
 fn can_use_bucket_for_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
@@ -191,7 +196,8 @@ fn can_use_bucket_for_authorization() {
 fn can_use_vault_for_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
@@ -230,7 +236,8 @@ fn can_use_vault_for_authorization() {
 fn can_create_proof_from_account_and_pass_on() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -261,7 +268,8 @@ fn can_create_proof_from_account_and_pass_on() {
 fn cant_move_restricted_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -295,7 +303,8 @@ fn cant_move_restricted_proof() {
 fn can_compose_bucket_and_vault_proof() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -317,8 +326,7 @@ fn can_compose_bucket_and_vault_proof() {
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
-                "compose_vault_and_bucket_proof",
-                args![Bucket(bucket_id)],
+                call_data!(compose_vault_and_bucket_proof(Bucket(bucket_id))),
             )
         })
         .build(test_runner.get_nonce([pk]))
@@ -334,7 +342,8 @@ fn can_compose_bucket_and_vault_proof() {
 fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
@@ -356,8 +365,10 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
-                "compose_vault_and_bucket_proof_by_amount",
-                args![Bucket(bucket_id), Decimal::from(2)],
+                call_data!(compose_vault_and_bucket_proof_by_amount(
+                    Bucket(bucket_id),
+                    Decimal::from(2)
+                )),
             )
         })
         .build(test_runner.get_nonce([pk]))
@@ -366,14 +377,15 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
 fn can_compose_bucket_and_vault_proof_by_ids() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -401,11 +413,10 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             |builder, bucket_id| {
                 builder.call_method(
                     component_address,
-                    "compose_vault_and_bucket_proof_by_ids",
-                    args![
+                    call_data!(compose_vault_and_bucket_proof_by_ids(
                         Bucket(bucket_id),
                         BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2),])
-                    ],
+                    )),
                 )
             },
         )
@@ -415,14 +426,15 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
 fn can_create_vault_proof_by_amount_from_non_fungibles() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -441,8 +453,10 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         .new_transaction_builder()
         .call_method(
             component_address,
-            "create_clone_drop_vault_proof_by_amount",
-            args![Decimal::from(3), Decimal::from(1)],
+            call_data![create_clone_drop_vault_proof_by_amount(
+                Decimal::from(3),
+                Decimal::from(1)
+            )],
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -450,14 +464,15 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }
 
 #[test]
 fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
@@ -482,12 +497,11 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 builder.call_function(
                     package_address,
                     "Receiver",
-                    "assert_ids",
-                    args!(
+                    call_data!(assert_ids(
                         Proof(proof_id),
                         BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
                         resource_address
-                    ),
+                    )),
                 )
             },
         )
@@ -497,5 +511,5 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     println!("{:?}", receipt);
 
     // Assert
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
 }

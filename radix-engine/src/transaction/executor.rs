@@ -1,90 +1,94 @@
+use sbor::rust::marker::PhantomData;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
+use scrypto::buffer::*;
+use scrypto::component::Package;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 use scrypto::resource::*;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec;
-use scrypto::rust::vec::Vec;
-use scrypto::{abi, access_rule_node, rule};
+use scrypto::values::ScryptoValue;
+use scrypto::{abi, access_rule_node, call_data, rule};
 
 use crate::engine::*;
-use crate::errors::*;
 use crate::ledger::*;
 use crate::model::*;
+use crate::transaction::abi_extractor::{export_abi, export_abi_by_component};
 use crate::transaction::*;
+use crate::wasm::*;
 
 /// An executor that runs transactions.
-pub struct TransactionExecutor<'l, L: SubstateStore> {
-    substate_store: &'l mut L,
+pub struct TransactionExecutor<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    substate_store: &'s mut S,
+    wasm_engine: &'w mut W,
     trace: bool,
+    phantom: PhantomData<I>,
 }
 
-impl<'l, L: SubstateStore> NonceProvider for TransactionExecutor<'l, L> {
+impl<'s, 'w, S, W, I> NonceProvider for TransactionExecutor<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
     fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
         self.substate_store.get_nonce()
     }
 }
 
-impl<'l, L: SubstateStore> AbiProvider for TransactionExecutor<'l, L> {
-    fn export_abi(
-        &self,
-        package_address: PackageAddress,
-        blueprint_name: &str,
-    ) -> Result<abi::Blueprint, RuntimeError> {
-        let package: Package = self
-            .substate_store
-            .get_decoded_substate(&package_address)
-            .map(|(package, _)| package)
-            .ok_or(RuntimeError::PackageNotFound(package_address))?;
-
-        BasicAbiProvider::new(self.trace)
-            .with_package(&package_address, package)
-            .export_abi(package_address, blueprint_name)
-    }
-
-    fn export_abi_by_component(
-        &self,
-        component_address: ComponentAddress,
-    ) -> Result<abi::Blueprint, RuntimeError> {
-        let component: Component = self
-            .substate_store
-            .get_decoded_substate(&component_address)
-            .map(|(component, _)| component)
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
-        let package: Package = self
-            .substate_store
-            .get_decoded_substate(&component.package_address())
-            .map(|(package, _)| package)
-            .unwrap();
-        BasicAbiProvider::new(self.trace)
-            .with_package(&component.package_address(), package)
-            .export_abi(component.package_address(), component.blueprint_name())
-    }
-}
-
-impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
-    pub fn new(substate_store: &'l mut L, trace: bool) -> Self {
+impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    pub fn new(
+        substate_store: &'s mut S,
+        wasm_engine: &'w mut W,
+        trace: bool,
+    ) -> TransactionExecutor<'s, 'w, S, W, I> {
         Self {
             substate_store,
+            wasm_engine,
             trace,
+            phantom: PhantomData,
         }
     }
 
     /// Returns an immutable reference to the ledger.
-    pub fn substate_store(&self) -> &L {
+    pub fn substate_store(&self) -> &S {
         self.substate_store
     }
 
     /// Returns a mutable reference to the ledger.
-    pub fn substate_store_mut(&mut self) -> &mut L {
+    pub fn substate_store_mut(&mut self) -> &mut S {
         self.substate_store
+    }
+
+    pub fn export_abi(
+        &self,
+        package_address: PackageAddress,
+        blueprint_name: &str,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        export_abi(self.substate_store, package_address, blueprint_name)
+    }
+
+    pub fn export_abi_by_component(
+        &self,
+        component_address: ComponentAddress,
+    ) -> Result<abi::Blueprint, RuntimeError> {
+        export_abi_by_component(self.substate_store, component_address)
     }
 
     /// Generates a new key pair.
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
-        let private_key = EcdsaPrivateKey::from_bytes(
-            hash(self.substate_store.get_and_increase_nonce().to_le_bytes()).as_ref(),
-        )
-        .unwrap();
+        let nonce = self.substate_store.get_nonce();
+        self.substate_store.increase_nonce();
+        let private_key = EcdsaPrivateKey::from_bytes(hash(nonce.to_le_bytes()).as_ref()).unwrap();
         let public_key = private_key.public_key();
         (public_key, private_key)
     }
@@ -94,7 +98,7 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .call_method(SYSTEM_COMPONENT, "free_xrd", vec![])
+                    .call_method(SYSTEM_COMPONENT, call_data!(free_xrd()))
                     .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                         builder.new_account_with_resource(withdraw_auth, bucket_id)
                     })
@@ -118,14 +122,11 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
     }
 
     /// Publishes a package.
-    pub fn publish_package<T: AsRef<[u8]>>(
-        &mut self,
-        code: T,
-    ) -> Result<PackageAddress, RuntimeError> {
+    pub fn publish_package(&mut self, package: Package) -> Result<PackageAddress, RuntimeError> {
         let receipt = self
             .validate_and_execute(
                 &TransactionBuilder::new()
-                    .publish_package(code.as_ref())
+                    .publish_package(package)
                     .build(self.get_nonce([]))
                     .sign([]),
             )
@@ -136,21 +137,6 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         } else {
             Err(receipt.result.err().unwrap())
         }
-    }
-
-    /// Overwrites a package.
-    pub fn overwrite_package(
-        &mut self,
-        package_address: PackageAddress,
-        code: Vec<u8>,
-    ) -> Result<(), WasmValidationError> {
-        let tx_hash = hash(self.substate_store.get_and_increase_nonce().to_le_bytes());
-        let mut id_gen = SubstateIdGenerator::new(tx_hash);
-
-        let package = Package::new(code)?;
-        self.substate_store
-            .put_encoded_substate(&package_address, &package, id_gen.next());
-        Ok(())
     }
 
     pub fn validate_and_execute(
@@ -166,39 +152,59 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
-        let mut track = Track::new(
-            self.substate_store,
+        // Start state track
+        let mut track = Track::new(self.substate_store, validated.raw_hash.clone());
+
+        // Create root call frame.
+        let mut root_frame = CallFrame::new_root(
+            self.trace,
             validated.raw_hash.clone(),
             validated.signers.clone(),
+            &mut track,
+            self.wasm_engine,
         );
-        let mut proc = track.start_process(self.trace);
 
-        let txn_process = TransactionProcess::new(validated.clone());
-        let mut txn_snode = SNodeState::Transaction(txn_process);
-        let error = match proc.run(&mut txn_snode, "execute".to_string(), vec![]) {
-            Ok(_) => None,
-            Err(e) => Some(e),
-        };
-        let outputs = if let SNodeState::Transaction(txn_process) = txn_snode {
-            txn_process.outputs().to_vec()
-        } else {
-            panic!("Should not get here");
+        // Invoke the transaction processor
+        // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
+        let result = root_frame.invoke_snode(
+            scrypto::core::SNodeRef::TransactionProcessor,
+            ScryptoValue::from_value(&TransactionProcessorFunction::Run(validated.clone())),
+        );
+
+        let (outputs, error) = match result {
+            Ok(o) => (scrypto_decode::<Vec<ScryptoValue>>(&o.raw).unwrap(), None),
+            Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
         };
 
-        // prepare data for receipts
-        let new_package_addresses = track.new_package_addresses();
-        let new_component_addresses = track.new_component_addresses();
-        let new_resource_addresses = track.new_resource_addresses();
-        let logs = track.logs().clone();
+        let track_receipt = track.to_receipt();
 
         // commit state updates
         let commit_receipt = if error.is_none() {
-            let receipt = track.commit();
+            if !track_receipt.borrowed.is_empty() {
+                panic!("There should be nothing borrowed by end of transaction.");
+            }
+            let commit_receipt = track_receipt.substates.commit(self.substate_store);
             self.substate_store.increase_nonce();
-            Some(receipt)
+            Some(commit_receipt)
         } else {
             None
         };
+
+        let mut new_component_addresses = Vec::new();
+        let mut new_resource_addresses = Vec::new();
+        let mut new_package_addresses = Vec::new();
+        for address in track_receipt.new_addresses {
+            match address {
+                Address::Component(component_address) => {
+                    new_component_addresses.push(component_address)
+                }
+                Address::Resource(resource_address) => {
+                    new_resource_addresses.push(resource_address)
+                }
+                Address::Package(package_address) => new_package_addresses.push(package_address),
+                _ => {}
+            }
+        }
 
         #[cfg(feature = "alloc")]
         let execution_time = None;
@@ -207,13 +213,13 @@ impl<'l, L: SubstateStore> TransactionExecutor<'l, L> {
 
         Receipt {
             commit_receipt,
-            validated_transaction: validated.clone(),
+            validated_transaction: validated,
             result: match error {
                 Some(error) => Err(error),
                 None => Ok(()),
             },
             outputs,
-            logs,
+            logs: track_receipt.logs,
             new_package_addresses,
             new_component_addresses,
             new_resource_addresses,

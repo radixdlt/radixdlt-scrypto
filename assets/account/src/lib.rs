@@ -13,11 +13,15 @@ blueprint! {
             }
 
             let access_rules = AccessRules::new()
+                .method("balance", rule!(allow_all))
                 .method("deposit", rule!(allow_all))
                 .method("deposit_batch", rule!(allow_all))
                 .default(withdraw_rule);
 
-            Self { vaults }.instantiate().add_access_check(access_rules).globalize()
+            Self { vaults }
+                .instantiate()
+                .add_access_check(access_rules)
+                .globalize()
         }
 
         pub fn new(withdraw_rule: AccessRule) -> ComponentAddress {

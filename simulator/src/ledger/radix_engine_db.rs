@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 use radix_engine::ledger::*;
 use rocksdb::{DBWithThreadMode, Direction, IteratorMode, SingleThreaded, DB};
-use sbor::{Decode, Encode};
+use sbor::Decode;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
 
@@ -18,9 +18,9 @@ impl RadixEngineDB {
     }
 
     pub fn with_bootstrap(root: PathBuf) -> Self {
-        let mut ledger = Self::new(root);
-        ledger.bootstrap();
-        ledger
+        let mut substate_store = Self::new(root);
+        bootstrap(&mut substate_store);
+        substate_store
     }
 
     pub fn list_packages(&self) -> Vec<PackageAddress> {
@@ -80,6 +80,7 @@ impl QueryableSubstateStore for RadixEngineDB {
         let mut iter = self
             .db
             .iterator(IteratorMode::From(&id, Direction::Forward));
+        iter.next(); // LazyMap
         let mut items = HashMap::new();
         while let Some((key, value)) = iter.next() {
             if !key.starts_with(&id) {
@@ -94,26 +95,13 @@ impl QueryableSubstateStore for RadixEngineDB {
     }
 }
 
-impl SubstateStore for RadixEngineDB {
-    fn get_substate<T: Encode>(&self, address: &T) -> Option<Substate> {
-        self.read(&scrypto_encode(address))
-            .map(|b| scrypto_decode(&b).unwrap())
+impl ReadableSubstateStore for RadixEngineDB {
+    fn get_substate(&self, address: &[u8]) -> Option<Substate> {
+        self.read(address).map(|b| scrypto_decode(&b).unwrap())
     }
 
-    fn put_substate<T: Encode>(&mut self, address: &T, substate: Substate) {
-        self.write(&scrypto_encode(address), &scrypto_encode(&substate));
-    }
-
-    fn get_child_substate<T: Encode>(&self, address: &T, key: &[u8]) -> Option<Substate> {
-        let mut id = scrypto_encode(address);
-        id.extend(key.to_vec());
-        self.read(&id).map(|b| scrypto_decode(&b).unwrap())
-    }
-
-    fn put_child_substate<T: Encode>(&mut self, address: &T, key: &[u8], substate: Substate) {
-        let mut id = scrypto_encode(address);
-        id.extend(key.to_vec());
-        self.write(&id, &scrypto_encode(&substate));
+    fn get_space(&mut self, address: &[u8]) -> Option<PhysicalSubstateId> {
+        self.read(&address).map(|b| scrypto_decode(&b).unwrap())
     }
 
     fn get_epoch(&self) -> u64 {
@@ -123,17 +111,27 @@ impl SubstateStore for RadixEngineDB {
             .unwrap_or(0)
     }
 
-    fn set_epoch(&mut self, epoch: u64) {
-        let id = scrypto_encode(&"epoch");
-        let value = scrypto_encode(&epoch);
-        self.write(&id, &value)
-    }
-
     fn get_nonce(&self) -> u64 {
         let id = scrypto_encode(&"nonce");
         self.read(&id)
             .map(|v| scrypto_decode(&v).unwrap())
             .unwrap_or(0)
+    }
+}
+
+impl WriteableSubstateStore for RadixEngineDB {
+    fn put_substate(&mut self, address: &[u8], substate: Substate) {
+        self.write(address, &scrypto_encode(&substate));
+    }
+
+    fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId) {
+        self.write(&address, &scrypto_encode(&phys_id));
+    }
+
+    fn set_epoch(&mut self, epoch: u64) {
+        let id = scrypto_encode(&"epoch");
+        let value = scrypto_encode(&epoch);
+        self.write(&id, &value)
     }
 
     fn increase_nonce(&mut self) {

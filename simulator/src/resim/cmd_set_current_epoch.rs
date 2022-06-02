@@ -1,5 +1,4 @@
 use clap::Parser;
-use radix_engine::ledger::SubstateStore;
 
 use crate::resim::*;
 
@@ -12,8 +11,8 @@ pub struct SetCurrentEpoch {
 
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        ledger.set_epoch(self.epoch);
+        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        substate_store.set_epoch(self.epoch);
 
         writeln!(out, "Current epoch set!").map_err(Error::IOError)?;
         Ok(())

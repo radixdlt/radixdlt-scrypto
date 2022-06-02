@@ -1,6 +1,7 @@
 use std::io;
 
-use radix_engine::errors::*;
+use radix_engine::engine::*;
+use radix_engine::model::ExtractAbiError;
 use radix_engine::transaction::*;
 use sbor::*;
 
@@ -24,7 +25,7 @@ pub enum Error {
 
     CargoError(CargoExecutionError),
 
-    PackageValidationError(WasmValidationError),
+    PackageError(ExtractAbiError),
 
     TransactionConstructionError(CallWithAbiError),
 

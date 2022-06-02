@@ -1,11 +1,23 @@
-use crate::args;
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::string::ToString;
+use sbor::*;
+
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::resource::*;
-use crate::rust::collections::BTreeSet;
-use crate::rust::string::ToString;
+use crate::sfunctions;
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum AuthZoneMethod {
+    Push(Proof),
+    Pop(),
+    Clear(),
+    CreateProof(ResourceAddress),
+    CreateProofByAmount(Decimal, ResourceAddress),
+    CreateProofByIds(BTreeSet<NonFungibleId>, ResourceAddress),
+}
 
 /// Represents the auth zone, which is used by system for checking
 /// if this component is allowed to
@@ -15,116 +27,55 @@ use crate::rust::string::ToString;
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    pub fn start() {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZoneManager,
-            function: "start".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
+    sfunctions! {
+        SNodeRef::AuthZoneRef => {
+            pub fn push(proof: Proof) -> () {
+                AuthZoneMethod::Push(proof)
+            }
 
-    pub fn end() {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZoneManager,
-            function: "end".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
+            pub fn pop() -> Proof {
+                AuthZoneMethod::Pop()
+            }
 
-    /// Pushes a proof to the auth zone.
-    pub fn push(proof: Proof) {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZoneRef,
-            function: "push".to_string(),
-            args: args![proof],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
+            pub fn create_proof(resource_address: ResourceAddress) -> Proof {
+                AuthZoneMethod::CreateProof(resource_address)
+            }
 
-    /// Pops the most recently added proof from the auth zone.
-    pub fn pop() -> Proof {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZoneRef,
-            function: "pop".to_string(),
-            args: args![],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
+            pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
+                AuthZoneMethod::CreateProofByAmount(amount, resource_address)
+            }
 
-    pub fn create_proof(resource_address: ResourceAddress) -> Proof {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZoneRef,
-            function: "create_proof".to_string(),
-            args: args![resource_address],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+            pub fn create_proof_by_ids(ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress) -> Proof {
+                AuthZoneMethod::CreateProofByIds(ids.clone(), resource_address)
+            }
+        }
     }
+}
 
-    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZoneRef,
-            function: "create_proof_by_amount".to_string(),
-            args: args![amount, resource_address],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
-
-    pub fn create_proof_by_ids(
-        ids: &BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    ) -> Proof {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::AuthZoneRef,
-            function: "create_proof_by_ids".to_string(),
-            args: args![ids.clone(), resource_address],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum CallerAuthZoneMethod {
+    CreateProof(ResourceAddress),
+    CreateProofByAmount(Decimal, ResourceAddress),
+    CreateProofByIds(BTreeSet<NonFungibleId>, ResourceAddress),
 }
 
 // just like above for create_proof* but targeting CallAuthZoneRef instead of AuthZoneRef
 pub struct CallerAuthZone {}
 
 impl CallerAuthZone {
-    pub fn create_proof(resource_address: ResourceAddress) -> Proof {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::CallerAuthZoneRef,
-            function: "create_proof".to_string(),
-            args: args![resource_address],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
+    sfunctions! {
+        SNodeRef::CallerAuthZoneRef => {
+            pub fn create_proof(resource_address: ResourceAddress) -> Proof {
+                CallerAuthZoneMethod::CreateProof(resource_address)
+            }
 
-    pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::CallerAuthZoneRef,
-            function: "create_proof_by_amount".to_string(),
-            args: args![amount, resource_address],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
-    }
+            pub fn create_proof_by_amount(amount: Decimal, resource_address: ResourceAddress) -> Proof {
+                CallerAuthZoneMethod::CreateProofByAmount(amount, resource_address)
+            }
 
-    pub fn create_proof_by_ids(
-        ids: &BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    ) -> Proof {
-        let input = InvokeSNodeInput {
-            snode_ref: SNodeRef::CallerAuthZoneRef,
-            function: "create_proof_by_ids".to_string(),
-            args: args![ids.clone(), resource_address],
-        };
-        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
-        scrypto_decode(&output.rtn).unwrap()
+            pub fn create_proof_by_ids(ids: &BTreeSet<NonFungibleId>, resource_address: ResourceAddress) -> Proof {
+                CallerAuthZoneMethod::CreateProofByIds(ids.clone(), resource_address)
+            }
+        }
     }
 }

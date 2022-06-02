@@ -14,16 +14,16 @@ blueprint! {
             let map1 = LazyMap::new();
             map0.insert(1u32, map1);
 
-            let input = PutLazyMapEntryInput {
-                lazy_map_id: (Runtime::transaction_hash(), 1025),
-                key: scrypto_encode(&0u32),
-                value: scrypto_encode(&LazyMap::<(), ()> {
+            let input = RadixEngineInput::PutLazyMapEntry(
+                (Runtime::transaction_hash(), 1025),
+                scrypto_encode(&0u32),
+                scrypto_encode(&LazyMap::<(), ()> {
                     id: (Runtime::transaction_hash(), 1024),
                     key: PhantomData,
                     value: PhantomData,
                 }),
-            };
-            let _: PutLazyMapEntryOutput = call_engine(PUT_LAZY_MAP_ENTRY, input);
+            );
+            let _: () = call_engine(input);
 
             CyclicMap { maps: map0 }.instantiate().globalize()
         }
@@ -31,16 +31,16 @@ blueprint! {
         pub fn new_self_cyclic() -> ComponentAddress {
             let map0 = LazyMap::new();
 
-            let input = PutLazyMapEntryInput {
-                lazy_map_id: (Runtime::transaction_hash(), 1024),
-                key: scrypto_encode(&0u32),
-                value: scrypto_encode(&LazyMap::<(), ()> {
+            let input = RadixEngineInput::PutLazyMapEntry(
+                (Runtime::transaction_hash(), 1024),
+                scrypto_encode(&0u32),
+                scrypto_encode(&LazyMap::<(), ()> {
                     id: (Runtime::transaction_hash(), 1024),
                     key: PhantomData,
                     value: PhantomData,
                 }),
-            };
-            let _: PutLazyMapEntryOutput = call_engine(PUT_LAZY_MAP_ENTRY, input);
+            );
+            let _: () = call_engine(input);
 
             CyclicMap { maps: map0 }.instantiate().globalize()
         }

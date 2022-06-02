@@ -1,29 +1,35 @@
-use crate::engine::SystemApi;
+use sbor::rust::cell::{Ref, RefCell, RefMut};
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::HashMap;
+use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::rust::cell::{Ref, RefCell, RefMut};
-use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::collections::HashMap;
-use scrypto::rust::rc::Rc;
-use scrypto::rust::string::String;
-use scrypto::rust::string::ToString;
-use scrypto::rust::vec::Vec;
+use scrypto::prelude::{
+    VaultCreateProofByIdsInput, VaultCreateProofInput, VaultGetAmountInput,
+    VaultGetNonFungibleIdsInput, VaultPutInput, VaultTakeInput,
+};
+use scrypto::resource::{
+    VaultCreateProofByAmountInput, VaultGetResourceAddressInput, VaultTakeNonFungiblesInput,
+};
 use scrypto::values::ScryptoValue;
 
+use crate::engine::SystemApi;
+use crate::model::VaultError::MethodNotFound;
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
+use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum VaultError {
     InvalidRequestData(DecodeError),
     ResourceContainerError(ResourceContainerError),
-    MethodNotFound(String),
     CouldNotCreateBucket,
     CouldNotTakeBucket,
     ProofError(ProofError),
     CouldNotCreateProof,
+    MethodNotFound,
 }
 
 /// A persistent resource container.
@@ -155,28 +161,28 @@ impl Vault {
         self.container.borrow_mut()
     }
 
-    pub fn main<S: SystemApi>(
+    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         vault_id: VaultId,
-        function: &str,
-        args: Vec<ScryptoValue>,
+        method_name: &str,
+        arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, VaultError> {
-        match function {
-            "put_into_vault" => {
-                let bucket: scrypto::resource::Bucket =
-                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+        match method_name {
+            "put" => {
+                let input: VaultPutInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .take_bucket(bucket.0)
+                    .take_bucket(input.bucket.0)
                     .map_err(|_| VaultError::CouldNotTakeBucket)?;
                 self.put(bucket)
                     .map_err(VaultError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&()))
             }
-            "take_from_vault" => {
-                let amount: Decimal =
-                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
-                let container = self.take(amount)?;
+            "take" => {
+                let input: VaultTakeInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let container = self.take(input.amount)?;
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| VaultError::CouldNotCreateBucket)?;
@@ -184,10 +190,10 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            "take_non_fungibles_from_vault" => {
-                let non_fungible_ids: BTreeSet<NonFungibleId> =
-                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
-                let container = self.take_non_fungibles(&non_fungible_ids)?;
+            "take_non_fungibles" => {
+                let input: VaultTakeNonFungiblesInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+                let container = self.take_non_fungibles(&input.non_fungible_ids)?;
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| VaultError::CouldNotCreateBucket)?;
@@ -195,21 +201,29 @@ impl Vault {
                     bucket_id,
                 )))
             }
-            "get_vault_amount" => {
+            "amount" => {
+                let _: VaultGetAmountInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let amount = self.total_amount();
                 Ok(ScryptoValue::from_value(&amount))
             }
-            "get_vault_resource_address" => {
+            "resource_address" => {
+                let _: VaultGetResourceAddressInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let resource_address = self.resource_address();
                 Ok(ScryptoValue::from_value(&resource_address))
             }
-            "get_non_fungible_ids_in_vault" => {
+            "non_fungible_ids" => {
+                let _: VaultGetNonFungibleIdsInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let ids = self
                     .total_ids()
                     .map_err(VaultError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&ids))
             }
-            "create_vault_proof" => {
+            "create_proof" => {
+                let _: VaultCreateProofInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let proof = self
                     .create_proof(ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
@@ -220,11 +234,11 @@ impl Vault {
                     proof_id,
                 )))
             }
-            "create_vault_proof_by_amount" => {
-                let amount: Decimal =
-                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+            "create_proof_by_amount" => {
+                let input: VaultCreateProofByAmountInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let proof = self
-                    .create_proof_by_amount(amount, ResourceContainerId::Vault(vault_id))
+                    .create_proof_by_amount(input.amount, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
                 let proof_id = system_api
                     .create_proof(proof)
@@ -233,11 +247,11 @@ impl Vault {
                     proof_id,
                 )))
             }
-            "create_vault_proof_by_ids" => {
-                let ids =
-                    scrypto_decode(&args[0].raw).map_err(|e| VaultError::InvalidRequestData(e))?;
+            "create_proof_by_ids" => {
+                let input: VaultCreateProofByIdsInput =
+                    scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let proof = self
-                    .create_proof_by_ids(&ids, ResourceContainerId::Vault(vault_id))
+                    .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
                 let proof_id = system_api
                     .create_proof(proof)
@@ -246,7 +260,7 @@ impl Vault {
                     proof_id,
                 )))
             }
-            _ => Err(VaultError::MethodNotFound(function.to_string())),
+            _ => Err(MethodNotFound),
         }
     }
 }

@@ -1,18 +1,19 @@
+use sbor::any::Value;
+use sbor::rust::vec::Vec;
+use sbor::*;
+use scrypto::engine::types::*;
+use scrypto::resource::{AccessRule, AccessRuleNode, SoftResource};
+use scrypto::resource::{
+    NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
+    SoftResourceOrNonFungibleList,
+};
+use scrypto::types::ScryptoType;
+
 use crate::model::method_authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
     HardResourceOrNonFungible,
 };
 use crate::model::MethodAuthorization;
-use sbor::any::Value;
-use sbor::*;
-use scrypto::engine::types::*;
-use scrypto::prelude::{AccessRule, AccessRuleNode, SoftResource};
-use scrypto::resource::{
-    NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
-    SoftResourceOrNonFungibleList,
-};
-use scrypto::rust::vec::Vec;
-use scrypto::types::ScryptoType;
 
 fn soft_to_hard_decimal(schema: &Type, soft_decimal: &SoftDecimal, dom: &Value) -> HardDecimal {
     match soft_decimal {
@@ -183,12 +184,12 @@ fn soft_to_hard_proof_rule(schema: &Type, proof_rule: &ProofRule, dom: &Value) -
         ProofRule::Require(soft_resource_or_non_fungible) => {
             let resource =
                 soft_to_hard_resource_or_non_fungible(schema, soft_resource_or_non_fungible, dom);
-            HardProofRule::This(resource)
+            HardProofRule::Require(resource)
         }
         ProofRule::AmountOf(soft_decimal, soft_resource) => {
             let resource = soft_to_hard_resource(schema, soft_resource, dom);
             let hard_decimal = soft_to_hard_decimal(schema, soft_decimal, dom);
-            HardProofRule::SomeOfResource(hard_decimal, resource)
+            HardProofRule::AmountOf(hard_decimal, resource)
         }
         ProofRule::AllOf(resources) => {
             let hard_resources = soft_to_hard_resource_list(schema, resources, dom);

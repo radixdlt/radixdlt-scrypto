@@ -1,14 +1,14 @@
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRules;
-use scrypto::rust::string::String;
-use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
 use crate::model::{convert, MethodAuthorization};
 
 /// A component is an instance of blueprint.
-#[derive(Debug, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,

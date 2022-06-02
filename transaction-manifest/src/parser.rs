@@ -161,7 +161,7 @@ impl Parser {
                 method: self.parse_value()?,
             },
             TokenKind::PublishPackage => Instruction::PublishPackage {
-                code: self.parse_value()?,
+                package: self.parse_value()?,
             },
             _ => {
                 return Err(ParserError::UnexpectedToken(token));
@@ -517,9 +517,15 @@ mod tests {
     fn test_enum() {
         parse_value_ok!(
             r#"Enum("Variant", "Hello", 123u8)"#,
-            Value::Enum("Variant".to_string(), vec![Value::String("Hello".into()), Value::U8(123)],)
+            Value::Enum(
+                "Variant".to_string(),
+                vec![Value::String("Hello".into()), Value::U8(123)],
+            )
         );
-        parse_value_ok!(r#"Enum("Variant")"#, Value::Enum("Variant".to_string(), vec![]));
+        parse_value_ok!(
+            r#"Enum("Variant")"#,
+            Value::Enum("Variant".to_string(), vec![])
+        );
     }
 
     #[test]

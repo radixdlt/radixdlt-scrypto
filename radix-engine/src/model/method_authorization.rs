@@ -1,6 +1,6 @@
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::engine::types::*;
-use scrypto::rust::vec::Vec;
 
 use crate::model::method_authorization::MethodAuthorizationError::NotAuthorized;
 use crate::model::{AuthZone, Proof};
@@ -120,8 +120,8 @@ pub enum HardProofRuleResourceList {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
 pub enum HardProofRule {
-    This(HardResourceOrNonFungible),
-    SomeOfResource(HardDecimal, HardResourceOrNonFungible),
+    Require(HardResourceOrNonFungible),
+    AmountOf(HardDecimal, HardResourceOrNonFungible),
     AllOf(HardProofRuleResourceList),
     AnyOf(HardProofRuleResourceList),
     CountOf(HardCount, HardProofRuleResourceList),
@@ -134,14 +134,14 @@ impl HardProofRule {
         shadow_auth_zone: &mut Option<&mut AuthZone>,
     ) -> Result<(), MethodAuthorizationError> {
         match self {
-            HardProofRule::This(resource) => {
+            HardProofRule::Require(resource) => {
                 if resource.check(auth_zones, shadow_auth_zone) {
                     Ok(())
                 } else {
                     Err(NotAuthorized)
                 }
             }
-            HardProofRule::SomeOfResource(HardDecimal::Amount(amount), resource) => {
+            HardProofRule::AmountOf(HardDecimal::Amount(amount), resource) => {
                 if resource.check_has_amount(*amount, auth_zones, shadow_auth_zone) {
                     Ok(())
                 } else {

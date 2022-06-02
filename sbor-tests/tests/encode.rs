@@ -1,8 +1,8 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
+use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::rust::string::ToString;
 use sbor::Encode;
 use sbor::Encoder;
 use sbor::TypeId;
@@ -24,6 +24,9 @@ pub enum TestEnum {
     B(u32),
     C,
 }
+
+#[derive(TypeId, Encode)]
+pub enum EmptyEnum {}
 
 #[test]
 fn test_encode_struct() {

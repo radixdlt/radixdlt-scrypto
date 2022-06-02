@@ -1,15 +1,16 @@
 use core::ops::*;
 use num_bigint::BigInt;
 use num_traits::Signed;
+use sbor::rust::convert::TryFrom;
+use sbor::rust::fmt;
+use sbor::rust::iter;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::misc::*;
-use crate::rust::convert::TryFrom;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::string::ToString;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// `Decimal` represents a 128 bit representation of a fixed-scale decimal number.
@@ -41,6 +42,14 @@ pub enum RoundingMode {
 impl Default for Decimal {
     fn default() -> Self {
         Self::zero()
+    }
+}
+
+impl iter::Sum for Decimal {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        let mut sum = Decimal::zero();
+        iter.for_each(|d| sum += d);
+        sum
     }
 }
 
@@ -497,6 +506,7 @@ fn read_dot(c: char) -> Result<(), ParseDecimalError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use sbor::rust::vec;
 
     #[test]
     fn test_format() {
@@ -790,5 +800,15 @@ mod tests {
         assert_eq!(num.round(2, mode).to_string(), "-2.56");
         assert_eq!(num.round(17, mode).to_string(), "-2.55555555555555556");
         assert_eq!(num.round(18, mode).to_string(), "-2.555555555555555555");
+    }
+
+    #[test]
+    fn test_sum() {
+        let decimals = vec![dec!("1"), dec!("2"), dec!("3")];
+        // two syntax
+        let sum1: Decimal = decimals.iter().copied().sum();
+        let sum2: Decimal = decimals.into_iter().sum();
+        assert_eq!(sum1, dec!("6"));
+        assert_eq!(sum2, dec!("6"));
     }
 }

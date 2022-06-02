@@ -6,6 +6,18 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  check-code-format:
+    name: Check code format
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install Scrypto toolchain
+      run: cargo install --path ./simulator
+    - name: Check format
+      run: bash ./check.sh
   sbor-unit-tests:
     name: Run SBOR unit tests
     runs-on: ${{ matrix.os }}
@@ -105,7 +117,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v2
     - name: Upgrade rust toolchain
@@ -117,6 +129,24 @@ jobs:
       working-directory: radix-engine
     - name: Run bench
       run: cargo bench
+      working-directory: radix-engine
+  radix-engine-wasmer:
+    name: Run Radix Engine tests (with Wasmer)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Upgrade rust toolchain
+      run: rustup upgrade
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Run tests
+      run: cargo test --verbose --features wasmer
+      working-directory: radix-engine
+    - name: Run bench
+      run: cargo bench --features wasmer
       working-directory: radix-engine
   transaction-manifest:
     name: Run transaction manifest tests

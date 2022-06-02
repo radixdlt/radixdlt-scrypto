@@ -1,4 +1,12 @@
 use sbor::path::{MutableSborPath, SborPath};
+use sbor::rust::borrow::Borrow;
+use sbor::rust::collections::HashMap;
+use sbor::rust::collections::HashSet;
+use sbor::rust::fmt;
+use sbor::rust::format;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use sbor::type_id::*;
 use sbor::{any::*, *};
 
@@ -8,14 +16,6 @@ use crate::crypto::*;
 use crate::engine::types::*;
 use crate::math::*;
 use crate::resource::*;
-use crate::rust::borrow::Borrow;
-use crate::rust::collections::HashMap;
-use crate::rust::collections::HashSet;
-use crate::rust::fmt;
-use crate::rust::format;
-use crate::rust::string::String;
-use crate::rust::string::ToString;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents an error when parsing a Scrypto value.
@@ -41,7 +41,40 @@ pub struct ScryptoValue {
     pub lazy_map_ids: HashSet<LazyMapId>,
 }
 
+// FIXME: encode as the original type, rather than Vec<u8>
+
+impl TypeId for ScryptoValue {
+    fn type_id() -> u8 {
+        Vec::<u8>::type_id()
+    }
+}
+
+impl Encode for ScryptoValue {
+    fn encode_value(&self, encoder: &mut Encoder) {
+        self.raw.encode_value(encoder);
+    }
+}
+
+impl Decode for ScryptoValue {
+    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
+        Ok(Self::from_slice(&Vec::<u8>::decode_value(decoder)?)
+            .expect("FIXME support untrusted ScryptoValue decoding"))
+    }
+}
+
 impl ScryptoValue {
+    pub fn unit() -> Self {
+        Self::from_value(&())
+    }
+
+    pub fn from_value<T: Encode>(value: &T) -> Self {
+        ScryptoValue::from_slice(&scrypto_encode(value)).unwrap()
+    }
+
+    pub fn from_any(value: &Value) -> Result<Self, ParseScryptoValueError> {
+        ScryptoValue::from_slice(&encode_any(value))
+    }
+
     pub fn from_slice(slice: &[u8]) -> Result<Self, ParseScryptoValueError> {
         // Decode with SBOR
         let value = decode_any(slice).map_err(ParseScryptoValueError::DecodeError)?;
@@ -114,16 +147,9 @@ impl ScryptoValue {
         }
         self.bucket_ids = new_bucket_ids;
 
-        let mut bytes = Vec::new();
-        let mut enc = Encoder::with_type(&mut bytes);
-        encode_any(None, &self.dom, &mut enc);
-        self.raw = bytes;
+        self.raw = encode_any(&self.dom);
 
         Ok(())
-    }
-
-    pub fn from_value<T: Encode>(value: &T) -> Self {
-        ScryptoValue::from_slice(&scrypto_encode(value)).unwrap()
     }
 
     pub fn to_string(&self) -> String {

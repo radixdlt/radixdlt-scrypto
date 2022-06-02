@@ -1,13 +1,14 @@
-use crate::resource::AccessRuleNode::{AllOf, AnyOf};
-use crate::resource::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::string::ToString;
-use crate::rust::vec;
-use crate::rust::vec::Vec;
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::string::ToString;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::math::Decimal;
 
-/// TODO: add documentation for public types once they're stable.
+use crate::engine::api::RadixEngineInput;
+use crate::engine::call_engine;
+use crate::resource::AccessRuleNode::{AllOf, AnyOf};
+use crate::resource::*;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Describe, TypeId, Encode, Decode)]
 pub enum SoftDecimal {
@@ -349,6 +350,18 @@ pub enum AccessRule {
     AllowAll,
     DenyAll,
     Protected(AccessRuleNode),
+}
+
+impl AccessRule {
+    pub fn check(&self, proofs: &[Proof]) -> bool {
+        let input = RadixEngineInput::CheckAccessRule(
+            self.clone(),
+            proofs.iter().map(|proof| proof.0).collect(),
+        );
+        let output: bool = call_engine(input);
+
+        output
+    }
 }
 
 #[macro_export]

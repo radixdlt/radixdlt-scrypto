@@ -1,14 +1,27 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::collections::HashMap;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto_abi::{Function, Method};
 
 use crate::buffer::*;
 use crate::core::*;
 use crate::misc::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
 use crate::types::*;
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub enum PackageFunction {
+    Publish(Package),
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct Package {
+    pub code: Vec<u8>,
+    pub blueprints: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
+}
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
@@ -18,9 +31,9 @@ impl PackageAddress {}
 
 /// Represents a published package.
 #[derive(Debug)]
-pub struct Package(pub(crate) PackageAddress);
+pub struct BorrowedPackage(pub(crate) PackageAddress);
 
-impl Package {
+impl BorrowedPackage {
     /// Invokes a function on this package.
     pub fn call<T: Decode>(&self, blueprint_name: &str, function: &str, args: Vec<Vec<u8>>) -> T {
         let output = Runtime::call_function(self.0, blueprint_name, function, args);

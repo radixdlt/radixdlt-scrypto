@@ -4,11 +4,13 @@ use bencher::Bencher;
 
 use radix_engine::ledger::*;
 use radix_engine::transaction::*;
-use scrypto::prelude::*;
+use radix_engine::wasm::default_wasm_engine;
+use scrypto::prelude::RADIX_TOKEN;
 
 fn bench_transfer(b: &mut Bencher) {
-    let mut ledger = InMemorySubstateStore::with_bootstrap();
-    let mut executor = TransactionExecutor::new(&mut ledger, false);
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
+    let mut wasm_engine = default_wasm_engine();
+    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, false);
     let (pk, sk, account1) = executor.new_account();
     let (_, _, account2) = executor.new_account();
     let transaction = TransactionBuilder::new()
@@ -19,7 +21,7 @@ fn bench_transfer(b: &mut Bencher) {
 
     b.iter(|| {
         let receipt = executor.validate_and_execute(&transaction).unwrap();
-        assert!(receipt.result.is_ok());
+        receipt.result.expect("It should work");
     });
 }
 

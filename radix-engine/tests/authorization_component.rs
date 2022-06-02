@@ -2,15 +2,18 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::errors::RuntimeError;
+use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
+use radix_engine::wasm::default_wasm_engine;
+use scrypto::call_data;
 use scrypto::prelude::*;
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (_, _, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
@@ -24,8 +27,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            "create_component_with_auth",
-            vec![scrypto_encode(&authorization)],
+            call_data!(create_component_with_auth(authorization)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -38,13 +40,12 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            "create_component",
-            vec![],
+            call_data!(create_component()),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
     let receipt = test_runner.validate_and_execute(&transaction);
-    assert!(receipt.result.is_ok());
+    receipt.result.expect("It should work");
     let my_component = receipt.new_component_addresses[0];
 
     // Act
@@ -52,8 +53,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         .new_transaction_builder()
         .call_method(
             my_component,
-            "cross_component_call",
-            vec![scrypto_encode(&secured_component)],
+            call_data!(cross_component_call(secured_component)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -68,7 +68,8 @@ fn cannot_make_cross_component_call_without_authorization() {
 fn can_make_cross_component_call_with_authorization() {
     // Arrange
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut test_runner = TestRunner::new(&mut substate_store);
+    let mut wasm_engine = default_wasm_engine();
+    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (key, sk, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
@@ -82,8 +83,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            "create_component_with_auth",
-            vec![scrypto_encode(&authorization)],
+            call_data!(create_component_with_auth(authorization)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -96,8 +96,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            "create_component",
-            vec![],
+            call_data!(create_component()),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -119,8 +118,7 @@ fn can_make_cross_component_call_with_authorization() {
         .new_transaction_builder()
         .call_method(
             my_component,
-            "cross_component_call",
-            vec![scrypto_encode(&secured_component)],
+            call_data!(cross_component_call(secured_component)),
         )
         .build(test_runner.get_nonce([]))
         .sign([]);

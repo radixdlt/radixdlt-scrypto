@@ -1,15 +1,16 @@
-use crate::ast;
 use radix_engine::engine::*;
 use radix_engine::model::*;
 use sbor::any::{encode_any, Value};
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::collections::HashMap;
+use sbor::rust::str::FromStr;
 use sbor::type_id::*;
-use sbor::Encoder;
+use scrypto::call_data_any_args;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::collections::HashMap;
-use scrypto::rust::str::FromStr;
 use scrypto::types::*;
 use scrypto::values::*;
+
+use crate::ast;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -282,17 +283,19 @@ pub fn generate_instruction(
             args,
         } => {
             let args = generate_args(args, resolver)?;
+            let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidatorError)?;
+                fields.push(validated_arg.dom);
             }
+
             Instruction::CallFunction {
                 package_address: generate_package_address(package_address)?,
                 blueprint_name: generate_string(blueprint_name)?,
-                function: generate_string(function)?,
-                args,
+                call_data: call_data_any_args!(generate_string(function)?, fields),
             }
         }
         ast::Instruction::CallMethod {
@@ -301,16 +304,24 @@ pub fn generate_instruction(
             args,
         } => {
             let args = generate_args(args, resolver)?;
+            let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
                     .map_err(GeneratorError::IdValidatorError)?;
+                fields.push(validated_arg.dom);
             }
+
+            let variant = ::sbor::Value::Enum {
+                name: generate_string(method)?,
+                fields,
+            };
+            let bytes = ::sbor::encode_any(&variant);
+
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address)?,
-                method: generate_string(method)?,
-                args,
+                call_data: bytes,
             }
         }
         ast::Instruction::CallMethodWithAllResources {
@@ -325,8 +336,8 @@ pub fn generate_instruction(
                 method: generate_string(method)?,
             }
         }
-        ast::Instruction::PublishPackage { code } => Instruction::PublishPackage {
-            code: generate_bytes(code)?,
+        ast::Instruction::PublishPackage { package } => Instruction::PublishPackage {
+            package: generate_bytes(package)?,
         },
     })
 }
@@ -349,10 +360,7 @@ fn generate_args(
     for v in values {
         let value = generate_value(v, None, resolver)?;
 
-        let mut bytes = Vec::new();
-        let mut enc = Encoder::with_type(&mut bytes);
-        encode_any(None, &value, &mut enc);
-        result.push(bytes);
+        result.push(encode_any(&value));
     }
     Ok(result)
 }
@@ -769,7 +777,9 @@ mod tests {
     use super::*;
     use crate::lexer::tokenize;
     use crate::parser::Parser;
-    use scrypto::buffer::*;
+    use scrypto::buffer::scrypto_encode;
+    use scrypto::call_data;
+    use scrypto::prelude::Package;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -996,11 +1006,7 @@ mod tests {
                 )
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
-                function: "new".into(),
-                args: vec![
-                    scrypto_encode(&500u32),
-                    scrypto_encode(&HashMap::from([("key", 1u8),])),
-                ]
+                call_data: call_data!(new(500u32, HashMap::from([("key", 1u8),])))
             }
         );
         generate_instruction_ok!(
@@ -1010,8 +1016,7 @@ mod tests {
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
-                method: "refill".into(),
-                args: vec![]
+                call_data: call_data!(refill())
             }
         );
         generate_instruction_ok!(
@@ -1045,6 +1050,11 @@ mod tests {
             0x30, 0x20, 0x28, 0x39, 0x64, 0x31, 0x62, 0x32, 0x31, 0x30, 0x36, 0x65, 0x20, 0x32,
             0x30, 0x32, 0x32, 0x2d, 0x30, 0x32, 0x2d, 0x32, 0x33, 0x29,
         ];
+        let package = Package {
+            code,
+            blueprints: HashMap::new(),
+        };
+        let encoded_package = scrypto_encode(&package);
 
         assert_eq!(
             crate::compile(tx).unwrap(),
@@ -1055,16 +1065,13 @@ mod tests {
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
-                        method: "withdraw_by_amount".into(),
-                        args: vec![
-                            scrypto_encode(&Decimal::from(5u32)),
-                            scrypto_encode(
-                                &ResourceAddress::from_str(
-                                    "030000000000000000000000000000000000000000000000000004"
-                                )
-                                .unwrap()
-                            ),
-                        ]
+                        call_data: call_data!(withdraw_by_amount(
+                            Decimal::from(5u32),
+                            ResourceAddress::from_str(
+                                "030000000000000000000000000000000000000000000000000004"
+                            )
+                            .unwrap()
+                        ))
                     },
                     Instruction::TakeFromWorktopByAmount {
                         amount: Decimal::from(2),
@@ -1078,8 +1085,7 @@ mod tests {
                             "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                         )
                         .unwrap(),
-                        method: "buy_gumball".into(),
-                        args: vec![scrypto_encode(&scrypto::resource::Bucket(512)),]
+                        call_data: call_data!(buy_gumball(scrypto::resource::Bucket(512)))
                     },
                     Instruction::AssertWorktopContainsByAmount {
                         amount: Decimal::from(3),
@@ -1109,16 +1115,13 @@ mod tests {
                             "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                         )
                         .unwrap(),
-                        method: "create_proof_by_amount".into(),
-                        args: vec![
-                            scrypto_encode(&Decimal::from(5u32)),
-                            scrypto_encode(
-                                &ResourceAddress::from_str(
-                                    "030000000000000000000000000000000000000000000000000004"
-                                )
-                                .unwrap()
-                            ),
-                        ]
+                        call_data: call_data!(create_proof_by_amount(
+                            Decimal::from(5u32),
+                            ResourceAddress::from_str(
+                                "030000000000000000000000000000000000000000000000000004"
+                            )
+                            .unwrap()
+                        ))
                     },
                     Instruction::PopFromAuthZone,
                     Instruction::DropProof { proof_id: 516 },
@@ -1140,8 +1143,9 @@ mod tests {
                         .unwrap(),
                         method: "deposit_batch".into(),
                     },
-                    Instruction::PublishPackage { code: code.clone() },
-                    Instruction::PublishPackage { code: code.clone() }
+                    Instruction::PublishPackage {
+                        package: encoded_package.clone()
+                    },
                 ]
             }
         );

@@ -1,16 +1,16 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::marker::PhantomData;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::LazyMapId};
 use crate::misc::*;
-use crate::rust::borrow::ToOwned;
-use crate::rust::fmt;
-use crate::rust::marker::PhantomData;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::vec;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// A scalable key-value map which loads entries on demand.
@@ -24,11 +24,11 @@ pub struct LazyMap<K: Encode + Decode, V: Encode + Decode> {
 impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
     /// Creates a new lazy map.
     pub fn new() -> Self {
-        let input = CreateLazyMapInput {};
-        let output: CreateLazyMapOutput = call_engine(CREATE_LAZY_MAP, input);
+        let input = RadixEngineInput::CreateLazyMap();
+        let output: LazyMapId = call_engine(input);
 
         Self {
-            id: output.lazy_map_id,
+            id: output,
             key: PhantomData,
             value: PhantomData,
         }
@@ -36,23 +36,20 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<V> {
-        let input = GetLazyMapEntryInput {
-            lazy_map_id: self.id,
-            key: scrypto_encode(key),
-        };
-        let output: GetLazyMapEntryOutput = call_engine(GET_LAZY_MAP_ENTRY, input);
+        let input = RadixEngineInput::GetLazyMapEntry(self.id, scrypto_encode(key));
+        let output: Option<Vec<u8>> = call_engine(input);
 
-        output.value.map(|v| scrypto_decode(&v).unwrap())
+        output.map(|v| scrypto_decode(&v).unwrap())
     }
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
-        let input = PutLazyMapEntryInput {
-            lazy_map_id: self.id,
-            key: scrypto_encode(&key),
-            value: scrypto_encode(&value),
-        };
-        let _: PutLazyMapEntryOutput = call_engine(PUT_LAZY_MAP_ENTRY, input);
+        let input = RadixEngineInput::PutLazyMapEntry(
+            self.id,
+            scrypto_encode(&key),
+            scrypto_encode(&value),
+        );
+        let _: () = call_engine(input);
     }
 }
 

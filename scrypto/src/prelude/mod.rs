@@ -8,14 +8,15 @@ pub use crate::misc::*;
 pub use crate::resource::*;
 pub use crate::{
     access_and_or, access_rule_node, args, blueprint, borrow_component, borrow_package,
-    borrow_resource_manager, compile_package, debug, dec, error, import, include_package, info,
-    resource_list, rule, trace, warn, Decode, Describe, Encode, NonFungibleData, TypeId,
+    borrow_resource_manager, compile_package, debug, dec, error, external_blueprint,
+    external_component, import, include_package, info, resource_list, rule, trace, warn, Decode,
+    Describe, Encode, NonFungibleData, TypeId,
 };
 
-pub use crate::rust::borrow::ToOwned;
-pub use crate::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
-pub use crate::rust::str::FromStr;
-pub use crate::rust::string::String;
-pub use crate::rust::string::ToString;
-pub use crate::rust::vec;
-pub use crate::rust::vec::Vec;
+pub use sbor::rust::borrow::ToOwned;
+pub use sbor::rust::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+pub use sbor::rust::str::FromStr;
+pub use sbor::rust::string::String;
+pub use sbor::rust::string::ToString;
+pub use sbor::rust::vec;
+pub use sbor::rust::vec::Vec;

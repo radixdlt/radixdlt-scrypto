@@ -1,3 +1,8 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::*;
@@ -6,11 +11,6 @@ use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
-use crate::rust::borrow::ToOwned;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 pub struct LocalComponent {
@@ -34,13 +34,13 @@ impl LocalComponent {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = CreateComponentInput {
-            blueprint_name: self.blueprint_name,
-            state: self.state,
-            access_rules_list: self.access_rules_list,
-        };
-        let output: CreateComponentOutput = call_engine(CREATE_COMPONENT, input);
-        output.component_address
+        let input = RadixEngineInput::CreateComponent(
+            self.blueprint_name,
+            self.state,
+            self.access_rules_list,
+        );
+        let output: ComponentAddress = call_engine(input);
+        output
     }
 }
 
@@ -70,36 +70,30 @@ impl Component {
 
     /// Returns the state of this component.
     pub fn get_state<T: ComponentState>(&self) -> T {
-        let input = GetComponentStateInput {};
-        let output: GetComponentStateOutput = call_engine(GET_COMPONENT_STATE, input);
+        let input = RadixEngineInput::GetComponentState(self.0);
+        let output: Vec<u8> = call_engine(input);
 
-        scrypto_decode(&output.state).unwrap()
+        scrypto_decode(&output).unwrap()
     }
 
     /// Updates the state of this component.
     pub fn put_state<T: ComponentState>(&self, state: T) {
-        let input = PutComponentStateInput {
-            state: scrypto_encode(&state),
-        };
-        let _: PutComponentStateOutput = call_engine(PUT_COMPONENT_STATE, input);
+        let input = RadixEngineInput::PutComponentState(self.0, scrypto_encode(&state));
+        let _: () = call_engine(input);
     }
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let input = GetComponentInfoInput {
-            component_address: self.0,
-        };
-        let output: GetComponentInfoOutput = call_engine(GET_COMPONENT_INFO, input);
-        output.package_address
+        let input = RadixEngineInput::GetComponentInfo(self.0);
+        let output: (PackageAddress, String) = call_engine(input);
+        output.0
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let input = GetComponentInfoInput {
-            component_address: self.0,
-        };
-        let output: GetComponentInfoOutput = call_engine(GET_COMPONENT_INFO, input);
-        output.blueprint_name
+        let input = RadixEngineInput::GetComponentInfo(self.0);
+        let output: (PackageAddress, String) = call_engine(input);
+        output.1
     }
 }
 

@@ -63,7 +63,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
             }
         },
         Data::Enum(DataEnum { variants, .. }) => {
-            let match_arms = variants.iter().map(| v| {
+            let match_arms = variants.iter().map(|v| {
                 let v_id = &v.ident;
                 let name_string = v_id.to_string();
                 let name: Expr = parse_quote! { #name_string };
@@ -110,13 +110,22 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 }
             });
 
-            quote! {
-                impl ::sbor::Encode for #ident {
-                    fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
-                        use ::sbor::{self, Encode};
+            if match_arms.len() == 0 {
+                quote! {
+                    impl ::sbor::Encode for #ident {
+                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                        }
+                    }
+                }
+            } else {
+                quote! {
+                    impl ::sbor::Encode for #ident {
+                        fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
+                            use ::sbor::{self, Encode};
 
-                        match self {
-                            #(#match_arms)*
+                            match self {
+                                #(#match_arms)*
+                            }
                         }
                     }
                 }

@@ -1,7 +1,6 @@
 use crate::any::Value;
-use crate::rust::vec::Vec;
 use crate::rust::vec;
-use sbor::*;
+use crate::rust::vec::Vec;
 
 #[derive(Eq, PartialEq, Clone)]
 pub struct MutableSborPath(Vec<usize>);
@@ -94,7 +93,9 @@ impl<'a> SborValueRetriever<'a> {
         }
 
         match value {
-            Value::Struct { fields } | Value::Enum { fields, .. } => self.get_from_vector_mut(fields),
+            Value::Struct { fields } | Value::Enum { fields, .. } => {
+                self.get_from_vector_mut(fields)
+            }
             Value::Array { elements, .. } | Value::Vec { elements, .. } => {
                 self.get_from_vector_mut(elements)
             }

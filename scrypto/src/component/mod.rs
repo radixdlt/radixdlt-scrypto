@@ -7,5 +7,7 @@ pub use component::{
     Component, ComponentAddress, ComponentState, LocalComponent, ParseComponentAddressError,
 };
 pub use lazy_map::{LazyMap, ParseLazyMapError};
-pub use package::{Package, PackageAddress, ParsePackageAddressError};
+pub use package::{
+    BorrowedPackage, Package, PackageAddress, PackageFunction, ParsePackageAddressError,
+};
 pub use system::{component_system, init_component_system, ComponentSystem};

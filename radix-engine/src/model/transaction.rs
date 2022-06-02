@@ -1,15 +1,14 @@
+use sbor::rust::collections::BTreeSet;
+use sbor::rust::string::String;
+use sbor::rust::vec;
+use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_encode;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::rust::collections::BTreeSet;
-use scrypto::rust::string::String;
-use scrypto::rust::vec;
-use scrypto::rust::vec::Vec;
 use scrypto::values::*;
 
 use crate::engine::*;
-use crate::errors::*;
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
 
 /// Represents an unsigned transaction
@@ -107,8 +106,7 @@ pub enum Instruction {
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
-        function: String,
-        args: Vec<Vec<u8>>,
+        call_data: Vec<u8>,
     },
 
     /// Calls a component method.
@@ -116,8 +114,7 @@ pub enum Instruction {
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
         component_address: ComponentAddress,
-        method: String,
-        args: Vec<Vec<u8>>,
+        call_data: Vec<u8>,
     },
 
     /// Calls a component method with all resources owned by the transaction.
@@ -127,7 +124,7 @@ pub enum Instruction {
     },
 
     /// Publishes a package.
-    PublishPackage { code: Vec<u8> },
+    PublishPackage { package: Vec<u8> },
 
     /// Specifies transaction nonce
     Nonce {
@@ -313,25 +310,21 @@ impl SignedTransaction {
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    function,
-                    args,
+                    call_data,
                 } => {
                     instructions.push(ValidatedInstruction::CallFunction {
                         package_address,
                         blueprint_name,
-                        function,
-                        args: Self::validate_args(args, &mut id_validator)?,
+                        call_data: Self::validate_call_data(call_data, &mut id_validator)?,
                     });
                 }
                 Instruction::CallMethod {
                     component_address,
-                    method,
-                    args,
+                    call_data,
                 } => {
                     instructions.push(ValidatedInstruction::CallMethod {
                         component_address,
-                        method,
-                        args: Self::validate_args(args, &mut id_validator)?,
+                        call_data: Self::validate_call_data(call_data, &mut id_validator)?,
                     });
                 }
                 Instruction::CallMethodWithAllResources {
@@ -346,8 +339,8 @@ impl SignedTransaction {
                         method,
                     });
                 }
-                Instruction::PublishPackage { code } => {
-                    instructions.push(ValidatedInstruction::PublishPackage { code });
+                Instruction::PublishPackage { package } => {
+                    instructions.push(ValidatedInstruction::PublishPackage { package });
                 }
                 Instruction::Nonce { .. } => {
                     // TODO: validate nonce
@@ -362,30 +355,26 @@ impl SignedTransaction {
         })
     }
 
-    fn validate_args(
-        args: Vec<Vec<u8>>,
+    fn validate_call_data(
+        call_data: Vec<u8>,
         id_validator: &mut IdValidator,
-    ) -> Result<Vec<ScryptoValue>, TransactionValidationError> {
-        let mut result = vec![];
-        for arg in args {
-            let validated_arg = ScryptoValue::from_slice(&arg)
-                .map_err(TransactionValidationError::ParseScryptoValueError)?;
-            id_validator
-                .move_resources(&validated_arg)
-                .map_err(TransactionValidationError::IdValidatorError)?;
-            if let Some(vault_id) = validated_arg.vault_ids.iter().nth(0) {
-                return Err(TransactionValidationError::VaultNotAllowed(
-                    vault_id.clone(),
-                ));
-            }
-            if let Some(lazy_map_id) = validated_arg.lazy_map_ids.iter().nth(0) {
-                return Err(TransactionValidationError::LazyMapNotAllowed(
-                    lazy_map_id.clone(),
-                ));
-            }
-            result.push(validated_arg);
+    ) -> Result<ScryptoValue, TransactionValidationError> {
+        let value = ScryptoValue::from_slice(&call_data)
+            .map_err(TransactionValidationError::ParseScryptoValueError)?;
+        id_validator
+            .move_resources(&value)
+            .map_err(TransactionValidationError::IdValidatorError)?;
+        if let Some(vault_id) = value.vault_ids.iter().nth(0) {
+            return Err(TransactionValidationError::VaultNotAllowed(
+                vault_id.clone(),
+            ));
         }
-        Ok(result)
+        if let Some(lazy_map_id) = value.lazy_map_ids.iter().nth(0) {
+            return Err(TransactionValidationError::LazyMapNotAllowed(
+                lazy_map_id.clone(),
+            ));
+        }
+        Ok(value)
     }
 }
 
@@ -393,9 +382,8 @@ impl SignedTransaction {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
+    use sbor::rust::marker::PhantomData;
     use scrypto::engine::types::ComponentAddress;
-    use scrypto::rust::borrow::ToOwned;
-    use scrypto::rust::marker::PhantomData;
 
     #[test]
     fn should_reject_transaction_passing_vault() {
@@ -404,11 +392,7 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        method: "test".to_owned(),
-                        args: vec![scrypto_encode(&scrypto::resource::Vault((
-                            Hash([2u8; 32]),
-                            0,
-                        )))],
+                        call_data: scrypto_encode(&scrypto::resource::Vault((Hash([2u8; 32]), 0,))),
                     }],
                 },
                 signatures: Vec::new(),
@@ -428,12 +412,11 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        method: "test".to_owned(),
-                        args: vec![scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
+                        call_data: scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
                             id: (Hash([2u8; 32]), 0,),
                             key: PhantomData,
                             value: PhantomData,
-                        })],
+                        }),
                     }],
                 },
                 signatures: Vec::new()

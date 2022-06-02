@@ -1,16 +1,28 @@
 use radix_engine::ledger::*;
-use radix_engine::model::{Component, Receipt, SignedTransaction};
+use radix_engine::model::{extract_package, Component, Receipt, SignedTransaction};
 use radix_engine::transaction::*;
-use scrypto::abi;
+use radix_engine::wasm::WasmEngine;
+use radix_engine::wasm::WasmInstance;
 use scrypto::prelude::*;
+use scrypto::{abi, call_data};
 
-pub struct TestRunner<'l> {
-    executor: TransactionExecutor<'l, InMemorySubstateStore>,
+pub struct TestRunner<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    executor: TransactionExecutor<'s, 'w, S, W, I>,
 }
 
-impl<'l> TestRunner<'l> {
-    pub fn new(ledger: &'l mut InMemorySubstateStore) -> Self {
-        let executor = TransactionExecutor::new(ledger, true);
+impl<'s, 'w, S, W, I> TestRunner<'s, 'w, S, W, I>
+where
+    S: ReadableSubstateStore + WriteableSubstateStore,
+    W: WasmEngine<I>,
+    I: WasmInstance,
+{
+    pub fn new(ledger: &'s mut S, wasm_engine: &'w mut W) -> Self {
+        let executor = TransactionExecutor::new(ledger, wasm_engine, false);
 
         Self { executor }
     }
@@ -47,7 +59,8 @@ impl<'l> TestRunner<'l> {
     }
 
     pub fn publish_package(&mut self, name: &str) -> PackageAddress {
-        self.executor.publish_package(&Self::compile(name)).unwrap()
+        let package = extract_package(Self::compile(name)).unwrap();
+        self.executor.publish_package(package).unwrap()
     }
 
     pub fn compile(name: &str) -> Vec<u8> {
@@ -96,8 +109,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                function,
-                vec![scrypto_encode(&token), scrypto_encode(&set_auth)],
+                call_data!(function.to_string(), token, set_auth),
             )
             .call_method_with_all_resources(account.2, "deposit_batch")
             .build(self.executor.get_nonce([account.0.clone()]))
@@ -130,13 +142,12 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                "create_restricted_token",
-                vec![
-                    scrypto_encode(&mint_auth),
-                    scrypto_encode(&burn_auth),
-                    scrypto_encode(&withdraw_auth),
-                    scrypto_encode(&admin_auth),
-                ],
+                call_data!(create_restricted_token(
+                    mint_auth,
+                    burn_auth,
+                    withdraw_auth,
+                    admin_auth
+                )),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -161,8 +172,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                "create_restricted_burn",
-                vec![scrypto_encode(&auth_resource_address)],
+                call_data!(create_restricted_burn(auth_resource_address)),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -182,8 +192,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                "create_restricted_transfer",
-                vec![scrypto_encode(&auth_resource_address)],
+                call_data![create_restricted_transfer(auth_resource_address)],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -198,13 +207,13 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                "create_non_fungible_fixed",
-                vec![],
+                call_data!(create_non_fungible_fixed()),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
             .sign([]);
         let receipt = self.executor.validate_and_execute(&transaction).unwrap();
+        receipt.result.expect("Should be okay.");
         receipt.new_resource_addresses[0]
     }
 
@@ -219,8 +228,7 @@ impl<'l> TestRunner<'l> {
             .call_function(
                 package,
                 "ResourceCreator",
-                "create_fungible_fixed",
-                args![amount, divisibility],
+                call_data!(create_fungible_fixed(amount, divisibility)),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build(self.executor.get_nonce([]))
@@ -275,4 +283,30 @@ macro_rules! assert_auth_error {
             panic!("Expected auth error but got: {:?}", $error);
         }
     }};
+}
+
+#[macro_export]
+macro_rules! assert_invoke_error {
+    ($result:expr, $pattern:pat) => {{
+        let matches = match &$result {
+            Err(radix_engine::engine::RuntimeError::InvokeError(e)) => {
+                matches!(e.as_ref(), $pattern)
+            }
+            _ => false,
+        };
+
+        if !matches {
+            panic!("Expected invoke error but got: {:?}", $result);
+        }
+    }};
+}
+
+pub fn wat2wasm(wat: &str) -> Vec<u8> {
+    wabt::wat2wasm(
+        wat.replace("${memcpy}", include_str!("wasm/snippets/memcpy.wat"))
+            .replace("${memmove}", include_str!("wasm/snippets/memmove.wat"))
+            .replace("${memset}", include_str!("wasm/snippets/memset.wat"))
+            .replace("${buffer}", include_str!("wasm/snippets/buffer.wat")),
+    )
+    .expect("Failed to compiled WAT into WASM")
 }

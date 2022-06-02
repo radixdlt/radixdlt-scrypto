@@ -1,11 +1,11 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::fmt;
+use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
+use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::rust::borrow::ToOwned;
-use crate::rust::fmt;
-use crate::rust::str::FromStr;
-use crate::rust::string::String;
-use crate::rust::string::ToString;
-use crate::rust::vec::Vec;
 use crate::types::*;
 
 /// Represents a key for a non-fungible resource
@@ -103,7 +103,7 @@ impl fmt::Debug for NonFungibleId {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rust::vec;
+    use sbor::rust::vec;
 
     #[test]
     fn test_non_fungible_id_string_rep() {

@@ -2,8 +2,9 @@
 use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
+use sbor::rust::collections::HashSet;
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::engine::types::*;
-use scrypto::rust::collections::HashSet;
 use scrypto::values::*;
 use std::collections::VecDeque;
 
@@ -18,12 +19,12 @@ pub enum DisplayError {
 }
 
 /// Dump a package into console.
-pub fn dump_package<T: SubstateStore, O: std::io::Write>(
+pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     package_address: PackageAddress,
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
-    let package: Option<Package> = substate_store
+    let package: Option<ValidatedPackage> = substate_store
         .get_decoded_substate(&package_address)
         .map(|(package, _)| package);
     match package {
@@ -47,7 +48,7 @@ pub fn dump_package<T: SubstateStore, O: std::io::Write>(
 }
 
 /// Dump a component into console.
-pub fn dump_component<T: SubstateStore + QueryableSubstateStore, O: std::io::Write>(
+pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
     substate_store: &T,
     output: &mut O,
@@ -101,7 +102,7 @@ pub fn dump_component<T: SubstateStore + QueryableSubstateStore, O: std::io::Wri
     }
 }
 
-fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore, O: std::io::Write>(
+fn dump_lazy_map<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
     lazy_map_id: &LazyMapId,
     substate_store: &T,
@@ -133,7 +134,7 @@ fn dump_lazy_map<T: SubstateStore + QueryableSubstateStore, O: std::io::Write>(
     Ok((referenced_maps, referenced_vaults))
 }
 
-fn dump_resources<T: SubstateStore, O: std::io::Write>(
+fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
     vaults: &HashSet<VaultId>,
     substate_store: &T,
@@ -141,11 +142,10 @@ fn dump_resources<T: SubstateStore, O: std::io::Write>(
 ) -> Result<(), DisplayError> {
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let vault: Vault = substate_store
-            .get_decoded_child_substate(&component_address, vault_id)
-            .unwrap()
-            .0;
-
+        let mut vault_address = scrypto_encode(&component_address);
+        vault_address.extend(scrypto_encode(vault_id));
+        let substate = substate_store.get_substate(&vault_address).unwrap();
+        let vault: Vault = scrypto_decode(&substate.value).unwrap();
         let amount = vault.total_amount();
         let resource_address = vault.resource_address();
         let resource_manager: ResourceManager = substate_store
@@ -172,10 +172,13 @@ fn dump_resources<T: SubstateStore, O: std::io::Write>(
         if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
             let ids = vault.total_ids().unwrap();
             for (inner_last, id) in ids.iter().identify_last() {
-                let non_fungible: Option<NonFungible> = substate_store
-                    .get_decoded_child_substate(&resource_address, id)
-                    .unwrap()
-                    .0;
+                let mut nf_address = scrypto_encode(&resource_address);
+                nf_address.push(0u8);
+                nf_address.extend(id.to_vec());
+
+                let non_fungible: Option<NonFungible> =
+                    scrypto_decode(&substate_store.get_substate(&nf_address).unwrap().value)
+                        .unwrap();
 
                 if let Some(non_fungible) = non_fungible {
                     let immutable_data =
@@ -184,7 +187,7 @@ fn dump_resources<T: SubstateStore, O: std::io::Write>(
                         ScryptoValue::from_slice(&non_fungible.mutable_data()).unwrap();
                     writeln!(
                         output,
-                        "{}  {} NON_FUNGIBLE {{ id: {}, immutable_data: {}, mutable_data: {} }}",
+                        "{}  {} NonFungible {{ id: {}, immutable_data: {}, mutable_data: {} }}",
                         if last { " " } else { "│" },
                         list_item_prefix(inner_last),
                         id,
@@ -199,7 +202,7 @@ fn dump_resources<T: SubstateStore, O: std::io::Write>(
 }
 
 /// Dump a resource into console.
-pub fn dump_resource_manager<T: SubstateStore, O: std::io::Write>(
+pub fn dump_resource_manager<T: ReadableSubstateStore, O: std::io::Write>(
     resource_address: ResourceAddress,
     substate_store: &T,
     output: &mut O,

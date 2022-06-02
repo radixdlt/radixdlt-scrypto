@@ -1,9 +1,10 @@
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::collections::HashMap;
+use sbor::rust::string::String;
+
 use crate::math::*;
 use crate::resource::*;
 use crate::rule;
-use crate::rust::borrow::ToOwned;
-use crate::rust::collections::HashMap;
-use crate::rust::string::String;
 
 /// Not divisible.
 pub const DIVISIBILITY_NONE: u8 = 0;
@@ -16,12 +17,12 @@ pub struct ResourceBuilder;
 pub struct FungibleResourceBuilder {
     divisibility: u8,
     metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
 }
 
 pub struct NonFungibleResourceBuilder {
     metadata: HashMap<String, String>,
-    authorization: HashMap<ResourceMethod, (AccessRule, Mutability)>,
+    authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
 }
 
 impl ResourceBuilder {
