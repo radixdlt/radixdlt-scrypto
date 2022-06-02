@@ -13,7 +13,7 @@ use scrypto::values::ScryptoValue;
 #[test]
 fn can_withdraw_from_my_account() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -35,7 +35,7 @@ fn can_withdraw_from_my_account() {
 #[test]
 fn can_withdraw_non_fungible_from_my_account() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -58,7 +58,7 @@ fn can_withdraw_non_fungible_from_my_account() {
 #[test]
 fn cannot_withdraw_from_other_account() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (_, _, account) = test_runner.new_account();
@@ -81,7 +81,7 @@ fn cannot_withdraw_from_other_account() {
 #[test]
 fn account_to_bucket_to_account() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -110,7 +110,7 @@ fn account_to_bucket_to_account() {
 #[test]
 fn test_account_balance() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();

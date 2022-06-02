@@ -1,6 +1,7 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::engine::types::*;
 use scrypto::values::*;
@@ -106,7 +107,7 @@ pub enum RuntimeError {
     LazyMapNotAllowed,
 
     /// Resource check failure.
-    ResourceCheckFailure,
+    ResourceCheckFailure(ResourceFailure),
 
     /// AuthZone error
     AuthZoneError(AuthZoneError),
@@ -125,6 +126,14 @@ pub enum RuntimeError {
     CantMoveRestrictedProof(ProofId),
 
     InvalidInvocation,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum ResourceFailure {
+    Resource(ResourceAddress),
+    Resources(Vec<ResourceAddress>),
+    UnclaimedLazyMap,
+    Unknown,
 }
 
 impl fmt::Display for RuntimeError {

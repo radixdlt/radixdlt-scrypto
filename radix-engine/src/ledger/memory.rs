@@ -20,6 +20,12 @@ impl InMemorySubstateStore {
             nonce: 0,
         }
     }
+
+    pub fn with_bootstrap() -> Self {
+        let mut substate_store = Self::new();
+        bootstrap(&mut substate_store);
+        substate_store
+    }
 }
 
 impl Default for InMemorySubstateStore {

@@ -11,7 +11,7 @@ pub struct SetCurrentEpoch {
 
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::new(get_data_dir()?);
+        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         substate_store.set_epoch(self.epoch);
 
         writeln!(out, "Current epoch set!").map_err(Error::IOError)?;
