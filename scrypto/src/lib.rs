@@ -40,8 +40,6 @@ pub mod misc;
 pub mod prelude;
 /// Scrypto resource library.
 pub mod resource;
-/// Scrypto types.
-pub mod types;
 /// Scrypto values.
 pub mod values;
 
