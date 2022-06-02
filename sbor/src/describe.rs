@@ -1,3 +1,4 @@
+use sbor::Value;
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
 use crate::rust::string::String;
@@ -82,6 +83,70 @@ pub enum Type {
         name: String,
         generics: Vec<Type>,
     },
+}
+
+impl Type {
+    pub fn matches(&self, value: &Value) -> bool {
+        match self {
+            /*
+            Type::Unit => matches!(value, Value::Unit),
+            Type::Bool => matches!(value, Value::Bool { .. }),
+            Type::I8 => matches!(value, Value::I8 { .. }),
+            Type::I16 => matches!(value, Value::I16 { .. }),
+            Type::I32 => matches!(value, Value::I32 { .. }),
+            Type::I64 => matches!(value, Value::I64 { .. }),
+            Type::I128 => matches!(value, Value::I128 { .. }),
+            Type::U8 => matches!(value, Value::U8 { .. }),
+            Type::U16 => matches!(value, Value::U16 { .. }),
+            Type::U32 => matches!(value, Value::U32 { .. }),
+            Type::U64 => matches!(value, Value::U64 { .. }),
+            Type::U128 => matches!(value, Value::U128 { .. }),
+            Type::String => matches!(value, Value::String { .. }),
+            Type::Option { value: type_value } => {
+                if let Value::Option { value } = value {
+                   match &**value {
+                       None => true,
+                       Some(value) => type_value.matches(value)
+                   }
+                } else {
+                    false
+                }
+            }
+            Type::Array { element: type_element, length } => {
+                if let Value::Array { element_type_id: _, elements } = value {
+                    let length = usize::from(*length);
+                    length == elements.len() && elements.iter().all(|v| type_element.matches(v))
+                } else {
+                    false
+                }
+            }
+            Type::Tuple { elements: type_elements } => {
+                if let Value::Tuple { elements } = value {
+                    type_elements.len() == elements.len()
+                        && type_elements.iter().enumerate().all(|(i, e)| e.matches(elements.get(i).unwrap()))
+                } else {
+                    false
+                }
+            }
+            */
+            Type::Struct { name: _, fields: type_fields } => {
+                if let Value::Struct { fields } = value {
+                    match type_fields {
+                        Fields::Unit => fields.is_empty(),
+                        Fields::Unnamed { unnamed } =>
+                            unnamed.len() == fields.len()
+                                && unnamed.iter().enumerate().all(|(i, e)| e.matches(fields.get(i).unwrap())),
+                        Fields::Named { named } =>
+                            named.len() == fields.len()
+                                && named.iter().enumerate().all(|(i, (_, e))| e.matches(fields.get(i).unwrap())),
+                    }
+                } else {
+                    false
+                }
+            }
+            _ => false
+        }
+    }
 }
 
 /// Represents the type info of an enum variant.

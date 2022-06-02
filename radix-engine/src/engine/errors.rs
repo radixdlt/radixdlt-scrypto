@@ -55,6 +55,8 @@ pub enum RuntimeError {
     ComponentNotFound(ComponentAddress),
 
     BlueprintFunctionDoesNotExist(String),
+    ComponentDecodeError(DecodeError),
+    ComponentValueDoesNotMatchAbi,
 
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),

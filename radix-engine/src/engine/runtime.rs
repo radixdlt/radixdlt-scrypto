@@ -11,7 +11,7 @@ use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::RuntimeError;
-use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
+use crate::engine::RuntimeError::{BlueprintFunctionDoesNotExist, ComponentValueDoesNotMatchAbi};
 use crate::engine::SystemApi;
 use crate::model::Component;
 use crate::wasm::*;
@@ -73,6 +73,8 @@ where
         state: Vec<u8>,
         access_rules_list: Vec<AccessRules>,
     ) -> Result<ComponentAddress, RuntimeError> {
+        // Abi checks
+        // TODO: Move this to a more appropriate place
         for access_rules in &access_rules_list {
             for (func_name, _) in access_rules.iter() {
                 if !self
@@ -84,7 +86,12 @@ where
                 }
             }
         }
+        let component_value = decode_any(&state).map_err(RuntimeError::ComponentDecodeError)?;
+        if !self.this.blueprint_abi().value.matches(&component_value) {
+            return Err(ComponentValueDoesNotMatchAbi);
+        }
 
+        // Create component
         let component = Component::new(
             self.this.package_address().clone(),
             blueprint_name,
