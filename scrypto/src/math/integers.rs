@@ -12,7 +12,7 @@ use num_bigint::BigInt;
 use num_traits::{Signed, Zero};
  
 
-macro_rules! types_large {
+macro_rules! types {
 
     ($(
             { 
@@ -93,7 +93,7 @@ macro_rules! types_large {
     }
 }
 
-types_large! { 
+types! { 
     {
         type: U8(u8),
         default: 0,
@@ -198,19 +198,48 @@ pub enum ParseBigIntError{
     Overflow,
 }
 
+macro_rules! byte {
+    (u8) => { 1 };
+    (u16) => { 2 };
+    (u32) => { 4 };
+    (u64) => { 8 };
+    (u128) => { 16 };
+    (i8) => { 1 };
+    (i16) => { 2 };
+    (i32) => { 4 };
+    (i64) => { 8 };
+    (i128) => { 16 };
+    (U8) => { 1 };
+    (U16) => { 2 };
+    (U32) => { 4 };
+    (U64) => { 8 };
+    (U128) => { 16 };
+    (U256) => { 32 };
+    (U384) => { 48 };
+    (U512) => { 64 };
+    (I8) => { 1 };
+    (I16) => { 2 };
+    (I32) => { 4 };
+    (I64) => { 8 };
+    (I128) => { 16 };
+    (I256) => { 32 };
+    (I384) => { 48 };
+    (I512) => { 64 };
+}
+
 macro_rules! impl_bigint_to_i {
-    ($($t:ty, $bytes_len:literal ),*) => {
+    ($($t:ty),*) => {
         $(
             paste! {
                 fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseBigIntError> {
                     let bytes = b.to_signed_bytes_le();
-                    if bytes.len() > $bytes_len {
+                    if bytes.len() > byte![$t] {
                         return Err(ParseBigIntError::Overflow);
                     } else {
                         let mut buf = if b.is_negative() {
-                            [255u8; $bytes_len]
+                            [255u8; byte![$t]]
                         } else {
-                            [0u8; $bytes_len]
+                            [0u8; byte![$t]]
                         };
                         buf[..bytes.len()].copy_from_slice(&bytes);
                         Ok($t(buf))
@@ -236,10 +265,10 @@ fn big_int_to_i128(v: BigInt) -> i128 {
     }
 }
 
-impl_bigint_to_i! { I256, 32, I384, 48, I512, 64 , U256, 32, U384, 48, U512, 64 }
+impl_bigint_to_i! { I256, I384, I512, U256, U384, U512 }
 
 macro_rules! sh_impl {
-    (to_sh: $t:ty, to_sh_bits: $b:literal, other: $o:ty, other_var: $other:ident, self_var: $self:ident, shl_expr: $shl_expr:expr, shr_expr: $shr_expr:expr ) => {
+    (to_sh: $t:ty, other: $o:ty, other_var: $other:ident, self_var: $self:ident, shl_expr: $shl_expr:expr, shr_expr: $shr_expr:expr ) => {
         paste! {
             impl Shl<$o> for $t {
                 type Output = $t;
@@ -284,8 +313,8 @@ macro_rules! sh_impl {
 // small: U8, U16, U32, U64, U128, I8, I16, I32, I64, I128
 // builtin: u8, u16, u32, u64, u128, i8, i16, i32, i64, i128
 macro_rules! sh {
-    (large.shl(large_signed), $b:tt, $self:tt, $other:tt) => {
-        if BigInt::from_signed_bytes_le(&$other.0).abs() > BigInt::from($b) {
+    (large.shl(large_signed), $self:tt, $other:tt, $t:tt) => {
+        if BigInt::from_signed_bytes_le(&$other.0).abs() > BigInt::from(byte![$t] * 8) {
             panic!("overflow");
         } else {
             let to_shift = BigInt::from_signed_bytes_le(&$self.0);
@@ -293,9 +322,9 @@ macro_rules! sh {
             to_shift.shl(shift).try_into().unwrap()
         }
     };
-    (large.shr(large_signed), $b:tt, $self:tt, $other:tt) => {
+    (large.shr(large_signed), $self:tt, $other:tt, $t:tt) => {
 
-        if BigInt::from_signed_bytes_le(&$other.0).abs() > BigInt::from($b) {
+        if BigInt::from_signed_bytes_le(&$other.0).abs() > BigInt::from(byte![$t] * 8) {
             panic!("overflow");
         } else {
             let to_shift = BigInt::from_signed_bytes_le(&$self.0);
@@ -303,79 +332,91 @@ macro_rules! sh {
             to_shift.shr(shift).try_into().unwrap()
         }
     };
-    (large.shl(large_unsigned), $b:tt, $self:tt, $other:tt) => {
+    (large.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {
         {
             let to_shift = big_int_to_i128(BigInt::from_signed_bytes_le(&$other.0));
+            // FIXME: line below might create a BigInt whose size might become larger than self.
+            // Check this!!!
             BigInt::from_signed_bytes_le(&$self.0).shl(to_shift).try_into().unwrap()
         }
     };
-    (large.shr(large_unsigned), $b:tt, $self:tt, $other:tt) => {
+    (large.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {
         {
             let to_shift = big_int_to_i128(BigInt::from_signed_bytes_le(&$other.0));
+            // FIXME: line below might create a BigInt whose size might become larger than self.
+            // Check this!!!
             BigInt::from_signed_bytes_le(&$self.0).shr(to_shift).try_into().unwrap()
         }
     };
-    (large.shl(builtin), $b:tt, $self:tt, $other:tt) => {
-        if $other > $b {
+    (large.shl(builtin), $self:tt, $other:tt, $t:tt) => {
+        if $other > byte![$t] * 8 {
             panic!("overflow");
         } else {
+            // FIXME: line below might create a BigInt whose size might become larger than self.
+            // Check this!!!
             BigInt::from_signed_bytes_le(&$self.0).shl($other).try_into().unwrap()
         }
     };
-    (large.shr(builtin), $b:tt, $self:tt, $other:tt) => {
-        if $other > $b {
+    (large.shr(builtin), $self:tt, $other:tt, $t:tt) => {
+        if $other > byte![$t] * 8 {
             panic!("overflow");
         } else {
+            // FIXME: line below might create a BigInt whose size might become larger than self.
+            // Check this!!!
             BigInt::from_signed_bytes_le(&$self.0).shr($other).try_into().unwrap()
         }
     };
-    (large.shl(small), $b:tt, $self:tt, $other:tt) => {
+    (large.shl(small), $self:tt, $other:tt, $t:tt) => {
+            // FIXME: line below might create a BigInt whose size might become larger than self.
+            // Check this!!!
         BigInt::from_signed_bytes_le(&$self.0).shl($other.0).try_into().unwrap()
     };
-    (large.shr(small), $b:tt, $self:tt, $other:tt) => {
+    (large.shr(small), $self:tt, $other:tt, $t:tt) => {
+            // FIXME: line below might create a BigInt whose size might become larger than self.
+            // Check this!!!
         BigInt::from_signed_bytes_le(&$self.0).shr($other.0).try_into().unwrap()
     };
-    (small.shl(small_signed), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shl(small_signed), $self:tt, $other:tt, $t:tt) => {
         if $other.0 < 0 {
             $t($self.0.checked_shr(-$other.0 as u32).unwrap())
         } else {
             $t($self.0.checked_shl($other.0 as u32).unwrap())
         }
     };
-    (small.shr(small_signed), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shr(small_signed), $self:tt, $other:tt, $t:tt) => {
         if $other.0 < 0 {
             $t($self.0.checked_shl(-$other.0 as u32).unwrap())
         } else {
             $t($self.0.checked_shr($other.0 as u32).unwrap())
         }
     };
-    (small.shl(small_unsigned), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shl(small_unsigned), $self:tt, $other:tt, $t:tt) => {
         $t($self.0.checked_shl(u32::try_from($other.0).unwrap()).unwrap())
     };
-    (small.shr(small_unsigned), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shr(small_unsigned), $self:tt, $other:tt, $t:tt) => {
         $t($self.0.checked_shr(u32::try_from($other.0).unwrap()).unwrap())
     };
-    (small.shl(builtin_signed), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shl(builtin_signed), $self:tt, $other:tt, $t:tt) => {
         if $other < 0 {
             $t($self.0.checked_shr(-$other as u32).unwrap())
         } else {
             $t($self.0.checked_shl($other as u32).unwrap())
         }
     };
-    (small.shr(builtin_signed), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shr(builtin_signed), $self:tt, $other:tt, $t:tt) => {
         if $other < 0 {
             $t($self.0.checked_shl(-$other as u32).unwrap())
         } else {
             $t($self.0.checked_shr($other as u32).unwrap())
         }
     };
-    (small.shl(builtin_unsigned), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shl(builtin_unsigned), $self:tt, $other:tt, $t:tt) => {
         $t($self.0.checked_shl(u32::try_from($other).unwrap()).unwrap())
     };
-    (small.shr(builtin_unsigned), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shr(builtin_unsigned), $self:tt, $other:tt, $t:tt) => {
         $t($self.0.checked_shr(u32::try_from($other).unwrap()).unwrap())
     };
-    (small.shl(large_unsigned), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {
             $t($self.0.checked_shl({
                 if $other > u32::MAX.into() {
                     panic!("overflow")
@@ -385,7 +426,7 @@ macro_rules! sh {
                 } 
             }).unwrap())
     };
-    (small.shr(large_unsigned), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {
             $t($self.0.checked_shr({
                 if $other > u32::MAX.into() {
                     panic!("overflow")
@@ -395,7 +436,7 @@ macro_rules! sh {
                 } 
             }).unwrap())
     };
-    (small.shl(large_signed), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shl(large_signed), $self:tt, $other:tt, $t:tt) => {
         if $other > 0.into() {
             $t($self.0.checked_shl({
                 if $other > u32::MAX.into() {
@@ -416,7 +457,7 @@ macro_rules! sh {
             }).unwrap())
         }
     };
-    (small.shr(large_signed), $b:tt, $self:tt, $other:tt, $t:tt) => {
+    (small.shr(large_signed), $self:tt, $other:tt, $t:tt) => {
         if $other > 0.into() {
             $t($self.0.checked_shr({
                 if $other > u32::MAX.into() {
@@ -443,456 +484,406 @@ macro_rules! sh {
 // small: U8, U16, U32, U64, U128, I8, I16, I32, I64, I128
 // builtin: u8, u16, u32, u64, u128, i8, i16, i32, i64, i128
 macro_rules! shift_impl_all {
-    (large: $($t:ty, $b:literal),*) => {
+    (large: $($t:ty),*) => {
         $(
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I256,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(large_signed), $b, self, other},
-                shr_expr: sh!{large.shr(large_signed), $b, self, other}
+                shl_expr: sh!{large.shl(large_signed), self, other, $t},
+                shr_expr: sh!{large.shr(large_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I384,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(large_signed), $b, self, other},
-                shr_expr: sh!{large.shr(large_signed), $b, self, other}
+                shl_expr: sh!{large.shl(large_signed), self, other, $t},
+                shr_expr: sh!{large.shr(large_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I512,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(large_signed), $b, self, other},
-                shr_expr: sh!{large.shr(large_signed), $b, self, other}
+                shl_expr: sh!{large.shl(large_signed), self, other, $t},
+                shr_expr: sh!{large.shr(large_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U256,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(large_unsigned), $b, self, other},
-                shr_expr: sh!{large.shr(large_unsigned), $b, self, other}
+                shl_expr: sh!{large.shl(large_unsigned), self, other, $t},
+                shr_expr: sh!{large.shr(large_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U384,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(large_unsigned), $b, self, other},
-                shr_expr: sh!{large.shr(large_unsigned), $b, self, other}
+                shl_expr: sh!{large.shl(large_unsigned), self, other, $t},
+                shr_expr: sh!{large.shr(large_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U512,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(large_unsigned), $b, self, other},
-                shr_expr: sh!{large.shr(large_unsigned), $b, self, other}
+                shl_expr: sh!{large.shl(large_unsigned), self, other, $t},
+                shr_expr: sh!{large.shr(large_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: i16,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(builtin), $b, self, other},
-                shr_expr: sh!{large.shr(builtin), $b, self, other}
+                shl_expr: sh!{large.shl(builtin), self, other, $t},
+                shr_expr: sh!{large.shr(builtin), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: i32,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(builtin), $b, self, other},
-                shr_expr: sh!{large.shr(builtin), $b, self, other}
+                shl_expr: sh!{large.shl(builtin), self, other, $t},
+                shr_expr: sh!{large.shr(builtin), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: i64,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(builtin), $b, self, other},
-                shr_expr: sh!{large.shr(builtin), $b, self, other}
+                shl_expr: sh!{large.shl(builtin), self, other, $t},
+                shr_expr: sh!{large.shr(builtin), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: i128,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(builtin), $b, self, other},
-                shr_expr: sh!{large.shr(builtin), $b, self, other}
+                shl_expr: sh!{large.shl(builtin), self, other, $t},
+                shr_expr: sh!{large.shr(builtin), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: u16,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(builtin), $b, self, other},
-                shr_expr: sh!{large.shr(builtin), $b, self, other}
+                shl_expr: sh!{large.shl(builtin), self, other, $t},
+                shr_expr: sh!{large.shr(builtin), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: u32,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(builtin), $b, self, other},
-                shr_expr: sh!{large.shr(builtin), $b, self, other}
+                shl_expr: sh!{large.shl(builtin), self, other, $t},
+                shr_expr: sh!{large.shr(builtin), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: u64,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(builtin), $b, self, other},
-                shr_expr: sh!{large.shr(builtin), $b, self, other}
+                shl_expr: sh!{large.shl(builtin), self, other, $t},
+                shr_expr: sh!{large.shr(builtin), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: u128,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(builtin), $b, self, other},
-                shr_expr: sh!{large.shr(builtin), $b, self, other}
+                shl_expr: sh!{large.shl(builtin), self, other, $t},
+                shr_expr: sh!{large.shr(builtin), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I16,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(small), $b, self, other},
-                shr_expr: sh!{large.shr(small), $b, self, other}
+                shl_expr: sh!{large.shl(small), self, other, $t},
+                shr_expr: sh!{large.shr(small), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I32,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(small), $b, self, other},
-                shr_expr: sh!{large.shr(small), $b, self, other}
+                shl_expr: sh!{large.shl(small), self, other, $t},
+                shr_expr: sh!{large.shr(small), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I64,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(small), $b, self, other},
-                shr_expr: sh!{large.shr(small), $b, self, other}
+                shl_expr: sh!{large.shl(small), self, other, $t},
+                shr_expr: sh!{large.shr(small), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I128,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(small), $b, self, other},
-                shr_expr: sh!{large.shr(small), $b, self, other}
+                shl_expr: sh!{large.shl(small), self, other, $t},
+                shr_expr: sh!{large.shr(small), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U16,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(small), $b, self, other},
-                shr_expr: sh!{large.shr(small), $b, self, other}
+                shl_expr: sh!{large.shl(small), self, other, $t},
+                shr_expr: sh!{large.shr(small), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U32,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(small), $b, self, other},
-                shr_expr: sh!{large.shr(small), $b, self, other}
+                shl_expr: sh!{large.shl(small), self, other, $t},
+                shr_expr: sh!{large.shr(small), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U64,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(small), $b, self, other},
-                shr_expr: sh!{large.shr(small), $b, self, other}
+                shl_expr: sh!{large.shl(small), self, other, $t},
+                shr_expr: sh!{large.shr(small), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U128,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{large.shl(small), $b, self, other},
-                shr_expr: sh!{large.shr(small), $b, self, other}
+                shl_expr: sh!{large.shl(small), self, other, $t},
+                shr_expr: sh!{large.shr(small), self, other, $t}
             }
         )*
     };
-    (small: $($t:ty, $b:literal),*) => {
+    (small: $($t:ty),*) => {
         $(
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I8,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                shr_expr: sh!{small.shr(small_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I16,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                shr_expr: sh!{small.shr(small_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I32,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                shr_expr: sh!{small.shr(small_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I64,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                shr_expr: sh!{small.shr(small_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I128,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                shr_expr: sh!{small.shr(small_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U8,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U16,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U32,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U64,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U128,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(small_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(small_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: i8,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: i16,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: i32,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: i64,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: i128,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: u8,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: u16,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: u32,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: u64,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: u128,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(builtin_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(builtin_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I256,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(large_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(large_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(large_signed), self, other, $t},
+                shr_expr: sh!{small.shr(large_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I384,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(large_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(large_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(large_signed), self, other, $t},
+                shr_expr: sh!{small.shr(large_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: I512,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(large_signed), $b, self, other, $t},
-                shr_expr: sh!{small.shr(large_signed), $b, self, other, $t}
+                shl_expr: sh!{small.shl(large_signed), self, other, $t},
+                shr_expr: sh!{small.shr(large_signed), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U256,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(large_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(large_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(large_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(large_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U384,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(large_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(large_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(large_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(large_unsigned), self, other, $t}
             }
             sh_impl!{
                 to_sh: $t,
-                to_sh_bits: $b,
                 other: U512,
                 other_var: other,
                 self_var: self, 
-                shl_expr: sh!{small.shl(large_unsigned), $b, self, other, $t},
-                shr_expr: sh!{small.shr(large_unsigned), $b, self, other, $t}
+                shl_expr: sh!{small.shl(large_unsigned), self, other, $t},
+                shr_expr: sh!{small.shr(large_unsigned), self, other, $t}
             }
             )*
     };
 }
 
-// implement large types
-shift_impl_all!{large: I256, 256, I384, 384, I512, 512, U256, 256, U384, 384, U512, 512}
+shift_impl_all!{large: I256, I384, I512, U256, U384, U512}
 
-// implement small types
-shift_impl_all!{small: I8, 8, I16, 16, I32, 32, I64, 64, I128, 128, U8, 8, U16, 16, U32, 32, U64, 64, U128, 128}
+shift_impl_all!{small: I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
 
 macro_rules! checked_impl {
-    ($(($t:ty, $o:ty, $self:ident, $sexpr:expr, $other:ident, $oexpr:expr)),*) => {
+    ($((impl Op<$o:ty> for $t:ty { fn op($self:ident, $other:ident: $oo:ty) -> $ot:ty { $sexpr:expr=>op($oexpr:expr)}})),*) => {
         paste! {
             $(
                 impl Add<$o> for $t {
@@ -1050,64 +1041,70 @@ macro_rules! checked_int_ops {
     (large: $($t:ident),*) => {
         $(
             checked_impl! { 
-                ($t, u8, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, u16, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, u32, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, u64, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, u128, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, i8, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, i16, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, i32, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, i64, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, i128, self, BigInt::from_signed_bytes_le(&self.0), other, other),
-                ($t, U8, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, U16, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, U32, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, U64, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, U128, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, U256, self, BigInt::from_signed_bytes_le(&self.0), other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, U384, self, BigInt::from_signed_bytes_le(&self.0), other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, U512, self, BigInt::from_signed_bytes_le(&self.0), other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, I8, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, I16, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, I32, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, I64, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, I128, self, BigInt::from_signed_bytes_le(&self.0), other, other.0),
-                ($t, I256, self, BigInt::from_signed_bytes_le(&self.0), other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, I384, self, BigInt::from_signed_bytes_le(&self.0), other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, I512, self, BigInt::from_signed_bytes_le(&self.0), other, BigInt::from_signed_bytes_le(&other.0))
+                (impl Op<u8> for $t { fn op(self, other: u8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+                (impl Op<u16> for $t { fn op(self, other: u16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+                (impl Op<u32> for $t { fn op(self, other: u32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+                (impl Op<u64> for $t { fn op(self, other: u64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+                (impl Op<u128> for $t { fn op(self, other: u128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+
+                (impl Op<i8> for $t { fn op(self, other: i8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+                (impl Op<i16> for $t { fn op(self, other: i16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+                (impl Op<i32> for $t { fn op(self, other: i32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+                (impl Op<i64> for $t { fn op(self, other: i64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+                (impl Op<i128> for $t { fn op(self, other: i128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}),
+
+                (impl Op<U8> for $t { fn op(self, other: U8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<U16> for $t { fn op(self, other: U16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<U32> for $t { fn op(self, other: U32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<U64> for $t { fn op(self, other: U64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<U128> for $t { fn op(self, other: U128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<U256> for $t { fn op(self, other: U256) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+                (impl Op<U384> for $t { fn op(self, other: U384) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+                (impl Op<U512> for $t { fn op(self, other: U512) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+
+                (impl Op<I8> for $t { fn op(self, other: I8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<I16> for $t { fn op(self, other: I16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<I32> for $t { fn op(self, other: I32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<I64> for $t { fn op(self, other: I64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<I128> for $t { fn op(self, other: I128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}),
+                (impl Op<I256> for $t { fn op(self, other: I256) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+                (impl Op<I384> for $t { fn op(self, other: I384) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+                (impl Op<I512> for $t { fn op(self, other: I512) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(BigInt::from_signed_bytes_le(&other.0))}})
             }
         )*
     };
     (small: $($t:ident),*) => {
         $(
             checked_impl! { 
-                ($t, u8, self, self.0, other, other),
-                ($t, u16, self, self.0, other, other),
-                ($t, u32, self, self.0, other, other),
-                ($t, u64, self, self.0, other, other),
-                ($t, u128, self, self.0, other, other),
-                ($t, i8, self, self.0, other, other),
-                ($t, i16, self, self.0, other, other),
-                ($t, i32, self, self.0, other, other),
-                ($t, i64, self, self.0, other, other),
-                ($t, i128, self, self.0, other, other),
-                ($t, U8, self, self.0, other, other.0),
-                ($t, U16, self, self.0, other, other.0),
-                ($t, U32, self, self.0, other, other.0),
-                ($t, U64, self, self.0, other, other.0),
-                ($t, U128, self, self.0, other, other.0),
-                ($t, U256, self, self.0, other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, U384, self, self.0, other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, U512, self, self.0, other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, I8, self, self.0, other, other.0),
-                ($t, I16, self, self.0, other, other.0),
-                ($t, I32, self, self.0, other, other.0),
-                ($t, I64, self, self.0, other, other.0),
-                ($t, I128, self, self.0, other, other.0),
-                ($t, I256, self, self.0, other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, I384, self, self.0, other, BigInt::from_signed_bytes_le(&other.0)),
-                ($t, I512, self, self.0, other, BigInt::from_signed_bytes_le(&other.0))
+                (impl Op<u8> for $t { fn op(self, other: u8) -> $t {self.0=>op(other)}}),
+                (impl Op<u16> for $t { fn op(self, other: u16) -> $t {self.0=>op(other)}}),
+                (impl Op<u32> for $t { fn op(self, other: u32) -> $t {self.0=>op(other)}}),
+                (impl Op<u64> for $t { fn op(self, other: u64) -> $t {self.0=>op(other)}}),
+                (impl Op<u128> for $t { fn op(self, other: u128) -> $t {self.0=>op(other)}}),
+
+                (impl Op<i8> for $t { fn op(self, other: i8) -> $t {self.0=>op(other)}}),
+                (impl Op<i16> for $t { fn op(self, other: i16) -> $t {self.0=>op(other)}}),
+                (impl Op<i32> for $t { fn op(self, other: i32) -> $t {self.0=>op(other)}}),
+                (impl Op<i64> for $t { fn op(self, other: i64) -> $t {self.0=>op(other)}}),
+                (impl Op<i128> for $t { fn op(self, other: i128) -> $t {self.0=>op(other)}}),
+                
+                (impl Op<U8> for $t { fn op(self, other: U8) -> $t {self.0=>op(other.0)}}),
+                (impl Op<U16> for $t { fn op(self, other: U16) -> $t {self.0=>op(other.0)}}),
+                (impl Op<U32> for $t { fn op(self, other: U32) -> $t {self.0=>op(other.0)}}),
+                (impl Op<U64> for $t { fn op(self, other: U64) -> $t {self.0=>op(other.0)}}),
+                (impl Op<U128> for $t { fn op(self, other: U128) -> $t {self.0=>op(other.0)}}),
+                (impl Op<U256> for $t { fn op(self, other: U256) -> $t {self.0=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+                (impl Op<U384> for $t { fn op(self, other: U384) -> $t {self.0=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+                (impl Op<U512> for $t { fn op(self, other: U512) -> $t {self.0=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+                
+                (impl Op<I8> for $t { fn op(self, other: I8) -> $t {self.0=>op(other.0)}}),
+                (impl Op<I16> for $t { fn op(self, other: I16) -> $t {self.0=>op(other.0)}}),
+                (impl Op<I32> for $t { fn op(self, other: I32) -> $t {self.0=>op(other.0)}}),
+                (impl Op<I64> for $t { fn op(self, other: I64) -> $t {self.0=>op(other.0)}}),
+                (impl Op<I128> for $t { fn op(self, other: I128) -> $t {self.0=>op(other.0)}}),
+                (impl Op<I256> for $t { fn op(self, other: I256) -> $t {self.0=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+                (impl Op<I384> for $t { fn op(self, other: I384) -> $t {self.0=>op(BigInt::from_signed_bytes_le(&other.0))}}),
+                (impl Op<I512> for $t { fn op(self, other: I512) -> $t {self.0=>op(BigInt::from_signed_bytes_le(&other.0))}})
             }
         )*
     }
@@ -1890,3 +1887,4 @@ mod tests {
 
 
 // TODO: implement from 
+// TODO: documentationpart update 
