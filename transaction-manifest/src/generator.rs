@@ -5,8 +5,8 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
+use scrypto::abi::*;
 use scrypto::engine::types::*;
-use scrypto::types::*;
 use scrypto::values::*;
 use scrypto::vec_to_struct;
 

@@ -2,7 +2,7 @@ use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::Type;
+use sbor::{DecodeError, Type};
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
 use scrypto::prelude::Package;
@@ -13,7 +13,8 @@ use crate::wasm::*;
 #[derive(Debug)]
 pub enum ExtractAbiError {
     InvalidWasm(PrepareError),
-    FailedToExportBlueprintAbi,
+    FailedToExportBlueprintAbi(InvokeError),
+    AbiDecodeError(DecodeError),
     InvalidBlueprintAbi,
 }
 
@@ -35,10 +36,10 @@ fn extract_abi(
     for method_name in function_exports {
         let rtn = instance
             .invoke_export(&method_name, "", &ScryptoValue::unit(), &mut runtime_boxed)
-            .map_err(|_| ExtractAbiError::FailedToExportBlueprintAbi)?;
+            .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: (Type, Vec<Function>, Vec<Method>) =
-            scrypto_decode(&rtn.raw).map_err(|_| ExtractAbiError::InvalidBlueprintAbi)?;
+            scrypto_decode(&rtn.raw).map_err(ExtractAbiError::AbiDecodeError)?;
 
         if let Type::Struct { name, fields: _ } = &abi.0 {
             blueprints.insert(name.clone(), abi);

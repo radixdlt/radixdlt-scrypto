@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::wasm::default_wasm_engine;
-use scrypto::{call_data, prelude::*};
+use scrypto::{prelude::*, to_struct};
 
 /// This tests the external_blueprint! and external_component! macros
 #[test]
@@ -30,7 +30,8 @@ fn test_external_bridges() {
         .call_function(
             target_package_address,
             "ExternalBlueprintTarget",
-            call_data!(create()),
+            "create",
+            to_struct!()
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -45,7 +46,8 @@ fn test_external_bridges() {
         .call_function(
             caller_package_address,
             "ExternalBlueprintCaller",
-            call_data!(create()),
+            "create",
+            to_struct!()
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
@@ -59,11 +61,13 @@ fn test_external_bridges() {
         .new_transaction_builder()
         .call_method(
             caller_component_address,
-            call_data!(run_tests_with_external_blueprint()),
+            "run_tests_with_external_blueprint",
+            to_struct!()
         )
         .call_method(
             caller_component_address,
-            call_data!(run_tests_with_external_component(target_component_address)),
+            "run_tests_with_external_component",
+            to_struct!(target_component_address)
         )
         .build(test_runner.get_nonce([]))
         .sign([]);
