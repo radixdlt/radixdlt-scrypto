@@ -9,6 +9,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::abi::BlueprintAbi;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneClearInput;
@@ -76,6 +77,7 @@ pub enum BorrowedSNodeState {
     Worktop(Worktop),
     Scrypto(
         ScryptoActorInfo,
+        BlueprintAbi,
         ValidatedPackage,
         String,
         Option<ComponentState>,
@@ -109,6 +111,7 @@ pub enum SNodeState<'a> {
     // TODO: use reference to the package
     Scrypto(
         ScryptoActorInfo,
+        BlueprintAbi,
         ValidatedPackage,
         String,
         Option<&'a mut ComponentState>,
@@ -159,9 +162,10 @@ impl LoadedSNodeState {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                BorrowedSNodeState::Scrypto(info, package, export_name, component_state) => {
+                BorrowedSNodeState::Scrypto(info, blueprint_abi, package, export_name, component_state) => {
                     SNodeState::Scrypto(
                         info.clone(),
+                        blueprint_abi.clone(),
                         package.clone(),
                         export_name.clone(),
                         component_state.as_mut(),
@@ -194,7 +198,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Worktop(worktop) => {
                 frame.worktop = Some(worktop);
             }
-            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
+            BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
                 if let Some(component_address) = actor.component_address() {
                     frame.track.return_borrowed_global_mut_value(
                         component_address,
@@ -492,9 +496,9 @@ where
             SNodeState::Worktop(worktop) => worktop
                 .main(method_name, call_data, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, package, export_name, component_state) => {
+            SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
                 self.component_state = component_state;
-                package.invoke(actor, export_name, method_name, call_data, self)
+                package.invoke(actor, blueprint_abi, export_name, method_name, call_data, self)
             }
             SNodeState::ResourceStatic => {
                 ResourceManager::static_main(method_name, call_data, self)
@@ -613,8 +617,8 @@ where
                                 ScryptoActorInfo::blueprint(
                                     package_address.clone(),
                                     blueprint_name.clone(),
-                                    abi.clone(),
                                 ),
+                                abi.clone(),
                                 package.clone(),
                                 export_name.clone(),
                                 None,
@@ -668,9 +672,9 @@ where
                                 ScryptoActorInfo::component(
                                     package_address,
                                     blueprint_name,
-                                    abi.clone(),
                                     component_address,
                                 ),
+                                abi.clone(),
                                 package.clone(),
                                 export_name,
                                 Some(ComponentState {
@@ -809,7 +813,7 @@ where
                 Borrowed(BorrowedSNodeState::Resource(_, _))
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
                 | Borrowed(BorrowedSNodeState::Bucket(_, _))
-                | Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
+                | Borrowed(BorrowedSNodeState::Scrypto(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone);
@@ -850,7 +854,7 @@ where
             self.track,
             self.wasm_engine,
             match loaded_snode {
-                Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
+                Borrowed(BorrowedSNodeState::Scrypto(..))
                 | Static(StaticSNodeState::TransactionProcessor) => Some(AuthZone::new()),
                 _ => None,
             },

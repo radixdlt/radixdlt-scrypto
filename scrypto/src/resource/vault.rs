@@ -7,6 +7,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
 use crate::crypto::*;
@@ -15,7 +16,6 @@ use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::sfunctions;
-use crate::types::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultPutInput {

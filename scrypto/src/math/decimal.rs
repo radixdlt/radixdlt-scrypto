@@ -10,8 +10,8 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::misc::*;
-use crate::types::*;
 
 /// `Decimal` represents a 128 bit representation of a fixed-scale decimal number.
 ///

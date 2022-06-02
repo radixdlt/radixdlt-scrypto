@@ -1,6 +1,5 @@
 use sbor::rust::string::String;
 use sbor::*;
-use scrypto_abi::BlueprintAbi;
 
 use crate::component::*;
 
@@ -15,7 +14,6 @@ pub enum ScryptoActor {
 pub struct ScryptoActorInfo {
     package_address: PackageAddress,
     blueprint_name: String,
-    blueprint_abi: BlueprintAbi,
     component_address: Option<ComponentAddress>,
 }
 
@@ -23,12 +21,10 @@ impl ScryptoActorInfo {
     pub fn blueprint(
         package_address: PackageAddress,
         blueprint_name: String,
-        blueprint_abi: BlueprintAbi,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
-            blueprint_abi,
             component_address: None,
         }
     }
@@ -36,23 +32,17 @@ impl ScryptoActorInfo {
     pub fn component(
         package_address: PackageAddress,
         blueprint_name: String,
-        blueprint_abi: BlueprintAbi,
         component_address: ComponentAddress,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
-            blueprint_abi,
             component_address: Some(component_address),
         }
     }
 
     pub fn component_address(&self) -> Option<ComponentAddress> {
         self.component_address
-    }
-
-    pub fn blueprint_abi(&self) -> &BlueprintAbi {
-        &self.blueprint_abi
     }
 
     pub fn actor(&self) -> ScryptoActor {

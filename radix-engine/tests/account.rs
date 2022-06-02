@@ -122,6 +122,7 @@ fn test_account_balance() {
 
     // Act
     let receipt = test_runner.validate_and_execute(&transaction);
+    receipt.result.expect("Should be okay");
 
     // Assert
     assert_eq!(

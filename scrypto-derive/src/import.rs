@@ -4,6 +4,7 @@ use syn::*;
 
 use sbor::describe as des;
 use scrypto_abi as abi;
+use scrypto_abi::ScryptoType;
 
 macro_rules! trace {
     ($($arg:expr),*) => {{
@@ -301,31 +302,30 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { HashMap<#key_type, #value_type> }
         }
-        des::Type::Custom { name, generics } => {
+        des::Type::Any => {
+            panic!("Any type not currently supported for importing.");
+        }
+        des::Type::Custom { type_id, generics } => {
             // Copying the names to avoid cyclic dependency.
+            let scrypto_type = ScryptoType::from_id(*type_id).ok_or(Error::new(
+                Span::call_site(),
+                format!("Invalid custom type: {}", type_id),
+            ))?;
 
-            let canonical_name = match name.as_str() {
-                "PackageAddress" => "::scrypto::component::PackageAddress",
-                "ComponentAddress" => "::scrypto::component::ComponentAddress",
-                "LazyMap" => "::scrypto::component::LazyMap",
-                "Hash" => "::scrypto::crypto::Hash",
-                "EcdsaPublicKey" => "::scrypto::crypto::EcdsaPublicKey",
-                "EcdsaSignature" => "::scrypto::crypto::EcdsaSignature",
-                "Decimal" => "::scrypto::math::Decimal",
-                "Bucket" => "::scrypto::resource::Bucket",
-                "Proof" => "::scrypto::resource::Proof",
-                "Vault" => "::scrypto::resource::Vault",
-                "NonFungibleId" => "::scrypto::resource::NonFungibleId",
-                "NonFungibleAddress" => "::scrypto::resource::NonFungibleAddress",
-                "ResourceAddress" => "::scrypto::resource::ResourceAddress",
-                "ProofRule" => "::scrypto::resource::ProofRule",
-                "AuthRule" => "::scrypto::resource::AuthRule",
-                _ => {
-                    return Err(Error::new(
-                        Span::call_site(),
-                        format!("Invalid custom type: {}", name),
-                    ));
-                }
+            let canonical_name = match scrypto_type {
+                ScryptoType::PackageAddress => "::scrypto::component::PackageAddress",
+                ScryptoType::ComponentAddress => "::scrypto::component::ComponentAddress",
+                ScryptoType::LazyMap => "::scrypto::component::LazyMap",
+                ScryptoType::Hash => "::scrypto::crypto::Hash",
+                ScryptoType::EcdsaPublicKey => "::scrypto::crypto::EcdsaPublicKey",
+                ScryptoType::EcdsaSignature => "::scrypto::crypto::EcdsaSignature",
+                ScryptoType::Decimal => "::scrypto::math::Decimal",
+                ScryptoType::Bucket => "::scrypto::resource::Bucket",
+                ScryptoType::Proof => "::scrypto::resource::Proof",
+                ScryptoType::Vault => "::scrypto::resource::Vault",
+                ScryptoType::NonFungibleId => "::scrypto::resource::NonFungibleId",
+                ScryptoType::NonFungibleAddress => "::scrypto::resource::NonFungibleAddress",
+                ScryptoType::ResourceAddress => "::scrypto::resource::ResourceAddress",
             };
 
             let ty: Type = parse_str(canonical_name).unwrap();
@@ -367,9 +367,12 @@ mod tests {
                     "blueprint_name": "Simple",
                     "abi": {
                         "value": {
-                            "type": "Custom",
+                            "type": "Struct",
                             "name": "Simple",
-                            "generics": []
+                            "fields": {
+                                "type": "Named",
+                                "named": []
+                            }
                         },
                         "functions": [
                             {
@@ -384,7 +387,7 @@ mod tests {
                                 },
                                 "output": {
                                     "type": "Custom",
-                                    "name": "ComponentAddress",
+                                    "type_id": 129,
                                     "generics": []
                                 }
                             },
@@ -401,7 +404,7 @@ mod tests {
                                 },
                                 "output": {
                                     "type": "Custom",
-                                    "name": "Bucket",
+                                    "type_id": 177,
                                     "generics": []
                                 }
                             }
