@@ -27,7 +27,7 @@ fn mocked_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
 #[test]
 fn test_loop() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
@@ -55,7 +55,7 @@ fn test_loop() {
 #[test]
 fn test_loop_out_of_tbd() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
@@ -83,7 +83,7 @@ fn test_loop_out_of_tbd() {
 #[test]
 fn test_recursion() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
@@ -112,7 +112,7 @@ fn test_recursion() {
 #[test]
 fn test_recursion_stack_overflow() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
@@ -140,7 +140,7 @@ fn test_recursion_stack_overflow() {
 #[test]
 fn test_grow_memory() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 
@@ -168,7 +168,7 @@ fn test_grow_memory() {
 #[test]
 fn test_grow_memory_out_of_tbd() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
 

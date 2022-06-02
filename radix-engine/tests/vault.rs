@@ -1,3 +1,4 @@
+use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
@@ -9,7 +10,7 @@ use scrypto::to_struct;
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -38,7 +39,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_component_should_fail() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -68,7 +69,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
 #[test]
 fn non_existent_vault_in_lazy_map_creation_should_fail() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -97,7 +98,7 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
 #[test]
 fn non_existent_vault_in_committed_lazy_map_should_fail() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -131,7 +132,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
 #[test]
 fn dangling_vault_should_fail() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -146,13 +147,18 @@ fn dangling_vault_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::ResourceCheckFailure);
+    assert_eq!(
+        runtime_error,
+        RuntimeError::ResourceCheckFailure(ResourceFailure::Resource(
+            receipt.new_resource_addresses[0]
+        ))
+    );
 }
 
 #[test]
 fn create_mutable_vault_into_map() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -177,7 +183,7 @@ fn create_mutable_vault_into_map() {
 #[test]
 fn invalid_double_ownership_of_vault() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -206,7 +212,7 @@ fn invalid_double_ownership_of_vault() {
 #[test]
 fn create_mutable_vault_into_map_and_referencing_before_storing() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -231,7 +237,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
 #[test]
 fn cannot_overwrite_vault_in_map() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -266,7 +272,7 @@ fn cannot_overwrite_vault_in_map() {
 #[test]
 fn create_mutable_vault_into_vector() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -291,7 +297,7 @@ fn create_mutable_vault_into_vector() {
 #[test]
 fn cannot_remove_vaults() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -326,7 +332,7 @@ fn cannot_remove_vaults() {
 #[test]
 fn can_push_vault_into_vector() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -357,7 +363,7 @@ fn can_push_vault_into_vector() {
 #[test]
 fn create_mutable_vault_with_take() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -382,7 +388,7 @@ fn create_mutable_vault_with_take() {
 #[test]
 fn create_mutable_vault_with_take_non_fungible() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -407,7 +413,7 @@ fn create_mutable_vault_with_take_non_fungible() {
 #[test]
 fn create_mutable_vault_with_get_nonfungible_ids() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -432,7 +438,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
 #[test]
 fn create_mutable_vault_with_get_amount() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();
@@ -457,7 +463,7 @@ fn create_mutable_vault_with_get_amount() {
 #[test]
 fn create_mutable_vault_with_get_resource_manager() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "vault"))).unwrap();

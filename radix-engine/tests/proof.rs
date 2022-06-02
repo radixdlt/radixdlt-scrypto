@@ -11,7 +11,7 @@ use scrypto::to_struct;
 #[test]
 fn can_create_clone_and_drop_bucket_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -43,7 +43,7 @@ fn can_create_clone_and_drop_bucket_proof() {
 #[test]
 fn can_create_clone_and_drop_vault_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -79,7 +79,7 @@ fn can_create_clone_and_drop_vault_proof() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -119,7 +119,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 #[test]
 fn can_create_clone_and_drop_vault_proof_by_ids() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -161,7 +161,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
 #[test]
 fn can_use_bucket_for_authorization() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -197,7 +197,7 @@ fn can_use_bucket_for_authorization() {
 #[test]
 fn can_use_vault_for_authorization() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -237,7 +237,7 @@ fn can_use_vault_for_authorization() {
 #[test]
 fn can_create_proof_from_account_and_pass_on() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -269,7 +269,7 @@ fn can_create_proof_from_account_and_pass_on() {
 #[test]
 fn cant_move_restricted_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -304,7 +304,7 @@ fn cant_move_restricted_proof() {
 #[test]
 fn can_compose_bucket_and_vault_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -344,7 +344,7 @@ fn can_compose_bucket_and_vault_proof() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -384,7 +384,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 #[test]
 fn can_compose_bucket_and_vault_proof_by_ids() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -434,7 +434,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 #[test]
 fn can_create_vault_proof_by_amount_from_non_fungibles() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -470,7 +470,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
 #[test]
 fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
