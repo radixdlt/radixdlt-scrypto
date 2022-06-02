@@ -83,7 +83,7 @@ pub enum Type {
         generics: Vec<Type>,
     },
 
-    Any
+    Any,
 }
 
 /// Represents the type info of an enum variant.

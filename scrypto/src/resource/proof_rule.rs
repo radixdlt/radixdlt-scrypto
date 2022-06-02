@@ -1,10 +1,10 @@
+use sbor::describe::{Fields, Variant};
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::rust::boxed::Box;
 use sbor::*;
-use sbor::describe::{Fields, Variant};
 use scrypto::math::Decimal;
 
 use crate::engine::api::RadixEngineInput;
@@ -139,8 +139,8 @@ impl From<&str> for SoftResourceOrNonFungibleList {
 }
 
 impl<T> From<Vec<T>> for SoftResourceOrNonFungibleList
-    where
-        T: Into<SoftResourceOrNonFungible>,
+where
+    T: Into<SoftResourceOrNonFungible>,
 {
     fn from(addresses: Vec<T>) -> Self {
         SoftResourceOrNonFungibleList::Static(addresses.into_iter().map(|a| a.into()).collect())
@@ -196,29 +196,25 @@ impl Describe for AccessRuleNode {
                 Variant {
                     name: "ProofRule".to_string(),
                     fields: Fields::Unnamed {
-                        unnamed: vec![Type::Any]
-                    }
+                        unnamed: vec![Type::Any],
+                    },
                 },
                 Variant {
                     name: "AnyOf".to_string(),
                     fields: Fields::Unnamed {
-                        unnamed: vec![
-                            Type::Vec {
-                                element: Box::new(Type::Any)
-                            }
-                        ]
-                    }
+                        unnamed: vec![Type::Vec {
+                            element: Box::new(Type::Any),
+                        }],
+                    },
                 },
                 Variant {
                     name: "AllOf".to_string(),
                     fields: Fields::Unnamed {
-                        unnamed: vec![
-                            Type::Vec {
-                                element: Box::new(Type::Any)
-                            }
-                        ]
-                    }
-                }
+                        unnamed: vec![Type::Vec {
+                            element: Box::new(Type::Any),
+                        }],
+                    },
+                },
             ],
         }
     }
@@ -247,38 +243,38 @@ impl AccessRuleNode {
 }
 
 pub fn require<T>(resource: T) -> ProofRule
-    where
-        T: Into<SoftResourceOrNonFungible>,
+where
+    T: Into<SoftResourceOrNonFungible>,
 {
     ProofRule::Require(resource.into())
 }
 
 pub fn require_any_of<T>(resources: T) -> ProofRule
-    where
-        T: Into<SoftResourceOrNonFungibleList>,
+where
+    T: Into<SoftResourceOrNonFungibleList>,
 {
     ProofRule::AnyOf(resources.into())
 }
 
 pub fn require_all_of<T>(resources: T) -> ProofRule
-    where
-        T: Into<SoftResourceOrNonFungibleList>,
+where
+    T: Into<SoftResourceOrNonFungibleList>,
 {
     ProofRule::AllOf(resources.into())
 }
 
 pub fn require_n_of<C, T>(count: C, resources: T) -> ProofRule
-    where
-        C: Into<SoftCount>,
-        T: Into<SoftResourceOrNonFungibleList>,
+where
+    C: Into<SoftCount>,
+    T: Into<SoftResourceOrNonFungibleList>,
 {
     ProofRule::CountOf(count.into(), resources.into())
 }
 
 pub fn require_amount<D, T>(amount: D, resource: T) -> ProofRule
-    where
-        D: Into<SoftDecimal>,
-        T: Into<SoftResource>,
+where
+    D: Into<SoftDecimal>,
+    T: Into<SoftResource>,
 {
     ProofRule::AmountOf(amount.into(), resource.into())
 }

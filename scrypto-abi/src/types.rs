@@ -70,14 +70,14 @@ pub enum ScryptoType {
 const MAPPING: [(ScryptoType, u8, &str); 13] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
-    (ScryptoType::LazyMap, 0x82, "LazyMap"), // 130
-    (ScryptoType::Hash, 0x90, "Hash"), // 144
+    (ScryptoType::LazyMap, 0x82, "LazyMap"),               // 130
+    (ScryptoType::Hash, 0x90, "Hash"),                     // 144
     (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"),
     (ScryptoType::EcdsaSignature, 0x93, "EcdsaSignature"),
     (ScryptoType::Decimal, 0xa1, "Decimal"), // 161
-    (ScryptoType::Bucket, 0xb1, "Bucket"), // 177
-    (ScryptoType::Proof, 0xb2, "Proof"), // 178
-    (ScryptoType::Vault, 0xb3, "Vault"), // 179
+    (ScryptoType::Bucket, 0xb1, "Bucket"),   // 177
+    (ScryptoType::Proof, 0xb2, "Proof"),     // 178
+    (ScryptoType::Vault, 0xb3, "Vault"),     // 179
     (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"), // 180
     (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"), // 181
     (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"), // 182

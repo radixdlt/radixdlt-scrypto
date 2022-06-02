@@ -5,6 +5,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine, types::BucketId};
@@ -12,7 +13,6 @@ use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::sfunctions2;
-use crate::abi::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ConsumingBucketBurnInput {}
