@@ -63,11 +63,11 @@ impl TransactionProcessor {
                 let mut outputs = Vec::new();
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
-                for inst in &transaction.instructions.clone() {
+                for inst in &transaction.validated_instructions.clone() {
                     let result = match inst {
                         ValidatedInstruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode(
@@ -87,7 +87,7 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_bucket_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode(
@@ -108,7 +108,7 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_bucket_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode(
@@ -165,7 +165,7 @@ impl TransactionProcessor {
                         ),
                         ValidatedInstruction::PopFromAuthZone {} => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode(
@@ -199,7 +199,7 @@ impl TransactionProcessor {
                         ValidatedInstruction::CreateProofFromAuthZone { resource_address } => {
                             id_allocator
                                 .new_proof_id()
-                                .map_err(RuntimeError::IdAllocatorError)
+                                .map_err(RuntimeError::IdAllocationError)
                                 .and_then(|new_id| {
                                     system_api
                                         .invoke_snode(
@@ -222,7 +222,7 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode(
@@ -245,7 +245,7 @@ impl TransactionProcessor {
                             resource_address,
                         } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode(
@@ -265,7 +265,7 @@ impl TransactionProcessor {
                             }),
                         ValidatedInstruction::CreateProofFromBucket { bucket_id } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 bucket_id_mapping
                                     .get(bucket_id)
@@ -287,7 +287,7 @@ impl TransactionProcessor {
                             }),
                         ValidatedInstruction::CloneProof { proof_id } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 proof_id_mapping
                                     .get(proof_id)

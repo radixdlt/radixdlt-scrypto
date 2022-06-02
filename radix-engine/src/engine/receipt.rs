@@ -58,11 +58,16 @@ impl fmt::Debug for Receipt {
         )?;
 
         write!(f, "\n{}", "Instructions:".bold().green())?;
-        for (i, inst) in self.validated_transaction.instructions.iter().enumerate() {
+        for (i, inst) in self
+            .validated_transaction
+            .validated_instructions
+            .iter()
+            .enumerate()
+        {
             write!(
                 f,
                 "\n{} {}",
-                prefix!(i, self.validated_transaction.instructions),
+                prefix!(i, self.validated_transaction.validated_instructions),
                 match inst {
                     ValidatedInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),

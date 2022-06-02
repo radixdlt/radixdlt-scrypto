@@ -13,11 +13,11 @@ use crate::types::{scrypto_type, ScryptoType};
 
 /// Represents an ECDSA public key.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EcdsaPublicKey(PublicKey);
+pub struct EcdsaPublicKey(pub PublicKey);
 
 /// Represents an ECDSA signature.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EcdsaSignature(Signature);
+pub struct EcdsaSignature(pub Signature);
 
 /// Represents an error ocurred when validating a signature.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -58,6 +58,14 @@ impl EcdsaPrivateKey {
             return Err(());
         }
         Ok(Self(SecretKey::from_be_bytes(slice).map_err(|_| ())?))
+    }
+
+    pub fn from_u64(n: u64) -> Result<Self, ()> {
+        let mut bytes = [0u8; EcdsaPrivateKey::LENGTH];
+        (&mut bytes[EcdsaPrivateKey::LENGTH - 8..EcdsaPrivateKey::LENGTH])
+            .copy_from_slice(&n.to_be_bytes());
+
+        Ok(Self(SecretKey::from_be_bytes(&bytes).map_err(|_| ())?))
     }
 }
 

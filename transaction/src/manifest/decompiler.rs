@@ -9,21 +9,21 @@ use crate::validation::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
-    IdValidatorError(IdValidatorError),
+    IdValidationError(IdValidationError),
     ParseScryptoValueError(ParseScryptoValueError),
 }
 
-pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
+pub fn decompile(instructions: &[Instruction]) -> Result<String, DecompileError> {
     let mut buf = String::new();
     let mut id_validator = IdValidator::new();
     let mut buckets = HashMap::<BucketId, String>::new();
     let mut proofs = HashMap::<ProofId, String>::new();
-    for inst in &tx.instructions {
+    for inst in instructions {
         match inst.clone() {
             Instruction::TakeFromWorktop { resource_address } => {
                 let bucket_id = id_validator
                     .new_bucket()
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
@@ -37,7 +37,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             } => {
                 let bucket_id = id_validator
                     .new_bucket()
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
@@ -51,7 +51,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             } => {
                 let bucket_id = id_validator
                     .new_bucket()
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 let name = format!("bucket{}", buckets.len() + 1);
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
@@ -66,7 +66,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::ReturnToWorktop { bucket_id } => {
                 id_validator
                     .drop_bucket(bucket_id)
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "RETURN_TO_WORKTOP Bucket({});\n",
                     buckets
@@ -106,7 +106,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::PopFromAuthZone => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::AuthZoneProof)
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!("POP_FROM_AUTH_ZONE Proof(\"{}\");\n", name));
@@ -114,7 +114,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::PushToAuthZone { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "PUSH_TO_AUTH_ZONE Proof({});\n",
                     proofs
@@ -129,7 +129,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::CreateProofFromAuthZone { resource_address } => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::AuthZoneProof)
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
@@ -143,7 +143,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             } => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::AuthZoneProof)
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
@@ -158,7 +158,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             } => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::AuthZoneProof)
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
@@ -172,7 +172,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::CreateProofFromBucket { bucket_id } => {
                 let proof_id = id_validator
                     .new_proof(ProofKind::BucketProof(bucket_id))
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
@@ -187,7 +187,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::CloneProof { proof_id } => {
                 let proof_id2 = id_validator
                     .clone_proof(proof_id)
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 let name = format!("proof{}", proofs.len() + 1);
                 proofs.insert(proof_id2, name.clone());
                 buf.push_str(&format!(
@@ -202,7 +202,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             Instruction::DropProof { proof_id } => {
                 id_validator
                     .drop_proof(proof_id)
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "DROP_PROOF Proof({});\n",
                     proofs
@@ -229,7 +229,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                             .map_err(DecompileError::ParseScryptoValueError)?;
                         id_validator
                             .move_resources(&validated_arg)
-                            .map_err(DecompileError::IdValidatorError)?;
+                            .map_err(DecompileError::IdValidationError)?;
 
                         buf.push(' ');
                         buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
@@ -257,7 +257,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                             .map_err(DecompileError::ParseScryptoValueError)?;
                         id_validator
                             .move_resources(&validated_arg)
-                            .map_err(DecompileError::IdValidatorError)?;
+                            .map_err(DecompileError::IdValidationError)?;
 
                         buf.push(' ');
                         buf.push_str(&validated_arg.to_string_with_context(&buckets, &proofs));
@@ -274,7 +274,7 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
             } => {
                 id_validator
                     .move_all_resources()
-                    .map_err(DecompileError::IdValidatorError)?;
+                    .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress(\"{}\") \"{}\";\n",
                     component_address, method
@@ -285,9 +285,6 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
                     "PUBLISH_PACKAGE Bytes(\"{}\");\n",
                     hex::encode(&package)
                 ));
-            }
-            Instruction::Nonce { .. } => {
-                // TODO: add support for this
             }
         }
     }

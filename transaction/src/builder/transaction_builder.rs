@@ -100,7 +100,7 @@ impl TransactionBuilder {
             Instruction::CallMethodWithAllResources { .. } => {
                 self.id_validator.move_all_resources().unwrap();
             }
-            Instruction::PublishPackage { .. } | Instruction::Nonce { .. } => {}
+            Instruction::PublishPackage { .. } => {}
         }
 
         self.instructions.push(inst);
@@ -420,18 +420,15 @@ impl TransactionBuilder {
     /// Builds a transaction with the given nonce.
     pub fn build(&self, nonce: u64) -> Transaction {
         let mut instructions = self.instructions.clone();
-        instructions.push(Instruction::Nonce { nonce });
 
-        Transaction { instructions }
+        todo!()
     }
 
     /// Builds a transaction with no nonce
     ///
     /// Nonce can be later filled by a third party or wallet.
     pub fn build_with_no_nonce(&self) -> Transaction {
-        Transaction {
-            instructions: self.instructions.clone(),
-        }
+        todo!()
     }
 
     /// Creates a token resource with mutable supply.

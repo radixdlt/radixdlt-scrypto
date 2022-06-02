@@ -148,12 +148,12 @@ where
         let now = std::time::Instant::now();
 
         // Start state track
-        let mut track = Track::new(self.substate_store, validated.raw_hash.clone());
+        let mut track = Track::new(self.substate_store, validated.intent_hash.clone());
 
         // Create root call frame.
         let mut root_frame = CallFrame::new_root(
             self.trace,
-            validated.raw_hash.clone(),
+            validated.intent_hash.clone(),
             validated.signers.clone(),
             &mut track,
             self.wasm_engine,

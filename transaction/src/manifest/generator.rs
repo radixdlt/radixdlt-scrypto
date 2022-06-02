@@ -34,7 +34,7 @@ pub enum GeneratorError {
     InvalidNonFungibleAddress(String),
     OddNumberOfElements(usize),
     NameResolverError(NameResolverError),
-    IdValidatorError(IdValidatorError),
+    IdValidationError(IdValidationError),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -98,20 +98,22 @@ impl NameResolver {
     }
 }
 
-pub fn generate_transaction(tx: &ast::Transaction) -> Result<Transaction, GeneratorError> {
+pub fn generate_manifest(
+    instructions: &[ast::Instruction],
+) -> Result<Vec<Instruction>, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
-    let mut instructions = Vec::new();
+    let mut manifest = Vec::new();
 
-    for instruction in &tx.instructions {
-        instructions.push(generate_instruction(
+    for instruction in instructions {
+        manifest.push(generate_instruction(
             instruction,
             &mut id_validator,
             &mut name_resolver,
         )?);
     }
 
-    Ok(Transaction { instructions })
+    Ok(manifest)
 }
 
 pub fn generate_instruction(
@@ -126,7 +128,7 @@ pub fn generate_instruction(
         } => {
             let bucket_id = id_validator
                 .new_bucket()
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeFromWorktop {
@@ -140,7 +142,7 @@ pub fn generate_instruction(
         } => {
             let bucket_id = id_validator
                 .new_bucket()
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeFromWorktopByAmount {
@@ -155,7 +157,7 @@ pub fn generate_instruction(
         } => {
             let bucket_id = id_validator
                 .new_bucket()
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeFromWorktopByIds {
@@ -167,7 +169,7 @@ pub fn generate_instruction(
             let bucket_id = generate_bucket(bucket, resolver)?;
             id_validator
                 .drop_bucket(bucket_id)
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             Instruction::ReturnToWorktop { bucket_id }
         }
         ast::Instruction::AssertWorktopContains { resource_address } => {
@@ -192,7 +194,7 @@ pub fn generate_instruction(
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             Instruction::PopFromAuthZone
@@ -201,7 +203,7 @@ pub fn generate_instruction(
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             Instruction::PushToAuthZone { proof_id }
         }
         ast::Instruction::ClearAuthZone => Instruction::ClearAuthZone,
@@ -213,7 +215,7 @@ pub fn generate_instruction(
             let resource_address = generate_resource_address(resource_address)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             Instruction::CreateProofFromAuthZone { resource_address }
@@ -227,7 +229,7 @@ pub fn generate_instruction(
             let resource_address = generate_resource_address(resource_address)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             Instruction::CreateProofFromAuthZoneByAmount {
@@ -244,7 +246,7 @@ pub fn generate_instruction(
             let resource_address = generate_resource_address(resource_address)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             Instruction::CreateProofFromAuthZoneByIds {
@@ -256,7 +258,7 @@ pub fn generate_instruction(
             let bucket_id = generate_bucket(bucket, resolver)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::BucketProof(bucket_id))
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id)?;
 
             Instruction::CreateProofFromBucket { bucket_id }
@@ -265,7 +267,7 @@ pub fn generate_instruction(
             let proof_id = generate_proof(proof, resolver)?;
             let proof_id2 = id_validator
                 .clone_proof(proof_id)
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             declare_proof(new_proof, resolver, proof_id2)?;
 
             Instruction::CloneProof { proof_id }
@@ -274,7 +276,7 @@ pub fn generate_instruction(
             let proof_id = generate_proof(proof, resolver)?;
             id_validator
                 .drop_proof(proof_id)
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             Instruction::DropProof { proof_id }
         }
         ast::Instruction::CallFunction {
@@ -289,7 +291,7 @@ pub fn generate_instruction(
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
-                    .map_err(GeneratorError::IdValidatorError)?;
+                    .map_err(GeneratorError::IdValidationError)?;
                 fields.push(validated_arg.dom);
             }
 
@@ -310,7 +312,7 @@ pub fn generate_instruction(
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
                 id_validator
                     .move_resources(&validated_arg)
-                    .map_err(GeneratorError::IdValidatorError)?;
+                    .map_err(GeneratorError::IdValidationError)?;
                 fields.push(validated_arg.dom);
             }
 
@@ -331,7 +333,7 @@ pub fn generate_instruction(
         } => {
             id_validator
                 .move_all_resources()
-                .map_err(GeneratorError::IdValidatorError)?;
+                .map_err(GeneratorError::IdValidationError)?;
             Instruction::CallMethodWithAllResources {
                 component_address: generate_component_address(component_address)?,
                 method: generate_string(method)?,
@@ -1059,96 +1061,94 @@ mod tests {
 
         assert_eq!(
             crate::manifest::compile(tx).unwrap(),
-            Transaction {
-                instructions: vec![
-                    Instruction::CallMethod {
-                        component_address: ComponentAddress::from_str(
-                            "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
-                        )
-                        .unwrap(),
-                        call_data: call_data!(withdraw_by_amount(
-                            Decimal::from(5u32),
-                            ResourceAddress::from_str(
-                                "030000000000000000000000000000000000000000000000000004"
-                            )
-                            .unwrap()
-                        ))
-                    },
-                    Instruction::TakeFromWorktopByAmount {
-                        amount: Decimal::from(2),
-                        resource_address: ResourceAddress::from_str(
+            vec![
+                Instruction::CallMethod {
+                    component_address: ComponentAddress::from_str(
+                        "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                    )
+                    .unwrap(),
+                    call_data: call_data!(withdraw_by_amount(
+                        Decimal::from(5u32),
+                        ResourceAddress::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
-                        .unwrap(),
-                    },
-                    Instruction::CallMethod {
-                        component_address: ComponentAddress::from_str(
-                            "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
-                        )
-                        .unwrap(),
-                        call_data: call_data!(buy_gumball(scrypto::resource::Bucket(512)))
-                    },
-                    Instruction::AssertWorktopContainsByAmount {
-                        amount: Decimal::from(3),
-                        resource_address: ResourceAddress::from_str(
+                        .unwrap()
+                    ))
+                },
+                Instruction::TakeFromWorktopByAmount {
+                    amount: Decimal::from(2),
+                    resource_address: ResourceAddress::from_str(
+                        "030000000000000000000000000000000000000000000000000004"
+                    )
+                    .unwrap(),
+                },
+                Instruction::CallMethod {
+                    component_address: ComponentAddress::from_str(
+                        "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
+                    )
+                    .unwrap(),
+                    call_data: call_data!(buy_gumball(scrypto::resource::Bucket(512)))
+                },
+                Instruction::AssertWorktopContainsByAmount {
+                    amount: Decimal::from(3),
+                    resource_address: ResourceAddress::from_str(
+                        "030000000000000000000000000000000000000000000000000004"
+                    )
+                    .unwrap(),
+                },
+                Instruction::AssertWorktopContains {
+                    resource_address: ResourceAddress::from_str(
+                        "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
+                    )
+                    .unwrap(),
+                },
+                Instruction::TakeFromWorktop {
+                    resource_address: ResourceAddress::from_str(
+                        "030000000000000000000000000000000000000000000000000004"
+                    )
+                    .unwrap(),
+                },
+                Instruction::CreateProofFromBucket { bucket_id: 513 },
+                Instruction::CloneProof { proof_id: 514 },
+                Instruction::DropProof { proof_id: 514 },
+                Instruction::DropProof { proof_id: 515 },
+                Instruction::CallMethod {
+                    component_address: ComponentAddress::from_str(
+                        "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                    )
+                    .unwrap(),
+                    call_data: call_data!(create_proof_by_amount(
+                        Decimal::from(5u32),
+                        ResourceAddress::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
-                        .unwrap(),
-                    },
-                    Instruction::AssertWorktopContains {
-                        resource_address: ResourceAddress::from_str(
-                            "03aedb7960d1f87dc25138f4cd101da6c98d57323478d53c5fb951"
-                        )
-                        .unwrap(),
-                    },
-                    Instruction::TakeFromWorktop {
-                        resource_address: ResourceAddress::from_str(
-                            "030000000000000000000000000000000000000000000000000004"
-                        )
-                        .unwrap(),
-                    },
-                    Instruction::CreateProofFromBucket { bucket_id: 513 },
-                    Instruction::CloneProof { proof_id: 514 },
-                    Instruction::DropProof { proof_id: 514 },
-                    Instruction::DropProof { proof_id: 515 },
-                    Instruction::CallMethod {
-                        component_address: ComponentAddress::from_str(
-                            "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
-                        )
-                        .unwrap(),
-                        call_data: call_data!(create_proof_by_amount(
-                            Decimal::from(5u32),
-                            ResourceAddress::from_str(
-                                "030000000000000000000000000000000000000000000000000004"
-                            )
-                            .unwrap()
-                        ))
-                    },
-                    Instruction::PopFromAuthZone,
-                    Instruction::DropProof { proof_id: 516 },
-                    Instruction::ReturnToWorktop { bucket_id: 513 },
-                    Instruction::TakeFromWorktopByIds {
-                        ids: BTreeSet::from([
-                            NonFungibleId::from_str("11").unwrap(),
-                            NonFungibleId::from_str("22").unwrap(),
-                        ]),
-                        resource_address: ResourceAddress::from_str(
-                            "030000000000000000000000000000000000000000000000000004"
-                        )
-                        .unwrap(),
-                    },
-                    Instruction::CallMethodWithAllResources {
-                        component_address: ComponentAddress::from_str(
-                            "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
-                        )
-                        .unwrap(),
-                        method: "deposit_batch".into(),
-                    },
-                    Instruction::PublishPackage {
-                        package: encoded_package.clone()
-                    },
-                ]
-            }
+                        .unwrap()
+                    ))
+                },
+                Instruction::PopFromAuthZone,
+                Instruction::DropProof { proof_id: 516 },
+                Instruction::ReturnToWorktop { bucket_id: 513 },
+                Instruction::TakeFromWorktopByIds {
+                    ids: BTreeSet::from([
+                        NonFungibleId::from_str("11").unwrap(),
+                        NonFungibleId::from_str("22").unwrap(),
+                    ]),
+                    resource_address: ResourceAddress::from_str(
+                        "030000000000000000000000000000000000000000000000000004"
+                    )
+                    .unwrap(),
+                },
+                Instruction::CallMethodWithAllResources {
+                    component_address: ComponentAddress::from_str(
+                        "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
+                    )
+                    .unwrap(),
+                    method: "deposit_batch".into(),
+                },
+                Instruction::PublishPackage {
+                    package: encoded_package.clone()
+                },
+            ]
         );
     }
 }

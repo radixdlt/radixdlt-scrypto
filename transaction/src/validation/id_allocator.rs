@@ -31,13 +31,13 @@ impl IdAllocator {
         }
     }
 
-    fn next(&mut self) -> Result<u32, IdAllocatorError> {
+    fn next(&mut self) -> Result<u32, IdAllocationError> {
         if self.available.len() > 0 {
             let id = self.available.start;
             self.available.start += 1;
             Ok(id)
         } else {
-            Err(IdAllocatorError::OutOfID)
+            Err(IdAllocationError::OutOfID)
         }
     }
 
@@ -45,7 +45,7 @@ impl IdAllocator {
     pub fn new_package_address(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<PackageAddress, IdAllocatorError> {
+    ) -> Result<PackageAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
         Ok(PackageAddress(hash(data).lower_26_bytes()))
@@ -55,7 +55,7 @@ impl IdAllocator {
     pub fn new_component_address(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<ComponentAddress, IdAllocatorError> {
+    ) -> Result<ComponentAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
         Ok(ComponentAddress(hash(data).lower_26_bytes()))
@@ -65,31 +65,31 @@ impl IdAllocator {
     pub fn new_resource_address(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<ResourceAddress, IdAllocatorError> {
+    ) -> Result<ResourceAddress, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
         Ok(ResourceAddress(hash(data).lower_26_bytes()))
     }
 
     /// Creates a new UUID.
-    pub fn new_uuid(&mut self, transaction_hash: Hash) -> Result<u128, IdAllocatorError> {
+    pub fn new_uuid(&mut self, transaction_hash: Hash) -> Result<u128, IdAllocationError> {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
         Ok(u128::from_le_bytes(hash(data).lower_16_bytes()))
     }
 
     /// Creates a new bucket ID.
-    pub fn new_bucket_id(&mut self) -> Result<BucketId, IdAllocatorError> {
+    pub fn new_bucket_id(&mut self) -> Result<BucketId, IdAllocationError> {
         Ok(self.next()?)
     }
 
     /// Creates a new proof ID.
-    pub fn new_proof_id(&mut self) -> Result<ProofId, IdAllocatorError> {
+    pub fn new_proof_id(&mut self) -> Result<ProofId, IdAllocationError> {
         Ok(self.next()?)
     }
 
     /// Creates a new vault ID.
-    pub fn new_vault_id(&mut self, transaction_hash: Hash) -> Result<VaultId, IdAllocatorError> {
+    pub fn new_vault_id(&mut self, transaction_hash: Hash) -> Result<VaultId, IdAllocationError> {
         Ok((transaction_hash, self.next()?))
     }
 
@@ -97,7 +97,7 @@ impl IdAllocator {
     pub fn new_lazy_map_id(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<LazyMapId, IdAllocatorError> {
+    ) -> Result<LazyMapId, IdAllocationError> {
         Ok((transaction_hash, self.next()?))
     }
 }
