@@ -7,7 +7,7 @@ use sbor::*;
 
 use crate::misc::*;
 use crate::resource::*;
-use crate::types::*;
+use crate::abi::*;
 
 /// Identifier for a non-fungible unit.
 #[derive(Clone, PartialEq, Eq, Hash)]

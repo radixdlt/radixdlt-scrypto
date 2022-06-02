@@ -14,7 +14,7 @@ use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::sfunctions;
-use crate::types::*;
+use crate::abi::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
 pub enum ResourceMethodAuthKey {

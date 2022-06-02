@@ -7,7 +7,7 @@ use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::call_data_any_args;
 use scrypto::engine::types::*;
-use scrypto::types::*;
+use scrypto::abi::*;
 use scrypto::values::*;
 
 use crate::ast;

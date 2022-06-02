@@ -10,13 +10,13 @@ use sbor::rust::vec::Vec;
 use sbor::type_id::*;
 use sbor::{any::*, *};
 
+use crate::abi::*;
 use crate::buffer::*;
 use crate::component::*;
 use crate::crypto::*;
 use crate::engine::types::*;
 use crate::math::*;
 use crate::resource::*;
-use crate::types::*;
 
 /// Represents an error when parsing a Scrypto value.
 #[derive(Debug, Clone, PartialEq, Eq)]

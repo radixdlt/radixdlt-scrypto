@@ -9,7 +9,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::types::{scrypto_type, ScryptoType};
+use crate::abi::{scrypto_type, ScryptoType};
 
 /// Represents an ECDSA public key.
 #[derive(Clone, Copy, PartialEq, Eq)]

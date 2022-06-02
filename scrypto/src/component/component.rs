@@ -5,13 +5,13 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
-use crate::types::*;
 
 pub struct LocalComponent {
     blueprint_name: String,

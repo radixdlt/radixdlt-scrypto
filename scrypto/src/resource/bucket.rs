@@ -12,7 +12,7 @@ use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::sfunctions2;
-use crate::types::*;
+use crate::abi::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ConsumingBucketBurnInput {}

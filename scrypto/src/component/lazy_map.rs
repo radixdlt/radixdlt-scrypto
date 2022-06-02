@@ -7,11 +7,11 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::buffer::*;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::LazyMapId};
 use crate::misc::*;
-use crate::types::*;
 
 /// A scalable key-value map which loads entries on demand.
 #[derive(PartialEq, Eq, Hash)]

@@ -7,7 +7,7 @@ use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
     SoftResourceOrNonFungibleList,
 };
-use scrypto::types::ScryptoType;
+use scrypto::abi::ScryptoType;
 
 use crate::model::method_authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,

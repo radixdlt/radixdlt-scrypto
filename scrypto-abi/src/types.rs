@@ -2,6 +2,7 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::String;
 
 /// A macro to help create a Scrypto-specific type.
+#[macro_export]
 macro_rules! scrypto_type {
     ($t:ty, $ct:expr, $generics: expr) => {
         impl TypeId for $t {
@@ -37,8 +38,6 @@ macro_rules! scrypto_type {
         }
     };
 }
-
-pub(crate) use scrypto_type;
 
 /// Scrypto types are special types that are Scrypto specific and may require special interpretation.
 ///
