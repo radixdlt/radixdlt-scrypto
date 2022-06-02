@@ -5,9 +5,9 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::types::*;
 
 /// Identifier for a non-fungible unit.
 #[derive(Clone, PartialEq, Eq, Hash)]

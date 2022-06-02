@@ -1,4 +1,6 @@
+use sbor::describe::{Fields, Variant};
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
@@ -146,23 +148,13 @@ where
 }
 
 /// Resource Proof Rules
-#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
 pub enum ProofRule {
     Require(SoftResourceOrNonFungible),
     AmountOf(SoftDecimal, SoftResource),
     CountOf(SoftCount, SoftResourceOrNonFungibleList),
     AllOf(SoftResourceOrNonFungibleList),
     AnyOf(SoftResourceOrNonFungibleList),
-}
-
-// FIXME: describe types with cycles
-impl Describe for ProofRule {
-    fn describe() -> sbor::describe::Type {
-        sbor::describe::Type::Custom {
-            name: "ProofRule".to_owned(),
-            generics: vec![],
-        }
-    }
 }
 
 impl From<NonFungibleAddress> for ProofRule {
@@ -198,9 +190,32 @@ pub enum AccessRuleNode {
 // FIXME: describe types with cycles
 impl Describe for AccessRuleNode {
     fn describe() -> sbor::describe::Type {
-        sbor::describe::Type::Custom {
+        sbor::describe::Type::Enum {
             name: "AccessRuleNode".to_owned(),
-            generics: vec![],
+            variants: vec![
+                Variant {
+                    name: "ProofRule".to_string(),
+                    fields: Fields::Unnamed {
+                        unnamed: vec![Type::Any],
+                    },
+                },
+                Variant {
+                    name: "AnyOf".to_string(),
+                    fields: Fields::Unnamed {
+                        unnamed: vec![Type::Vec {
+                            element: Box::new(Type::Any),
+                        }],
+                    },
+                },
+                Variant {
+                    name: "AllOf".to_string(),
+                    fields: Fields::Unnamed {
+                        unnamed: vec![Type::Vec {
+                            element: Box::new(Type::Any),
+                        }],
+                    },
+                },
+            ],
         }
     }
 }
