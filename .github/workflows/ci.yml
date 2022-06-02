@@ -130,6 +130,24 @@ jobs:
     - name: Run bench
       run: cargo bench
       working-directory: radix-engine
+  radix-engine-wasmer:
+    name: Run Radix Engine tests (with Wasmer)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Upgrade rust toolchain
+      run: rustup upgrade
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
+    - name: Run tests
+      run: cargo test --verbose --features wasmer
+      working-directory: radix-engine
+    - name: Run bench
+      run: cargo bench --features wasmer
+      working-directory: radix-engine
   transaction-manifest:
     name: Run transaction manifest tests
     runs-on: ${{ matrix.os }}

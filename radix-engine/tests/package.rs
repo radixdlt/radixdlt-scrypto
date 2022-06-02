@@ -7,7 +7,7 @@ use radix_engine::model::extract_package;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::default_wasm_engine;
 use radix_engine::wasm::InvokeError;
-use radix_engine::wasm::WasmValidationError::NoMemoryExport;
+use radix_engine::wasm::PrepareError::NoMemory;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use test_runner::{wat2wasm, TestRunner};
@@ -15,7 +15,7 @@ use test_runner::{wat2wasm, TestRunner};
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
 
@@ -44,14 +44,14 @@ fn missing_memory_should_cause_error() {
     let error = receipt.result.expect_err("Should be error.");
     assert_eq!(
         error,
-        RuntimeError::PackageError(PackageError::WasmValidationError(NoMemoryExport))
+        RuntimeError::PackageError(PackageError::InvalidWasm(NoMemory))
     );
 }
 
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package = test_runner.publish_package("package");
@@ -75,7 +75,7 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package = test_runner.publish_package("package");
@@ -99,7 +99,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let package = test_runner.publish_package("package");
@@ -122,7 +122,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
 

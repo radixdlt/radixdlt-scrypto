@@ -1,3 +1,4 @@
+use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
@@ -9,7 +10,7 @@ use scrypto::prelude::*;
 #[test]
 fn dangling_lazy_map_should_fail() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
@@ -28,13 +29,16 @@ fn dangling_lazy_map_should_fail() {
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(runtime_error, RuntimeError::ResourceCheckFailure);
+    assert_eq!(
+        runtime_error,
+        RuntimeError::ResourceCheckFailure(ResourceFailure::UnclaimedLazyMap)
+    );
 }
 
 #[test]
 fn can_insert_in_child_nodes() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
@@ -54,7 +58,7 @@ fn can_insert_in_child_nodes() {
 #[test]
 fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
@@ -78,7 +82,7 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
 #[test]
 fn cyclic_map_fails_execution() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
@@ -105,7 +109,7 @@ fn cyclic_map_fails_execution() {
 #[test]
 fn self_cyclic_map_fails_execution() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
@@ -132,7 +136,7 @@ fn self_cyclic_map_fails_execution() {
 #[test]
 fn cannot_remove_lazy_maps() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
@@ -166,7 +170,7 @@ fn cannot_remove_lazy_maps() {
 #[test]
 fn cannot_overwrite_lazy_maps() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
@@ -200,7 +204,7 @@ fn cannot_overwrite_lazy_maps() {
 #[test]
 fn create_lazy_map_and_get() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();
@@ -224,7 +228,7 @@ fn create_lazy_map_and_get() {
 #[test]
 fn create_lazy_map_and_put() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "lazy_map"))).unwrap();

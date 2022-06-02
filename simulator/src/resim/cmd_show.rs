@@ -14,7 +14,7 @@ pub struct Show {
 
 impl Show {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let ledger = RadixEngineDB::new(get_data_dir()?);
+        let ledger = RadixEngineDB::with_bootstrap(get_data_dir()?);
 
         if let Ok(package_address) = PackageAddress::from_str(&self.address) {
             dump_package(package_address, &ledger, out).map_err(Error::LedgerDumpError)

@@ -11,7 +11,7 @@ use scrypto::prelude::*;
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (_, _, account) = test_runner.new_account();
@@ -67,7 +67,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 #[test]
 fn can_make_cross_component_call_with_authorization() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (key, sk, account) = test_runner.new_account();
