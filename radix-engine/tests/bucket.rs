@@ -12,7 +12,7 @@ use scrypto::prelude::*;
 
 #[test]
 fn test_bucket() {
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (_, _, account) = executor.new_account();
@@ -54,7 +54,7 @@ fn test_bucket() {
 
 #[test]
 fn test_bucket_of_badges() {
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (_, _, account) = executor.new_account();
@@ -76,7 +76,7 @@ fn test_bucket_of_badges() {
 #[test]
 fn test_take_with_invalid_granularity() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -115,7 +115,7 @@ fn test_take_with_invalid_granularity() {
 #[test]
 fn test_take_with_negative_amount() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -154,7 +154,7 @@ fn test_take_with_negative_amount() {
 #[test]
 fn create_empty_bucket() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();

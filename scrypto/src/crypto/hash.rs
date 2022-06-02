@@ -6,8 +6,8 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::misc::*;
-use crate::types::*;
 
 /// Represents a 32-byte hash digest.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]

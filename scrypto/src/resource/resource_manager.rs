@@ -7,6 +7,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
@@ -14,7 +15,6 @@ use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
 use crate::sfunctions;
-use crate::types::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
 pub enum ResourceMethodAuthKey {

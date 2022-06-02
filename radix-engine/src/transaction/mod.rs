@@ -1,10 +1,9 @@
-mod abi_provider;
+mod abi_extractor;
 mod builder;
 mod error;
 mod executor;
 mod nonce_provider;
 
-pub use abi_provider::{AbiProvider, BasicAbiProvider};
 pub use builder::TransactionBuilder;
 pub use error::{BuildArgsError, CallWithAbiError};
 pub use executor::TransactionExecutor;

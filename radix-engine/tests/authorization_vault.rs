@@ -10,7 +10,7 @@ use scrypto::prelude::*;
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
@@ -34,7 +34,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 #[test]
 fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
     let (pk, sk, account) = test_runner.new_account();
