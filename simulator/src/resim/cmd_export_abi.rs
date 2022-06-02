@@ -21,7 +21,7 @@ pub struct ExportAbi {
 
 impl ExportAbi {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::new(get_data_dir()?);
+        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
         let mut wasm_engine = default_wasm_engine();
         let executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
         match executor.export_abi(self.package_address, &self.blueprint_name) {

@@ -7,7 +7,7 @@ use scrypto::to_struct;
 
 #[test]
 fn test_process_and_transaction() {
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let package = extract_package(compile_package!(format!("./tests/{}", "core"))).unwrap();
@@ -23,7 +23,7 @@ fn test_process_and_transaction() {
 
 #[test]
 fn test_call() {
-    let mut substate_store = InMemorySubstateStore::new();
+    let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = default_wasm_engine();
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let (_, _, account) = executor.new_account();
