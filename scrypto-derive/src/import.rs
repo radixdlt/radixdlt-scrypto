@@ -313,6 +313,9 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
 
             parse_quote! { HashMap<#key_type, #value_type> }
         }
+        des::Type::Any => {
+            panic!("Any type not currently supported for importing.");
+        }
         des::Type::Custom { name, generics } => {
             // Copying the names to avoid cyclic dependency.
 

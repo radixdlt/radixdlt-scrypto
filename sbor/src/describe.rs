@@ -82,6 +82,8 @@ pub enum Type {
         name: String,
         generics: Vec<Type>,
     },
+
+    Any
 }
 
 /// Represents the type info of an enum variant.
