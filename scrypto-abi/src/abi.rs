@@ -34,7 +34,7 @@ pub struct Function {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Method {
     pub name: String,
-    pub mutability: Mutability,
+    pub mutability: SelfMutability,
     pub input: Type,
     pub output: Type,
 }
@@ -42,7 +42,7 @@ pub struct Method {
 /// Whether a method is going to change the component state.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub enum Mutability {
+pub enum SelfMutability {
     /// An immutable method requires an immutable reference to component state.
     Immutable,
 

@@ -74,7 +74,7 @@ fn test_simple_abi() {
                     },
                     "output": {
                         "type": "Custom",
-                        "name": "ComponentAddress",
+                        "type_id": 129,
                         "generics": []
                     }
                 },
@@ -93,17 +93,17 @@ fn test_simple_abi() {
                         "elements": [
                             {
                                 "type": "Custom",
-                                "name": "Decimal",
+                                "type_id": 161,
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "PackageAddress",
+                                "type_id": 128,
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "LazyMap",
+                                "type_id": 130,
                                 "generics": [
                                     {
                                         "type": "String"
@@ -115,22 +115,22 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "name":  "Hash",
+                                "type_id": 144,
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "Bucket",
+                                "type_id": 177,
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "Proof",
+                                "type_id": 178,
                                 "generics": []
                             },
                             {
                                 "type": "Custom",
-                                "name": "Vault",
+                                "type_id": 179,
                                 "generics": []
                             }
                         ]

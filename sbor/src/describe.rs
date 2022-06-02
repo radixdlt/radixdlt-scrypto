@@ -79,9 +79,11 @@ pub enum Type {
     },
 
     Custom {
-        name: String,
+        type_id: u8,
         generics: Vec<Type>,
     },
+
+    Any,
 }
 
 /// Represents the type info of an enum variant.

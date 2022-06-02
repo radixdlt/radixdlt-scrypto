@@ -41,7 +41,7 @@ r#"
                             "arg0",
                             {
                                 "type": "Custom",
-                                "name": "Decimal",
+                                "type_id": 161,
                                 "generics": []
                             }
                         ],
@@ -49,7 +49,7 @@ r#"
                             "arg1",
                             {
                                 "type": "Custom",
-                                "name": "PackageAddress",
+                                "type_id": 128,
                                 "generics": []
                             }
                         ],
@@ -57,7 +57,7 @@ r#"
                             "arg2",
                             {
                                 "type": "Custom",
-                                "name": "ComponentAddress",
+                                "type_id": 129,
                                 "generics": []
                             }
                         ],
@@ -65,7 +65,7 @@ r#"
                             "arg3",
                             {
                                 "type": "Custom",
-                                "name": "LazyMap",
+                                "type_id": 130,
                                 "generics": [
                                     {
                                         "type": "String"
@@ -80,7 +80,7 @@ r#"
                             "arg4",
                             {
                                 "type": "Custom",
-                                "name": "Bucket",
+                                "type_id": 177,
                                 "generics": []
                             }
                         ],
@@ -88,7 +88,7 @@ r#"
                             "arg5",
                             {
                                 "type": "Custom",
-                                "name": "Proof",
+                                "type_id": 178,
                                 "generics": []
                             }
                         ],
@@ -96,7 +96,7 @@ r#"
                             "arg6",
                             {
                                 "type": "Custom",
-                                "name": "Vault",
+                                "type_id": 179,
                                 "generics": []
                             }
                         ],
@@ -104,7 +104,7 @@ r#"
                             "arg7",
                             {
                                 "type": "Custom",
-                                "name": "ResourceAddress",
+                                "type_id": 182,
                                 "generics": []
                             }
                         ]
@@ -113,7 +113,7 @@ r#"
             },
             "output": {
                 "type": "Custom",
-                "name": "Bucket",
+                "type_id": 177,
                 "generics": []
             }
         }
