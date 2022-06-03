@@ -8,8 +8,9 @@ use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
-use crate::engine::*;
+use crate::errors::*;
 use crate::model::{ValidatedInstruction, ValidatedTransaction};
+use crate::validation::*;
 
 /// Represents an unsigned transaction
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
@@ -372,7 +373,7 @@ mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
     use sbor::rust::marker::PhantomData;
-    use scrypto::engine::types::ComponentAddress;
+    use scrypto::component::ComponentAddress;
 
     #[test]
     fn should_reject_transaction_passing_vault() {

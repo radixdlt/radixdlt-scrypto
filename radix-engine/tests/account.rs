@@ -4,11 +4,11 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::model::*;
 use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use scrypto::values::ScryptoValue;
+use transaction::model::*;
 
 #[test]
 fn can_withdraw_from_my_account() {
