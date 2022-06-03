@@ -19,10 +19,9 @@ enum Action {
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let (token_address, mint_auth, burn_auth, withdraw_auth, admin_auth) =
         test_runner.create_restricted_token(account);
-
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
@@ -32,12 +31,13 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Withdraw => "set_withdrawable",
             Action::Deposit => "set_depositable",
         };
-        test_runner.set_auth(
-            (&pk, &sk, account),
+        test_runner.update_resource_auth(
             function,
             admin_auth,
             token_address,
             updated_auth,
+            account,
+            public_key,
         );
     }
 
@@ -81,8 +81,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     };
 
     let manifest = builder.build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     if expect_err {

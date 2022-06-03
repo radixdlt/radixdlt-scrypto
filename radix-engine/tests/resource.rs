@@ -12,7 +12,7 @@ use transaction::builder::ManifestBuilder;
 fn test_resource_manager() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.publish_package("resource");
 
     // Act
@@ -31,8 +31,7 @@ fn test_resource_manager() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     println!("{:?}", receipt);
@@ -43,7 +42,7 @@ fn test_resource_manager() {
 fn mint_with_bad_granularity_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.publish_package("resource");
 
     // Act
@@ -55,8 +54,7 @@ fn mint_with_bad_granularity_should_fail() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -73,7 +71,7 @@ fn mint_with_bad_granularity_should_fail() {
 fn mint_too_much_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.publish_package("resource");
 
     // Act
@@ -85,8 +83,7 @@ fn mint_too_much_should_fail() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");

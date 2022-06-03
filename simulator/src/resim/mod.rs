@@ -137,6 +137,7 @@ pub fn handle_manifest<O: std::io::Write>(
     signing_keys: &Option<String>,
     manifest_path: &Option<PathBuf>,
     trace: bool,
+    output_receipt: bool,
     out: &mut O,
 ) -> Result<Option<Receipt>, Error> {
     match manifest_path {
@@ -162,7 +163,9 @@ pub fn handle_manifest<O: std::io::Write>(
             let transaction = TestTransaction::new(manifest, nonce, pks);
 
             let receipt = executor.execute(&transaction);
-            writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
+            if output_receipt {
+                writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
+            }
 
             if let Err(error) = &receipt.result {
                 Err(Error::TransactionExecutionError(error.clone()))
@@ -177,6 +180,7 @@ pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivat
     let private_keys = if let Some(keys) = signing_keys {
         keys.split(",")
             .map(str::trim)
+            .filter(|s| !s.is_empty())
             .map(|key| {
                 hex::decode(key)
                     .map_err(|_| Error::InvalidPrivateKey)

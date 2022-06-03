@@ -11,7 +11,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_bucket() {
     let mut test_runner = TestRunner::new(true);
-    let (_, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.publish_package("bucket");
 
     let manifest = ManifestBuilder::new()
@@ -42,15 +42,14 @@ fn test_bucket() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.result.expect("It should work");
 }
 
 #[test]
 fn test_bucket_of_badges() {
     let mut test_runner = TestRunner::new(true);
-    let (_, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.publish_package("bucket");
 
     let manifest = ManifestBuilder::new()
@@ -60,8 +59,7 @@ fn test_bucket_of_badges() {
         .call_function(package_address, "BadgeTest", call_data!(query()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.result.expect("It should work");
 }
 
@@ -69,7 +67,7 @@ fn test_bucket_of_badges() {
 fn test_take_with_invalid_granularity() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let package_address = test_runner.publish_package("bucket");
 
@@ -85,8 +83,7 @@ fn test_take_with_invalid_granularity() {
         )
         .unwrap()
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -105,7 +102,7 @@ fn test_take_with_invalid_granularity() {
 fn test_take_with_negative_amount() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
     let package_address = test_runner.publish_package("bucket");
 
@@ -121,8 +118,7 @@ fn test_take_with_negative_amount() {
         )
         .unwrap()
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -141,7 +137,7 @@ fn test_take_with_negative_amount() {
 fn create_empty_bucket() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -158,8 +154,7 @@ fn create_empty_bucket() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert

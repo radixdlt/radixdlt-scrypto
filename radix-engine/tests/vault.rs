@@ -22,8 +22,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
             call_data!(create_component_with_non_existent_vault()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -41,16 +40,14 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "NonExistentVault", call_data!(new()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, call_data!(create_non_existent_vault()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -74,8 +71,7 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
             call_data!(create_lazy_map_with_non_existent_vault()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -93,8 +89,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "NonExistentVault", call_data!(new()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
@@ -104,8 +99,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
             call_data!(create_non_existent_vault_in_lazy_map()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -125,8 +119,7 @@ fn dangling_vault_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "VaultTest", call_data!(dangling_vault()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -152,8 +145,7 @@ fn create_mutable_vault_into_map() {
             call_data!(new_vault_into_map()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -173,8 +165,7 @@ fn invalid_double_ownership_of_vault() {
             call_data!(invalid_double_ownership_of_vault()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -198,8 +189,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
             call_data!(new_vault_into_map_then_get()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -217,16 +207,14 @@ fn cannot_overwrite_vault_in_map() {
             call_data!(new_vault_into_map()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, call_data!(overwrite_vault_in_map()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -250,8 +238,7 @@ fn create_mutable_vault_into_vector() {
             call_data!(new_vault_into_vector()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -269,16 +256,14 @@ fn cannot_remove_vaults() {
             call_data!(new_vault_into_vector()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, call_data!(clear_vector()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -300,16 +285,14 @@ fn can_push_vault_into_vector() {
             call_data!(new_vault_into_vector()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, call_data!(push_vault_into_vector()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -329,8 +312,7 @@ fn create_mutable_vault_with_take() {
             call_data!(new_vault_with_take()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -350,8 +332,7 @@ fn create_mutable_vault_with_take_non_fungible() {
             call_data!(new_vault_with_take_non_fungible()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -371,8 +352,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
             call_data!(new_vault_with_get_non_fungible_ids()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -392,8 +372,7 @@ fn create_mutable_vault_with_get_amount() {
             call_data!(new_vault_with_get_amount()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -413,8 +392,7 @@ fn create_mutable_vault_with_get_resource_manager() {
             call_data!(new_vault_with_get_resource_manager()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");

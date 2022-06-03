@@ -237,21 +237,23 @@ where
     pub fn new_root(
         verbose: bool,
         transaction_hash: Hash,
-        transaction_signers: Vec<EcdsaPublicKey>,
+        transaction_signer_public_keys: Vec<EcdsaPublicKey>,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
     ) -> Self {
-        let signers: BTreeSet<NonFungibleId> = transaction_signers
+        let signer_public_keys: BTreeSet<NonFungibleId> = transaction_signer_public_keys
             .clone()
             .into_iter()
             .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
             .collect();
 
         let mut initial_auth_zone_proofs = Vec::new();
-        if !signers.is_empty() {
+        if !signer_public_keys.is_empty() {
             // Proofs can't be zero amount
-            let mut ecdsa_bucket =
-                Bucket::new(ResourceContainer::new_non_fungible(ECDSA_TOKEN, signers));
+            let mut ecdsa_bucket = Bucket::new(ResourceContainer::new_non_fungible(
+                ECDSA_TOKEN,
+                signer_public_keys,
+            ));
             let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
             initial_auth_zone_proofs.push(ecdsa_proof);
         }

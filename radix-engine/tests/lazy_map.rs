@@ -22,8 +22,7 @@ fn dangling_lazy_map_should_fail() {
             call_data!(dangling_lazy_map()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -43,8 +42,7 @@ fn can_insert_in_child_nodes() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "SuperLazyMap", call_data!(new()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work");
@@ -64,8 +62,7 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
             call_data!(new_lazy_map_into_map_then_get()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work");
@@ -81,8 +78,7 @@ fn cyclic_map_fails_execution() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "CyclicMap", call_data!(new()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -105,8 +101,7 @@ fn self_cyclic_map_fails_execution() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "CyclicMap", call_data!(new_self_cyclic()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -131,16 +126,14 @@ fn cannot_remove_lazy_maps() {
             call_data!(new_lazy_map_into_vector()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, call_data!(clear_vector()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -162,16 +155,14 @@ fn cannot_overwrite_lazy_maps() {
             call_data!(new_lazy_map_into_lazy_map()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, call_data!(overwrite_lazy_map()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -195,8 +186,7 @@ fn create_lazy_map_and_get() {
             call_data!(new_lazy_map_with_get()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work");
@@ -216,8 +206,7 @@ fn create_lazy_map_and_put() {
             call_data!(new_lazy_map_with_put()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work");

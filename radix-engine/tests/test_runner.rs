@@ -12,7 +12,8 @@ use transaction::validation::TestTransaction;
 pub struct TestRunner {
     substate_store: InMemorySubstateStore,
     wasm_engine: DefaultWasmEngine,
-    nonce: u64,
+    next_private_key: u64,
+    next_transaction_nonce: u64,
     trace: bool,
 }
 
@@ -21,25 +22,28 @@ impl TestRunner {
         Self {
             substate_store: InMemorySubstateStore::with_bootstrap(),
             wasm_engine: DefaultWasmEngine::new(),
-            nonce: 1,
+            next_private_key: 1, // 0 is invalid
+            next_transaction_nonce: 0,
             trace,
         }
     }
 
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
-        let private_key = EcdsaPrivateKey::from_u64(self.next_nonce()).unwrap();
+        let private_key = EcdsaPrivateKey::from_u64(self.next_private_key).unwrap();
         let public_key = private_key.public_key();
+
+        self.next_private_key += 1;
         (public_key, private_key)
     }
 
-    pub fn new_key_pair_with_pk_address(
+    pub fn new_key_pair_with_auth_address(
         &mut self,
     ) -> (EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress) {
-        let (pk, sk) = self.new_key_pair();
+        let key_pair = self.new_account();
         (
-            pk,
-            sk,
-            NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec())),
+            key_pair.0,
+            key_pair.1,
+            NonFungibleAddress::from_public_key(&key_pair.0),
         )
     }
 
@@ -56,14 +60,10 @@ impl TestRunner {
     }
 
     pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentAddress) {
-        let (public_key, private_key, pk_address) = self.new_key_pair_with_pk_address();
-        let withdraw_auth = rule!(require(pk_address));
-
-        (
-            public_key,
-            private_key,
-            self.new_account_with_auth_rule(&withdraw_auth),
-        )
+        let key_pair = self.new_key_pair();
+        let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&key_pair.0)));
+        let account = self.new_account_with_auth_rule(&withdraw_auth);
+        (key_pair.0, key_pair.1, account)
     }
 
     pub fn publish_package(&mut self, name: &str) -> PackageAddress {
@@ -82,9 +82,11 @@ impl TestRunner {
     pub fn execute_manifest(
         &mut self,
         manifest: TransactionManifest,
-        signers: Vec<EcdsaPublicKey>,
+        signer_public_keys: Vec<EcdsaPublicKey>,
     ) -> Receipt {
-        let transaction = TestTransaction::new(manifest, self.next_nonce(), signers);
+        let transaction =
+            TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
+        self.next_transaction_nonce += 1;
 
         TransactionExecutor::new(&mut self.substate_store, &mut self.wasm_engine, self.trace)
             .execute(&transaction)
@@ -111,26 +113,26 @@ impl TestRunner {
             .expect("Failed to export ABI")
     }
 
-    pub fn set_auth(
+    pub fn update_resource_auth(
         &mut self,
-        account: (&EcdsaPublicKey, &EcdsaPrivateKey, ComponentAddress),
         function: &str,
         auth: ResourceAddress,
         token: ResourceAddress,
         set_auth: ResourceAddress,
+        account: ComponentAddress,
+        signer_public_key: EcdsaPublicKey,
     ) {
         let package = self.publish_package("resource_creator");
         let manifest = ManifestBuilder::new()
-            .create_proof_from_account(auth, account.2)
+            .create_proof_from_account(auth, account)
             .call_function(
                 package,
                 "ResourceCreator",
                 call_data!(function.to_string(), token, set_auth),
             )
-            .call_method_with_all_resources(account.2, "deposit_batch")
+            .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let signers = vec![account.0.clone()];
-        self.execute_manifest(manifest, signers)
+        self.execute_manifest(manifest, vec![signer_public_key])
             .result
             .expect("Should be okay");
     }
@@ -164,8 +166,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let signers = vec![];
-        let receipt = self.execute_manifest(manifest, signers);
+        let receipt = self.execute_manifest(manifest, vec![]);
         (
             receipt.new_resource_addresses[0],
             mint_auth,
@@ -189,8 +190,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let signers = vec![];
-        let receipt = self.execute_manifest(manifest, signers);
+        let receipt = self.execute_manifest(manifest, vec![]);
         (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
@@ -209,8 +209,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let signers = vec![];
-        let receipt = self.execute_manifest(manifest, signers);
+        let receipt = self.execute_manifest(manifest, vec![]);
         (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
@@ -224,8 +223,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let signers = vec![];
-        let receipt = self.execute_manifest(manifest, signers);
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.result.expect("Should be okay.");
         receipt.new_resource_addresses[0]
     }
@@ -245,8 +243,7 @@ impl TestRunner {
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let signers = vec![];
-        let receipt = self.execute_manifest(manifest, signers);
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.new_resource_addresses[0]
     }
 
@@ -257,8 +254,7 @@ impl TestRunner {
         function_name: &str,
         args: Vec<String>,
         account: ComponentAddress,
-        pk: EcdsaPublicKey,
-        sk: &EcdsaPrivateKey,
+        signer_public_key: EcdsaPublicKey,
     ) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
             .call_function_with_abi(
@@ -272,15 +268,8 @@ impl TestRunner {
             .unwrap()
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
-        let signers = vec![pk];
-        let receipt = self.execute_manifest(manifest, signers);
+        let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
         receipt.new_component_addresses[0]
-    }
-
-    fn next_nonce(&mut self) -> u64 {
-        let nonce = self.nonce;
-        self.nonce += 1;
-        nonce
     }
 }
 

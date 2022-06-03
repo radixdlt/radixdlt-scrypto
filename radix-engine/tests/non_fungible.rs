@@ -10,7 +10,7 @@ use transaction::builder::ManifestBuilder;
 fn create_non_fungible_mutable() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (_, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package = test_runner.publish_package("non_fungible");
 
     // Act
@@ -22,8 +22,7 @@ fn create_non_fungible_mutable() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.result.expect("It should work");
@@ -33,7 +32,7 @@ fn create_non_fungible_mutable() {
 fn can_burn_non_fungible() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package = test_runner.publish_package("non_fungible");
     let manifest = ManifestBuilder::new()
         .call_function(
@@ -43,8 +42,7 @@ fn can_burn_non_fungible() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.result.expect("Should be okay.");
     let resource_address = receipt.new_resource_addresses[0];
     let non_fungible_address =
@@ -63,8 +61,7 @@ fn can_burn_non_fungible() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.result.expect("Should be okay.");
@@ -73,7 +70,7 @@ fn can_burn_non_fungible() {
 #[test]
 fn test_non_fungible() {
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.publish_package("non_fungible");
 
     let manifest = ManifestBuilder::new()
@@ -114,8 +111,7 @@ fn test_non_fungible() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
     receipt.result.expect("It should work");
 }
@@ -123,7 +119,7 @@ fn test_non_fungible() {
 #[test]
 fn test_singleton_non_fungible() {
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.publish_package("non_fungible");
 
     let manifest = ManifestBuilder::new()
@@ -134,8 +130,7 @@ fn test_singleton_non_fungible() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
     receipt.result.expect("It should work");
 }

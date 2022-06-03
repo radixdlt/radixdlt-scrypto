@@ -32,26 +32,55 @@ impl NewAccount {
             })
             .build();
 
-        let receipt = handle_manifest(manifest, &None, &self.manifest, self.trace, out)?;
+        let receipt = handle_manifest(
+            manifest,
+            &Some("".to_string()), // explicit empty signer public keys
+            &self.manifest,
+            self.trace,
+            false,
+            out,
+        )?;
 
         if let Some(receipt) = receipt {
+            let account = receipt.new_component_addresses[0];
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
             writeln!(
                 out,
                 "Account component address: {}",
-                receipt.new_component_addresses[0].to_string().green()
+                account.to_string().green()
             )
             .map_err(Error::IOError)?;
+            writeln!(out, "Public key: {}", public_key.to_string().green())
+                .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "Private key: {}",
+                hex::encode(private_key.to_bytes()).green()
+            )
+            .map_err(Error::IOError)?;
+
+            if get_configs()?.is_none() {
+                writeln!(
+                    out,
+                    "No configuration found on system. will use the above account as default."
+                )
+                .map_err(Error::IOError)?;
+                set_configs(&Configs {
+                    default_account: account,
+                    default_private_key: private_key.to_bytes(),
+                })?;
+            }
         } else {
             writeln!(out, "A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!").map_err(Error::IOError)?;
+            writeln!(out, "Public key: {}", public_key.to_string().green())
+                .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "Private key: {}",
+                hex::encode(private_key.to_bytes()).green()
+            )
+            .map_err(Error::IOError)?;
         }
-        writeln!(out, "Public key: {}", public_key.to_string().green()).map_err(Error::IOError)?;
-        writeln!(
-            out,
-            "Private key: {}",
-            hex::encode(private_key.to_bytes()).green()
-        )
-        .map_err(Error::IOError)?;
         Ok(())
     }
 }

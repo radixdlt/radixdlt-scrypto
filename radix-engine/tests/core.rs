@@ -14,15 +14,14 @@ fn test_process_and_transaction() {
     let manifest1 = ManifestBuilder::new()
         .call_function(package_address, "CoreTest", call_data![query()])
         .build();
-    let signers = vec![];
-    let receipt1 = test_runner.execute_manifest(manifest1, signers);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     receipt1.result.expect("Should be okay.");
 }
 
 #[test]
 fn test_call() {
     let mut test_runner = TestRunner::new(true);
-    let (_, _, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.publish_package("core");
 
     let manifest = ManifestBuilder::new()
@@ -30,7 +29,6 @@ fn test_call() {
         .call_function(package_address, "MoveTest", call_data![move_proof()])
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.result.expect("Should be okay.");
 }

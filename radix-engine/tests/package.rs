@@ -31,8 +31,7 @@ fn missing_memory_should_cause_error() {
         blueprints: HashMap::new(),
     };
     let manifest = ManifestBuilder::new().publish_package(package).build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be error.");
@@ -52,8 +51,7 @@ fn large_return_len_should_cause_memory_access_error() {
     let manifest = ManifestBuilder::new()
         .call_function(package, "LargeReturnSize", call_data!(something()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -73,8 +71,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let manifest = ManifestBuilder::new()
         .call_function(package, "MaxReturnSize", call_data!(something()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -113,8 +110,7 @@ fn test_basic_package() {
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
     let package = extract_package(code).unwrap();
     let manifest = ManifestBuilder::new().publish_package(package).build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work")

@@ -11,7 +11,7 @@ use transaction::builder::ManifestBuilder;
 fn can_create_clone_and_drop_bucket_proof() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
 
@@ -28,8 +28,7 @@ fn can_create_clone_and_drop_bucket_proof() {
         .unwrap()
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -40,7 +39,7 @@ fn can_create_clone_and_drop_bucket_proof() {
 fn can_create_clone_and_drop_vault_proof() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
     let component_address = test_runner.instantiate_component(
@@ -49,8 +48,7 @@ fn can_create_clone_and_drop_vault_proof() {
         "new",
         vec![format!("1,{}", resource_address)],
         account,
-        pk,
-        &sk,
+        public_key,
     );
 
     // Act
@@ -60,8 +58,7 @@ fn can_create_clone_and_drop_vault_proof() {
             call_data!(create_clone_drop_vault_proof(Decimal::one())),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     println!("{:?}", receipt);
 
     // Assert
@@ -72,7 +69,7 @@ fn can_create_clone_and_drop_vault_proof() {
 fn can_create_clone_and_drop_vault_proof_by_amount() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.publish_package("proof");
@@ -82,8 +79,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         "new",
         vec![format!("3,{}", resource_address)],
         account,
-        pk,
-        &sk,
+        public_key,
     );
 
     // Act
@@ -97,8 +93,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         )
         .unwrap()
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     println!("{:?}", receipt);
 
     // Assert
@@ -109,7 +104,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
 fn can_create_clone_and_drop_vault_proof_by_ids() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
     let component_address = test_runner.instantiate_component(
@@ -118,8 +113,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         "new",
         vec![format!("3,{}", resource_address)],
         account,
-        pk,
-        &sk,
+        public_key,
     );
 
     // Act
@@ -135,8 +129,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
             call_data!(create_clone_drop_vault_proof_by_ids(total_ids, proof_ids)),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     println!("{:?}", receipt);
 
     // Assert
@@ -147,7 +140,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
 fn can_use_bucket_for_authorization() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
     let package_address = test_runner.publish_package("proof");
@@ -168,8 +161,7 @@ fn can_use_bucket_for_authorization() {
         .unwrap()
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -180,7 +172,7 @@ fn can_use_bucket_for_authorization() {
 fn can_use_vault_for_authorization() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let (auth_resource_address, burnable_resource_address) =
         test_runner.create_restricted_burn_token(account);
     let package_address = test_runner.publish_package("proof");
@@ -190,8 +182,7 @@ fn can_use_vault_for_authorization() {
         "new",
         vec![format!("1,{}", auth_resource_address)],
         account,
-        pk,
-        &sk,
+        public_key,
     );
 
     // Act
@@ -205,8 +196,7 @@ fn can_use_vault_for_authorization() {
         )
         .unwrap()
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -217,7 +207,7 @@ fn can_use_vault_for_authorization() {
 fn can_create_proof_from_account_and_pass_on() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.publish_package("proof");
@@ -234,8 +224,7 @@ fn can_create_proof_from_account_and_pass_on() {
         )
         .unwrap()
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -246,7 +235,7 @@ fn can_create_proof_from_account_and_pass_on() {
 fn cant_move_restricted_proof() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.publish_package("proof");
@@ -263,8 +252,7 @@ fn cant_move_restricted_proof() {
         )
         .unwrap()
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -278,7 +266,7 @@ fn cant_move_restricted_proof() {
 fn can_compose_bucket_and_vault_proof() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.publish_package("proof");
@@ -288,8 +276,7 @@ fn can_compose_bucket_and_vault_proof() {
         "new",
         vec![format!("1,{}", resource_address)],
         account,
-        pk,
-        &sk,
+        public_key,
     );
 
     // Act
@@ -302,8 +289,7 @@ fn can_compose_bucket_and_vault_proof() {
             )
         })
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -314,7 +300,7 @@ fn can_compose_bucket_and_vault_proof() {
 fn can_compose_bucket_and_vault_proof_by_amount() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address =
         test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
     let package_address = test_runner.publish_package("proof");
@@ -324,8 +310,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         "new",
         vec![format!("1,{}", resource_address)],
         account,
-        pk,
-        &sk,
+        public_key,
     );
 
     // Act
@@ -341,8 +326,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             )
         })
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -353,7 +337,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
 fn can_compose_bucket_and_vault_proof_by_ids() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
     let component_address = test_runner.instantiate_component(
@@ -362,8 +346,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         "new",
         vec![format!("1,{}", resource_address)],
         account,
-        pk,
-        &sk,
+        public_key,
     );
 
     // Act
@@ -387,8 +370,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             },
         )
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert
@@ -399,7 +381,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
 fn can_create_vault_proof_by_amount_from_non_fungibles() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
     let component_address = test_runner.instantiate_component(
@@ -408,8 +390,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         "new",
         vec![format!("3,{}", resource_address)],
         account,
-        pk,
-        &sk,
+        public_key,
     );
 
     // Act
@@ -422,8 +403,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
             )],
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     println!("{:?}", receipt);
 
     // Assert
@@ -434,7 +414,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
 fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
     let package_address = test_runner.publish_package("proof");
 
@@ -466,8 +446,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
             },
         )
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     println!("{:?}", receipt);
 
     // Assert

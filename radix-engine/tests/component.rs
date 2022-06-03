@@ -15,23 +15,21 @@ fn test_package() {
     let manifest1 = ManifestBuilder::new()
         .call_function(package, "PackageTest", call_data!(publish()))
         .build();
-    let signers = vec![];
-    let receipt1 = test_runner.execute_manifest(manifest1, signers);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     assert!(receipt1.result.is_ok());
 }
 
 #[test]
 fn test_component() {
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let package = test_runner.publish_package("component");
 
     // Create component
     let manifest1 = ManifestBuilder::new()
         .call_function(package, "ComponentTest", call_data!(create_component()))
         .build();
-    let signers = vec![];
-    let receipt1 = test_runner.execute_manifest(manifest1, signers);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     assert!(receipt1.result.is_ok());
 
     // Find the component address from receipt
@@ -48,8 +46,8 @@ fn test_component() {
         .call_method(component, call_data!(put_component_state()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt2 = test_runner.execute_manifest(manifest2, signers);
+    let signer_public_keys = vec![public_key];
+    let receipt2 = test_runner.execute_manifest(manifest2, signer_public_keys);
     receipt2.result.expect("Should be okay.");
 }
 
@@ -67,8 +65,7 @@ fn invalid_blueprint_name_should_cause_error() {
             call_data![create_component()],
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -86,8 +83,7 @@ fn reentrancy_should_not_be_possible() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "ReentrantComponent", call_data!(new()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.result.expect("Should be okay");
     let component_address = receipt.new_component_addresses[0];
 
@@ -95,8 +91,7 @@ fn reentrancy_should_not_be_possible() {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, call_data!(call_self()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -116,8 +111,7 @@ fn missing_component_address_should_cause_error() {
     let manifest = ManifestBuilder::new()
         .call_method(component_address, call_data!(get_component_state()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");

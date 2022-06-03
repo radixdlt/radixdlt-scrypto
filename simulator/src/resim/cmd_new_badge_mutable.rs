@@ -71,6 +71,7 @@ impl NewBadgeMutable {
             &self.signing_keys,
             &self.manifest,
             self.trace,
+            true,
             out,
         )
         .map(|_| ())

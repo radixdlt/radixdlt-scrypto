@@ -13,7 +13,7 @@ use transaction::model::*;
 fn can_withdraw_from_my_account() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
@@ -21,8 +21,7 @@ fn can_withdraw_from_my_account() {
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.result.expect("It should work");
@@ -32,7 +31,7 @@ fn can_withdraw_from_my_account() {
 fn can_withdraw_non_fungible_from_my_account() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
     let resource_address = test_runner.create_non_fungible_resource(account);
 
@@ -41,8 +40,7 @@ fn can_withdraw_non_fungible_from_my_account() {
         .withdraw_from_account(resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.result.expect("Should be okay");
@@ -53,13 +51,13 @@ fn cannot_withdraw_from_other_account() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_account();
-    let (other_pk, other_sk, other_account) = test_runner.new_account();
+    let (other_public_key, _, other_account) = test_runner.new_account();
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let signers = vec![other_pk]; // Act
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let signer_public_keys = vec![other_public_key]; // Act
+    let receipt = test_runner.execute_manifest(manifest, signer_public_keys);
 
     // Assert
     let error = receipt.result.expect_err("Should be runtime error");
@@ -70,7 +68,7 @@ fn cannot_withdraw_from_other_account() {
 fn account_to_bucket_to_account() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let manifest = ManifestBuilder::new()
         .withdraw_from_account(RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
@@ -82,8 +80,8 @@ fn account_to_bucket_to_account() {
                 .0
         })
         .build();
-    let signers = vec![pk]; // Act
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let signer_public_keys = vec![public_key]; // Act
+    let receipt = test_runner.execute_manifest(manifest, signer_public_keys);
 
     // Assert
     receipt.result.expect("It should work");
@@ -93,12 +91,12 @@ fn account_to_bucket_to_account() {
 fn test_account_balance() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let manifest = ManifestBuilder::new()
         .call_method(account, call_data![balance(RADIX_TOKEN)])
         .build();
-    let signers = vec![pk]; // Act
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let signer_public_keys = vec![public_key]; // Act
+    let receipt = test_runner.execute_manifest(manifest, signer_public_keys);
 
     // Assert
     assert_eq!(

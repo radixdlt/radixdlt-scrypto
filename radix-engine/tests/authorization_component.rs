@@ -12,7 +12,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_account();
-    let auth = test_runner.create_non_fungible_resource(account.clone());
+    let auth = test_runner.create_non_fungible_resource(account);
     let auth_id = NonFungibleId::from_u32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id);
     let authorization =
@@ -26,8 +26,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             call_data!(create_component_with_auth(authorization)),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_addresses[0];
 
@@ -38,8 +37,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             call_data!(create_component()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.result.expect("It should work");
     let my_component = receipt.new_component_addresses[0];
 
@@ -50,8 +48,7 @@ fn cannot_make_cross_component_call_without_authorization() {
             call_data!(cross_component_call(secured_component)),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be error");
@@ -62,7 +59,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 fn can_make_cross_component_call_with_authorization() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (key, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
     let auth_address = NonFungibleAddress::new(auth, auth_id.clone());
@@ -77,8 +74,7 @@ fn can_make_cross_component_call_with_authorization() {
             call_data!(create_component_with_auth(authorization)),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_addresses[0];
 
@@ -89,8 +85,7 @@ fn can_make_cross_component_call_with_authorization() {
             call_data!(create_component()),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.result.expect("Should be okay.");
     let my_component = receipt.new_component_addresses[0];
 
@@ -98,8 +93,7 @@ fn can_make_cross_component_call_with_authorization() {
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
         .build();
-    let signers = vec![key];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
     receipt.result.expect("Should be okay.");
 
     // Act
@@ -109,8 +103,7 @@ fn can_make_cross_component_call_with_authorization() {
             call_data!(cross_component_call(secured_component)),
         )
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay");

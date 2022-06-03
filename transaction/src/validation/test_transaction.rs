@@ -10,11 +10,15 @@ pub struct TestTransaction {
     pub manifest: TransactionManifest,
     pub instructions: Vec<ExecutableInstruction>,
     pub nonce: u64,
-    pub signers: Vec<EcdsaPublicKey>,
+    pub signer_public_keys: Vec<EcdsaPublicKey>,
 }
 
 impl TestTransaction {
-    pub fn new(manifest: TransactionManifest, nonce: u64, signers: Vec<EcdsaPublicKey>) -> Self {
+    pub fn new(
+        manifest: TransactionManifest,
+        nonce: u64,
+        signer_public_keys: Vec<EcdsaPublicKey>,
+    ) -> Self {
         let instructions = manifest
             .instructions
             .iter()
@@ -120,7 +124,7 @@ impl TestTransaction {
             manifest,
             instructions,
             nonce,
-            signers,
+            signer_public_keys,
         }
     }
 }
@@ -134,7 +138,7 @@ impl ExecutableTransaction for TestTransaction {
         &self.instructions
     }
 
-    fn signers(&self) -> &[EcdsaPublicKey] {
-        &self.signers
+    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
+        &self.signer_public_keys
     }
 }

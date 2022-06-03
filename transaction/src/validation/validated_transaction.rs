@@ -15,7 +15,7 @@ pub struct ValidatedTransaction {
     pub transaction: Transaction,
     pub transaction_hash: Hash,
     pub instructions: Vec<ExecutableInstruction>,
-    pub signers: Vec<EcdsaPublicKey>,
+    pub signer_public_keys: Vec<EcdsaPublicKey>,
 }
 
 impl ValidatedTransaction {
@@ -212,7 +212,7 @@ impl ValidatedTransaction {
         // TODO: whether to use intent hash or transaction hash
         let transaction_hash = transaction.hash();
 
-        let signers = transaction
+        let signer_public_keys = transaction
             .signed_intent
             .intent_signatures
             .iter()
@@ -223,7 +223,7 @@ impl ValidatedTransaction {
             transaction,
             transaction_hash,
             instructions,
-            signers,
+            signer_public_keys,
         })
     }
 
@@ -257,7 +257,7 @@ impl ExecutableTransaction for ValidatedTransaction {
         &self.instructions
     }
 
-    fn signers(&self) -> &[EcdsaPublicKey] {
-        &self.signers
+    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
+        &self.signer_public_keys
     }
 }

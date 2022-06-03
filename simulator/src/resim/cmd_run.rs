@@ -39,6 +39,7 @@ impl Run {
             &self.signing_keys,
             &None,
             self.trace,
+            true,
             out,
         )
         .map(|_| ())

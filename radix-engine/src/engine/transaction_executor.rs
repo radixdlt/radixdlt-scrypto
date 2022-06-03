@@ -56,7 +56,7 @@ where
         let now = std::time::Instant::now();
 
         let transaction_hash = transaction.transaction_hash();
-        let signers = transaction.signers().to_vec();
+        let signer_public_keys = transaction.signer_public_keys().to_vec();
         let instructions = transaction.instructions().to_vec();
 
         // Start state track
@@ -66,7 +66,7 @@ where
         let mut root_frame = CallFrame::new_root(
             self.trace,
             transaction_hash,
-            signers,
+            signer_public_keys,
             &mut track,
             self.wasm_engine,
         );

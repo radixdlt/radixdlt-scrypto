@@ -10,7 +10,7 @@ use transaction::builder::ManifestBuilder;
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
     let (_, token_resource_address) = test_runner.create_restricted_transfer_token(account);
 
@@ -19,8 +19,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
         .withdraw_from_account_by_amount(Decimal::one(), token_resource_address, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     let err = receipt.result.expect_err("Should be a runtime error");
@@ -31,7 +30,7 @@ fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {
 fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let (pk, sk, account) = test_runner.new_account();
+    let (public_key, _, account) = test_runner.new_account();
     let (_, _, other_account) = test_runner.new_account();
     let (auth_resource_address, token_resource_address) =
         test_runner.create_restricted_transfer_token(account);
@@ -56,8 +55,7 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
         .pop_from_auth_zone(|builder, proof_id| builder.drop_proof(proof_id))
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let signers = vec![pk];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.result.expect("Should be okay.");

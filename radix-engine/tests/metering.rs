@@ -18,8 +18,7 @@ fn test_loop() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work")
@@ -36,8 +35,7 @@ fn test_loop_out_of_tbd() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. })
@@ -55,8 +53,7 @@ fn test_recursion() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work")
@@ -73,8 +70,7 @@ fn test_recursion_stack_overflow() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     assert_invoke_error!(receipt.result, InvokeError::WasmError { .. })
@@ -91,8 +87,7 @@ fn test_grow_memory() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work")
@@ -109,8 +104,7 @@ fn test_grow_memory_out_of_tbd() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", call_data!(f()))
         .build();
-    let signers = vec![];
-    let receipt = test_runner.execute_manifest(manifest, signers);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. })

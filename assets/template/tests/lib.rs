@@ -9,6 +9,8 @@ use transaction::validation::TestTransaction;
 
 #[test]
 fn test_hello() {
+    // TODO: Make TestRunner publicly available
+
     // Set up environment.
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
@@ -36,7 +38,7 @@ fn test_hello() {
             )
         })
         .build();
-    let account_address = executor
+    let account = executor
         .execute(&TestTransaction::new(manifest, 3, vec![public_key]))
         .new_component_addresses[0];
 
@@ -51,7 +53,7 @@ fn test_hello() {
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new()
         .call_method(receipt.new_component_addresses[0], call_data!(free_token()))
-        .call_method_with_all_resources(account_address, "deposit_batch")
+        .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = executor.execute(&TestTransaction::new(manifest, 4, vec![public_key]));
     println!("{:?}\n", receipt);
