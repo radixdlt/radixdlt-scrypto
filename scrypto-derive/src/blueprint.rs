@@ -93,11 +93,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
                 // Dispatch the call
                 let method = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
-                let rtn;
-                match method.as_str() {
+                let rtn = match method.as_str() {
                     #( #arm_guards => #arm_bodies )*
                     _ => panic!("Invalid method")
-                }
+                };
 
                 // Return
                 rtn
@@ -266,7 +265,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
 
                 // call the function
                 let stmt: Stmt = parse_quote! {
-                    rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
                         &blueprint::#bp_ident::#ident(#(#dispatch_args),*)
                     );
                 };
@@ -278,6 +277,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(stmt);
                 }
+                stmts.push(Stmt::Expr(parse_quote!{ rtn }));
 
                 arm_guards.push(parse_quote! { #fn_name });
                 arm_bodies.push(Expr::Block(ExprBlock {
@@ -584,20 +584,21 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let method = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
-                    let rtn;
-                    match method.as_str() {
+                    let rtn = match method.as_str() {
                         "x" => {
                             let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                             let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
                             let state: blueprint::Test = borrow_component!(component_address).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, input.arg0));
+                            let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, input.arg0));
+                            rtn
                         }
                         "y" => {
                             let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
-                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(input.arg0));
+                            let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(input.arg0));
+                            rtn
                         }
                         _ => panic!("Invalid method")
-                    }
+                    };
                     rtn
                 }
                 #[no_mangle]
