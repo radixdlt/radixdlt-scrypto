@@ -2,7 +2,7 @@ use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::DecodeError;
+use sbor::{DecodeError, Value};
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -40,6 +40,7 @@ pub enum RuntimeError {
     MethodDoesNotExist(String),
     InvalidMethodArgument {
         function_name: String,
+        arg: Value,
     },
 
     /// Package does not exist.

@@ -614,7 +614,8 @@ where
                             .ok_or(RuntimeError::MethodDoesNotExist(function_name.clone()))?;
                         if !function_abi.input.matches(&call_data.dom) {
                             return Err(RuntimeError::InvalidMethodArgument {
-                                function_name
+                                function_name,
+                                arg: call_data.dom,
                             });
                         }
                         let export_name = format!("{}_main", blueprint_name);
@@ -668,7 +669,8 @@ where
                             .ok_or(RuntimeError::MethodDoesNotExist(function_name.clone()))?;
                         if !function_abi.input.matches(&call_data.dom) {
                             return Err(RuntimeError::InvalidMethodArgument {
-                                function_name
+                                function_name,
+                                arg: call_data.dom,
                             });
                         }
                         let (_, method_auths) =
