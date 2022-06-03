@@ -5,30 +5,44 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
-use crate::types::*;
+use crate::sfunctions2;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ConsumingBucketMethod {
-    Burn(),
+pub struct ConsumingBucketBurnInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketTakeInput {
+    pub amount: Decimal,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum BucketMethod {
-    Take(Decimal),
-    TakeNonFungibles(BTreeSet<NonFungibleId>),
-    Put(scrypto::resource::Bucket),
-    GetNonFungibleIds(),
-    GetAmount(),
-    GetResourceAddress(),
-    CreateProof(),
+pub struct BucketPutInput {
+    pub bucket: scrypto::resource::Bucket,
 }
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketTakeNonFungiblesInput {
+    pub ids: BTreeSet<NonFungibleId>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketGetNonFungibleIdsInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketGetAmountInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketGetResourceAddressInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct BucketCreateProofInput {}
 
 /// Represents a transient resource container.
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -45,36 +59,51 @@ impl Bucket {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions! {
+    sfunctions2! {
         SNodeRef::Bucket(self.0) => {
            pub fn burn(self) -> () {
-                ConsumingBucketMethod::Burn()
+                ConsumingBucketBurnInput {}
             }
         }
     }
 
-    sfunctions! {
+    fn take_internal(&mut self, amount: Decimal) -> Self {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::BucketRef(self.0),
+            "take".to_string(),
+            scrypto_encode(&BucketTakeInput { amount }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    sfunctions2! {
         SNodeRef::BucketRef(self.0) => {
-            pub fn put(&mut self, other: Self) -> () {
-                BucketMethod::Put(other)
-            }
-            fn take_internal(&mut self, amount: Decimal) -> Self {
-                BucketMethod::Take(amount)
-            }
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
-                BucketMethod::TakeNonFungibles(non_fungible_ids.clone())
+                BucketTakeNonFungiblesInput {
+                    ids: non_fungible_ids.clone()
+                }
             }
-            pub fn create_proof(&self) -> scrypto::resource::Proof {
-                BucketMethod::CreateProof()
-            }
-            pub fn amount(&self) -> Decimal {
-                BucketMethod::GetAmount()
-            }
-            pub fn resource_address(&self) -> ResourceAddress {
-                BucketMethod::GetResourceAddress()
+            pub fn put(&mut self, other: Self) -> () {
+                BucketPutInput {
+                    bucket: other
+                }
             }
             pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
-                BucketMethod::GetNonFungibleIds()
+                BucketGetNonFungibleIdsInput {
+                }
+            }
+            pub fn amount(&self) -> Decimal {
+                BucketGetAmountInput {
+                }
+            }
+            pub fn resource_address(&self) -> ResourceAddress {
+                BucketGetResourceAddressInput {
+                }
+            }
+            pub fn create_proof(&self) -> scrypto::resource::Proof {
+                BucketCreateProofInput {
+                }
             }
         }
     }

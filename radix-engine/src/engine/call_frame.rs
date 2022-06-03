@@ -506,16 +506,16 @@ where
                 Ok(return_value)
             }
             SNodeState::BucketRef(bucket_id, bucket) => bucket
-                .main(bucket_id, call_data, self)
+                .main(bucket_id, method_name, call_data, self)
                 .map_err(RuntimeError::BucketError),
             SNodeState::Bucket(bucket) => bucket
-                .consuming_main(call_data, self)
+                .consuming_main(method_name, call_data, self)
                 .map_err(RuntimeError::BucketError),
             SNodeState::ProofRef(_, proof) => proof
-                .main(call_data, self)
+                .main(method_name, call_data, self)
                 .map_err(RuntimeError::ProofError),
             SNodeState::Proof(proof) => proof
-                .main_consume(call_data)
+                .main_consume(method_name, call_data)
                 .map_err(RuntimeError::ProofError),
             SNodeState::VaultRef(vault_id, _, vault) => vault
                 .main(vault_id, method_name, call_data, self)
@@ -729,7 +729,7 @@ where
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
-                let method_auth = resource_manager.get_consuming_bucket_auth(&call_data);
+                let method_auth = resource_manager.get_consuming_bucket_auth(&method_name);
                 Ok((
                     Consumed(Some(ConsumedSNodeState::Bucket(bucket))),
                     vec![method_auth.clone()],

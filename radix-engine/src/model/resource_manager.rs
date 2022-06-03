@@ -8,7 +8,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule::{self, *};
 use scrypto::resource::Mutability::{self, *};
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
-use scrypto::resource::{ConsumingBucketMethod, ResourceManagerFunction, ResourceManagerMethod};
+use scrypto::resource::{ResourceManagerFunction, ResourceManagerMethod};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -195,17 +195,11 @@ impl ResourceManager {
         }
     }
 
-    pub fn get_consuming_bucket_auth(&self, arg: &ScryptoValue) -> &MethodAuthorization {
-        let method = scrypto_decode(&arg.raw);
-        match method {
-            Err(_) => &MethodAuthorization::Unsupported,
-            Ok(ConsumingBucketMethod::Burn()) => match self.method_table.get("burn") {
-                None => &MethodAuthorization::Unsupported,
-                Some(Public) => &MethodAuthorization::AllowAll,
-                Some(Protected(method)) => {
-                    self.authorization.get(method).unwrap().get_method_auth()
-                }
-            },
+    pub fn get_consuming_bucket_auth(&self, method_name: &str) -> &MethodAuthorization {
+        match self.method_table.get(method_name) {
+            None => &MethodAuthorization::Unsupported,
+            Some(Public) => &MethodAuthorization::AllowAll,
+            Some(Protected(method)) => self.authorization.get(method).unwrap().get_method_auth(),
         }
     }
 
