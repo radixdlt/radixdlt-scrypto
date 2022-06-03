@@ -9,7 +9,7 @@
         "scrypto-derive/Cargo.toml",
         "scrypto-tests/Cargo.toml",
         "simulator/Cargo.toml",
-        "transaction-manifest/Cargo.toml",
+        "transaction/Cargo.toml",
     ],
     "cSpell.words": [
         "Instrumenter",

@@ -1,11 +1,12 @@
 use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
+use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
-use radix_engine::transaction::*;
 use radix_engine::wasm::default_wasm_engine;
 use scrypto::prelude::*;
 use scrypto::to_struct;
+use transaction::builder::TransactionBuilder;
 
 #[test]
 fn dangling_lazy_map_should_fail() {

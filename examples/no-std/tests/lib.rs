@@ -1,12 +1,13 @@
 // This is optional, as you may choose to use std for testing only.
 #![no_std]
 
+use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
-use radix_engine::transaction::*;
 use radix_engine::wasm::default_wasm_engine;
 use scrypto::prelude::*;
 use scrypto::to_struct;
+use transaction::builder::TransactionBuilder;
 
 #[test]
 fn test_say_hello() {

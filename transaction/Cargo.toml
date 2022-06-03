@@ -1,0 +1,17 @@
+[package]
+name = "transaction"
+version = "0.5.0"
+edition = "2021"
+
+[dependencies]
+sbor = { path = "../sbor", default-features = false }
+scrypto = { path = "../scrypto", default-features = false }
+clap = { version = "3.1.17", features = ["derive", "cargo"] }
+hex = { version = "0.4.3", default-features = false }
+
+
+[features]
+# You should enable either `std` or `alloc`
+default = ["std"]
+std = ["sbor/std", "scrypto/std", "hex/std"]
+alloc = ["sbor/alloc", "scrypto/alloc", "hex/alloc"]

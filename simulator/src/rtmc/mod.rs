@@ -1,7 +1,7 @@
 use clap::Parser;
 use scrypto::buffer::scrypto_encode;
 use std::path::PathBuf;
-use transaction_manifest::compile;
+use transaction::manifest::compile;
 
 /// Radix transaction manifest compiler
 #[derive(Parser, Debug)]
@@ -19,7 +19,7 @@ pub struct Args {
 #[derive(Debug)]
 pub enum Error {
     IoError(std::io::Error),
-    CompileError(transaction_manifest::CompileError),
+    CompileError(transaction::manifest::CompileError),
 }
 
 pub fn run() -> Result<(), Error> {

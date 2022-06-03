@@ -14,6 +14,7 @@ use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
+use transaction::validation::*;
 
 use crate::engine::LazyMapState::{Committed, Uncommitted};
 use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static};
@@ -471,62 +472,57 @@ where
         ),
         RuntimeError,
     > {
-        let output = match snode {
-            SNodeState::Root => {
-                panic!("Root is not runnable")
-            }
-            SNodeState::SystemStatic => {
-                System::static_main(method_name, call_data, self).map_err(RuntimeError::SystemError)
-            }
-            SNodeState::TransactionProcessorStatic => {
-                TransactionProcessor::static_main(method_name, call_data, self).map_err(|e| match e
-                {
-                    TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                    TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                    TransactionProcessorError::RuntimeError(e) => e,
-                })
-            }
-            SNodeState::PackageStatic => {
-                ValidatedPackage::static_main(method_name, call_data, self)
-                    .map_err(RuntimeError::PackageError)
-            }
-            SNodeState::AuthZoneRef(auth_zone) => auth_zone
-                .main(method_name, call_data, self)
-                .map_err(RuntimeError::AuthZoneError),
-            SNodeState::Worktop(worktop) => worktop
-                .main(method_name, call_data, self)
-                .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
-                self.component_state = component_state;
-                package.invoke(actor, blueprint_abi, export_name, method_name, call_data, self)
-            }
-            SNodeState::ResourceStatic => {
-                ResourceManager::static_main(method_name, call_data, self)
-                    .map_err(RuntimeError::ResourceManagerError)
-            }
-            SNodeState::ResourceRef(resource_address, resource_manager) => {
-                let return_value = resource_manager
-                    .main(resource_address, method_name, call_data, self)
-                    .map_err(RuntimeError::ResourceManagerError)?;
+        let output =
+            match snode {
+                SNodeState::Root => {
+                    panic!("Root is not runnable")
+                }
+                SNodeState::SystemStatic => System::static_main(method_name, call_data, self)
+                    .map_err(RuntimeError::SystemError),
+                SNodeState::TransactionProcessorStatic => {
+                    TransactionProcessor::static_main(method_name, call_data, self).map_err(|e| match e {
+                        TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                        TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                        TransactionProcessorError::RuntimeError(e) => e,
+                    })
+                }
+                SNodeState::PackageStatic => ValidatedPackage::static_main(method_name, call_data, self)
+                    .map_err(RuntimeError::PackageError),
+                SNodeState::AuthZoneRef(auth_zone) => auth_zone
+                    .main(method_name, call_data, self)
+                    .map_err(RuntimeError::AuthZoneError),
+                SNodeState::Worktop(worktop) => worktop
+                    .main(method_name, call_data, self)
+                    .map_err(RuntimeError::WorktopError),
+                SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
+                    self.component_state = component_state;
+                    package.invoke(actor, blueprint_abi, export_name, method_name, call_data, self)
+                }
+                SNodeState::ResourceStatic => ResourceManager::static_main(method_name, call_data, self)
+                    .map_err(RuntimeError::ResourceManagerError),
+                SNodeState::ResourceRef(resource_address, resource_manager) => {
+                    let return_value = resource_manager
+                        .main(resource_address, method_name, call_data, self)
+                        .map_err(RuntimeError::ResourceManagerError)?;
 
-                Ok(return_value)
-            }
-            SNodeState::BucketRef(bucket_id, bucket) => bucket
-                .main(bucket_id, method_name, call_data, self)
-                .map_err(RuntimeError::BucketError),
-            SNodeState::Bucket(bucket) => bucket
-                .consuming_main(method_name, call_data, self)
-                .map_err(RuntimeError::BucketError),
-            SNodeState::ProofRef(_, proof) => proof
-                .main(method_name, call_data, self)
-                .map_err(RuntimeError::ProofError),
-            SNodeState::Proof(proof) => proof
-                .main_consume(method_name, call_data)
-                .map_err(RuntimeError::ProofError),
-            SNodeState::VaultRef(vault_id, _, vault) => vault
-                .main(vault_id, method_name, call_data, self)
-                .map_err(RuntimeError::VaultError),
-        }?;
+                    Ok(return_value)
+                }
+                SNodeState::BucketRef(bucket_id, bucket) => bucket
+                    .main(bucket_id, method_name, call_data, self)
+                    .map_err(RuntimeError::BucketError),
+                SNodeState::Bucket(bucket) => bucket
+                    .consuming_main(method_name, call_data, self)
+                    .map_err(RuntimeError::BucketError),
+                SNodeState::ProofRef(_, proof) => proof
+                    .main(method_name, call_data, self)
+                    .map_err(RuntimeError::ProofError),
+                SNodeState::Proof(proof) => proof
+                    .main_consume(method_name, call_data)
+                    .map_err(RuntimeError::ProofError),
+                SNodeState::VaultRef(vault_id, _, vault) => vault
+                    .main(vault_id, method_name, call_data, self)
+                    .map_err(RuntimeError::VaultError),
+            }?;
 
         self.process_return_data(snode_ref, &output)?;
 
