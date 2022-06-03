@@ -8,12 +8,14 @@ use scrypto::engine::types::*;
 use scrypto::resource::*;
 use scrypto::values::ScryptoValue;
 use scrypto::{abi, access_rule_node, rule, to_struct};
+use transaction::builder::*;
+use transaction::errors::*;
+use transaction::model::*;
 
 use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
-use crate::transaction::abi_extractor::{export_abi, export_abi_by_component};
-use crate::transaction::*;
+use crate::model::{export_abi, export_abi_by_component};
 use crate::wasm::*;
 
 /// An executor that runs transactions.
@@ -27,17 +29,6 @@ where
     wasm_engine: &'w mut W,
     trace: bool,
     phantom: PhantomData<I>,
-}
-
-impl<'s, 'w, S, W, I> NonceProvider for TransactionExecutor<'s, 'w, S, W, I>
-where
-    S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
-{
-    fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
-        self.substate_store.get_nonce()
-    }
 }
 
 impl<'s, 'w, S, W, I> TransactionExecutor<'s, 'w, S, W, I>
@@ -82,6 +73,10 @@ where
         component_address: ComponentAddress,
     ) -> Result<abi::BlueprintAbi, RuntimeError> {
         export_abi_by_component(self.substate_store, component_address)
+    }
+
+    pub fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, _intended_signers: PKS) -> u64 {
+        self.substate_store.get_nonce()
     }
 
     /// Generates a new key pair.

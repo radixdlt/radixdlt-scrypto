@@ -7,10 +7,10 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
 use scrypto::values::*;
+use transaction::model::*;
 
 use crate::engine::CommitReceipt;
 use crate::engine::RuntimeError;
-use crate::model::*;
 
 /// Represents a transaction receipt.
 pub struct Receipt {

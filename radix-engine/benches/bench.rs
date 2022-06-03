@@ -2,10 +2,11 @@
 extern crate bencher;
 use bencher::Bencher;
 
+use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
-use radix_engine::transaction::*;
 use radix_engine::wasm::default_wasm_engine;
 use scrypto::prelude::RADIX_TOKEN;
+use transaction::builder::TransactionBuilder;
 
 fn bench_transfer(b: &mut Bencher) {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
