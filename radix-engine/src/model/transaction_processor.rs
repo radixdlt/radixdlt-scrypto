@@ -451,7 +451,7 @@ impl TransactionProcessor {
                                 system_api.invoke_snode2(
                                     SNodeRef::WorktopRef,
                                     "drain".to_string(),
-                                    ScryptoValue::from_value(&WorktopDrainInput {})
+                                    ScryptoValue::from_value(&WorktopDrainInput {}),
                                 )
                             })
                             .and_then(|result| {
