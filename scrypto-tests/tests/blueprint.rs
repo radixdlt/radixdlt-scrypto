@@ -75,7 +75,8 @@ fn test_simple_abi() {
                         "type": "Custom",
                         "type_id": 129,
                         "generics": []
-                    }
+                    },
+                    "export_name": "Simple_new_main"
                 },
 
                 {
@@ -91,7 +92,8 @@ fn test_simple_abi() {
                     },
                     "output": {
                         "type": "U32"
-                    }
+                    },
+                    "export_name": "Simple_get_state_main"
                 },
                 {
                     "name": "set_state",
@@ -113,7 +115,8 @@ fn test_simple_abi() {
                     },
                     "output": {
                         "type": "Unit"
-                    }
+                    },
+                    "export_name": "Simple_set_state_main"
                 },
                 {
                     "name": "custom_types",
@@ -172,7 +175,8 @@ fn test_simple_abi() {
                                 "generics": []
                             }
                         ]
-                    }
+                    },
+                    "export_name": "Simple_custom_types_main"
                 }
             ]
         }),

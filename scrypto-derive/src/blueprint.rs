@@ -308,7 +308,6 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                     let input = quote! {
                         #input_struct_name::describe()
                     };
-
                     let output = match &m.sig.output {
                         ReturnType::Default => quote! {
                             ::sbor::describe::Type::Unit
@@ -320,6 +319,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                             }
                         }
                     };
+                    let export_name = format!("{}_{}_main", bp_ident, m.sig.ident);
 
                     if mutability.is_none() {
                         functions.push(parse_quote! {
@@ -328,6 +328,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                                 mutability: Option::None,
                                 input: #input,
                                 output: #output,
+                                export_name: #export_name.to_string(),
                             }
                         });
                     } else {
@@ -337,6 +338,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                                 mutability: Option::Some(#mutability),
                                 input: #input,
                                 output: #output,
+                                export_name: #export_name.to_string(),
                             }
                         });
                     }
@@ -590,12 +592,14 @@ mod tests {
                             mutability: Option::Some(::scrypto::abi::SelfMutability::Immutable),
                             input: Test_x_Input::describe(),
                             output: <u32>::describe(),
+                            export_name: "Test_x_main".to_string(),
                         },
                         ::scrypto::abi::Function {
                             name: "y".to_owned(),
                             mutability: Option::None,
                             input: Test_y_Input::describe(),
                             output: <u32>::describe(),
+                            export_name: "Test_y_main".to_string(),
                         }
                     ];
                     let value: Type = blueprint::Test::describe();

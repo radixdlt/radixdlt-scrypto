@@ -389,7 +389,8 @@ mod tests {
                                     "type": "Custom",
                                     "type_id": 129,
                                     "generics": []
-                                }
+                                },
+                                "export_name": "Simple_new_main"
                             },
                             {
                                 "name": "free_token",
@@ -406,7 +407,8 @@ mod tests {
                                     "type": "Custom",
                                     "type_id": 177,
                                     "generics": []
-                                }
+                                },
+                                "export_name": "Simple_free_token_main"
                             }
                         ]
                     }

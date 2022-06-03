@@ -49,6 +49,7 @@ pub struct Function {
     pub mutability: Option<SelfMutability>,
     pub input: Type,
     pub output: Type,
+    pub export_name: String,
 }
 
 /// Whether a method is going to change the component state.

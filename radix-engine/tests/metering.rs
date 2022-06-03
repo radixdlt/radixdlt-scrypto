@@ -29,6 +29,7 @@ fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
                         fields: Fields::Named { named: vec![] }
                     },
                     output: Type::Unit,
+                    export_name: "Test_f_main".to_string(),
                 }
             ],
         },

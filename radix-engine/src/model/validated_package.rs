@@ -2,7 +2,6 @@ use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::rust::format;
 use sbor::*;
 use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
@@ -93,12 +92,12 @@ impl ValidatedPackage {
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        let func_name = format!("{}_{}_main", actor.blueprint_name(), func_name);
+        let func_name = &blueprint_abi.get_function_abi(func_name).unwrap().export_name;
         let mut instance = system_api.wasm_engine().instantiate(self.code());
         let runtime = RadixEngineWasmRuntime::new(actor, blueprint_abi, system_api, CALL_FUNCTION_TBD_LIMIT);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
         instance
-            .invoke_export(&func_name, &arg, &mut runtime_boxed)
+            .invoke_export(func_name, &arg, &mut runtime_boxed)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,

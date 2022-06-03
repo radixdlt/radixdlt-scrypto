@@ -36,7 +36,8 @@ r#"
                 },
                 "output": {
                     "type": "U32"
-                }
+                },
+                "export_name": "Simple_stateless_func_main"
             },
             {
                 "name": "test_custom_types",
@@ -124,7 +125,8 @@ r#"
                     "type": "Custom",
                     "type_id": 177,
                     "generics": []
-                }
+                },
+                "export_name": "Simple_test_custom_types_main"
             },
             {
                 "name": "calculate_volume",
@@ -243,7 +245,8 @@ r#"
                 },
                 "output": {
                     "type": "U32"
-                }
+                },
+                "export_name": "Simple_calculate_volume_main"
             }
         ]
     }
