@@ -127,7 +127,6 @@ impl Type {
                     false
                 }
             }
-            /*
             Type::Tuple { elements: type_elements } => {
                 if let Value::Tuple { elements } = value {
                     type_elements.len() == elements.len()
@@ -136,7 +135,6 @@ impl Type {
                     false
                 }
             }
-            */
             Type::TreeSet { element: type_element } => {
                 if let Value::TreeSet { element_type_id: _, elements } = value {
                     elements.iter().all(|v| type_element.matches(v))
