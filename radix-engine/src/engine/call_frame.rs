@@ -498,7 +498,22 @@ where
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
                 self.component_state = component_state;
-                package.invoke(actor, blueprint_abi, export_name, method_name, call_data, self)
+
+                let rtn = package.invoke(actor, &blueprint_abi, export_name, method_name, call_data, self);
+                match rtn {
+                    Ok(scrypto_value) => {
+                        let function_abi = blueprint_abi.get_function_abi(method_name).unwrap();
+                        if !function_abi.output.matches(&scrypto_value.dom) {
+                            Err(RuntimeError::InvalidMethodOutput {
+                                function_name: method_name.to_string(),
+                                value: scrypto_value.dom
+                            })
+                        } else {
+                            Ok(scrypto_value)
+                        }
+                    }
+                    Err(e) => Err(e)
+                }
             }
             SNodeState::ResourceStatic => {
                 ResourceManager::static_main(method_name, call_data, self)
@@ -613,7 +628,7 @@ where
                         let function_abi = abi.get_function_abi(&function_name)
                             .ok_or(RuntimeError::MethodDoesNotExist(function_name.clone()))?;
                         if !function_abi.input.matches(&call_data.dom) {
-                            return Err(RuntimeError::InvalidMethodArgument {
+                            return Err(RuntimeError::InvalidMethodInput {
                                 function_name,
                                 arg: call_data.dom,
                             });
@@ -668,7 +683,7 @@ where
                         let function_abi = abi.get_function_abi(&function_name)
                             .ok_or(RuntimeError::MethodDoesNotExist(function_name.clone()))?;
                         if !function_abi.input.matches(&call_data.dom) {
-                            return Err(RuntimeError::InvalidMethodArgument {
+                            return Err(RuntimeError::InvalidMethodInput {
                                 function_name,
                                 arg: call_data.dom,
                             });

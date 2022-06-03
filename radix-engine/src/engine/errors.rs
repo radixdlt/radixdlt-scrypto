@@ -38,9 +38,13 @@ pub enum RuntimeError {
 
     /// Invalid request code.
     MethodDoesNotExist(String),
-    InvalidMethodArgument {
+    InvalidMethodInput {
         function_name: String,
         arg: Value,
+    },
+    InvalidMethodOutput {
+        function_name: String,
+        value: Value,
     },
 
     /// Package does not exist.

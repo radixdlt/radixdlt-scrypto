@@ -64,7 +64,7 @@ fn test_arg(method_name: &str, arg: Vec<u8>, should_succeed: bool) {
         receipt.result.expect("Should be okay.");
     } else {
         let error = receipt.result.expect_err("Should be an error.");
-        if !matches!(error, RuntimeError::InvalidMethodArgument { .. }) {
+        if !matches!(error, RuntimeError::InvalidMethodInput { .. }) {
             panic!("Error should be InvalidMethodArgument but was {:?}", error)
         }
     }

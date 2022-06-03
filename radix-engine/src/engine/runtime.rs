@@ -24,7 +24,7 @@ where
     I: WasmInstance,
 {
     this: ScryptoActorInfo,
-    blueprint_abi: BlueprintAbi,
+    blueprint_abi: &'s BlueprintAbi,
     system_api: &'s mut S,
     tbd_limit: u32,
     tbd_balance: u32,
@@ -38,7 +38,7 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn new(this: ScryptoActorInfo, blueprint_abi: BlueprintAbi, system_api: &'s mut S, tbd_limit: u32) -> Self {
+    pub fn new(this: ScryptoActorInfo, blueprint_abi: &'s BlueprintAbi, system_api: &'s mut S, tbd_limit: u32) -> Self {
         RadixEngineWasmRuntime {
             this,
             blueprint_abi,
