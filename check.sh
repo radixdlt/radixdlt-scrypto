@@ -13,7 +13,7 @@ cd "$(dirname "$0")"
 (cd scrypto-tests; cargo fmt --check --quiet)
 (cd radix-engine; cargo fmt --check --quiet)
 (cd simulator; cargo fmt --check --quiet)
-(cd transaction-manifest; cargo fmt --check --quiet)
+(cd transaction; cargo fmt --check --quiet)
 
 (cd assets/account; scrypto fmt --check --quiet)
 (cd assets/system; scrypto fmt --check --quiet)

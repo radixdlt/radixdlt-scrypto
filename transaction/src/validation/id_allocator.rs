@@ -2,6 +2,8 @@ use sbor::rust::ops::Range;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
 
+use crate::errors::*;
+
 pub const ECDSA_TOKEN_BUCKET_ID: BucketId = 0;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,13 +13,7 @@ pub enum IdSpace {
     Application,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IdAllocatorError {
-    OutOfID,
-}
-
 /// An ID allocator defines how identities are generated.
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct IdAllocator {
     available: Range<u32>,

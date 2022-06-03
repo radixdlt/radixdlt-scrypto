@@ -2,8 +2,8 @@ use std::io;
 
 use radix_engine::engine::*;
 use radix_engine::model::ExtractAbiError;
-use radix_engine::transaction::*;
 use sbor::*;
+use transaction::errors::*;
 
 use crate::ledger::*;
 use crate::utils::*;
@@ -27,7 +27,7 @@ pub enum Error {
 
     PackageError(ExtractAbiError),
 
-    TransactionConstructionError(CallWithAbiError),
+    TransactionConstructionError(BuildCallWithAbiError),
 
     TransactionValidationError(TransactionValidationError),
 
@@ -37,9 +37,9 @@ pub enum Error {
 
     LedgerDumpError(DisplayError),
 
-    CompileError(transaction_manifest::CompileError),
+    CompileError(transaction::manifest::CompileError),
 
-    DecompileError(transaction_manifest::DecompileError),
+    DecompileError(transaction::manifest::DecompileError),
 
     InvalidId(String),
 

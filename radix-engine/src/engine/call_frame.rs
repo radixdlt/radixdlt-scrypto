@@ -14,6 +14,7 @@ use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneMethod;
 use scrypto::values::*;
+use transaction::validation::*;
 
 use crate::engine::LazyMapState::{Committed, Uncommitted};
 use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static};
