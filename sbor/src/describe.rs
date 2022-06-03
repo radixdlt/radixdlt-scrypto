@@ -107,7 +107,6 @@ impl Type {
             Type::U128 => matches!(value, Value::U128 { .. }),
             */
             Type::String => matches!(value, Value::String { .. }),
-            /*
             Type::Option { value: type_value } => {
                 if let Value::Option { value } = value {
                    match &**value {
@@ -118,7 +117,6 @@ impl Type {
                     false
                 }
             }
-            */
             Type::Array { element: type_element, length } => {
                 if let Value::Array { element_type_id: _, elements } = value {
                     let length = usize::from(*length);
