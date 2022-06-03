@@ -8,6 +8,7 @@ sbor = ${sbor}
 scrypto = ${scrypto}
 
 [dev-dependencies]
+transaction = ${transaction}
 radix-engine = ${radix-engine}
 
 [profile.release]

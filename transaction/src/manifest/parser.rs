@@ -1,5 +1,5 @@
-use crate::ast::{Instruction, Transaction, Type, Value};
-use crate::lexer::{Token, TokenKind};
+use crate::manifest::ast::{Instruction, Transaction, Type, Value};
+use crate::manifest::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParserError {
@@ -451,7 +451,7 @@ impl Parser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lexer::{tokenize, Span};
+    use crate::manifest::lexer::{tokenize, Span};
 
     #[macro_export]
     macro_rules! parse_instruction_ok {

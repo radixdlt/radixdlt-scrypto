@@ -1,13 +1,12 @@
 mod call_frame;
 mod component_objects;
 mod errors;
-mod id_allocator;
-mod id_validator;
 mod receipt;
 mod runtime;
 mod substate_receipt;
 mod system_api;
 mod track;
+mod transaction_executor;
 
 pub use call_frame::{
     BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LazyMapState,
@@ -15,8 +14,6 @@ pub use call_frame::{
 };
 pub use component_objects::*;
 pub use errors::*;
-pub use id_allocator::*;
-pub use id_validator::*;
 pub use receipt::*;
 pub use runtime::RadixEngineWasmRuntime;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
@@ -25,3 +22,4 @@ pub use track::{
     Address, BorrowedSNodes, SubstateParentId, SubstateUpdate, SubstateValue, Track, TrackError,
     TrackReceipt,
 };
+pub use transaction_executor::TransactionExecutor;
