@@ -120,7 +120,7 @@ where
 
         Receipt {
             commit_receipt,
-            validated_instructions: instructions,
+            instructions,
             result: match error {
                 Some(error) => Err(error),
                 None => Ok(()),

@@ -85,6 +85,6 @@ pub trait ExecutableTransaction {
     /// Returns the instructions to execute.
     fn instructions(&self) -> &[ExecutableInstruction];
 
-    /// Returns the public key of signer_public_keys.
+    /// Returns the public key of signers.
     fn signer_public_keys(&self) -> &[EcdsaPublicKey];
 }

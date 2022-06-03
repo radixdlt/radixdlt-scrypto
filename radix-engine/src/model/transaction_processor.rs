@@ -57,13 +57,13 @@ impl TransactionProcessor {
             .map_err(|e| TransactionProcessorError::InvalidRequestData(e))?;
 
         match function {
-            TransactionProcessorFunction::Run(validated_instructions) => {
+            TransactionProcessorFunction::Run(instructions) => {
                 let mut proof_id_mapping = HashMap::new();
                 let mut bucket_id_mapping = HashMap::new();
                 let mut outputs = Vec::new();
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
-                for inst in &validated_instructions {
+                for inst in &instructions {
                     let result = match inst {
                         ExecutableInstruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()
