@@ -43,23 +43,19 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     }
 
     let output_mod = quote! {
-        pub mod blueprint {
-            use super::*;
+        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+        pub struct #bp_ident #bp_fields #bp_semi_token
 
-            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-            pub struct #bp_ident #bp_fields #bp_semi_token
+        impl #bp_ident {
+            #(#bp_items)*
+        }
 
-            impl #bp_ident {
-                #(#bp_items)*
-            }
-
-            impl ::scrypto::component::ComponentState for #bp_ident {
-                fn instantiate(self) -> ::scrypto::component::LocalComponent {
-                    ::scrypto::component::component_system().to_component_state_with_auth(
-                        #bp_name,
-                        self
-                    )
-                }
+        impl ::scrypto::component::ComponentState for #bp_ident {
+            fn instantiate(self) -> ::scrypto::component::LocalComponent {
+                ::scrypto::component::component_system().to_component_state_with_auth(
+                    #bp_name,
+                    self
+                )
             }
         }
     };
@@ -119,7 +115,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             let functions: Vec<Function> = vec![ #(#abi_functions),* ];
             let methods: Vec<Method> = vec![ #(#abi_methods),* ];
-            let schema: Type = blueprint::#bp_ident::describe();
+            let schema: Type = #bp_ident::describe();
             let output = (schema, functions, methods);
 
             ::scrypto::buffer::scrypto_encode_to_buffer(&output)
@@ -218,7 +214,7 @@ fn generate_dispatcher(
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can't have more than 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = borrow_component!(component_address).get_state();
+                                let #mutability state: #bp_ident = borrow_component!(component_address).get_state();
                             });
 
                             // Generate a `Stmt` for writing back component state
@@ -250,7 +246,7 @@ fn generate_dispatcher(
                 // call the function
                 let stmt: Stmt = parse_quote! {
                     rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
-                        &blueprint::#bp_ident::#ident(#(#dispatch_args),*)
+                        &#bp_ident::#ident(#(#dispatch_args),*)
                     );
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
@@ -406,31 +402,27 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                pub mod blueprint {
-                    use super::*;
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                pub struct Test {
+                    a: u32,
+                    admin: ResourceManager
+                }
 
-                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                    pub struct Test {
-                        a: u32,
-                        admin: ResourceManager
+                impl Test {
+                    pub fn x(&self, i: u32) -> u32 {
+                        i + self.a
                     }
-
-                    impl Test {
-                        pub fn x(&self, i: u32) -> u32 {
-                            i + self.a
-                        }
-                        pub fn y(i: u32) -> u32 {
-                            i * 2
-                        }
+                    pub fn y(i: u32) -> u32 {
+                        i * 2
                     }
+                }
 
-                    impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> ::scrypto::component::LocalComponent {
-                            ::scrypto::component::component_system().to_component_state_with_auth(
-                                "Test",
-                                self
-                            )
-                        }
+                impl ::scrypto::component::ComponentState for Test {
+                    fn instantiate(self) -> ::scrypto::component::LocalComponent {
+                        ::scrypto::component::component_system().to_component_state_with_auth(
+                            "Test",
+                            self
+                        )
                     }
                 }
 
@@ -452,11 +444,11 @@ mod tests {
                     match method {
                         TestMethod::x(arg0) => {
                             let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                            let state: blueprint::Test = borrow_component!(component_address).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, arg0));
+                            let state: Test = borrow_component!(component_address).get_state();
+                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test::x(&state, arg0));
                         }
                         TestMethod::y(arg0) => {
-                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(arg0));
+                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test::y(arg0));
                         }
                     }
                     rtn
@@ -479,7 +471,7 @@ mod tests {
                         inputs: vec![<u32>::describe()],
                         output: <u32>::describe(),
                     }];
-                    let schema: Type = blueprint::Test::describe();
+                    let schema: Type = Test::describe();
                     let output = (schema, functions, methods);
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
@@ -495,23 +487,19 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                pub mod blueprint {
-                    use super::*;
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                pub struct Test {
+                }
 
-                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                    pub struct Test {
-                    }
+                impl Test {
+                }
 
-                    impl Test {
-                    }
-
-                    impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> ::scrypto::component::LocalComponent {
-                            ::scrypto::component::component_system().to_component_state_with_auth(
-                                "Test",
-                                self
-                            )
-                        }
+                impl ::scrypto::component::ComponentState for Test {
+                    fn instantiate(self) -> ::scrypto::component::LocalComponent {
+                        ::scrypto::component::component_system().to_component_state_with_auth(
+                            "Test",
+                            self
+                        )
                     }
                 }
 
@@ -533,7 +521,7 @@ mod tests {
                     use ::sbor::rust::vec::Vec;
                     let functions: Vec<Function> = vec![];
                     let methods: Vec<Method> = vec![];
-                    let schema: Type = blueprint::Test::describe();
+                    let schema: Type = Test::describe();
                     let output = (schema, functions, methods);
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
