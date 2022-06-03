@@ -68,7 +68,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let method_input_structs = generate_method_input_structs(bp_ident, bp_items);
 
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
-    let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items)?;
+    let (arm_guards, arm_bodies, functions) = generate_dispatcher(bp_ident, bp_items)?;
     let output_dispatcher = if arm_guards.is_empty() {
         quote! {
             #(#method_input_structs)*
@@ -81,6 +81,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     } else {
         quote! {
             #(#method_input_structs)*
+
+            #(#functions)*
 
             #[no_mangle]
             pub extern "C" fn #dispatcher_ident(method_ptr: *mut u8, method_arg: *mut u8) -> *mut u8 {
@@ -196,9 +198,10 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>)> {
+fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>, Vec<TokenStream>)> {
     let mut arm_guards = Vec::<Expr>::new();
     let mut arm_bodies = Vec::<Expr>::new();
+    let mut functions = Vec::new();
 
     for item in items {
         trace!("Processing item: {}", quote! { #item });
@@ -287,14 +290,30 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                         brace_token: Brace {
                             span: Span::call_site(),
                         },
-                        stmts,
+                        stmts: stmts.clone(),
                     },
                 }));
+
+                let function_ident = format_ident!("{}_{}_main", bp_ident, ident);
+                let extern_function = quote! {
+                    #[no_mangle]
+                    pub extern "C" fn #function_ident(method_arg: *mut u8) -> *mut u8 {
+                        // Set up panic hook
+                        ::scrypto::misc::set_up_panic_hook();
+
+                        // Set up component and resource subsystems;
+                        ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+                        ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+
+                        #(#stmts)*
+                    }
+                };
+                functions.push(extern_function);
             }
         };
     }
 
-    Ok((arm_guards, arm_bodies))
+    Ok((arm_guards, arm_bodies, functions))
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
@@ -576,6 +595,36 @@ mod tests {
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Test_y_Input { arg0 : u32 }
+
+                #[no_mangle]
+                pub extern "C" fn Test_x_main(method_arg: *mut u8) -> *mut u8 {
+                    // Set up panic hook
+                    ::scrypto::misc::set_up_panic_hook();
+
+                    // Set up component and resource subsystems;
+                    ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+                    ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+
+                    let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                    let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
+                    let state: blueprint::Test = borrow_component!(component_address).get_state();
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, input.arg0));
+                    rtn
+                }
+
+                #[no_mangle]
+                pub extern "C" fn Test_y_main(method_arg: *mut u8) -> *mut u8 {
+                    // Set up panic hook
+                    ::scrypto::misc::set_up_panic_hook();
+
+                    // Set up component and resource subsystems;
+                    ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
+                    ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
+
+                    let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(input.arg0));
+                    rtn
+                }
 
                 #[no_mangle]
                 pub extern "C" fn Test_main(method_ptr: *mut u8, method_arg: *mut u8) -> *mut u8 {
