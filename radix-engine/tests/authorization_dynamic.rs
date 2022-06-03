@@ -4,9 +4,10 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
 use scrypto::prelude::*;
+use transaction::builder::ManifestBuilder;
+use transaction::signing::EcdsaPrivateKey;
 
 fn test_dynamic_auth(
     num_keys: usize,
@@ -16,9 +17,7 @@ fn test_dynamic_auth(
     should_succeed: bool,
 ) {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
         ..num_keys)
         .map(|_| test_runner.new_key_pair_with_pk_address())
@@ -37,8 +36,7 @@ fn test_dynamic_auth(
         .collect();
 
     let package = test_runner.publish_package("component");
-    let transaction1 = test_runner
-        .new_transaction_builder()
+    let manifest1 = ManifestBuilder::new()
         .call_function(
             package,
             "AuthComponent",
@@ -46,34 +44,32 @@ fn test_dynamic_auth(
                 addresses.get(initial_auth).unwrap().clone()
             )],
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt1 = test_runner.validate_and_execute(&transaction1);
+        .build();
+    let signers = vec![];
+    let receipt1 = test_runner.execute_manifest(manifest1, signers);
     receipt1.result.expect("Should be okay.");
     let component = receipt1.new_component_addresses[0];
 
     if let Some(next_auth) = update_auth {
-        let update_txn = test_runner
-            .new_transaction_builder()
+        let update_manifest = ManifestBuilder::new()
             .call_method(
                 component,
                 call_data![update_auth(addresses.get(next_auth).unwrap().clone())],
             )
-            .build(test_runner.get_nonce([]))
-            .sign([]);
+            .build();
+        let signers = vec![];
         test_runner
-            .validate_and_execute(&update_txn)
+            .execute_manifest(update_manifest, signers)
             .result
             .expect("Should be okay.");
     }
 
     // Act
-    let transaction2 = test_runner
-        .new_transaction_builder()
+    let manifest2 = ManifestBuilder::new()
         .call_method(component, call_data![get_secret()])
-        .build(test_runner.get_nonce(pks))
-        .sign(sks);
-    let receipt2 = test_runner.validate_and_execute(&transaction2);
+        .build();
+    let signers = pks.to_vec();
+    let receipt2 = test_runner.execute_manifest(manifest2, signers);
 
     // Assert
     if should_succeed {
@@ -90,9 +86,7 @@ fn test_dynamic_authlist(
     signers: &[usize],
     should_succeed: bool,
 ) {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let key_and_addresses: Vec<(EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress)> = (0
         ..list_size)
         .map(|_| test_runner.new_key_pair_with_pk_address())
@@ -113,26 +107,24 @@ fn test_dynamic_authlist(
 
     // Arrange
     let package = test_runner.publish_package("component");
-    let transaction1 = test_runner
-        .new_transaction_builder()
+    let manifest1 = ManifestBuilder::new()
         .call_function(
             package,
             "AuthListComponent",
             call_data![create_component(2u8, list, authorization)],
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt0 = test_runner.validate_and_execute(&transaction1);
+        .build();
+    let signers = vec![];
+    let receipt0 = test_runner.execute_manifest(manifest1, signers);
     receipt0.result.expect("Should be okay.");
     let component = receipt0.new_component_addresses[0];
 
     // Act
-    let transaction2 = test_runner
-        .new_transaction_builder()
+    let manifest2 = ManifestBuilder::new()
         .call_method(component, call_data!(get_secret()))
-        .build(test_runner.get_nonce(pks))
-        .sign(sks);
-    let receipt = test_runner.validate_and_execute(&transaction2);
+        .build();
+    let signers = pks.to_vec();
+    let receipt = test_runner.execute_manifest(manifest2, signers);
 
     // Assert
     if should_succeed {
@@ -230,9 +222,7 @@ fn dynamic_any_of_should_fail_if_path_does_not_exist() {
 #[test]
 fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk, _, _) = test_runner.new_account();
     let (other_pk, other_sk, _) = test_runner.new_account();
     let package = test_runner.publish_package("component");
@@ -241,22 +231,20 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let other_non_fungible_address =
         NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(other_pk.to_vec()));
     let players = [non_fungible_address, other_non_fungible_address];
-    let transaction1 = test_runner
-        .new_transaction_builder()
+    let manifest1 = ManifestBuilder::new()
         .call_function(package, "Chess", call_data![create_game(players)])
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt1 = test_runner.validate_and_execute(&transaction1);
+        .build();
+    let signers = vec![];
+    let receipt1 = test_runner.execute_manifest(manifest1, signers);
     receipt1.result.expect("Should be okay.");
     let component = receipt1.new_component_addresses[0];
 
     // Act
-    let transaction2 = test_runner
-        .new_transaction_builder()
+    let manifest2 = ManifestBuilder::new()
         .call_method(component, call_data!(make_move()))
-        .build(test_runner.get_nonce([other_pk]))
-        .sign([&other_sk]);
-    let receipt = test_runner.validate_and_execute(&transaction2);
+        .build();
+    let signers = vec![other_pk];
+    let receipt = test_runner.execute_manifest(manifest2, signers);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");
@@ -266,9 +254,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
 #[test]
 fn chess_should_allow_second_player_to_move_after_first_player() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk, sk, _) = test_runner.new_account();
     let (other_pk, other_sk, _) = test_runner.new_account();
     let package = test_runner.publish_package("component");
@@ -277,31 +263,28 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let other_non_fungible_address =
         NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(other_pk.to_vec()));
     let players = [non_fungible_address, other_non_fungible_address];
-    let transaction1 = test_runner
-        .new_transaction_builder()
+    let manifest1 = ManifestBuilder::new()
         .call_function(package, "Chess", call_data![create_game(players)])
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt1 = test_runner.validate_and_execute(&transaction1);
+        .build();
+    let signers = vec![];
+    let receipt1 = test_runner.execute_manifest(manifest1, signers);
     receipt1.result.expect("Should be okay.");
     let component = receipt1.new_component_addresses[0];
-    let transaction2 = test_runner
-        .new_transaction_builder()
+    let manifest2 = ManifestBuilder::new()
         .call_method(component, call_data!(make_move()))
-        .build(test_runner.get_nonce([pk]))
-        .sign([&sk]);
+        .build();
+    let signers = vec![pk];
     test_runner
-        .validate_and_execute(&transaction2)
+        .execute_manifest(manifest2, signers)
         .result
         .expect("Should be okay.");
 
     // Act
-    let transaction3 = test_runner
-        .new_transaction_builder()
+    let manifest3 = ManifestBuilder::new()
         .call_method(component, call_data!(make_move()))
-        .build(test_runner.get_nonce([other_pk]))
-        .sign([&other_sk]);
-    let receipt = test_runner.validate_and_execute(&transaction3);
+        .build();
+    let signers = vec![other_pk];
+    let receipt = test_runner.execute_manifest(manifest3, signers);
 
     // Assert
     receipt.result.expect("Should be okay.");

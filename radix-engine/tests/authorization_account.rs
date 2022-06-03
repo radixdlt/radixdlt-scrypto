@@ -7,35 +7,31 @@ use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::ledger::*;
-use radix_engine::wasm::default_wasm_engine;
 use radix_engine::wasm::WasmEngine;
 use radix_engine::wasm::WasmInstance;
 use scrypto::call_data;
 use scrypto::prelude::*;
+use transaction::builder::ManifestBuilder;
+use transaction::signing::EcdsaPrivateKey;
 
-fn test_auth_rule<'s, 'w, S, W, I>(
-    test_runner: &mut TestRunner<'s, 'w, S, W, I>,
+fn test_auth_rule(
+    test_runner: &mut TestRunner,
     auth_rule: &AccessRule,
     pks: &[EcdsaPublicKey],
     sks: &[&EcdsaPrivateKey],
     should_succeed: bool,
-) where
-    S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
-{
+) {
     // Arrange
     let account_address = test_runner.new_account_with_auth_rule(auth_rule);
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .withdraw_from_account(RADIX_TOKEN, account_address)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(test_runner.get_nonce(pks))
-        .sign(sks);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = pks.to_vec();
+    let receipt = test_runner.execute_manifest(manifest, signers);
 
     // Assert
     if should_succeed {
@@ -48,9 +44,7 @@ fn test_auth_rule<'s, 'w, S, W, I>(
 
 #[test]
 fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
 
@@ -68,9 +62,7 @@ fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
 
 #[test]
 fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -94,9 +86,7 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
 
 #[test]
 fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
 
@@ -108,9 +98,7 @@ fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
 #[test]
 fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (_, _, auth1) = test_runner.new_key_pair_with_pk_address();
 
@@ -120,9 +108,7 @@ fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
 
 #[test]
 fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -138,9 +124,7 @@ fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
 
 #[test]
 fn can_withdraw_from_my_complex_account() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -166,9 +150,7 @@ fn can_withdraw_from_my_complex_account() {
 
 #[test]
 fn cannot_withdraw_from_my_complex_account() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (_, _, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -190,9 +172,7 @@ fn cannot_withdraw_from_my_complex_account() {
 
 #[test]
 fn can_withdraw_from_my_complex_account_2() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -221,9 +201,7 @@ fn can_withdraw_from_my_complex_account_2() {
 
 #[test]
 fn cannot_withdraw_from_my_complex_account_2() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
     let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
     let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
@@ -256,16 +234,13 @@ fn cannot_withdraw_from_my_complex_account_2() {
 #[test]
 fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let xrd_auth = rule!(require(RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_method(SYSTEM_COMPONENT, call_data![free_xrd()])
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
@@ -277,9 +252,9 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![];
+    let receipt = test_runner.execute_manifest(manifest, signers);
 
     // Assert
     receipt.result.expect("Should be okay.");
@@ -288,16 +263,13 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 #[test]
 fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let xrd_auth = rule!(require_amount(Decimal(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_method(SYSTEM_COMPONENT, call_data![free_xrd()])
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
@@ -309,9 +281,9 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![];
+    let receipt = test_runner.execute_manifest(manifest, signers);
 
     // Assert
     receipt.result.expect("Should be okay.");
@@ -320,16 +292,13 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
 #[test]
 fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let xrd_auth = rule!(require_amount(Decimal::from(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_method(SYSTEM_COMPONENT, call_data![free_xrd()])
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
@@ -341,9 +310,9 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![];
+    let receipt = test_runner.execute_manifest(manifest, signers);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");

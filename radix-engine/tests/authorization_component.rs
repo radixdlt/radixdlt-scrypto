@@ -4,16 +4,15 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::wasm::default_wasm_engine;
 use scrypto::call_data;
 use scrypto::prelude::*;
+use transaction::builder::ManifestBuilder;
+use transaction::signing::EcdsaPrivateKey;
 
 #[test]
 fn cannot_make_cross_component_call_without_authorization() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (_, _, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
@@ -22,42 +21,39 @@ fn cannot_make_cross_component_call_without_authorization() {
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
     let package_address = test_runner.publish_package("component");
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "CrossComponent",
             call_data!(create_component_with_auth(authorization)),
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![];
+    let receipt = test_runner.execute_manifest(manifest, signers);
     receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_addresses[0];
 
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "CrossComponent",
             call_data!(create_component()),
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![];
+    let receipt = test_runner.execute_manifest(manifest, signers);
     receipt.result.expect("It should work");
     let my_component = receipt.new_component_addresses[0];
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_method(
             my_component,
             call_data!(cross_component_call(secured_component)),
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![];
+    let receipt = test_runner.execute_manifest(manifest, signers);
 
     // Assert
     let error = receipt.result.expect_err("Should be error");
@@ -67,9 +63,7 @@ fn cannot_make_cross_component_call_without_authorization() {
 #[test]
 fn can_make_cross_component_call_with_authorization() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let (key, sk, account) = test_runner.new_account();
     let auth = test_runner.create_non_fungible_resource(account.clone());
     let auth_id = NonFungibleId::from_u32(1);
@@ -78,51 +72,47 @@ fn can_make_cross_component_call_with_authorization() {
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
     let package_address = test_runner.publish_package("component");
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "CrossComponent",
             call_data!(create_component_with_auth(authorization)),
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![];
+    let receipt = test_runner.execute_manifest(manifest, signers);
     receipt.result.expect("Should be okay");
     let secured_component = receipt.new_component_addresses[0];
 
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "CrossComponent",
             call_data!(create_component()),
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![];
+    let receipt = test_runner.execute_manifest(manifest, signers);
     receipt.result.expect("Should be okay.");
     let my_component = receipt.new_component_addresses[0];
 
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .withdraw_from_account_by_ids(&BTreeSet::from([auth_id.clone()]), auth, account)
         .call_method_with_all_resources(my_component, "put_auth")
-        .build(test_runner.get_nonce([key]))
-        .sign([&sk]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![key];
+    let receipt = test_runner.execute_manifest(manifest, signers);
     receipt.result.expect("Should be okay.");
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_method(
             my_component,
             call_data!(cross_component_call(secured_component)),
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let signers = vec![];
+    let receipt = test_runner.execute_manifest(manifest, signers);
 
     // Assert
     receipt.result.expect("Should be okay");

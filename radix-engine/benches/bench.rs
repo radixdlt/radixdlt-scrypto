@@ -6,7 +6,7 @@ use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::wasm::default_wasm_engine;
 use scrypto::prelude::RADIX_TOKEN;
-use transaction::builder::TransactionBuilder;
+use transaction::builder::ManifestBuilder;
 
 fn bench_transfer(b: &mut Bencher) {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
@@ -14,14 +14,14 @@ fn bench_transfer(b: &mut Bencher) {
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, false);
     let (pk, sk, account1) = executor.new_account();
     let (_, _, account2) = executor.new_account();
-    let transaction = TransactionBuilder::new()
+    let transaction = ManifestBuilder::new()
         .withdraw_from_account_by_amount(1.into(), RADIX_TOKEN, account1)
         .call_method_with_all_resources(account2, "deposit_batch")
-        .build(executor.get_nonce([pk]))
-        .sign([&sk]);
+        .build();
+    let signers = vec![pk];
 
     b.iter(|| {
-        let receipt = executor.validate_and_execute(&transaction).unwrap();
+        let receipt = executor.execute(&transaction).unwrap();
         receipt.result.expect("It should work");
     });
 }
