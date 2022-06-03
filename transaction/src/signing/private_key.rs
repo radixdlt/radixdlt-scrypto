@@ -42,7 +42,11 @@ impl EcdsaPrivateKey {
 mod tests {
     use super::*;
     use sbor::rust::str::FromStr;
-    use scrypto::crypto::Hash;
+    use scrypto::{
+        crypto::Hash,
+        prelude::ECDSA_TOKEN,
+        resource::{NonFungibleAddress, NonFungibleId},
+    };
 
     #[test]
     fn sign_and_verify() {
@@ -61,5 +65,19 @@ mod tests {
         assert_eq!(scrypto::crypto::hash(test_message), hash);
         assert_eq!(sk.sign(test_message.as_bytes()), sig);
         assert!(EcdsaVerifier::verify(test_message.as_bytes(), &pk, &sig));
+    }
+
+    #[test]
+    fn test_non_fungible_address_codec() {
+        let expected = "030000000000000000000000000000000000000000000000000005046ff03b949241ce1dadd43519e6960e0a85b41a69a05c328103aa2bce1594ca163c4f753a55bf01dc53f6c0b0c7eee78b40c6ff7d25a96e2282b989cef71c144a";
+        let private_key = EcdsaPrivateKey::from_bytes(&[1u8; 32]).unwrap();
+        let public_key = private_key.public_key();
+        let auth_address =
+            NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(public_key.to_vec()));
+        let s1 = auth_address.to_string();
+        let auth_address2 = NonFungibleAddress::from_str(&s1).unwrap();
+        let s2 = auth_address2.to_string();
+        assert_eq!(s1, expected);
+        assert_eq!(s2, expected);
     }
 }
