@@ -100,20 +100,22 @@ impl NameResolver {
 
 pub fn generate_manifest(
     instructions: &[ast::Instruction],
-) -> Result<Vec<Instruction>, GeneratorError> {
+) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
-    let mut manifest = Vec::new();
+    let mut output = Vec::new();
 
     for instruction in instructions {
-        manifest.push(generate_instruction(
+        output.push(generate_instruction(
             instruction,
             &mut id_validator,
             &mut name_resolver,
         )?);
     }
 
-    Ok(manifest)
+    Ok(TransactionManifest {
+        instructions: output,
+    })
 }
 
 pub fn generate_instruction(
@@ -1060,7 +1062,7 @@ mod tests {
         let encoded_package = scrypto_encode(&package);
 
         assert_eq!(
-            crate::manifest::compile(tx).unwrap(),
+            crate::manifest::compile(tx).unwrap().instructions,
             vec![
                 Instruction::CallMethod {
                     component_address: ComponentAddress::from_str(

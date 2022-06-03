@@ -2,15 +2,10 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::model::extract_package;
-use radix_engine::{
-    ledger::InMemorySubstateStore,
-    wasm::{default_wasm_engine, InvokeError},
-};
+use radix_engine::wasm::InvokeError;
 use scrypto::call_data;
 use test_runner::wat2wasm;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaPrivateKey;
 
 #[test]
 fn test_loop() {

@@ -4,13 +4,9 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
-use radix_engine::engine::TransactionExecutor;
-use radix_engine::ledger::*;
-use radix_engine::model::extract_package;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaPrivateKey;
 
 #[test]
 fn dangling_lazy_map_should_fail() {

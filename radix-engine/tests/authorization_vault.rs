@@ -3,10 +3,8 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaPrivateKey;
 
 #[test]
 fn cannot_withdraw_restricted_transfer_from_my_account_with_no_auth() {

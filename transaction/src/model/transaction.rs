@@ -148,9 +148,7 @@ impl TransactionIntent {
     pub fn new(header: TransactionHeader, manifest: &str) -> Result<Self, CompileError> {
         Ok(Self {
             header,
-            manifest: TransactionManifest {
-                instructions: compile(manifest)?,
-            },
+            manifest: compile(manifest)?,
         })
     }
 

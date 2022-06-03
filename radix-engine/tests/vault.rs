@@ -4,13 +4,9 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
-use radix_engine::engine::TransactionExecutor;
-use radix_engine::ledger::*;
-use radix_engine::model::extract_package;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaPrivateKey;
 
 #[test]
 fn non_existent_vault_in_component_creation_should_fail() {

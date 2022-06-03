@@ -13,12 +13,12 @@ pub enum DecompileError {
     ParseScryptoValueError(ParseScryptoValueError),
 }
 
-pub fn decompile(instructions: &[Instruction]) -> Result<String, DecompileError> {
+pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileError> {
     let mut buf = String::new();
     let mut id_validator = IdValidator::new();
     let mut buckets = HashMap::<BucketId, String>::new();
     let mut proofs = HashMap::<ProofId, String>::new();
-    for inst in instructions {
+    for inst in &manifest.instructions {
         match inst.clone() {
             Instruction::TakeFromWorktop { resource_address } => {
                 let bucket_id = id_validator

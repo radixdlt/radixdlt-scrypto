@@ -6,6 +6,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::engine::types::EcdsaPublicKey;
+use crate::engine::types::ECDSA_TOKEN;
 use crate::misc::*;
 use crate::resource::*;
 
@@ -22,6 +24,10 @@ impl NonFungibleAddress {
             resource_address,
             non_fungible_id,
         }
+    }
+
+    pub fn from_public_key(public_key: &EcdsaPublicKey) -> Self {
+        NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(public_key.to_vec()))
     }
 
     /// Returns the resource address.

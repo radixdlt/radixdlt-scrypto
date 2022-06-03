@@ -250,14 +250,14 @@ impl ValidatedTransaction {
 
 impl ExecutableTransaction for ValidatedTransaction {
     fn transaction_hash(&self) -> Hash {
-        todo!()
+        self.transaction_hash
     }
 
     fn instructions(&self) -> &[ExecutableInstruction] {
-        todo!()
+        &self.instructions
     }
 
     fn signers(&self) -> &[EcdsaPublicKey] {
-        todo!()
+        &self.signers
     }
 }

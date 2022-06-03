@@ -20,66 +20,38 @@ pub struct NewAccount {
 
 impl NewAccount {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut wasm_engine = default_wasm_engine();
-        let mut executor =
-            TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
+        let secret = rand::thread_rng().gen::<[u8; 32]>();
+        let private_key = EcdsaPrivateKey::from_bytes(&secret).unwrap();
+        let public_key = private_key.public_key();
+        let auth_address = NonFungibleAddress::from_public_key(&public_key);
+        let withdraw_auth = rule!(require(auth_address));
+        let manifest = ManifestBuilder::new()
+            .call_method(SYSTEM_COMPONENT, call_data!(free_xrd()))
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                builder.new_account_with_resource(&withdraw_auth, bucket_id)
+            })
+            .build();
 
-        if let Some(path) = &self.manifest {
-            let secret = rand::thread_rng().gen::<[u8; 32]>();
-            let private_key = EcdsaPrivateKey::from_bytes(&secret).unwrap();
-            let public_key = private_key.public_key();
-            let auth_address = NonFungibleAddress::new(
-                ECDSA_TOKEN,
-                NonFungibleId::from_bytes(public_key.to_vec()),
-            );
-            let withdraw_auth = rule!(require(auth_address));
-            let transaction = TransactionBuilder::new()
-                .call_method(SYSTEM_COMPONENT, call_data!(free_xrd()))
-                .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
-                    builder.new_account_with_resource(&withdraw_auth, bucket_id)
-                })
-                .build_with_no_nonce();
-            process_transaction(&mut executor, transaction, &None, &Some(path.clone()), out)?;
-            writeln!(out, "A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!").map_err(Error::IOError)?;
-            writeln!(out, "Public key: {}", public_key.to_string().green())
-                .map_err(Error::IOError)?;
-            writeln!(
-                out,
-                "Private key: {}",
-                hex::encode(private_key.to_bytes()).green()
-            )
-            .map_err(Error::IOError)?;
-        } else {
-            let (public_key, private_key, account) = executor.new_account();
+        let receipt = handle_manifest(manifest, &None, &self.manifest, self.trace, out)?;
+
+        if let Some(receipt) = receipt {
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
             writeln!(
                 out,
                 "Account component address: {}",
-                account.to_string().green()
+                receipt.new_component_addresses[0].to_string().green()
             )
             .map_err(Error::IOError)?;
-            writeln!(out, "Public key: {}", public_key.to_string().green())
-                .map_err(Error::IOError)?;
-            writeln!(
-                out,
-                "Private key: {}",
-                hex::encode(private_key.to_bytes()).green()
-            )
-            .map_err(Error::IOError)?;
-            if get_configs()?.is_none() {
-                writeln!(
-                    out,
-                    "No configuration found on system. will use the above account as default."
-                )
-                .map_err(Error::IOError)?;
-                set_configs(&Configs {
-                    default_account: account,
-                    default_private_key: private_key.to_bytes(),
-                })?;
-            }
+        } else {
+            writeln!(out, "A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!").map_err(Error::IOError)?;
         }
-
+        writeln!(out, "Public key: {}", public_key.to_string().green()).map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "Private key: {}",
+            hex::encode(private_key.to_bytes()).green()
+        )
+        .map_err(Error::IOError)?;
         Ok(())
     }
 }

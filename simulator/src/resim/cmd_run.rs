@@ -1,5 +1,4 @@
 use clap::Parser;
-use radix_engine::engine::TransactionExecutor;
 use regex::{Captures, Regex};
 use std::env;
 use std::path::PathBuf;
@@ -31,15 +30,18 @@ impl Run {
     }
 
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut wasm_engine = default_wasm_engine();
-        let mut executor =
-            TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
-        let transaction =
+        let compiled_manifest =
             transaction::manifest::compile(&pre_processed_manifest).map_err(Error::CompileError)?;
-        process_transaction(&mut executor, transaction, &self.signing_keys, &None, out)
+        handle_manifest(
+            compiled_manifest,
+            &self.signing_keys,
+            &None,
+            self.trace,
+            out,
+        )
+        .map(|_| ())
     }
 }
 

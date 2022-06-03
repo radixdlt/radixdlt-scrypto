@@ -2,12 +2,9 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::ledger::*;
-use radix_engine::model::extract_package;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaPrivateKey;
 
 #[test]
 fn create_non_fungible_mutable() {

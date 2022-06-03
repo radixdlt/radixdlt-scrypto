@@ -2,10 +2,8 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::{call_data, prelude::*};
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaPrivateKey;
 
 /// This tests the external_blueprint! and external_component! macros
 #[test]

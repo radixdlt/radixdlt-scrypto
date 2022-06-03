@@ -2,7 +2,6 @@
 pub mod test_runner;
 
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::extract_package;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::InvokeError;
@@ -11,7 +10,6 @@ use scrypto::call_data;
 use scrypto::prelude::*;
 use test_runner::{wat2wasm, TestRunner};
 use transaction::builder::ManifestBuilder;
-use transaction::signing::EcdsaPrivateKey;
 
 #[test]
 fn missing_memory_should_cause_error() {

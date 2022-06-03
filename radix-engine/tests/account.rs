@@ -3,13 +3,11 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use scrypto::values::ScryptoValue;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
-use transaction::signing::EcdsaPrivateKey;
 
 #[test]
 fn can_withdraw_from_my_account() {

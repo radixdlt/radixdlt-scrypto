@@ -1,6 +1,6 @@
 use crate::manifest::*;
 
-use crate::model::Instruction;
+use crate::model::TransactionManifest;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompileError {
@@ -9,7 +9,7 @@ pub enum CompileError {
     GeneratorError(generator::GeneratorError),
 }
 
-pub fn compile(s: &str) -> Result<Vec<Instruction>, CompileError> {
+pub fn compile(s: &str) -> Result<TransactionManifest, CompileError> {
     let tokens = lexer::tokenize(s).map_err(CompileError::LexerError)?;
     let instructions = parser::Parser::new(tokens)
         .parse_manifest()

@@ -1,8 +1,6 @@
 use clap::Parser;
-use radix_engine::engine::TransactionExecutor;
-use radix_engine::wasm::*;
 use scrypto::engine::types::*;
-use transaction::builder::TransactionBuilder;
+use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 
@@ -33,24 +31,21 @@ pub struct Transfer {
 
 impl Transfer {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut wasm_engine = default_wasm_engine();
-        let mut executor =
-            TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
-        let transaction = TransactionBuilder::new()
+        let manifest = ManifestBuilder::new()
             .withdraw_from_account_by_amount(
                 self.amount,
                 self.resource_address,
                 get_default_account()?,
             )
             .call_method_with_all_resources(self.recipient, "deposit_batch")
-            .build_with_no_nonce();
-        process_transaction(
-            &mut executor,
-            transaction,
+            .build();
+        handle_manifest(
+            manifest,
             &self.signing_keys,
             &self.manifest,
+            self.trace,
             out,
         )
+        .map(|_| ())
     }
 }
