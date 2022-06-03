@@ -39,6 +39,12 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
         value,
         functions: vec![
             Function {
+                name: "invalid_output".to_string(),
+                mutability: Option::None,
+                input: Type::Unit,
+                output: Type::U8,
+            },
+            Function {
                 name: "unit".to_string(),
                 mutability: Option::None,
                 input: Type::Unit,
