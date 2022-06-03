@@ -9,10 +9,9 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::call_data;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::resource::AuthZoneMethod;
+use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
@@ -486,7 +485,7 @@ where
                 ValidatedPackage::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
-                .main(call_data, self)
+                .main(method_name, call_data, self)
                 .map_err(RuntimeError::AuthZoneError),
             SNodeState::Worktop(worktop) => worktop
                 .main(call_data, self)
@@ -538,7 +537,7 @@ where
             self.invoke_snode2(
                 SNodeRef::AuthZoneRef,
                 "clear".to_string(),
-                ScryptoValue::from_value(&AuthZoneMethod::Clear()),
+                ScryptoValue::from_value(&AuthZoneClearInput {}),
             )?;
         }
         self.check_resource()?;
@@ -1232,7 +1231,8 @@ where
         let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
         simulated_auth_zone
             .main(
-                ScryptoValue::from_slice(&call_data!(clear())).unwrap(),
+                "clear",
+                ScryptoValue::from_value(&AuthZoneClearInput {}),
                 self,
             )
             .map_err(RuntimeError::AuthZoneError)?;

@@ -16,7 +16,7 @@ mod system;
 mod vault;
 
 pub use access_rules::AccessRules;
-pub use auth_zone::{AuthZoneMethod, ComponentAuthZone};
+pub use auth_zone::*;
 pub use bucket::*;
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;
