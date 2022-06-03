@@ -130,16 +130,12 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         quote! { #output_dispatcher }
     );
 
-    let output_stubs = generate_stubs(bp_ident, bp_items)?;
-
     let output = quote! {
         #output_mod
 
         #output_dispatcher
 
         #output_abi
-
-        #output_stubs
     };
     trace!("Finished processing blueprint macro");
 
@@ -366,119 +362,6 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<
     Ok((functions, methods))
 }
 
-// Parses function items of an `Impl` and returns ABI of functions.
-fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
-    let bp_name = bp_ident.to_string();
-    let mut functions = Vec::<ImplItem>::new();
-    let mut methods = Vec::<ImplItem>::new();
-
-    for item in items {
-        trace!("Processing item: {}", quote! { #item });
-        match item {
-            ImplItem::Method(ref m) => {
-                if let Visibility::Public(_) = &m.vis {
-                    let ident = &m.sig.ident;
-                    let name = ident.to_string();
-                    let mut mutable = None;
-                    let mut input_types = vec![];
-                    let mut input_args = vec![];
-                    let mut input_len = 0;
-                    for input in &m.sig.inputs {
-                        match input {
-                            FnArg::Receiver(ref r) => {
-                                // Check receiver type and mutability
-                                if r.reference.is_none() {
-                                    return Err(Error::new(r.span(), "Function input `self` is not supported. Try replacing it with &self."));
-                                }
-
-                                if r.mutability.is_some() {
-                                    mutable = Some(true);
-                                } else {
-                                    mutable = Some(false);
-                                }
-                            }
-                            FnArg::Typed(ref t) => {
-                                let arg = format_ident!("arg{}", input_len.to_string());
-                                input_args.push(arg);
-
-                                let ty = replace_self_with(&t.ty, &bp_ident.to_string());
-                                input_types.push(ty);
-
-                                input_len += 1;
-                            }
-                        }
-                    }
-
-                    let output = match &m.sig.output {
-                        ReturnType::Default => parse_quote! { () },
-                        ReturnType::Type(_, t) => replace_self_with(t, &bp_ident.to_string()),
-                    };
-
-                    if mutable.is_none() {
-                        functions.push(parse_quote! {
-                            pub fn #ident(#(#input_args: #input_types),*) -> #output {
-                                let rtn = ::scrypto::core::Runtime::call_function(
-                                    ::scrypto::core::Runtime::package_address(),
-                                    #bp_name,
-                                    #name,
-                                    ::scrypto::args!(#(#input_args),*)
-                                );
-                                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
-                            }
-                        });
-                    } else {
-                        methods.push(parse_quote! {
-                            pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                let rtn = ::scrypto::core::Runtime::call_method(
-                                    self.component_address,
-                                    #name,
-                                    ::scrypto::args!(#(#input_args),*)
-                                );
-                                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
-                            }
-                        });
-                    }
-                }
-            }
-            _ => {
-                return Err(Error::new(
-                    item.span(),
-                    "Non-method impl items are not supported!",
-                ));
-            }
-        };
-    }
-
-    let output = quote! {
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-        pub struct #bp_ident {
-            component_address: ::scrypto::component::ComponentAddress,
-        }
-
-        impl #bp_ident {
-            #(#functions)*
-
-            #(#methods)*
-        }
-
-        impl From<::scrypto::component::ComponentAddress> for #bp_ident {
-            fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                Self {
-                    component_address
-                }
-            }
-        }
-
-        impl From<#bp_ident> for ::scrypto::component::ComponentAddress {
-            fn from(a: #bp_ident) -> ::scrypto::component::ComponentAddress {
-                a.component_address
-            }
-        }
-    };
-
-    Ok(output)
-}
-
 fn replace_self_with(t: &Type, name: &str) -> Type {
     match t {
         Type::Path(tp) => {
@@ -600,30 +483,6 @@ mod tests {
                     let output = (schema, functions, methods);
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test {
-                    component_address: ::scrypto::component::ComponentAddress,
-                }
-                impl Test {
-                    pub fn y(arg0: u32) -> u32 {
-                        let rtn = ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0));
-                        ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
-                    }
-                    pub fn x(&self, arg0: u32) -> u32 {
-                        let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0));
-                        ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
-                    }
-                }
-                impl From<::scrypto::component::ComponentAddress> for Test {
-                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                        Self { component_address }
-                    }
-                }
-                impl From<Test> for ::scrypto::component::ComponentAddress {
-                    fn from(a: Test) -> ::scrypto::component::ComponentAddress {
-                        a.component_address
-                    }
-                }
             },
         );
     }
@@ -677,22 +536,6 @@ mod tests {
                     let schema: Type = blueprint::Test::describe();
                     let output = (schema, functions, methods);
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
-                }
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test {
-                    component_address: ::scrypto::component::ComponentAddress,
-                }
-                impl Test {
-                }
-                impl From<::scrypto::component::ComponentAddress> for Test {
-                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                        Self { component_address }
-                    }
-                }
-                impl From<Test> for ::scrypto::component::ComponentAddress {
-                    fn from(a: Test) -> ::scrypto::component::ComponentAddress {
-                        a.component_address
-                    }
                 }
             },
         );
