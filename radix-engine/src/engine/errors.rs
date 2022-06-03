@@ -5,20 +5,10 @@ use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::engine::types::*;
 use scrypto::values::*;
+use transaction::errors::*;
 
-use crate::engine::*;
 use crate::model::*;
 use crate::wasm::InvokeError;
-
-/// Represents an error when validating a transaction.
-#[derive(Debug, PartialEq, Eq)]
-pub enum TransactionValidationError {
-    ParseScryptoValueError(ParseScryptoValueError),
-    IdValidatorError(IdValidatorError),
-    VaultNotAllowed(VaultId),
-    LazyMapNotAllowed(LazyMapId),
-    InvalidSignature,
-}
 
 /// Represents an error when executing a transaction.
 #[derive(Debug, PartialEq, Clone)]

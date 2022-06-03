@@ -7,10 +7,9 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
 use scrypto::engine::types::*;
+use transaction::validation::*;
 
-use crate::engine::{
-    ComponentObjects, IdAllocator, IdSpace, SubstateOperation, SubstateOperationsReceipt,
-};
+use crate::engine::{ComponentObjects, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
