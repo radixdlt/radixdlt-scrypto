@@ -34,6 +34,7 @@ impl ValidatedPackage {
             .reject_floating_point()?
             .reject_start_function()?
             .check_imports()?
+            .check_exports(&package.blueprints)?
             .check_memory()?
             .enforce_initial_memory_limit()?
             .enforce_functions_limit()?

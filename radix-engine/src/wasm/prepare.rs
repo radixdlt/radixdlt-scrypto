@@ -1,6 +1,8 @@
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use scrypto::abi::BlueprintAbi;
+use scrypto::prelude::HashMap;
 use wasm_instrument::parity_wasm::{
     self,
     elements::{External, Instruction::*, Internal, Module, Type, ValueType},
@@ -154,6 +156,23 @@ impl WasmModule {
                     || !matches!(entry.external(), External::Function(_))
                 {
                     return Err(PrepareError::InvalidImports);
+                }
+            }
+        }
+
+        Ok(self)
+    }
+
+    pub fn check_exports(self, blueprints: &HashMap<String, BlueprintAbi>) -> Result<Self, PrepareError> {
+        // only allow `env::radix_engine` import
+        let exports = self.module.export_section().ok_or(PrepareError::NoExports)?;
+        for (_, blueprint_abi) in blueprints {
+            for func in &blueprint_abi.functions {
+                let func_name = &func.export_name;
+                // TODO: Check if signature matches
+                if !exports.entries().iter()
+                    .any(|x| x.field().eq(func_name) && matches!(x.internal(), Internal::Function(_))) {
+                    return Err(PrepareError::MissingExport { export_name: func_name.to_string() })
                 }
             }
         }
