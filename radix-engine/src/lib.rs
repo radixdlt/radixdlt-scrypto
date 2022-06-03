@@ -12,7 +12,5 @@ pub mod engine;
 pub mod ledger;
 /// Radix Engine models.
 pub mod model;
-/// Radix Engine transaction abstraction.
-pub mod transaction;
 /// Wasm validation, instrumentation and execution.
 pub mod wasm;

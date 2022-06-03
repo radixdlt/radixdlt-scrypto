@@ -12,7 +12,7 @@ cd "$(dirname "$0")"
 (cd scrypto-derive; cargo build)
 (cd scrypto-tests; cargo build)
 (cd radix-engine; cargo build)
-(cd transaction-manifest; cargo build)
+(cd transaction; cargo build)
 
 echo "Building assets and examples..."
 (cd assets/account; cargo build --target wasm32-unknown-unknown --release)

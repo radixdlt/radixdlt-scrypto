@@ -2,15 +2,8 @@ use sbor::rust::collections::*;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
-use crate::engine::*;
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IdValidatorError {
-    IdAllocatorError(IdAllocatorError),
-    BucketNotFound(BucketId),
-    ProofNotFound(ProofId),
-    BucketLocked(BucketId),
-}
+use crate::errors::*;
+use crate::validation::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ProofKind {

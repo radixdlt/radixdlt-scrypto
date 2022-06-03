@@ -2,9 +2,9 @@
 pub mod test_runner;
 
 use sbor::describe::Fields;
+use radix_engine::engine::TransactionExecutor;
 use radix_engine::{
     ledger::InMemorySubstateStore,
-    transaction::{NonceProvider, TransactionBuilder, TransactionExecutor},
     wasm::{default_wasm_engine, InvokeError},
 };
 use sbor::Type;
@@ -12,6 +12,7 @@ use scrypto::abi::{BlueprintAbi, Function};
 use scrypto::prelude::{HashMap, Package};
 use scrypto::to_struct;
 use test_runner::wat2wasm;
+use transaction::builder::TransactionBuilder;
 
 fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
     let mut blueprint_abis = HashMap::new();

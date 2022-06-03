@@ -1,9 +1,11 @@
-use radix_engine::engine::*;
-use radix_engine::model::*;
 use sbor::rust::collections::*;
 use sbor::{encode_any, Value};
 use scrypto::engine::types::*;
 use scrypto::values::*;
+
+use crate::errors::*;
+use crate::model::*;
+use crate::validation::*;
 
 #[derive(Debug, Clone)]
 pub enum DecompileError {
@@ -298,11 +300,11 @@ pub fn decompile(tx: &Transaction) -> Result<String, DecompileError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::compile;
+    use crate::manifest::compile;
 
     #[test]
     fn test_decompile() {
-        let tx = compile(include_str!("../examples/complex.rtm")).unwrap();
+        let tx = compile(include_str!("../../examples/complex.rtm")).unwrap();
 
         let manifest = &decompile(&tx).unwrap();
         println!("{}", manifest);
