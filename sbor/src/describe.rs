@@ -98,12 +98,16 @@ impl Type {
             Type::I32 => matches!(value, Value::I32 { .. }),
             Type::I64 => matches!(value, Value::I64 { .. }),
             Type::I128 => matches!(value, Value::I128 { .. }),
+            */
             Type::U8 => matches!(value, Value::U8 { .. }),
+            /*
             Type::U16 => matches!(value, Value::U16 { .. }),
             Type::U32 => matches!(value, Value::U32 { .. }),
             Type::U64 => matches!(value, Value::U64 { .. }),
             Type::U128 => matches!(value, Value::U128 { .. }),
+            */
             Type::String => matches!(value, Value::String { .. }),
+            /*
             Type::Option { value: type_value } => {
                 if let Value::Option { value } = value {
                    match &**value {
@@ -114,6 +118,7 @@ impl Type {
                     false
                 }
             }
+            */
             Type::Array { element: type_element, length } => {
                 if let Value::Array { element_type_id: _, elements } = value {
                     let length = usize::from(*length);
@@ -122,6 +127,7 @@ impl Type {
                     false
                 }
             }
+            /*
             Type::Tuple { elements: type_elements } => {
                 if let Value::Tuple { elements } = value {
                     type_elements.len() == elements.len()
@@ -131,9 +137,29 @@ impl Type {
                 }
             }
             */
+            Type::TreeSet { element: type_element } => {
+                if let Value::TreeSet { element_type_id: _, elements } = value {
+                    elements.iter().all(|v| type_element.matches(v))
+                } else {
+                    false
+                }
+            }
             Type::Vec { element: type_element } => {
                 if let Value::Vec { element_type_id: _, elements } = value {
                     elements.iter().all(|v| type_element.matches(v))
+                } else {
+                    false
+                }
+            }
+            Type::HashMap { key: type_key, value: type_value } => {
+                if let Value::HashMap { key_type_id: _, value_type_id: _, elements } = value {
+                    elements.iter().enumerate().all(|(i, e)| {
+                        if i % 2 == 0 {
+                            type_key.matches(e)
+                        } else {
+                            type_value.matches(e)
+                        }
+                    })
                 } else {
                     false
                 }
