@@ -1,8 +1,7 @@
-use proc_macro2::{Ident, Span, TokenStream};
+use proc_macro2::{Ident, TokenStream};
 use quote::{format_ident, quote};
 use syn::parse::Parser;
 use syn::spanned::Spanned;
-use syn::token::Brace;
 use syn::*;
 
 use crate::ast;
@@ -67,43 +66,10 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("Generated mod: \n{}", quote! { #output_mod });
     let method_input_structs = generate_method_input_structs(bp_ident, bp_items);
 
-    let dispatcher_ident = format_ident!("{}_main", bp_ident);
-    let (arm_guards, arm_bodies, functions) = generate_dispatcher(bp_ident, bp_items)?;
-    let output_dispatcher = if arm_guards.is_empty() {
-        quote! {
-            #(#method_input_structs)*
-
-            #[no_mangle]
-            pub extern "C" fn #dispatcher_ident(method_ptr: *mut u8) -> *mut u8 {
-                panic!("No invocation expected")
-            }
-        }
-    } else {
-        quote! {
-            #(#method_input_structs)*
-
-            #(#functions)*
-
-            #[no_mangle]
-            pub extern "C" fn #dispatcher_ident(method_ptr: *mut u8, method_arg: *mut u8) -> *mut u8 {
-                // Set up panic hook
-                ::scrypto::misc::set_up_panic_hook();
-
-                // Set up component and resource subsystems;
-                ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
-                ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
-
-                // Dispatch the call
-                let method = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
-                let rtn = match method.as_str() {
-                    #( #arm_guards => #arm_bodies )*
-                    _ => panic!("Invalid method")
-                };
-
-                // Return
-                rtn
-            }
-        }
+    let functions = generate_dispatcher(bp_ident, bp_items)?;
+    let output_dispatcher = quote! {
+        #(#method_input_structs)*
+        #(#functions)*
     };
 
     trace!("Generated dispatcher: \n{}", quote! { #output_dispatcher });
@@ -198,9 +164,7 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>, Vec<TokenStream>)> {
-    let mut arm_guards = Vec::<Expr>::new();
-    let mut arm_bodies = Vec::<Expr>::new();
+fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<TokenStream>> {
     let mut functions = Vec::new();
 
     for item in items {
@@ -208,7 +172,6 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
 
         if let ImplItem::Method(ref m) = item {
             if let Visibility::Public(_) = &m.vis {
-                let fn_name = &m.sig.ident.to_string();
                 let ident = &m.sig.ident;
 
                 let mut match_args: Vec<Expr> = vec![];
@@ -282,18 +245,6 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
                 }
                 stmts.push(Stmt::Expr(parse_quote!{ rtn }));
 
-                arm_guards.push(parse_quote! { #fn_name });
-                arm_bodies.push(Expr::Block(ExprBlock {
-                    attrs: vec![],
-                    label: None,
-                    block: Block {
-                        brace_token: Brace {
-                            span: Span::call_site(),
-                        },
-                        stmts: stmts.clone(),
-                    },
-                }));
-
                 let function_ident = format_ident!("{}_{}_main", bp_ident, ident);
                 let extern_function = quote! {
                     #[no_mangle]
@@ -313,7 +264,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
         };
     }
 
-    Ok((arm_guards, arm_bodies, functions))
+    Ok(functions)
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
@@ -627,30 +578,6 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_main(method_ptr: *mut u8, method_arg: *mut u8) -> *mut u8 {
-                    ::scrypto::misc::set_up_panic_hook();
-                    ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
-                    ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
-
-                    let method = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
-                    let rtn = match method.as_str() {
-                        "x" => {
-                            let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
-                            let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                            let state: blueprint::Test = borrow_component!(component_address).get_state();
-                            let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, input.arg0));
-                            rtn
-                        }
-                        "y" => {
-                            let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
-                            let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(input.arg0));
-                            rtn
-                        }
-                        _ => panic!("Invalid method")
-                    };
-                    rtn
-                }
-                #[no_mangle]
                 pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{BlueprintAbi, Function};
@@ -734,10 +661,6 @@ mod tests {
                     }
                 }
 
-                #[no_mangle]
-                pub extern "C" fn Test_main(method_ptr: *mut u8) -> *mut u8 {
-                    panic!("No invocation expected")
-                }
                 #[no_mangle]
                 pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
