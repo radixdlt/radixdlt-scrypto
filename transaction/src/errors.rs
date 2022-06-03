@@ -1,8 +1,7 @@
 use sbor::describe::Type;
 use sbor::rust::string::String;
 use scrypto::engine::types::*;
-
-use crate::engine::RuntimeError;
+use scrypto::values::*;
 
 /// Represents an error when parsing arguments.
 #[derive(Debug, Clone)]
@@ -19,7 +18,7 @@ pub enum BuildArgsError {
 
 /// Represents an error when building a transaction.
 #[derive(Debug, Clone)]
-pub enum CallWithAbiError {
+pub enum BuildCallWithAbiError {
     /// The given blueprint function does not exist.
     FunctionNotFound(String),
 
@@ -30,11 +29,33 @@ pub enum CallWithAbiError {
     FailedToBuildArgs(BuildArgsError),
 
     /// Failed to export the ABI of a function.
-    FailedToExportFunctionAbi(PackageAddress, String, String, RuntimeError),
+    FailedToExportFunctionAbi(PackageAddress, String, String),
 
     /// Failed to export the ABI of a method.
     FailedToExportMethodAbi(ComponentAddress, String),
 
     /// Account is required but not provided.
     AccountNotProvided,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TransactionValidationError {
+    ParseScryptoValueError(ParseScryptoValueError),
+    IdValidatorError(IdValidatorError),
+    VaultNotAllowed(VaultId),
+    LazyMapNotAllowed(LazyMapId),
+    InvalidSignature,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IdAllocatorError {
+    OutOfID,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IdValidatorError {
+    IdAllocatorError(IdAllocatorError),
+    BucketNotFound(BucketId),
+    ProofNotFound(ProofId),
+    BucketLocked(BucketId),
 }

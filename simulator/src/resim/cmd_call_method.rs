@@ -1,9 +1,10 @@
 #![allow(unused_must_use)]
 
 use clap::Parser;
-use radix_engine::transaction::*;
+use radix_engine::engine::TransactionExecutor;
 use radix_engine::wasm::*;
 use scrypto::engine::types::*;
+use transaction::builder::TransactionBuilder;
 
 use crate::resim::*;
 

@@ -1,5 +1,5 @@
 use clap::Parser;
-use radix_engine::transaction::*;
+use radix_engine::engine::TransactionExecutor;
 use radix_engine::wasm::*;
 use scrypto::engine::types::*;
 
