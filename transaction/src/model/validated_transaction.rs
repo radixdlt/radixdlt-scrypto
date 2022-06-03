@@ -33,15 +33,14 @@ impl ValidatedTransaction {
         current_epoch: u64,
     ) -> Result<Self, TransactionValidationError> {
         let mut validated_instructions = vec![];
-        let mut signers = vec![];
 
         // verify header and signature
         transaction
             .validate_header(current_epoch)
-            .map_err(TransactionValidationError::HeaderValidationError);
+            .map_err(TransactionValidationError::HeaderValidationError)?;
         transaction
             .validate_signatures()
-            .map_err(TransactionValidationError::SignatureValidationError);
+            .map_err(TransactionValidationError::SignatureValidationError)?;
 
         // semantic analysis
         let mut id_validator = IdValidator::new();
@@ -217,6 +216,13 @@ impl ValidatedTransaction {
                 }
             }
         }
+
+        let signers = transaction
+            .signed_intent
+            .intent_signatures
+            .iter()
+            .map(|e| e.0)
+            .collect();
 
         Ok(Self {
             transaction,

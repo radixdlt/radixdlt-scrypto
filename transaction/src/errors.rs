@@ -8,7 +8,10 @@ use scrypto::values::*;
 pub enum HeaderValidationError {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum SignatureValidationError {}
+pub enum SignatureValidationError {
+    InvalidIntentSignature,
+    InvalidNotarySignature,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IdAllocationError {

@@ -7,8 +7,6 @@ use scrypto::crypto::*;
 pub struct EcdsaPrivateKey(SecretKey);
 
 impl EcdsaPrivateKey {
-    /* all public methods are confined to this impl */
-
     pub const LENGTH: usize = 32;
 
     pub fn public_key(&self) -> EcdsaPublicKey {

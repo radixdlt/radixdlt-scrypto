@@ -1,6 +1,7 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::crypto::{EcdsaPublicKey, EcdsaSignature, Hash};
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, EcdsaVerifier, Hash};
 
 use crate::errors::*;
 use crate::manifest::{compile, CompileError};
@@ -58,53 +59,69 @@ impl TransactionIntent {
     }
 
     pub fn hash(&self) -> Hash {
-        todo!()
+        hash(scrypto_encode(self))
     }
 
     pub fn sign<S: Signer>(&self, signer: &S) -> TransactionSignature {
-        todo!()
+        signer.sign(&scrypto_encode(self))
     }
 }
 
 impl SignedTransactionIntent {
     pub fn hash(&self) -> Hash {
-        todo!()
+        hash(scrypto_encode(self))
     }
 
     pub fn notarize<S: Signer>(&self, signer: &S) -> TransactionSignature {
-        todo!()
+        signer.sign(&scrypto_encode(self))
     }
 }
 
 impl Transaction {
     pub fn from_slice(slice: &[u8]) -> Result<Transaction, DecodeError> {
-        todo!()
+        scrypto_decode(slice)
     }
 
     pub fn intent_hash(&self) -> Hash {
-        todo!()
+        self.signed_intent.intent.hash()
     }
 
     pub fn signed_intent_hash(&self) -> Hash {
-        todo!()
+        self.signed_intent.hash()
     }
 
     pub fn hash(&self) -> Hash {
-        todo!()
+        hash(scrypto_encode(self))
     }
 
-    pub fn validate_header(&self, current_epoch: u64) -> Result<(), HeaderValidationError> {
-        todo!()
+    pub fn validate_header(&self, _current_epoch: u64) -> Result<(), HeaderValidationError> {
+        let _header = &self.signed_intent.intent.header;
+
+        // TODO: validate headers
+
+        Ok(())
     }
 
-    pub fn validate_signatures(
-        &self,
-    ) -> Result<(Vec<EcdsaPublicKey>, EcdsaPublicKey), SignatureValidationError> {
-        let msg = self.intent_hash();
-        // if !EcdsaVerifier::verify(&msg, pk, sig) {
-        //     return Err(TransactionValidationError::InvalidSignature);
-        // }
-        todo!()
+    pub fn validate_signatures(&self) -> Result<(), SignatureValidationError> {
+        // verify intent signature
+        let intent_payload = scrypto_encode(&self.signed_intent.intent);
+        for sig in &self.signed_intent.intent_signatures {
+            if !EcdsaVerifier::verify(&intent_payload, &sig.0, &sig.1) {
+                return Err(SignatureValidationError::InvalidIntentSignature);
+            }
+        }
+
+        // verify notary signature
+        let signed_intent_payload = scrypto_encode(&self.signed_intent);
+        if !EcdsaVerifier::verify(
+            &signed_intent_payload,
+            &self.notary_signature.0,
+            &self.notary_signature.1,
+        ) {
+            return Err(SignatureValidationError::InvalidNotarySignature);
+        }
+
+        Ok(())
     }
 }
 
@@ -150,9 +167,18 @@ mod tests {
             notary_signature: signature3,
         };
 
-        assert_eq!("", transaction.intent_hash().to_string());
-        assert_eq!("", transaction.signed_intent_hash().to_string());
-        assert_eq!("", transaction.hash().to_string());
-        assert_eq!("", hex::encode(scrypto_encode(&transaction)));
+        assert_eq!(
+            "f63d14e41c4e7d39a5ee34882e7c29f36cf79715abaa3c68acdcb39ae00e314b",
+            transaction.intent_hash().to_string()
+        );
+        assert_eq!(
+            "b3b2b605b279035311ae4e55d28e9ac8fd0d43b4e9514ffd71a3eb9b1bb320c4",
+            transaction.signed_intent_hash().to_string()
+        );
+        assert_eq!(
+            "66b75c8ce7f089ff781a5ad92021a58b0adbd810e09f072c8510f0985b4bbfd9",
+            transaction.hash().to_string()
+        );
+        assert_eq!("10020000001002000000100200000010060000000701110f000000496e7465726e616c546573746e6574000000000a00000000000000000a64000000000000000a05000000000000009141000000045ecbe4d1a6330a44c8f7ef951d4bf165e6c6b721efada985fb41661bc6e7fd6c8734640c4998ff7e374b06ce1a64a2ecd82ab036384fb83d9a79b127a27d503210010000003011010000000d000000436c656172417574685a6f6e6500000000302302000000020000009141000000046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f593400000004b29b0c7e1d5be1b7bd1b8385f8ea6e8f8be257dd6f0802ae4fc0d6611c81c4e61b61c1ed55fc5787f375b117a2af26ba93badeff0e2c03c6b09fb4f72c2e182020000009141000000047cf27b188d034f7e8a52380304b51ac3c08969e277f21b35a60b48fc4766997807775510db8ed040293d9ac69f7430dbba7dade63ce982299e04b79d227873d1934000000093386b4f7f412ca9282d66c3807193e73c13731de8bd3e671ce0e02233b6d1a433202177d67e12eec24ae93fe7b28e996db226622c35e248e54f631f50ba0f7b23020000009141000000045ecbe4d1a6330a44c8f7ef951d4bf165e6c6b721efada985fb41661bc6e7fd6c8734640c4998ff7e374b06ce1a64a2ecd82ab036384fb83d9a79b127a27d5032934000000082254bf709be96e80dd06c9642a54988814b88731f0612423ff8549bc512284cce60c6c5716c5429c8cb0e51085ac266483b85c26b19b4c1deacf225672a8f6e", hex::encode(scrypto_encode(&transaction)));
     }
 }
