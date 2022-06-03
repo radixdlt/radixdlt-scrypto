@@ -319,10 +319,10 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
 
                                 if r.mutability.is_some() {
                                     mutability =
-                                        Some(quote! { ::scrypto::abi::Mutability::Mutable });
+                                        Some(quote! { ::scrypto::abi::SelfMutability::Mutable });
                                 } else {
                                     mutability =
-                                        Some(quote! { ::scrypto::abi::Mutability::Immutable });
+                                        Some(quote! { ::scrypto::abi::SelfMutability::Immutable });
                                 }
                             }
                             FnArg::Typed(ref t) => {
@@ -610,7 +610,7 @@ mod tests {
                     let functions: Vec<Function> = vec![
                         ::scrypto::abi::Function {
                             name: "x".to_owned(),
-                            mutability: Option::Some(::scrypto::abi::Mutability::Immutable),
+                            mutability: Option::Some(::scrypto::abi::SelfMutability::Immutable),
                             input: Test_x_Input::describe(),
                             output: <u32>::describe(),
                         },

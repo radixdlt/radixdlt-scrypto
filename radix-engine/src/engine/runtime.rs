@@ -1,6 +1,7 @@
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::SNodeRef;
 use scrypto::core::ScryptoActorInfo;
@@ -23,6 +24,7 @@ where
     I: WasmInstance,
 {
     this: ScryptoActorInfo,
+    blueprint_abi: BlueprintAbi,
     system_api: &'s mut S,
     tbd_limit: u32,
     tbd_balance: u32,
@@ -36,9 +38,10 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S, tbd_limit: u32) -> Self {
+    pub fn new(this: ScryptoActorInfo, blueprint_abi: BlueprintAbi, system_api: &'s mut S, tbd_limit: u32) -> Self {
         RadixEngineWasmRuntime {
             this,
+            blueprint_abi,
             system_api,
             tbd_limit,
             tbd_balance: tbd_limit,
@@ -77,9 +80,7 @@ where
         // TODO: Move this to a more appropriate place
         for access_rules in &access_rules_list {
             for (func_name, _) in access_rules.iter() {
-                if !self
-                    .this
-                    .blueprint_abi()
+                if !self.blueprint_abi
                     .contains_function(func_name.as_str())
                 {
                     return Err(BlueprintFunctionDoesNotExist(func_name.to_string()));

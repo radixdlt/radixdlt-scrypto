@@ -9,6 +9,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::abi::BlueprintAbi;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneClearInput;
@@ -76,6 +77,7 @@ pub enum BorrowedSNodeState {
     Worktop(Worktop),
     Scrypto(
         ScryptoActorInfo,
+        BlueprintAbi,
         ValidatedPackage,
         String,
         Option<ComponentState>,
@@ -109,6 +111,7 @@ pub enum SNodeState<'a> {
     // TODO: use reference to the package
     Scrypto(
         ScryptoActorInfo,
+        BlueprintAbi,
         ValidatedPackage,
         String,
         Option<&'a mut ComponentState>,
@@ -159,9 +162,10 @@ impl LoadedSNodeState {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                BorrowedSNodeState::Scrypto(info, package, export_name, component_state) => {
+                BorrowedSNodeState::Scrypto(info, blueprint_abi, package, export_name, component_state) => {
                     SNodeState::Scrypto(
                         info.clone(),
+                        blueprint_abi.clone(),
                         package.clone(),
                         export_name.clone(),
                         component_state.as_mut(),
@@ -194,7 +198,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Worktop(worktop) => {
                 frame.worktop = Some(worktop);
             }
-            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
+            BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
                 if let Some(component_address) = actor.component_address() {
                     frame.track.return_borrowed_global_mut_value(
                         component_address,
@@ -299,25 +303,48 @@ where
 
     /// Checks resource leak.
     fn check_resource(&self) -> Result<(), RuntimeError> {
-        let success = self.buckets.is_empty()
-            && self.proofs.is_empty()
-            && self.owned_snodes.vaults.is_empty()
-            && self.owned_snodes.lazy_maps.is_empty()
-            && match &self.worktop {
-                Some(worktop) => worktop.is_empty(),
-                None => true,
-            };
+        self.sys_log(Level::Info, "Resource check started".to_string());
+        let mut success = true;
+        let mut resource = ResourceFailure::Unknown;
 
+        for (bucket_id, bucket) in &self.buckets {
+            self.sys_log(
+                Level::Warn,
+                format!("Dangling bucket: {}, {:?}", bucket_id, bucket),
+            );
+            resource = ResourceFailure::Resource(bucket.resource_address());
+            success = false;
+        }
+        for (vault_id, vault) in &self.owned_snodes.vaults {
+            self.sys_log(
+                Level::Warn,
+                format!("Dangling vault: {:?}, {:?}", vault_id, vault),
+            );
+            resource = ResourceFailure::Resource(vault.resource_address());
+            success = false;
+        }
+        for (lazy_map_id, lazy_map) in &self.owned_snodes.lazy_maps {
+            self.sys_log(
+                Level::Warn,
+                format!("Dangling lazy map: {:?}, {:?}", lazy_map_id, lazy_map),
+            );
+            resource = ResourceFailure::UnclaimedLazyMap;
+            success = false;
+        }
+
+        if let Some(worktop) = &self.worktop {
+            if !worktop.is_empty() {
+                self.sys_log(Level::Warn, "Resource worktop is not empty".to_string());
+                resource = ResourceFailure::Resources(worktop.resource_addresses());
+                success = false;
+            }
+        }
+
+        self.sys_log(Level::Info, "Resource check ended".to_string());
         if success {
             Ok(())
         } else {
-            self.sys_log(Level::Info, format!("Resources owned by call frame"));
-            self.sys_log(Level::Info, format!("Buckets: {:?}", self.buckets));
-            self.sys_log(Level::Info, format!("Proofs: {:?}", self.proofs));
-            self.sys_log(Level::Info, format!("SNodes: {:?}", self.owned_snodes));
-            self.sys_log(Level::Info, format!("Worktop: {:?}", self.worktop));
-            self.sys_log(Level::Info, format!("Auth zone: {:?}", self.auth_zone));
-            Err(RuntimeError::ResourceCheckFailure)
+            Err(RuntimeError::ResourceCheckFailure(resource))
         }
     }
 
@@ -469,9 +496,9 @@ where
             SNodeState::Worktop(worktop) => worktop
                 .main(method_name, call_data, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, package, export_name, component_state) => {
+            SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
                 self.component_state = component_state;
-                package.invoke(actor, export_name, method_name, call_data, self)
+                package.invoke(actor, blueprint_abi, export_name, method_name, call_data, self)
             }
             SNodeState::ResourceStatic => {
                 ResourceManager::static_main(method_name, call_data, self)
@@ -597,8 +624,8 @@ where
                                 ScryptoActorInfo::blueprint(
                                     package_address.clone(),
                                     blueprint_name.clone(),
-                                    abi.clone(),
                                 ),
+                                abi.clone(),
                                 package.clone(),
                                 export_name.clone(),
                                 None,
@@ -660,9 +687,9 @@ where
                                 ScryptoActorInfo::component(
                                     package_address,
                                     blueprint_name,
-                                    abi.clone(),
                                     component_address,
                                 ),
+                                abi.clone(),
                                 package.clone(),
                                 export_name,
                                 Some(ComponentState {
@@ -801,7 +828,7 @@ where
                 Borrowed(BorrowedSNodeState::Resource(_, _))
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
                 | Borrowed(BorrowedSNodeState::Bucket(_, _))
-                | Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
+                | Borrowed(BorrowedSNodeState::Scrypto(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone);
@@ -842,7 +869,7 @@ where
             self.track,
             self.wasm_engine,
             match loaded_snode {
-                Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
+                Borrowed(BorrowedSNodeState::Scrypto(..))
                 | Static(StaticSNodeState::TransactionProcessor) => Some(AuthZone::new()),
                 _ => None,
             },
