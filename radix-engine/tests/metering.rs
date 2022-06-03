@@ -1,24 +1,35 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use sbor::describe::Fields;
 use radix_engine::{
     ledger::InMemorySubstateStore,
     transaction::{NonceProvider, TransactionBuilder, TransactionExecutor},
     wasm::{default_wasm_engine, InvokeError},
 };
 use sbor::Type;
-use scrypto::abi::BlueprintAbi;
+use scrypto::abi::{BlueprintAbi, Function};
 use scrypto::prelude::{HashMap, Package};
 use scrypto::to_struct;
 use test_runner::wat2wasm;
 
-fn mocked_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
+fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
     let mut blueprint_abis = HashMap::new();
     blueprint_abis.insert(
         blueprint_name,
         BlueprintAbi {
             value: Type::Unit,
-            functions: Vec::new(),
+            functions: vec![
+                Function {
+                    name: "f".to_string(),
+                    mutability: Option::None,
+                    input: Type::Struct {
+                        name: "Any".to_string(),
+                        fields: Fields::Named { named: vec![] }
+                    },
+                    output: Type::Unit,
+                }
+            ],
         },
     );
     blueprint_abis
@@ -35,7 +46,7 @@ fn test_loop() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
     let package = Package {
         code,
-        blueprints: mocked_abi("Test".to_string()),
+        blueprints: metering_abi("Test".to_string()),
     };
     let package_address = executor
         .publish_package(package)
@@ -63,7 +74,7 @@ fn test_loop_out_of_tbd() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
     let package = Package {
         code,
-        blueprints: mocked_abi("Test".to_string()),
+        blueprints: metering_abi("Test".to_string()),
     };
     let package_address = executor
         .publish_package(package)
@@ -92,7 +103,7 @@ fn test_recursion() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
     let package = Package {
         code,
-        blueprints: mocked_abi("Test".to_string()),
+        blueprints: metering_abi("Test".to_string()),
     };
     let package_address = executor
         .publish_package(package)
@@ -120,7 +131,7 @@ fn test_recursion_stack_overflow() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
     let package = Package {
         code,
-        blueprints: mocked_abi("Test".to_string()),
+        blueprints: metering_abi("Test".to_string()),
     };
     let package_address = executor
         .publish_package(package)
@@ -148,7 +159,7 @@ fn test_grow_memory() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "99999"));
     let package = Package {
         code,
-        blueprints: mocked_abi("Test".to_string()),
+        blueprints: metering_abi("Test".to_string()),
     };
     let package_address = executor
         .publish_package(package)
@@ -176,7 +187,7 @@ fn test_grow_memory_out_of_tbd() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package = Package {
         code,
-        blueprints: mocked_abi("Test".to_string()),
+        blueprints: metering_abi("Test".to_string()),
     };
     let package_address = executor
         .publish_package(package)
