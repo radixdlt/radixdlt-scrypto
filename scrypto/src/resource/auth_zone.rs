@@ -9,7 +9,6 @@ use crate::math::Decimal;
 use crate::resource::*;
 use crate::sfunctions2;
 
-
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePopInput {}
 

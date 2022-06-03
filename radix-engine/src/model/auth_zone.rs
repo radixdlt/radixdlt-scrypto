@@ -3,12 +3,15 @@ use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::resource::{AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput, AuthZoneCreateProofInput, AuthZonePushInput, AuthZonePopInput};
+use scrypto::resource::{
+    AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput,
+    AuthZoneCreateProofInput, AuthZonePopInput, AuthZonePushInput,
+};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
-use crate::model::{Proof, ProofError, ResourceManager};
 use crate::model::AuthZoneError::InvalidMethod;
+use crate::model::{Proof, ProofError, ResourceManager};
 use crate::wasm::*;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -127,8 +130,10 @@ impl AuthZone {
                     .borrow_global_mut_resource_manager(input.resource_address)
                     .map_err(|_| AuthZoneError::CouldNotGetResource)?;
                 let resource_type = resource_manager.resource_type();
-                system_api
-                    .return_borrowed_global_resource_manager(input.resource_address, resource_manager);
+                system_api.return_borrowed_global_resource_manager(
+                    input.resource_address,
+                    resource_manager,
+                );
                 let proof = self.create_proof(input.resource_address, resource_type)?;
                 let proof_id = system_api
                     .create_proof(proof)
@@ -144,9 +149,15 @@ impl AuthZone {
                     .borrow_global_mut_resource_manager(input.resource_address)
                     .map_err(|_| AuthZoneError::CouldNotGetResource)?;
                 let resource_type = resource_manager.resource_type();
-                system_api
-                    .return_borrowed_global_resource_manager(input.resource_address, resource_manager);
-                let proof = self.create_proof_by_amount(input.amount, input.resource_address, resource_type)?;
+                system_api.return_borrowed_global_resource_manager(
+                    input.resource_address,
+                    resource_manager,
+                );
+                let proof = self.create_proof_by_amount(
+                    input.amount,
+                    input.resource_address,
+                    resource_type,
+                )?;
                 let proof_id = system_api
                     .create_proof(proof)
                     .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
@@ -161,9 +172,12 @@ impl AuthZone {
                     .borrow_global_mut_resource_manager(input.resource_address)
                     .map_err(|_| AuthZoneError::CouldNotGetResource)?;
                 let resource_type = resource_manager.resource_type();
-                system_api
-                    .return_borrowed_global_resource_manager(input.resource_address, resource_manager);
-                let proof = self.create_proof_by_ids(&input.ids, input.resource_address, resource_type)?;
+                system_api.return_borrowed_global_resource_manager(
+                    input.resource_address,
+                    resource_manager,
+                );
+                let proof =
+                    self.create_proof_by_ids(&input.ids, input.resource_address, resource_type)?;
                 let proof_id = system_api
                     .create_proof(proof)
                     .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
@@ -177,7 +191,7 @@ impl AuthZone {
                 self.clear();
                 Ok(ScryptoValue::from_value(&()))
             }
-            _ => Err(InvalidMethod)
+            _ => Err(InvalidMethod),
         }
     }
 }

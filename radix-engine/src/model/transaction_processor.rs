@@ -7,7 +7,10 @@ use scrypto::call_data;
 use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput, AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, ProofCloneInput};
+use scrypto::prelude::{
+    AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput,
+    AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, ProofCloneInput,
+};
 use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
 
@@ -194,7 +197,7 @@ impl TransactionProcessor {
                                     SNodeRef::AuthZoneRef,
                                     "push".to_string(),
                                     ScryptoValue::from_value(&AuthZonePushInput {
-                                        proof: scrypto::resource::Proof(real_id)
+                                        proof: scrypto::resource::Proof(real_id),
                                     }),
                                 )
                             }),
@@ -231,10 +234,12 @@ impl TransactionProcessor {
                                     .invoke_snode2(
                                         SNodeRef::AuthZoneRef,
                                         "create_proof_by_amount".to_string(),
-                                        ScryptoValue::from_value(&AuthZoneCreateProofByAmountInput {
-                                            amount: *amount,
-                                            resource_address: *resource_address,
-                                        }),
+                                        ScryptoValue::from_value(
+                                            &AuthZoneCreateProofByAmountInput {
+                                                amount: *amount,
+                                                resource_address: *resource_address,
+                                            },
+                                        ),
                                     )
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
