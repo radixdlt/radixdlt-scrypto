@@ -1,5 +1,3 @@
-use radix_engine::engine::*;
-use radix_engine::model::*;
 use sbor::any::{encode_any, Value};
 use sbor::rust::collections::BTreeSet;
 use sbor::rust::collections::HashMap;
@@ -10,7 +8,10 @@ use scrypto::engine::types::*;
 use scrypto::values::*;
 use scrypto::vec_to_struct;
 
-use crate::ast;
+use crate::errors::*;
+use crate::manifest::ast;
+use crate::model::*;
+use crate::validation::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GeneratorError {
@@ -771,8 +772,8 @@ fn generate_type_id(ty: &ast::Type) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lexer::tokenize;
-    use crate::parser::Parser;
+    use crate::manifest::lexer::tokenize;
+    use crate::manifest::parser::Parser;
     use scrypto::buffer::scrypto_encode;
     use scrypto::prelude::Package;
     use scrypto::to_struct;
@@ -1031,7 +1032,7 @@ mod tests {
 
     #[test]
     fn test_transaction() {
-        let tx = include_str!("../examples/complex.rtm");
+        let tx = include_str!("../../examples/complex.rtm");
         let code = vec![
             0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x04, 0x05, 0x01, 0x70, 0x01, 0x01,
             0x01, 0x05, 0x03, 0x01, 0x00, 0x10, 0x06, 0x19, 0x03, 0x7f, 0x01, 0x41, 0x80, 0x80,
@@ -1055,7 +1056,7 @@ mod tests {
         let encoded_package = scrypto_encode(&package);
 
         assert_eq!(
-            crate::compile(tx).unwrap(),
+            crate::manifest::compile(tx).unwrap(),
             Transaction {
                 instructions: vec![
                     Instruction::CallMethod {

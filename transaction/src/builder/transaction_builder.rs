@@ -18,9 +18,9 @@ use scrypto::resource::{AccessRule, AccessRuleNode, Burn, Mint, Withdraw};
 use scrypto::values::*;
 use scrypto::*;
 
-use crate::engine::*;
+use crate::errors::*;
 use crate::model::*;
-use crate::transaction::*;
+use crate::validation::*;
 
 /// Utility for building transaction.
 pub struct TransactionBuilder {
@@ -315,17 +315,17 @@ impl TransactionBuilder {
         args: Vec<String>,
         account: Option<ComponentAddress>,
         blueprint_abi: &abi::Blueprint,
-    ) -> Result<&mut Self, CallWithAbiError> {
+    ) -> Result<&mut Self, BuildCallWithAbiError> {
         let abi = blueprint_abi
             .functions
             .iter()
             .find(|f| f.name == function)
             .map(Clone::clone)
-            .ok_or_else(|| CallWithAbiError::FunctionNotFound(function.to_owned()))?;
+            .ok_or_else(|| BuildCallWithAbiError::FunctionNotFound(function.to_owned()))?;
 
         let arguments = self
             .parse_args(&abi.inputs, args, account)
-            .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
+            .map_err(|e| BuildCallWithAbiError::FailedToBuildArgs(e))?;
 
         let mut fields = Vec::new();
         for arg in arguments {
@@ -373,17 +373,17 @@ impl TransactionBuilder {
         args: Vec<String>,
         account: Option<ComponentAddress>,
         blueprint_abi: &abi::Blueprint,
-    ) -> Result<&mut Self, CallWithAbiError> {
+    ) -> Result<&mut Self, BuildCallWithAbiError> {
         let abi = blueprint_abi
             .methods
             .iter()
             .find(|m| m.name == method)
             .map(Clone::clone)
-            .ok_or_else(|| CallWithAbiError::MethodNotFound(method.to_owned()))?;
+            .ok_or_else(|| BuildCallWithAbiError::MethodNotFound(method.to_owned()))?;
 
         let arguments = self
             .parse_args(&abi.inputs, args, account)
-            .map_err(|e| CallWithAbiError::FailedToBuildArgs(e))?;
+            .map_err(|e| BuildCallWithAbiError::FailedToBuildArgs(e))?;
 
         Ok(self
             .add_instruction(Instruction::CallMethod {

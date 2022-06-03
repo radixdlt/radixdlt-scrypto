@@ -1,14 +1,15 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use radix_engine::engine::TransactionExecutor;
 use radix_engine::model::extract_package;
 use radix_engine::{
     ledger::InMemorySubstateStore,
-    transaction::{NonceProvider, TransactionBuilder, TransactionExecutor},
     wasm::{default_wasm_engine, InvokeError},
 };
 use scrypto::to_struct;
 use test_runner::wat2wasm;
+use transaction::builder::TransactionBuilder;
 
 #[test]
 fn test_loop() {
