@@ -61,7 +61,7 @@ where
     }
 
     pub fn publish_package(&mut self, name: &str) -> PackageAddress {
-        let package = extract_package(Self::compile(name)).unwrap();
+        let package = extract_package(Self::compile(name)).expect("Should be okay.");
         self.executor.publish_package(package).unwrap()
     }
 

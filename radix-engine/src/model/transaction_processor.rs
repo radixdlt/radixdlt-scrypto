@@ -7,8 +7,8 @@ use scrypto::call_data;
 use scrypto::component::{Package, PackageFunction};
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::resource::{AuthZoneMethod, BucketMethod};
-use scrypto::resource::{ConsumingProofMethod, ProofMethod};
+use scrypto::prelude::{BucketCreateProofInput, ProofCloneInput};
+use scrypto::resource::{AuthZoneMethod, ConsumingProofDropInput};
 use scrypto::values::*;
 use transaction::model::*;
 use transaction::validation::*;
@@ -275,9 +275,10 @@ impl TransactionProcessor {
                             })
                             .and_then(|(new_id, real_bucket_id)| {
                                 system_api
-                                    .invoke_snode(
+                                    .invoke_snode2(
                                         SNodeRef::BucketRef(real_bucket_id),
-                                        ScryptoValue::from_value(&BucketMethod::CreateProof()),
+                                        "create_proof".to_string(),
+                                        ScryptoValue::from_value(&BucketCreateProofInput {}),
                                     )
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
@@ -294,9 +295,10 @@ impl TransactionProcessor {
                                     .cloned()
                                     .map(|real_id| {
                                         system_api
-                                            .invoke_snode(
+                                            .invoke_snode2(
                                                 SNodeRef::ProofRef(real_id),
-                                                ScryptoValue::from_value(&ProofMethod::Clone()),
+                                                "clone".to_string(),
+                                                ScryptoValue::from_value(&ProofCloneInput {}),
                                             )
                                             .map(|v| {
                                                 let cloned_proof_id =
@@ -312,9 +314,10 @@ impl TransactionProcessor {
                         ValidatedInstruction::DropProof { proof_id } => proof_id_mapping
                             .remove(proof_id)
                             .map(|real_id| {
-                                system_api.invoke_snode(
+                                system_api.invoke_snode2(
                                     SNodeRef::Proof(real_id),
-                                    ScryptoValue::from_value(&ConsumingProofMethod::Drop()),
+                                    "drop".to_string(),
+                                    ScryptoValue::from_value(&ConsumingProofDropInput {}),
                                 )
                             })
                             .unwrap_or(Err(ProofNotFound(*proof_id))),
@@ -415,9 +418,10 @@ impl TransactionProcessor {
                             .and_then(|_| {
                                 for (_, real_id) in proof_id_mapping.drain() {
                                     system_api
-                                        .invoke_snode(
+                                        .invoke_snode2(
                                             SNodeRef::Proof(real_id),
-                                            ScryptoValue::from_value(&ConsumingProofMethod::Drop()),
+                                            "drop".to_string(),
+                                            ScryptoValue::from_value(&ConsumingProofDropInput {}),
                                         )
                                         .unwrap();
                                 }

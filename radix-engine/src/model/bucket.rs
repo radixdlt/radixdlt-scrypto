@@ -5,7 +5,11 @@ use sbor::rust::rc::Rc;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::resource::{BucketMethod, ConsumingBucketMethod};
+use scrypto::prelude::{
+    BucketCreateProofInput, BucketGetAmountInput, BucketGetNonFungibleIdsInput,
+    BucketGetResourceAddressInput, BucketPutInput, BucketTakeInput, BucketTakeNonFungiblesInput,
+    ConsumingBucketBurnInput,
+};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
@@ -23,6 +27,7 @@ pub enum BucketError {
     ResourceContainerError(ResourceContainerError),
     ProofError(ProofError),
     CouldNotCreateProof,
+    MethodNotFound(String),
 }
 
 /// A transient resource container.
@@ -156,16 +161,16 @@ impl Bucket {
     pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         bucket_id: BucketId,
+        method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, BucketError> {
-        let method: BucketMethod =
-            scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
-
-        match method {
-            BucketMethod::Take(amount) => {
+        match method_name {
+            "take" => {
+                let input: BucketTakeInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let container = self
-                    .take(amount)
+                    .take(input.amount)
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
                     .create_bucket(container)
@@ -174,9 +179,11 @@ impl Bucket {
                     bucket_id,
                 )))
             }
-            BucketMethod::TakeNonFungibles(ids) => {
+            "take_non_fungibles" => {
+                let input: BucketTakeNonFungiblesInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let container = self
-                    .take_non_fungibles(&ids)
+                    .take_non_fungibles(&input.ids)
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
                     .create_bucket(container)
@@ -185,25 +192,37 @@ impl Bucket {
                     bucket_id,
                 )))
             }
-            BucketMethod::GetNonFungibleIds() => {
+            "non_fungible_ids" => {
+                let _: BucketGetNonFungibleIdsInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let ids = self
                     .total_ids()
                     .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&ids))
             }
-            BucketMethod::Put(bucket) => {
+            "put" => {
+                let input: BucketPutInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .take_bucket(bucket.0)
+                    .take_bucket(input.bucket.0)
                     .map_err(|_| BucketError::CouldNotTakeBucket)?;
                 self.put(bucket)
                     .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_value(&()))
             }
-            BucketMethod::GetAmount() => Ok(ScryptoValue::from_value(&self.total_amount())),
-            BucketMethod::GetResourceAddress() => {
+            "amount" => {
+                let _: BucketGetAmountInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+                Ok(ScryptoValue::from_value(&self.total_amount()))
+            }
+            "resource_address" => {
+                let _: BucketGetResourceAddressInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_value(&self.resource_address()))
             }
-            BucketMethod::CreateProof() => {
+            "create_proof" => {
+                let _: BucketCreateProofInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let proof = self
                     .create_proof(bucket_id)
                     .map_err(BucketError::ProofError)?;
@@ -214,18 +233,20 @@ impl Bucket {
                     proof_id,
                 )))
             }
+            _ => Err(BucketError::MethodNotFound(method_name.to_string())),
         }
     }
 
     pub fn consuming_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         self,
+        method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, BucketError> {
-        let method: ConsumingBucketMethod =
-            scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
-        match method {
-            ConsumingBucketMethod::Burn() => {
+        match method_name {
+            "burn" => {
+                let _: ConsumingBucketBurnInput =
+                    scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 // Notify resource manager, TODO: Should not need to notify manually
                 let resource_address = self.resource_address();
                 let mut resource_manager = system_api
@@ -243,6 +264,7 @@ impl Bucket {
 
                 Ok(ScryptoValue::from_value(&()))
             }
+            _ => Err(BucketError::MethodNotFound(method_name.to_string())),
         }
     }
 }

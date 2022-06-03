@@ -5,52 +5,64 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
+use crate::abi::*;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions;
-use crate::types::*;
+use crate::sfunctions2;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ConsumingProofMethod {
-    Drop(),
-}
+pub struct ConsumingProofDropInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ProofMethod {
-    Amount(),
-    ResourceAddress(),
-    NonFungibleIds(),
-    Clone(),
-}
+pub struct ProofGetAmountInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ProofGetNonFungibleIdsInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ProofGetResourceAddressInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ProofCloneInput {}
 
 /// Represents a proof of owning some resource.
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
-    sfunctions! {
+    sfunctions2! {
         SNodeRef::ProofRef(self.0) => {
-            fn clone(&self) -> Self { ProofMethod::Clone() }
+            fn clone(&self) -> Self {
+                ProofCloneInput {}
+            }
         }
     }
 }
 
 impl Proof {
-    sfunctions! {
+    sfunctions2! {
         SNodeRef::ProofRef(self.0) => {
-            pub fn amount(&self) -> Decimal { ProofMethod::Amount() }
-            pub fn resource_address(&self) -> ResourceAddress { ProofMethod::ResourceAddress() }
-            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> { ProofMethod::NonFungibleIds() }
+            pub fn amount(&self) -> Decimal {
+                ProofGetAmountInput {}
+            }
+            pub fn non_fungible_ids(&self) -> BTreeSet<NonFungibleId> {
+                ProofGetNonFungibleIdsInput {}
+            }
+            pub fn resource_address(&self) -> ResourceAddress {
+                ProofGetResourceAddressInput {}
+            }
         }
     }
 
-    sfunctions! {
+    sfunctions2! {
         SNodeRef::Proof(self.0) => {
-            pub fn drop(self) -> () { ConsumingProofMethod::Drop() }
+            pub fn drop(self) -> () {
+                ConsumingProofDropInput {}
+            }
         }
     }
 

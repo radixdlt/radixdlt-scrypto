@@ -7,11 +7,14 @@ use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
-use scrypto::resource::ConsumingProofMethod;
-use scrypto::resource::ProofMethod;
+use scrypto::prelude::{
+    ProofCloneInput, ProofGetAmountInput, ProofGetNonFungibleIdsInput, ProofGetResourceAddressInput,
+};
+use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -45,6 +48,7 @@ pub enum ProofError {
     FungibleOperationNotAllowed,
     CouldNotCreateProof,
     InvalidRequestData(DecodeError),
+    UnknownMethod,
 }
 
 impl Proof {
@@ -330,22 +334,30 @@ impl Proof {
 
     pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
+        method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
-        let method: ProofMethod =
-            scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-
-        match method {
-            ProofMethod::Amount() => Ok(ScryptoValue::from_value(&self.total_amount())),
-            ProofMethod::NonFungibleIds() => {
-                let ids = self.total_ids()?;
-                Ok(ScryptoValue::from_value(&ids))
+        match method_name {
+            "amount" => {
+                let _: ProofGetAmountInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                Ok(ScryptoValue::from_value(&self.total_amount()))
             }
-            ProofMethod::ResourceAddress() => {
+            "non_fungible_ids" => {
+                let _: ProofGetNonFungibleIdsInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
+                let ids = self.total_ids()?;
+                return Ok(ScryptoValue::from_value(&ids));
+            }
+            "resource_address" => {
+                let _: ProofGetResourceAddressInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 Ok(ScryptoValue::from_value(&self.resource_address()))
             }
-            ProofMethod::Clone() => {
+            "clone" => {
+                let _: ProofCloneInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let cloned_proof = self.clone();
                 let proof_id = system_api
                     .create_proof(cloned_proof)
@@ -354,18 +366,23 @@ impl Proof {
                     proof_id,
                 )))
             }
+            _ => Err(UnknownMethod),
         }
     }
 
-    pub fn main_consume(self, arg: ScryptoValue) -> Result<ScryptoValue, ProofError> {
-        let method: ConsumingProofMethod =
-            scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-
-        match method {
-            ConsumingProofMethod::Drop() => {
+    pub fn main_consume(
+        self,
+        method_name: &str,
+        arg: ScryptoValue,
+    ) -> Result<ScryptoValue, ProofError> {
+        match method_name {
+            "drop" => {
+                let _: ConsumingProofDropInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 self.drop();
                 Ok(ScryptoValue::from_value(&()))
             }
+            _ => Err(UnknownMethod),
         }
     }
 }

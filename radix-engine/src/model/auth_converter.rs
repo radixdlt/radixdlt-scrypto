@@ -1,13 +1,13 @@
 use sbor::any::Value;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::abi::ScryptoType;
 use scrypto::engine::types::*;
 use scrypto::resource::{AccessRule, AccessRuleNode, SoftResource};
 use scrypto::resource::{
     NonFungibleAddress, ProofRule, SoftCount, SoftDecimal, SoftResourceOrNonFungible,
     SoftResourceOrNonFungibleList,
 };
-use scrypto::types::ScryptoType;
 
 use crate::model::method_authorization::{
     HardAuthRule, HardCount, HardDecimal, HardProofRule, HardProofRuleResourceList,
