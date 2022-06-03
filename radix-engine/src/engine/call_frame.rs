@@ -80,7 +80,6 @@ pub enum BorrowedSNodeState {
         ScryptoActorInfo,
         BlueprintAbi,
         ValidatedPackage,
-        String,
         Option<ComponentState>,
     ),
     Resource(ResourceAddress, ResourceManager),
@@ -114,7 +113,6 @@ pub enum SNodeState<'a> {
         ScryptoActorInfo,
         BlueprintAbi,
         ValidatedPackage,
-        String,
         Option<&'a mut ComponentState>,
     ),
     ResourceStatic,
@@ -163,12 +161,11 @@ impl LoadedSNodeState {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                BorrowedSNodeState::Scrypto(info, blueprint_abi, package, export_name, component_state) => {
+                BorrowedSNodeState::Scrypto(info, blueprint_abi, package, component_state) => {
                     SNodeState::Scrypto(
                         info.clone(),
                         blueprint_abi.clone(),
                         package.clone(),
-                        export_name.clone(),
                         component_state.as_mut(),
                     )
                 }
@@ -199,7 +196,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Worktop(worktop) => {
                 frame.worktop = Some(worktop);
             }
-            BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
+            BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
                 if let Some(component_address) = actor.component_address() {
                     frame.track.return_borrowed_global_mut_value(
                         component_address,
@@ -461,7 +458,7 @@ where
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'p>,
-        method_name: &str,
+        func_name: &str,
         call_data: ScryptoValue,
     ) -> Result<
         (
@@ -477,33 +474,33 @@ where
                 SNodeState::Root => {
                     panic!("Root is not runnable")
                 }
-                SNodeState::SystemStatic => System::static_main(method_name, call_data, self)
+                SNodeState::SystemStatic => System::static_main(func_name, call_data, self)
                     .map_err(RuntimeError::SystemError),
                 SNodeState::TransactionProcessorStatic => {
-                    TransactionProcessor::static_main(method_name, call_data, self).map_err(|e| match e {
+                    TransactionProcessor::static_main(func_name, call_data, self).map_err(|e| match e {
                         TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
                         TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
                         TransactionProcessorError::RuntimeError(e) => e,
                     })
                 }
-                SNodeState::PackageStatic => ValidatedPackage::static_main(method_name, call_data, self)
+                SNodeState::PackageStatic => ValidatedPackage::static_main(func_name, call_data, self)
                     .map_err(RuntimeError::PackageError),
                 SNodeState::AuthZoneRef(auth_zone) => auth_zone
-                    .main(method_name, call_data, self)
+                    .main(func_name, call_data, self)
                     .map_err(RuntimeError::AuthZoneError),
                 SNodeState::Worktop(worktop) => worktop
-                    .main(method_name, call_data, self)
+                    .main(func_name, call_data, self)
                     .map_err(RuntimeError::WorktopError),
-                SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
+                SNodeState::Scrypto(actor, blueprint_abi, package, component_state) => {
                     self.component_state = component_state;
 
-                    let rtn = package.invoke(actor, &blueprint_abi, export_name, method_name, call_data, self);
+                    let rtn = package.invoke(actor, &blueprint_abi, func_name, call_data, self);
                     match rtn {
                         Ok(scrypto_value) => {
-                            let function_abi = blueprint_abi.get_function_abi(method_name).unwrap();
+                            let function_abi = blueprint_abi.get_function_abi(func_name).unwrap();
                             if !function_abi.output.matches(&scrypto_value.dom) {
                                 Err(RuntimeError::InvalidMethodOutput {
-                                    function_name: method_name.to_string(),
+                                    function_name: func_name.to_string(),
                                     value: scrypto_value.dom
                                 })
                             } else {
@@ -513,29 +510,29 @@ where
                         Err(e) => Err(e)
                     }
                 }
-                SNodeState::ResourceStatic => ResourceManager::static_main(method_name, call_data, self)
+                SNodeState::ResourceStatic => ResourceManager::static_main(func_name, call_data, self)
                     .map_err(RuntimeError::ResourceManagerError),
                 SNodeState::ResourceRef(resource_address, resource_manager) => {
                     let return_value = resource_manager
-                        .main(resource_address, method_name, call_data, self)
+                        .main(resource_address, func_name, call_data, self)
                         .map_err(RuntimeError::ResourceManagerError)?;
 
                     Ok(return_value)
                 }
                 SNodeState::BucketRef(bucket_id, bucket) => bucket
-                    .main(bucket_id, method_name, call_data, self)
+                    .main(bucket_id, func_name, call_data, self)
                     .map_err(RuntimeError::BucketError),
                 SNodeState::Bucket(bucket) => bucket
-                    .consuming_main(method_name, call_data, self)
+                    .consuming_main(func_name, call_data, self)
                     .map_err(RuntimeError::BucketError),
                 SNodeState::ProofRef(_, proof) => proof
-                    .main(method_name, call_data, self)
+                    .main(func_name, call_data, self)
                     .map_err(RuntimeError::ProofError),
                 SNodeState::Proof(proof) => proof
-                    .main_consume(method_name, call_data)
+                    .main_consume(func_name, call_data)
                     .map_err(RuntimeError::ProofError),
                 SNodeState::VaultRef(vault_id, _, vault) => vault
-                    .main(vault_id, method_name, call_data, self)
+                    .main(vault_id, func_name, call_data, self)
                     .map_err(RuntimeError::VaultError),
             }?;
 
@@ -629,7 +626,6 @@ where
                                 arg: call_data.dom,
                             });
                         }
-                        let export_name = format!("{}_main", blueprint_name);
 
                         Ok((
                             Borrowed(BorrowedSNodeState::Scrypto(
@@ -639,7 +635,6 @@ where
                                 ),
                                 abi.clone(),
                                 package.clone(),
-                                export_name.clone(),
                                 None,
                             )),
                             vec![],
@@ -662,7 +657,6 @@ where
                             .into();
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
-                        let export_name = format!("{}_main", blueprint_name);
 
                         let substate_value = self
                             .track
@@ -704,7 +698,6 @@ where
                                 ),
                                 abi.clone(),
                                 package.clone(),
-                                export_name,
                                 Some(ComponentState {
                                     component_address,
                                     component,

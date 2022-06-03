@@ -33,7 +33,7 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiE
     let mut blueprints = HashMap::new();
     for method_name in function_exports {
         let rtn = instance
-            .invoke_export(&method_name, "", &ScryptoValue::unit(), &mut runtime_boxed)
+            .invoke_export(&method_name, &ScryptoValue::unit(), &mut runtime_boxed)
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: BlueprintAbi =

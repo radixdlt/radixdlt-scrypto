@@ -8,22 +8,22 @@ static mut MAX: [u8; 4] = u32::MAX.to_le_bytes();
 static mut ZERO: [u8; 4] = [0, 0, 0, 0];
 
 #[no_mangle]
-pub extern "C" fn LargeReturnSize_main(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn LargeReturnSize_f_main(_input: *mut u8) -> *mut u8 {
     unsafe { LARGE.as_mut_ptr() }
 }
 
 #[no_mangle]
-pub extern "C" fn MaxReturnSize_main(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn MaxReturnSize_f_main(_input: *mut u8) -> *mut u8 {
     unsafe { MAX.as_mut_ptr() }
 }
 
 #[no_mangle]
-pub extern "C" fn ZeroReturnSize_main(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn ZeroReturnSize_f_main(_input: *mut u8) -> *mut u8 {
     unsafe { ZERO.as_mut_ptr() }
 }
 
 #[no_mangle]
-pub extern "C" fn LargeReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn LargeReturnSize_abi(_input: *mut u8) -> *mut u8 {
     let value = Type::Struct {
         name: "LargeReturnSize".to_string(),
         fields: Fields::Unit,
@@ -32,7 +32,7 @@ pub extern "C" fn LargeReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut
         value,
         functions: vec![
             Function {
-                name: "something".to_string(),
+                name: "f".to_string(),
                 mutability: Option::None,
                 input: Type::Struct {
                     name: "Any".to_string(),
@@ -46,7 +46,7 @@ pub extern "C" fn LargeReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut
 }
 
 #[no_mangle]
-pub extern "C" fn MaxReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn MaxReturnSize_abi(_input: *mut u8) -> *mut u8 {
     let value = Type::Struct {
         name: "MaxReturnSize".to_string(),
         fields: Fields::Unit,
@@ -55,7 +55,7 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
         value,
         functions: vec![
             Function {
-                name: "something".to_string(),
+                name: "f".to_string(),
                 mutability: Option::None,
                 input: Type::Struct {
                     name: "Any".to_string(),
@@ -70,7 +70,7 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
 }
 
 #[no_mangle]
-pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8) -> *mut u8 {
     let value = Type::Struct {
         name: "ZeroReturnSize".to_string(),
         fields: Fields::Unit,
@@ -79,7 +79,7 @@ pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut 
         value,
         functions: vec![
             Function {
-                name: "something".to_string(),
+                name: "f".to_string(),
                 mutability: Option::None,
                 input: Type::Struct {
                     name: "Any".to_string(),

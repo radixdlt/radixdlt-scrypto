@@ -25,12 +25,72 @@ blueprint! {
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_main(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn AbiComponent2_invalid_output_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_unit_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_bool_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_i8_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_i16_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_i32_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_i64_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_i128_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_u8_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_u16_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_u32_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_u64_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_u128_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_result_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_tree_map_main(_input: *mut u8) -> *mut u8 {
+    ::scrypto::buffer::scrypto_encode_to_buffer(&())
+}
+#[no_mangle]
+pub extern "C" fn AbiComponent2_hash_set_main(_input: *mut u8) -> *mut u8 {
     ::scrypto::buffer::scrypto_encode_to_buffer(&())
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
     let value = Type::Struct {
         name: "AbiComponent2".to_string(),
         fields: Fields::Unit,

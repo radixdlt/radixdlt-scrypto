@@ -21,8 +21,7 @@ pub trait WasmInstance {
     /// to be able to store them in `usize`.
     fn invoke_export<'r>(
         &mut self,
-        name: &str,
-        method_name: &str,
+        func_name: &str,
         arg: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError>;

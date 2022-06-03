@@ -112,7 +112,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let abi_functions = generate_abi(bp_ident, bp_items)?;
     let output_abi = quote! {
         #[no_mangle]
-        pub extern "C" fn #abi_ident(input: *mut u8, input2: *mut u8) -> *mut u8 {
+        pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
             use ::sbor::{Describe, Type};
             use ::scrypto::abi::{BlueprintAbi, Function};
             use ::sbor::rust::borrow::ToOwned;
@@ -651,7 +651,7 @@ mod tests {
                     rtn
                 }
                 #[no_mangle]
-                pub extern "C" fn Test_abi(input: *mut u8, input2: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{BlueprintAbi, Function};
                     use ::sbor::rust::borrow::ToOwned;
@@ -739,7 +739,7 @@ mod tests {
                     panic!("No invocation expected")
                 }
                 #[no_mangle]
-                pub extern "C" fn Test_abi(input: *mut u8, input2: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{BlueprintAbi, Function};
                     use ::sbor::rust::borrow::ToOwned;
