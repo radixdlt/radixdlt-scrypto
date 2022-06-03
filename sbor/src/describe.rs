@@ -131,6 +131,13 @@ impl Type {
                 }
             }
             */
+            Type::Vec { element: type_element } => {
+                if let Value::Vec { element_type_id: _, elements } = value {
+                    elements.iter().all(|v| type_element.matches(v))
+                } else {
+                    false
+                }
+            }
             Type::Struct { name: _, fields: type_fields } => {
                 if let Value::Struct { fields } = value {
                     match type_fields {
@@ -146,6 +153,35 @@ impl Type {
                     false
                 }
             }
+            Type::Enum { name: _, variants: type_variants } => {
+                if let Value::Enum { name, fields } = value {
+                    for variant in type_variants {
+                        if variant.name.eq(name) {
+                            return match &variant.fields {
+                                Fields::Unit => fields.is_empty(),
+                                Fields::Unnamed { unnamed } =>
+                                    unnamed.len() == fields.len()
+                                        && unnamed.iter().enumerate().all(|(i, e)| e.matches(fields.get(i).unwrap())),
+                                Fields::Named { named } =>
+                                    named.len() == fields.len()
+                                        && named.iter().enumerate().all(|(i, (_, e))| e.matches(fields.get(i).unwrap())),
+                            };
+                        }
+                    }
+                    false
+                } else {
+                    false
+                }
+            }
+            Type::Custom { type_id: type_type_id, generics: _ } => {
+                if let Value::Custom { type_id, bytes: _ } = value {
+                    // TODO: check generics
+                    *type_type_id == *type_id
+                } else {
+                    false
+                }
+            }
+            Type::Any => true,
             _ => false
         }
     }
