@@ -13,7 +13,8 @@ use crate::validation::*;
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub struct ValidatedTransaction {
     pub transaction: Transaction,
-    pub validated_instructions: Vec<ValidatedInstruction>,
+    pub transaction_hash: Hash,
+    pub instructions: Vec<ExecutableInstruction>,
     pub signers: Vec<EcdsaPublicKey>,
 }
 
@@ -32,7 +33,7 @@ impl ValidatedTransaction {
         transaction: Transaction,
         current_epoch: u64,
     ) -> Result<Self, TransactionValidationError> {
-        let mut validated_instructions = vec![];
+        let mut instructions = vec![];
 
         // verify header and signature
         transaction
@@ -50,8 +51,7 @@ impl ValidatedTransaction {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions
-                        .push(ValidatedInstruction::TakeFromWorktop { resource_address });
+                    instructions.push(ExecutableInstruction::TakeFromWorktop { resource_address });
                 }
                 Instruction::TakeFromWorktopByAmount {
                     amount,
@@ -60,7 +60,7 @@ impl ValidatedTransaction {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions.push(ValidatedInstruction::TakeFromWorktopByAmount {
+                    instructions.push(ExecutableInstruction::TakeFromWorktopByAmount {
                         amount,
                         resource_address,
                     });
@@ -72,7 +72,7 @@ impl ValidatedTransaction {
                     id_validator
                         .new_bucket()
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions.push(ValidatedInstruction::TakeFromWorktopByIds {
+                    instructions.push(ExecutableInstruction::TakeFromWorktopByIds {
                         ids,
                         resource_address,
                     });
@@ -81,29 +81,26 @@ impl ValidatedTransaction {
                     id_validator
                         .drop_bucket(bucket_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions
-                        .push(ValidatedInstruction::ReturnToWorktop { bucket_id });
+                    instructions.push(ExecutableInstruction::ReturnToWorktop { bucket_id });
                 }
                 Instruction::AssertWorktopContains { resource_address } => {
-                    validated_instructions
-                        .push(ValidatedInstruction::AssertWorktopContains { resource_address });
+                    instructions
+                        .push(ExecutableInstruction::AssertWorktopContains { resource_address });
                 }
                 Instruction::AssertWorktopContainsByAmount {
                     amount,
                     resource_address,
                 } => {
-                    validated_instructions.push(
-                        ValidatedInstruction::AssertWorktopContainsByAmount {
-                            amount,
-                            resource_address,
-                        },
-                    );
+                    instructions.push(ExecutableInstruction::AssertWorktopContainsByAmount {
+                        amount,
+                        resource_address,
+                    });
                 }
                 Instruction::AssertWorktopContainsByIds {
                     ids,
                     resource_address,
                 } => {
-                    validated_instructions.push(ValidatedInstruction::AssertWorktopContainsByIds {
+                    instructions.push(ExecutableInstruction::AssertWorktopContainsByIds {
                         ids,
                         resource_address,
                     });
@@ -112,23 +109,23 @@ impl ValidatedTransaction {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions.push(ValidatedInstruction::PopFromAuthZone);
+                    instructions.push(ExecutableInstruction::PopFromAuthZone);
                 }
                 Instruction::PushToAuthZone { proof_id } => {
                     id_validator
                         .drop_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions.push(ValidatedInstruction::PushToAuthZone { proof_id });
+                    instructions.push(ExecutableInstruction::PushToAuthZone { proof_id });
                 }
                 Instruction::ClearAuthZone => {
-                    validated_instructions.push(ValidatedInstruction::ClearAuthZone);
+                    instructions.push(ExecutableInstruction::ClearAuthZone);
                 }
                 Instruction::CreateProofFromAuthZone { resource_address } => {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions
-                        .push(ValidatedInstruction::CreateProofFromAuthZone { resource_address });
+                    instructions
+                        .push(ExecutableInstruction::CreateProofFromAuthZone { resource_address });
                 }
                 Instruction::CreateProofFromAuthZoneByAmount {
                     amount,
@@ -137,12 +134,10 @@ impl ValidatedTransaction {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions.push(
-                        ValidatedInstruction::CreateProofFromAuthZoneByAmount {
-                            amount,
-                            resource_address,
-                        },
-                    );
+                    instructions.push(ExecutableInstruction::CreateProofFromAuthZoneByAmount {
+                        amount,
+                        resource_address,
+                    });
                 }
                 Instruction::CreateProofFromAuthZoneByIds {
                     ids,
@@ -151,38 +146,35 @@ impl ValidatedTransaction {
                     id_validator
                         .new_proof(ProofKind::AuthZoneProof)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions.push(
-                        ValidatedInstruction::CreateProofFromAuthZoneByIds {
-                            ids,
-                            resource_address,
-                        },
-                    );
+                    instructions.push(ExecutableInstruction::CreateProofFromAuthZoneByIds {
+                        ids,
+                        resource_address,
+                    });
                 }
                 Instruction::CreateProofFromBucket { bucket_id } => {
                     id_validator
                         .new_proof(ProofKind::BucketProof(bucket_id))
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions
-                        .push(ValidatedInstruction::CreateProofFromBucket { bucket_id });
+                    instructions.push(ExecutableInstruction::CreateProofFromBucket { bucket_id });
                 }
                 Instruction::CloneProof { proof_id } => {
                     id_validator
                         .clone_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions.push(ValidatedInstruction::CloneProof { proof_id });
+                    instructions.push(ExecutableInstruction::CloneProof { proof_id });
                 }
                 Instruction::DropProof { proof_id } => {
                     id_validator
                         .drop_proof(proof_id)
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions.push(ValidatedInstruction::DropProof { proof_id });
+                    instructions.push(ExecutableInstruction::DropProof { proof_id });
                 }
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
                     call_data,
                 } => {
-                    validated_instructions.push(ValidatedInstruction::CallFunction {
+                    instructions.push(ExecutableInstruction::CallFunction {
                         package_address,
                         blueprint_name,
                         call_data: Self::validate_call_data(call_data, &mut id_validator)
@@ -193,7 +185,7 @@ impl ValidatedTransaction {
                     component_address,
                     call_data,
                 } => {
-                    validated_instructions.push(ValidatedInstruction::CallMethod {
+                    instructions.push(ExecutableInstruction::CallMethod {
                         component_address,
                         call_data: Self::validate_call_data(call_data, &mut id_validator)
                             .map_err(TransactionValidationError::CallDataValidationError)?,
@@ -206,16 +198,19 @@ impl ValidatedTransaction {
                     id_validator
                         .move_all_resources()
                         .map_err(TransactionValidationError::IdValidationError)?;
-                    validated_instructions.push(ValidatedInstruction::CallMethodWithAllResources {
+                    instructions.push(ExecutableInstruction::CallMethodWithAllResources {
                         component_address,
                         method,
                     });
                 }
                 Instruction::PublishPackage { package } => {
-                    validated_instructions.push(ValidatedInstruction::PublishPackage { package });
+                    instructions.push(ExecutableInstruction::PublishPackage { package });
                 }
             }
         }
+
+        // TODO: whether to use intent hash or transaction hash
+        let transaction_hash = transaction.hash();
 
         let signers = transaction
             .signed_intent
@@ -226,7 +221,8 @@ impl ValidatedTransaction {
 
         Ok(Self {
             transaction,
-            validated_instructions,
+            transaction_hash,
+            instructions,
             signers,
         })
     }
@@ -249,5 +245,19 @@ impl ValidatedTransaction {
             ));
         }
         Ok(value)
+    }
+}
+
+impl ExecutableTransaction for ValidatedTransaction {
+    fn transaction_hash(&self) -> Hash {
+        todo!()
+    }
+
+    fn instructions(&self) -> &[ExecutableInstruction] {
+        todo!()
+    }
+
+    fn signers(&self) -> &[EcdsaPublicKey] {
+        todo!()
     }
 }

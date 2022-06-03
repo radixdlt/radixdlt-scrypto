@@ -2,11 +2,13 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
+/// Represents an instruction that can be executed by Radix Engine.
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum ValidatedInstruction {
+pub enum ExecutableInstruction {
     TakeFromWorktop {
         resource_address: ResourceAddress,
     },
@@ -73,4 +75,16 @@ pub enum ValidatedInstruction {
     PublishPackage {
         package: Vec<u8>,
     },
+}
+
+/// A common trait for all transactions that can be executed by Radix Engine.
+pub trait ExecutableTransaction {
+    /// Returns the transaction hash, which must be globally unique.
+    fn transaction_hash(&self) -> Hash;
+
+    /// Returns the instructions to execute.
+    fn instructions(&self) -> &[ExecutableInstruction];
+
+    /// Returns the public key of signers.
+    fn signers(&self) -> &[EcdsaPublicKey];
 }
