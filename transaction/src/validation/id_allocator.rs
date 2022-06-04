@@ -97,7 +97,7 @@ impl IdAllocator {
     pub fn new_lazy_map_id(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<LazyMapId, IdAllocatorError> {
+    ) -> Result<KeyValueStoreId, IdAllocatorError> {
         Ok((transaction_hash, self.next()?))
     }
 }

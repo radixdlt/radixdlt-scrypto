@@ -10,13 +10,13 @@ use sbor::*;
 use crate::abi::*;
 use crate::buffer::*;
 use crate::crypto::*;
-use crate::engine::{api::*, call_engine, types::LazyMapId};
+use crate::engine::{api::*, call_engine, types::KeyValueStoreId};
 use crate::misc::*;
 
 /// A scalable key-value map which loads entries on demand.
 #[derive(PartialEq, Eq, Hash)]
 pub struct LazyMap<K: Encode + Decode, V: Encode + Decode> {
-    pub id: LazyMapId,
+    pub id: KeyValueStoreId,
     pub key: PhantomData<K>,
     pub value: PhantomData<V>,
 }
@@ -25,7 +25,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
     /// Creates a new lazy map.
     pub fn new() -> Self {
         let input = RadixEngineInput::CreateLazyMap();
-        let output: LazyMapId = call_engine(input);
+        let output: KeyValueStoreId = call_engine(input);
 
         Self {
             id: output,

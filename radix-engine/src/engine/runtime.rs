@@ -120,14 +120,14 @@ where
         Ok((package_address, blueprint_name))
     }
 
-    fn handle_create_lazy_map(&mut self) -> Result<LazyMapId, RuntimeError> {
+    fn handle_create_lazy_map(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
         let lazy_map_id = self.system_api.create_lazy_map();
         Ok(lazy_map_id)
     }
 
     fn handle_get_lazy_map_entry(
         &mut self,
-        lazy_map_id: LazyMapId,
+        lazy_map_id: KeyValueStoreId,
         key: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key =
@@ -140,7 +140,7 @@ where
 
     fn handle_put_lazy_map_entry(
         &mut self,
-        lazy_map_id: LazyMapId,
+        lazy_map_id: KeyValueStoreId,
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<(), RuntimeError> {

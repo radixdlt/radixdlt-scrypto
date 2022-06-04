@@ -43,7 +43,7 @@ pub enum TransactionValidationError {
     ParseScryptoValueError(ParseScryptoValueError),
     IdValidatorError(IdValidatorError),
     VaultNotAllowed(VaultId),
-    LazyMapNotAllowed(LazyMapId),
+    LazyMapNotAllowed(KeyValueStoreId),
     InvalidSignature,
 }
 

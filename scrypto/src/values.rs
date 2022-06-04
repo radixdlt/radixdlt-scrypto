@@ -38,7 +38,7 @@ pub struct ScryptoValue {
     pub bucket_ids: HashMap<BucketId, SborPath>,
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
-    pub lazy_map_ids: HashSet<LazyMapId>,
+    pub lazy_map_ids: HashSet<KeyValueStoreId>,
 }
 
 // FIXME: encode as the original type, rather than Vec<u8>

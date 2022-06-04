@@ -1,4 +1,3 @@
-use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -48,14 +47,14 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
-    /// Lazy map does not exist.
-    LazyMapNotFound(LazyMapId),
+    /// Key Value Store does not exist.
+    KeyValueStoreNotFound(KeyValueStoreId),
 
-    /// Lazy map removed.
-    LazyMapRemoved(LazyMapId),
+    /// Key Value Store removed.
+    KeyValueStoreRemoved(KeyValueStoreId),
 
     /// Cyclic LazyMap added
-    CyclicLazyMap(LazyMapId),
+    CyclicLazyMap(KeyValueStoreId),
 
     /// Vault does not exist.
     VaultNotFound(VaultId),

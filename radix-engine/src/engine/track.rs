@@ -74,7 +74,7 @@ pub enum Address {
     Component(ComponentAddress),
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
-    LazyMap(ComponentAddress, LazyMapId),
+    LazyMap(ComponentAddress, KeyValueStoreId),
     Vault(ComponentAddress, VaultId),
 }
 
@@ -328,7 +328,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn create_key_space(
         &mut self,
         component_address: ComponentAddress,
-        lazy_map_id: LazyMapId,
+        lazy_map_id: KeyValueStoreId,
     ) {
         let mut space_address = scrypto_encode(&component_address);
         space_address.extend(scrypto_encode(&lazy_map_id));
@@ -535,7 +535,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new map id.
-    pub fn new_lazy_map_id(&mut self) -> LazyMapId {
+    pub fn new_lazy_map_id(&mut self) -> KeyValueStoreId {
         self.id_allocator
             .new_lazy_map_id(self.transaction_hash())
             .unwrap()
@@ -580,14 +580,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         for (vault_id, vault) in new_objects.vaults {
             self.create_uuid_value_2((component_address, vault_id), vault);
         }
-        for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
+        for (lazy_map_id, unclaimed) in new_objects.kv_stores {
             self.create_key_space(component_address, lazy_map_id);
-            for (k, v) in unclaimed.lazy_map {
+            for (k, v) in unclaimed.kv_store {
                 let parent_address = Address::LazyMap(component_address, lazy_map_id);
                 self.set_key_value(parent_address, k, Some(v));
             }
 
-            for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
+            for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_kv_stores {
                 self.create_key_space(component_address, child_lazy_map_id);
                 for (k, v) in child_lazy_map {
                     let parent_address = Address::LazyMap(component_address, child_lazy_map_id);

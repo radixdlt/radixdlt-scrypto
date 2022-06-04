@@ -163,7 +163,7 @@ fn cannot_remove_lazy_maps() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::LazyMapRemoved(_) => {}
+        RuntimeError::KeyValueStoreRemoved(_) => {}
         _ => panic!("Should be lazy map removed error but was {}", runtime_error),
     }
 }
@@ -197,7 +197,7 @@ fn cannot_overwrite_lazy_maps() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::LazyMapRemoved(_) => {}
+        RuntimeError::KeyValueStoreRemoved(_) => {}
         _ => panic!("Should be lazy map removed error but was {}", runtime_error),
     }
 }

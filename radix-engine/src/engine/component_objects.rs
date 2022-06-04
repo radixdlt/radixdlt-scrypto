@@ -7,18 +7,18 @@ use crate::engine::*;
 use crate::model::*;
 
 #[derive(Debug)]
-pub struct UnclaimedLazyMap {
-    pub lazy_map: HashMap<Vec<u8>, ScryptoValue>,
-    /// All descendents (not just direct children) of the unclaimed lazy map
-    pub descendent_lazy_maps: HashMap<LazyMapId, HashMap<Vec<u8>, ScryptoValue>>,
+pub struct UnclaimedKeyValueStore {
+    pub kv_store: HashMap<Vec<u8>, ScryptoValue>,
+    /// All descendents (not just direct children) of the store
+    pub descendent_kv_stores: HashMap<KeyValueStoreId, HashMap<Vec<u8>, ScryptoValue>>,
     pub descendent_vaults: HashMap<VaultId, Vault>,
 }
 
-impl UnclaimedLazyMap {
+impl UnclaimedKeyValueStore {
     pub fn new() -> Self {
-        UnclaimedLazyMap {
-            lazy_map: HashMap::new(),
-            descendent_lazy_maps: HashMap::new(),
+        UnclaimedKeyValueStore {
+            kv_store: HashMap::new(),
+            descendent_kv_stores: HashMap::new(),
             descendent_vaults: HashMap::new(),
         }
     }
@@ -31,29 +31,29 @@ impl UnclaimedLazyMap {
         self.descendent_vaults.insert(vault_id, vault);
     }
 
-    fn insert_lazy_map(
+    fn insert_kv_store(
         &mut self,
-        lazy_map_id: LazyMapId,
-        lazy_map: HashMap<Vec<u8>, ScryptoValue>,
+        kv_store_id: KeyValueStoreId,
+        kv_store: HashMap<Vec<u8>, ScryptoValue>,
     ) {
-        if self.descendent_lazy_maps.contains_key(&lazy_map_id) {
-            panic!("duplicate map insertion: {:?}", lazy_map_id);
+        if self.descendent_kv_stores.contains_key(&kv_store_id) {
+            panic!("duplicate map insertion: {:?}", kv_store_id);
         }
 
-        self.descendent_lazy_maps.insert(lazy_map_id, lazy_map);
+        self.descendent_kv_stores.insert(kv_store_id, kv_store);
     }
 
-    fn insert_map_descendent(
+    fn insert_store_descendent(
         &mut self,
-        unclaimed_lazy_map: UnclaimedLazyMap,
-        lazy_map_id: LazyMapId,
+        unclaimed_kv_store: UnclaimedKeyValueStore,
+        kv_store_id: KeyValueStoreId,
     ) {
-        self.insert_lazy_map(lazy_map_id, unclaimed_lazy_map.lazy_map);
+        self.insert_kv_store(kv_store_id, unclaimed_kv_store.kv_store);
 
-        for (lazy_map_id, lazy_map) in unclaimed_lazy_map.descendent_lazy_maps {
-            self.insert_lazy_map(lazy_map_id, lazy_map);
+        for (kv_store_id, kv_store) in unclaimed_kv_store.descendent_kv_stores {
+            self.insert_kv_store(kv_store_id, kv_store);
         }
-        for (vault_id, vault) in unclaimed_lazy_map.descendent_vaults {
+        for (vault_id, vault) in unclaimed_kv_store.descendent_vaults {
             self.insert_vault(vault_id, vault);
         }
     }
@@ -63,28 +63,28 @@ impl UnclaimedLazyMap {
             self.insert_vault(vault_id, vault);
         }
 
-        for (lazy_map_id, child_lazy_map) in new_descendents.lazy_maps {
-            self.insert_map_descendent(child_lazy_map, lazy_map_id);
+        for (kv_store_id, child_kv_store) in new_descendents.kv_stores {
+            self.insert_store_descendent(child_kv_store, kv_store_id);
         }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct ComponentObjectRefs {
-    pub lazy_map_ids: HashSet<LazyMapId>,
+    pub kv_store_ids: HashSet<KeyValueStoreId>,
     pub vault_ids: HashSet<VaultId>,
 }
 
 impl ComponentObjectRefs {
     pub fn new() -> Self {
         ComponentObjectRefs {
-            lazy_map_ids: HashSet::new(),
+            kv_store_ids: HashSet::new(),
             vault_ids: HashSet::new(),
         }
     }
 
     pub fn extend(&mut self, other: ComponentObjectRefs) {
-        self.lazy_map_ids.extend(other.lazy_map_ids);
+        self.kv_store_ids.extend(other.kv_store_ids);
         self.vault_ids.extend(other.vault_ids);
     }
 
@@ -96,9 +96,9 @@ impl ComponentObjectRefs {
             }
         }
 
-        for lazy_map_id in &other.lazy_map_ids {
-            if !self.lazy_map_ids.remove(&lazy_map_id) {
-                return Err(RuntimeError::LazyMapRemoved(*lazy_map_id));
+        for kv_store_id in &other.kv_store_ids {
+            if !self.kv_store_ids.remove(&kv_store_id) {
+                return Err(RuntimeError::KeyValueStoreRemoved(*kv_store_id));
             }
         }
 
@@ -109,18 +109,18 @@ impl ComponentObjectRefs {
 /// Component type objects which will eventually move into a component
 #[derive(Debug)]
 pub struct ComponentObjects {
-    /// Lazy maps which haven't been assigned to a component or lazy map yet.
-    /// Keeps track of vault and lazy map descendents.
-    pub lazy_maps: HashMap<LazyMapId, UnclaimedLazyMap>,
-    /// Vaults which haven't been assigned to a component or lazy map yet.
+    /// Key/Value stores which haven't been assigned to a component or another store yet.
+    /// Keeps track of vault and store descendents.
+    pub kv_stores: HashMap<KeyValueStoreId, UnclaimedKeyValueStore>,
+    /// Vaults which haven't been assigned to a component or store yet.
     pub vaults: HashMap<VaultId, Vault>,
-    borrowed_vault: Option<(VaultId, Option<LazyMapId>)>,
+    borrowed_vault: Option<(VaultId, Option<KeyValueStoreId>)>,
 }
 
 impl ComponentObjects {
     pub fn new() -> Self {
         ComponentObjects {
-            lazy_maps: HashMap::new(),
+            kv_stores: HashMap::new(),
             vaults: HashMap::new(),
             borrowed_vault: None,
         }
@@ -132,7 +132,7 @@ impl ComponentObjects {
         }
 
         let mut vaults = HashMap::new();
-        let mut lazy_maps = HashMap::new();
+        let mut kv_stores = HashMap::new();
 
         for vault_id in other.vault_ids {
             let vault = self
@@ -142,17 +142,17 @@ impl ComponentObjects {
             vaults.insert(vault_id, vault);
         }
 
-        for lazy_map_id in other.lazy_map_ids {
-            let lazy_map = self
-                .lazy_maps
-                .remove(&lazy_map_id)
-                .ok_or(RuntimeError::LazyMapNotFound(lazy_map_id))?;
-            lazy_maps.insert(lazy_map_id, lazy_map);
+        for kv_store_id in other.kv_store_ids {
+            let kv_store = self
+                .kv_stores
+                .remove(&kv_store_id)
+                .ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id))?;
+            kv_stores.insert(kv_store_id, kv_store);
         }
 
         Ok(ComponentObjects {
             vaults,
-            lazy_maps,
+            kv_stores,
             borrowed_vault: None,
         })
     }
@@ -160,19 +160,19 @@ impl ComponentObjects {
     pub fn insert_objects_into_map(
         &mut self,
         new_objects: ComponentObjects,
-        lazy_map_id: &LazyMapId,
+        kv_store_id: &KeyValueStoreId,
     ) {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
-        let unclaimed_map = self.lazy_maps.get_mut(lazy_map_id).unwrap();
+        let unclaimed_map = self.kv_stores.get_mut(kv_store_id).unwrap();
         unclaimed_map.insert_descendents(new_objects);
     }
 
-    pub fn insert_lazy_map_entry(
+    pub fn insert_kv_store_entry(
         &mut self,
-        lazy_map_id: &LazyMapId,
+        kv_store_id: &KeyValueStoreId,
         key: Vec<u8>,
         value: ScryptoValue,
     ) {
@@ -180,40 +180,40 @@ impl ComponentObjects {
             panic!("Should not be taking while value is being borrowed");
         }
 
-        let (_, lazy_map) = self.get_lazy_map_mut(lazy_map_id).unwrap();
-        lazy_map.insert(key, value);
+        let (_, kv_store) = self.get_kv_store_mut(kv_store_id).unwrap();
+        kv_store.insert(key, value);
     }
 
-    pub fn get_lazy_map_entry(
+    pub fn get_kv_store_entry(
         &mut self,
-        lazy_map_id: &LazyMapId,
+        kv_store_id: &KeyValueStoreId,
         key: &[u8],
-    ) -> Option<(LazyMapId, Option<ScryptoValue>)> {
+    ) -> Option<(KeyValueStoreId, Option<ScryptoValue>)> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
-        self.get_lazy_map_mut(lazy_map_id)
-            .map(|(lazy_map_id, lazy_map)| (lazy_map_id, lazy_map.get(key).map(|v| v.clone())))
+        self.get_kv_store_mut(kv_store_id)
+            .map(|(kv_store_id, kv_store)| (kv_store_id, kv_store.get(key).map(|v| v.clone())))
     }
 
-    fn get_lazy_map_mut(
+    fn get_kv_store_mut(
         &mut self,
-        lazy_map_id: &LazyMapId,
-    ) -> Option<(LazyMapId, &mut HashMap<Vec<u8>, ScryptoValue>)> {
+        kv_store_id: &KeyValueStoreId,
+    ) -> Option<(KeyValueStoreId, &mut HashMap<Vec<u8>, ScryptoValue>)> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
         // TODO: Optimize to prevent iteration
-        for (root, unclaimed) in self.lazy_maps.iter_mut() {
-            if lazy_map_id.eq(root) {
-                return Some((root.clone(), &mut unclaimed.lazy_map));
+        for (root, unclaimed) in self.kv_stores.iter_mut() {
+            if kv_store_id.eq(root) {
+                return Some((root.clone(), &mut unclaimed.kv_store));
             }
 
-            let lazy_map = unclaimed.descendent_lazy_maps.get_mut(lazy_map_id);
-            if lazy_map.is_some() {
-                return Some((root.clone(), lazy_map.unwrap()));
+            let kv_store = unclaimed.descendent_kv_stores.get_mut(kv_store_id);
+            if kv_store.is_some() {
+                return Some((root.clone(), kv_store.unwrap()));
             }
         }
 
@@ -230,9 +230,9 @@ impl ComponentObjects {
             return Some(vault);
         }
 
-        for (lazy_map_id, unclaimed) in self.lazy_maps.iter_mut() {
+        for (kv_store_id, unclaimed) in self.kv_stores.iter_mut() {
             if let Some(vault) = unclaimed.descendent_vaults.remove(vault_id) {
-                self.borrowed_vault = Some((*vault_id, Some(*lazy_map_id)));
+                self.borrowed_vault = Some((*vault_id, Some(*kv_store_id)));
                 return Some(vault);
             }
         }
@@ -243,7 +243,7 @@ impl ComponentObjects {
     pub fn return_borrowed_vault_mut(&mut self, vault: Vault) {
         if let Some((vault_id, maybe_ancestor)) = self.borrowed_vault.take() {
             if let Some(ancestor_id) = maybe_ancestor {
-                self.lazy_maps
+                self.kv_stores
                     .get_mut(&ancestor_id)
                     .unwrap()
                     .descendent_vaults

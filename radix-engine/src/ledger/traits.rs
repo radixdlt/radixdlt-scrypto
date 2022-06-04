@@ -9,7 +9,7 @@ pub trait QueryableSubstateStore {
     fn get_lazy_map_entries(
         &self,
         component_address: ComponentAddress,
-        lazy_map_id: &LazyMapId,
+        lazy_map_id: &KeyValueStoreId,
     ) -> HashMap<Vec<u8>, Vec<u8>>;
 }
 
