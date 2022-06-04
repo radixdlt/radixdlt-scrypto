@@ -86,7 +86,8 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             // Find all vaults owned by the component, assuming a tree structure.
             let mut vaults_found: HashSet<VaultId> = state_data.vault_ids.iter().cloned().collect();
-            let mut queue: VecDeque<KeyValueStoreId> = state_data.kv_store_ids.iter().cloned().collect();
+            let mut queue: VecDeque<KeyValueStoreId> =
+                state_data.kv_store_ids.iter().cloned().collect();
             while !queue.is_empty() {
                 let kv_store_id = queue.pop_front().unwrap();
                 let (maps, vaults) =

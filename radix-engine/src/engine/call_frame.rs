@@ -350,7 +350,10 @@ where
         for (kv_store_id, kv_store) in &self.owned_snodes.kv_stores {
             self.sys_log(
                 Level::Warn,
-                format!("Dangling key/value store: {:?}, {:?}", kv_store_id, kv_store),
+                format!(
+                    "Dangling key/value store: {:?}, {:?}",
+                    kv_store_id, kv_store
+                ),
             );
             resource = ResourceFailure::UnclaimedKeyValueStore;
             success = false;
@@ -1097,9 +1100,10 @@ where
         }) = &mut self.component_state
         {
             if snode_refs.kv_store_ids.contains(&kv_store_id) {
-                let substate_value = self
-                    .track
-                    .read_key_value(Address::KeyValueStore(*component_address, kv_store_id), key.raw);
+                let substate_value = self.track.read_key_value(
+                    Address::KeyValueStore(*component_address, kv_store_id),
+                    key.raw,
+                );
                 let value = match substate_value {
                     SubstateValue::KeyValueStoreEntry(v) => v,
                     _ => panic!("Substate value is not a KeyValueStore entry"),

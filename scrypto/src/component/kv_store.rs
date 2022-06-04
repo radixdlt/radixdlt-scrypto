@@ -121,11 +121,14 @@ impl<K: Encode + Decode, V: Encode + Decode> Decode for KeyValueStore<K, V> {
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
         let len = decoder.read_len()?;
         let slice = decoder.read_bytes(len)?;
-        Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData(ScryptoType::KeyValueStore.id()))
+        Self::try_from(slice)
+            .map_err(|_| DecodeError::InvalidCustomData(ScryptoType::KeyValueStore.id()))
     }
 }
 
-impl<K: Encode + Decode + Describe, V: Encode + Decode + Describe> Describe for KeyValueStore<K, V> {
+impl<K: Encode + Decode + Describe, V: Encode + Decode + Describe> Describe
+    for KeyValueStore<K, V>
+{
     fn describe() -> Type {
         Type::Custom {
             type_id: ScryptoType::KeyValueStore.id(),
@@ -142,7 +145,8 @@ impl<K: Encode + Decode, V: Encode + Decode> FromStr for KeyValueStore<K, V> {
     type Err = ParseKeyValueStoreError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s).map_err(|_| ParseKeyValueStoreError::InvalidHex(s.to_owned()))?;
+        let bytes =
+            hex::decode(s).map_err(|_| ParseKeyValueStoreError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }

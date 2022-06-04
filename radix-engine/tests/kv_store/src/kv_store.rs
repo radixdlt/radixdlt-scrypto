@@ -85,7 +85,8 @@ blueprint! {
         }
 
         pub fn overwrite_lazy_map(&mut self) -> () {
-            self.lazy_maps.insert("hello".to_owned(), KeyValueStore::new())
+            self.lazy_maps
+                .insert("hello".to_owned(), KeyValueStore::new())
         }
 
         pub fn clear_vector(&mut self) -> () {

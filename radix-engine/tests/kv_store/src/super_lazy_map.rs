@@ -2,7 +2,10 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct SuperLazyMap {
-        maps: KeyValueStore<u32, KeyValueStore<u32, KeyValueStore<u32, KeyValueStore<String, String>>>>,
+        maps: KeyValueStore<
+            u32,
+            KeyValueStore<u32, KeyValueStore<u32, KeyValueStore<String, String>>>,
+        >,
     }
 
     impl SuperLazyMap {

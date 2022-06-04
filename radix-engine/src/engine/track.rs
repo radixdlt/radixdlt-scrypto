@@ -425,7 +425,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         address.extend(key);
         if let Some(cur) = self.up_substates.get(&address) {
             match cur {
-                SubstateValue::KeyValueStoreEntry(e) => return SubstateValue::KeyValueStoreEntry(e.clone()),
+                SubstateValue::KeyValueStoreEntry(e) => {
+                    return SubstateValue::KeyValueStoreEntry(e.clone())
+                }
                 SubstateValue::NonFungible(n) => return SubstateValue::NonFungible(n.clone()),
                 _ => panic!("Unsupported key value"),
             }
@@ -590,7 +592,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             for (child_kv_store_id, child_kv_store) in unclaimed.descendent_kv_stores {
                 self.create_key_space(component_address, child_kv_store_id);
                 for (k, v) in child_kv_store {
-                    let parent_address = Address::KeyValueStore(component_address, child_kv_store_id);
+                    let parent_address =
+                        Address::KeyValueStore(component_address, child_kv_store_id);
                     self.set_key_value(parent_address, k, Some(v));
                 }
             }
