@@ -78,6 +78,23 @@ fn verify_stored_value(value: &ScryptoValue) -> Result<(), RuntimeError> {
     Ok(())
 }
 
+fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
+    if !value.bucket_ids.is_empty() {
+        return Err(RuntimeError::BucketNotAllowed);
+    }
+    if !value.proof_ids.is_empty() {
+        return Err(RuntimeError::ProofNotAllowed);
+    }
+    if !value.vault_ids.is_empty() {
+        return Err(RuntimeError::VaultNotAllowed);
+    }
+    if !value.lazy_map_ids.is_empty() {
+        return Err(RuntimeError::LazyMapNotAllowed);
+    }
+    Ok(())
+}
+
+
 pub enum ConsumedSNodeState {
     Bucket(Bucket),
     Proof(Proof),
@@ -1053,9 +1070,11 @@ where
     fn read_lazy_map_entry(
         &mut self,
         lazy_map_id: LazyMapId,
-        key: Vec<u8>,
+        key: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        if let Some((_, value)) = self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key) {
+        verify_stored_key(&key)?;
+
+        if let Some((_, value)) = self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key.raw) {
             match value {
                 Some(v) => {
                     let value = Value::Option {
@@ -1083,7 +1102,7 @@ where
             if snode_refs.lazy_map_ids.contains(&lazy_map_id) {
                 let substate_value = self
                     .track
-                    .read_key_value(Address::LazyMap(*component_address, lazy_map_id), key);
+                    .read_key_value(Address::LazyMap(*component_address, lazy_map_id), key.raw);
                 let value = match substate_value {
                     SubstateValue::LazyMapEntry(v) => v,
                     _ => panic!("Substate value is not a LazyMapEntry"),
@@ -1118,13 +1137,13 @@ where
     fn write_lazy_map_entry(
         &mut self,
         lazy_map_id: LazyMapId,
-        key: Vec<u8>,
+        key: ScryptoValue,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
         verify_stored_value(&value)?;
 
         let (old_value, lazy_map_state) =
-            match self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key) {
+            match self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key.raw) {
                 None => match &self.component_state {
                     Some(ComponentState {
                         component_address,
@@ -1136,7 +1155,7 @@ where
                         }
                         let old_substate_value = self.track.read_key_value(
                             Address::LazyMap(*component_address, lazy_map_id),
-                            key.clone(),
+                            key.raw.clone(),
                         );
                         let old_value = match old_substate_value {
                             SubstateValue::LazyMapEntry(v) => v,
@@ -1178,14 +1197,14 @@ where
         match lazy_map_state {
             Uncommitted { root } => {
                 self.owned_snodes
-                    .insert_lazy_map_entry(&lazy_map_id, key, value);
+                    .insert_lazy_map_entry(&lazy_map_id, key.raw, value);
                 self.owned_snodes
                     .insert_objects_into_map(new_objects, &root);
             }
             Committed { component_address } => {
                 self.track.set_key_value(
                     Address::LazyMap(component_address, lazy_map_id),
-                    key,
+                    key.raw,
                     SubstateValue::LazyMapEntry(Some(value.raw)),
                 );
                 self.track
