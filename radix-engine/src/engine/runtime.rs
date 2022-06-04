@@ -130,9 +130,11 @@ where
         lazy_map_id: LazyMapId,
         key: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let scrypto_key = ScryptoValue::from_slice(&key)
-            .map_err(RuntimeError::ParseScryptoValueError)?;
-        let value = self.system_api.read_lazy_map_entry(lazy_map_id, scrypto_key)?;
+        let scrypto_key =
+            ScryptoValue::from_slice(&key).map_err(RuntimeError::ParseScryptoValueError)?;
+        let value = self
+            .system_api
+            .read_lazy_map_entry(lazy_map_id, scrypto_key)?;
         Ok(value)
     }
 
@@ -142,10 +144,10 @@ where
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let scrypto_key = ScryptoValue::from_slice(&key)
-            .map_err(RuntimeError::ParseScryptoValueError)?;
-        let scrypto_value = ScryptoValue::from_slice(&value)
-            .map_err(RuntimeError::ParseScryptoValueError)?;
+        let scrypto_key =
+            ScryptoValue::from_slice(&key).map_err(RuntimeError::ParseScryptoValueError)?;
+        let scrypto_value =
+            ScryptoValue::from_slice(&value).map_err(RuntimeError::ParseScryptoValueError)?;
         self.system_api
             .write_lazy_map_entry(lazy_map_id, scrypto_key, scrypto_value)?;
         Ok(())

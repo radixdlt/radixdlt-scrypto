@@ -31,7 +31,11 @@ impl UnclaimedLazyMap {
         self.descendent_vaults.insert(vault_id, vault);
     }
 
-    fn insert_lazy_map(&mut self, lazy_map_id: LazyMapId, lazy_map: HashMap<Vec<u8>, ScryptoValue>) {
+    fn insert_lazy_map(
+        &mut self,
+        lazy_map_id: LazyMapId,
+        lazy_map: HashMap<Vec<u8>, ScryptoValue>,
+    ) {
         if self.descendent_lazy_maps.contains_key(&lazy_map_id) {
             panic!("duplicate map insertion: {:?}", lazy_map_id);
         }
@@ -166,7 +170,12 @@ impl ComponentObjects {
         unclaimed_map.insert_descendents(new_objects);
     }
 
-    pub fn insert_lazy_map_entry(&mut self, lazy_map_id: &LazyMapId, key: Vec<u8>, value: ScryptoValue) {
+    pub fn insert_lazy_map_entry(
+        &mut self,
+        lazy_map_id: &LazyMapId,
+        key: Vec<u8>,
+        value: ScryptoValue,
+    ) {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }

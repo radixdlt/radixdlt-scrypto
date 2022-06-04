@@ -1,6 +1,7 @@
 use colored::*;
 use sbor::path::SborPath;
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::marker::*;
@@ -8,7 +9,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::rust::boxed::Box;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
@@ -93,7 +93,6 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     }
     Ok(())
 }
-
 
 pub enum ConsumedSNodeState {
     Bucket(Bucket),
@@ -403,11 +402,9 @@ where
         Ok(())
     }
 
-
     /// Process and parse entry data from any component object (components and maps)
     fn process_entry_data(data: &[u8]) -> Result<ComponentObjectRefs, RuntimeError> {
-        let value =
-            ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
+        let value = ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
         verify_stored_value(&value)?;
 
         // lazy map allowed
@@ -1078,14 +1075,14 @@ where
             match value {
                 Some(v) => {
                     let value = Value::Option {
-                        value: Box::new(Some(v.dom))
+                        value: Box::new(Some(v.dom)),
                     };
                     let encoded = encode_any(&value);
                     return Ok(ScryptoValue::from_slice(&encoded).unwrap());
                 }
                 None => {
                     let value = Value::Option {
-                        value: Box::new(Option::None)
+                        value: Box::new(Option::None),
                     };
                     let encoded = encode_any(&value);
                     return Ok(ScryptoValue::from_slice(&encoded).unwrap());
@@ -1109,21 +1106,20 @@ where
                 };
                 if value.is_some() {
                     let value_slice = &value.as_ref().unwrap();
-                    let map_entry_objects =
-                        Self::process_entry_data(value_slice).unwrap();
+                    let map_entry_objects = Self::process_entry_data(value_slice).unwrap();
                     snode_refs.extend(map_entry_objects);
 
                     // TODO: cleanup with process_entry_data
                     let scrypto_value = ScryptoValue::from_slice(value_slice)
                         .map_err(RuntimeError::ParseScryptoValueError)?;
                     let value = Value::Option {
-                        value: Box::new(Some(scrypto_value.dom))
+                        value: Box::new(Some(scrypto_value.dom)),
                     };
                     let encoded = encode_any(&value);
                     return Ok(ScryptoValue::from_slice(&encoded).unwrap());
                 } else {
                     let value = Value::Option {
-                        value: Box::new(Option::None)
+                        value: Box::new(Option::None),
                     };
                     let encoded = encode_any(&value);
                     return Ok(ScryptoValue::from_slice(&encoded).unwrap());
@@ -1160,7 +1156,8 @@ where
                         let old_value = match old_substate_value {
                             SubstateValue::LazyMapEntry(v) => v,
                             _ => panic!("Substate value is not a LazyMapEntry"),
-                        }.map(|v| ScryptoValue::from_slice(&v).unwrap());
+                        }
+                        .map(|v| ScryptoValue::from_slice(&v).unwrap());
                         Ok((
                             old_value,
                             Committed {
@@ -1181,7 +1178,7 @@ where
             Some(e) => ComponentObjectRefs {
                 lazy_map_ids: e.lazy_map_ids,
                 vault_ids: e.vault_ids,
-            }
+            },
         };
         new_entry_object_refs.remove(&old_entry_object_refs)?;
 
