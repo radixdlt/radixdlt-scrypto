@@ -38,7 +38,7 @@ pub struct ScryptoValue {
     pub bucket_ids: HashMap<BucketId, SborPath>,
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
-    pub lazy_map_ids: HashSet<KeyValueStoreId>,
+    pub kv_store_ids: HashSet<KeyValueStoreId>,
 }
 
 // FIXME: encode as the original type, rather than Vec<u8>
@@ -98,7 +98,7 @@ impl ScryptoValue {
                 .map(|(e, path)| (e.0, path))
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
-            lazy_map_ids: checker.lazy_maps.iter().map(|e| e.id).collect(),
+            kv_store_ids: checker.lazy_maps.iter().map(|e| e.id).collect(),
         })
     }
 

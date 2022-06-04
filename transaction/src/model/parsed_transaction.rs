@@ -359,7 +359,7 @@ impl SignedTransaction {
                 vault_id.clone(),
             ));
         }
-        if let Some(lazy_map_id) = value.lazy_map_ids.iter().nth(0) {
+        if let Some(lazy_map_id) = value.kv_store_ids.iter().nth(0) {
             return Err(TransactionValidationError::LazyMapNotAllowed(
                 lazy_map_id.clone(),
             ));

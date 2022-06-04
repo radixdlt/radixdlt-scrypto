@@ -121,7 +121,7 @@ where
     }
 
     fn handle_create_lazy_map(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let lazy_map_id = self.system_api.create_lazy_map();
+        let lazy_map_id = self.system_api.create_kv_store();
         Ok(lazy_map_id)
     }
 
@@ -134,7 +134,7 @@ where
             ScryptoValue::from_slice(&key).map_err(RuntimeError::ParseScryptoValueError)?;
         let value = self
             .system_api
-            .read_lazy_map_entry(lazy_map_id, scrypto_key)?;
+            .read_kv_store_entry(lazy_map_id, scrypto_key)?;
         Ok(value)
     }
 
@@ -149,7 +149,7 @@ where
         let scrypto_value =
             ScryptoValue::from_slice(&value).map_err(RuntimeError::ParseScryptoValueError)?;
         self.system_api
-            .write_lazy_map_entry(lazy_map_id, scrypto_key, scrypto_value)?;
+            .write_kv_store_entry(lazy_map_id, scrypto_key, scrypto_value)?;
         Ok(())
     }
 

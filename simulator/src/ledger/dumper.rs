@@ -86,7 +86,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             // Find all vaults owned by the component, assuming a tree structure.
             let mut vaults_found: HashSet<VaultId> = state_data.vault_ids.iter().cloned().collect();
-            let mut queue: VecDeque<KeyValueStoreId> = state_data.lazy_map_ids.iter().cloned().collect();
+            let mut queue: VecDeque<KeyValueStoreId> = state_data.kv_store_ids.iter().cloned().collect();
             while !queue.is_empty() {
                 let lazy_map_id = queue.pop_front().unwrap();
                 let (maps, vaults) =
@@ -128,7 +128,7 @@ fn dump_lazy_map<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
             k_validated,
             v_validated
         );
-        referenced_maps.extend(v_validated.lazy_map_ids);
+        referenced_maps.extend(v_validated.kv_store_ids);
         referenced_vaults.extend(v_validated.vault_ids);
     }
     Ok((referenced_maps, referenced_vaults))

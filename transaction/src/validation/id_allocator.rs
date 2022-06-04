@@ -94,7 +94,7 @@ impl IdAllocator {
     }
 
     /// Creates a new lazy map ID.
-    pub fn new_lazy_map_id(
+    pub fn new_kv_store_id(
         &mut self,
         transaction_hash: Hash,
     ) -> Result<KeyValueStoreId, IdAllocatorError> {

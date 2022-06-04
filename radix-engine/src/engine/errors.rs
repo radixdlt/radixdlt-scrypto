@@ -1,6 +1,7 @@
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use sbor::rust::boxed::Box;
 use sbor::DecodeError;
 use scrypto::engine::types::*;
 use scrypto::values::*;
