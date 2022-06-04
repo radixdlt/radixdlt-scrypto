@@ -129,7 +129,7 @@ where
         &mut self,
         lazy_map_id: LazyMapId,
         key: Vec<u8>,
-    ) -> Result<Option<Vec<u8>>, RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         let value = self.system_api.read_lazy_map_entry(lazy_map_id, key)?;
         Ok(value)
     }
@@ -199,7 +199,7 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
                 .map(encode),
             RadixEngineInput::CreateLazyMap() => self.handle_create_lazy_map().map(encode),
             RadixEngineInput::GetLazyMapEntry(lazy_map_id, key) => {
-                self.handle_get_lazy_map_entry(lazy_map_id, key).map(encode)
+                self.handle_get_lazy_map_entry(lazy_map_id, key)
             }
             RadixEngineInput::PutLazyMapEntry(lazy_map_id, key, value) => self
                 .handle_put_lazy_map_entry(lazy_map_id, key, value)

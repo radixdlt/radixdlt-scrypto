@@ -1,6 +1,7 @@
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
+use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
 use crate::model::*;
@@ -178,13 +179,13 @@ impl ComponentObjects {
         &mut self,
         lazy_map_id: &LazyMapId,
         key: &[u8],
-    ) -> Option<(LazyMapId, Option<Vec<u8>>)> {
+    ) -> Option<(LazyMapId, Option<ScryptoValue>)> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
         self.get_lazy_map_mut(lazy_map_id)
-            .map(|(lazy_map_id, lazy_map)| (lazy_map_id, lazy_map.get(key).map(|v| v.to_vec())))
+            .map(|(lazy_map_id, lazy_map)| (lazy_map_id, lazy_map.get(key).map(|v| ScryptoValue::from_slice(v.as_slice()).unwrap())))
     }
 
     fn get_lazy_map_mut(

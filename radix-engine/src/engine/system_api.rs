@@ -86,7 +86,7 @@ where
         &mut self,
         lazy_map_id: LazyMapId,
         key: Vec<u8>,
-    ) -> Result<Option<Vec<u8>>, RuntimeError>;
+    ) -> Result<ScryptoValue, RuntimeError>;
 
     fn write_lazy_map_entry(
         &mut self,
