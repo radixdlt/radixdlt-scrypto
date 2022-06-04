@@ -92,7 +92,7 @@ where
         &mut self,
         lazy_map_id: LazyMapId,
         key: Vec<u8>,
-        value: Vec<u8>,
+        value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
 
     fn get_epoch(&mut self) -> u64;

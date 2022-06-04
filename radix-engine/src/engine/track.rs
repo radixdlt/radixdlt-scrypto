@@ -7,6 +7,7 @@ use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
 use scrypto::engine::types::*;
+use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
 use crate::engine::{ComponentObjects, SubstateOperation, SubstateOperationsReceipt};
@@ -217,9 +218,9 @@ impl Into<SubstateValue> for Option<NonFungible> {
     }
 }
 
-impl Into<SubstateValue> for Option<Vec<u8>> {
+impl Into<SubstateValue> for Option<ScryptoValue> {
     fn into(self) -> SubstateValue {
-        SubstateValue::LazyMapEntry(self)
+        SubstateValue::LazyMapEntry(self.map(|v| v.raw))
     }
 }
 

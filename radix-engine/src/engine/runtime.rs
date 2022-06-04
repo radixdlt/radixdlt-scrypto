@@ -140,8 +140,10 @@ where
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<(), RuntimeError> {
+        let scrypto_value = ScryptoValue::from_slice(&value)
+            .map_err(RuntimeError::ParseScryptoValueError)?;
         self.system_api
-            .write_lazy_map_entry(lazy_map_id, key, value)?;
+            .write_lazy_map_entry(lazy_map_id, key, scrypto_value)?;
         Ok(())
     }
 

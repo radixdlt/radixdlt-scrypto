@@ -8,9 +8,9 @@ use crate::model::*;
 
 #[derive(Debug)]
 pub struct UnclaimedLazyMap {
-    pub lazy_map: HashMap<Vec<u8>, Vec<u8>>,
+    pub lazy_map: HashMap<Vec<u8>, ScryptoValue>,
     /// All descendents (not just direct children) of the unclaimed lazy map
-    pub descendent_lazy_maps: HashMap<LazyMapId, HashMap<Vec<u8>, Vec<u8>>>,
+    pub descendent_lazy_maps: HashMap<LazyMapId, HashMap<Vec<u8>, ScryptoValue>>,
     pub descendent_vaults: HashMap<VaultId, Vault>,
 }
 
@@ -31,7 +31,7 @@ impl UnclaimedLazyMap {
         self.descendent_vaults.insert(vault_id, vault);
     }
 
-    fn insert_lazy_map(&mut self, lazy_map_id: LazyMapId, lazy_map: HashMap<Vec<u8>, Vec<u8>>) {
+    fn insert_lazy_map(&mut self, lazy_map_id: LazyMapId, lazy_map: HashMap<Vec<u8>, ScryptoValue>) {
         if self.descendent_lazy_maps.contains_key(&lazy_map_id) {
             panic!("duplicate map insertion: {:?}", lazy_map_id);
         }
@@ -166,7 +166,7 @@ impl ComponentObjects {
         unclaimed_map.insert_descendents(new_objects);
     }
 
-    pub fn insert_lazy_map_entry(&mut self, lazy_map_id: &LazyMapId, key: Vec<u8>, value: Vec<u8>) {
+    pub fn insert_lazy_map_entry(&mut self, lazy_map_id: &LazyMapId, key: Vec<u8>, value: ScryptoValue) {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
@@ -185,13 +185,13 @@ impl ComponentObjects {
         }
 
         self.get_lazy_map_mut(lazy_map_id)
-            .map(|(lazy_map_id, lazy_map)| (lazy_map_id, lazy_map.get(key).map(|v| ScryptoValue::from_slice(v.as_slice()).unwrap())))
+            .map(|(lazy_map_id, lazy_map)| (lazy_map_id, lazy_map.get(key).map(|v| v.clone())))
     }
 
     fn get_lazy_map_mut(
         &mut self,
         lazy_map_id: &LazyMapId,
-    ) -> Option<(LazyMapId, &mut HashMap<Vec<u8>, Vec<u8>>)> {
+    ) -> Option<(LazyMapId, &mut HashMap<Vec<u8>, ScryptoValue>)> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }

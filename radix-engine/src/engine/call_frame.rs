@@ -68,6 +68,16 @@ pub struct CallFrame<
     phantom: PhantomData<I>,
 }
 
+fn verify_stored_value(value: &ScryptoValue) -> Result<(), RuntimeError> {
+    if !value.bucket_ids.is_empty() {
+        return Err(RuntimeError::BucketNotAllowed);
+    }
+    if !value.proof_ids.is_empty() {
+        return Err(RuntimeError::ProofNotAllowed);
+    }
+    Ok(())
+}
+
 pub enum ConsumedSNodeState {
     Bucket(Bucket),
     Proof(Proof),
@@ -376,22 +386,18 @@ where
         Ok(())
     }
 
+
     /// Process and parse entry data from any component object (components and maps)
     fn process_entry_data(data: &[u8]) -> Result<ComponentObjectRefs, RuntimeError> {
-        let validated =
+        let value =
             ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
-        if !validated.bucket_ids.is_empty() {
-            return Err(RuntimeError::BucketNotAllowed);
-        }
-        if !validated.proof_ids.is_empty() {
-            return Err(RuntimeError::ProofNotAllowed);
-        }
+        verify_stored_value(&value)?;
 
         // lazy map allowed
         // vaults allowed
         Ok(ComponentObjectRefs {
-            lazy_map_ids: validated.lazy_map_ids,
-            vault_ids: validated.vault_ids,
+            lazy_map_ids: value.lazy_map_ids,
+            vault_ids: value.vault_ids,
         })
     }
 
@@ -1113,8 +1119,10 @@ where
         &mut self,
         lazy_map_id: LazyMapId,
         key: Vec<u8>,
-        value: Vec<u8>,
+        value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
+        verify_stored_value(&value)?;
+
         let (old_value, lazy_map_state) =
             match self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key) {
                 None => match &self.component_state {
@@ -1145,7 +1153,10 @@ where
                 },
                 Some((root, value)) => Ok((value, Uncommitted { root })),
             }?;
-        let mut new_entry_object_refs = Self::process_entry_data(&value)?;
+        let mut new_entry_object_refs = ComponentObjectRefs {
+            lazy_map_ids: value.lazy_map_ids.clone(),
+            vault_ids: value.vault_ids.clone(),
+        };
         let old_entry_object_refs = match old_value {
             None => ComponentObjectRefs::new(),
             Some(e) => ComponentObjectRefs {
@@ -1175,7 +1186,7 @@ where
                 self.track.set_key_value(
                     Address::LazyMap(component_address, lazy_map_id),
                     key,
-                    SubstateValue::LazyMapEntry(Some(value)),
+                    SubstateValue::LazyMapEntry(Some(value.raw)),
                 );
                 self.track
                     .insert_objects_into_component(new_objects, component_address);
