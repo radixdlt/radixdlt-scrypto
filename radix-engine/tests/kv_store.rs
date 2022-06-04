@@ -32,7 +32,7 @@ fn dangling_lazy_map_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     assert_eq!(
         runtime_error,
-        RuntimeError::ResourceCheckFailure(ResourceFailure::UnclaimedLazyMap)
+        RuntimeError::ResourceCheckFailure(ResourceFailure::UnclaimedKeyValueStore)
     );
 }
 
@@ -99,7 +99,7 @@ fn cyclic_map_fails_execution() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::CyclicLazyMap(_) => {}
+        RuntimeError::CyclicKeyValueStore(_) => {}
         _ => panic!(
             "Should be a cyclic lazy map error but was {}",
             runtime_error
@@ -126,7 +126,7 @@ fn self_cyclic_map_fails_execution() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::CyclicLazyMap(_) => {}
+        RuntimeError::CyclicKeyValueStore(_) => {}
         _ => panic!(
             "Should be a cyclic lazy map error but was {}",
             runtime_error

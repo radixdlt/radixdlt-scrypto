@@ -89,7 +89,7 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
         return Err(RuntimeError::VaultNotAllowed);
     }
     if !value.kv_store_ids.is_empty() {
-        return Err(RuntimeError::LazyMapNotAllowed);
+        return Err(RuntimeError::KeyValueStoreNotAllowed);
     }
     Ok(())
 }
@@ -352,7 +352,7 @@ where
                 Level::Warn,
                 format!("Dangling key/value store: {:?}, {:?}", kv_store_id, kv_store),
             );
-            resource = ResourceFailure::UnclaimedLazyMap;
+            resource = ResourceFailure::UnclaimedKeyValueStore;
             success = false;
         }
 
@@ -374,7 +374,7 @@ where
 
     fn process_call_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
-            return Err(RuntimeError::LazyMapNotAllowed);
+            return Err(RuntimeError::KeyValueStoreNotAllowed);
         }
         if !validated.vault_ids.is_empty() {
             return Err(RuntimeError::VaultNotAllowed);
@@ -388,7 +388,7 @@ where
         validated: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
-            return Err(RuntimeError::LazyMapNotAllowed);
+            return Err(RuntimeError::KeyValueStoreNotAllowed);
         }
 
         // Allow vaults to be returned from ResourceStatic
@@ -1102,7 +1102,7 @@ where
                     .read_key_value(Address::KeyValueStore(*component_address, kv_store_id), key.raw);
                 let value = match substate_value {
                     SubstateValue::KeyValueStoreEntry(v) => v,
-                    _ => panic!("Substate value is not a LazyMapEntry"),
+                    _ => panic!("Substate value is not a KeyValueStore entry"),
                 };
                 if value.is_some() {
                     let value_slice = &value.as_ref().unwrap();
@@ -1155,7 +1155,7 @@ where
                         );
                         let old_value = match old_substate_value {
                             SubstateValue::KeyValueStoreEntry(v) => v,
-                            _ => panic!("Substate value is not a LazyMapEntry"),
+                            _ => panic!("Substate value is not a KeyValueStore entry"),
                         }
                         .map(|v| ScryptoValue::from_slice(&v).unwrap());
                         Ok((
@@ -1185,7 +1185,7 @@ where
         // Check for cycles
         if let Uncommitted { root } = kv_store_state {
             if new_entry_object_refs.kv_store_ids.contains(&root) {
-                return Err(RuntimeError::CyclicLazyMap(root));
+                return Err(RuntimeError::CyclicKeyValueStore(root));
             }
         }
 

@@ -112,9 +112,9 @@ impl Address {
             Address::NonFungibleSet(resource_address) => {
                 resource_to_non_fungible_space!(resource_address.clone())
             }
-            Address::KeyValueStore(component_address, lazy_map_id) => {
+            Address::KeyValueStore(component_address, kv_store_id) => {
                 let mut entry_address = scrypto_encode(component_address);
-                entry_address.extend(scrypto_encode(lazy_map_id));
+                entry_address.extend(scrypto_encode(kv_store_id));
                 entry_address
             }
         }
@@ -328,10 +328,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn create_key_space(
         &mut self,
         component_address: ComponentAddress,
-        lazy_map_id: KeyValueStoreId,
+        kv_store_id: KeyValueStoreId,
     ) {
         let mut space_address = scrypto_encode(&component_address);
-        space_address.extend(scrypto_encode(&lazy_map_id));
+        space_address.extend(scrypto_encode(&kv_store_id));
         self.up_virtual_substate_space.insert(space_address);
     }
 
@@ -443,8 +443,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 .substate_store
                 .get_substate(&address)
                 .map(|r| {
-                    let lazy_map_entry = scrypto_decode(&r.value).unwrap();
-                    SubstateValue::KeyValueStoreEntry(lazy_map_entry)
+                    let kv_store_entry = scrypto_decode(&r.value).unwrap();
+                    SubstateValue::KeyValueStoreEntry(kv_store_entry)
                 })
                 .unwrap_or(SubstateValue::KeyValueStoreEntry(None)),
             _ => panic!("Invalid keyed value address"),
@@ -580,17 +580,17 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         for (vault_id, vault) in new_objects.vaults {
             self.create_uuid_value_2((component_address, vault_id), vault);
         }
-        for (lazy_map_id, unclaimed) in new_objects.kv_stores {
-            self.create_key_space(component_address, lazy_map_id);
+        for (kv_store_id, unclaimed) in new_objects.kv_stores {
+            self.create_key_space(component_address, kv_store_id);
             for (k, v) in unclaimed.kv_store {
-                let parent_address = Address::KeyValueStore(component_address, lazy_map_id);
+                let parent_address = Address::KeyValueStore(component_address, kv_store_id);
                 self.set_key_value(parent_address, k, Some(v));
             }
 
-            for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_kv_stores {
-                self.create_key_space(component_address, child_lazy_map_id);
-                for (k, v) in child_lazy_map {
-                    let parent_address = Address::KeyValueStore(component_address, child_lazy_map_id);
+            for (child_kv_store_id, child_kv_store) in unclaimed.descendent_kv_stores {
+                self.create_key_space(component_address, child_kv_store_id);
+                for (k, v) in child_kv_store {
+                    let parent_address = Address::KeyValueStore(component_address, child_kv_store_id);
                     self.set_key_value(parent_address, k, Some(v));
                 }
             }

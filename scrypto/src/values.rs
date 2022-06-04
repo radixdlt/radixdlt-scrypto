@@ -98,7 +98,7 @@ impl ScryptoValue {
                 .map(|(e, path)| (e.0, path))
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
-            kv_store_ids: checker.lazy_maps.iter().map(|e| e.id).collect(),
+            kv_store_ids: checker.kv_stores.iter().map(|e| e.id).collect(),
         })
     }
 
@@ -182,7 +182,7 @@ pub struct ScryptoCustomValueChecker {
     pub buckets: HashMap<Bucket, SborPath>,
     pub proofs: HashMap<Proof, SborPath>,
     pub vaults: HashSet<Vault>,
-    pub lazy_maps: HashSet<KeyValueStore<(), ()>>,
+    pub kv_stores: HashSet<KeyValueStore<(), ()>>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -199,7 +199,7 @@ pub enum ScryptoCustomValueCheckError {
     InvalidEcdsaSignature(ParseEcdsaSignatureError),
     InvalidBucket(ParseBucketError),
     InvalidProof(ParseProofError),
-    InvalidLazyMap(ParseKeyValueStoreError),
+    InvalidKeyValueStore(ParseKeyValueStoreError),
     InvalidVault(ParseVaultError),
     InvalidNonFungibleId(ParseNonFungibleIdError),
     InvalidNonFungibleAddress(ParseNonFungibleAddressError),
@@ -212,7 +212,7 @@ impl ScryptoCustomValueChecker {
             buckets: HashMap::new(),
             proofs: HashMap::new(),
             vaults: HashSet::new(),
-            lazy_maps: HashSet::new(),
+            kv_stores: HashSet::new(),
         }
     }
 }
@@ -237,8 +237,8 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             }
             ScryptoType::KeyValueStore => {
                 let map = KeyValueStore::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidLazyMap)?;
-                if !self.lazy_maps.insert(map) {
+                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
+                if !self.kv_stores.insert(map) {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
@@ -493,7 +493,7 @@ impl ScryptoValueFormatter {
                 )
             }
             ScryptoType::KeyValueStore => format!(
-                "LazyMap(\"{}\")",
+                "KeyValueStore(\"{}\")",
                 KeyValueStore::<(), ()>::try_from(data).unwrap()
             ),
             ScryptoType::Hash => format!("Hash(\"{}\")", Hash::try_from(data).unwrap()),

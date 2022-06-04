@@ -22,7 +22,7 @@ pub struct KeyValueStore<K: Encode + Decode, V: Encode + Decode> {
 }
 
 impl<K: Encode + Decode, V: Encode + Decode> KeyValueStore<K, V> {
-    /// Creates a new lazy map.
+    /// Creates a new key value store.
     pub fn new() -> Self {
         let input = RadixEngineInput::CreateKeyValueStore();
         let output: KeyValueStoreId = call_engine(input);
@@ -55,7 +55,7 @@ impl<K: Encode + Decode, V: Encode + Decode> KeyValueStore<K, V> {
 // error
 //========
 
-/// Represents an error when decoding lazy map.
+/// Represents an error when decoding key value store.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseKeyValueStoreError {
     InvalidHex(String),

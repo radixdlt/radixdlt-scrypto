@@ -84,13 +84,13 @@ where
 
     fn read_kv_store_entry(
         &mut self,
-        lazy_map_id: KeyValueStoreId,
+        kv_store_id: KeyValueStoreId,
         key: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
     fn write_kv_store_entry(
         &mut self,
-        lazy_map_id: KeyValueStoreId,
+        kv_store_id: KeyValueStoreId,
         key: ScryptoValue,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;

@@ -360,7 +360,7 @@ impl SignedTransaction {
             ));
         }
         if let Some(lazy_map_id) = value.kv_store_ids.iter().nth(0) {
-            return Err(TransactionValidationError::LazyMapNotAllowed(
+            return Err(TransactionValidationError::KeyValueStoreNotAllowed(
                 lazy_map_id.clone(),
             ));
         }
@@ -412,7 +412,7 @@ mod tests {
                 signatures: Vec::new()
             }
             .validate(),
-            Err(TransactionValidationError::LazyMapNotAllowed((
+            Err(TransactionValidationError::KeyValueStoreNotAllowed((
                 Hash([2u8; 32]),
                 0,
             ))),
