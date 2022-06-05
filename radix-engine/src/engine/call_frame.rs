@@ -23,6 +23,12 @@ use crate::ledger::*;
 use crate::model::*;
 use crate::wasm::*;
 
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+enum StoredValueId {
+    KeyValueStoreId(KeyValueStoreId),
+    VaultId(VaultId),
+}
+
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
 pub struct CallFrame<
@@ -59,8 +65,7 @@ pub struct CallFrame<
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
     component_state: Option<&'p mut ComponentState>,
-    kv_store_refs: HashSet<KeyValueStoreId>,
-    vault_refs: HashSet<VaultId>,
+    ref_values: HashSet<StoredValueId>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p AuthZone>,
@@ -316,8 +321,7 @@ where
             buckets,
             proofs,
             owned_snodes: ComponentObjects::new(),
-            kv_store_refs: HashSet::new(),
-            vault_refs: HashSet::new(),
+            ref_values: HashSet::new(),
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -790,7 +794,7 @@ where
                     ..
                 }) = &self.component_state
                 {
-                    if !self.vault_refs.contains(vault_id) {
+                    if !self.ref_values.contains(&StoredValueId::VaultId(*vault_id)) {
                         return Err(RuntimeError::VaultNotFound(*vault_id));
                     }
                     let vault: Vault = self
@@ -1026,8 +1030,12 @@ where
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
-                self.vault_refs.extend(initial_value.vault_ids.clone());
-                self.kv_store_refs.extend(initial_value.kv_store_ids.clone());
+                for vault_id in &initial_value.vault_ids {
+                    self.ref_values.insert(StoredValueId::VaultId(*vault_id));
+                }
+                for kv_store_id in &initial_value.kv_store_ids {
+                    self.ref_values.insert(StoredValueId::KeyValueStoreId(*kv_store_id));
+                }
                 let state = component.state().to_vec();
                 return Ok(state);
             }
@@ -1095,7 +1103,7 @@ where
             ..
         }) = &mut self.component_state
         {
-            if self.kv_store_refs.contains(&kv_store_id) {
+            if self.ref_values.contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
                 let substate_value = self.track.read_key_value(
                     Address::KeyValueStore(*component_address, kv_store_id),
                     key.raw,
@@ -1107,8 +1115,12 @@ where
                 if value.is_some() {
                     let value_slice = &value.as_ref().unwrap();
                     let map_entry_objects = Self::process_entry_data(value_slice).unwrap();
-                    self.kv_store_refs.extend(map_entry_objects.kv_store_ids.clone());
-                    self.vault_refs.extend(map_entry_objects.vault_ids.clone());
+                    for kv_store_id in map_entry_objects.kv_store_ids {
+                        self.ref_values.insert(StoredValueId::KeyValueStoreId(kv_store_id));
+                    }
+                    for vault_id in map_entry_objects.vault_ids {
+                        self.ref_values.insert(StoredValueId::VaultId(vault_id));
+                    }
 
                     // TODO: cleanup with process_entry_data
                     let scrypto_value = ScryptoValue::from_slice(value_slice)
@@ -1146,7 +1158,7 @@ where
                         component_address,
                         ..
                     }) => {
-                        if !self.kv_store_refs.contains(&kv_store_id) {
+                        if !self.ref_values.contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
                             return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
                         }
                         let old_substate_value = self.track.read_key_value(
