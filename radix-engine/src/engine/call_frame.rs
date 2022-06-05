@@ -154,7 +154,7 @@ pub enum SNodeState<'a> {
 pub struct ComponentState {
     pub component_address: ComponentAddress,
     pub component: Component,
-    pub initial_loaded_object_refs: ComponentObjectRefs,
+    pub initial_value: ScryptoValue,
     pub snode_refs: ComponentObjectRefs,
 }
 
@@ -692,11 +692,7 @@ where
                         let (_, method_auths) = component.method_authorization(&schema, &function);
 
                         // set up component state
-                        let data = ScryptoValue::from_slice(component.state()).unwrap();
-                        let initial_loaded_object_refs = ComponentObjectRefs {
-                            vault_ids: data.vault_ids.into_iter().collect(),
-                            kv_store_ids: data.kv_store_ids.into_iter().collect(),
-                        };
+                        let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
                         let snode_refs = ComponentObjectRefs::new();
 
                         Ok((
@@ -711,7 +707,7 @@ where
                                 Some(ComponentState {
                                     component_address,
                                     component,
-                                    initial_loaded_object_refs,
+                                    initial_value,
                                     snode_refs,
                                 }),
                             )),
@@ -1028,12 +1024,15 @@ where
         if let Some(ComponentState {
             component_address,
             component,
-            initial_loaded_object_refs,
+            initial_value,
             snode_refs,
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
-                snode_refs.extend(initial_loaded_object_refs.clone());
+                snode_refs.extend(ComponentObjectRefs {
+                    vault_ids: initial_value.vault_ids.clone(),
+                    kv_store_ids: initial_value.kv_store_ids.clone(),
+                });
                 let state = component.state().to_vec();
                 return Ok(state);
             }
@@ -1050,13 +1049,16 @@ where
         if let Some(ComponentState {
             component_address,
             component,
-            initial_loaded_object_refs,
+            initial_value,
             ..
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
                 let mut new_set = Self::process_entry_data(&state)?;
-                new_set.remove(&initial_loaded_object_refs)?;
+                new_set.remove(&ComponentObjectRefs {
+                    vault_ids: initial_value.vault_ids.clone(),
+                    kv_store_ids: initial_value.kv_store_ids.clone(),
+                })?;
                 let new_objects = self.owned_snodes.take(new_set)?;
                 self.track
                     .insert_objects_into_component(new_objects, *component_address);
