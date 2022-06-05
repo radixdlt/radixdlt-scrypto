@@ -69,34 +69,6 @@ impl UnclaimedKeyValueStore {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct ComponentObjectRefs {
-    pub value_ids: HashSet<StoredValueId>
-}
-
-impl ComponentObjectRefs {
-    pub fn new() -> Self {
-        ComponentObjectRefs {
-            value_ids: HashSet::new(),
-        }
-    }
-
-    pub fn extend(&mut self, other: ComponentObjectRefs) {
-        self.value_ids.extend(other.value_ids);
-    }
-
-    pub fn remove(&mut self, other: &ComponentObjectRefs) -> Result<(), RuntimeError> {
-        // Only allow vaults to be added, never removed
-        for id in &other.value_ids {
-            if !self.value_ids.remove(&id) {
-                return Err(RuntimeError::StoredValueRemoved(*id));
-            }
-        }
-
-        Ok(())
-    }
-}
-
 /// Component type objects which will eventually move into a component
 #[derive(Debug)]
 pub struct ComponentObjects {
@@ -117,7 +89,7 @@ impl ComponentObjects {
         }
     }
 
-    pub fn take(&mut self, other: ComponentObjectRefs) -> Result<ComponentObjects, RuntimeError> {
+    pub fn take(&mut self, other: HashSet<StoredValueId>) -> Result<ComponentObjects, RuntimeError> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
@@ -125,7 +97,7 @@ impl ComponentObjects {
         let mut vaults = HashMap::new();
         let mut kv_stores = HashMap::new();
 
-        for id in other.value_ids {
+        for id in other {
             match id {
                 StoredValueId::KeyValueStoreId(kv_store_id) => {
                     let kv_store = self
