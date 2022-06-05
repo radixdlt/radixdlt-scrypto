@@ -23,12 +23,6 @@ use crate::ledger::*;
 use crate::model::*;
 use crate::wasm::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-enum StoredValueId {
-    KeyValueStoreId(KeyValueStoreId),
-    VaultId(VaultId),
-}
-
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
 pub struct CallFrame<
@@ -1030,11 +1024,8 @@ where
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
-                for vault_id in &initial_value.vault_ids {
-                    self.ref_values.insert(StoredValueId::VaultId(*vault_id));
-                }
-                for kv_store_id in &initial_value.kv_store_ids {
-                    self.ref_values.insert(StoredValueId::KeyValueStoreId(*kv_store_id));
+                for value_id in initial_value.stored_value_ids() {
+                    self.ref_values.insert(value_id);
                 }
                 let state = component.state().to_vec();
                 return Ok(state);
@@ -1114,12 +1105,9 @@ where
                 };
                 if value.is_some() {
                     let value_slice = &value.as_ref().unwrap();
-                    let map_entry_objects = Self::process_entry_data(value_slice).unwrap();
-                    for kv_store_id in map_entry_objects.kv_store_ids {
-                        self.ref_values.insert(StoredValueId::KeyValueStoreId(kv_store_id));
-                    }
-                    for vault_id in map_entry_objects.vault_ids {
-                        self.ref_values.insert(StoredValueId::VaultId(vault_id));
+                    let scrypto_value = ScryptoValue::from_slice(value_slice).unwrap();
+                    for value_id in scrypto_value.stored_value_ids() {
+                        self.ref_values.insert(value_id);
                     }
 
                     // TODO: cleanup with process_entry_data
