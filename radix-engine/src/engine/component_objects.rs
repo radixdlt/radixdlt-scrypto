@@ -37,7 +37,7 @@ impl UnclaimedKeyValueStore {
         kv_store: HashMap<Vec<u8>, ScryptoValue>,
     ) {
         if self.descendent_kv_stores.contains_key(&kv_store_id) {
-            panic!("duplicate map insertion: {:?}", kv_store_id);
+            panic!("duplicate store insertion: {:?}", kv_store_id);
         }
 
         self.descendent_kv_stores.insert(kv_store_id, kv_store);
@@ -157,7 +157,7 @@ impl ComponentObjects {
         })
     }
 
-    pub fn insert_objects_into_map(
+    pub fn insert_objects_into_kv_store(
         &mut self,
         new_objects: ComponentObjects,
         kv_store_id: &KeyValueStoreId,
@@ -166,8 +166,8 @@ impl ComponentObjects {
             panic!("Should not be taking while value is being borrowed");
         }
 
-        let unclaimed_map = self.kv_stores.get_mut(kv_store_id).unwrap();
-        unclaimed_map.insert_descendents(new_objects);
+        let unclaimed_kv_store = self.kv_stores.get_mut(kv_store_id).unwrap();
+        unclaimed_kv_store.insert_descendents(new_objects);
     }
 
     pub fn insert_kv_store_entry(

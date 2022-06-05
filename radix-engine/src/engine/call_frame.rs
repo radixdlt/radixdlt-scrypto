@@ -1200,7 +1200,7 @@ where
                 self.owned_snodes
                     .insert_kv_store_entry(&kv_store_id, key.raw, value);
                 self.owned_snodes
-                    .insert_objects_into_map(new_objects, &root);
+                    .insert_objects_into_kv_store(new_objects, &root);
             }
             Committed { component_address } => {
                 self.track.set_key_value(
