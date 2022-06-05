@@ -67,6 +67,26 @@ pub struct CallFrame<
     phantom: PhantomData<I>,
 }
 
+fn stored_value_update(old: &ScryptoValue, new: &ScryptoValue) -> Result<ComponentObjectRefs, RuntimeError> {
+    let old_ids = old.stored_value_ids();
+    let new_ids = new.stored_value_ids();
+    for old_id in &old_ids {
+        if !new_ids.contains(old_id) {
+            return Err(RuntimeError::StoredValueRemoved(old_id.clone()));
+        }
+    }
+
+    let mut new_value_ids = HashSet::new();
+    for new_id in new_ids {
+        if !old_ids.contains(&new_id) {
+            new_value_ids.insert(new_id);
+        }
+    }
+    Ok(ComponentObjectRefs {
+        value_ids: new_value_ids
+    })
+}
+
 fn verify_stored_value(value: &ScryptoValue) -> Result<(), RuntimeError> {
     if !value.bucket_ids.is_empty() {
         return Err(RuntimeError::BucketNotAllowed);
@@ -1037,8 +1057,10 @@ where
     fn write_component_state(
         &mut self,
         addr: ComponentAddress,
-        state: Vec<u8>,
+        state: ScryptoValue,
     ) -> Result<(), RuntimeError> {
+        verify_stored_value(&state)?;
+
         if let Some(ComponentState {
             component_address,
             component,
@@ -1047,14 +1069,11 @@ where
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
-                let mut new_set = Self::process_entry_data(&state)?;
-                new_set.remove(&ComponentObjectRefs {
-                    value_ids: initial_value.stored_value_ids()
-                })?;
-                let new_objects = self.owned_snodes.take(new_set)?;
+                let new_refs = stored_value_update(initial_value, &state)?;
+                let new_objects = self.owned_snodes.take(new_refs)?;
                 self.track
                     .insert_objects_into_component(new_objects, *component_address);
-                component.set_state(state);
+                component.set_state(state.raw);
                 return Ok(());
             }
         }
@@ -1167,16 +1186,17 @@ where
                 },
                 Some((root, value)) => Ok((value, Uncommitted { root })),
             }?;
-        let mut new_entry_object_refs = ComponentObjectRefs {
-            value_ids: value.stored_value_ids(),
+
+        let new_entry_object_refs = match old_value {
+            None => {
+                ComponentObjectRefs {
+                    value_ids: value.stored_value_ids()
+                }
+            }
+            Some(old_scrypto_value) => {
+                stored_value_update(&old_scrypto_value, &value)?
+            }
         };
-        let old_entry_object_refs = match old_value {
-            None => ComponentObjectRefs::new(),
-            Some(e) => ComponentObjectRefs {
-                value_ids: e.stored_value_ids(),
-            },
-        };
-        new_entry_object_refs.remove(&old_entry_object_refs)?;
 
         // Check for cycles
         if let Uncommitted { root } = kv_store_state {
