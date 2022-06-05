@@ -71,34 +71,25 @@ impl UnclaimedKeyValueStore {
 
 #[derive(Debug, Clone)]
 pub struct ComponentObjectRefs {
-    pub kv_store_ids: HashSet<KeyValueStoreId>,
-    pub vault_ids: HashSet<VaultId>,
+    pub value_ids: HashSet<StoredValueId>
 }
 
 impl ComponentObjectRefs {
     pub fn new() -> Self {
         ComponentObjectRefs {
-            kv_store_ids: HashSet::new(),
-            vault_ids: HashSet::new(),
+            value_ids: HashSet::new(),
         }
     }
 
     pub fn extend(&mut self, other: ComponentObjectRefs) {
-        self.kv_store_ids.extend(other.kv_store_ids);
-        self.vault_ids.extend(other.vault_ids);
+        self.value_ids.extend(other.value_ids);
     }
 
     pub fn remove(&mut self, other: &ComponentObjectRefs) -> Result<(), RuntimeError> {
         // Only allow vaults to be added, never removed
-        for vault_id in &other.vault_ids {
-            if !self.vault_ids.remove(&vault_id) {
-                return Err(RuntimeError::VaultRemoved(*vault_id));
-            }
-        }
-
-        for kv_store_id in &other.kv_store_ids {
-            if !self.kv_store_ids.remove(&kv_store_id) {
-                return Err(RuntimeError::KeyValueStoreRemoved(*kv_store_id));
+        for id in &other.value_ids {
+            if !self.value_ids.remove(&id) {
+                return Err(RuntimeError::StoredValueRemoved(*id));
             }
         }
 
@@ -134,20 +125,23 @@ impl ComponentObjects {
         let mut vaults = HashMap::new();
         let mut kv_stores = HashMap::new();
 
-        for vault_id in other.vault_ids {
-            let vault = self
-                .vaults
-                .remove(&vault_id)
-                .ok_or(RuntimeError::VaultNotFound(vault_id))?;
-            vaults.insert(vault_id, vault);
-        }
-
-        for kv_store_id in other.kv_store_ids {
-            let kv_store = self
-                .kv_stores
-                .remove(&kv_store_id)
-                .ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id))?;
-            kv_stores.insert(kv_store_id, kv_store);
+        for id in other.value_ids {
+            match id {
+                StoredValueId::KeyValueStoreId(kv_store_id) => {
+                    let kv_store = self
+                        .kv_stores
+                        .remove(&kv_store_id)
+                        .ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id))?;
+                    kv_stores.insert(kv_store_id, kv_store);
+                }
+                StoredValueId::VaultId(vault_id) => {
+                    let vault = self
+                        .vaults
+                        .remove(&vault_id)
+                        .ok_or(RuntimeError::VaultNotFound(vault_id))?;
+                    vaults.insert(vault_id, vault);
+                }
+            }
         }
 
         Ok(ComponentObjects {

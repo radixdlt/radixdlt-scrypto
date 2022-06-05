@@ -412,8 +412,7 @@ where
         // kv store allowed
         // vaults allowed
         Ok(ComponentObjectRefs {
-            kv_store_ids: value.kv_store_ids,
-            vault_ids: value.vault_ids,
+            value_ids: value.stored_value_ids()
         })
     }
 
@@ -1050,8 +1049,7 @@ where
             if addr.eq(component_address) {
                 let mut new_set = Self::process_entry_data(&state)?;
                 new_set.remove(&ComponentObjectRefs {
-                    vault_ids: initial_value.vault_ids.clone(),
-                    kv_store_ids: initial_value.kv_store_ids.clone(),
+                    value_ids: initial_value.stored_value_ids()
                 })?;
                 let new_objects = self.owned_snodes.take(new_set)?;
                 self.track
@@ -1170,21 +1168,19 @@ where
                 Some((root, value)) => Ok((value, Uncommitted { root })),
             }?;
         let mut new_entry_object_refs = ComponentObjectRefs {
-            kv_store_ids: value.kv_store_ids.clone(),
-            vault_ids: value.vault_ids.clone(),
+            value_ids: value.stored_value_ids(),
         };
         let old_entry_object_refs = match old_value {
             None => ComponentObjectRefs::new(),
             Some(e) => ComponentObjectRefs {
-                kv_store_ids: e.kv_store_ids,
-                vault_ids: e.vault_ids,
+                value_ids: e.stored_value_ids(),
             },
         };
         new_entry_object_refs.remove(&old_entry_object_refs)?;
 
         // Check for cycles
         if let Uncommitted { root } = kv_store_state {
-            if new_entry_object_refs.kv_store_ids.contains(&root) {
+            if new_entry_object_refs.value_ids.contains(&StoredValueId::KeyValueStoreId(root.clone())) {
                 return Err(RuntimeError::CyclicKeyValueStore(root));
             }
         }
