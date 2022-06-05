@@ -58,12 +58,12 @@ pub struct CallFrame<
     /// Referenced Snodes
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
+    /// Referenced values, lazily loaded
+    component_state: Option<&'p mut ComponentState>,
+    snode_refs: ComponentObjectRefs,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p AuthZone>,
-
-    /// Component state, lazily loaded
-    component_state: Option<&'p mut ComponentState>,
 
     phantom: PhantomData<I>,
 }
@@ -155,7 +155,6 @@ pub struct ComponentState {
     pub component_address: ComponentAddress,
     pub component: Component,
     pub initial_value: ScryptoValue,
-    pub snode_refs: ComponentObjectRefs,
 }
 
 ///TODO: Remove
@@ -317,6 +316,7 @@ where
             buckets,
             proofs,
             owned_snodes: ComponentObjects::new(),
+            snode_refs: ComponentObjectRefs::new(),
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -693,7 +693,6 @@ where
 
                         // set up component state
                         let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
-                        let snode_refs = ComponentObjectRefs::new();
 
                         Ok((
                             Borrowed(BorrowedSNodeState::Scrypto(
@@ -708,7 +707,6 @@ where
                                     component_address,
                                     component,
                                     initial_value,
-                                    snode_refs,
                                 }),
                             )),
                             method_auths,
@@ -788,11 +786,10 @@ where
                     (None, vault)
                 } else if let Some(ComponentState {
                     component_address,
-                    snode_refs,
                     ..
                 }) = &self.component_state
                 {
-                    if !snode_refs.vault_ids.contains(vault_id) {
+                    if !self.snode_refs.vault_ids.contains(vault_id) {
                         return Err(RuntimeError::VaultNotFound(*vault_id));
                     }
                     let vault: Vault = self
@@ -1025,11 +1022,10 @@ where
             component_address,
             component,
             initial_value,
-            snode_refs,
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
-                snode_refs.extend(ComponentObjectRefs {
+                self.snode_refs.extend(ComponentObjectRefs {
                     vault_ids: initial_value.vault_ids.clone(),
                     kv_store_ids: initial_value.kv_store_ids.clone(),
                 });
@@ -1097,11 +1093,10 @@ where
 
         if let Some(ComponentState {
             component_address,
-            snode_refs,
             ..
         }) = &mut self.component_state
         {
-            if snode_refs.kv_store_ids.contains(&kv_store_id) {
+            if self.snode_refs.kv_store_ids.contains(&kv_store_id) {
                 let substate_value = self.track.read_key_value(
                     Address::KeyValueStore(*component_address, kv_store_id),
                     key.raw,
@@ -1113,7 +1108,7 @@ where
                 if value.is_some() {
                     let value_slice = &value.as_ref().unwrap();
                     let map_entry_objects = Self::process_entry_data(value_slice).unwrap();
-                    snode_refs.extend(map_entry_objects);
+                    self.snode_refs.extend(map_entry_objects);
 
                     // TODO: cleanup with process_entry_data
                     let scrypto_value = ScryptoValue::from_slice(value_slice)
@@ -1149,10 +1144,9 @@ where
                 None => match &self.component_state {
                     Some(ComponentState {
                         component_address,
-                        snode_refs,
                         ..
                     }) => {
-                        if !snode_refs.kv_store_ids.contains(&kv_store_id) {
+                        if !self.snode_refs.kv_store_ids.contains(&kv_store_id) {
                             return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
                         }
                         let old_substate_value = self.track.read_key_value(
