@@ -55,12 +55,12 @@ pub struct CallFrame<
     proofs: HashMap<ProofId, Proof>,
     owned_snodes: ComponentObjects,
 
-    /// Referenced Snodes
+    /// Referenced values
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
-    /// Referenced values, lazily loaded
     component_state: Option<&'p mut ComponentState>,
-    snode_refs: ComponentObjectRefs,
+    kv_store_refs: HashSet<KeyValueStoreId>,
+    vault_refs: HashSet<VaultId>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p AuthZone>,
@@ -316,7 +316,8 @@ where
             buckets,
             proofs,
             owned_snodes: ComponentObjects::new(),
-            snode_refs: ComponentObjectRefs::new(),
+            kv_store_refs: HashSet::new(),
+            vault_refs: HashSet::new(),
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -789,7 +790,7 @@ where
                     ..
                 }) = &self.component_state
                 {
-                    if !self.snode_refs.vault_ids.contains(vault_id) {
+                    if !self.vault_refs.contains(vault_id) {
                         return Err(RuntimeError::VaultNotFound(*vault_id));
                     }
                     let vault: Vault = self
@@ -1025,10 +1026,8 @@ where
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
-                self.snode_refs.extend(ComponentObjectRefs {
-                    vault_ids: initial_value.vault_ids.clone(),
-                    kv_store_ids: initial_value.kv_store_ids.clone(),
-                });
+                self.vault_refs.extend(initial_value.vault_ids.clone());
+                self.kv_store_refs.extend(initial_value.kv_store_ids.clone());
                 let state = component.state().to_vec();
                 return Ok(state);
             }
@@ -1096,7 +1095,7 @@ where
             ..
         }) = &mut self.component_state
         {
-            if self.snode_refs.kv_store_ids.contains(&kv_store_id) {
+            if self.kv_store_refs.contains(&kv_store_id) {
                 let substate_value = self.track.read_key_value(
                     Address::KeyValueStore(*component_address, kv_store_id),
                     key.raw,
@@ -1108,7 +1107,8 @@ where
                 if value.is_some() {
                     let value_slice = &value.as_ref().unwrap();
                     let map_entry_objects = Self::process_entry_data(value_slice).unwrap();
-                    self.snode_refs.extend(map_entry_objects);
+                    self.kv_store_refs.extend(map_entry_objects.kv_store_ids.clone());
+                    self.vault_refs.extend(map_entry_objects.vault_ids.clone());
 
                     // TODO: cleanup with process_entry_data
                     let scrypto_value = ScryptoValue::from_slice(value_slice)
@@ -1146,7 +1146,7 @@ where
                         component_address,
                         ..
                     }) => {
-                        if !self.snode_refs.kv_store_ids.contains(&kv_store_id) {
+                        if !self.kv_store_refs.contains(&kv_store_id) {
                             return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
                         }
                         let old_substate_value = self.track.read_key_value(
