@@ -50,10 +50,10 @@ pub struct CallFrame<
     /// Wasm engine
     wasm_engine: &'w mut W,
 
-    /// Owned Snodes
+    /// Owned Values
     buckets: HashMap<BucketId, Bucket>,
     proofs: HashMap<ProofId, Proof>,
-    owned_snodes: ComponentObjects,
+    owned_values: ComponentObjects,
 
     /// Referenced values
     worktop: Option<Worktop>,
@@ -263,7 +263,7 @@ impl BorrowedSNodeState {
                         .track
                         .return_borrowed_global_mut_value((component_address, vault_id), vault);
                 } else {
-                    frame.owned_snodes.return_borrowed_vault_mut(vault);
+                    frame.owned_values.return_borrowed_vault_mut(vault);
                 }
             }
         }
@@ -332,7 +332,7 @@ where
             wasm_engine,
             buckets,
             proofs,
-            owned_snodes: ComponentObjects::new(),
+            owned_values: ComponentObjects::new(),
             ref_values: HashSet::new(),
             worktop,
             auth_zone,
@@ -356,7 +356,7 @@ where
             resource = ResourceFailure::Resource(bucket.resource_address());
             success = false;
         }
-        for (vault_id, vault) in &self.owned_snodes.vaults {
+        for (vault_id, vault) in &self.owned_values.vaults {
             self.sys_log(
                 Level::Warn,
                 format!("Dangling vault: {:?}, {:?}", vault_id, vault),
@@ -364,7 +364,7 @@ where
             resource = ResourceFailure::Resource(vault.resource_address());
             success = false;
         }
-        for (kv_store_id, kv_store) in &self.owned_snodes.kv_stores {
+        for (kv_store_id, kv_store) in &self.owned_values.kv_stores {
             self.sys_log(
                 Level::Warn,
                 format!(
@@ -449,7 +449,7 @@ where
         let mut vaults = HashMap::new();
         for vault_id in vault_ids {
             let vault = self
-                .owned_snodes
+                .owned_values
                 .vaults
                 .remove(vault_id)
                 .ok_or(RuntimeError::VaultNotFound(*vault_id))?;
@@ -783,7 +783,7 @@ where
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (component, vault) = if let Some(vault) =
-                    self.owned_snodes.borrow_vault_mut(vault_id)
+                    self.owned_values.borrow_vault_mut(vault_id)
                 {
                     (None, vault)
                 } else if let Some(ComponentState {
@@ -908,7 +908,7 @@ where
         );
         self.buckets.extend(received_buckets);
         self.proofs.extend(received_proofs);
-        self.owned_snodes.vaults.extend(received_vaults);
+        self.owned_values.vaults.extend(received_vaults);
 
         // Return borrowed snodes
         if let Borrowed(borrowed) = loaded_snode {
@@ -990,7 +990,7 @@ where
 
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
         let vault_id = self.track.new_vault_id();
-        self.owned_snodes
+        self.owned_values
             .vaults
             .insert(vault_id, Vault::new(container));
         Ok(vault_id)
@@ -1013,10 +1013,10 @@ where
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
         let value = ScryptoValue::from_slice(component.state()).map_err(RuntimeError::ParseScryptoValueError)?;
         verify_stored_value(&value)?;
-        let new_objects = self.owned_snodes.take(value.stored_value_ids())?;
+        let values = self.owned_values.take(value.stored_value_ids())?;
         let address = self.track.create_uuid_value(component);
         self.track
-            .insert_objects_into_component(new_objects, address.clone().into());
+            .insert_objects_into_component(values, address.clone().into());
         Ok(address.into())
     }
 
@@ -1054,10 +1054,10 @@ where
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
-                let new_values = stored_value_update(initial_value, &state)?;
-                let new_objects = self.owned_snodes.take(new_values)?;
+                let new_value_ids = stored_value_update(initial_value, &state)?;
+                let new_values = self.owned_values.take(new_value_ids)?;
                 self.track
-                    .insert_objects_into_component(new_objects, *component_address);
+                    .insert_objects_into_component(new_values, *component_address);
                 component.set_state(state.raw);
                 return Ok(());
             }
@@ -1072,7 +1072,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         verify_stored_key(&key)?;
 
-        if let Some((_, value)) = self.owned_snodes.get_kv_store_entry(&kv_store_id, &key.raw) {
+        if let Some((_, value)) = self.owned_values.get_kv_store_entry(&kv_store_id, &key.raw) {
             match value {
                 Some(v) => {
                     let value = Value::Option {
@@ -1141,7 +1141,7 @@ where
         verify_stored_value(&value)?;
 
         let (old_value, kv_store_state) =
-            match self.owned_snodes.get_kv_store_entry(&kv_store_id, &key.raw) {
+            match self.owned_values.get_kv_store_entry(&kv_store_id, &key.raw) {
                 None => match &self.component_state {
                     Some(ComponentState {
                         component_address,
@@ -1171,26 +1171,26 @@ where
                 Some((root, value)) => Ok((value, Uncommitted { root })),
             }?;
 
-        let new_values = match old_value {
+        let new_value_ids = match old_value {
             None => value.stored_value_ids(),
             Some(old_scrypto_value) => stored_value_update(&old_scrypto_value, &value)?
         };
 
         // Check for cycles
         if let Uncommitted { root } = kv_store_state {
-            if new_values.contains(&StoredValueId::KeyValueStoreId(root.clone())) {
+            if new_value_ids.contains(&StoredValueId::KeyValueStoreId(root.clone())) {
                 return Err(RuntimeError::CyclicKeyValueStore(root));
             }
         }
 
-        let new_objects = self.owned_snodes.take(new_values)?;
+        let new_values = self.owned_values.take(new_value_ids)?;
 
         match kv_store_state {
             Uncommitted { root } => {
-                self.owned_snodes
+                self.owned_values
                     .insert_kv_store_entry(&kv_store_id, key.raw, value);
-                self.owned_snodes
-                    .insert_objects_into_kv_store(new_objects, &root);
+                self.owned_values
+                    .insert_values_into_kv_store(new_values, &root);
             }
             Committed { component_address } => {
                 self.track.set_key_value(
@@ -1199,7 +1199,7 @@ where
                     SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                 );
                 self.track
-                    .insert_objects_into_component(new_objects, component_address);
+                    .insert_objects_into_component(new_values, component_address);
             }
         }
 
@@ -1227,7 +1227,7 @@ where
 
     fn create_kv_store(&mut self) -> KeyValueStoreId {
         let kv_store_id = self.track.new_kv_store_id();
-        self.owned_snodes
+        self.owned_values
             .kv_stores
             .insert(kv_store_id, UnclaimedKeyValueStore::new());
         kv_store_id

@@ -58,15 +58,24 @@ impl UnclaimedKeyValueStore {
         }
     }
 
-    pub fn insert_descendents(&mut self, new_descendents: ComponentObjects) {
-        for (vault_id, vault) in new_descendents.vaults {
-            self.insert_vault(vault_id, vault);
-        }
-
-        for (kv_store_id, child_kv_store) in new_descendents.kv_stores {
-            self.insert_store_descendent(child_kv_store, kv_store_id);
+    pub fn insert_descendents(&mut self, new_descendents: Vec<StoredValue>) {
+        for value in new_descendents {
+            match value {
+                StoredValue::UnclaimedKeyValueStore(id, kv_store) => {
+                    self.insert_store_descendent(kv_store, id);
+                }
+                StoredValue::Vault(id, vault) => {
+                    self.insert_vault(id, vault);
+                }
+            }
         }
     }
+}
+
+#[derive(Debug)]
+pub enum StoredValue {
+    UnclaimedKeyValueStore(KeyValueStoreId, UnclaimedKeyValueStore),
+    Vault(VaultId, Vault)
 }
 
 /// Component type objects which will eventually move into a component
@@ -89,13 +98,12 @@ impl ComponentObjects {
         }
     }
 
-    pub fn take(&mut self, other: HashSet<StoredValueId>) -> Result<ComponentObjects, RuntimeError> {
+    pub fn take(&mut self, other: HashSet<StoredValueId>) -> Result<Vec<StoredValue>, RuntimeError> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
-        let mut vaults = HashMap::new();
-        let mut kv_stores = HashMap::new();
+        let mut taken_values = Vec::new();
 
         for id in other {
             match id {
@@ -104,28 +112,24 @@ impl ComponentObjects {
                         .kv_stores
                         .remove(&kv_store_id)
                         .ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id))?;
-                    kv_stores.insert(kv_store_id, kv_store);
+                    taken_values.push(StoredValue::UnclaimedKeyValueStore(kv_store_id, kv_store));
                 }
                 StoredValueId::VaultId(vault_id) => {
                     let vault = self
                         .vaults
                         .remove(&vault_id)
                         .ok_or(RuntimeError::VaultNotFound(vault_id))?;
-                    vaults.insert(vault_id, vault);
+                    taken_values.push(StoredValue::Vault(vault_id, vault));
                 }
             }
         }
 
-        Ok(ComponentObjects {
-            vaults,
-            kv_stores,
-            borrowed_vault: None,
-        })
+        Ok(taken_values)
     }
 
-    pub fn insert_objects_into_kv_store(
+    pub fn insert_values_into_kv_store(
         &mut self,
-        new_objects: ComponentObjects,
+        values: Vec<StoredValue>,
         kv_store_id: &KeyValueStoreId,
     ) {
         if self.borrowed_vault.is_some() {
@@ -133,7 +137,8 @@ impl ComponentObjects {
         }
 
         let unclaimed_kv_store = self.kv_stores.get_mut(kv_store_id).unwrap();
-        unclaimed_kv_store.insert_descendents(new_objects);
+
+        unclaimed_kv_store.insert_descendents(values);
     }
 
     pub fn insert_kv_store_entry(
