@@ -17,7 +17,7 @@ pub struct Receipt {
     pub commit_receipt: Option<CommitReceipt>,
     pub instructions: Vec<ExecutableInstruction>,
     pub result: Result<(), RuntimeError>,
-    pub outputs: Vec<ScryptoValue>,
+    pub outputs: Vec<Vec<u8>>,
     pub logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -72,8 +72,13 @@ impl fmt::Debug for Receipt {
         }
 
         write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
-        for (i, result) in self.outputs.iter().enumerate() {
-            write!(f, "\n{} {:?}", prefix!(i, self.outputs), result)?;
+        for (i, output) in self.outputs.iter().enumerate() {
+            write!(
+                f,
+                "\n{} {:?}",
+                prefix!(i, self.outputs),
+                ScryptoValue::from_slice(output).expect("Invalid call return data")
+            )?;
         }
 
         write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;

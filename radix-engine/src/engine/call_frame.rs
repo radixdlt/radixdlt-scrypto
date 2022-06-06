@@ -406,7 +406,7 @@ where
 
     /// Process and parse entry data from any component object (components and maps)
     fn process_entry_data(data: &[u8]) -> Result<ComponentObjectRefs, RuntimeError> {
-        let value = ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
+        let value = ScryptoValue::from_slice(data).map_err(RuntimeError::DecodeError)?;
         verify_stored_value(&value)?;
 
         // lazy map allowed
@@ -560,7 +560,7 @@ where
             self.invoke_snode2(
                 SNodeRef::AuthZoneRef,
                 "clear".to_string(),
-                ScryptoValue::from_value(&AuthZoneClearInput {}),
+                ScryptoValue::from_trusted(&AuthZoneClearInput {}),
             )?;
         }
         self.check_resource()?;
@@ -1079,15 +1079,13 @@ where
                     let value = Value::Option {
                         value: Box::new(Some(v.dom)),
                     };
-                    let encoded = encode_any(&value);
-                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
+                    return Ok(ScryptoValue::from_value(value).unwrap());
                 }
                 None => {
                     let value = Value::Option {
-                        value: Box::new(Option::None),
+                        value: Box::new(None),
                     };
-                    let encoded = encode_any(&value);
-                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
+                    return Ok(ScryptoValue::from_value(value).unwrap());
                 }
             }
         }
@@ -1112,19 +1110,17 @@ where
                     snode_refs.extend(map_entry_objects);
 
                     // TODO: cleanup with process_entry_data
-                    let scrypto_value = ScryptoValue::from_slice(value_slice)
-                        .map_err(RuntimeError::ParseScryptoValueError)?;
+                    let scrypto_value =
+                        ScryptoValue::from_slice(value_slice).map_err(RuntimeError::DecodeError)?;
                     let value = Value::Option {
                         value: Box::new(Some(scrypto_value.dom)),
                     };
-                    let encoded = encode_any(&value);
-                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
+                    return Ok(ScryptoValue::from_value(value).unwrap());
                 } else {
                     let value = Value::Option {
                         value: Box::new(Option::None),
                     };
-                    let encoded = encode_any(&value);
-                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
+                    return Ok(ScryptoValue::from_value(value).unwrap());
                 }
             }
         }
@@ -1294,7 +1290,7 @@ where
         simulated_auth_zone
             .main(
                 "clear",
-                ScryptoValue::from_value(&AuthZoneClearInput {}),
+                ScryptoValue::from_trusted(&AuthZoneClearInput {}),
                 self,
             )
             .map_err(RuntimeError::AuthZoneError)?;

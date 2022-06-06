@@ -18,13 +18,6 @@ use crate::engine::types::*;
 use crate::math::*;
 use crate::resource::*;
 
-/// Represents an error when parsing a Scrypto value.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseScryptoValueError {
-    DecodeError(DecodeError),
-    CustomValueCheckError(ScryptoCustomValueCheckError),
-}
-
 pub enum ScryptoValueReplaceError {
     ProofIdNotFound(ProofId),
     BucketIdNotFound(BucketId),
@@ -41,88 +34,28 @@ pub struct ScryptoValue {
     pub lazy_map_ids: HashSet<LazyMapId>,
 }
 
-impl Encode for ScryptoValue {
-    fn encode_type(&self, encoder: &mut Encoder) {
-        match &self.dom {
-            Value::Unit => encoder.write_type(TYPE_UNIT),
-            Value::Bool { .. } => encoder.write_type(TYPE_BOOL),
-            Value::I8 { .. } => encoder.write_type(TYPE_I8),
-            Value::I16 { .. } => encoder.write_type(TYPE_I16),
-            Value::I32 { .. } => encoder.write_type(TYPE_I32),
-            Value::I64 { .. } => encoder.write_type(TYPE_I64),
-            Value::I128 { .. } => encoder.write_type(TYPE_I128),
-            Value::U8 { .. } => encoder.write_type(TYPE_U8),
-            Value::U16 { .. } => encoder.write_type(TYPE_U16),
-            Value::U32 { .. } => encoder.write_type(TYPE_U32),
-            Value::U64 { .. } => encoder.write_type(TYPE_U64),
-            Value::U128 { .. } => encoder.write_type(TYPE_U128),
-            Value::String { .. } => encoder.write_type(TYPE_STRING),
-            Value::Struct { .. } => encoder.write_type(TYPE_STRUCT),
-            Value::Enum { .. } => encoder.write_type(TYPE_ENUM),
-            Value::Option { .. } => encoder.write_type(TYPE_OPTION),
-            Value::Array { .. } => encoder.write_type(TYPE_ARRAY),
-            Value::Tuple { .. } => encoder.write_type(TYPE_TUPLE),
-            Value::Result { .. } => encoder.write_type(TYPE_RESULT),
-            Value::Vec { .. } => encoder.write_type(TYPE_VEC),
-            Value::TreeSet { .. } => encoder.write_type(TYPE_TREE_SET),
-            Value::TreeMap { .. } => encoder.write_type(TYPE_TREE_MAP),
-            Value::HashSet { .. } => encoder.write_type(TYPE_HASH_SET),
-            Value::HashMap { .. } => encoder.write_type(TYPE_HASH_MAP),
-            Value::Custom { type_id, .. } => encoder.write_type(*type_id),
-        }
-    }
-
-    fn encode_value(&self, encoder: &mut Encoder) {
-        encoder.write_slice(&self.raw);
-    }
-}
-
-impl Decode for ScryptoValue {
-    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
-        decoder.read_type()?;
-        Ok(())
-    }
-
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        let remaining = decoder.remaining();
-        let slice = decoder.read_bytes(remaining)?;
-        let dom = decode_any(slice)?;
-        let (bucket_ids, proof_ids, vault_ids, lazy_map_ids) = Self::extract_runtime_objects(&dom)?;
-        Ok(Self {
-            raw: slice.to_vec(),
-            dom,
-            bucket_ids,
-            proof_ids,
-            vault_ids,
-            lazy_map_ids,
-        })
-    }
-}
-
 impl ScryptoValue {
     pub fn unit() -> Self {
-        Self::from_value(&())
+        Self::from_trusted(&())
     }
 
-    pub fn from_value<T: Encode>(value: &T) -> Self {
-        ScryptoValue::from_slice(&scrypto_encode(value)).unwrap()
+    pub fn from_trusted<T: Encode>(value: &T) -> Self {
+        let bytes = scrypto_encode(value);
+        Self::from_slice(&bytes).expect("Failed to convert trusted value into ScryptoValue")
     }
 
-    pub fn from_any(value: &Value) -> Result<Self, ParseScryptoValueError> {
-        ScryptoValue::from_slice(&encode_any(value))
+    pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
+        let value = decode_any(slice)?;
+        Self::from_value(value)
     }
 
-    pub fn from_slice(slice: &[u8]) -> Result<Self, ParseScryptoValueError> {
-        // Decode with SBOR
-        let value = decode_any(slice).map_err(ParseScryptoValueError::DecodeError)?;
-
-        // Scrypto specific types checking
+    pub fn from_value(value: Value) -> Result<Self, DecodeError> {
         let mut checker = ScryptoCustomValueChecker::new();
         traverse_any(&mut MutableSborPath::new(), &value, &mut checker)
-            .map_err(ParseScryptoValueError::CustomValueCheckError)?;
+            .map_err(|e| DecodeError::CustomError(format!("{:?}", e)))?;
 
-        Ok(ScryptoValue {
-            raw: slice.to_vec(),
+        Ok(Self {
+            raw: encode_any(&value),
             dom: value,
             bucket_ids: checker
                 .buckets
@@ -199,37 +132,6 @@ impl ScryptoValue {
         proof_ids: &HashMap<ProofId, String>,
     ) -> String {
         ScryptoValueFormatter::format_value(&self.dom, bucket_ids, proof_ids)
-    }
-
-    fn extract_runtime_objects(
-        dom: &Value,
-    ) -> Result<
-        (
-            HashMap<BucketId, SborPath>,
-            HashMap<ProofId, SborPath>,
-            HashSet<VaultId>,
-            HashSet<LazyMapId>,
-        ),
-        DecodeError,
-    > {
-        let mut checker = ScryptoCustomValueChecker::new();
-        traverse_any(&mut MutableSborPath::new(), dom, &mut checker)
-            .map_err(|e| DecodeError::CustomError(format!("{:?}", e)))?;
-
-        Ok((
-            checker
-                .buckets
-                .drain()
-                .map(|(e, path)| (e.0, path))
-                .collect(),
-            checker
-                .proofs
-                .drain()
-                .map(|(e, path)| (e.0, path))
-                .collect(),
-            checker.vaults.iter().map(|e| e.0).collect(),
-            checker.lazy_maps.iter().map(|e| e.id).collect(),
-        ))
     }
 }
 
@@ -622,11 +524,6 @@ mod tests {
             scrypto::resource::Bucket(0),
         ]);
         let error = ScryptoValue::from_slice(&buckets).expect_err("Should be an error");
-        assert_eq!(
-            error,
-            ParseScryptoValueError::CustomValueCheckError(
-                ScryptoCustomValueCheckError::DuplicateIds
-            )
-        );
+        assert_eq!(error, DecodeError::CustomError("DuplicateIds".to_string()));
     }
 }

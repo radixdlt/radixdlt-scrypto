@@ -4,7 +4,6 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::DecodeError;
 use scrypto::engine::types::*;
-use scrypto::values::*;
 use transaction::errors::*;
 
 use crate::model::*;
@@ -17,7 +16,7 @@ pub enum RuntimeError {
     InvokeError(Box<InvokeError>),
 
     /// The data is not a valid SBOR value.
-    ParseScryptoValueError(ParseScryptoValueError),
+    DecodeError(DecodeError),
 
     AuthZoneDoesNotExist,
 

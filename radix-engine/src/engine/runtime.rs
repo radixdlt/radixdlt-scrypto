@@ -57,8 +57,7 @@ where
         snode_ref: SNodeRef,
         call_data: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let call_data =
-            ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
+        let call_data = ScryptoValue::from_slice(&call_data).map_err(RuntimeError::DecodeError)?;
         let result = self.system_api.invoke_snode(snode_ref, call_data)?;
         Ok(result.raw)
     }
@@ -69,8 +68,7 @@ where
         method_name: String,
         call_data: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let call_data =
-            ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
+        let call_data = ScryptoValue::from_slice(&call_data).map_err(RuntimeError::DecodeError)?;
         let result = self
             .system_api
             .invoke_snode2(snode_ref, method_name, call_data)?;
@@ -130,8 +128,7 @@ where
         lazy_map_id: LazyMapId,
         key: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let scrypto_key =
-            ScryptoValue::from_slice(&key).map_err(RuntimeError::ParseScryptoValueError)?;
+        let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let value = self
             .system_api
             .read_lazy_map_entry(lazy_map_id, scrypto_key)?;
@@ -144,10 +141,8 @@ where
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let scrypto_key =
-            ScryptoValue::from_slice(&key).map_err(RuntimeError::ParseScryptoValueError)?;
-        let scrypto_value =
-            ScryptoValue::from_slice(&value).map_err(RuntimeError::ParseScryptoValueError)?;
+        let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
+        let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
         self.system_api
             .write_lazy_map_entry(lazy_map_id, scrypto_key, scrypto_value)?;
         Ok(())
@@ -177,7 +172,7 @@ where
 }
 
 fn encode<T: Encode>(output: T) -> ScryptoValue {
-    ScryptoValue::from_value(&output)
+    ScryptoValue::from_trusted(&output)
 }
 
 impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime

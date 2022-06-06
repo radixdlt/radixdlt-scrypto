@@ -3,6 +3,7 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;
+use sbor::Value;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::engine::types::*;
 use scrypto::values::*;
@@ -121,15 +122,23 @@ fn dump_lazy_map<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
     for (last, (k, v)) in map.iter().identify_last() {
         let k_validated = ScryptoValue::from_slice(k).unwrap();
         let v_validated = ScryptoValue::from_slice(v).unwrap();
-        writeln!(
-            output,
-            "{} {} => {}",
-            list_item_prefix(last),
-            k_validated,
-            v_validated
-        );
-        referenced_maps.extend(v_validated.lazy_map_ids);
-        referenced_vaults.extend(v_validated.vault_ids);
+        match v_validated.dom {
+            Value::Option { value } => {
+                if let Some(v) = *value {
+                    let v_inner = ScryptoValue::from_value(v).unwrap();
+                    writeln!(
+                        output,
+                        "{} {} => {}",
+                        list_item_prefix(last),
+                        k_validated,
+                        v_inner
+                    );
+                    referenced_maps.extend(v_inner.lazy_map_ids);
+                    referenced_vaults.extend(v_inner.vault_ids);
+                }
+            }
+            _ => panic!("LazyMap entry value is not an Option"),
+        }
     }
     Ok((referenced_maps, referenced_vaults))
 }

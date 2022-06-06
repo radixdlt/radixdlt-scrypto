@@ -86,7 +86,7 @@ impl MethodAccessRule {
             }
         }
 
-        Ok(ScryptoValue::from_value(&()))
+        Ok(ScryptoValue::from_trusted(&()))
     }
 
     fn update(&mut self, method_auth: AccessRule) {
@@ -401,7 +401,7 @@ impl ResourceManager {
                     None
                 };
 
-                Ok(ScryptoValue::from_value(&(resource_address, bucket_id)))
+                Ok(ScryptoValue::from_trusted(&(resource_address, bucket_id)))
             }
         }
     }
@@ -430,7 +430,7 @@ impl ResourceManager {
                 let vault_id = system_api
                     .create_vault(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateVault)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Vault(
+                Ok(ScryptoValue::from_trusted(&scrypto::resource::Vault(
                     vault_id,
                 )))
             }
@@ -440,7 +440,7 @@ impl ResourceManager {
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_trusted(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
@@ -449,20 +449,20 @@ impl ResourceManager {
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_trusted(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
-            ResourceManagerMethod::GetMetadata() => Ok(ScryptoValue::from_value(&self.metadata)),
+            ResourceManagerMethod::GetMetadata() => Ok(ScryptoValue::from_trusted(&self.metadata)),
             ResourceManagerMethod::GetResourceType() => {
-                Ok(ScryptoValue::from_value(&self.resource_type))
+                Ok(ScryptoValue::from_trusted(&self.resource_type))
             }
             ResourceManagerMethod::GetTotalSupply() => {
-                Ok(ScryptoValue::from_value(&self.total_supply))
+                Ok(ScryptoValue::from_trusted(&self.total_supply))
             }
             ResourceManagerMethod::UpdateMetadata(new_metadata) => {
                 self.update_metadata(new_metadata)?;
-                Ok(ScryptoValue::from_value(&()))
+                Ok(ScryptoValue::from_trusted(&()))
             }
             ResourceManagerMethod::UpdateNonFungibleData(non_fungible_id, new_mutable_data) => {
                 let non_fungible_address =
@@ -474,13 +474,13 @@ impl ResourceManager {
                 non_fungible.set_mutable_data(data.raw);
                 system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
 
-                Ok(ScryptoValue::from_value(&()))
+                Ok(ScryptoValue::from_trusted(&()))
             }
             ResourceManagerMethod::NonFungibleExists(non_fungible_id) => {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), non_fungible_id);
                 let non_fungible = system_api.get_non_fungible(&non_fungible_address);
-                Ok(ScryptoValue::from_value(&non_fungible.is_some()))
+                Ok(ScryptoValue::from_trusted(&non_fungible.is_some()))
             }
             ResourceManagerMethod::GetNonFungible(non_fungible_id) => {
                 let non_fungible_address =
@@ -488,7 +488,7 @@ impl ResourceManager {
                 let non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
                     ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                 )?;
-                Ok(ScryptoValue::from_value(&[
+                Ok(ScryptoValue::from_trusted(&[
                     non_fungible.immutable_data(),
                     non_fungible.mutable_data(),
                 ]))

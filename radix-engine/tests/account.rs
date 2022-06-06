@@ -104,6 +104,6 @@ fn test_account_balance() {
     // Assert
     assert_eq!(
         receipt.outputs[0],
-        ScryptoValue::from_value(&Decimal::from(1000000))
+        ScryptoValue::from_trusted(&Decimal::from(1000000)).raw
     );
 }

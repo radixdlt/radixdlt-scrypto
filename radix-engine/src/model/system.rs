@@ -23,11 +23,11 @@ impl System {
         match function {
             SystemFunction::GetEpoch() => {
                 // TODO: Make this stateful
-                Ok(ScryptoValue::from_value(&system_api.get_epoch()))
+                Ok(ScryptoValue::from_trusted(&system_api.get_epoch()))
             }
-            SystemFunction::GetTransactionHash() => {
-                Ok(ScryptoValue::from_value(&system_api.get_transaction_hash()))
-            }
+            SystemFunction::GetTransactionHash() => Ok(ScryptoValue::from_trusted(
+                &system_api.get_transaction_hash(),
+            )),
         }
     }
 }

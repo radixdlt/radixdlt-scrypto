@@ -1,5 +1,5 @@
 use sbor::rust::collections::*;
-use sbor::{encode_any, Value};
+use sbor::{encode_any, DecodeError, Value};
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -10,7 +10,7 @@ use crate::validation::*;
 #[derive(Debug, Clone)]
 pub enum DecompileError {
     IdValidationError(IdValidationError),
-    ParseScryptoValueError(ParseScryptoValueError),
+    DecodeError(DecodeError),
 }
 
 pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileError> {
@@ -216,8 +216,8 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                 blueprint_name,
                 call_data: arg,
             } => {
-                let validated_arg = ScryptoValue::from_slice(&arg)
-                    .map_err(DecompileError::ParseScryptoValueError)?;
+                let validated_arg =
+                    ScryptoValue::from_slice(&arg).map_err(DecompileError::DecodeError)?;
                 if let Value::Enum { name, fields } = validated_arg.dom {
                     buf.push_str(&format!(
                         "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
@@ -226,7 +226,7 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                     for field in fields {
                         let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
-                            .map_err(DecompileError::ParseScryptoValueError)?;
+                            .map_err(DecompileError::DecodeError)?;
                         id_validator
                             .move_resources(&validated_arg)
                             .map_err(DecompileError::IdValidationError)?;
@@ -243,8 +243,8 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                 component_address,
                 call_data: arg,
             } => {
-                let validated_arg = ScryptoValue::from_slice(&arg)
-                    .map_err(DecompileError::ParseScryptoValueError)?;
+                let validated_arg =
+                    ScryptoValue::from_slice(&arg).map_err(DecompileError::DecodeError)?;
                 if let Value::Enum { name, fields } = validated_arg.dom {
                     buf.push_str(&format!(
                         "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
@@ -254,7 +254,7 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                     for field in fields {
                         let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
-                            .map_err(DecompileError::ParseScryptoValueError)?;
+                            .map_err(DecompileError::DecodeError)?;
                         id_validator
                             .move_resources(&validated_arg)
                             .map_err(DecompileError::IdValidationError)?;

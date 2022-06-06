@@ -175,7 +175,7 @@ impl Bucket {
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| BucketError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_trusted(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
@@ -188,7 +188,7 @@ impl Bucket {
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| BucketError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_trusted(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
@@ -198,7 +198,7 @@ impl Bucket {
                 let ids = self
                     .total_ids()
                     .map_err(BucketError::ResourceContainerError)?;
-                Ok(ScryptoValue::from_value(&ids))
+                Ok(ScryptoValue::from_trusted(&ids))
             }
             "put" => {
                 let input: BucketPutInput =
@@ -208,17 +208,17 @@ impl Bucket {
                     .map_err(|_| BucketError::CouldNotTakeBucket)?;
                 self.put(bucket)
                     .map_err(BucketError::ResourceContainerError)?;
-                Ok(ScryptoValue::from_value(&()))
+                Ok(ScryptoValue::from_trusted(&()))
             }
             "amount" => {
                 let _: BucketGetAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
-                Ok(ScryptoValue::from_value(&self.total_amount()))
+                Ok(ScryptoValue::from_trusted(&self.total_amount()))
             }
             "resource_address" => {
                 let _: BucketGetResourceAddressInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
-                Ok(ScryptoValue::from_value(&self.resource_address()))
+                Ok(ScryptoValue::from_trusted(&self.resource_address()))
             }
             "create_proof" => {
                 let _: BucketCreateProofInput =
@@ -229,7 +229,7 @@ impl Bucket {
                 let proof_id = system_api
                     .create_proof(proof)
                     .map_err(|_| BucketError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_value(&scrypto::resource::Proof(
+                Ok(ScryptoValue::from_trusted(&scrypto::resource::Proof(
                     proof_id,
                 )))
             }
@@ -262,7 +262,7 @@ impl Bucket {
                 system_api
                     .return_borrowed_global_resource_manager(resource_address, resource_manager);
 
-                Ok(ScryptoValue::from_value(&()))
+                Ok(ScryptoValue::from_trusted(&()))
             }
             _ => Err(BucketError::MethodNotFound(method_name.to_string())),
         }
