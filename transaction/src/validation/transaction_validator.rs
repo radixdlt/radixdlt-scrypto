@@ -228,7 +228,9 @@ impl TransactionValidator {
         Ok(())
     }
 
-    fn validate_signatures(transaction: &NotarizedTransaction) -> Result<(), SignatureValidationError> {
+    fn validate_signatures(
+        transaction: &NotarizedTransaction,
+    ) -> Result<(), SignatureValidationError> {
         // verify intent signature
         let intent_payload = transaction.signed_intent.intent.to_bytes();
         for sig in &transaction.signed_intent.intent_signatures {
