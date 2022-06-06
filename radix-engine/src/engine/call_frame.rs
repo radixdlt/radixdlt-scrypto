@@ -67,7 +67,10 @@ pub struct CallFrame<
     phantom: PhantomData<I>,
 }
 
-fn stored_value_update(old: &ScryptoValue, new: &ScryptoValue) -> Result<HashSet<StoredValueId>, RuntimeError> {
+fn stored_value_update(
+    old: &ScryptoValue,
+    new: &ScryptoValue,
+) -> Result<HashSet<StoredValueId>, RuntimeError> {
     let old_ids = old.stored_value_ids();
     let new_ids = new.stored_value_ids();
     for old_id in &old_ids {
@@ -787,8 +790,7 @@ where
                 {
                     (None, vault)
                 } else if let Some(ComponentState {
-                    component_address,
-                    ..
+                    component_address, ..
                 }) = &self.component_state
                 {
                     if !self.ref_values.contains(&StoredValueId::VaultId(*vault_id)) {
@@ -1011,7 +1013,8 @@ where
     }
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
-        let value = ScryptoValue::from_slice(component.state()).map_err(RuntimeError::ParseScryptoValueError)?;
+        let value = ScryptoValue::from_slice(component.state())
+            .map_err(RuntimeError::ParseScryptoValueError)?;
         verify_stored_value(&value)?;
         let new_objects = self.owned_snodes.take(value.stored_value_ids())?;
         let address = self.track.create_uuid_value(component);
@@ -1092,11 +1095,13 @@ where
         }
 
         if let Some(ComponentState {
-            component_address,
-            ..
+            component_address, ..
         }) = &mut self.component_state
         {
-            if self.ref_values.contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
+            if self
+                .ref_values
+                .contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+            {
                 let substate_value = self.track.read_key_value(
                     Address::KeyValueStore(*component_address, kv_store_id),
                     key.raw,
@@ -1144,10 +1149,12 @@ where
             match self.owned_snodes.get_kv_store_entry(&kv_store_id, &key.raw) {
                 None => match &self.component_state {
                     Some(ComponentState {
-                        component_address,
-                        ..
+                        component_address, ..
                     }) => {
-                        if !self.ref_values.contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
+                        if !self
+                            .ref_values
+                            .contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+                        {
                             return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
                         }
                         let old_substate_value = self.track.read_key_value(
@@ -1173,7 +1180,7 @@ where
 
         let new_values = match old_value {
             None => value.stored_value_ids(),
-            Some(old_scrypto_value) => stored_value_update(&old_scrypto_value, &value)?
+            Some(old_scrypto_value) => stored_value_update(&old_scrypto_value, &value)?,
         };
 
         // Check for cycles

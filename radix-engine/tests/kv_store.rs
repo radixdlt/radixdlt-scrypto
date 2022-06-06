@@ -199,7 +199,10 @@ fn cannot_overwrite_lazy_maps() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::StoredValueRemoved(StoredValueId::KeyValueStoreId(_)) => {}
-        _ => panic!("Should be stored value removed error but was {}", runtime_error),
+        _ => panic!(
+            "Should be stored value removed error but was {}",
+            runtime_error
+        ),
     }
 }
 

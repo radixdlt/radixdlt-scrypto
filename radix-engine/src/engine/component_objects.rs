@@ -89,7 +89,10 @@ impl ComponentObjects {
         }
     }
 
-    pub fn take(&mut self, other: HashSet<StoredValueId>) -> Result<ComponentObjects, RuntimeError> {
+    pub fn take(
+        &mut self,
+        other: HashSet<StoredValueId>,
+    ) -> Result<ComponentObjects, RuntimeError> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
