@@ -1,6 +1,7 @@
 use colored::*;
 use sbor::path::SborPath;
 use sbor::rust::borrow::ToOwned;
+use sbor::rust::boxed::Box;
 use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::marker::*;
@@ -9,10 +10,9 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::call_data;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::resource::AuthZoneMethod;
+use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
@@ -66,6 +66,32 @@ pub struct CallFrame<
     component_state: Option<&'p mut ComponentState>,
 
     phantom: PhantomData<I>,
+}
+
+fn verify_stored_value(value: &ScryptoValue) -> Result<(), RuntimeError> {
+    if !value.bucket_ids.is_empty() {
+        return Err(RuntimeError::BucketNotAllowed);
+    }
+    if !value.proof_ids.is_empty() {
+        return Err(RuntimeError::ProofNotAllowed);
+    }
+    Ok(())
+}
+
+fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
+    if !value.bucket_ids.is_empty() {
+        return Err(RuntimeError::BucketNotAllowed);
+    }
+    if !value.proof_ids.is_empty() {
+        return Err(RuntimeError::ProofNotAllowed);
+    }
+    if !value.vault_ids.is_empty() {
+        return Err(RuntimeError::VaultNotAllowed);
+    }
+    if !value.lazy_map_ids.is_empty() {
+        return Err(RuntimeError::LazyMapNotAllowed);
+    }
+    Ok(())
 }
 
 pub enum ConsumedSNodeState {
@@ -380,20 +406,14 @@ where
 
     /// Process and parse entry data from any component object (components and maps)
     fn process_entry_data(data: &[u8]) -> Result<ComponentObjectRefs, RuntimeError> {
-        let validated =
-            ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
-        if !validated.bucket_ids.is_empty() {
-            return Err(RuntimeError::BucketNotAllowed);
-        }
-        if !validated.proof_ids.is_empty() {
-            return Err(RuntimeError::ProofNotAllowed);
-        }
+        let value = ScryptoValue::from_slice(data).map_err(RuntimeError::ParseScryptoValueError)?;
+        verify_stored_value(&value)?;
 
         // lazy map allowed
         // vaults allowed
         Ok(ComponentObjectRefs {
-            lazy_map_ids: validated.lazy_map_ids,
-            vault_ids: validated.vault_ids,
+            lazy_map_ids: value.lazy_map_ids,
+            vault_ids: value.vault_ids,
         })
     }
 
@@ -488,7 +508,7 @@ where
                 ValidatedPackage::static_main(call_data, self).map_err(RuntimeError::PackageError)
             }
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
-                .main(call_data, self)
+                .main(method_name, call_data, self)
                 .map_err(RuntimeError::AuthZoneError),
             SNodeState::Worktop(worktop) => worktop
                 .main(call_data, self)
@@ -540,7 +560,7 @@ where
             self.invoke_snode2(
                 SNodeRef::AuthZoneRef,
                 "clear".to_string(),
-                ScryptoValue::from_value(&AuthZoneMethod::Clear()),
+                ScryptoValue::from_value(&AuthZoneClearInput {}),
             )?;
         }
         self.check_resource()?;
@@ -1049,10 +1069,27 @@ where
     fn read_lazy_map_entry(
         &mut self,
         lazy_map_id: LazyMapId,
-        key: Vec<u8>,
-    ) -> Result<Option<Vec<u8>>, RuntimeError> {
-        if let Some((_, value)) = self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key) {
-            return Ok(value);
+        key: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        verify_stored_key(&key)?;
+
+        if let Some((_, value)) = self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key.raw) {
+            match value {
+                Some(v) => {
+                    let value = Value::Option {
+                        value: Box::new(Some(v.dom)),
+                    };
+                    let encoded = encode_any(&value);
+                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
+                }
+                None => {
+                    let value = Value::Option {
+                        value: Box::new(Option::None),
+                    };
+                    let encoded = encode_any(&value);
+                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
+                }
+            }
         }
 
         if let Some(ComponentState {
@@ -1064,18 +1101,31 @@ where
             if snode_refs.lazy_map_ids.contains(&lazy_map_id) {
                 let substate_value = self
                     .track
-                    .read_key_value(Address::LazyMap(*component_address, lazy_map_id), key);
+                    .read_key_value(Address::LazyMap(*component_address, lazy_map_id), key.raw);
                 let value = match substate_value {
                     SubstateValue::LazyMapEntry(v) => v,
                     _ => panic!("Substate value is not a LazyMapEntry"),
                 };
                 if value.is_some() {
-                    let map_entry_objects =
-                        Self::process_entry_data(&value.as_ref().unwrap()).unwrap();
+                    let value_slice = &value.as_ref().unwrap();
+                    let map_entry_objects = Self::process_entry_data(value_slice).unwrap();
                     snode_refs.extend(map_entry_objects);
-                }
 
-                return Ok(value);
+                    // TODO: cleanup with process_entry_data
+                    let scrypto_value = ScryptoValue::from_slice(value_slice)
+                        .map_err(RuntimeError::ParseScryptoValueError)?;
+                    let value = Value::Option {
+                        value: Box::new(Some(scrypto_value.dom)),
+                    };
+                    let encoded = encode_any(&value);
+                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
+                } else {
+                    let value = Value::Option {
+                        value: Box::new(Option::None),
+                    };
+                    let encoded = encode_any(&value);
+                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
+                }
             }
         }
 
@@ -1085,11 +1135,13 @@ where
     fn write_lazy_map_entry(
         &mut self,
         lazy_map_id: LazyMapId,
-        key: Vec<u8>,
-        value: Vec<u8>,
+        key: ScryptoValue,
+        value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
+        verify_stored_value(&value)?;
+
         let (old_value, lazy_map_state) =
-            match self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key) {
+            match self.owned_snodes.get_lazy_map_entry(&lazy_map_id, &key.raw) {
                 None => match &self.component_state {
                     Some(ComponentState {
                         component_address,
@@ -1101,12 +1153,13 @@ where
                         }
                         let old_substate_value = self.track.read_key_value(
                             Address::LazyMap(*component_address, lazy_map_id),
-                            key.clone(),
+                            key.raw.clone(),
                         );
                         let old_value = match old_substate_value {
                             SubstateValue::LazyMapEntry(v) => v,
                             _ => panic!("Substate value is not a LazyMapEntry"),
-                        };
+                        }
+                        .map(|v| ScryptoValue::from_slice(&v).unwrap());
                         Ok((
                             old_value,
                             Committed {
@@ -1118,10 +1171,16 @@ where
                 },
                 Some((root, value)) => Ok((value, Uncommitted { root })),
             }?;
-        let mut new_entry_object_refs = Self::process_entry_data(&value)?;
+        let mut new_entry_object_refs = ComponentObjectRefs {
+            lazy_map_ids: value.lazy_map_ids.clone(),
+            vault_ids: value.vault_ids.clone(),
+        };
         let old_entry_object_refs = match old_value {
             None => ComponentObjectRefs::new(),
-            Some(e) => Self::process_entry_data(&e).unwrap(),
+            Some(e) => ComponentObjectRefs {
+                lazy_map_ids: e.lazy_map_ids,
+                vault_ids: e.vault_ids,
+            },
         };
         new_entry_object_refs.remove(&old_entry_object_refs)?;
 
@@ -1137,15 +1196,15 @@ where
         match lazy_map_state {
             Uncommitted { root } => {
                 self.owned_snodes
-                    .insert_lazy_map_entry(&lazy_map_id, key, value);
+                    .insert_lazy_map_entry(&lazy_map_id, key.raw, value);
                 self.owned_snodes
                     .insert_objects_into_map(new_objects, &root);
             }
             Committed { component_address } => {
                 self.track.set_key_value(
                     Address::LazyMap(component_address, lazy_map_id),
-                    key,
-                    SubstateValue::LazyMapEntry(Some(value)),
+                    key.raw,
+                    SubstateValue::LazyMapEntry(Some(value.raw)),
                 );
                 self.track
                     .insert_objects_into_component(new_objects, component_address);
@@ -1234,7 +1293,8 @@ where
         let is_authorized = method_authorization.check(&[&simulated_auth_zone]).is_ok();
         simulated_auth_zone
             .main(
-                ScryptoValue::from_slice(&call_data!(clear())).unwrap(),
+                "clear",
+                ScryptoValue::from_value(&AuthZoneClearInput {}),
                 self,
             )
             .map_err(RuntimeError::AuthZoneError)?;
