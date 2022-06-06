@@ -85,14 +85,14 @@ where
     fn read_lazy_map_entry(
         &mut self,
         lazy_map_id: LazyMapId,
-        key: Vec<u8>,
-    ) -> Result<Option<Vec<u8>>, RuntimeError>;
+        key: ScryptoValue,
+    ) -> Result<ScryptoValue, RuntimeError>;
 
     fn write_lazy_map_entry(
         &mut self,
         lazy_map_id: LazyMapId,
-        key: Vec<u8>,
-        value: Vec<u8>,
+        key: ScryptoValue,
+        value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
 
     fn get_epoch(&mut self) -> u64;
