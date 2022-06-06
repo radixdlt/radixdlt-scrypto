@@ -16,7 +16,6 @@ use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::KeyValueStoreState::{Committed, Uncommitted};
 use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::engine::*;
 use crate::ledger::*;
@@ -177,12 +176,6 @@ pub struct ComponentState {
     pub initial_value: ScryptoValue,
 }
 
-///TODO: Remove
-#[derive(Debug)]
-pub enum KeyValueStoreState {
-    Uncommitted { root: KeyValueStoreId },
-    Committed { component_address: ComponentAddress },
-}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveMethod {
@@ -1146,6 +1139,13 @@ where
         key: ScryptoValue,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
+        ///TODO: Remove
+        #[derive(Debug)]
+        enum KeyValueStoreState {
+            Uncommitted { root: KeyValueStoreId },
+            Committed { component_address: ComponentAddress },
+        }
+
         verify_stored_value(&value)?;
 
         let (old_value, kv_store_state) =
@@ -1171,14 +1171,14 @@ where
                         .map(|v| ScryptoValue::from_slice(&v).unwrap());
                         Ok((
                             old_value,
-                            Committed {
+                            KeyValueStoreState::Committed {
                                 component_address: *component_address,
                             },
                         ))
                     }
                     _ => Err(RuntimeError::KeyValueStoreNotFound(kv_store_id)),
                 },
-                Some((root, value)) => Ok((value, Uncommitted { root })),
+                Some((root, value)) => Ok((value, KeyValueStoreState::Uncommitted { root })),
             }?;
 
         let new_value_ids = match old_value {
@@ -1187,7 +1187,7 @@ where
         };
 
         // Check for cycles
-        if let Uncommitted { root } = kv_store_state {
+        if let KeyValueStoreState::Uncommitted { root } = kv_store_state {
             if new_value_ids.contains(&StoredValueId::KeyValueStoreId(root.clone())) {
                 return Err(RuntimeError::CyclicKeyValueStore(root));
             }
@@ -1196,13 +1196,13 @@ where
         let new_values = self.owned_values.take(new_value_ids)?;
 
         match kv_store_state {
-            Uncommitted { root } => {
+            KeyValueStoreState::Uncommitted { root } => {
                 self.owned_values
                     .set_key_value(&kv_store_id, key.raw, value);
                 self.owned_values
                     .insert_values_into_kv_store(new_values, &root);
             }
-            Committed { component_address } => {
+            KeyValueStoreState::Committed { component_address } => {
                 self.track.set_key_value(
                     Address::KeyValueStore(component_address, kv_store_id),
                     key.raw,
