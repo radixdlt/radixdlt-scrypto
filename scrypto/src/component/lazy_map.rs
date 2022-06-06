@@ -37,9 +37,7 @@ impl<K: Encode + Decode, V: Encode + Decode> LazyMap<K, V> {
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<V> {
         let input = RadixEngineInput::GetLazyMapEntry(self.id, scrypto_encode(key));
-        let output: Option<Vec<u8>> = call_engine(input);
-
-        output.map(|v| scrypto_decode(&v).unwrap())
+        call_engine(input)
     }
 
     /// Inserts a new key-value pair into this map.
