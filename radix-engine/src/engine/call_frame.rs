@@ -343,7 +343,7 @@ where
     }
 
     /// Checks resource leak.
-    fn check_resource(&self) -> Result<(), RuntimeError> {
+    fn check_resource(&mut self) -> Result<(), RuntimeError> {
         self.sys_log(Level::Info, "Resource check started".to_string());
         let mut success = true;
         let mut resource = ResourceFailure::Unknown;
@@ -356,23 +356,15 @@ where
             resource = ResourceFailure::Resource(bucket.resource_address());
             success = false;
         }
-        for (vault_id, vault) in &self.owned_values.vaults {
+        for (_, value) in self.owned_values.take_all() {
             self.sys_log(
                 Level::Warn,
-                format!("Dangling vault: {:?}, {:?}", vault_id, vault),
+                format!("Dangling value: {:?}", value),
             );
-            resource = ResourceFailure::Resource(vault.resource_address());
-            success = false;
-        }
-        for (kv_store_id, kv_store) in &self.owned_values.kv_stores {
-            self.sys_log(
-                Level::Warn,
-                format!(
-                    "Dangling key/value store: {:?}, {:?}",
-                    kv_store_id, kv_store
-                ),
-            );
-            resource = ResourceFailure::UnclaimedKeyValueStore;
+            resource = match value {
+                StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
+                StoredValue::UnclaimedKeyValueStore(..) => ResourceFailure::UnclaimedKeyValueStore,
+            };
             success = false;
         }
 
@@ -446,15 +438,23 @@ where
         &mut self,
         vault_ids: &HashSet<VaultId>,
     ) -> Result<HashMap<VaultId, Vault>, RuntimeError> {
-        let mut vaults = HashMap::new();
+        let mut vault_ids_to_take = HashSet::new();
         for vault_id in vault_ids {
-            let vault = self
-                .owned_values
-                .vaults
-                .remove(vault_id)
-                .ok_or(RuntimeError::VaultNotFound(*vault_id))?;
-            vaults.insert(*vault_id, vault);
+            vault_ids_to_take.insert(StoredValueId::VaultId(*vault_id));
         }
+
+        let vaults_to_take = self.owned_values.take(vault_ids_to_take)?;
+
+        let mut vaults = HashMap::new();
+        for vault_to_take in vaults_to_take {
+            match vault_to_take {
+                StoredValue::Vault(vault_id, vault) => {
+                    vaults.insert(vault_id, vault);
+                }
+                _ => panic!("Expected vault but was {:?}", vault_to_take)
+            }
+        }
+
         Ok(vaults)
     }
 
@@ -791,14 +791,15 @@ where
                     ..
                 }) = &self.component_state
                 {
-                    if !self.ref_values.contains(&StoredValueId::VaultId(*vault_id)) {
-                        return Err(RuntimeError::VaultNotFound(*vault_id));
+                    let value_id = StoredValueId::VaultId(*vault_id);
+                    if !self.ref_values.contains(&value_id) {
+                        return Err(RuntimeError::ValueNotFound(value_id));
                     }
                     let vault: Vault = self
                         .track
                         .borrow_global_mut_value((*component_address, *vault_id))
                         .map_err(|e| match e {
-                            TrackError::NotFound => RuntimeError::VaultNotFound(vault_id.clone()),
+                            TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
                             TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
                         })?
                         .into();
@@ -894,7 +895,7 @@ where
 
         // invoke the main function
         let snode = loaded_snode.to_snode_state();
-        let (result, received_buckets, received_proofs, received_vaults) =
+        let (result, received_buckets, received_proofs, mut received_vaults) =
             frame.run(Some(snode_ref), snode, &method_name, call_data)?;
 
         // move buckets and proofs to this process.
@@ -908,7 +909,10 @@ where
         );
         self.buckets.extend(received_buckets);
         self.proofs.extend(received_proofs);
-        self.owned_values.vaults.extend(received_vaults);
+        for (vault_id, vault) in received_vaults.drain() {
+            self.owned_values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, vault));
+
+        }
 
         // Return borrowed snodes
         if let Borrowed(borrowed) = loaded_snode {
@@ -991,8 +995,7 @@ where
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
         let vault_id = self.track.new_vault_id();
         self.owned_values
-            .vaults
-            .insert(vault_id, Vault::new(container));
+            .insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, Vault::new(container)));
         Ok(vault_id)
     }
 
@@ -1228,8 +1231,10 @@ where
     fn create_kv_store(&mut self) -> KeyValueStoreId {
         let kv_store_id = self.track.new_kv_store_id();
         self.owned_values
-            .kv_stores
-            .insert(kv_store_id, UnclaimedKeyValueStore::new());
+            .insert(
+                StoredValueId::KeyValueStoreId(kv_store_id.clone()),
+                StoredValue::UnclaimedKeyValueStore(kv_store_id, UnclaimedKeyValueStore::new())
+            );
         kv_store_id
     }
 

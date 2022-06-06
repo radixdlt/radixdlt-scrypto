@@ -81,21 +81,24 @@ pub enum StoredValue {
 /// Component type objects which will eventually move into a component
 #[derive(Debug)]
 pub struct ComponentObjects {
-    /// Key/Value stores which haven't been assigned to a component or another store yet.
-    /// Keeps track of vault and store descendents.
-    pub kv_stores: HashMap<KeyValueStoreId, UnclaimedKeyValueStore>,
-    /// Vaults which haven't been assigned to a component or store yet.
-    pub vaults: HashMap<VaultId, Vault>,
+    values: HashMap<StoredValueId, StoredValue>,
     borrowed_vault: Option<(VaultId, Option<KeyValueStoreId>)>,
 }
 
 impl ComponentObjects {
     pub fn new() -> Self {
         ComponentObjects {
-            kv_stores: HashMap::new(),
-            vaults: HashMap::new(),
+            values: HashMap::new(),
             borrowed_vault: None,
         }
+    }
+
+    pub fn take_all(&mut self) -> HashMap<StoredValueId, StoredValue> {
+        self.values.drain().collect()
+    }
+
+    pub fn insert(&mut self, id : StoredValueId, value: StoredValue) {
+        self.values.insert(id, value);
     }
 
     pub fn take(&mut self, other: HashSet<StoredValueId>) -> Result<Vec<StoredValue>, RuntimeError> {
@@ -106,22 +109,9 @@ impl ComponentObjects {
         let mut taken_values = Vec::new();
 
         for id in other {
-            match id {
-                StoredValueId::KeyValueStoreId(kv_store_id) => {
-                    let kv_store = self
-                        .kv_stores
-                        .remove(&kv_store_id)
-                        .ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id))?;
-                    taken_values.push(StoredValue::UnclaimedKeyValueStore(kv_store_id, kv_store));
-                }
-                StoredValueId::VaultId(vault_id) => {
-                    let vault = self
-                        .vaults
-                        .remove(&vault_id)
-                        .ok_or(RuntimeError::VaultNotFound(vault_id))?;
-                    taken_values.push(StoredValue::Vault(vault_id, vault));
-                }
-            }
+            let value = self.values.remove(&id)
+                .ok_or(RuntimeError::ValueNotFound(id))?;
+            taken_values.push(value);
         }
 
         Ok(taken_values)
@@ -136,7 +126,11 @@ impl ComponentObjects {
             panic!("Should not be taking while value is being borrowed");
         }
 
-        let unclaimed_kv_store = self.kv_stores.get_mut(kv_store_id).unwrap();
+        let value = self.values.get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id)).unwrap();
+        let unclaimed_kv_store = match value {
+            StoredValue::UnclaimedKeyValueStore(_, unclaimed) => unclaimed,
+            _ => panic!("Expected kv store but was {:?}", value)
+        };
 
         unclaimed_kv_store.insert_descendents(values);
     }
@@ -176,15 +170,17 @@ impl ComponentObjects {
             panic!("Should not be taking while value is being borrowed");
         }
 
-        // TODO: Optimize to prevent iteration
-        for (root, unclaimed) in self.kv_stores.iter_mut() {
-            if kv_store_id.eq(root) {
-                return Some((root.clone(), &mut unclaimed.kv_store));
-            }
+        for (_, value) in self.values.iter_mut() {
+            if let StoredValue::UnclaimedKeyValueStore(root, unclaimed) = value {
+                // TODO: Optimize to prevent iteration
+                if kv_store_id.eq(root) {
+                    return Some((root.clone(), &mut unclaimed.kv_store));
+                }
 
-            let kv_store = unclaimed.descendent_kv_stores.get_mut(kv_store_id);
-            if kv_store.is_some() {
-                return Some((root.clone(), kv_store.unwrap()));
+                let kv_store = unclaimed.descendent_kv_stores.get_mut(kv_store_id);
+                if kv_store.is_some() {
+                    return Some((root.clone(), kv_store.unwrap()));
+                }
             }
         }
 
@@ -196,15 +192,20 @@ impl ComponentObjects {
             panic!("Should not be able to borrow multiple times");
         }
 
-        if let Some(vault) = self.vaults.remove(vault_id) {
+        if let Some(vault) = self.values.remove(&StoredValueId::VaultId(*vault_id)) {
             self.borrowed_vault = Some((*vault_id, None));
-            return Some(vault);
+            match vault {
+                StoredValue::Vault(_, vault) => return Some(vault),
+                _ => panic!("Expected vault but was {:?}", vault)
+            }
         }
 
-        for (kv_store_id, unclaimed) in self.kv_stores.iter_mut() {
-            if let Some(vault) = unclaimed.descendent_vaults.remove(vault_id) {
-                self.borrowed_vault = Some((*vault_id, Some(*kv_store_id)));
-                return Some(vault);
+        for (_, value) in self.values.iter_mut() {
+            if let StoredValue::UnclaimedKeyValueStore(kv_store_id, unclaimed) = value {
+                if let Some(vault) = unclaimed.descendent_vaults.remove(vault_id) {
+                    self.borrowed_vault = Some((*vault_id, Some(*kv_store_id)));
+                    return Some(vault);
+                }
             }
         }
 
@@ -214,13 +215,17 @@ impl ComponentObjects {
     pub fn return_borrowed_vault_mut(&mut self, vault: Vault) {
         if let Some((vault_id, maybe_ancestor)) = self.borrowed_vault.take() {
             if let Some(ancestor_id) = maybe_ancestor {
-                self.kv_stores
-                    .get_mut(&ancestor_id)
-                    .unwrap()
-                    .descendent_vaults
-                    .insert(vault_id, vault);
+                let value = self.values
+                    .get_mut(&StoredValueId::KeyValueStoreId(ancestor_id))
+                    .unwrap();
+                match value {
+                    StoredValue::UnclaimedKeyValueStore(_, unclaimed) => {
+                        unclaimed.descendent_vaults.insert(vault_id, vault);
+                    }
+                    _ => panic!("Expected kv store but was {:?}", value)
+                };
             } else {
-                self.vaults.insert(vault_id, vault);
+                self.values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id.clone(), vault));
             }
         } else {
             panic!("Should never get here");
