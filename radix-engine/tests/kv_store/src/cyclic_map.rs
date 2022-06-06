@@ -5,19 +5,19 @@ use std::marker::PhantomData;
 
 blueprint! {
     struct CyclicMap {
-        maps: LazyMap<u32, LazyMap<u32, u32>>,
+        maps: KeyValueStore<u32, KeyValueStore<u32, u32>>,
     }
 
     impl CyclicMap {
         pub fn new() -> ComponentAddress {
-            let map0 = LazyMap::new();
-            let map1 = LazyMap::new();
+            let map0 = KeyValueStore::new();
+            let map1 = KeyValueStore::new();
             map0.insert(1u32, map1);
 
-            let input = RadixEngineInput::PutLazyMapEntry(
+            let input = RadixEngineInput::PutKeyValueStoreEntry(
                 (Runtime::transaction_hash(), 1025),
                 scrypto_encode(&0u32),
-                scrypto_encode(&LazyMap::<(), ()> {
+                scrypto_encode(&KeyValueStore::<(), ()> {
                     id: (Runtime::transaction_hash(), 1024),
                     key: PhantomData,
                     value: PhantomData,
@@ -29,12 +29,12 @@ blueprint! {
         }
 
         pub fn new_self_cyclic() -> ComponentAddress {
-            let map0 = LazyMap::new();
+            let map0 = KeyValueStore::new();
 
-            let input = RadixEngineInput::PutLazyMapEntry(
+            let input = RadixEngineInput::PutKeyValueStoreEntry(
                 (Runtime::transaction_hash(), 1024),
                 scrypto_encode(&0u32),
-                scrypto_encode(&LazyMap::<(), ()> {
+                scrypto_encode(&KeyValueStore::<(), ()> {
                     id: (Runtime::transaction_hash(), 1024),
                     key: PhantomData,
                     value: PhantomData,

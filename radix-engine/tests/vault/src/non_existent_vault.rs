@@ -3,14 +3,14 @@ use scrypto::prelude::*;
 blueprint! {
     struct NonExistentVault {
         vault: Option<Vault>,
-        vaults: LazyMap<u128, Vault>,
+        vaults: KeyValueStore<u128, Vault>,
     }
 
     impl NonExistentVault {
         pub fn create_component_with_non_existent_vault() -> ComponentAddress {
             NonExistentVault {
                 vault: Option::Some(Vault((Runtime::transaction_hash(), 1025))),
-                vaults: LazyMap::new(),
+                vaults: KeyValueStore::new(),
             }
             .instantiate()
             .globalize()
@@ -19,7 +19,7 @@ blueprint! {
         pub fn new() -> ComponentAddress {
             NonExistentVault {
                 vault: Option::None,
-                vaults: LazyMap::new(),
+                vaults: KeyValueStore::new(),
             }
             .instantiate()
             .globalize()
@@ -30,7 +30,7 @@ blueprint! {
         }
 
         pub fn create_lazy_map_with_non_existent_vault() -> ComponentAddress {
-            let vaults = LazyMap::new();
+            let vaults = KeyValueStore::new();
             vaults.insert(0, Vault((Runtime::transaction_hash(), 1025)));
             NonExistentVault {
                 vault: Option::None,

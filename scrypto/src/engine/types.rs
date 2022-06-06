@@ -16,7 +16,7 @@ pub use crate::resource::NonFungibleId;
 pub use crate::resource::ResourceAddress;
 pub use crate::resource::ResourceType;
 
-pub type LazyMapId = (Hash, u32);
+pub type KeyValueStoreId = (Hash, u32);
 pub type BucketId = u32;
 pub type ProofId = u32;
 pub type VaultId = (Hash, u32);
