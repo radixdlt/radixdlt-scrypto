@@ -359,8 +359,8 @@ impl SignedTransaction {
                 vault_id.clone(),
             ));
         }
-        if let Some(lazy_map_id) = value.lazy_map_ids.iter().nth(0) {
-            return Err(TransactionValidationError::LazyMapNotAllowed(
+        if let Some(lazy_map_id) = value.kv_store_ids.iter().nth(0) {
+            return Err(TransactionValidationError::KeyValueStoreNotAllowed(
                 lazy_map_id.clone(),
             ));
         }
@@ -402,7 +402,7 @@ mod tests {
                 transaction: Transaction {
                     instructions: vec![Instruction::CallMethod {
                         component_address: ComponentAddress([1u8; 26]),
-                        call_data: scrypto_encode(&scrypto::component::LazyMap::<(), ()> {
+                        call_data: scrypto_encode(&scrypto::component::KeyValueStore::<(), ()> {
                             id: (Hash([2u8; 32]), 0,),
                             key: PhantomData,
                             value: PhantomData,
@@ -412,7 +412,7 @@ mod tests {
                 signatures: Vec::new()
             }
             .validate(),
-            Err(TransactionValidationError::LazyMapNotAllowed((
+            Err(TransactionValidationError::KeyValueStoreNotAllowed((
                 Hash([2u8; 32]),
                 0,
             ))),

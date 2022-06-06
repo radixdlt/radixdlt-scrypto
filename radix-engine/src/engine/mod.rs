@@ -9,7 +9,7 @@ mod track;
 mod transaction_executor;
 
 pub use call_frame::{
-    BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LazyMapState,
+    BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, KeyValueStoreState,
     LoadedSNodeState, MoveMethod, SNodeState, StaticSNodeState,
 };
 pub use component_objects::*;

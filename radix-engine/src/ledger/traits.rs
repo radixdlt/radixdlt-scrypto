@@ -6,10 +6,10 @@ use scrypto::crypto::*;
 use scrypto::engine::types::*;
 
 pub trait QueryableSubstateStore {
-    fn get_lazy_map_entries(
+    fn get_kv_store_entries(
         &self,
         component_address: ComponentAddress,
-        lazy_map_id: &LazyMapId,
+        kv_store_id: &KeyValueStoreId,
     ) -> HashMap<Vec<u8>, Vec<u8>>;
 }
 
