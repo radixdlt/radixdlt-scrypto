@@ -17,7 +17,11 @@ use transaction::model::*;
 use transaction::validation::*;
 
 use crate::engine::{RuntimeError, RuntimeError::ProofNotFound, SystemApi};
-use crate::model::worktop::WorktopMethod;
+use crate::model::worktop::{
+    WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
+    WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
+    WorktopTakeAllInput, WorktopTakeAmountInput, WorktopTakeNonFungiblesInput,
+};
 use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -73,11 +77,12 @@ impl TransactionProcessor {
                             .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_snode(
+                                    .invoke_snode2(
                                         SNodeRef::WorktopRef,
-                                        ScryptoValue::from_trusted(&WorktopMethod::TakeAll(
-                                            *resource_address,
-                                        )),
+                                        "take_all".to_string(),
+                                        ScryptoValue::from_trusted(&WorktopTakeAllInput {
+                                            resource_address: *resource_address,
+                                        }),
                                     )
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
@@ -95,12 +100,13 @@ impl TransactionProcessor {
                             .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_snode(
+                                    .invoke_snode2(
                                         SNodeRef::WorktopRef,
-                                        ScryptoValue::from_trusted(&WorktopMethod::TakeAmount(
-                                            *amount,
-                                            *resource_address,
-                                        )),
+                                        "take_amount".to_string(),
+                                        ScryptoValue::from_trusted(&WorktopTakeAmountInput {
+                                            amount: *amount,
+                                            resource_address: *resource_address,
+                                        }),
                                     )
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
@@ -118,14 +124,13 @@ impl TransactionProcessor {
                             .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
-                                    .invoke_snode(
+                                    .invoke_snode2(
                                         SNodeRef::WorktopRef,
-                                        ScryptoValue::from_trusted(
-                                            &WorktopMethod::TakeNonFungibles(
-                                                ids.clone(),
-                                                *resource_address,
-                                            ),
-                                        ),
+                                        "take_non_fungibles".to_string(),
+                                        ScryptoValue::from_trusted(&WorktopTakeNonFungiblesInput {
+                                            ids: ids.clone(),
+                                            resource_address: *resource_address,
+                                        }),
                                     )
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
@@ -138,41 +143,45 @@ impl TransactionProcessor {
                         ExecutableInstruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
                             .remove(bucket_id)
                             .map(|real_id| {
-                                system_api.invoke_snode(
+                                system_api.invoke_snode2(
                                     SNodeRef::WorktopRef,
-                                    ScryptoValue::from_trusted(&WorktopMethod::Put(
-                                        scrypto::resource::Bucket(real_id),
-                                    )),
+                                    "put".to_string(),
+                                    ScryptoValue::from_trusted(&WorktopPutInput {
+                                        bucket: scrypto::resource::Bucket(real_id),
+                                    }),
                                 )
                             })
                             .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id))),
                         ExecutableInstruction::AssertWorktopContains { resource_address } => {
-                            system_api.invoke_snode(
+                            system_api.invoke_snode2(
                                 SNodeRef::WorktopRef,
-                                ScryptoValue::from_trusted(&WorktopMethod::AssertContains(
-                                    *resource_address,
-                                )),
+                                "assert_contains".to_string(),
+                                ScryptoValue::from_trusted(&WorktopAssertContainsInput {
+                                    resource_address: *resource_address,
+                                }),
                             )
                         }
                         ExecutableInstruction::AssertWorktopContainsByAmount {
                             amount,
                             resource_address,
-                        } => system_api.invoke_snode(
+                        } => system_api.invoke_snode2(
                             SNodeRef::WorktopRef,
-                            ScryptoValue::from_trusted(&WorktopMethod::AssertContainsAmount(
-                                *amount,
-                                *resource_address,
-                            )),
+                            "assert_contains_amount".to_string(),
+                            ScryptoValue::from_trusted(&WorktopAssertContainsAmountInput {
+                                amount: *amount,
+                                resource_address: *resource_address,
+                            }),
                         ),
                         ExecutableInstruction::AssertWorktopContainsByIds {
                             ids,
                             resource_address,
-                        } => system_api.invoke_snode(
+                        } => system_api.invoke_snode2(
                             SNodeRef::WorktopRef,
-                            ScryptoValue::from_trusted(&WorktopMethod::AssertContainsNonFungibles(
-                                ids.clone(),
-                                *resource_address,
-                            )),
+                            "assert_contains_non_fungibles".to_string(),
+                            ScryptoValue::from_trusted(&WorktopAssertContainsNonFungiblesInput {
+                                ids: ids.clone(),
+                                resource_address: *resource_address,
+                            }),
                         ),
                         ExecutableInstruction::PopFromAuthZone {} => id_allocator
                             .new_proof_id()
@@ -381,11 +390,12 @@ impl TransactionProcessor {
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
                                     system_api
-                                        .invoke_snode(
+                                        .invoke_snode2(
                                             SNodeRef::WorktopRef,
-                                            ScryptoValue::from_trusted(&WorktopMethod::Put(
-                                                scrypto::resource::Bucket(*bucket_id),
-                                            )),
+                                            "put".to_string(),
+                                            ScryptoValue::from_trusted(&WorktopPutInput {
+                                                bucket: scrypto::resource::Bucket(*bucket_id),
+                                            }),
                                         )
                                         .unwrap(); // TODO: Remove unwrap
                                 }
@@ -423,11 +433,12 @@ impl TransactionProcessor {
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
                                     system_api
-                                        .invoke_snode(
+                                        .invoke_snode2(
                                             SNodeRef::WorktopRef,
-                                            ScryptoValue::from_trusted(&WorktopMethod::Put(
-                                                scrypto::resource::Bucket(*bucket_id),
-                                            )),
+                                            "put".to_string(),
+                                            ScryptoValue::from_trusted(&WorktopPutInput {
+                                                bucket: scrypto::resource::Bucket(*bucket_id),
+                                            }),
                                         )
                                         .unwrap(); // TODO: Remove unwrap
                                 }
@@ -453,9 +464,10 @@ impl TransactionProcessor {
                                         )
                                         .unwrap();
                                 }
-                                system_api.invoke_snode(
+                                system_api.invoke_snode2(
                                     SNodeRef::WorktopRef,
-                                    ScryptoValue::from_trusted(&WorktopMethod::Drain()),
+                                    "drain".to_string(),
+                                    ScryptoValue::from_trusted(&WorktopDrainInput {}),
                                 )
                             })
                             .and_then(|result| {

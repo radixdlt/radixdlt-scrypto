@@ -7,6 +7,9 @@ use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 use crate::manifest::{compile, CompileError};
 use crate::model::Instruction;
 
+// TODO: add versioning of transaction schema
+
+// TODO: we may be able to squeeze network identifier into the other fields, like the `v` byte in signature.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub enum Network {
     InternalTestnet,
@@ -40,7 +43,7 @@ pub struct SignedTransactionIntent {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub struct Transaction {
+pub struct NotarizedTransaction {
     pub signed_intent: SignedTransactionIntent,
     pub notary_signature: EcdsaSignature,
 }
@@ -72,8 +75,8 @@ impl SignedTransactionIntent {
     }
 }
 
-impl Transaction {
-    pub fn from_slice(slice: &[u8]) -> Result<Transaction, DecodeError> {
+impl NotarizedTransaction {
+    pub fn from_slice(slice: &[u8]) -> Result<NotarizedTransaction, DecodeError> {
         scrypto_decode(slice)
     }
 
@@ -123,7 +126,7 @@ mod tests {
 
         // notarize
         let signature3 = sk_notary.sign(&signed_intent.to_bytes());
-        let transaction = Transaction {
+        let transaction = NotarizedTransaction {
             signed_intent,
             notary_signature: signature3,
         };

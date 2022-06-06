@@ -7,7 +7,7 @@ use crate::model::*;
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub struct ValidatedTransaction {
-    pub transaction: Transaction,
+    pub transaction: NotarizedTransaction,
     pub transaction_hash: Hash,
     pub instructions: Vec<ExecutableInstruction>,
     pub signer_public_keys: Vec<EcdsaPublicKey>,
