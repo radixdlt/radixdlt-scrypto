@@ -101,7 +101,10 @@ impl ComponentObjects {
         self.values.insert(id, value);
     }
 
-    pub fn take(&mut self, other: HashSet<StoredValueId>) -> Result<Vec<StoredValue>, RuntimeError> {
+    pub fn take(
+        &mut self,
+        other: HashSet<StoredValueId>,
+    ) -> Result<Vec<StoredValue>, RuntimeError> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }

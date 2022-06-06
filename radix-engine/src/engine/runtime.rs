@@ -106,8 +106,8 @@ where
         component_address: ComponentAddress,
         state: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let value = ScryptoValue::from_slice(&state)
-            .map_err(RuntimeError::ParseScryptoValueError)?;
+        let value =
+            ScryptoValue::from_slice(&state).map_err(RuntimeError::ParseScryptoValueError)?;
         self.system_api
             .write_component_state(component_address, value)?;
         Ok(())
