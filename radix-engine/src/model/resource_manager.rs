@@ -153,7 +153,7 @@ impl ResourceManager {
         for pub_method in [
             "create_bucket",
             "metadata",
-            "get_resource_type",
+            "resource_type",
             "total_supply",
             "create_vault",
         ] {
