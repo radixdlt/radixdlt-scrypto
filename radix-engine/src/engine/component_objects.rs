@@ -103,7 +103,7 @@ impl ComponentObjects {
 
     pub fn take(
         &mut self,
-        other: HashSet<StoredValueId>,
+        other: &HashSet<StoredValueId>,
     ) -> Result<Vec<StoredValue>, RuntimeError> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
@@ -112,8 +112,8 @@ impl ComponentObjects {
         let mut taken_values = Vec::new();
 
         for id in other {
-            let value = self.values.remove(&id)
-                .ok_or(RuntimeError::ValueNotFound(id))?;
+            let value = self.values.remove(id)
+                .ok_or(RuntimeError::ValueNotFound(*id))?;
             taken_values.push(value);
         }
 
@@ -138,34 +138,20 @@ impl ComponentObjects {
         unclaimed_kv_store.insert_descendents(values);
     }
 
-    pub fn set_key_value(
-        &mut self,
-        kv_store_id: &KeyValueStoreId,
-        key: Vec<u8>,
-        value: ScryptoValue,
-    ) {
-        if self.borrowed_vault.is_some() {
-            panic!("Should not be taking while value is being borrowed");
-        }
-
-        let (_, kv_store) = self.get_kv_store_mut(kv_store_id).unwrap();
-        kv_store.insert(key, value);
-    }
-
     pub fn get_kv_store_entry(
         &mut self,
         kv_store_id: &KeyValueStoreId,
         key: &[u8],
-    ) -> Option<(KeyValueStoreId, Option<ScryptoValue>)> {
+    ) -> Option<Option<ScryptoValue>> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
         self.get_kv_store_mut(kv_store_id)
-            .map(|(kv_store_id, kv_store)| (kv_store_id, kv_store.get(key).map(|v| v.clone())))
+            .map(|(_, kv_store)| kv_store.get(key).map(|v| v.clone()))
     }
 
-    fn get_kv_store_mut(
+    pub fn get_kv_store_mut(
         &mut self,
         kv_store_id: &KeyValueStoreId,
     ) -> Option<(KeyValueStoreId, &mut HashMap<Vec<u8>, ScryptoValue>)> {

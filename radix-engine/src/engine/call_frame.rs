@@ -439,7 +439,7 @@ where
             vault_ids_to_take.insert(StoredValueId::VaultId(*vault_id));
         }
 
-        let vaults_to_take = self.owned_values.take(vault_ids_to_take)?;
+        let vaults_to_take = self.owned_values.take(&vault_ids_to_take)?;
 
         let mut vaults = HashMap::new();
         for vault_to_take in vaults_to_take {
@@ -1012,7 +1012,7 @@ where
         let value = ScryptoValue::from_slice(component.state())
             .map_err(RuntimeError::ParseScryptoValueError)?;
         verify_stored_value(&value)?;
-        let values = self.owned_values.take(value.stored_value_ids())?;
+        let values = self.owned_values.take(&value.stored_value_ids())?;
         let address = self.track.create_uuid_value(component);
         self.track
             .insert_objects_into_component(values, address.clone().into());
@@ -1054,7 +1054,7 @@ where
         {
             if addr.eq(component_address) {
                 let new_value_ids = stored_value_update(initial_value, &state)?;
-                let new_values = self.owned_values.take(new_value_ids)?;
+                let new_values = self.owned_values.take(&new_value_ids)?;
                 self.track
                     .insert_objects_into_component(new_values, *component_address);
                 component.set_state(state.raw);
@@ -1071,7 +1071,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         verify_stored_key(&key)?;
 
-        if let Some((_, value)) = self.owned_values.get_kv_store_entry(&kv_store_id, &key.raw) {
+        if let Some(value) = self.owned_values.get_kv_store_entry(&kv_store_id, &key.raw) {
             match value {
                 Some(v) => {
                     let value = Value::Option {
@@ -1142,7 +1142,7 @@ where
         ///TODO: Remove
         #[derive(Debug)]
         enum KeyValueStoreState {
-            Uncommitted { root: KeyValueStoreId },
+            Uncommitted,
             Committed { component_address: ComponentAddress },
         }
 
@@ -1178,27 +1178,22 @@ where
                     }
                     _ => Err(RuntimeError::KeyValueStoreNotFound(kv_store_id)),
                 },
-                Some((root, value)) => Ok((value, KeyValueStoreState::Uncommitted { root })),
+                Some(value) => Ok((value, KeyValueStoreState::Uncommitted)),
             }?;
 
         let new_value_ids = match old_value {
             None => value.stored_value_ids(),
             Some(old_scrypto_value) => stored_value_update(&old_scrypto_value, &value)?,
         };
-
-        // Check for cycles
-        if let KeyValueStoreState::Uncommitted { root } = kv_store_state {
-            if new_value_ids.contains(&StoredValueId::KeyValueStoreId(root.clone())) {
-                return Err(RuntimeError::CyclicKeyValueStore(root));
-            }
-        }
-
-        let new_values = self.owned_values.take(new_value_ids)?;
+        let new_values = self.owned_values.take(&new_value_ids)?;
 
         match kv_store_state {
-            KeyValueStoreState::Uncommitted { root } => {
-                self.owned_values
-                    .set_key_value(&kv_store_id, key.raw, value);
+            KeyValueStoreState::Uncommitted => {
+                // Check for cycles
+                let (root, kv_store) = self.owned_values.get_kv_store_mut(&kv_store_id)
+                    .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
+                kv_store.insert(key.raw, value);
+
                 self.owned_values
                     .insert_values_into_kv_store(new_values, &root);
             }
