@@ -10,10 +10,10 @@ use crate::crypto::*;
 use crate::engine::{api::*, call_engine};
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum SystemFunction {
-    GetEpoch(),
-    GetTransactionHash(),
-}
+pub struct SystemGetCurrentEpochInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct SystemGetTransactionHashInput {}
 
 /// The transaction runtime.
 #[derive(Debug)]
@@ -89,9 +89,10 @@ impl Runtime {
 
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
-        let input = RadixEngineInput::InvokeSNode(
+        let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::SystemStatic,
-            scrypto_encode(&SystemFunction::GetTransactionHash()),
+            "transaction_hash".to_string(),
+            scrypto_encode(&SystemGetTransactionHashInput {}),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
@@ -99,9 +100,10 @@ impl Runtime {
 
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
-        let input = RadixEngineInput::InvokeSNode(
+        let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::SystemStatic,
-            scrypto_encode(&SystemFunction::GetEpoch()),
+            "current_epoch".to_string(),
+            scrypto_encode(&SystemGetCurrentEpochInput {}),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()

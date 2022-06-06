@@ -8,4 +8,4 @@ pub use actor::{ScryptoActor, ScryptoActorInfo};
 pub use invocation::SNodeRef;
 pub use level::Level;
 pub use logger::Logger;
-pub use runtime::{Runtime, SystemFunction};
+pub use runtime::{Runtime, SystemGetCurrentEpochInput, SystemGetTransactionHashInput};
