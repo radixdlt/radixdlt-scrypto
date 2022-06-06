@@ -6,7 +6,7 @@ pub struct TransactionBuilder {
     manifest: TransactionManifest,
     header: Option<TransactionHeader>,
     intent_signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
-    notary_signature: Option<(EcdsaPublicKey, EcdsaSignature)>,
+    notary_signature: Option<EcdsaSignature>,
 }
 
 impl TransactionBuilder {
@@ -27,7 +27,8 @@ impl TransactionBuilder {
     pub fn sign<S: Signer>(mut self, signer: &S) -> Self {
         let intent = self.transaction_intent();
         let intent_payload = scrypto_encode(&intent);
-        self.intent_signatures.push(signer.sign(&intent_payload));
+        self.intent_signatures
+            .push((signer.public_key(), signer.sign(&intent_payload)));
         self
     }
 

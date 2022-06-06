@@ -230,7 +230,7 @@ impl TransactionValidator {
 
     fn validate_signatures(transaction: &Transaction) -> Result<(), SignatureValidationError> {
         // verify intent signature
-        let intent_payload = transaction.intent_payload();
+        let intent_payload = transaction.signed_intent.intent.to_bytes();
         for sig in &transaction.signed_intent.intent_signatures {
             if !EcdsaVerifier::verify(&intent_payload, &sig.0, &sig.1) {
                 return Err(SignatureValidationError::InvalidIntentSignature);
@@ -238,11 +238,11 @@ impl TransactionValidator {
         }
 
         // verify notary signature
-        let signed_intent_payload = transaction.signed_intent_paylod();
+        let signed_intent_payload = transaction.signed_intent.to_bytes();
         if !EcdsaVerifier::verify(
             &signed_intent_payload,
-            &transaction.notary_signature.0,
-            &transaction.notary_signature.1,
+            &transaction.signed_intent.intent.header.notary_public_key,
+            &transaction.notary_signature,
         ) {
             return Err(SignatureValidationError::InvalidNotarySignature);
         }
