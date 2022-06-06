@@ -64,6 +64,10 @@ impl fmt::Debug for Receipt {
                 "\n{} {}",
                 prefix!(i, self.instructions),
                 match inst {
+                    ExecutableInstruction::CallFunction { package_address, blueprint_name, call_data } =>
+                        format!("CallFunction {{ package_address: {}, blueprint_name: {:?}, call_data: {:?} }}", package_address, blueprint_name,  ScryptoValue::from_slice(&call_data).expect("Invalid call data")),
+                    ExecutableInstruction::CallMethod { component_address, call_data } =>
+                        format!("CallMethod {{ component_address: {}, call_data: {:?} }}", component_address, ScryptoValue::from_slice(&call_data).expect("Invalid call data")),
                     ExecutableInstruction::PublishPackage { .. } =>
                         "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),
