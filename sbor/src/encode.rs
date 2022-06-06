@@ -7,14 +7,24 @@ use crate::rust::vec::Vec;
 use crate::type_id::*;
 
 /// A data structure that can be serialized into a byte array using SBOR.
-pub trait Encode: TypeId {
-    #[inline]
+pub trait Encode: EncodeValue {
     fn encode(&self, encoder: &mut Encoder) {
-        encoder.write_type(Self::type_id());
+        self.encode_type(encoder);
         self.encode_value(encoder);
     }
 
+    fn encode_type(&self, encoder: &mut Encoder);
+}
+
+pub trait EncodeValue {
     fn encode_value(&self, encoder: &mut Encoder);
+}
+
+impl<T: TypeId + EncodeValue> Encode for T {
+    #[inline]
+    fn encode_type(&self, encoder: &mut Encoder) {
+        encoder.write_type(Self::type_id());
+    }
 }
 
 /// An `Encoder` abstracts the logic for writing core types into a byte buffer.
@@ -60,23 +70,23 @@ impl<'a> Encoder<'a> {
     }
 }
 
-impl Encode for () {
+impl EncodeValue for () {
     fn encode_value(&self, _encoder: &mut Encoder) {}
 }
 
-impl Encode for bool {
+impl EncodeValue for bool {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(if *self { 1u8 } else { 0u8 })
     }
 }
 
-impl Encode for i8 {
+impl EncodeValue for i8 {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(*self as u8);
     }
 }
 
-impl Encode for u8 {
+impl EncodeValue for u8 {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_u8(*self);
     }
@@ -84,7 +94,7 @@ impl Encode for u8 {
 
 macro_rules! encode_int {
     ($type:ident, $type_id:ident) => {
-        impl Encode for $type {
+        impl EncodeValue for $type {
             fn encode_value(&self, encoder: &mut Encoder) {
                 encoder.write_slice(&(*self).to_le_bytes());
             }
@@ -101,39 +111,39 @@ encode_int!(u32, TYPE_U32);
 encode_int!(u64, TYPE_U64);
 encode_int!(u128, TYPE_U128);
 
-impl Encode for isize {
+impl EncodeValue for isize {
     fn encode_value(&self, encoder: &mut Encoder) {
         (*self as i32).encode_value(encoder);
     }
 }
 
-impl Encode for usize {
+impl EncodeValue for usize {
     fn encode_value(&self, encoder: &mut Encoder) {
         (*self as u32).encode_value(encoder);
     }
 }
 
-impl Encode for str {
+impl EncodeValue for str {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
         encoder.write_slice(self.as_bytes());
     }
 }
 
-impl Encode for &str {
+impl EncodeValue for &str {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_len(self.len());
         encoder.write_slice(self.as_bytes());
     }
 }
 
-impl Encode for String {
+impl EncodeValue for String {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_str().encode_value(encoder);
     }
 }
 
-impl<T: Encode> Encode for Option<T> {
+impl<T: Encode> EncodeValue for Option<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             None => {
@@ -147,19 +157,19 @@ impl<T: Encode> Encode for Option<T> {
     }
 }
 
-impl<T: Encode> Encode for Box<T> {
+impl<T: Encode> EncodeValue for Box<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_ref().encode_value(encoder);
     }
 }
 
-impl<T: Encode> Encode for RefCell<T> {
+impl<T: Encode> EncodeValue for RefCell<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.borrow().encode_value(encoder);
     }
 }
 
-impl<T: Encode, const N: usize> Encode for [T; N] {
+impl<T: Encode + TypeId, const N: usize> EncodeValue for [T; N] {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
         encoder.write_len(self.len());
@@ -171,7 +181,7 @@ impl<T: Encode, const N: usize> Encode for [T; N] {
 
 macro_rules! encode_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
-        impl<$($name: Encode),+> Encode for ($($name,)+) {
+        impl<$($name: Encode),+> EncodeValue for ($($name,)+) {
             fn encode_value(&self, encoder: &mut Encoder) {
                 encoder.write_len($n);
 
@@ -191,7 +201,7 @@ encode_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 encode_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 encode_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
-impl<T: Encode, E: Encode> Encode for Result<T, E> {
+impl<T: Encode, E: Encode> EncodeValue for Result<T, E> {
     fn encode_value(&self, encoder: &mut Encoder) {
         match self {
             Ok(o) => {
@@ -206,13 +216,13 @@ impl<T: Encode, E: Encode> Encode for Result<T, E> {
     }
 }
 
-impl<T: Encode> Encode for Vec<T> {
+impl<T: Encode + TypeId> EncodeValue for Vec<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         self.as_slice().encode_value(encoder);
     }
 }
 
-impl<T: Encode> Encode for [T] {
+impl<T: Encode + TypeId> EncodeValue for [T] {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
         encoder.write_len(self.len());
@@ -231,7 +241,7 @@ impl<T: Encode> Encode for [T] {
     }
 }
 
-impl<T: Encode> Encode for BTreeSet<T> {
+impl<T: Encode + TypeId> EncodeValue for BTreeSet<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
         encoder.write_len(self.len());
@@ -241,7 +251,7 @@ impl<T: Encode> Encode for BTreeSet<T> {
     }
 }
 
-impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
+impl<K: Encode + TypeId, V: Encode + TypeId> EncodeValue for BTreeMap<K, V> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(K::type_id());
         encoder.write_type(V::type_id());
@@ -253,7 +263,7 @@ impl<K: Encode, V: Encode> Encode for BTreeMap<K, V> {
     }
 }
 
-impl<T: Encode> Encode for HashSet<T> {
+impl<T: Encode + TypeId> EncodeValue for HashSet<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
         encoder.write_len(self.len());
@@ -263,7 +273,7 @@ impl<T: Encode> Encode for HashSet<T> {
     }
 }
 
-impl<K: Encode, V: Encode> Encode for HashMap<K, V> {
+impl<K: Encode + TypeId, V: Encode + TypeId> EncodeValue for HashMap<K, V> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(K::type_id());
         encoder.write_type(V::type_id());

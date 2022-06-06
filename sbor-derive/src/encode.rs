@@ -25,7 +25,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 let ns_ids = ns.iter().map(|f| &f.ident);
                 let ns_len = Index::from(ns_ids.len());
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl ::sbor::EncodeValue for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
                             encoder.write_len(#ns_len);
@@ -43,7 +43,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                 }
                 let ns_len = Index::from(ns_indices.len());
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl ::sbor::EncodeValue for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
                             encoder.write_len(#ns_len);
@@ -54,7 +54,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl ::sbor::EncodeValue for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             encoder.write_len(0);
                         }
@@ -112,14 +112,14 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
 
             if match_arms.len() == 0 {
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl ::sbor::EncodeValue for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                         }
                     }
                 }
             } else {
                 quote! {
-                    impl ::sbor::Encode for #ident {
+                    impl ::sbor::EncodeValue for #ident {
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                             use ::sbor::{self, Encode};
 
@@ -162,7 +162,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Encode for Test {
+                impl ::sbor::EncodeValue for Test {
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                         use ::sbor::{self, Encode};
                         encoder.write_len(1);
@@ -181,7 +181,7 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::Encode for Test {
+                impl ::sbor::EncodeValue for Test {
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
                         use ::sbor::{self, Encode};
                         match self {
