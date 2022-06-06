@@ -31,10 +31,10 @@ fn bench_transfer(b: &mut Bencher) {
         })
         .build();
     let account1 = executor
-        .execute(&TestTransaction::new(manifest.clone(), 3, vec![public_key]))
+        .execute(&TestTransaction::new(manifest.clone(), 1, vec![public_key]))
         .new_component_addresses[0];
     let account2 = executor
-        .execute(&TestTransaction::new(manifest, 4, vec![public_key]))
+        .execute(&TestTransaction::new(manifest, 2, vec![public_key]))
         .new_component_addresses[0];
 
     // Create a transfer manifest
@@ -44,7 +44,7 @@ fn bench_transfer(b: &mut Bencher) {
         .build();
 
     // Loop
-    let mut nonce = 5;
+    let mut nonce = 3;
     b.iter(|| {
         let receipt = executor.execute(&TestTransaction::new(
             manifest.clone(),

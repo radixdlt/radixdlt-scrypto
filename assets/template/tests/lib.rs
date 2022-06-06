@@ -39,7 +39,7 @@ fn test_hello() {
         })
         .build();
     let account = executor
-        .execute(&TestTransaction::new(manifest, 3, vec![public_key]))
+        .execute(&TestTransaction::new(manifest, 2, vec![public_key]))
         .new_component_addresses[0];
 
     // Test the `instantiate_hello` function.

@@ -46,8 +46,7 @@ fn test_component() {
         .call_method(component, call_data!(put_component_state()))
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let signer_public_keys = vec![public_key];
-    let receipt2 = test_runner.execute_manifest(manifest2, signer_public_keys);
+    let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
     receipt2.result.expect("Should be okay.");
 }
 

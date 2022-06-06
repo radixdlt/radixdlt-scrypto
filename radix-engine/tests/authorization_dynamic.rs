@@ -61,8 +61,7 @@ fn test_dynamic_auth(
     let manifest2 = ManifestBuilder::new()
         .call_method(component, call_data![get_secret()])
         .build();
-    let signer_public_keys = public_keys.to_vec();
-    let receipt2 = test_runner.execute_manifest(manifest2, signer_public_keys);
+    let receipt2 = test_runner.execute_manifest(manifest2, public_keys.to_vec());
 
     // Assert
     if should_succeed {
@@ -111,8 +110,7 @@ fn test_dynamic_authlist(
     let manifest2 = ManifestBuilder::new()
         .call_method(component, call_data!(get_secret()))
         .build();
-    let signer_public_keys = public_keys.to_vec();
-    let receipt = test_runner.execute_manifest(manifest2, signer_public_keys);
+    let receipt = test_runner.execute_manifest(manifest2, public_keys.to_vec());
 
     // Assert
     if should_succeed {
@@ -232,8 +230,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let manifest2 = ManifestBuilder::new()
         .call_method(component, call_data!(make_move()))
         .build();
-    let signer_public_keys = vec![other_public_key];
-    let receipt = test_runner.execute_manifest(manifest2, signer_public_keys);
+    let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");
@@ -259,9 +256,8 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let manifest2 = ManifestBuilder::new()
         .call_method(component, call_data!(make_move()))
         .build();
-    let signer_public_keys = vec![public_key];
     test_runner
-        .execute_manifest(manifest2, signer_public_keys)
+        .execute_manifest(manifest2, vec![public_key])
         .result
         .expect("Should be okay.");
 
@@ -269,8 +265,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let manifest3 = ManifestBuilder::new()
         .call_method(component, call_data!(make_move()))
         .build();
-    let signer_public_keys = vec![other_public_key];
-    let receipt = test_runner.execute_manifest(manifest3, signer_public_keys);
+    let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key]);
 
     // Assert
     receipt.result.expect("Should be okay.");

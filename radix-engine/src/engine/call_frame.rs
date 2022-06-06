@@ -237,11 +237,11 @@ where
     pub fn new_root(
         verbose: bool,
         transaction_hash: Hash,
-        transaction_signer_public_keys: Vec<EcdsaPublicKey>,
+        signer_public_keys: Vec<EcdsaPublicKey>,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
     ) -> Self {
-        let signer_public_keys: BTreeSet<NonFungibleId> = transaction_signer_public_keys
+        let signer_public_keys: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
             .into_iter()
             .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))

@@ -56,10 +56,9 @@ fn cannot_withdraw_from_other_account() {
         .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
         .build();
-    let signer_public_keys = vec![other_public_key];
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, signer_public_keys);
+    let receipt = test_runner.execute_manifest(manifest, vec![other_public_key]);
 
     // Assert
     let error = receipt.result.expect_err("Should be runtime error");
@@ -82,10 +81,9 @@ fn account_to_bucket_to_account() {
                 .0
         })
         .build();
-    let signer_public_keys = vec![public_key];
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, signer_public_keys);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     receipt.result.expect("It should work");
@@ -99,10 +97,9 @@ fn test_account_balance() {
     let manifest = ManifestBuilder::new()
         .call_method(account, call_data![balance(RADIX_TOKEN)])
         .build();
-    let signer_public_keys = vec![public_key];
 
     // Act
-    let receipt = test_runner.execute_manifest(manifest, signer_public_keys);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     assert_eq!(
