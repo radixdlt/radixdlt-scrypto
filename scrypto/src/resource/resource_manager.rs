@@ -288,7 +288,7 @@ impl ResourceManager {
             pub fn metadata(&self) -> HashMap<String, String> {
                 ResourceManagerGetMetadataInput {}
             }
-            pub fn resource_type(&self) -> () {
+            pub fn resource_type(&self) -> ResourceType {
                 ResourceManagerGetResourceTypeInput {}
             }
             pub fn total_supply(&self) -> Decimal {
