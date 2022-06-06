@@ -1,46 +1,36 @@
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::crypto::*;
 use scrypto::values::*;
 
-use crate::errors::*;
+use crate::errors::{SignatureValidationError, *};
 use crate::model::*;
 use crate::validation::*;
 
-/// Represents a validated transaction
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub struct ValidatedTransaction {
-    pub transaction: Transaction,
-    pub transaction_hash: Hash,
-    pub instructions: Vec<ExecutableInstruction>,
-    pub signer_public_keys: Vec<EcdsaPublicKey>,
-}
+pub struct TransactionValidator {}
 
-impl ValidatedTransaction {
-    pub fn from_slice(
+impl TransactionValidator {
+    pub fn validate_slice(
         transaction: &[u8],
         current_epoch: u64,
-    ) -> Result<Self, TransactionValidationError> {
+    ) -> Result<ValidatedTransaction, TransactionValidationError> {
         let transaction: Transaction = scrypto_decode(transaction)
             .map_err(TransactionValidationError::DeserializationError)?;
 
-        Self::from_struct(transaction, current_epoch)
+        Self::validate(transaction, current_epoch)
     }
 
-    pub fn from_struct(
+    pub fn validate(
         transaction: Transaction,
         current_epoch: u64,
-    ) -> Result<Self, TransactionValidationError> {
+    ) -> Result<ValidatedTransaction, TransactionValidationError> {
         let mut instructions = vec![];
 
         // verify header and signature
-        transaction
-            .validate_header(current_epoch)
+        Self::validate_header(&transaction, current_epoch)
             .map_err(TransactionValidationError::HeaderValidationError)?;
-        transaction
-            .validate_signatures()
+        Self::validate_signatures(&transaction)
             .map_err(TransactionValidationError::SignatureValidationError)?;
 
         // semantic analysis
@@ -219,12 +209,45 @@ impl ValidatedTransaction {
             .map(|e| e.0)
             .collect();
 
-        Ok(Self {
+        Ok(ValidatedTransaction {
             transaction,
             transaction_hash,
             instructions,
             signer_public_keys,
         })
+    }
+
+    fn validate_header(
+        transaction: &Transaction,
+        _current_epoch: u64,
+    ) -> Result<(), HeaderValidationError> {
+        let _header = &transaction.signed_intent.intent.header;
+
+        // TODO: validate headers
+
+        Ok(())
+    }
+
+    fn validate_signatures(transaction: &Transaction) -> Result<(), SignatureValidationError> {
+        // verify intent signature
+        let intent_payload = transaction.intent_payload();
+        for sig in &transaction.signed_intent.intent_signatures {
+            if !EcdsaVerifier::verify(&intent_payload, &sig.0, &sig.1) {
+                return Err(SignatureValidationError::InvalidIntentSignature);
+            }
+        }
+
+        // verify notary signature
+        let signed_intent_payload = transaction.signed_intent_paylod();
+        if !EcdsaVerifier::verify(
+            &signed_intent_payload,
+            &transaction.notary_signature.0,
+            &transaction.notary_signature.1,
+        ) {
+            return Err(SignatureValidationError::InvalidNotarySignature);
+        }
+
+        Ok(())
     }
 
     fn validate_call_data(
@@ -245,19 +268,5 @@ impl ValidatedTransaction {
             ));
         }
         Ok(value)
-    }
-}
-
-impl ExecutableTransaction for ValidatedTransaction {
-    fn transaction_hash(&self) -> Hash {
-        self.transaction_hash
-    }
-
-    fn instructions(&self) -> &[ExecutableInstruction] {
-        &self.instructions
-    }
-
-    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
-        &self.signer_public_keys
     }
 }

@@ -2,9 +2,8 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
-use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, EcdsaVerifier, Hash};
+use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 
-use crate::errors::*;
 use crate::manifest::{compile, CompileError};
 use crate::model::Instruction;
 use crate::signing::Signer;
@@ -79,46 +78,28 @@ impl Transaction {
         scrypto_decode(slice)
     }
 
+    pub fn intent_payload(&self) -> Vec<u8> {
+        scrypto_encode(&self.signed_intent.intent)
+    }
+
     pub fn intent_hash(&self) -> Hash {
         self.signed_intent.intent.hash()
+    }
+
+    pub fn signed_intent_paylod(&self) -> Vec<u8> {
+        scrypto_encode(&self.signed_intent)
     }
 
     pub fn signed_intent_hash(&self) -> Hash {
         self.signed_intent.hash()
     }
 
+    pub fn payload(&self) -> Vec<u8> {
+        scrypto_encode(self)
+    }
+
     pub fn hash(&self) -> Hash {
         hash(scrypto_encode(self))
-    }
-
-    pub fn validate_header(&self, _current_epoch: u64) -> Result<(), HeaderValidationError> {
-        let _header = &self.signed_intent.intent.header;
-
-        // TODO: validate headers
-
-        Ok(())
-    }
-
-    pub fn validate_signatures(&self) -> Result<(), SignatureValidationError> {
-        // verify intent signature
-        let intent_payload = scrypto_encode(&self.signed_intent.intent);
-        for sig in &self.signed_intent.intent_signatures {
-            if !EcdsaVerifier::verify(&intent_payload, &sig.0, &sig.1) {
-                return Err(SignatureValidationError::InvalidIntentSignature);
-            }
-        }
-
-        // verify notary signature
-        let signed_intent_payload = scrypto_encode(&self.signed_intent);
-        if !EcdsaVerifier::verify(
-            &signed_intent_payload,
-            &self.notary_signature.0,
-            &self.notary_signature.1,
-        ) {
-            return Err(SignatureValidationError::InvalidNotarySignature);
-        }
-
-        Ok(())
     }
 }
 

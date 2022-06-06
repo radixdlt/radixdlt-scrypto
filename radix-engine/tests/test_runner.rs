@@ -5,9 +5,9 @@ use radix_engine::wasm::DefaultWasmEngine;
 use scrypto::prelude::*;
 use scrypto::{abi, call_data};
 use transaction::builder::ManifestBuilder;
+use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::TestTransaction;
 
 pub struct TestRunner {
     substate_store: InMemorySubstateStore,

@@ -61,9 +61,9 @@ use std::fs;
 use std::path::PathBuf;
 use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
+use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::TestTransaction;
 
 use crate::ledger::*;
 

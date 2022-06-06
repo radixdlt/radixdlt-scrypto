@@ -8,8 +8,8 @@ use radix_engine::wasm::DefaultWasmEngine;
 use scrypto::call_data;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::TestTransaction;
 
 #[test]
 fn test_say_hello() {

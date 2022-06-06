@@ -4,8 +4,8 @@ use radix_engine::model::extract_package;
 use radix_engine::wasm::DefaultWasmEngine;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::TestTransaction;
 
 #[test]
 fn test_hello() {

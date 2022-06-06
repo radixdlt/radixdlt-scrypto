@@ -7,8 +7,8 @@ use radix_engine::ledger::*;
 use radix_engine::wasm::DefaultWasmEngine;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
+use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::TestTransaction;
 
 fn bench_transfer(b: &mut Bencher) {
     // Set up environment.
@@ -20,7 +20,7 @@ fn bench_transfer(b: &mut Bencher) {
     let private_key = EcdsaPrivateKey::from_u64(1).unwrap();
     let public_key = private_key.public_key();
 
-    // Create two account2
+    // Create two accounts
     let manifest = ManifestBuilder::new()
         .call_method(SYSTEM_COMPONENT, call_data!(free_xrd()))
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
