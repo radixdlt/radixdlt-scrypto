@@ -29,7 +29,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 let s_ids = s.iter().map(|f| &f.ident);
                 let s_types = s.iter().map(|f| &f.ty);
                 quote! {
-                    impl ::sbor::DecodeValue for #ident {
+                    impl ::sbor::Decode for #ident {
+                        #[inline]
+                        fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                            decoder.check_type(Self::type_id())
+                        }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
                             decoder.check_len(#ns_len)?;
@@ -53,7 +57,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 }
                 let ns_len = Index::from(unnamed.iter().filter(|f| !is_skipped(f)).count());
                 quote! {
-                    impl ::sbor::DecodeValue for #ident {
+                    impl ::sbor::Decode for #ident {
+                        #[inline]
+                        fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                            decoder.check_type(Self::type_id())
+                        }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             use ::sbor::{self, Decode};
                             decoder.check_len(#ns_len)?;
@@ -66,7 +74,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             }
             syn::Fields::Unit => {
                 quote! {
-                    impl ::sbor::DecodeValue for #ident {
+                    impl ::sbor::Decode for #ident {
+                        #[inline]
+                        fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                            decoder.check_type(Self::type_id())
+                        }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                             decoder.check_len(0)?;
                             Ok(Self {})
@@ -132,7 +144,11 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
             });
 
             quote! {
-                impl ::sbor::DecodeValue for #ident {
+                impl ::sbor::Decode for #ident {
+                    #[inline]
+                    fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type(Self::type_id())
+                    }
                     #[inline]
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
@@ -177,7 +193,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::DecodeValue for Test {
+                impl ::sbor::Decode for Test {
+                    #[inline]
+                    fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type(Self::type_id())
+                    }
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
                         decoder.check_len(1)?;
@@ -198,7 +218,11 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                impl ::sbor::DecodeValue for Test {
+                impl ::sbor::Decode for Test {
+                    #[inline]
+                    fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        decoder.check_type(Self::type_id())
+                    }
                     #[inline]
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
                         use ::sbor::{self, Decode};
