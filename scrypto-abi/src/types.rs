@@ -31,7 +31,10 @@ macro_rules! scrypto_type {
                 let len = decoder.read_len()?;
                 let slice = decoder.read_bytes(len)?;
                 Self::try_from(slice).map_err(|_| {
-                    DecodeError::CustomError(format!("Failed to decode {}", stringify!($t)))
+                    DecodeError::CustomError(::sbor::rust::format!(
+                        "Failed to decode {}",
+                        stringify!($t)
+                    ))
                 })
             }
         }

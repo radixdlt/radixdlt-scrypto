@@ -6,6 +6,7 @@ use crate::rust::mem::MaybeUninit;
 use crate::rust::ptr::copy;
 use crate::rust::rc::Rc;
 use crate::rust::string::String;
+use crate::rust::string::ToString;
 use crate::rust::vec::Vec;
 use crate::type_id::*;
 
