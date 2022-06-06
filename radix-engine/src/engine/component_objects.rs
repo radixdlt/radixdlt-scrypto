@@ -7,16 +7,16 @@ use crate::engine::*;
 use crate::model::*;
 
 #[derive(Debug)]
-pub struct UnclaimedKeyValueStore {
+pub struct FloatingKeyValueStore {
     pub kv_store: HashMap<Vec<u8>, ScryptoValue>,
     /// All descendents (not just direct children) of the store
     pub descendent_kv_stores: HashMap<KeyValueStoreId, HashMap<Vec<u8>, ScryptoValue>>,
     pub descendent_vaults: HashMap<VaultId, Vault>,
 }
 
-impl UnclaimedKeyValueStore {
+impl FloatingKeyValueStore {
     pub fn new() -> Self {
-        UnclaimedKeyValueStore {
+        FloatingKeyValueStore {
             kv_store: HashMap::new(),
             descendent_kv_stores: HashMap::new(),
             descendent_vaults: HashMap::new(),
@@ -45,7 +45,7 @@ impl UnclaimedKeyValueStore {
 
     fn insert_store_descendent(
         &mut self,
-        unclaimed_kv_store: UnclaimedKeyValueStore,
+        unclaimed_kv_store: FloatingKeyValueStore,
         kv_store_id: KeyValueStoreId,
     ) {
         self.insert_kv_store(kv_store_id, unclaimed_kv_store.kv_store);
@@ -74,7 +74,7 @@ impl UnclaimedKeyValueStore {
 
 #[derive(Debug)]
 pub enum StoredValue {
-    UnclaimedKeyValueStore(KeyValueStoreId, UnclaimedKeyValueStore),
+    UnclaimedKeyValueStore(KeyValueStoreId, FloatingKeyValueStore),
     Vault(VaultId, Vault)
 }
 
@@ -135,7 +135,7 @@ impl ComponentObjects {
         unclaimed_kv_store.insert_descendents(values);
     }
 
-    pub fn insert_kv_store_entry(
+    pub fn set_key_value(
         &mut self,
         kv_store_id: &KeyValueStoreId,
         key: Vec<u8>,

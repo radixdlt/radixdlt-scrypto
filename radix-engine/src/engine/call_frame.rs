@@ -1191,7 +1191,7 @@ where
         match kv_store_state {
             Uncommitted { root } => {
                 self.owned_values
-                    .insert_kv_store_entry(&kv_store_id, key.raw, value);
+                    .set_key_value(&kv_store_id, key.raw, value);
                 self.owned_values
                     .insert_values_into_kv_store(new_values, &root);
             }
@@ -1233,7 +1233,7 @@ where
         self.owned_values
             .insert(
                 StoredValueId::KeyValueStoreId(kv_store_id.clone()),
-                StoredValue::UnclaimedKeyValueStore(kv_store_id, UnclaimedKeyValueStore::new())
+                StoredValue::UnclaimedKeyValueStore(kv_store_id, FloatingKeyValueStore::new())
             );
         kv_store_id
     }
