@@ -39,8 +39,8 @@ impl TransactionBuilder {
         self
     }
 
-    pub fn build(&self) -> Transaction {
-        Transaction {
+    pub fn build(&self) -> NotarizedTransaction {
+        NotarizedTransaction {
             signed_intent: self.signed_transaction_intent(),
             notary_signature: self.notary_signature.clone().expect("Not notarized"),
         }

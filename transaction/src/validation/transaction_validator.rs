@@ -15,14 +15,14 @@ impl TransactionValidator {
         transaction: &[u8],
         current_epoch: u64,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
-        let transaction: Transaction = scrypto_decode(transaction)
+        let transaction: NotarizedTransaction = scrypto_decode(transaction)
             .map_err(TransactionValidationError::DeserializationError)?;
 
         Self::validate(transaction, current_epoch)
     }
 
     pub fn validate(
-        transaction: Transaction,
+        transaction: NotarizedTransaction,
         current_epoch: u64,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
         let mut instructions = vec![];
@@ -218,7 +218,7 @@ impl TransactionValidator {
     }
 
     fn validate_header(
-        transaction: &Transaction,
+        transaction: &NotarizedTransaction,
         _current_epoch: u64,
     ) -> Result<(), HeaderValidationError> {
         let _header = &transaction.signed_intent.intent.header;
@@ -228,7 +228,7 @@ impl TransactionValidator {
         Ok(())
     }
 
-    fn validate_signatures(transaction: &Transaction) -> Result<(), SignatureValidationError> {
+    fn validate_signatures(transaction: &NotarizedTransaction) -> Result<(), SignatureValidationError> {
         // verify intent signature
         let intent_payload = transaction.signed_intent.intent.to_bytes();
         for sig in &transaction.signed_intent.intent_signatures {
