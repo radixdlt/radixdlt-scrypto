@@ -28,6 +28,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Encode for #ident {
                         #[inline]
                         fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
+                            use ::sbor::TypeId;
                             encoder.write_type(Self::type_id());
                         }
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -50,6 +51,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Encode for #ident {
                         #[inline]
                         fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
+                            use ::sbor::TypeId;
                             encoder.write_type(Self::type_id());
                         }
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -65,6 +67,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Encode for #ident {
                         #[inline]
                         fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
+                            use ::sbor::TypeId;
                             encoder.write_type(Self::type_id());
                         }
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -127,6 +130,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Encode for #ident {
                         #[inline]
                         fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
+                            use ::sbor::TypeId;
                             encoder.write_type(Self::type_id());
                         }
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -138,6 +142,7 @@ pub fn handle_encode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Encode for #ident {
                         #[inline]
                         fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
+                            use ::sbor::TypeId;
                             encoder.write_type(Self::type_id());
                         }
                         fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -185,6 +190,7 @@ mod tests {
                 impl ::sbor::Encode for Test {
                     #[inline]
                     fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
+                        use ::sbor::TypeId;
                         encoder.write_type(Self::type_id());
                     }
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {
@@ -208,6 +214,7 @@ mod tests {
                 impl ::sbor::Encode for Test {
                     #[inline]
                     fn encode_type(&self, encoder: &mut ::sbor::Encoder) {
+                        use ::sbor::TypeId;
                         encoder.write_type(Self::type_id());
                     }
                     fn encode_value(&self, encoder: &mut ::sbor::Encoder) {

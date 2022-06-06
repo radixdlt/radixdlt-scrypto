@@ -30,9 +30,7 @@ pub enum DecodeError {
 
     NotAllBytesUsed(usize),
 
-    InvalidCustomData(u8),
-
-    DuplicateEntry,
+    CustomError(String),
 }
 
 /// A data structure that can be decoded from a byte array using SBOR.
@@ -417,7 +415,10 @@ impl<T: Decode + TypeId + Ord> Decode for BTreeSet<T> {
         let mut result = BTreeSet::new();
         for _ in 0..len {
             if !result.insert(T::decode_value(decoder)?) {
-                return Err(DecodeError::DuplicateEntry);
+                // This is a custom error because key duplication logic is defined by the application
+                return Err(DecodeError::CustomError(
+                    "Duplicate BTreeSet entries".to_string(),
+                ));
             }
         }
         Ok(result)
@@ -439,7 +440,10 @@ impl<K: Decode + TypeId + Ord, V: Decode + TypeId> Decode for BTreeMap<K, V> {
                 .insert(K::decode_value(decoder)?, V::decode_value(decoder)?)
                 .is_some()
             {
-                return Err(DecodeError::DuplicateEntry);
+                // This is a custom error because key duplication logic is defined by the application
+                return Err(DecodeError::CustomError(
+                    "Duplicate BTreeMap entries".to_string(),
+                ));
             }
         }
         Ok(map)
@@ -458,7 +462,10 @@ impl<T: Decode + TypeId + Hash + Eq> Decode for HashSet<T> {
         let mut result = HashSet::new();
         for _ in 0..len {
             if !result.insert(T::decode_value(decoder)?) {
-                return Err(DecodeError::DuplicateEntry);
+                // This is a custom error because key duplication logic is defined by the application
+                return Err(DecodeError::CustomError(
+                    "Duplicate HashSet entries".to_string(),
+                ));
             }
         }
         Ok(result)
@@ -480,7 +487,10 @@ impl<K: Decode + TypeId + Hash + Eq, V: Decode + TypeId> Decode for HashMap<K, V
                 .insert(K::decode_value(decoder)?, V::decode_value(decoder)?)
                 .is_some()
             {
-                return Err(DecodeError::DuplicateEntry);
+                // This is a custom error because key duplication logic is defined by the application
+                return Err(DecodeError::CustomError(
+                    "Duplicate HashMap entries".to_string(),
+                ));
             }
         }
         Ok(map)

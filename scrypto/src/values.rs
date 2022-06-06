@@ -41,24 +41,61 @@ pub struct ScryptoValue {
     pub lazy_map_ids: HashSet<LazyMapId>,
 }
 
-// FIXME: encode as the original type, rather than Vec<u8>
-
-impl TypeId for ScryptoValue {
-    fn type_id() -> u8 {
-        Vec::<u8>::type_id()
-    }
-}
-
 impl Encode for ScryptoValue {
+    fn encode_type(&self, encoder: &mut Encoder) {
+        match &self.dom {
+            Value::Unit => encoder.write_type(TYPE_UNIT),
+            Value::Bool { .. } => encoder.write_type(TYPE_BOOL),
+            Value::I8 { .. } => encoder.write_type(TYPE_I8),
+            Value::I16 { .. } => encoder.write_type(TYPE_I16),
+            Value::I32 { .. } => encoder.write_type(TYPE_I32),
+            Value::I64 { .. } => encoder.write_type(TYPE_I64),
+            Value::I128 { .. } => encoder.write_type(TYPE_I128),
+            Value::U8 { .. } => encoder.write_type(TYPE_U8),
+            Value::U16 { .. } => encoder.write_type(TYPE_U16),
+            Value::U32 { .. } => encoder.write_type(TYPE_U32),
+            Value::U64 { .. } => encoder.write_type(TYPE_U64),
+            Value::U128 { .. } => encoder.write_type(TYPE_U128),
+            Value::String { .. } => encoder.write_type(TYPE_STRING),
+            Value::Struct { .. } => encoder.write_type(TYPE_STRUCT),
+            Value::Enum { .. } => encoder.write_type(TYPE_ENUM),
+            Value::Option { .. } => encoder.write_type(TYPE_OPTION),
+            Value::Array { .. } => encoder.write_type(TYPE_ARRAY),
+            Value::Tuple { .. } => encoder.write_type(TYPE_TUPLE),
+            Value::Result { .. } => encoder.write_type(TYPE_RESULT),
+            Value::Vec { .. } => encoder.write_type(TYPE_VEC),
+            Value::TreeSet { .. } => encoder.write_type(TYPE_TREE_SET),
+            Value::TreeMap { .. } => encoder.write_type(TYPE_TREE_MAP),
+            Value::HashSet { .. } => encoder.write_type(TYPE_HASH_SET),
+            Value::HashMap { .. } => encoder.write_type(TYPE_HASH_MAP),
+            Value::Custom { type_id, .. } => encoder.write_type(*type_id),
+        }
+    }
+
     fn encode_value(&self, encoder: &mut Encoder) {
-        self.raw.encode_value(encoder);
+        encoder.write_slice(&self.raw);
     }
 }
 
 impl Decode for ScryptoValue {
+    fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+        decoder.read_type()?;
+        Ok(())
+    }
+
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        Ok(Self::from_slice(&Vec::<u8>::decode_value(decoder)?)
-            .expect("FIXME support untrusted ScryptoValue decoding"))
+        let remaining = decoder.remaining();
+        let slice = decoder.read_bytes(remaining)?;
+        let dom = decode_any(slice)?;
+        let (bucket_ids, proof_ids, vault_ids, lazy_map_ids) = Self::extract_runtime_objects(&dom)?;
+        Ok(Self {
+            raw: slice.to_vec(),
+            dom,
+            bucket_ids,
+            proof_ids,
+            vault_ids,
+            lazy_map_ids,
+        })
     }
 }
 
@@ -163,6 +200,37 @@ impl ScryptoValue {
     ) -> String {
         ScryptoValueFormatter::format_value(&self.dom, bucket_ids, proof_ids)
     }
+
+    fn extract_runtime_objects(
+        dom: &Value,
+    ) -> Result<
+        (
+            HashMap<BucketId, SborPath>,
+            HashMap<ProofId, SborPath>,
+            HashSet<VaultId>,
+            HashSet<LazyMapId>,
+        ),
+        DecodeError,
+    > {
+        let mut checker = ScryptoCustomValueChecker::new();
+        traverse_any(&mut MutableSborPath::new(), dom, &mut checker)
+            .map_err(|e| DecodeError::CustomError(format!("{:?}", e)))?;
+
+        Ok((
+            checker
+                .buckets
+                .drain()
+                .map(|(e, path)| (e.0, path))
+                .collect(),
+            checker
+                .proofs
+                .drain()
+                .map(|(e, path)| (e.0, path))
+                .collect(),
+            checker.vaults.iter().map(|e| e.0).collect(),
+            checker.lazy_maps.iter().map(|e| e.id).collect(),
+        ))
+    }
 }
 
 impl fmt::Debug for ScryptoValue {
@@ -188,8 +256,7 @@ pub struct ScryptoCustomValueChecker {
 /// Represents an error when validating a Scrypto-specific value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValueCheckError {
-    DecodeError(DecodeError),
-    InvalidTypeId(u8),
+    UnknownTypeId(u8),
     InvalidDecimal(ParseDecimalError),
     InvalidPackageAddress(ParsePackageAddressError),
     InvalidComponentAddress(ParseComponentAddressError),
@@ -226,7 +293,7 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
         type_id: u8,
         data: &[u8],
     ) -> Result<(), Self::Err> {
-        match ScryptoType::from_id(type_id).ok_or(Self::Err::InvalidTypeId(type_id))? {
+        match ScryptoType::from_id(type_id).ok_or(Self::Err::UnknownTypeId(type_id))? {
             ScryptoType::PackageAddress => {
                 PackageAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;

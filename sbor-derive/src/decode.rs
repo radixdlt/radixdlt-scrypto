@@ -32,6 +32,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Decode for #ident {
                         #[inline]
                         fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                            use ::sbor::TypeId;
                             decoder.check_type(Self::type_id())
                         }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
@@ -60,6 +61,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Decode for #ident {
                         #[inline]
                         fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                            use ::sbor::TypeId;
                             decoder.check_type(Self::type_id())
                         }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
@@ -77,6 +79,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                     impl ::sbor::Decode for #ident {
                         #[inline]
                         fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                            use ::sbor::TypeId;
                             decoder.check_type(Self::type_id())
                         }
                         fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
@@ -147,6 +150,7 @@ pub fn handle_decode(input: TokenStream) -> Result<TokenStream> {
                 impl ::sbor::Decode for #ident {
                     #[inline]
                     fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        use ::sbor::TypeId;
                         decoder.check_type(Self::type_id())
                     }
                     #[inline]
@@ -196,6 +200,7 @@ mod tests {
                 impl ::sbor::Decode for Test {
                     #[inline]
                     fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        use ::sbor::TypeId;
                         decoder.check_type(Self::type_id())
                     }
                     fn decode_value(decoder: &mut ::sbor::Decoder) -> Result<Self, ::sbor::DecodeError> {
@@ -221,6 +226,7 @@ mod tests {
                 impl ::sbor::Decode for Test {
                     #[inline]
                     fn decode_type(decoder: &mut ::sbor::Decoder) -> Result<(), ::sbor::DecodeError> {
+                        use ::sbor::TypeId;
                         decoder.check_type(Self::type_id())
                     }
                     #[inline]
