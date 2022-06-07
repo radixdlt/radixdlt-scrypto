@@ -7,15 +7,21 @@ use crate::engine::*;
 use crate::model::*;
 
 #[derive(Debug)]
-pub struct FloatingKeyValueStore {
+pub enum StoredValue {
+    KeyValueStore(KeyValueStoreId, PreCommittedKeyValueStore),
+    Vault(VaultId, Vault),
+}
+
+#[derive(Debug)]
+pub struct PreCommittedKeyValueStore {
     pub store: HashMap<Vec<u8>, ScryptoValue>,
-    pub child_kv_stores: HashMap<KeyValueStoreId, FloatingKeyValueStore>,
+    pub child_kv_stores: HashMap<KeyValueStoreId, PreCommittedKeyValueStore>,
     pub child_vaults: HashMap<VaultId, Vault>,
 }
 
-impl FloatingKeyValueStore {
+impl PreCommittedKeyValueStore {
     pub fn new() -> Self {
-        FloatingKeyValueStore {
+        PreCommittedKeyValueStore {
             store: HashMap::new(),
             child_kv_stores: HashMap::new(),
             child_vaults: HashMap::new(),
@@ -25,7 +31,7 @@ impl FloatingKeyValueStore {
     fn find_child_kv_store(
         &mut self,
         kv_store_id: &KeyValueStoreId,
-    ) -> Option<&mut FloatingKeyValueStore> {
+    ) -> Option<&mut PreCommittedKeyValueStore> {
         for (id, child_kv_store) in self.child_kv_stores.iter_mut() {
             if id.eq(kv_store_id) {
                 return Some(child_kv_store);
@@ -48,7 +54,11 @@ impl FloatingKeyValueStore {
         self.child_vaults.insert(vault_id, vault);
     }
 
-    fn insert_kv_store(&mut self, kv_store_id: KeyValueStoreId, kv_store: FloatingKeyValueStore) {
+    fn insert_kv_store(
+        &mut self,
+        kv_store_id: KeyValueStoreId,
+        kv_store: PreCommittedKeyValueStore,
+    ) {
         if self.child_kv_stores.contains_key(&kv_store_id) {
             panic!("duplicate store insertion: {:?}", kv_store_id);
         }
@@ -59,7 +69,7 @@ impl FloatingKeyValueStore {
     pub fn insert_children(&mut self, values: Vec<StoredValue>) {
         for value in values {
             match value {
-                StoredValue::UnclaimedKeyValueStore(id, kv_store) => {
+                StoredValue::KeyValueStore(id, kv_store) => {
                     self.insert_kv_store(id, kv_store);
                 }
                 StoredValue::Vault(id, vault) => {
@@ -68,12 +78,6 @@ impl FloatingKeyValueStore {
             }
         }
     }
-}
-
-#[derive(Debug)]
-pub enum StoredValue {
-    UnclaimedKeyValueStore(KeyValueStoreId, FloatingKeyValueStore),
-    Vault(VaultId, Vault),
 }
 
 /// Component type objects which will eventually move into a component
@@ -136,14 +140,14 @@ impl ComponentObjects {
     pub fn get_kv_store_mut(
         &mut self,
         kv_store_id: &KeyValueStoreId,
-    ) -> Option<&mut FloatingKeyValueStore> {
+    ) -> Option<&mut PreCommittedKeyValueStore> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
         // TODO: Optimize to prevent search
         for (_, value) in self.values.iter_mut() {
-            if let StoredValue::UnclaimedKeyValueStore(ref id, unclaimed) = value {
+            if let StoredValue::KeyValueStore(ref id, unclaimed) = value {
                 if id.eq(kv_store_id) {
                     return Some(unclaimed);
                 }
@@ -172,7 +176,7 @@ impl ComponentObjects {
         }
 
         for (_, value) in self.values.iter_mut() {
-            if let StoredValue::UnclaimedKeyValueStore(kv_store_id, unclaimed) = value {
+            if let StoredValue::KeyValueStore(kv_store_id, unclaimed) = value {
                 if let Some(vault) = unclaimed.child_vaults.remove(vault_id) {
                     self.borrowed_vault = Some((*vault_id, Some(*kv_store_id)));
                     return Some(vault);
@@ -191,7 +195,7 @@ impl ComponentObjects {
                     .get_mut(&StoredValueId::KeyValueStoreId(ancestor_id))
                     .unwrap();
                 match value {
-                    StoredValue::UnclaimedKeyValueStore(_, unclaimed) => {
+                    StoredValue::KeyValueStore(_, unclaimed) => {
                         unclaimed.child_vaults.insert(vault_id, vault);
                     }
                     _ => panic!("Expected kv store but was {:?}", value),

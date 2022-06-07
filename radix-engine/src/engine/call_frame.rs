@@ -357,7 +357,7 @@ where
             self.sys_log(Level::Warn, format!("Dangling value: {:?}", value));
             resource = match value {
                 StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
-                StoredValue::UnclaimedKeyValueStore(..) => ResourceFailure::UnclaimedKeyValueStore,
+                StoredValue::KeyValueStore(..) => ResourceFailure::UnclaimedKeyValueStore,
             };
             success = false;
         }
@@ -1241,7 +1241,7 @@ where
         let kv_store_id = self.track.new_kv_store_id();
         self.owned_values.insert(
             StoredValueId::KeyValueStoreId(kv_store_id.clone()),
-            StoredValue::UnclaimedKeyValueStore(kv_store_id, FloatingKeyValueStore::new()),
+            StoredValue::KeyValueStore(kv_store_id, PreCommittedKeyValueStore::new()),
         );
         kv_store_id
     }

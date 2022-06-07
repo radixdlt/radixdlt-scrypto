@@ -11,7 +11,7 @@ use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
 use crate::engine::{
-    FloatingKeyValueStore, StoredValue, SubstateOperation, SubstateOperationsReceipt,
+    PreCommittedKeyValueStore, StoredValue, SubstateOperation, SubstateOperationsReceipt,
 };
 use crate::ledger::*;
 use crate::model::*;
@@ -579,7 +579,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     fn insert_kv_store_into_component(
         &mut self,
         kv_store_id: KeyValueStoreId,
-        kv_store: FloatingKeyValueStore,
+        kv_store: PreCommittedKeyValueStore,
         component_address: ComponentAddress,
     ) {
         self.create_key_space(component_address, kv_store_id);
@@ -611,7 +611,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 StoredValue::Vault(vault_id, vault) => {
                     self.create_uuid_value_2((component_address, vault_id), vault);
                 }
-                StoredValue::UnclaimedKeyValueStore(kv_store_id, kv_store) => {
+                StoredValue::KeyValueStore(kv_store_id, kv_store) => {
                     self.insert_kv_store_into_component(
                         kv_store_id,
                         kv_store,
