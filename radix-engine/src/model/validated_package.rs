@@ -5,11 +5,12 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::{Function, Method};
 use scrypto::buffer::scrypto_decode;
-use scrypto::component::PackageFunction;
 use scrypto::core::ScryptoActorInfo;
+use scrypto::prelude::PackagePublishInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
+use crate::model::PackageError::MethodNotFound;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -69,22 +70,25 @@ impl ValidatedPackage {
     }
 
     pub fn static_main<'s, S, W, I>(
+        method_name: &str,
         call_data: ScryptoValue,
-        system_api: &'s mut S,
+        system_api: &mut S,
     ) -> Result<ScryptoValue, PackageError>
     where
         S: SystemApi<W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        let function: PackageFunction =
-            scrypto_decode(&call_data.raw).map_err(|e| PackageError::InvalidRequestData(e))?;
-        match function {
-            PackageFunction::Publish(bytes) => {
-                let package = ValidatedPackage::new(bytes).map_err(PackageError::InvalidWasm)?;
+        match method_name {
+            "publish" => {
+                let input: PackagePublishInput = scrypto_decode(&call_data.raw)
+                    .map_err(|e| PackageError::InvalidRequestData(e))?;
+                let package =
+                    ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
                 let package_address = system_api.create_package(package);
-                Ok(ScryptoValue::from_trusted(&package_address))
+                Ok(ScryptoValue::from_typed(&package_address))
             }
+            _ => Err(MethodNotFound(method_name.to_string())),
         }
     }
 

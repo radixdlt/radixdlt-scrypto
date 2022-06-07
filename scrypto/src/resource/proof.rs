@@ -12,7 +12,7 @@ use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions2;
+use crate::sfunctions;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ConsumingProofDropInput {}
@@ -34,7 +34,7 @@ pub struct ProofCloneInput {}
 pub struct Proof(pub ProofId);
 
 impl Clone for Proof {
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::ProofRef(self.0) => {
             fn clone(&self) -> Self {
                 ProofCloneInput {}
@@ -44,7 +44,7 @@ impl Clone for Proof {
 }
 
 impl Proof {
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::ProofRef(self.0) => {
             pub fn amount(&self) -> Decimal {
                 ProofGetAmountInput {}
@@ -58,7 +58,7 @@ impl Proof {
         }
     }
 
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::Proof(self.0) => {
             pub fn drop(self) -> () {
                 ConsumingProofDropInput {}

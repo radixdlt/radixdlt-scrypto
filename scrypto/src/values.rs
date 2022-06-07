@@ -36,10 +36,10 @@ pub struct ScryptoValue {
 
 impl ScryptoValue {
     pub fn unit() -> Self {
-        Self::from_trusted(&())
+        Self::from_typed(&())
     }
 
-    pub fn from_trusted<T: Encode>(value: &T) -> Self {
+    pub fn from_typed<T: Encode>(value: &T) -> Self {
         let bytes = scrypto_encode(value);
         Self::from_slice(&bytes).expect("Failed to convert trusted value into ScryptoValue")
     }

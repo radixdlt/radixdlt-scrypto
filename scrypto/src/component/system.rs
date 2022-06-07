@@ -1,5 +1,6 @@
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::*;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
 use crate::buffer::*;
@@ -47,9 +48,10 @@ impl ComponentSystem {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let input = RadixEngineInput::InvokeSNode(
+        let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::PackageStatic,
-            scrypto_encode(&PackageFunction::Publish(package)),
+            "publish".to_string(),
+            scrypto_encode(&PackagePublishInput { package }),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()

@@ -106,7 +106,7 @@ impl AuthZone {
                 let proof_id = system_api
                     .create_proof(proof)
                     .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_trusted(&scrypto::resource::Proof(
+                Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
             }
@@ -121,7 +121,7 @@ impl AuthZone {
                 proof.change_to_unrestricted();
 
                 self.push(proof);
-                Ok(ScryptoValue::from_trusted(&()))
+                Ok(ScryptoValue::from_typed(&()))
             }
             "create_proof" => {
                 let input: AuthZoneCreateProofInput =
@@ -138,7 +138,7 @@ impl AuthZone {
                 let proof_id = system_api
                     .create_proof(proof)
                     .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_trusted(&scrypto::resource::Proof(
+                Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
             }
@@ -161,7 +161,7 @@ impl AuthZone {
                 let proof_id = system_api
                     .create_proof(proof)
                     .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_trusted(&scrypto::resource::Proof(
+                Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
             }
@@ -181,7 +181,7 @@ impl AuthZone {
                 let proof_id = system_api
                     .create_proof(proof)
                     .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_trusted(&scrypto::resource::Proof(
+                Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
             }
@@ -189,7 +189,7 @@ impl AuthZone {
                 let _: AuthZoneClearInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 self.clear();
-                Ok(ScryptoValue::from_trusted(&()))
+                Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(InvalidMethod),
         }

@@ -4,12 +4,13 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::call_data;
-use scrypto::component::{Package, PackageFunction};
+use scrypto::component::Package;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::{
     AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput,
-    AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, ProofCloneInput,
+    AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, PackagePublishInput,
+    ProofCloneInput,
 };
 use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
@@ -80,16 +81,14 @@ impl TransactionProcessor {
                                     .invoke_snode2(
                                         SNodeRef::WorktopRef,
                                         "take_all".to_string(),
-                                        ScryptoValue::from_trusted(&WorktopTakeAllInput {
+                                        ScryptoValue::from_typed(&WorktopTakeAllInput {
                                             resource_address: *resource_address,
                                         }),
                                     )
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
                                         bucket_id_mapping.insert(new_id, bucket_id);
-                                        ScryptoValue::from_trusted(&scrypto::resource::Bucket(
-                                            new_id,
-                                        ))
+                                        ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
                                     })
                             }),
                         ExecutableInstruction::TakeFromWorktopByAmount {
@@ -103,7 +102,7 @@ impl TransactionProcessor {
                                     .invoke_snode2(
                                         SNodeRef::WorktopRef,
                                         "take_amount".to_string(),
-                                        ScryptoValue::from_trusted(&WorktopTakeAmountInput {
+                                        ScryptoValue::from_typed(&WorktopTakeAmountInput {
                                             amount: *amount,
                                             resource_address: *resource_address,
                                         }),
@@ -111,9 +110,7 @@ impl TransactionProcessor {
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
                                         bucket_id_mapping.insert(new_id, bucket_id);
-                                        ScryptoValue::from_trusted(&scrypto::resource::Bucket(
-                                            new_id,
-                                        ))
+                                        ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
                                     })
                             }),
                         ExecutableInstruction::TakeFromWorktopByIds {
@@ -127,7 +124,7 @@ impl TransactionProcessor {
                                     .invoke_snode2(
                                         SNodeRef::WorktopRef,
                                         "take_non_fungibles".to_string(),
-                                        ScryptoValue::from_trusted(&WorktopTakeNonFungiblesInput {
+                                        ScryptoValue::from_typed(&WorktopTakeNonFungiblesInput {
                                             ids: ids.clone(),
                                             resource_address: *resource_address,
                                         }),
@@ -135,9 +132,7 @@ impl TransactionProcessor {
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
                                         bucket_id_mapping.insert(new_id, bucket_id);
-                                        ScryptoValue::from_trusted(&scrypto::resource::Bucket(
-                                            new_id,
-                                        ))
+                                        ScryptoValue::from_typed(&scrypto::resource::Bucket(new_id))
                                     })
                             }),
                         ExecutableInstruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
@@ -146,7 +141,7 @@ impl TransactionProcessor {
                                 system_api.invoke_snode2(
                                     SNodeRef::WorktopRef,
                                     "put".to_string(),
-                                    ScryptoValue::from_trusted(&WorktopPutInput {
+                                    ScryptoValue::from_typed(&WorktopPutInput {
                                         bucket: scrypto::resource::Bucket(real_id),
                                     }),
                                 )
@@ -156,7 +151,7 @@ impl TransactionProcessor {
                             system_api.invoke_snode2(
                                 SNodeRef::WorktopRef,
                                 "assert_contains".to_string(),
-                                ScryptoValue::from_trusted(&WorktopAssertContainsInput {
+                                ScryptoValue::from_typed(&WorktopAssertContainsInput {
                                     resource_address: *resource_address,
                                 }),
                             )
@@ -167,7 +162,7 @@ impl TransactionProcessor {
                         } => system_api.invoke_snode2(
                             SNodeRef::WorktopRef,
                             "assert_contains_amount".to_string(),
-                            ScryptoValue::from_trusted(&WorktopAssertContainsAmountInput {
+                            ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
                                 amount: *amount,
                                 resource_address: *resource_address,
                             }),
@@ -178,7 +173,7 @@ impl TransactionProcessor {
                         } => system_api.invoke_snode2(
                             SNodeRef::WorktopRef,
                             "assert_contains_non_fungibles".to_string(),
-                            ScryptoValue::from_trusted(&WorktopAssertContainsNonFungiblesInput {
+                            ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
                                 ids: ids.clone(),
                                 resource_address: *resource_address,
                             }),
@@ -191,14 +186,12 @@ impl TransactionProcessor {
                                     .invoke_snode2(
                                         SNodeRef::AuthZoneRef,
                                         "pop".to_string(),
-                                        ScryptoValue::from_trusted(&AuthZonePopInput {}),
+                                        ScryptoValue::from_typed(&AuthZonePopInput {}),
                                     )
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                         proof_id_mapping.insert(new_id, proof_id);
-                                        ScryptoValue::from_trusted(&scrypto::resource::Proof(
-                                            new_id,
-                                        ))
+                                        ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
                             }),
                         ExecutableInstruction::ClearAuthZone => {
@@ -206,7 +199,7 @@ impl TransactionProcessor {
                             system_api.invoke_snode2(
                                 SNodeRef::AuthZoneRef,
                                 "clear".to_string(),
-                                ScryptoValue::from_trusted(&AuthZoneClearInput {}),
+                                ScryptoValue::from_typed(&AuthZoneClearInput {}),
                             )
                         }
                         ExecutableInstruction::PushToAuthZone { proof_id } => proof_id_mapping
@@ -216,7 +209,7 @@ impl TransactionProcessor {
                                 system_api.invoke_snode2(
                                     SNodeRef::AuthZoneRef,
                                     "push".to_string(),
-                                    ScryptoValue::from_trusted(&AuthZonePushInput {
+                                    ScryptoValue::from_typed(&AuthZonePushInput {
                                         proof: scrypto::resource::Proof(real_id),
                                     }),
                                 )
@@ -230,14 +223,14 @@ impl TransactionProcessor {
                                         .invoke_snode2(
                                             SNodeRef::AuthZoneRef,
                                             "create_proof".to_string(),
-                                            ScryptoValue::from_trusted(&AuthZoneCreateProofInput {
+                                            ScryptoValue::from_typed(&AuthZoneCreateProofInput {
                                                 resource_address: *resource_address,
                                             }),
                                         )
                                         .map(|rtn| {
                                             let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                             proof_id_mapping.insert(new_id, proof_id);
-                                            ScryptoValue::from_trusted(&scrypto::resource::Proof(
+                                            ScryptoValue::from_typed(&scrypto::resource::Proof(
                                                 new_id,
                                             ))
                                         })
@@ -254,7 +247,7 @@ impl TransactionProcessor {
                                     .invoke_snode2(
                                         SNodeRef::AuthZoneRef,
                                         "create_proof_by_amount".to_string(),
-                                        ScryptoValue::from_trusted(
+                                        ScryptoValue::from_typed(
                                             &AuthZoneCreateProofByAmountInput {
                                                 amount: *amount,
                                                 resource_address: *resource_address,
@@ -264,9 +257,7 @@ impl TransactionProcessor {
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                         proof_id_mapping.insert(new_id, proof_id);
-                                        ScryptoValue::from_trusted(&scrypto::resource::Proof(
-                                            new_id,
-                                        ))
+                                        ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
                             }),
                         ExecutableInstruction::CreateProofFromAuthZoneByIds {
@@ -280,19 +271,15 @@ impl TransactionProcessor {
                                     .invoke_snode2(
                                         SNodeRef::AuthZoneRef,
                                         "create_proof_by_ids".to_string(),
-                                        ScryptoValue::from_trusted(
-                                            &AuthZoneCreateProofByIdsInput {
-                                                ids: ids.clone(),
-                                                resource_address: *resource_address,
-                                            },
-                                        ),
+                                        ScryptoValue::from_typed(&AuthZoneCreateProofByIdsInput {
+                                            ids: ids.clone(),
+                                            resource_address: *resource_address,
+                                        }),
                                     )
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                         proof_id_mapping.insert(new_id, proof_id);
-                                        ScryptoValue::from_trusted(&scrypto::resource::Proof(
-                                            new_id,
-                                        ))
+                                        ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
                             }),
                         ExecutableInstruction::CreateProofFromBucket { bucket_id } => id_allocator
@@ -310,14 +297,12 @@ impl TransactionProcessor {
                                     .invoke_snode2(
                                         SNodeRef::BucketRef(real_bucket_id),
                                         "create_proof".to_string(),
-                                        ScryptoValue::from_trusted(&BucketCreateProofInput {}),
+                                        ScryptoValue::from_typed(&BucketCreateProofInput {}),
                                     )
                                     .map(|rtn| {
                                         let proof_id = *rtn.proof_ids.iter().next().unwrap().0;
                                         proof_id_mapping.insert(new_id, proof_id);
-                                        ScryptoValue::from_trusted(&scrypto::resource::Proof(
-                                            new_id,
-                                        ))
+                                        ScryptoValue::from_typed(&scrypto::resource::Proof(new_id))
                                     })
                             }),
                         ExecutableInstruction::CloneProof { proof_id } => id_allocator
@@ -332,15 +317,15 @@ impl TransactionProcessor {
                                             .invoke_snode2(
                                                 SNodeRef::ProofRef(real_id),
                                                 "clone".to_string(),
-                                                ScryptoValue::from_trusted(&ProofCloneInput {}),
+                                                ScryptoValue::from_typed(&ProofCloneInput {}),
                                             )
                                             .map(|v| {
                                                 let cloned_proof_id =
                                                     v.proof_ids.iter().next().unwrap().0;
                                                 proof_id_mapping.insert(new_id, *cloned_proof_id);
-                                                ScryptoValue::from_trusted(
-                                                    &scrypto::resource::Proof(new_id),
-                                                )
+                                                ScryptoValue::from_typed(&scrypto::resource::Proof(
+                                                    new_id,
+                                                ))
                                             })
                                     })
                                     .unwrap_or(Err(RuntimeError::ProofNotFound(*proof_id)))
@@ -351,7 +336,7 @@ impl TransactionProcessor {
                                 system_api.invoke_snode2(
                                     SNodeRef::Proof(real_id),
                                     "drop".to_string(),
-                                    ScryptoValue::from_trusted(&ConsumingProofDropInput {}),
+                                    ScryptoValue::from_typed(&ConsumingProofDropInput {}),
                                 )
                             })
                             .unwrap_or(Err(ProofNotFound(*proof_id))),
@@ -381,7 +366,7 @@ impl TransactionProcessor {
                                         .invoke_snode2(
                                             SNodeRef::AuthZoneRef,
                                             "push".to_string(),
-                                            ScryptoValue::from_trusted(&AuthZonePushInput {
+                                            ScryptoValue::from_typed(&AuthZonePushInput {
                                                 proof: scrypto::resource::Proof(*proof_id),
                                             }),
                                         )
@@ -393,7 +378,7 @@ impl TransactionProcessor {
                                         .invoke_snode2(
                                             SNodeRef::WorktopRef,
                                             "put".to_string(),
-                                            ScryptoValue::from_trusted(&WorktopPutInput {
+                                            ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
                                         )
@@ -424,7 +409,7 @@ impl TransactionProcessor {
                                         .invoke_snode2(
                                             SNodeRef::AuthZoneRef,
                                             "push".to_string(),
-                                            ScryptoValue::from_trusted(&AuthZonePushInput {
+                                            ScryptoValue::from_typed(&AuthZonePushInput {
                                                 proof: scrypto::resource::Proof(*proof_id),
                                             }),
                                         )
@@ -436,7 +421,7 @@ impl TransactionProcessor {
                                         .invoke_snode2(
                                             SNodeRef::WorktopRef,
                                             "put".to_string(),
-                                            ScryptoValue::from_trusted(&WorktopPutInput {
+                                            ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
                                         )
@@ -452,7 +437,7 @@ impl TransactionProcessor {
                             .invoke_snode2(
                                 SNodeRef::AuthZoneRef,
                                 "clear".to_string(),
-                                ScryptoValue::from_trusted(&AuthZoneClearInput {}),
+                                ScryptoValue::from_typed(&AuthZoneClearInput {}),
                             )
                             .and_then(|_| {
                                 for (_, real_id) in proof_id_mapping.drain() {
@@ -460,14 +445,14 @@ impl TransactionProcessor {
                                         .invoke_snode2(
                                             SNodeRef::Proof(real_id),
                                             "drop".to_string(),
-                                            ScryptoValue::from_trusted(&ConsumingProofDropInput {}),
+                                            ScryptoValue::from_typed(&ConsumingProofDropInput {}),
                                         )
                                         .unwrap();
                                 }
                                 system_api.invoke_snode2(
                                     SNodeRef::WorktopRef,
                                     "drain".to_string(),
-                                    ScryptoValue::from_trusted(&WorktopDrainInput {}),
+                                    ScryptoValue::from_typed(&WorktopDrainInput {}),
                                 )
                             })
                             .and_then(|result| {
@@ -488,11 +473,10 @@ impl TransactionProcessor {
                             scrypto_decode::<Package>(package)
                                 .map_err(|e| RuntimeError::InvalidPackage(e))
                                 .and_then(|package| {
-                                    system_api.invoke_snode(
+                                    system_api.invoke_snode2(
                                         SNodeRef::PackageStatic,
-                                        ScryptoValue::from_trusted(&PackageFunction::Publish(
-                                            package,
-                                        )),
+                                        "publish".to_string(),
+                                        ScryptoValue::from_typed(&PackagePublishInput { package }),
                                     )
                                 })
                         }
@@ -501,7 +485,7 @@ impl TransactionProcessor {
                     outputs.push(result);
                 }
 
-                Ok(ScryptoValue::from_trusted(
+                Ok(ScryptoValue::from_typed(
                     &outputs
                         .into_iter()
                         .map(|sv| sv.raw)
