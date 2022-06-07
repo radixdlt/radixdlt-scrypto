@@ -257,6 +257,7 @@ impl TransactionValidator {
     fn validate_signatures(
         transaction: &NotarizedTransaction,
     ) -> Result<(), SignatureValidationError> {
+        // TODO: split into static validation part and runtime validation part to support more signatures
         if transaction.signed_intent.intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
             return Err(SignatureValidationError::TooManySignatures);
         }
