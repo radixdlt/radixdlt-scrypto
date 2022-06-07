@@ -8,61 +8,60 @@ use crate::model::*;
 
 #[derive(Debug)]
 pub struct FloatingKeyValueStore {
-    pub kv_store: HashMap<Vec<u8>, ScryptoValue>,
-    /// All descendents (not just direct children) of the store
-    pub descendent_kv_stores: HashMap<KeyValueStoreId, HashMap<Vec<u8>, ScryptoValue>>,
-    pub descendent_vaults: HashMap<VaultId, Vault>,
+    pub store: HashMap<Vec<u8>, ScryptoValue>,
+    pub child_kv_stores: HashMap<KeyValueStoreId, FloatingKeyValueStore>,
+    pub child_vaults: HashMap<VaultId, Vault>,
 }
 
 impl FloatingKeyValueStore {
     pub fn new() -> Self {
         FloatingKeyValueStore {
-            kv_store: HashMap::new(),
-            descendent_kv_stores: HashMap::new(),
-            descendent_vaults: HashMap::new(),
+            store: HashMap::new(),
+            child_kv_stores: HashMap::new(),
+            child_vaults: HashMap::new(),
         }
     }
 
+    fn find_child_kv_store(&mut self, kv_store_id: &KeyValueStoreId) -> Option<&mut FloatingKeyValueStore> {
+        for (id, child_kv_store) in self.child_kv_stores.iter_mut() {
+            if id.eq(kv_store_id) {
+                return Some(child_kv_store);
+            }
+
+            let maybe_store = child_kv_store.find_child_kv_store(kv_store_id);
+            if maybe_store.is_some() {
+                return maybe_store;
+            }
+        }
+
+        None
+    }
+
     fn insert_vault(&mut self, vault_id: VaultId, vault: Vault) {
-        if self.descendent_vaults.contains_key(&vault_id) {
+        if self.child_vaults.contains_key(&vault_id) {
             panic!("duplicate vault insertion: {:?}", vault_id);
         }
 
-        self.descendent_vaults.insert(vault_id, vault);
+        self.child_vaults.insert(vault_id, vault);
     }
 
     fn insert_kv_store(
         &mut self,
         kv_store_id: KeyValueStoreId,
-        kv_store: HashMap<Vec<u8>, ScryptoValue>,
+        kv_store: FloatingKeyValueStore,
     ) {
-        if self.descendent_kv_stores.contains_key(&kv_store_id) {
+        if self.child_kv_stores.contains_key(&kv_store_id) {
             panic!("duplicate store insertion: {:?}", kv_store_id);
         }
 
-        self.descendent_kv_stores.insert(kv_store_id, kv_store);
+        self.child_kv_stores.insert(kv_store_id, kv_store);
     }
 
-    fn insert_store_descendent(
-        &mut self,
-        unclaimed_kv_store: FloatingKeyValueStore,
-        kv_store_id: KeyValueStoreId,
-    ) {
-        self.insert_kv_store(kv_store_id, unclaimed_kv_store.kv_store);
-
-        for (kv_store_id, kv_store) in unclaimed_kv_store.descendent_kv_stores {
-            self.insert_kv_store(kv_store_id, kv_store);
-        }
-        for (vault_id, vault) in unclaimed_kv_store.descendent_vaults {
-            self.insert_vault(vault_id, vault);
-        }
-    }
-
-    pub fn insert_descendents(&mut self, new_descendents: Vec<StoredValue>) {
-        for value in new_descendents {
+    pub fn insert_children(&mut self, values: Vec<StoredValue>) {
+        for value in values {
             match value {
                 StoredValue::UnclaimedKeyValueStore(id, kv_store) => {
-                    self.insert_store_descendent(kv_store, id);
+                    self.insert_kv_store(id, kv_store);
                 }
                 StoredValue::Vault(id, vault) => {
                     self.insert_vault(id, vault);
@@ -120,24 +119,6 @@ impl ComponentObjects {
         Ok(taken_values)
     }
 
-    pub fn insert_values_into_kv_store(
-        &mut self,
-        values: Vec<StoredValue>,
-        kv_store_id: &KeyValueStoreId,
-    ) {
-        if self.borrowed_vault.is_some() {
-            panic!("Should not be taking while value is being borrowed");
-        }
-
-        let value = self.values.get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id)).unwrap();
-        let unclaimed_kv_store = match value {
-            StoredValue::UnclaimedKeyValueStore(_, unclaimed) => unclaimed,
-            _ => panic!("Expected kv store but was {:?}", value)
-        };
-
-        unclaimed_kv_store.insert_descendents(values);
-    }
-
     pub fn get_kv_store_entry(
         &mut self,
         kv_store_id: &KeyValueStoreId,
@@ -148,27 +129,27 @@ impl ComponentObjects {
         }
 
         self.get_kv_store_mut(kv_store_id)
-            .map(|(_, kv_store)| kv_store.get(key).map(|v| v.clone()))
+            .map(|kv_store| kv_store.store.get(key).map(|v| v.clone()))
     }
 
     pub fn get_kv_store_mut(
         &mut self,
         kv_store_id: &KeyValueStoreId,
-    ) -> Option<(KeyValueStoreId, &mut HashMap<Vec<u8>, ScryptoValue>)> {
+    ) -> Option<&mut FloatingKeyValueStore> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
+        // TODO: Optimize to prevent search
         for (_, value) in self.values.iter_mut() {
-            if let StoredValue::UnclaimedKeyValueStore(root, unclaimed) = value {
-                // TODO: Optimize to prevent iteration
-                if kv_store_id.eq(root) {
-                    return Some((root.clone(), &mut unclaimed.kv_store));
+            if let StoredValue::UnclaimedKeyValueStore(ref id, unclaimed) = value {
+                if id.eq(kv_store_id) {
+                    return Some(unclaimed);
                 }
 
-                let kv_store = unclaimed.descendent_kv_stores.get_mut(kv_store_id);
-                if kv_store.is_some() {
-                    return Some((root.clone(), kv_store.unwrap()));
+                let maybe_store = unclaimed.find_child_kv_store(kv_store_id);
+                if maybe_store.is_some() {
+                    return maybe_store;
                 }
             }
         }
@@ -191,7 +172,7 @@ impl ComponentObjects {
 
         for (_, value) in self.values.iter_mut() {
             if let StoredValue::UnclaimedKeyValueStore(kv_store_id, unclaimed) = value {
-                if let Some(vault) = unclaimed.descendent_vaults.remove(vault_id) {
+                if let Some(vault) = unclaimed.child_vaults.remove(vault_id) {
                     self.borrowed_vault = Some((*vault_id, Some(*kv_store_id)));
                     return Some(vault);
                 }
@@ -209,7 +190,7 @@ impl ComponentObjects {
                     .unwrap();
                 match value {
                     StoredValue::UnclaimedKeyValueStore(_, unclaimed) => {
-                        unclaimed.descendent_vaults.insert(vault_id, vault);
+                        unclaimed.child_vaults.insert(vault_id, vault);
                     }
                     _ => panic!("Expected kv store but was {:?}", value)
                 };

@@ -1190,12 +1190,10 @@ where
         match kv_store_state {
             KeyValueStoreState::Uncommitted => {
                 // Check for cycles
-                let (root, kv_store) = self.owned_values.get_kv_store_mut(&kv_store_id)
+                let kv_store = self.owned_values.get_kv_store_mut(&kv_store_id)
                     .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
-                kv_store.insert(key.raw, value);
-
-                self.owned_values
-                    .insert_values_into_kv_store(new_values, &root);
+                kv_store.store.insert(key.raw, value);
+                kv_store.insert_children(new_values);
             }
             KeyValueStoreState::Committed { component_address } => {
                 self.track.set_key_value(
