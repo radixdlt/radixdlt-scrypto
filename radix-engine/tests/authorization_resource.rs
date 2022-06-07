@@ -5,10 +5,9 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::wasm::default_wasm_engine;
 use scrypto::prelude::*;
 use scrypto::to_struct;
+use transaction::builder::ManifestBuilder;
 
 enum Action {
     Mint,
@@ -19,13 +18,10 @@ enum Action {
 
 fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, expect_err: bool) {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (pk, sk, account) = test_runner.new_account();
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_account();
     let (token_address, mint_auth, burn_auth, withdraw_auth, admin_auth) =
         test_runner.create_restricted_token(account);
-
     let (_, updated_auth) = test_runner.create_restricted_burn_token(account);
 
     if update_auth {
@@ -35,12 +31,13 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             Action::Withdraw => "set_withdrawable",
             Action::Deposit => "set_depositable",
         };
-        test_runner.set_auth(
-            (&pk, &sk, account),
+        test_runner.update_resource_auth(
             function,
             admin_auth,
             token_address,
             updated_auth,
+            account,
+            public_key,
         );
     }
 
@@ -56,7 +53,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
     };
 
     // Act
-    let mut builder = test_runner.new_transaction_builder();
+    let mut builder = ManifestBuilder::new();
     builder.create_proof_from_account_by_amount(Decimal::one(), auth_to_use, account);
 
     match action {
@@ -84,8 +81,8 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
             .call_method_with_all_resources(account, "deposit_batch"),
     };
 
-    let transaction = builder.build(test_runner.get_nonce([pk])).sign([&sk]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+    let manifest = builder.build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     if expect_err {

@@ -1,14 +1,14 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    struct SuperLazyMap {
+    struct SuperKeyValueStore {
         maps: KeyValueStore<
             u32,
             KeyValueStore<u32, KeyValueStore<u32, KeyValueStore<String, String>>>,
         >,
     }
 
-    impl SuperLazyMap {
+    impl SuperKeyValueStore {
         pub fn new() -> ComponentAddress {
             let map0 = KeyValueStore::new();
             let map1 = KeyValueStore::new();
@@ -23,7 +23,7 @@ blueprint! {
             let map3 = map2.get(&3u32).unwrap();
             map3.insert(4u32, map4);
 
-            SuperLazyMap { maps: map0 }.instantiate().globalize()
+            SuperKeyValueStore { maps: map0 }.instantiate().globalize()
         }
     }
 }

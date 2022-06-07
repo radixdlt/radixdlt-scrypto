@@ -5,37 +5,26 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::ledger::*;
-use radix_engine::wasm::default_wasm_engine;
-use radix_engine::wasm::WasmEngine;
-use radix_engine::wasm::WasmInstance;
 use scrypto::prelude::*;
+use transaction::builder::ManifestBuilder;
 use scrypto::to_struct;
 
-fn test_auth_rule<'s, 'w, S, W, I>(
-    test_runner: &mut TestRunner<'s, 'w, S, W, I>,
+fn test_auth_rule(
+    test_runner: &mut TestRunner,
     auth_rule: &AccessRule,
-    pks: &[EcdsaPublicKey],
-    sks: &[&EcdsaPrivateKey],
+    signer_public_keys: &[EcdsaPublicKey],
     should_succeed: bool,
-) where
-    S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
-{
+) {
     // Arrange
-    let account_address = test_runner.new_account_with_auth_rule(auth_rule);
+    let account = test_runner.new_account_with_auth_rule(auth_rule);
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
-        .withdraw_from_account(RADIX_TOKEN, account_address)
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(RADIX_TOKEN, account)
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(test_runner.get_nonce(pks))
-        .sign(sks);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, signer_public_keys.to_vec());
 
     // Assert
     if should_succeed {
@@ -48,11 +37,9 @@ fn test_auth_rule<'s, 'w, S, W, I>(
 
 #[test]
 fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
+    let mut test_runner = TestRunner::new(true);
+    let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
+    let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
 
     let auths = [
         rule!(require_any_of(vec![auth0.clone(), auth1.clone()])),
@@ -60,20 +47,18 @@ fn can_withdraw_from_my_1_of_2_account_with_either_key_sign() {
     ];
 
     for auth in auths {
-        for (pk, sk) in [(pk0, &sk0), (pk1, &sk1)] {
-            test_auth_rule(&mut test_runner, &auth, &[pk], &[&sk], true);
+        for pk in [pk0, pk1] {
+            test_auth_rule(&mut test_runner, &auth, &[pk], true);
         }
     }
 }
 
 #[test]
 fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
-    let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
+    let mut test_runner = TestRunner::new(true);
+    let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
+    let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
+    let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
     let auths = [
         rule!(require_any_of(vec![
             auth0.clone(),
@@ -86,64 +71,50 @@ fn can_withdraw_from_my_1_of_3_account_with_either_key_sign() {
     ];
 
     for auth in auths {
-        for (pk, sk) in [(pk0, &sk0), (pk1, &sk1), (pk2, &sk2)] {
-            test_auth_rule(&mut test_runner, &auth, &[pk], &[&sk], true);
+        for pk in [pk0, pk1, pk2] {
+            test_auth_rule(&mut test_runner, &auth, &[pk], true);
         }
     }
 }
 
 #[test]
 fn can_withdraw_from_my_2_of_2_resource_auth_account_with_both_signatures() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
+    let mut test_runner = TestRunner::new(true);
+    let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
+    let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
 
     let auth = rule!(require_any_of(vec![auth0, auth1,]));
 
-    test_auth_rule(&mut test_runner, &auth, &[pk0, pk1], &[&sk0, &sk1], true);
+    test_auth_rule(&mut test_runner, &auth, &[pk0, pk1], true);
 }
 
 #[test]
 fn cannot_withdraw_from_my_2_of_2_account_with_single_signature() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (_, _, auth1) = test_runner.new_key_pair_with_pk_address();
+    let mut test_runner = TestRunner::new(true);
+    let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
+    let (_, _, auth1) = test_runner.new_key_pair_with_auth_address();
 
     let auth = rule!(require_all_of(vec![auth0, auth1]));
-    test_auth_rule(&mut test_runner, &auth, &[pk0], &[&sk0], false);
+    test_auth_rule(&mut test_runner, &auth, &[pk0], false);
 }
 
 #[test]
 fn can_withdraw_from_my_2_of_3_account_with_2_signatures() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (_, _, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
-    let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
+    let mut test_runner = TestRunner::new(true);
+    let (_, _, auth0) = test_runner.new_key_pair_with_auth_address();
+    let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
+    let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
     let auth_2_of_3 = rule!(require_n_of(2, vec![auth0, auth1, auth2]));
-    test_auth_rule(
-        &mut test_runner,
-        &auth_2_of_3,
-        &[pk1, pk2],
-        &[&sk1, &sk2],
-        true,
-    );
+    test_auth_rule(&mut test_runner, &auth_2_of_3, &[pk1, pk2], true);
 }
 
 #[test]
 fn can_withdraw_from_my_complex_account() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
-    let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
+    let mut test_runner = TestRunner::new(true);
+    let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
+    let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
+    let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
     let auths = [
         rule!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
         rule!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
@@ -151,27 +122,21 @@ fn can_withdraw_from_my_complex_account() {
         rule!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
         rule!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
-    let signers_list = [
-        (vec![pk2], vec![&sk2]),
-        (vec![pk0, pk1], vec![&sk0, &sk1]),
-        (vec![pk0, pk1, pk2], vec![&sk0, &sk1, &sk2]),
-    ];
+    let signer_public_keys_list = [vec![pk2], vec![pk0, pk1], vec![pk0, pk1, pk2]];
 
     for auth in auths {
-        for signers in &signers_list {
-            test_auth_rule(&mut test_runner, &auth, &signers.0, &signers.1, true);
+        for signer_public_keys in &signer_public_keys_list {
+            test_auth_rule(&mut test_runner, &auth, &signer_public_keys, true);
         }
     }
 }
 
 #[test]
 fn cannot_withdraw_from_my_complex_account() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
-    let (_, _, auth2) = test_runner.new_key_pair_with_pk_address();
+    let mut test_runner = TestRunner::new(true);
+    let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
+    let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
+    let (_, _, auth2) = test_runner.new_key_pair_with_auth_address();
     let auths = [
         rule!(require(auth0.clone()) && require(auth1.clone()) || require(auth2.clone())),
         rule!((require(auth0.clone()) && require(auth1.clone())) || require(auth2.clone())),
@@ -179,24 +144,22 @@ fn cannot_withdraw_from_my_complex_account() {
         rule!(require(auth2.clone()) || require(auth0.clone()) && require(auth1.clone())),
         rule!(require(auth2.clone()) || (require(auth0.clone()) && require(auth1.clone()))),
     ];
-    let signers_list = [(vec![pk0], vec![&sk0]), (vec![pk1], vec![&sk1])];
+    let signer_public_keys_list = [vec![pk0], vec![pk1]];
 
     for auth in auths {
-        for signers in &signers_list {
-            test_auth_rule(&mut test_runner, &auth, &signers.0, &signers.1, false);
+        for signer_public_keys in &signer_public_keys_list {
+            test_auth_rule(&mut test_runner, &auth, &signer_public_keys, false);
         }
     }
 }
 
 #[test]
 fn can_withdraw_from_my_complex_account_2() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
-    let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
-    let (pk3, sk3, auth3) = test_runner.new_key_pair_with_pk_address();
+    let mut test_runner = TestRunner::new(true);
+    let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
+    let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
+    let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
+    let (pk3, _, auth3) = test_runner.new_key_pair_with_auth_address();
     let auths = [
         rule!(
             require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
@@ -207,27 +170,22 @@ fn can_withdraw_from_my_complex_account_2() {
                 || require(auth3.clone())
         ),
     ];
-    let signers_list = [
-        (vec![pk0, pk1, pk2], vec![&sk0, &sk1, &sk2]),
-        (vec![pk3], vec![&sk3]),
-    ];
+    let signer_public_keys_list = [vec![pk0, pk1, pk2], vec![pk3]];
 
     for auth in auths {
-        for signers in &signers_list {
-            test_auth_rule(&mut test_runner, &auth, &signers.0, &signers.1, true);
+        for signer_public_keys in &signer_public_keys_list {
+            test_auth_rule(&mut test_runner, &auth, &signer_public_keys, true);
         }
     }
 }
 
 #[test]
 fn cannot_withdraw_from_my_complex_account_2() {
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let (pk0, sk0, auth0) = test_runner.new_key_pair_with_pk_address();
-    let (pk1, sk1, auth1) = test_runner.new_key_pair_with_pk_address();
-    let (pk2, sk2, auth2) = test_runner.new_key_pair_with_pk_address();
-    let (_, _, auth3) = test_runner.new_key_pair_with_pk_address();
+    let mut test_runner = TestRunner::new(true);
+    let (pk0, _, auth0) = test_runner.new_key_pair_with_auth_address();
+    let (pk1, _, auth1) = test_runner.new_key_pair_with_auth_address();
+    let (pk2, _, auth2) = test_runner.new_key_pair_with_auth_address();
+    let (_, _, auth3) = test_runner.new_key_pair_with_auth_address();
     let auths = [
         rule!(
             require(auth0.clone()) && require(auth1.clone()) && require(auth2.clone())
@@ -238,17 +196,17 @@ fn cannot_withdraw_from_my_complex_account_2() {
                 || require(auth3.clone())
         ),
     ];
-    let signers_list = [
-        (vec![pk0], vec![&sk0]),
-        (vec![pk1], vec![&sk1]),
-        (vec![pk2], vec![&sk2]),
-        (vec![pk0, pk1], vec![&sk0, &sk1]),
-        (vec![pk1, pk2], vec![&sk1, &sk2]),
+    let signer_public_keys_list = [
+        vec![pk0],
+        vec![pk1],
+        vec![pk2],
+        vec![pk0, pk1],
+        vec![pk1, pk2],
     ];
 
     for auth in auths {
-        for signers in &signers_list {
-            test_auth_rule(&mut test_runner, &auth, &signers.0, &signers.1, false);
+        for signer_public_keys in &signer_public_keys_list {
+            test_auth_rule(&mut test_runner, &auth, &signer_public_keys, false);
         }
     }
 }
@@ -256,16 +214,13 @@ fn cannot_withdraw_from_my_complex_account_2() {
 #[test]
 fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let xrd_auth = rule!(require(RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
@@ -277,9 +232,8 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay.");
@@ -288,16 +242,13 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 #[test]
 fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let xrd_auth = rule!(require_amount(Decimal(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
@@ -309,9 +260,8 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("Should be okay.");
@@ -320,16 +270,13 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
 #[test]
 fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
     let xrd_auth = rule!(require_amount(Decimal::from(1), RADIX_TOKEN));
     let account = test_runner.new_account_with_auth_rule(&xrd_auth);
     let (_, _, other_account) = test_runner.new_account();
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
@@ -341,9 +288,8 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
             builder
         })
         .call_method_with_all_resources(other_account, "deposit_batch")
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");

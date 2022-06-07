@@ -30,35 +30,35 @@ impl IdValidator {
         }
     }
 
-    pub fn new_bucket(&mut self) -> Result<BucketId, IdValidatorError> {
+    pub fn new_bucket(&mut self) -> Result<BucketId, IdValidationError> {
         let bucket_id = self
             .id_allocator
             .new_bucket_id()
-            .map_err(IdValidatorError::IdAllocatorError)?;
+            .map_err(IdValidationError::IdAllocationError)?;
         self.bucket_ids.insert(bucket_id, 0);
         Ok(bucket_id)
     }
 
-    pub fn drop_bucket(&mut self, bucket_id: BucketId) -> Result<(), IdValidatorError> {
+    pub fn drop_bucket(&mut self, bucket_id: BucketId) -> Result<(), IdValidationError> {
         if let Some(cnt) = self.bucket_ids.get(&bucket_id) {
             if *cnt == 0 {
                 self.bucket_ids.remove(&bucket_id);
                 Ok(())
             } else {
-                Err(IdValidatorError::BucketLocked(bucket_id))
+                Err(IdValidationError::BucketLocked(bucket_id))
             }
         } else {
-            Err(IdValidatorError::BucketNotFound(bucket_id))
+            Err(IdValidationError::BucketNotFound(bucket_id))
         }
     }
 
-    pub fn new_proof(&mut self, kind: ProofKind) -> Result<ProofId, IdValidatorError> {
+    pub fn new_proof(&mut self, kind: ProofKind) -> Result<ProofId, IdValidationError> {
         match &kind {
             ProofKind::BucketProof(bucket_id) => {
                 if let Some(cnt) = self.bucket_ids.get_mut(bucket_id) {
                     *cnt += 1;
                 } else {
-                    return Err(IdValidatorError::BucketNotFound(*bucket_id));
+                    return Err(IdValidationError::BucketNotFound(*bucket_id));
                 }
             }
             ProofKind::AuthZoneProof | ProofKind::VirtualProof => {}
@@ -67,12 +67,12 @@ impl IdValidator {
         let proof_id = self
             .id_allocator
             .new_proof_id()
-            .map_err(IdValidatorError::IdAllocatorError)?;
+            .map_err(IdValidationError::IdAllocationError)?;
         self.proof_ids.insert(proof_id, kind);
         Ok(proof_id)
     }
 
-    pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ProofId, IdValidatorError> {
+    pub fn clone_proof(&mut self, proof_id: ProofId) -> Result<ProofId, IdValidationError> {
         if let Some(kind) = self.proof_ids.get(&proof_id).cloned() {
             if let ProofKind::BucketProof(bucket_id) = kind {
                 if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
@@ -84,15 +84,15 @@ impl IdValidator {
             let proof_id = self
                 .id_allocator
                 .new_proof_id()
-                .map_err(IdValidatorError::IdAllocatorError)?;
+                .map_err(IdValidationError::IdAllocationError)?;
             self.proof_ids.insert(proof_id, kind);
             Ok(proof_id)
         } else {
-            Err(IdValidatorError::ProofNotFound(proof_id))
+            Err(IdValidationError::ProofNotFound(proof_id))
         }
     }
 
-    pub fn drop_proof(&mut self, proof_id: ProofId) -> Result<(), IdValidatorError> {
+    pub fn drop_proof(&mut self, proof_id: ProofId) -> Result<(), IdValidationError> {
         if let Some(kind) = self.proof_ids.remove(&proof_id) {
             if let ProofKind::BucketProof(bucket_id) = kind {
                 if let Some(cnt) = self.bucket_ids.get_mut(&bucket_id) {
@@ -103,17 +103,17 @@ impl IdValidator {
             }
             Ok(())
         } else {
-            Err(IdValidatorError::ProofNotFound(proof_id))
+            Err(IdValidationError::ProofNotFound(proof_id))
         }
     }
 
-    pub fn move_all_resources(&mut self) -> Result<(), IdValidatorError> {
+    pub fn move_all_resources(&mut self) -> Result<(), IdValidationError> {
         self.proof_ids.clear();
         self.bucket_ids.clear();
         Ok(())
     }
 
-    pub fn move_resources(&mut self, arg: &ScryptoValue) -> Result<(), IdValidatorError> {
+    pub fn move_resources(&mut self, arg: &ScryptoValue) -> Result<(), IdValidationError> {
         for (bucket_id, _) in &arg.bucket_ids {
             self.drop_bucket(*bucket_id)?;
         }

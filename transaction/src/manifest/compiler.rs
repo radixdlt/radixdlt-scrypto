@@ -1,6 +1,6 @@
 use crate::manifest::*;
 
-use crate::model::Transaction;
+use crate::model::TransactionManifest;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CompileError {
@@ -9,10 +9,10 @@ pub enum CompileError {
     GeneratorError(generator::GeneratorError),
 }
 
-pub fn compile(s: &str) -> Result<Transaction, CompileError> {
+pub fn compile(s: &str) -> Result<TransactionManifest, CompileError> {
     let tokens = lexer::tokenize(s).map_err(CompileError::LexerError)?;
-    let ast = parser::Parser::new(tokens)
-        .parse_transaction()
+    let instructions = parser::Parser::new(tokens)
+        .parse_manifest()
         .map_err(CompileError::ParserError)?;
-    generator::generate_transaction(&ast).map_err(CompileError::GeneratorError)
+    generator::generate_manifest(&instructions).map_err(CompileError::GeneratorError)
 }

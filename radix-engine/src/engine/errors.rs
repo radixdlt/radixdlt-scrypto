@@ -24,7 +24,7 @@ pub enum RuntimeError {
     WorktopDoesNotExist,
 
     /// Failed to allocate an ID.
-    IdAllocatorError(IdAllocatorError),
+    IdAllocationError(IdAllocationError),
 
     /// Invalid request code.
     UnknownMethod(String),

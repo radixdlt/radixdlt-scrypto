@@ -1,33 +1,29 @@
+#[rustfmt::skip]
+pub mod test_runner;
+
+use crate::test_runner::TestRunner;
 use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
-use radix_engine::engine::TransactionExecutor;
-use radix_engine::ledger::*;
-use radix_engine::model::extract_package;
-use radix_engine::wasm::default_wasm_engine;
 use scrypto::prelude::*;
 use scrypto::to_struct;
-use transaction::builder::TransactionBuilder;
+use transaction::builder::ManifestBuilder;
 
 #[test]
-fn dangling_lazy_map_should_fail() {
+fn dangling_key_value_store_should_fail() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = extract_package(compile_package!(format!("./tests/{}", "kv_store"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            "dangling_lazy_map",
+            "KeyValueStoreTest",
+            "dangling_key_value_store",
             to_struct!(),
         )
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -40,43 +36,35 @@ fn dangling_lazy_map_should_fail() {
 #[test]
 fn can_insert_in_child_nodes() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = extract_package(compile_package!(format!("./tests/{}", "kv_store"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
-    let transaction = TransactionBuilder::new()
-        .call_function(package_address, "SuperLazyMap", "new", to_struct!())
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+    let manifest = ManifestBuilder::new()
+        .call_function(package_address, "SuperKeyValueStore", "new", to_struct!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work");
 }
 
 #[test]
-fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
+fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = extract_package(compile_package!(format!("./tests/{}", "kv_store"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            "new_lazy_map_into_map_then_get",
+            "KeyValueStoreTest",
+            "new_key_value_store_into_map_then_get",
             to_struct!(),
         )
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work");
@@ -85,25 +73,21 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
 #[test]
 fn cyclic_map_fails_execution() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = extract_package(compile_package!(format!("./tests/{}", "kv_store"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_function(package_address, "CyclicMap", "new", to_struct!())
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::CyclicKeyValueStore(_) => {}
         _ => panic!(
-            "Should be a cyclic lazy map error but was {}",
+            "Should be a cyclic key value store error but was {}",
             runtime_error
         ),
     }
@@ -112,150 +96,134 @@ fn cyclic_map_fails_execution() {
 #[test]
 fn self_cyclic_map_fails_execution() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = extract_package(compile_package!(format!("./tests/{}", "kv_store"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "CyclicMap",
             "new_self_cyclic",
             to_struct!(),
         )
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::CyclicKeyValueStore(_) => {}
         _ => panic!(
-            "Should be a cyclic lazy map error but was {}",
+            "Should be a cyclic key value store error but was {}",
             runtime_error
         ),
     }
 }
 
 #[test]
-fn cannot_remove_lazy_maps() {
+fn cannot_remove_key_value_stores() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = extract_package(compile_package!(format!("./tests/{}", "kv_store"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
-    let transaction = TransactionBuilder::new()
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            "new_lazy_map_into_vector",
+            "KeyValueStoreTest",
+            "new_key_value_store_into_vector",
             to_struct!(),
         )
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_method(component_address, "clear_vector", to_struct!())
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::KeyValueStoreRemoved(_) => {}
-        _ => panic!("Should be lazy map removed error but was {}", runtime_error),
+        _ => panic!(
+            "Should be key value store removed error but was {}",
+            runtime_error
+        ),
     }
 }
 
 #[test]
-fn cannot_overwrite_lazy_maps() {
+fn cannot_overwrite_key_value_stores() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = extract_package(compile_package!(format!("./tests/{}", "kv_store"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
-    let transaction = TransactionBuilder::new()
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            "new_lazy_map_into_lazy_map",
+            "KeyValueStoreTest",
+            "new_key_value_store_into_key_value_store",
             to_struct!(),
         )
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let transaction = TransactionBuilder::new()
-        .call_method(component_address, "overwrite_lazy_map", to_struct!())
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+    let manifest = ManifestBuilder::new()
+        .call_method(component_address, "overwrite_key_value_store", to_struct!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
         RuntimeError::KeyValueStoreRemoved(_) => {}
-        _ => panic!("Should be lazy map removed error but was {}", runtime_error),
+        _ => panic!(
+            "Should be key value store removed error but was {}",
+            runtime_error
+        ),
     }
 }
 
 #[test]
-fn create_lazy_map_and_get() {
+fn create_key_value_store_and_get() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = extract_package(compile_package!(format!("./tests/{}", "kv_store"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            "new_lazy_map_with_get",
+            "KeyValueStoreTest",
+            "new_key_value_store_with_get",
             to_struct!(),
         )
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work");
 }
 
 #[test]
-fn create_lazy_map_and_put() {
+fn create_key_value_store_and_put() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let package = extract_package(compile_package!(format!("./tests/{}", "kv_store"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            "new_lazy_map_with_put",
+            "KeyValueStoreTest",
+            "new_key_value_store_with_put",
             to_struct!(),
         )
-        .build(executor.get_nonce([]))
-        .sign([]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work");

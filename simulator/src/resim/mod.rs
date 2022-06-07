@@ -47,17 +47,23 @@ pub const ENV_DATA_DIR: &'static str = "DATA_DIR";
 pub const ENV_DISABLE_MANIFEST_OUTPUT: &'static str = "DISABLE_MANIFEST_OUTPUT";
 
 use clap::{Parser, Subcommand};
+use radix_engine::engine::Receipt;
 use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use radix_engine::wasm::*;
+use scrypto::abi;
 use scrypto::crypto::*;
+use scrypto::prelude::ComponentAddress;
+use scrypto::prelude::PackageAddress;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
-use transaction::builder::TransactionBuilder;
+use transaction::builder::ManifestBuilder;
 use transaction::manifest::decompile;
-use transaction::model::Transaction;
+use transaction::model::TestTransaction;
+use transaction::model::TransactionManifest;
+use transaction::signing::EcdsaPrivateKey;
 
 use crate::ledger::*;
 
@@ -126,50 +132,55 @@ pub fn run() -> Result<(), Error> {
     }
 }
 
-pub fn process_transaction<'s, 'w, S, W, I, O>(
-    executor: &mut TransactionExecutor<'s, 'w, S, W, I>,
-    mut transaction: Transaction,
+pub fn handle_manifest<O: std::io::Write>(
+    manifest: TransactionManifest,
     signing_keys: &Option<String>,
     manifest_path: &Option<PathBuf>,
+    trace: bool,
+    output_receipt: bool,
     out: &mut O,
-) -> Result<(), Error>
-where
-    S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
-    O: std::io::Write,
-{
+) -> Result<Option<Receipt>, Error> {
     match manifest_path {
         Some(path) => {
-            if env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
-                Ok(())
-            } else {
-                let manifest = decompile(&transaction).map_err(Error::DecompileError)?;
-                fs::write(path, manifest).map_err(Error::IOError)
+            if !env::var(ENV_DISABLE_MANIFEST_OUTPUT).is_ok() {
+                let manifest = decompile(&manifest).map_err(Error::DecompileError)?;
+                fs::write(path, manifest).map_err(Error::IOError)?;
             }
+            Ok(None)
         }
         None => {
-            let sks = parse_signing_keys(signing_keys)?;
+            let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+            let mut wasm_engine = DefaultWasmEngine::new();
+            let mut executor =
+                TransactionExecutor::new(&mut substate_store, &mut wasm_engine, trace);
+
+            let sks = get_signing_keys(signing_keys)?;
             let pks = sks
                 .iter()
                 .map(|e| e.public_key())
                 .collect::<Vec<EcdsaPublicKey>>();
-            let nonce = executor.get_nonce(&pks);
-            transaction.add_nonce(nonce);
-            let signed = transaction.sign(sks.iter().collect::<Vec<&EcdsaPrivateKey>>());
-            let receipt = executor
-                .validate_and_execute(&signed)
-                .map_err(Error::TransactionValidationError)?;
-            writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
-            receipt.result.map_err(Error::TransactionExecutionError)
+            let nonce = executor.substate_store().get_nonce();
+            let transaction = TestTransaction::new(manifest, nonce, pks);
+
+            let receipt = executor.execute(&transaction);
+            if output_receipt {
+                writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
+            }
+
+            if let Err(error) = &receipt.result {
+                Err(Error::TransactionExecutionError(error.clone()))
+            } else {
+                Ok(Some(receipt))
+            }
         }
     }
 }
 
-pub fn parse_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivateKey>, Error> {
+pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivateKey>, Error> {
     let private_keys = if let Some(keys) = signing_keys {
         keys.split(",")
             .map(str::trim)
+            .filter(|s| !s.is_empty())
             .map(|key| {
                 hex::decode(key)
                     .map_err(|_| Error::InvalidPrivateKey)
@@ -183,4 +194,21 @@ pub fn parse_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPriv
     };
 
     Ok(private_keys)
+}
+
+pub fn export_abi(
+    package_address: PackageAddress,
+    blueprint_name: &str,
+) -> Result<abi::Blueprint, Error> {
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+    radix_engine::model::export_abi(&mut substate_store, package_address, blueprint_name)
+        .map_err(Error::AbiExportError)
+}
+
+pub fn export_abi_by_component(
+    component_address: ComponentAddress,
+) -> Result<abi::Blueprint, Error> {
+    let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+    radix_engine::model::export_abi_by_component(&mut substate_store, component_address)
+        .map_err(Error::AbiExportError)
 }
