@@ -15,7 +15,7 @@ use crate::engine::{api::*, call_engine, types::VaultId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions2;
+use crate::sfunctions;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct VaultPutInput {
@@ -61,9 +61,10 @@ pub struct Vault(pub VaultId);
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeSNode(
+        let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::ResourceRef(resource_address),
-            scrypto_encode(&ResourceManagerMethod::CreateVault()),
+            "create_vault".to_string(),
+            scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
@@ -86,7 +87,7 @@ impl Vault {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::VaultRef(self.0) => {
             pub fn put(&mut self, bucket: Bucket) -> () {
                 VaultPutInput {

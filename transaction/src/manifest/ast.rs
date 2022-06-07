@@ -1,9 +1,4 @@
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Transaction {
-    pub instructions: Vec<Instruction>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Instruction {
     TakeFromWorktop {
         resource_address: Value,

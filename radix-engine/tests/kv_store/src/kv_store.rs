@@ -1,91 +1,91 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    struct LazyMapTest {
+    struct KeyValueStoreTest {
         map: KeyValueStore<String, String>,
         vector: Vec<KeyValueStore<String, String>>,
-        lazy_maps: KeyValueStore<String, KeyValueStore<String, String>>,
+        key_value_stores: KeyValueStore<String, KeyValueStore<String, String>>,
     }
 
-    impl LazyMapTest {
-        pub fn dangling_lazy_map() -> Option<String> {
+    impl KeyValueStoreTest {
+        pub fn dangling_key_value_store() -> Option<String> {
             let map = KeyValueStore::new();
             map.insert("hello".to_owned(), "world".to_owned());
             map.get(&"hello".to_owned())
         }
 
-        pub fn new_lazy_map_into_vector() -> ComponentAddress {
+        pub fn new_key_value_store_into_vector() -> ComponentAddress {
             let map = KeyValueStore::new();
             map.get(&"hello".to_owned());
             let mut vector = Vec::new();
             vector.push(KeyValueStore::new());
-            let lazy_maps = KeyValueStore::new();
-            LazyMapTest {
+            let key_value_stores = KeyValueStore::new();
+            KeyValueStoreTest {
                 map,
                 vector,
-                lazy_maps,
+                key_value_stores,
             }
             .instantiate()
             .globalize()
         }
 
-        pub fn new_lazy_map_into_lazy_map() -> ComponentAddress {
+        pub fn new_key_value_store_into_key_value_store() -> ComponentAddress {
             let map = KeyValueStore::new();
             let vector = Vec::new();
-            let lazy_maps = KeyValueStore::new();
-            lazy_maps.insert("hello".to_owned(), KeyValueStore::new());
-            LazyMapTest {
+            let key_value_stores = KeyValueStore::new();
+            key_value_stores.insert("hello".to_owned(), KeyValueStore::new());
+            KeyValueStoreTest {
                 map,
                 vector,
-                lazy_maps,
+                key_value_stores,
             }
             .instantiate()
             .globalize()
         }
 
-        pub fn new_lazy_map_into_map_then_get() -> ComponentAddress {
-            let lazy_map = KeyValueStore::new();
-            let lazy_maps = KeyValueStore::new();
-            lazy_maps.insert("hello".to_owned(), lazy_map);
-            let lazy_map = lazy_maps.get(&"hello".to_owned()).unwrap();
-            lazy_map.insert("hello".to_owned(), "hello".to_owned());
-            LazyMapTest {
+        pub fn new_key_value_store_into_map_then_get() -> ComponentAddress {
+            let key_value_store = KeyValueStore::new();
+            let key_value_stores = KeyValueStore::new();
+            key_value_stores.insert("hello".to_owned(), key_value_store);
+            let key_value_store = key_value_stores.get(&"hello".to_owned()).unwrap();
+            key_value_store.insert("hello".to_owned(), "hello".to_owned());
+            KeyValueStoreTest {
                 map: KeyValueStore::new(),
                 vector: Vec::new(),
-                lazy_maps,
+                key_value_stores,
             }
             .instantiate()
             .globalize()
         }
 
-        pub fn new_lazy_map_with_get() -> ComponentAddress {
+        pub fn new_key_value_store_with_get() -> ComponentAddress {
             let map = KeyValueStore::new();
             map.get(&"hello".to_owned());
-            let lazy_maps = KeyValueStore::new();
-            LazyMapTest {
+            let key_value_stores = KeyValueStore::new();
+            KeyValueStoreTest {
                 map,
                 vector: Vec::new(),
-                lazy_maps,
+                key_value_stores,
             }
             .instantiate()
             .globalize()
         }
 
-        pub fn new_lazy_map_with_put() -> ComponentAddress {
+        pub fn new_key_value_store_with_put() -> ComponentAddress {
             let map = KeyValueStore::new();
             map.insert("hello".to_owned(), "world".to_owned());
-            let lazy_maps = KeyValueStore::new();
-            LazyMapTest {
+            let key_value_stores = KeyValueStore::new();
+            KeyValueStoreTest {
                 map,
                 vector: Vec::new(),
-                lazy_maps,
+                key_value_stores,
             }
             .instantiate()
             .globalize()
         }
 
-        pub fn overwrite_lazy_map(&mut self) -> () {
-            self.lazy_maps
+        pub fn overwrite_key_value_store(&mut self) -> () {
+            self.key_value_stores
                 .insert("hello".to_owned(), KeyValueStore::new())
         }
 

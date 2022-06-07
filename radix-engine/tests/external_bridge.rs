@@ -2,17 +2,14 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::ledger::InMemorySubstateStore;
-use radix_engine::wasm::default_wasm_engine;
 use scrypto::{call_data, prelude::*};
+use transaction::builder::ManifestBuilder;
 
 /// This tests the external_blueprint! and external_component! macros
 #[test]
 fn test_external_bridges() {
     // ARRANGE
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
 
     // Part 1 - Upload the target and caller packages
     let target_package_address = test_runner.publish_package("component");
@@ -25,38 +22,33 @@ fn test_external_bridges() {
     let caller_package_address = test_runner.publish_package("external_blueprint_caller");
 
     // Part 2 - Get a target component address
-    let transaction1 = test_runner
-        .new_transaction_builder()
+    let manifest1 = ManifestBuilder::new()
         .call_function(
             target_package_address,
             "ExternalBlueprintTarget",
             call_data!(create()),
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt1 = test_runner.validate_and_execute(&transaction1);
+        .build();
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     assert!(receipt1.result.is_ok());
 
     let target_component_address = receipt1.new_component_addresses[0];
 
     // Part 3 - Get the caller component address
-    let transaction2 = test_runner
-        .new_transaction_builder()
+    let manifest2 = ManifestBuilder::new()
         .call_function(
             caller_package_address,
             "ExternalBlueprintCaller",
             call_data!(create()),
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt2 = test_runner.validate_and_execute(&transaction2);
+        .build();
+    let receipt2 = test_runner.execute_manifest(manifest2, vec![]);
     assert!(receipt2.result.is_ok());
 
     let caller_component_address = receipt2.new_component_addresses[0];
 
     // ACT
-    let transaction3 = test_runner
-        .new_transaction_builder()
+    let manifest3 = ManifestBuilder::new()
         .call_method(
             caller_component_address,
             call_data!(run_tests_with_external_blueprint()),
@@ -65,9 +57,8 @@ fn test_external_bridges() {
             caller_component_address,
             call_data!(run_tests_with_external_component(target_component_address)),
         )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt3 = test_runner.validate_and_execute(&transaction3);
+        .build();
+    let receipt3 = test_runner.execute_manifest(manifest3, vec![]);
 
     // ASSERT
     assert!(receipt3.result.is_ok());

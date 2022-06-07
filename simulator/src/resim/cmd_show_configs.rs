@@ -1,5 +1,6 @@
 use clap::Parser;
 use colored::*;
+use transaction::signing::EcdsaPrivateKey;
 
 use crate::resim::*;
 

@@ -7,7 +7,7 @@ use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
 use crate::resource::*;
-use crate::sfunctions2;
+use crate::sfunctions;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct AuthZonePopInput {}
@@ -45,7 +45,7 @@ pub struct AuthZoneClearInput {}
 pub struct ComponentAuthZone {}
 
 impl ComponentAuthZone {
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::AuthZoneRef => {
             pub fn pop() -> Proof {
                 AuthZonePopInput {}
