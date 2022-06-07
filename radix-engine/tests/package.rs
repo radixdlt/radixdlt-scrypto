@@ -2,21 +2,18 @@
 pub mod test_runner;
 
 use radix_engine::engine::RuntimeError;
-use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::model::PackageError;
-use radix_engine::wasm::default_wasm_engine;
 use radix_engine::wasm::InvokeError;
 use radix_engine::wasm::PrepareError::NoMemory;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use test_runner::{wat2wasm, TestRunner};
+use transaction::builder::ManifestBuilder;
 
 #[test]
 fn missing_memory_should_cause_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(
@@ -32,12 +29,8 @@ fn missing_memory_should_cause_error() {
         code,
         blueprints: HashMap::new(),
     };
-    let transaction = test_runner
-        .new_transaction_builder()
-        .publish_package(package)
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+    let manifest = ManifestBuilder::new().publish_package(package).build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be error.");
@@ -50,18 +43,14 @@ fn missing_memory_should_cause_error() {
 #[test]
 fn large_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let package = test_runner.publish_package("package");
+    let mut test_runner = TestRunner::new(true);
+    let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_function(package, "LargeReturnSize", "something", to_struct!())
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -74,18 +63,14 @@ fn large_return_len_should_cause_memory_access_error() {
 #[test]
 fn overflow_return_len_should_cause_memory_access_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let package = test_runner.publish_package("package");
+    let mut test_runner = TestRunner::new(true);
+    let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_function(package, "MaxReturnSize", "something", to_struct!())
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -98,18 +83,15 @@ fn overflow_return_len_should_cause_memory_access_error() {
 #[test]
 fn zero_return_len_should_cause_data_validation_error() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let package = test_runner.publish_package("package");
+    let mut test_runner = TestRunner::new(true);
+    let package = test_runner.extract_and_publish_package("package");
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
+    let manifest = ManifestBuilder::new()
         .call_function(package, "ZeroReturnSize", "something", to_struct!())
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+        .build();
+
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
@@ -121,9 +103,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 #[test]
 fn test_basic_package() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
+    let mut test_runner = TestRunner::new(true);
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
@@ -131,12 +111,8 @@ fn test_basic_package() {
         code,
         blueprints: HashMap::new(),
     };
-    let transaction = test_runner
-        .new_transaction_builder()
-        .publish_package(package)
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+    let manifest = ManifestBuilder::new().publish_package(package).build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     receipt.result.expect("It should work")

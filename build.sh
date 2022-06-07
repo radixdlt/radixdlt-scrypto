@@ -5,14 +5,15 @@ set -e
 
 cd "$(dirname "$0")"
 
-(cd sbor; cargo build)
-(cd sbor-derive; cargo build)
-(cd sbor-tests; cargo build)
-(cd scrypto; cargo build)
-(cd scrypto-derive; cargo build)
-(cd scrypto-tests; cargo build)
-(cd radix-engine; cargo build)
-(cd transaction; cargo build)
+(cd sbor; cargo build; cargo test --no-run)
+(cd sbor-derive; cargo build; cargo test --no-run)
+(cd sbor-tests; cargo build; cargo test --no-run)
+(cd scrypto; cargo build; cargo test --no-run)
+(cd scrypto-derive; cargo build; cargo test --no-run)
+(cd scrypto-tests; cargo build; cargo test --no-run)
+(cd radix-engine; cargo build; cargo test --no-run)
+(cd transaction; cargo build; cargo test --no-run)
+(cd simulator; cargo build; cargo test --no-run)
 
 echo "Building assets and examples..."
 (cd assets/account; cargo build --target wasm32-unknown-unknown --release)

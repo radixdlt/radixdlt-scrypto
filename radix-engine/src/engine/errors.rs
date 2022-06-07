@@ -24,7 +24,7 @@ pub enum RuntimeError {
     WorktopDoesNotExist,
 
     /// Failed to allocate an ID.
-    IdAllocatorError(IdAllocatorError),
+    IdAllocationError(IdAllocationError),
 
     /// Invalid request code.
     MethodDoesNotExist(String),
@@ -59,14 +59,14 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
-    /// Lazy map does not exist.
-    LazyMapNotFound(LazyMapId),
+    /// Key Value Store does not exist.
+    KeyValueStoreNotFound(KeyValueStoreId),
 
-    /// Lazy map removed.
-    LazyMapRemoved(LazyMapId),
+    /// Key Value Store removed.
+    KeyValueStoreRemoved(KeyValueStoreId),
 
-    /// Cyclic LazyMap added
-    CyclicLazyMap(LazyMapId),
+    /// Cyclic Key Value Store added
+    CyclicKeyValueStore(KeyValueStoreId),
 
     /// Vault does not exist.
     VaultNotFound(VaultId),
@@ -104,8 +104,8 @@ pub enum RuntimeError {
     /// Vault is not allowed
     VaultNotAllowed,
 
-    /// Lazy Map is not allowed
-    LazyMapNotAllowed,
+    /// Key Value store is not allowed
+    KeyValueStoreNotAllowed,
 
     /// Resource check failure.
     ResourceCheckFailure(ResourceFailure),
@@ -133,7 +133,7 @@ pub enum RuntimeError {
 pub enum ResourceFailure {
     Resource(ResourceAddress),
     Resources(Vec<ResourceAddress>),
-    UnclaimedLazyMap,
+    UnclaimedKeyValueStore,
     Unknown,
 }
 
