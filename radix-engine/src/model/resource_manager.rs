@@ -153,7 +153,7 @@ impl ResourceManager {
         for pub_method in [
             "create_bucket",
             "metadata",
-            "get_resource_type",
+            "resource_type",
             "total_supply",
             "create_vault",
         ] {
@@ -302,7 +302,7 @@ impl ResourceManager {
         if !validated.proof_ids.is_empty() {
             return Err(ResourceManagerError::InvalidNonFungibleData);
         }
-        if !validated.lazy_map_ids.is_empty() {
+        if !validated.kv_store_ids.is_empty() {
             return Err(ResourceManagerError::InvalidNonFungibleData);
         }
         if !validated.vault_ids.is_empty() {
