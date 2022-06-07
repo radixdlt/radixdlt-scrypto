@@ -2,7 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::engine::{Receipt, ResourceFailure};
+use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
 use scrypto::call_data;
 use scrypto::engine::types::StoredValueId;
@@ -239,7 +239,6 @@ fn can_reference_in_memory_vault() {
     receipt.expect_success();
 }
 
-
 #[test]
 fn can_reference_deep_in_memory_value() {
     // Arrange
@@ -252,6 +251,27 @@ fn can_reference_deep_in_memory_value() {
             package_address,
             "Precommitted",
             call_data!(can_reference_deep_precommitted_value()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_success();
+}
+
+
+#[test]
+fn can_reference_deep_in_memory_vault() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "Precommitted",
+            call_data!(can_reference_deep_precommitted_vault()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

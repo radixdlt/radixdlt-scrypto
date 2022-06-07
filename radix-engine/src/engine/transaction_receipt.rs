@@ -28,7 +28,7 @@ pub struct Receipt {
 impl Receipt {
     pub fn expect_success(&self) {
         if self.result.is_err() {
-            panic!("Expected success but was:\n{:?}", receipt)
+            panic!("Expected success but was:\n{:?}", self);
         }
     }
 }
