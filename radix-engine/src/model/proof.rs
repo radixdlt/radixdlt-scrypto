@@ -342,18 +342,18 @@ impl Proof {
             "amount" => {
                 let _: ProofGetAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-                Ok(ScryptoValue::from_trusted(&self.total_amount()))
+                Ok(ScryptoValue::from_typed(&self.total_amount()))
             }
             "non_fungible_ids" => {
                 let _: ProofGetNonFungibleIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let ids = self.total_ids()?;
-                return Ok(ScryptoValue::from_trusted(&ids));
+                return Ok(ScryptoValue::from_typed(&ids));
             }
             "resource_address" => {
                 let _: ProofGetResourceAddressInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-                Ok(ScryptoValue::from_trusted(&self.resource_address()))
+                Ok(ScryptoValue::from_typed(&self.resource_address()))
             }
             "clone" => {
                 let _: ProofCloneInput =
@@ -362,7 +362,7 @@ impl Proof {
                 let proof_id = system_api
                     .create_proof(cloned_proof)
                     .map_err(|_| ProofError::CouldNotCreateProof)?;
-                Ok(ScryptoValue::from_trusted(&scrypto::resource::Proof(
+                Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
             }
@@ -380,7 +380,7 @@ impl Proof {
                 let _: ConsumingProofDropInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 self.drop();
-                Ok(ScryptoValue::from_trusted(&()))
+                Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(UnknownMethod),
         }

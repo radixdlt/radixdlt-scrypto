@@ -219,7 +219,7 @@ impl Worktop {
                     .map_err(|_| WorktopError::CouldNotTakeBucket)?;
                 self.put(bucket)
                     .map_err(WorktopError::ResourceContainerError)?;
-                Ok(ScryptoValue::from_trusted(&()))
+                Ok(ScryptoValue::from_typed(&()))
             }
             "take_amount" => {
                 let input: WorktopTakeAmountInput =
@@ -244,7 +244,7 @@ impl Worktop {
                 let bucket_id = system_api
                     .create_bucket(resource_container)
                     .map_err(|_| WorktopError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_trusted(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
@@ -271,7 +271,7 @@ impl Worktop {
                 let bucket_id = system_api
                     .create_bucket(resource_container)
                     .map_err(|_| WorktopError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_trusted(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
@@ -298,7 +298,7 @@ impl Worktop {
                 let bucket_id = system_api
                     .create_bucket(resource_container)
                     .map_err(|_| WorktopError::CouldNotCreateBucket)?;
-                Ok(ScryptoValue::from_trusted(&scrypto::resource::Bucket(
+                Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
             }
@@ -308,7 +308,7 @@ impl Worktop {
                 if self.total_amount(input.resource_address).is_zero() {
                     Err(WorktopError::AssertionFailed)
                 } else {
-                    Ok(ScryptoValue::from_trusted(&()))
+                    Ok(ScryptoValue::from_typed(&()))
                 }
             }
             "assert_contains_amount" => {
@@ -317,7 +317,7 @@ impl Worktop {
                 if self.total_amount(input.resource_address) < input.amount {
                     Err(WorktopError::AssertionFailed)
                 } else {
-                    Ok(ScryptoValue::from_trusted(&()))
+                    Ok(ScryptoValue::from_typed(&()))
                 }
             }
             "assert_contains_non_fungibles" => {
@@ -330,7 +330,7 @@ impl Worktop {
                 {
                     Err(WorktopError::AssertionFailed)
                 } else {
-                    Ok(ScryptoValue::from_trusted(&()))
+                    Ok(ScryptoValue::from_typed(&()))
                 }
             }
             "drain" => {
@@ -349,7 +349,7 @@ impl Worktop {
                         buckets.push(scrypto::resource::Bucket(bucket_id));
                     }
                 }
-                Ok(ScryptoValue::from_trusted(&buckets))
+                Ok(ScryptoValue::from_typed(&buckets))
             }
             _ => Err(InvalidMethod),
         }

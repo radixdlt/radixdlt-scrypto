@@ -83,7 +83,7 @@ impl ValidatedPackage {
             PackageFunction::Publish(bytes) => {
                 let package = ValidatedPackage::new(bytes).map_err(PackageError::InvalidWasm)?;
                 let package_address = system_api.create_package(package);
-                Ok(ScryptoValue::from_trusted(&package_address))
+                Ok(ScryptoValue::from_typed(&package_address))
             }
         }
     }

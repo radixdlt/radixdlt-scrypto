@@ -172,7 +172,7 @@ where
 }
 
 fn encode<T: Encode>(output: T) -> ScryptoValue {
-    ScryptoValue::from_trusted(&output)
+    ScryptoValue::from_typed(&output)
 }
 
 impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime

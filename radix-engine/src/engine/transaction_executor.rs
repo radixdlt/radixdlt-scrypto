@@ -75,7 +75,7 @@ where
         // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
         let result = root_frame.invoke_snode(
             scrypto::core::SNodeRef::TransactionProcessor,
-            ScryptoValue::from_trusted(&TransactionProcessorFunction::Run(instructions.clone())),
+            ScryptoValue::from_typed(&TransactionProcessorFunction::Run(instructions.clone())),
         );
 
         let (outputs, error) = match result {

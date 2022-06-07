@@ -561,7 +561,7 @@ where
             self.invoke_snode2(
                 SNodeRef::AuthZoneRef,
                 "clear".to_string(),
-                ScryptoValue::from_trusted(&AuthZoneClearInput {}),
+                ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
         self.check_resource()?;
@@ -1292,7 +1292,7 @@ where
         simulated_auth_zone
             .main(
                 "clear",
-                ScryptoValue::from_trusted(&AuthZoneClearInput {}),
+                ScryptoValue::from_typed(&AuthZoneClearInput {}),
                 self,
             )
             .map_err(RuntimeError::AuthZoneError)?;
