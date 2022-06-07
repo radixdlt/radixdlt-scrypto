@@ -6,8 +6,8 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
 use scrypto::prelude::*;
-use transaction::builder::ManifestBuilder;
 use scrypto::to_struct;
+use transaction::builder::ManifestBuilder;
 
 fn test_auth_rule(
     test_runner: &mut TestRunner,

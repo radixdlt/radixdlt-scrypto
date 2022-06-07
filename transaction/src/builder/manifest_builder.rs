@@ -300,7 +300,6 @@ impl ManifestBuilder {
         self
     }
 
-
     /// Calls a function.
     ///
     /// The implementation will automatically prepare the arguments based on the
@@ -359,7 +358,6 @@ impl ManifestBuilder {
         });
         self
     }
-
 
     /// Calls a method.
     ///
@@ -427,7 +425,6 @@ impl ManifestBuilder {
         }
     }
 
-
     /// Creates a token resource with mutable supply.
     pub fn new_token_mutable(
         &mut self,
@@ -458,7 +455,7 @@ impl ManifestBuilder {
                 mint_params
             ),
         })
-            .0
+        .0
     }
 
     /// Creates a token resource with fixed supply.
@@ -483,7 +480,7 @@ impl ManifestBuilder {
                 })
             ),
         })
-            .0
+        .0
     }
 
     /// Creates a badge resource with mutable supply.
@@ -516,7 +513,7 @@ impl ManifestBuilder {
                 mint_params
             ),
         })
-            .0
+        .0
     }
 
     /// Creates a badge resource with fixed supply.
@@ -541,9 +538,8 @@ impl ManifestBuilder {
                 })
             ),
         })
-            .0
+        .0
     }
-
 
     /// Mints resource.
     pub fn mint(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
@@ -555,7 +551,6 @@ impl ManifestBuilder {
         });
         self
     }
-
 
     /// Burns a resource.
     pub fn burn(&mut self, amount: Decimal, resource_address: ResourceAddress) -> &mut Self {
@@ -590,7 +585,6 @@ impl ManifestBuilder {
         )
     }
 
-
     /// Creates an account.
     pub fn new_account(&mut self, withdraw_auth: &AccessRuleNode) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
@@ -599,7 +593,7 @@ impl ManifestBuilder {
             method_name: "new".to_string(),
             arg: to_struct!(withdraw_auth.clone()),
         })
-            .0
+        .0
     }
 
     /// Creates an account with some initial resource.
@@ -614,7 +608,7 @@ impl ManifestBuilder {
             method_name: "new_with_resource".to_string(),
             arg: to_struct!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
         })
-            .0
+        .0
     }
 
     /// Withdraws resource from an account.
@@ -628,7 +622,7 @@ impl ManifestBuilder {
             method_name: "withdraw".to_string(),
             arg: to_struct!(resource_address),
         })
-            .0
+        .0
     }
 
     /// Withdraws resource from an account.
@@ -643,7 +637,7 @@ impl ManifestBuilder {
             method_name: "withdraw_by_amount".to_string(),
             arg: to_struct!(amount, resource_address),
         })
-            .0
+        .0
     }
 
     /// Withdraws resource from an account.
@@ -658,7 +652,7 @@ impl ManifestBuilder {
             method_name: "withdraw_by_ids".to_string(),
             arg: to_struct!(ids.clone(), resource_address),
         })
-            .0
+        .0
     }
 
     /// Creates resource proof from an account.
@@ -672,7 +666,7 @@ impl ManifestBuilder {
             method_name: "create_proof".to_string(),
             arg: to_struct!(resource_address),
         })
-            .0
+        .0
     }
 
     /// Creates resource proof from an account.
@@ -687,7 +681,7 @@ impl ManifestBuilder {
             method_name: "create_proof_by_amount".to_string(),
             arg: to_struct!(amount, resource_address),
         })
-            .0
+        .0
     }
 
     /// Creates resource proof from an account.
@@ -702,7 +696,7 @@ impl ManifestBuilder {
             method_name: "create_proof_by_ids".to_string(),
             arg: to_struct!(ids.clone(), resource_address),
         })
-            .0
+        .0
     }
 
     //===============================

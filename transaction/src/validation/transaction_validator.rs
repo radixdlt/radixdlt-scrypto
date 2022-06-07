@@ -176,7 +176,7 @@ impl TransactionValidator {
                 Instruction::CallMethod {
                     component_address,
                     method_name,
-                    arg
+                    arg,
                 } => {
                     instructions.push(ExecutableInstruction::CallMethod {
                         component_address,

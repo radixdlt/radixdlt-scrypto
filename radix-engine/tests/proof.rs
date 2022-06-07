@@ -3,8 +3,8 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use scrypto::to_struct;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 #[test]
