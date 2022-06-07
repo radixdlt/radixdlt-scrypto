@@ -13,8 +13,8 @@ use crate::core::*;
 use crate::misc::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum PackageFunction {
-    Publish(Package),
+pub struct PackagePublishInput {
+    pub package: Package,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]

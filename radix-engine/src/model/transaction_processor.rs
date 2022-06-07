@@ -4,12 +4,13 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::call_data;
-use scrypto::component::{Package, PackageFunction};
+use scrypto::component::Package;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::prelude::{
     AuthZoneClearInput, AuthZoneCreateProofByAmountInput, AuthZoneCreateProofByIdsInput,
-    AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, ProofCloneInput,
+    AuthZoneCreateProofInput, AuthZonePushInput, BucketCreateProofInput, PackagePublishInput,
+    ProofCloneInput,
 };
 use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
 use scrypto::values::*;
@@ -472,11 +473,10 @@ impl TransactionProcessor {
                             scrypto_decode::<Package>(package)
                                 .map_err(|e| RuntimeError::InvalidPackage(e))
                                 .and_then(|package| {
-                                    system_api.invoke_snode(
+                                    system_api.invoke_snode2(
                                         SNodeRef::PackageStatic,
-                                        ScryptoValue::from_value(&PackageFunction::Publish(
-                                            package,
-                                        )),
+                                        "publish".to_string(),
+                                        ScryptoValue::from_value(&PackagePublishInput { package }),
                                     )
                                 })
                         }
