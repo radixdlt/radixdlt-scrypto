@@ -38,7 +38,7 @@ pub struct ScryptoValue {
     pub bucket_ids: HashMap<BucketId, SborPath>,
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
-    pub lazy_map_ids: HashSet<LazyMapId>,
+    pub kv_store_ids: HashSet<KeyValueStoreId>,
 }
 
 // FIXME: encode as the original type, rather than Vec<u8>
@@ -98,7 +98,7 @@ impl ScryptoValue {
                 .map(|(e, path)| (e.0, path))
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
-            lazy_map_ids: checker.lazy_maps.iter().map(|e| e.id).collect(),
+            kv_store_ids: checker.kv_stores.iter().map(|e| e.id).collect(),
         })
     }
 
@@ -182,7 +182,7 @@ pub struct ScryptoCustomValueChecker {
     pub buckets: HashMap<Bucket, SborPath>,
     pub proofs: HashMap<Proof, SborPath>,
     pub vaults: HashSet<Vault>,
-    pub lazy_maps: HashSet<LazyMap<(), ()>>,
+    pub kv_stores: HashSet<KeyValueStore<(), ()>>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -199,7 +199,7 @@ pub enum ScryptoCustomValueCheckError {
     InvalidEcdsaSignature(ParseEcdsaSignatureError),
     InvalidBucket(ParseBucketError),
     InvalidProof(ParseProofError),
-    InvalidLazyMap(ParseLazyMapError),
+    InvalidKeyValueStore(ParseKeyValueStoreError),
     InvalidVault(ParseVaultError),
     InvalidNonFungibleId(ParseNonFungibleIdError),
     InvalidNonFungibleAddress(ParseNonFungibleAddressError),
@@ -212,7 +212,7 @@ impl ScryptoCustomValueChecker {
             buckets: HashMap::new(),
             proofs: HashMap::new(),
             vaults: HashSet::new(),
-            lazy_maps: HashSet::new(),
+            kv_stores: HashSet::new(),
         }
     }
 }
@@ -235,10 +235,10 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
             }
-            ScryptoType::LazyMap => {
-                let map = LazyMap::try_from(data)
-                    .map_err(ScryptoCustomValueCheckError::InvalidLazyMap)?;
-                if !self.lazy_maps.insert(map) {
+            ScryptoType::KeyValueStore => {
+                let map = KeyValueStore::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
+                if !self.kv_stores.insert(map) {
                     return Err(ScryptoCustomValueCheckError::DuplicateIds);
                 }
             }
@@ -492,9 +492,9 @@ impl ScryptoValueFormatter {
                     ComponentAddress::try_from(data).unwrap()
                 )
             }
-            ScryptoType::LazyMap => format!(
-                "LazyMap(\"{}\")",
-                LazyMap::<(), ()>::try_from(data).unwrap()
+            ScryptoType::KeyValueStore => format!(
+                "KeyValueStore(\"{}\")",
+                KeyValueStore::<(), ()>::try_from(data).unwrap()
             ),
             ScryptoType::Hash => format!("Hash(\"{}\")", Hash::try_from(data).unwrap()),
             ScryptoType::EcdsaPublicKey => {

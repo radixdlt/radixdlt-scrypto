@@ -2,12 +2,12 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct Account {
-        vaults: LazyMap<ResourceAddress, Vault>,
+        vaults: KeyValueStore<ResourceAddress, Vault>,
     }
 
     impl Account {
         fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {
-            let vaults = LazyMap::new();
+            let vaults = KeyValueStore::new();
             if let Some(b) = bucket {
                 vaults.insert(b.resource_address(), Vault::with_bucket(b));
             }
