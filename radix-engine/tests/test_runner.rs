@@ -88,8 +88,10 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
-        TransactionExecutor::new(&mut self.substate_store, &mut self.wasm_engine, self.trace)
-            .execute(&transaction)
+        let receipt = TransactionExecutor::new(&mut self.substate_store, &mut self.wasm_engine, self.trace)
+            .execute(&transaction);
+
+        receipt
     }
 
     pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {

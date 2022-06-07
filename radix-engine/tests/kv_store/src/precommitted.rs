@@ -3,6 +3,7 @@ use scrypto::prelude::*;
 blueprint! {
     struct Precommitted {
         store: KeyValueStore<u32, Vault>,
+        deep_store: KeyValueStore<u32, KeyValueStore<u32, u32>>,
     }
 
     impl Precommitted {
@@ -16,7 +17,25 @@ blueprint! {
             store.insert(0u32, vault);
             let vault = store.get(&0u32).expect("Should be a vault");
             assert!(!vault.is_empty());
-            Precommitted { store }.instantiate().globalize()
+            Precommitted {
+                store,
+                deep_store: KeyValueStore::new(),
+            }.instantiate().globalize()
+        }
+
+        pub fn can_reference_deep_precommitted_value() -> ComponentAddress {
+            let deep_store = KeyValueStore::new();
+            let sub_store = KeyValueStore::new();
+            sub_store.insert(0u32, 2u32);
+            deep_store.insert(0u32, sub_store);
+
+            let value: u32 = deep_store.get(&0u32).unwrap().get(&0u32).unwrap();
+            assert!(value == 2u32);
+
+            Precommitted {
+                store: KeyValueStore::new(),
+                deep_store,
+            }.instantiate().globalize()
         }
     }
 }
