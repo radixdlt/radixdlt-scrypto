@@ -2,11 +2,6 @@
 pub mod test_runner;
 
 use radix_engine::engine::RuntimeError;
-<<<<<<< HEAD
-use radix_engine::ledger::InMemorySubstateStore;
-=======
-use radix_engine::model::extract_package;
->>>>>>> cleanup-abi
 use radix_engine::model::PackageError;
 use radix_engine::wasm::InvokeError;
 use radix_engine::wasm::PrepareError::NoMemory;
