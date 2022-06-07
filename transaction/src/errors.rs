@@ -13,8 +13,10 @@ pub enum HeaderValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {
+    TooManySignatures,
     InvalidIntentSignature,
     InvalidNotarySignature,
+    DuplicateSigner,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

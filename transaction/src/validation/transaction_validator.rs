@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use sbor::rust::vec;
 use scrypto::buffer::scrypto_decode;
 use scrypto::crypto::*;
@@ -232,7 +234,7 @@ impl TransactionValidator {
         let header = &transaction.signed_intent.intent.header;
 
         // version
-        if header.version != 1 {
+        if header.version != TRANSACTION_VERSION_V1 {
             return Err(HeaderValidationError::UnknownVersion(header.version));
         }
 
@@ -240,7 +242,7 @@ impl TransactionValidator {
         if header.end_epoch_exclusive <= header.start_epoch_inclusive {
             return Err(HeaderValidationError::InvalidEpochRange);
         }
-        if header.end_epoch_exclusive - header.start_epoch_inclusive > 100 {
+        if header.end_epoch_exclusive - header.start_epoch_inclusive > MAX_EPOCH_DURATION {
             return Err(HeaderValidationError::EpochRangeTooLarge);
         }
         if current_epoch < header.start_epoch_inclusive
@@ -255,11 +257,19 @@ impl TransactionValidator {
     fn validate_signatures(
         transaction: &NotarizedTransaction,
     ) -> Result<(), SignatureValidationError> {
+        if transaction.signed_intent.intent_signatures.len() > MAX_NUMBER_OF_INTENT_SIGNATURES {
+            return Err(SignatureValidationError::TooManySignatures);
+        }
+
         // verify intent signature
         let intent_payload = transaction.signed_intent.intent.to_bytes();
+        let mut signers = HashSet::new();
         for sig in &transaction.signed_intent.intent_signatures {
             if !EcdsaVerifier::verify(&intent_payload, &sig.0, &sig.1) {
                 return Err(SignatureValidationError::InvalidIntentSignature);
+            }
+            if !signers.insert(sig.0.to_vec()) {
+                return Err(SignatureValidationError::DuplicateSigner);
             }
         }
 
@@ -294,5 +304,107 @@ impl TransactionValidator {
             ));
         }
         Ok(value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaPrivateKey};
+
+    macro_rules! assert_invalid_tx {
+        ($result: expr, ($version: expr, $start_epoch: expr, $end_epoch: expr, $nonce: expr, $signers: expr, $notary: expr)) => {{
+            let mut hash_mgr: TestIntentHashManager = TestIntentHashManager::new();
+            let mut epoch_mgr: TestEpochManager = TestEpochManager::new(0);
+            assert_eq!(
+                Err($result),
+                TransactionValidator::validate(
+                    create_transaction(
+                        $version,
+                        $start_epoch,
+                        $end_epoch,
+                        $nonce,
+                        $signers,
+                        $notary
+                    ),
+                    &mut hash_mgr,
+                    &mut epoch_mgr,
+                )
+            );
+        }};
+    }
+
+    #[test]
+    fn test_invalid_header() {
+        assert_invalid_tx!(
+            TransactionValidationError::HeaderValidationError(
+                HeaderValidationError::UnknownVersion(2)
+            ),
+            (2, 0, 100, 5, vec![1], 2)
+        );
+        assert_invalid_tx!(
+            TransactionValidationError::HeaderValidationError(
+                HeaderValidationError::InvalidEpochRange
+            ),
+            (1, 0, 0, 5, vec![1], 2)
+        );
+        assert_invalid_tx!(
+            TransactionValidationError::HeaderValidationError(
+                HeaderValidationError::EpochRangeTooLarge
+            ),
+            (1, 0, 1000, 5, vec![1], 2)
+        );
+        assert_invalid_tx!(
+            TransactionValidationError::HeaderValidationError(
+                HeaderValidationError::OutOfEpochRange
+            ),
+            (1, 100, 101, 5, vec![1], 2)
+        );
+    }
+
+    #[test]
+    fn test_invalid_signatures() {
+        assert_invalid_tx!(
+            TransactionValidationError::SignatureValidationError(
+                SignatureValidationError::TooManySignatures
+            ),
+            (1, 0, 100, 5, (1..20).collect(), 2)
+        );
+        assert_invalid_tx!(
+            TransactionValidationError::SignatureValidationError(
+                SignatureValidationError::DuplicateSigner
+            ),
+            (1, 0, 100, 5, vec![1, 1], 2)
+        );
+    }
+
+    fn create_transaction(
+        version: u8,
+        start_epoch: u64,
+        end_epoch: u64,
+        nonce: u64,
+        signers: Vec<u64>,
+        notary: u64,
+    ) -> NotarizedTransaction {
+        let sk_notary = EcdsaPrivateKey::from_u64(notary).unwrap();
+
+        let mut builder = TransactionBuilder::new()
+            .header(TransactionHeader {
+                version,
+                network: Network::InternalTestnet,
+                start_epoch_inclusive: start_epoch,
+                end_epoch_exclusive: end_epoch,
+                nonce,
+                notary_public_key: sk_notary.public_key(),
+            })
+            .manifest(ManifestBuilder::new().clear_auth_zone().build());
+
+        for signer in signers {
+            builder = builder.sign(&EcdsaPrivateKey::from_u64(signer).unwrap());
+        }
+
+        builder = builder.notarize(&sk_notary);
+
+        builder.build()
     }
 }

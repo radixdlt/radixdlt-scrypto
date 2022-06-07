@@ -1,17 +1,13 @@
-#[rustfmt::skip]
-pub mod test_runner;
-
 use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::wasm::DefaultWasmEngine;
 use scrypto::prelude::*;
-use test_runner::{TestEpochManager, TestIntentHashManager};
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::Network;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::TransactionValidator;
+use transaction::validation::{TestEpochManager, TestIntentHashManager, TransactionValidator};
 
 #[test]
 fn test_normal_transaction_flow() {
