@@ -80,17 +80,17 @@ where
         component_address: ComponentAddress,
     ) -> Result<(PackageAddress, String), RuntimeError>;
 
-    fn create_lazy_map(&mut self) -> LazyMapId;
+    fn create_kv_store(&mut self) -> KeyValueStoreId;
 
-    fn read_lazy_map_entry(
+    fn read_kv_store_entry(
         &mut self,
-        lazy_map_id: LazyMapId,
+        kv_store_id: KeyValueStoreId,
         key: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn write_lazy_map_entry(
+    fn write_kv_store_entry(
         &mut self,
-        lazy_map_id: LazyMapId,
+        kv_store_id: KeyValueStoreId,
         key: ScryptoValue,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;

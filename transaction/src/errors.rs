@@ -30,7 +30,7 @@ pub enum CallDataValidationError {
     DecodeError(DecodeError),
     IdValidationError(IdValidationError),
     VaultNotAllowed(VaultId),
-    LazyMapNotAllowed(LazyMapId),
+    KeyValueStoreNotAllowed(KeyValueStoreId),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

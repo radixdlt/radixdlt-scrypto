@@ -28,7 +28,7 @@ pub enum GeneratorError {
     InvalidResourceAddress(String),
     InvalidDecimal(String),
     InvalidHash(String),
-    InvalidLazyMapId(String),
+    InvalidKeyValueStoreId(String),
     InvalidVaultId(String),
     InvalidNonFungibleId(String),
     InvalidNonFungibleAddress(String),

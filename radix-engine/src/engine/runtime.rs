@@ -118,33 +118,33 @@ where
         Ok((package_address, blueprint_name))
     }
 
-    fn handle_create_lazy_map(&mut self) -> Result<LazyMapId, RuntimeError> {
-        let lazy_map_id = self.system_api.create_lazy_map();
-        Ok(lazy_map_id)
+    fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
+        let kv_store_id = self.system_api.create_kv_store();
+        Ok(kv_store_id)
     }
 
-    fn handle_get_lazy_map_entry(
+    fn handle_get_kv_store_entry(
         &mut self,
-        lazy_map_id: LazyMapId,
+        kv_store_id: KeyValueStoreId,
         key: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let value = self
             .system_api
-            .read_lazy_map_entry(lazy_map_id, scrypto_key)?;
+            .read_kv_store_entry(kv_store_id, scrypto_key)?;
         Ok(value)
     }
 
-    fn handle_put_lazy_map_entry(
+    fn handle_put_kv_store_entry(
         &mut self,
-        lazy_map_id: LazyMapId,
+        kv_store_id: KeyValueStoreId,
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
         self.system_api
-            .write_lazy_map_entry(lazy_map_id, scrypto_key, scrypto_value)?;
+            .write_kv_store_entry(kv_store_id, scrypto_key, scrypto_value)?;
         Ok(())
     }
 
@@ -200,12 +200,12 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
             RadixEngineInput::PutComponentState(component_address, state) => self
                 .handle_put_component_state(component_address, state)
                 .map(encode),
-            RadixEngineInput::CreateLazyMap() => self.handle_create_lazy_map().map(encode),
-            RadixEngineInput::GetLazyMapEntry(lazy_map_id, key) => {
-                self.handle_get_lazy_map_entry(lazy_map_id, key)
+            RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
+            RadixEngineInput::GetKeyValueStoreEntry(kv_store_id, key) => {
+                self.handle_get_kv_store_entry(kv_store_id, key)
             }
-            RadixEngineInput::PutLazyMapEntry(lazy_map_id, key, value) => self
-                .handle_put_lazy_map_entry(lazy_map_id, key, value)
+            RadixEngineInput::PutKeyValueStoreEntry(kv_store_id, key, value) => self
+                .handle_put_kv_store_entry(kv_store_id, key, value)
                 .map(encode),
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),

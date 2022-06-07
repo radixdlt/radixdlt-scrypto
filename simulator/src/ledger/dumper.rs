@@ -86,11 +86,12 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
 
             // Find all vaults owned by the component, assuming a tree structure.
             let mut vaults_found: HashSet<VaultId> = state_data.vault_ids.iter().cloned().collect();
-            let mut queue: VecDeque<LazyMapId> = state_data.lazy_map_ids.iter().cloned().collect();
+            let mut queue: VecDeque<KeyValueStoreId> =
+                state_data.kv_store_ids.iter().cloned().collect();
             while !queue.is_empty() {
-                let lazy_map_id = queue.pop_front().unwrap();
+                let kv_store_id = queue.pop_front().unwrap();
                 let (maps, vaults) =
-                    dump_lazy_map(component_address, &lazy_map_id, substate_store, output)?;
+                    dump_kv_store(component_address, &kv_store_id, substate_store, output)?;
                 queue.extend(maps);
                 vaults_found.extend(vaults);
             }
@@ -102,21 +103,21 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     }
 }
 
-fn dump_lazy_map<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
+fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::Write>(
     component_address: ComponentAddress,
-    lazy_map_id: &LazyMapId,
+    kv_store_id: &KeyValueStoreId,
     substate_store: &T,
     output: &mut O,
-) -> Result<(Vec<LazyMapId>, Vec<VaultId>), DisplayError> {
+) -> Result<(Vec<KeyValueStoreId>, Vec<VaultId>), DisplayError> {
     let mut referenced_maps = Vec::new();
     let mut referenced_vaults = Vec::new();
-    let map = substate_store.get_lazy_map_entries(component_address, lazy_map_id);
+    let map = substate_store.get_kv_store_entries(component_address, kv_store_id);
     writeln!(
         output,
         "{}: {:?}{:?}",
-        "Lazy Map".green().bold(),
+        "Key Value Store".green().bold(),
         component_address,
-        lazy_map_id
+        kv_store_id
     );
     for (last, (k, v)) in map.iter().identify_last() {
         let key = ScryptoValue::from_slice(k).unwrap();
@@ -124,7 +125,7 @@ fn dump_lazy_map<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         if let Some(v) = value_wrapper {
             let value = ScryptoValue::from_slice(&v).unwrap();
             writeln!(output, "{} {} => {}", list_item_prefix(last), key, value);
-            referenced_maps.extend(value.lazy_map_ids);
+            referenced_maps.extend(value.kv_store_ids);
             referenced_vaults.extend(value.vault_ids);
         }
     }

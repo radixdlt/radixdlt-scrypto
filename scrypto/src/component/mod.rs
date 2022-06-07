@@ -1,12 +1,12 @@
 mod component;
-mod lazy_map;
+mod kv_store;
 mod package;
 mod system;
 
 pub use component::{
     Component, ComponentAddress, ComponentState, LocalComponent, ParseComponentAddressError,
 };
-pub use lazy_map::{LazyMap, ParseLazyMapError};
+pub use kv_store::{KeyValueStore, ParseKeyValueStoreError};
 pub use package::{
     BorrowedPackage, Package, PackageAddress, PackageFunction, ParsePackageAddressError,
 };
