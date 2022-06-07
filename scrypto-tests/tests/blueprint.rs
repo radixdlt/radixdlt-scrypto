@@ -28,7 +28,7 @@ blueprint! {
             self.state = new_state;
         }
 
-        pub fn custom_types() -> (Decimal, PackageAddress, LazyMap<String, String>, Hash, Bucket, Proof, Vault) {
+        pub fn custom_types() -> (Decimal, PackageAddress, KeyValueStore<String, String>, Hash, Bucket, Proof, Vault) {
             todo!()
         }
     }

@@ -1,7 +1,47 @@
 use sbor::describe::Type;
 use sbor::rust::string::String;
+use sbor::DecodeError;
 use scrypto::engine::types::*;
 use scrypto::values::*;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HeaderValidationError {}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SignatureValidationError {
+    InvalidIntentSignature,
+    InvalidNotarySignature,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IdAllocationError {
+    OutOfID,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IdValidationError {
+    IdAllocationError(IdAllocationError),
+    BucketNotFound(BucketId),
+    ProofNotFound(ProofId),
+    BucketLocked(BucketId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CallDataValidationError {
+    InvalidScryptoValue(ParseScryptoValueError),
+    IdValidationError(IdValidationError),
+    VaultNotAllowed(VaultId),
+    KeyValueStoreNotAllowed(KeyValueStoreId),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TransactionValidationError {
+    DeserializationError(DecodeError),
+    HeaderValidationError(HeaderValidationError),
+    SignatureValidationError(SignatureValidationError),
+    IdValidationError(IdValidationError),
+    CallDataValidationError(CallDataValidationError),
+}
 
 /// Represents an error when parsing arguments.
 #[derive(Debug, Clone)]
@@ -38,26 +78,4 @@ pub enum BuildCallWithAbiError {
 
     /// Account is required but not provided.
     AccountNotProvided,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TransactionValidationError {
-    ParseScryptoValueError(ParseScryptoValueError),
-    IdValidatorError(IdValidatorError),
-    VaultNotAllowed(VaultId),
-    LazyMapNotAllowed(LazyMapId),
-    InvalidSignature,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IdAllocatorError {
-    OutOfID,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum IdValidatorError {
-    IdAllocatorError(IdAllocatorError),
-    BucketNotFound(BucketId),
-    ProofNotFound(ProofId),
-    BucketLocked(BucketId),
 }

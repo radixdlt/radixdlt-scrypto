@@ -1,9 +1,7 @@
 use clap::Parser;
-use radix_engine::engine::TransactionExecutor;
-use radix_engine::wasm::*;
 use sbor::rust::collections::*;
 use scrypto::engine::types::*;
-use transaction::builder::TransactionBuilder;
+use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 
@@ -48,10 +46,6 @@ pub struct NewBadgeMutable {
 
 impl NewBadgeMutable {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut wasm_engine = default_wasm_engine();
-        let mut executor =
-            TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
         let mut metadata = HashMap::new();
         if let Some(symbol) = self.symbol.clone() {
             metadata.insert("symbol".to_string(), symbol);
@@ -69,15 +63,17 @@ impl NewBadgeMutable {
             metadata.insert("icon_url".to_string(), icon_url);
         };
 
-        let transaction = TransactionBuilder::new()
+        let manifest = ManifestBuilder::new()
             .new_badge_mutable(metadata, self.minter_resource_address)
-            .build_with_no_nonce();
-        process_transaction(
-            &mut executor,
-            transaction,
+            .build();
+        handle_manifest(
+            manifest,
             &self.signing_keys,
             &self.manifest,
+            self.trace,
+            true,
             out,
         )
+        .map(|_| ())
     }
 }

@@ -68,19 +68,19 @@ impl RadixEngineDB {
 }
 
 impl QueryableSubstateStore for RadixEngineDB {
-    fn get_lazy_map_entries(
+    fn get_kv_store_entries(
         &self,
         component_address: ComponentAddress,
-        lazy_map_id: &LazyMapId,
+        kv_store_id: &KeyValueStoreId,
     ) -> HashMap<Vec<u8>, Vec<u8>> {
         let mut id = scrypto_encode(&component_address);
-        id.extend(scrypto_encode(lazy_map_id));
+        id.extend(scrypto_encode(kv_store_id));
         let key_size = id.len();
 
         let mut iter = self
             .db
             .iterator(IteratorMode::From(&id, Direction::Forward));
-        iter.next(); // LazyMap
+        iter.next(); // Key Value Store
         let mut items = HashMap::new();
         while let Some((key, value)) = iter.next() {
             if !key.starts_with(&id) {

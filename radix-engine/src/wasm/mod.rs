@@ -15,11 +15,7 @@ pub use prepare::*;
 pub use traits::*;
 
 #[cfg(feature = "wasmer")]
-pub fn default_wasm_engine() -> WasmerEngine {
-    WasmerEngine::new()
-}
+pub type DefaultWasmEngine = WasmerEngine;
 
 #[cfg(not(feature = "wasmer"))]
-pub fn default_wasm_engine() -> WasmiEngine {
-    WasmiEngine::new()
-}
+pub type DefaultWasmEngine = WasmiEngine;
