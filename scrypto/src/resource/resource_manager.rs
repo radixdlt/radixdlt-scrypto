@@ -8,7 +8,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::scrypto_decode;
+use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
@@ -33,48 +33,63 @@ pub enum Mutability {
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ResourceManagerFunction {
-    Create(
-        ResourceType,
-        HashMap<String, String>,
-        HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
-        Option<MintParams>,
-    ),
+pub struct ResourceManagerCreateInput {
+    pub resource_type: ResourceType,
+    pub metadata: HashMap<String, String>,
+    pub access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+    pub mint_params: Option<MintParams>,
 }
 
 #[derive(Debug, TypeId, Encode, Decode)]
-pub enum ResourceManagerMethod {
-    Mint(MintParams),
-    UpdateAuth(ResourceMethodAuthKey, AccessRule),
-    LockAuth(ResourceMethodAuthKey),
-    GetResourceType(),
-    GetMetadata(),
-    GetTotalSupply(),
-    GetNonFungible(NonFungibleId),
-    NonFungibleExists(NonFungibleId),
-    UpdateNonFungibleData(NonFungibleId, Vec<u8>),
-    UpdateMetadata(HashMap<String, String>),
-    CreateVault(),
-    CreateBucket(),
+pub struct ResourceManagerUpdateAuthInput {
+    pub method: ResourceMethodAuthKey,
+    pub access_rule: AccessRule,
 }
 
-impl ResourceManagerMethod {
-    pub fn name(&self) -> &str {
-        match self {
-            ResourceManagerMethod::Mint(_) => "mint",
-            ResourceManagerMethod::UpdateAuth(_, _) => "update_auth",
-            ResourceManagerMethod::LockAuth(_) => "lock_auth",
-            ResourceManagerMethod::GetResourceType() => "get_resource_type",
-            ResourceManagerMethod::GetMetadata() => "get_metadata",
-            ResourceManagerMethod::GetTotalSupply() => "get_total_supply",
-            ResourceManagerMethod::GetNonFungible(_) => "get_non_fungible",
-            ResourceManagerMethod::NonFungibleExists(_) => "non_fungible_exists",
-            ResourceManagerMethod::UpdateNonFungibleData(_, _) => "update_non_fungible_data",
-            ResourceManagerMethod::UpdateMetadata(_) => "update_metadata",
-            ResourceManagerMethod::CreateVault() => "create_vault",
-            ResourceManagerMethod::CreateBucket() => "create_bucket",
-        }
-    }
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerLockAuthInput {
+    pub method: ResourceMethodAuthKey,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerCreateVaultInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerCreateBucketInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerMintInput {
+    pub mint_params: MintParams,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerGetMetadataInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerGetResourceTypeInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerGetTotalSupplyInput {}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerUpdateMetadataInput {
+    pub metadata: HashMap<String, String>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerUpdateNonFungibleDataInput {
+    pub id: NonFungibleId,
+    pub data: Vec<u8>,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerNonFungibleExistsInput {
+    pub id: NonFungibleId,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ResourceManagerGetNonFungibleInput {
+    pub id: NonFungibleId,
 }
 
 /// Represents a resource address.
@@ -88,67 +103,206 @@ impl ResourceAddress {}
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
+    pub fn set_mintable(&mut self, access_rule: AccessRule) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "update_auth".to_string(),
+            scrypto_encode(&ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::Mint,
+                access_rule,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "update_auth".to_string(),
+            scrypto_encode(&ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::Burn,
+                access_rule,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "update_auth".to_string(),
+            scrypto_encode(&ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::Withdraw,
+                access_rule,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn set_depositable(&mut self, access_rule: AccessRule) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "update_auth".to_string(),
+            scrypto_encode(&ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::Deposit,
+                access_rule,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn set_updateable_metadata(&self, access_rule: AccessRule) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "update_auth".to_string(),
+            scrypto_encode(&ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::UpdateMetadata,
+                access_rule,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "update_auth".to_string(),
+            scrypto_encode(&ResourceManagerUpdateAuthInput {
+                method: ResourceMethodAuthKey::UpdateNonFungibleData,
+                access_rule,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_mintable(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Mint,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_burnable(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Burn,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_withdrawable(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Withdraw,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_depositable(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::Deposit,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_updateable_metadata(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::UpdateMetadata,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    pub fn lock_updateable_non_fungible_data(&mut self) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "lock_auth".to_string(),
+            scrypto_encode(&ResourceManagerLockAuthInput {
+                method: ResourceMethodAuthKey::UpdateNonFungibleData,
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "mint".to_string(),
+            scrypto_encode(&ResourceManagerMintInput { mint_params }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "update_non_fungible_data".to_string(),
+            scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
+    fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
+        let input = RadixEngineInput::InvokeSNode2(
+            SNodeRef::ResourceRef(self.0),
+            "non_fungible_data".to_string(),
+            scrypto_encode(&ResourceManagerGetNonFungibleInput { id }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        scrypto_decode(&output).unwrap()
+    }
+
     sfunctions! {
         SNodeRef::ResourceRef(self.0) => {
-            fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
-                ResourceManagerMethod::Mint(mint_params)
-            }
-            pub fn set_mintable(&mut self, mint_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Mint, mint_auth)
-            }
-            pub fn lock_mintable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Mint)
-            }
-            pub fn set_burnable(&mut self, burn_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Burn, burn_auth)
-            }
-            pub fn lock_burnable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Burn)
-            }
-            pub fn set_withdrawable(&mut self, withdraw_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Withdraw, withdraw_auth)
-            }
-            pub fn lock_withdrawable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Withdraw)
-            }
-            pub fn set_depositable(&mut self, deposit_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::Deposit, deposit_auth)
-            }
-            pub fn lock_depositable(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::Deposit)
-            }
-            pub fn set_updateable_metadata(&self, update_metadata_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::UpdateMetadata, update_metadata_auth)
-            }
-            pub fn lock_updateable_metadata(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::UpdateMetadata)
-            }
-            pub fn set_updateable_non_fungible_data(&self, update_non_fungible_data_auth: AccessRule) -> () {
-                ResourceManagerMethod::UpdateAuth(ResourceMethodAuthKey::UpdateNonFungibleData, update_non_fungible_data_auth)
-            }
-            pub fn lock_updateable_non_fungible_data(&mut self) -> () {
-                ResourceManagerMethod::LockAuth(ResourceMethodAuthKey::UpdateNonFungibleData)
-            }
             pub fn metadata(&self) -> HashMap<String, String> {
-                ResourceManagerMethod::GetMetadata()
+                ResourceManagerGetMetadataInput {}
+            }
+            pub fn resource_type(&self) -> ResourceType {
+                ResourceManagerGetResourceTypeInput {}
             }
             pub fn total_supply(&self) -> Decimal {
-                ResourceManagerMethod::GetTotalSupply()
+                ResourceManagerGetTotalSupplyInput {}
             }
-            fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
-                ResourceManagerMethod::GetNonFungible(id)
-            }
-            fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, new_data: Vec<u8>) -> () {
-                ResourceManagerMethod::UpdateNonFungibleData(id, new_data)
+            pub fn update_metadata(&mut self, metadata: HashMap<String, String>) -> () {
+                ResourceManagerUpdateMetadataInput {
+                    metadata
+                }
             }
             pub fn non_fungible_exists(&self, id: &NonFungibleId) -> bool {
-                ResourceManagerMethod::NonFungibleExists(id.clone())
-            }
-            pub fn update_metadata(&mut self, new_metadata: HashMap<String, String>) -> () {
-                ResourceManagerMethod::UpdateMetadata(new_metadata)
-            }
-            pub fn resource_type(&self) -> () {
-                ResourceManagerMethod::GetResourceType()
+                ResourceManagerNonFungibleExistsInput {
+                    id: id.clone()
+                }
             }
         }
     }

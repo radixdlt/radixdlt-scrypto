@@ -4,6 +4,7 @@ use std::path::PathBuf;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::engine::types::*;
+use transaction::signing::EcdsaPrivateKey;
 
 use crate::resim::*;
 use std::env;
