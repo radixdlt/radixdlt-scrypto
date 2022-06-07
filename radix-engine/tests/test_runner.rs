@@ -1,77 +1,103 @@
 use radix_engine::engine::{Receipt, TransactionExecutor};
 use radix_engine::ledger::*;
-use radix_engine::model::{extract_package, Component};
-use radix_engine::wasm::WasmEngine;
-use radix_engine::wasm::WasmInstance;
+use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
+use radix_engine::wasm::DefaultWasmEngine;
 use scrypto::prelude::*;
 use scrypto::{abi, to_struct};
-use transaction::builder::TransactionBuilder;
-use transaction::model::SignedTransaction;
+use transaction::builder::ManifestBuilder;
+use transaction::model::TestTransaction;
+use transaction::model::TransactionManifest;
+use transaction::signing::EcdsaPrivateKey;
 
-pub struct TestRunner<'s, 'w, S, W, I>
-where
-    S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
-{
-    executor: TransactionExecutor<'s, 'w, S, W, I>,
+pub struct TestRunner {
+    substate_store: InMemorySubstateStore,
+    wasm_engine: DefaultWasmEngine,
+    next_private_key: u64,
+    next_transaction_nonce: u64,
+    trace: bool,
 }
 
-impl<'s, 'w, S, W, I> TestRunner<'s, 'w, S, W, I>
-where
-    S: ReadableSubstateStore + WriteableSubstateStore,
-    W: WasmEngine<I>,
-    I: WasmInstance,
-{
-    pub fn new(ledger: &'s mut S, wasm_engine: &'w mut W) -> Self {
-        let executor = TransactionExecutor::new(ledger, wasm_engine, false);
-
-        Self { executor }
-    }
-
-    pub fn new_transaction_builder(&self) -> TransactionBuilder {
-        TransactionBuilder::new()
+impl TestRunner {
+    pub fn new(trace: bool) -> Self {
+        Self {
+            substate_store: InMemorySubstateStore::with_bootstrap(),
+            wasm_engine: DefaultWasmEngine::new(),
+            next_private_key: 1, // 0 is invalid
+            next_transaction_nonce: 0,
+            trace,
+        }
     }
 
     pub fn new_key_pair(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey) {
-        self.executor.new_key_pair()
+        let private_key = EcdsaPrivateKey::from_u64(self.next_private_key).unwrap();
+        let public_key = private_key.public_key();
+
+        self.next_private_key += 1;
+        (public_key, private_key)
     }
 
-    pub fn new_key_pair_with_pk_address(
+    pub fn new_key_pair_with_auth_address(
         &mut self,
     ) -> (EcdsaPublicKey, EcdsaPrivateKey, NonFungibleAddress) {
-        let (pk, sk) = self.new_key_pair();
+        let key_pair = self.new_account();
         (
-            pk,
-            sk,
-            NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec())),
+            key_pair.0,
+            key_pair.1,
+            NonFungibleAddress::from_public_key(&key_pair.0),
         )
     }
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
-        self.executor.new_account_with_auth_rule(withdraw_auth)
+        let manifest = ManifestBuilder::new()
+            .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
+            .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+                builder.new_account_with_resource(withdraw_auth, bucket_id)
+            })
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.new_component_addresses[0]
     }
 
     pub fn new_account(&mut self) -> (EcdsaPublicKey, EcdsaPrivateKey, ComponentAddress) {
-        self.executor.new_account()
+        let key_pair = self.new_key_pair();
+        let withdraw_auth = rule!(require(NonFungibleAddress::from_public_key(&key_pair.0)));
+        let account = self.new_account_with_auth_rule(&withdraw_auth);
+        (key_pair.0, key_pair.1, account)
     }
 
-    pub fn validate_and_execute(&mut self, transaction: &SignedTransaction) -> Receipt {
-        self.executor.validate_and_execute(transaction).unwrap()
+    pub fn publish_package(&mut self, package: Package) -> PackageAddress {
+        let manifest = ManifestBuilder::new()
+            .publish_package(package)
+            .build();
+
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.new_package_addresses[0]
     }
 
-    pub fn publish_package(&mut self, name: &str) -> PackageAddress {
-        let package = extract_package(Self::compile(name)).expect("Should be okay.");
-        self.executor.publish_package(package).unwrap()
+    pub fn extract_and_publish_package(&mut self, name: &str) -> PackageAddress {
+        self.publish_package_with_code(compile_package!(format!("./tests/{}", name)))
     }
 
-    pub fn compile(name: &str) -> Vec<u8> {
-        compile_package!(format!("./tests/{}", name))
+    pub fn publish_package_with_code(&mut self, code: Vec<u8>) -> PackageAddress {
+        self.publish_package(extract_package(code).expect("Failed to extract package"))
     }
 
-    pub fn component(&self, component_address: ComponentAddress) -> Component {
-        self.executor
-            .substate_store()
+    pub fn execute_manifest(
+        &mut self,
+        manifest: TransactionManifest,
+        signer_public_keys: Vec<EcdsaPublicKey>,
+    ) -> Receipt {
+        let transaction =
+            TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
+        self.next_transaction_nonce += 1;
+
+        TransactionExecutor::new(&mut self.substate_store, &mut self.wasm_engine, self.trace)
+            .execute(&transaction)
+    }
+
+    pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
+        self.substate_store
             .get_decoded_substate(&component_address)
             .map(|(component, _)| component)
             .unwrap()
@@ -82,50 +108,41 @@ where
         package_address: PackageAddress,
         blueprint_name: &str,
     ) -> abi::BlueprintAbi {
-        self.executor
-            .export_abi(package_address, blueprint_name)
-            .unwrap()
+        export_abi(&self.substate_store, package_address, blueprint_name)
+            .expect("Failed to export ABI")
     }
 
     pub fn export_abi_by_component(
         &self,
         component_address: ComponentAddress,
     ) -> abi::BlueprintAbi {
-        self.executor
-            .export_abi_by_component(component_address)
-            .unwrap()
+        export_abi_by_component(&self.substate_store, component_address)
+            .expect("Failed to export ABI")
     }
 
-    pub fn get_nonce<PKS: AsRef<[EcdsaPublicKey]>>(&self, intended_signers: PKS) -> u64 {
-        self.executor.get_nonce(intended_signers)
-    }
-
-    pub fn set_auth(
+    pub fn update_resource_auth(
         &mut self,
-        account: (&EcdsaPublicKey, &EcdsaPrivateKey, ComponentAddress),
         function: &str,
         auth: ResourceAddress,
         token: ResourceAddress,
         set_auth: ResourceAddress,
+        account: ComponentAddress,
+        signer_public_key: EcdsaPublicKey,
     ) {
-        let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new()
-            .create_proof_from_account(auth, account.2)
+        let package = self.extract_and_publish_package("resource_creator");
+        let manifest = ManifestBuilder::new()
+            .create_proof_from_account(auth, account)
             .call_function(
                 package,
                 "ResourceCreator",
                 function,
                 to_struct!(token, set_auth),
             )
-            .call_method_with_all_resources(account.2, "deposit_batch")
-            .build(self.executor.get_nonce([account.0.clone()]))
-            .sign([account.1]);
-        let result = self
-            .executor
-            .validate_and_execute(&transaction)
-            .unwrap()
-            .result;
-        result.expect("Should be okay");
+            .call_method_with_all_resources(account, "deposit_batch")
+            .build();
+        self.execute_manifest(manifest, vec![signer_public_key])
+            .result
+            .expect("Should be okay");
     }
 
     pub fn create_restricted_token(
@@ -143,8 +160,8 @@ where
         let withdraw_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new()
+        let package = self.extract_and_publish_package("resource_creator");
+        let manifest = ManifestBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -152,9 +169,8 @@ where
                 to_struct!(mint_auth, burn_auth, withdraw_auth, admin_auth),
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(self.executor.get_nonce([]))
-            .sign([]);
-        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
         (
             receipt.new_resource_addresses[0],
             mint_auth,
@@ -169,8 +185,8 @@ where
         account: ComponentAddress,
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
-        let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new()
+        let package = self.extract_and_publish_package("resource_creator");
+        let manifest = ManifestBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -178,9 +194,8 @@ where
                 to_struct!(auth_resource_address),
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(self.executor.get_nonce([]))
-            .sign([]);
-        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
         (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
@@ -190,8 +205,8 @@ where
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new()
+        let package = self.extract_and_publish_package("resource_creator");
+        let manifest = ManifestBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -199,15 +214,14 @@ where
                 to_struct![auth_resource_address],
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(self.executor.get_nonce([]))
-            .sign([]);
-        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
         (auth_resource_address, receipt.new_resource_addresses[0])
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new()
+        let package = self.extract_and_publish_package("resource_creator");
+        let manifest = ManifestBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -215,9 +229,8 @@ where
                 to_struct!(),
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(self.executor.get_nonce([]))
-            .sign([]);
-        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.result.expect("Should be okay.");
         receipt.new_resource_addresses[0]
     }
@@ -228,8 +241,8 @@ where
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let package = self.publish_package("resource_creator");
-        let transaction = TransactionBuilder::new()
+        let package = self.extract_and_publish_package("resource_creator");
+        let manifest = ManifestBuilder::new()
             .call_function(
                 package,
                 "ResourceCreator",
@@ -237,9 +250,8 @@ where
                 to_struct!(amount, divisibility),
             )
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(self.executor.get_nonce([]))
-            .sign([]);
-        let receipt = self.executor.validate_and_execute(&transaction).unwrap();
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![]);
         receipt.new_resource_addresses[0]
     }
 
@@ -250,27 +262,21 @@ where
         function_name: &str,
         args: Vec<String>,
         account: ComponentAddress,
-        pk: EcdsaPublicKey,
-        sk: &EcdsaPrivateKey,
+        signer_public_key: EcdsaPublicKey,
     ) -> ComponentAddress {
-        let transaction = self
-            .new_transaction_builder()
+        let manifest = ManifestBuilder::new()
             .call_function_with_abi(
                 package_address,
                 blueprint_name,
                 function_name,
                 args,
                 Some(account),
-                &self
-                    .executor
-                    .export_abi(package_address, blueprint_name)
-                    .unwrap(),
+                &self.export_abi(package_address, blueprint_name),
             )
             .unwrap()
             .call_method_with_all_resources(account, "deposit_batch")
-            .build(self.executor.get_nonce([pk]))
-            .sign([sk]);
-        let receipt = self.validate_and_execute(&transaction);
+            .build();
+        let receipt = self.execute_manifest(manifest, vec![signer_public_key]);
         receipt.new_component_addresses[0]
     }
 }

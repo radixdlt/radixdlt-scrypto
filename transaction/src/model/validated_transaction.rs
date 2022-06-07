@@ -1,87 +1,28 @@
-use sbor::rust::collections::BTreeSet;
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::crypto::*;
-use scrypto::engine::types::*;
-use scrypto::values::*;
+
+use crate::model::*;
 
 /// Represents a validated transaction
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
 pub struct ValidatedTransaction {
-    pub raw_hash: Hash,
-    pub instructions: Vec<ValidatedInstruction>,
-    pub signers: Vec<EcdsaPublicKey>,
+    pub transaction: NotarizedTransaction,
+    pub transaction_hash: Hash,
+    pub instructions: Vec<ExecutableInstruction>,
+    pub signer_public_keys: Vec<EcdsaPublicKey>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
-pub enum ValidatedInstruction {
-    TakeFromWorktop {
-        resource_address: ResourceAddress,
-    },
-    TakeFromWorktopByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    TakeFromWorktopByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    ReturnToWorktop {
-        bucket_id: BucketId,
-    },
-    AssertWorktopContains {
-        resource_address: ResourceAddress,
-    },
-    AssertWorktopContainsByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    AssertWorktopContainsByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    PopFromAuthZone,
-    PushToAuthZone {
-        proof_id: ProofId,
-    },
-    ClearAuthZone,
-    CreateProofFromAuthZone {
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromAuthZoneByAmount {
-        amount: Decimal,
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromAuthZoneByIds {
-        ids: BTreeSet<NonFungibleId>,
-        resource_address: ResourceAddress,
-    },
-    CreateProofFromBucket {
-        bucket_id: BucketId,
-    },
-    CloneProof {
-        proof_id: ProofId,
-    },
-    DropProof {
-        proof_id: ProofId,
-    },
-    CallFunction {
-        package_address: PackageAddress,
-        blueprint_name: String,
-        method_name: String,
-        arg: ScryptoValue,
-    },
-    CallMethod {
-        component_address: ComponentAddress,
-        method_name: String,
-        arg: ScryptoValue,
-    },
-    CallMethodWithAllResources {
-        component_address: ComponentAddress,
-        method: String,
-    },
-    PublishPackage {
-        package: Vec<u8>,
-    },
+impl ExecutableTransaction for ValidatedTransaction {
+    fn transaction_hash(&self) -> Hash {
+        self.transaction_hash
+    }
+
+    fn instructions(&self) -> &[ExecutableInstruction] {
+        &self.instructions
+    }
+
+    fn signer_public_keys(&self) -> &[EcdsaPublicKey] {
+        &self.signer_public_keys
+    }
 }

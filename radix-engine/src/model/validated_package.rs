@@ -80,8 +80,8 @@ impl ValidatedPackage {
             "publish" => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
                     .map_err(|e| PackageError::InvalidRequestData(e))?;
-                let package = ValidatedPackage::new(input.package)
-                    .map_err(PackageError::InvalidWasm)?;
+                let package =
+                    ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
                 let package_address = system_api.create_package(package);
                 Ok(ScryptoValue::from_value(&package_address))
             }
