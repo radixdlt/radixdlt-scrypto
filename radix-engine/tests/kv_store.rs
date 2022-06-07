@@ -9,17 +9,17 @@ use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 
 #[test]
-fn dangling_lazy_map_should_fail() {
+fn dangling_key_value_store_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("lazy_map");
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            call_data!(dangling_lazy_map()),
+            "KeyValueStoreTest",
+            call_data!(dangling_key_value_store()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -28,7 +28,7 @@ fn dangling_lazy_map_should_fail() {
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     assert_eq!(
         runtime_error,
-        RuntimeError::ResourceCheckFailure(ResourceFailure::UnclaimedLazyMap)
+        RuntimeError::ResourceCheckFailure(ResourceFailure::UnclaimedKeyValueStore)
     );
 }
 
@@ -36,11 +36,11 @@ fn dangling_lazy_map_should_fail() {
 fn can_insert_in_child_nodes() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("lazy_map");
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "SuperLazyMap", call_data!(new()))
+        .call_function(package_address, "SuperKeyValueStore", call_data!(new()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -49,17 +49,17 @@ fn can_insert_in_child_nodes() {
 }
 
 #[test]
-fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
+fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("lazy_map");
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            call_data!(new_lazy_map_into_map_then_get()),
+            "KeyValueStoreTest",
+            call_data!(new_key_value_store_into_map_then_get()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -72,7 +72,7 @@ fn create_mutable_lazy_map_into_map_and_referencing_before_storing() {
 fn cyclic_map_fails_execution() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("lazy_map");
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -83,9 +83,9 @@ fn cyclic_map_fails_execution() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::CyclicLazyMap(_) => {}
+        RuntimeError::CyclicKeyValueStore(_) => {}
         _ => panic!(
-            "Should be a cyclic lazy map error but was {}",
+            "Should be a cyclic key value store error but was {}",
             runtime_error
         ),
     }
@@ -95,7 +95,7 @@ fn cyclic_map_fails_execution() {
 fn self_cyclic_map_fails_execution() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("lazy_map");
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -106,24 +106,24 @@ fn self_cyclic_map_fails_execution() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::CyclicLazyMap(_) => {}
+        RuntimeError::CyclicKeyValueStore(_) => {}
         _ => panic!(
-            "Should be a cyclic lazy map error but was {}",
+            "Should be a cyclic key value store error but was {}",
             runtime_error
         ),
     }
 }
 
 #[test]
-fn cannot_remove_lazy_maps() {
+fn cannot_remove_key_value_stores() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("lazy_map");
+    let package_address = test_runner.publish_package("kv_store");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            call_data!(new_lazy_map_into_vector()),
+            "KeyValueStoreTest",
+            call_data!(new_key_value_store_into_vector()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -138,21 +138,24 @@ fn cannot_remove_lazy_maps() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::LazyMapRemoved(_) => {}
-        _ => panic!("Should be lazy map removed error but was {}", runtime_error),
+        RuntimeError::KeyValueStoreRemoved(_) => {}
+        _ => panic!(
+            "Should be key value store removed error but was {}",
+            runtime_error
+        ),
     }
 }
 
 #[test]
-fn cannot_overwrite_lazy_maps() {
+fn cannot_overwrite_key_value_stores() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("lazy_map");
+    let package_address = test_runner.publish_package("kv_store");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            call_data!(new_lazy_map_into_lazy_map()),
+            "KeyValueStoreTest",
+            call_data!(new_key_value_store_into_key_value_store()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -160,30 +163,33 @@ fn cannot_overwrite_lazy_maps() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, call_data!(overwrite_lazy_map()))
+        .call_method(component_address, call_data!(overwrite_key_value_store()))
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::LazyMapRemoved(_) => {}
-        _ => panic!("Should be lazy map removed error but was {}", runtime_error),
+        RuntimeError::KeyValueStoreRemoved(_) => {}
+        _ => panic!(
+            "Should be key value store removed error but was {}",
+            runtime_error
+        ),
     }
 }
 
 #[test]
-fn create_lazy_map_and_get() {
+fn create_key_value_store_and_get() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("lazy_map");
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            call_data!(new_lazy_map_with_get()),
+            "KeyValueStoreTest",
+            call_data!(new_key_value_store_with_get()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -193,17 +199,17 @@ fn create_lazy_map_and_get() {
 }
 
 #[test]
-fn create_lazy_map_and_put() {
+fn create_key_value_store_and_put() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("lazy_map");
+    let package_address = test_runner.publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LazyMapTest",
-            call_data!(new_lazy_map_with_put()),
+            "KeyValueStoreTest",
+            call_data!(new_key_value_store_with_put()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -74,7 +74,7 @@ pub enum Address {
     Component(ComponentAddress),
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
-    LazyMap(ComponentAddress, LazyMapId),
+    KeyValueStore(ComponentAddress, KeyValueStoreId),
     Vault(ComponentAddress, VaultId),
 }
 
@@ -85,7 +85,7 @@ pub enum SubstateValue {
     Package(ValidatedPackage),
     Vault(Vault),
     NonFungible(Option<NonFungible>),
-    LazyMapEntry(Option<Vec<u8>>),
+    KeyValueStoreEntry(Option<Vec<u8>>),
 }
 
 // TODO: Replace NonFungible with real re address
@@ -112,9 +112,9 @@ impl Address {
             Address::NonFungibleSet(resource_address) => {
                 resource_to_non_fungible_space!(resource_address.clone())
             }
-            Address::LazyMap(component_address, lazy_map_id) => {
+            Address::KeyValueStore(component_address, kv_store_id) => {
                 let mut entry_address = scrypto_encode(component_address);
-                entry_address.extend(scrypto_encode(lazy_map_id));
+                entry_address.extend(scrypto_encode(kv_store_id));
                 entry_address
             }
         }
@@ -183,7 +183,7 @@ impl SubstateValue {
             SubstateValue::Component(component) => scrypto_encode(component),
             SubstateValue::Vault(vault) => scrypto_encode(vault),
             SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
-            SubstateValue::LazyMapEntry(value) => scrypto_encode(value),
+            SubstateValue::KeyValueStoreEntry(value) => scrypto_encode(value),
         }
     }
 }
@@ -220,7 +220,7 @@ impl Into<SubstateValue> for Option<NonFungible> {
 
 impl Into<SubstateValue> for Option<ScryptoValue> {
     fn into(self) -> SubstateValue {
-        SubstateValue::LazyMapEntry(self.map(|v| v.raw))
+        SubstateValue::KeyValueStoreEntry(self.map(|v| v.raw))
     }
 }
 
@@ -328,10 +328,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn create_key_space(
         &mut self,
         component_address: ComponentAddress,
-        lazy_map_id: LazyMapId,
+        kv_store_id: KeyValueStoreId,
     ) {
         let mut space_address = scrypto_encode(&component_address);
-        space_address.extend(scrypto_encode(&lazy_map_id));
+        space_address.extend(scrypto_encode(&kv_store_id));
         self.up_virtual_substate_space.insert(space_address);
     }
 
@@ -425,7 +425,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         address.extend(key);
         if let Some(cur) = self.up_substates.get(&address) {
             match cur {
-                SubstateValue::LazyMapEntry(e) => return SubstateValue::LazyMapEntry(e.clone()),
+                SubstateValue::KeyValueStoreEntry(e) => {
+                    return SubstateValue::KeyValueStoreEntry(e.clone())
+                }
                 SubstateValue::NonFungible(n) => return SubstateValue::NonFungible(n.clone()),
                 _ => panic!("Unsupported key value"),
             }
@@ -439,14 +441,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     SubstateValue::NonFungible(non_fungible)
                 })
                 .unwrap_or(SubstateValue::NonFungible(None)),
-            Address::LazyMap(..) => self
+            Address::KeyValueStore(..) => self
                 .substate_store
                 .get_substate(&address)
                 .map(|r| {
-                    let lazy_map_entry = scrypto_decode(&r.value).unwrap();
-                    SubstateValue::LazyMapEntry(lazy_map_entry)
+                    let kv_store_entry = scrypto_decode(&r.value).unwrap();
+                    SubstateValue::KeyValueStoreEntry(kv_store_entry)
                 })
-                .unwrap_or(SubstateValue::LazyMapEntry(None)),
+                .unwrap_or(SubstateValue::KeyValueStoreEntry(None)),
             _ => panic!("Invalid keyed value address"),
         }
     }
@@ -535,9 +537,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new map id.
-    pub fn new_lazy_map_id(&mut self) -> LazyMapId {
+    pub fn new_kv_store_id(&mut self) -> KeyValueStoreId {
         self.id_allocator
-            .new_lazy_map_id(self.transaction_hash())
+            .new_kv_store_id(self.transaction_hash())
             .unwrap()
     }
 
@@ -580,17 +582,18 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         for (vault_id, vault) in new_objects.vaults {
             self.create_uuid_value_2((component_address, vault_id), vault);
         }
-        for (lazy_map_id, unclaimed) in new_objects.lazy_maps {
-            self.create_key_space(component_address, lazy_map_id);
-            for (k, v) in unclaimed.lazy_map {
-                let parent_address = Address::LazyMap(component_address, lazy_map_id);
+        for (kv_store_id, unclaimed) in new_objects.kv_stores {
+            self.create_key_space(component_address, kv_store_id);
+            for (k, v) in unclaimed.kv_store {
+                let parent_address = Address::KeyValueStore(component_address, kv_store_id);
                 self.set_key_value(parent_address, k, Some(v));
             }
 
-            for (child_lazy_map_id, child_lazy_map) in unclaimed.descendent_lazy_maps {
-                self.create_key_space(component_address, child_lazy_map_id);
-                for (k, v) in child_lazy_map {
-                    let parent_address = Address::LazyMap(component_address, child_lazy_map_id);
+            for (child_kv_store_id, child_kv_store) in unclaimed.descendent_kv_stores {
+                self.create_key_space(component_address, child_kv_store_id);
+                for (k, v) in child_kv_store {
+                    let parent_address =
+                        Address::KeyValueStore(component_address, child_kv_store_id);
                     self.set_key_value(parent_address, k, Some(v));
                 }
             }

@@ -93,11 +93,11 @@ impl IdAllocator {
         Ok((transaction_hash, self.next()?))
     }
 
-    /// Creates a new lazy map ID.
-    pub fn new_lazy_map_id(
+    /// Creates a new key value store ID.
+    pub fn new_kv_store_id(
         &mut self,
         transaction_hash: Hash,
-    ) -> Result<LazyMapId, IdAllocationError> {
+    ) -> Result<KeyValueStoreId, IdAllocationError> {
         Ok((transaction_hash, self.next()?))
     }
 }

@@ -264,9 +264,9 @@ impl TransactionValidator {
         if let Some(vault_id) = value.vault_ids.iter().nth(0) {
             return Err(CallDataValidationError::VaultNotAllowed(vault_id.clone()));
         }
-        if let Some(lazy_map_id) = value.lazy_map_ids.iter().nth(0) {
-            return Err(CallDataValidationError::LazyMapNotAllowed(
-                lazy_map_id.clone(),
+        if let Some(kv_store_id) = value.kv_store_ids.iter().nth(0) {
+            return Err(CallDataValidationError::KeyValueStoreNotAllowed(
+                kv_store_id.clone(),
             ));
         }
         Ok(value)

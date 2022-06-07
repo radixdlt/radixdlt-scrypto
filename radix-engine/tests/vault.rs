@@ -58,7 +58,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
 }
 
 #[test]
-fn non_existent_vault_in_lazy_map_creation_should_fail() {
+fn non_existent_vault_in_key_value_store_creation_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.publish_package("vault");
@@ -68,7 +68,7 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
         .call_function(
             package_address,
             "NonExistentVault",
-            call_data!(create_lazy_map_with_non_existent_vault()),
+            call_data!(create_key_value_store_with_non_existent_vault()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -82,7 +82,7 @@ fn non_existent_vault_in_lazy_map_creation_should_fail() {
 }
 
 #[test]
-fn non_existent_vault_in_committed_lazy_map_should_fail() {
+fn non_existent_vault_in_committed_key_value_store_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.publish_package("vault");
@@ -96,7 +96,7 @@ fn non_existent_vault_in_committed_lazy_map_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_method(
             component_address,
-            call_data!(create_non_existent_vault_in_lazy_map()),
+            call_data!(create_non_existent_vault_in_key_value_store()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
