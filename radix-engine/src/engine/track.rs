@@ -10,9 +10,7 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
-use crate::engine::{
-    StoredValue, SubstateOperation, SubstateOperationsReceipt,
-};
+use crate::engine::{StoredValue, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 

@@ -88,8 +88,9 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
-        let receipt = TransactionExecutor::new(&mut self.substate_store, &mut self.wasm_engine, self.trace)
-            .execute(&transaction);
+        let receipt =
+            TransactionExecutor::new(&mut self.substate_store, &mut self.wasm_engine, self.trace)
+                .execute(&transaction);
 
         receipt
     }

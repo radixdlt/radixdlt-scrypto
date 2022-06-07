@@ -22,7 +22,9 @@ blueprint! {
                 store,
                 deep_store: KeyValueStore::new(),
                 deep_vault: KeyValueStore::new(),
-            }.instantiate().globalize()
+            }
+            .instantiate()
+            .globalize()
         }
 
         pub fn can_reference_deep_precommitted_value() -> ComponentAddress {
@@ -38,7 +40,9 @@ blueprint! {
                 store: KeyValueStore::new(),
                 deep_store,
                 deep_vault: KeyValueStore::new(),
-            }.instantiate().globalize()
+            }
+            .instantiate()
+            .globalize()
         }
 
         pub fn can_reference_deep_precommitted_vault() -> ComponentAddress {
@@ -59,7 +63,9 @@ blueprint! {
                 store: KeyValueStore::new(),
                 deep_store: KeyValueStore::new(),
                 deep_vault,
-            }.instantiate().globalize()
+            }
+            .instantiate()
+            .globalize()
         }
     }
 }

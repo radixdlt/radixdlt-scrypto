@@ -259,7 +259,6 @@ fn can_reference_deep_in_memory_value() {
     receipt.expect_success();
 }
 
-
 #[test]
 fn can_reference_deep_in_memory_vault() {
     // Arrange

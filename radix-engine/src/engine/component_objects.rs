@@ -26,7 +26,10 @@ impl PreCommittedKeyValueStore {
         }
     }
 
-    fn find_child_kv_store(&mut self, kv_store_id: &KeyValueStoreId) -> Option<&mut PreCommittedKeyValueStore> {
+    fn find_child_kv_store(
+        &mut self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> Option<&mut PreCommittedKeyValueStore> {
         for (_, child_value) in self.child_values.iter_mut() {
             if let StoredValue::KeyValueStore(ref id, kv_store) = child_value {
                 if id.eq(kv_store_id) {
@@ -43,7 +46,11 @@ impl PreCommittedKeyValueStore {
         None
     }
 
-    fn take_child_vault(&mut self, self_id: KeyValueStoreId, vault_id: &VaultId) -> Option<(KeyValueStoreId, Vault)> {
+    fn take_child_vault(
+        &mut self,
+        self_id: KeyValueStoreId,
+        vault_id: &VaultId,
+    ) -> Option<(KeyValueStoreId, Vault)> {
         let maybe_vault = self.child_values.remove(&StoredValueId::VaultId(*vault_id));
         if let Some(StoredValue::Vault(_, vault)) = maybe_vault {
             return Option::Some((self_id, vault));
@@ -191,7 +198,10 @@ impl ComponentObjects {
         if let Some((vault_id, maybe_parent)) = self.borrowed_vault.take() {
             if let Some(parent_id) = maybe_parent {
                 let kv_store = self.get_kv_store_mut_internal(&parent_id).unwrap();
-                kv_store.child_values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id.clone(), vault));
+                kv_store.child_values.insert(
+                    StoredValueId::VaultId(vault_id.clone()),
+                    StoredValue::Vault(vault_id.clone(), vault),
+                );
             } else {
                 self.values.insert(
                     StoredValueId::VaultId(vault_id.clone()),
