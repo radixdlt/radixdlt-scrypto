@@ -7,6 +7,7 @@ use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use forward_ref::*;
 use num_bigint::BigInt;
+use num_traits::{FromPrimitive, Num, Signed, ToPrimitive, Zero, Zero};
 use num_traits::{Signed, Zero};
 use paste::paste;
 
@@ -196,23 +197,37 @@ pub enum ParseBigIntError {
     Overflow,
 }
 
-macro_rules! impl_bigint_to_i {
+macro_rules! impl_bigint_to_large {
     ($($t:ty),*) => {
         $(
             paste! {
                 fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseBigIntError> {
                     let bytes = b.to_signed_bytes_le();
-                    const tlen: usize = (<$t>::BITS / 8 ) as usize;
-                    if bytes.len() > tlen {
+                    const t_bytes: usize = (<$t>::BITS / 8 ) as usize;
+                    if bytes.len() > t_bytes {
                         return Err(ParseBigIntError::Overflow);
+                    }
+                    let mut buf = if b.is_negative() {
+                        [255u8; t_bytes]
                     } else {
-                        let mut buf = if b.is_negative() {
-                            [255u8; tlen]
-                        } else {
-                            [0u8; tlen]
-                        };
-                        buf[..bytes.len()].copy_from_slice(&bytes);
-                        Ok($t(buf))
+                        [0u8; t_bytes]
+                    };
+                    buf[..bytes.len()].copy_from_slice(&bytes);
+                    Ok($t(buf))
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! impl_bigint_to_small {
+    ($($t:ty),*) => {
+        $(
+            paste! {
+                fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseBigIntError> {
+                    match b.[<to_$t:lower>]() {
+                        Some(v) => Ok($t(v)),
+                        None => Err(ParseBigIntError::Overflow),
                     }
                 }
             }
@@ -220,22 +235,8 @@ macro_rules! impl_bigint_to_i {
     }
 }
 
-fn big_int_to_i128(v: BigInt) -> i128 {
-    let bytes = v.to_signed_bytes_le();
-    if bytes.len() > 16 {
-        panic!("Overflow");
-    } else {
-        let mut buf = if v.is_negative() {
-            [255u8; 16]
-        } else {
-            [0u8; 16]
-        };
-        buf[..bytes.len()].copy_from_slice(&bytes);
-        i128::from_le_bytes(buf)
-    }
-}
-
-impl_bigint_to_i! { I256, I384, I512, U256, U384, U512 }
+impl_bigint_to_large! { I256, I384, I512, U256, U384, U512 }
+impl_bigint_to_small! { I8, I16, I32, I64, I128, U8, U16, U32, U64, U128 }
 
 macro_rules! sh_impl {
     (to_sh: $t:ty, other: $o:ty, other_var: $other:ident, self_var: $self:ident, shl_expr: $shl_expr:expr, shr_expr: $shr_expr:expr ) => {
@@ -288,7 +289,7 @@ macro_rules! sh {
             panic!("overflow");
         } else {
             let to_shift = BigInt::from_signed_bytes_le(&$self.0);
-            let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&$other.0));
+            let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
             to_shift.shl(shift).try_into().unwrap()
         }
     };
@@ -297,12 +298,12 @@ macro_rules! sh {
             panic!("overflow");
         } else {
             let to_shift = BigInt::from_signed_bytes_le(&$self.0);
-            let shift = big_int_to_i128(BigInt::from_signed_bytes_le(&$other.0));
+            let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
             to_shift.shr(shift).try_into().unwrap()
         }
     };
     (large.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {{
-        let to_shift = big_int_to_i128(BigInt::from_signed_bytes_le(&$other.0));
+        let to_shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
         // FIXME: line below might create a BigInt whose size might become larger than self.
         // Check this!!!
         BigInt::from_signed_bytes_le(&$self.0)
@@ -311,7 +312,7 @@ macro_rules! sh {
             .unwrap()
     }};
     (large.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {{
-        let to_shift = big_int_to_i128(BigInt::from_signed_bytes_le(&$other.0));
+        let to_shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
         // FIXME: line below might create a BigInt whose size might become larger than self.
         // Check this!!!
         BigInt::from_signed_bytes_le(&$self.0)
@@ -1052,32 +1053,32 @@ macro_rules! checked_int_ops {
     (large: $($t:ident),*) => {
         $(
             checked_impl! {
-                (impl Op<u8> for $t { fn op(self, other: u8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
-                (impl Op<u16> for $t { fn op(self, other: u16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
-                (impl Op<u32> for $t { fn op(self, other: u32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
-                (impl Op<u64> for $t { fn op(self, other: u64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
-                (impl Op<u128> for $t { fn op(self, other: u128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
+                (impl Op<u8> for $t { fn op(self, other: u8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
+                (impl Op<u16> for $t { fn op(self, other: u16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
+                (impl Op<u32> for $t { fn op(self, other: u32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
+                (impl Op<u64> for $t { fn op(self, other: u64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
+                (impl Op<u128> for $t { fn op(self, other: u128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
 
-                (impl Op<i8> for $t { fn op(self, other: i8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
-                (impl Op<i16> for $t { fn op(self, other: i16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
-                (impl Op<i32> for $t { fn op(self, other: i32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
-                (impl Op<i64> for $t { fn op(self, other: i64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
-                (impl Op<i128> for $t { fn op(self, other: i128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other)}}), checked_prefix: false,
+                (impl Op<i8> for $t { fn op(self, other: i8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
+                (impl Op<i16> for $t { fn op(self, other: i16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
+                (impl Op<i32> for $t { fn op(self, other: i32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
+                (impl Op<i64> for $t { fn op(self, other: i64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
+                (impl Op<i128> for $t { fn op(self, other: i128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), checked_prefix: false,
 
-                (impl Op<U8> for $t { fn op(self, other: U8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
-                (impl Op<U16> for $t { fn op(self, other: U16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
-                (impl Op<U32> for $t { fn op(self, other: U32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
-                (impl Op<U64> for $t { fn op(self, other: U64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
-                (impl Op<U128> for $t { fn op(self, other: U128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
+                (impl Op<U8> for $t { fn op(self, other: U8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
+                (impl Op<U16> for $t { fn op(self, other: U16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
+                (impl Op<U32> for $t { fn op(self, other: U32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
+                (impl Op<U64> for $t { fn op(self, other: U64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
+                (impl Op<U128> for $t { fn op(self, other: U128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
                 (impl Op<U256> for $t { fn op(self, other: U256) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), checked_prefix: false,
                 (impl Op<U384> for $t { fn op(self, other: U384) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), checked_prefix: false,
                 (impl Op<U512> for $t { fn op(self, other: U512) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), checked_prefix: false,
 
-                (impl Op<I8> for $t { fn op(self, other: I8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
-                (impl Op<I16> for $t { fn op(self, other: I16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
-                (impl Op<I32> for $t { fn op(self, other: I32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
-                (impl Op<I64> for $t { fn op(self, other: I64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
-                (impl Op<I128> for $t { fn op(self, other: I128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(other.0)}}), checked_prefix: false,
+                (impl Op<I8> for $t { fn op(self, other: I8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
+                (impl Op<I16> for $t { fn op(self, other: I16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
+                (impl Op<I32> for $t { fn op(self, other: I32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
+                (impl Op<I64> for $t { fn op(self, other: I64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
+                (impl Op<I128> for $t { fn op(self, other: I128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), checked_prefix: false,
                 (impl Op<I256> for $t { fn op(self, other: I256) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), checked_prefix: false,
                 (impl Op<I384> for $t { fn op(self, other: I384) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), checked_prefix: false,
                 (impl Op<I512> for $t { fn op(self, other: I512) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), checked_prefix: false
