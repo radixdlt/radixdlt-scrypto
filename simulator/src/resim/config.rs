@@ -14,6 +14,7 @@ use std::env;
 pub struct Configs {
     pub default_account: ComponentAddress,
     pub default_private_key: Vec<u8>,
+    pub nonce: u64,
 }
 
 /// Returns the data directory.
@@ -66,4 +67,8 @@ pub fn get_default_private_key() -> Result<EcdsaPrivateKey, Error> {
     get_configs()?
         .ok_or(Error::NoDefaultAccount)
         .map(|config| EcdsaPrivateKey::from_bytes(&config.default_private_key).unwrap())
+}
+
+pub fn get_nonce() -> Result<u64, Error> {
+    Ok(get_configs()?.map(|c| c.nonce).unwrap_or(0))
 }

@@ -15,10 +15,19 @@ pub struct SetDefaultAccount {
 
 impl SetDefaultAccount {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        set_configs(&Configs {
-            default_account: self.component_address,
-            default_private_key: hex::decode(&self.private_key).unwrap(),
-        })?;
+        let new_configs = match get_configs()? {
+            Some(mut configs) => {
+                configs.default_account = self.component_address;
+                configs.default_private_key = hex::decode(&self.private_key).unwrap();
+                configs
+            }
+            None => Configs {
+                default_account: self.component_address,
+                default_private_key: hex::decode(&self.private_key).unwrap(),
+                nonce: 0,
+            },
+        };
+        set_configs(&new_configs)?;
 
         writeln!(out, "Default account updated!").map_err(Error::IOError)?;
         Ok(())

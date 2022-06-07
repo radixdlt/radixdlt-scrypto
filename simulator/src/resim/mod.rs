@@ -159,7 +159,7 @@ pub fn handle_manifest<O: std::io::Write>(
                 .iter()
                 .map(|e| e.public_key())
                 .collect::<Vec<EcdsaPublicKey>>();
-            let nonce = executor.substate_store().get_nonce();
+            let nonce = get_nonce()?;
             let transaction = TestTransaction::new(manifest, nonce, pks);
 
             let receipt = executor.execute(&transaction);

@@ -68,6 +68,7 @@ impl NewAccount {
                 set_configs(&Configs {
                     default_account: account,
                     default_private_key: private_key.to_bytes(),
+                    nonce: 0,
                 })?;
             }
         } else {

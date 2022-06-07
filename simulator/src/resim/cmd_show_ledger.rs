@@ -31,8 +31,6 @@ impl ShowLedger {
                 .map_err(Error::IOError)?;
         }
 
-        writeln!(out, "{}: {}", "Nonce".green().bold(), ledger.get_nonce())
-            .map_err(Error::IOError)?;
         Ok(())
     }
 }
