@@ -170,6 +170,9 @@ pub fn handle_manifest<O: std::io::Write>(
             if let Err(error) = &receipt.result {
                 Err(Error::TransactionExecutionError(error.clone()))
             } else {
+                let mut configs = get_configs()?;
+                configs.nonce = nonce + 1;
+                set_configs(&configs)?;
                 Ok(Some(receipt))
             }
         }
