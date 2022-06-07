@@ -7,8 +7,8 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::abi::*;
+use crate::buffer::{scrypto_decode, scrypto_encode};
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
@@ -288,7 +288,7 @@ impl ResourceManager {
             pub fn metadata(&self) -> HashMap<String, String> {
                 ResourceManagerGetMetadataInput {}
             }
-            pub fn resource_type(&self) -> () {
+            pub fn resource_type(&self) -> ResourceType {
                 ResourceManagerGetResourceTypeInput {}
             }
             pub fn total_supply(&self) -> Decimal {

@@ -1,4 +1,4 @@
-use crate::manifest::ast::{Instruction, Transaction, Type, Value};
+use crate::manifest::ast::{Instruction, Type, Value};
 use crate::manifest::lexer::{Token, TokenKind};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -56,14 +56,14 @@ impl Parser {
         Ok(token)
     }
 
-    pub fn parse_transaction(&mut self) -> Result<Transaction, ParserError> {
+    pub fn parse_manifest(&mut self) -> Result<Vec<Instruction>, ParserError> {
         let mut instructions = Vec::<Instruction>::new();
 
         while !self.is_eof() {
             instructions.push(self.parse_instruction()?);
         }
 
-        Ok(Transaction { instructions })
+        Ok(instructions)
     }
 
     pub fn parse_instruction(&mut self) -> Result<Instruction, ParserError> {

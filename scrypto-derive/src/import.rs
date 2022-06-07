@@ -339,7 +339,7 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
             let canonical_name = match scrypto_type {
                 ScryptoType::PackageAddress => "::scrypto::component::PackageAddress",
                 ScryptoType::ComponentAddress => "::scrypto::component::ComponentAddress",
-                ScryptoType::LazyMap => "::scrypto::component::LazyMap",
+                ScryptoType::KeyValueStore => "::scrypto::component::KeyValueStore",
                 ScryptoType::Hash => "::scrypto::crypto::Hash",
                 ScryptoType::EcdsaPublicKey => "::scrypto::crypto::EcdsaPublicKey",
                 ScryptoType::EcdsaSignature => "::scrypto::crypto::EcdsaSignature",

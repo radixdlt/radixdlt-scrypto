@@ -8,6 +8,7 @@ sbor = { path = "../sbor", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
 clap = { version = "3.1.17", features = ["derive", "cargo"] }
 hex = { version = "0.4.3", default-features = false }
+p256 = { git = "https://github.com/radixdlt/elliptic-curves", branch = "alloc", default-features = false, features = ["ecdsa"] }
 
 
 [features]

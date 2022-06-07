@@ -64,13 +64,14 @@ blueprint! {
             (badge, token_address)
         }
 
-        pub fn query() -> (Bucket, HashMap<String, String>, Decimal) {
+        pub fn query() -> (Bucket, HashMap<String, String>, Decimal, ResourceType) {
             let (badge, resource_address) = Self::create_fungible();
             let resource_manager = borrow_resource_manager!(resource_address);
             (
                 badge,
                 resource_manager.metadata(),
                 resource_manager.total_supply(),
+                resource_manager.resource_type(),
             )
         }
 
