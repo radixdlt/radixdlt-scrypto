@@ -34,23 +34,17 @@ fn test_invalid_access_rule_methods() {
 
 fn test_arg(method_name: &str, arg: Vec<u8>, should_succeed: bool) {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::new();
-    let mut wasm_engine = default_wasm_engine();
-    let mut test_runner = TestRunner::new(&mut substate_store, &mut wasm_engine);
-    let package_address = test_runner.publish_package("abi");
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("abi");
 
     // Act
-    let transaction = test_runner
-        .new_transaction_builder()
-        .call_function(
-            package_address,
-            "AbiComponent2",
-            method_name,
-            arg,
-        )
-        .build(test_runner.get_nonce([]))
-        .sign([]);
-    let receipt = test_runner.validate_and_execute(&transaction);
+    let manifest = ManifestBuilder::new().call_function(
+        package_address,
+        "AbiComponent2",
+        method_name,
+        arg,
+    ).build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
     if should_succeed {
