@@ -1,5 +1,6 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 
 use crate::buffer::{scrypto_decode, scrypto_encode};
@@ -45,17 +46,18 @@ impl ResourceSystem {
         &mut self,
         resource_type: ResourceType,
         metadata: HashMap<String, String>,
-        authorization: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
+        access_rules: HashMap<ResourceMethodAuthKey, (AccessRule, Mutability)>,
         mint_params: Option<MintParams>,
     ) -> (ResourceAddress, Option<Bucket>) {
-        let input = RadixEngineInput::InvokeSNode(
+        let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::ResourceStatic,
-            scrypto_encode(&ResourceManagerFunction::Create(
+            "create".to_string(),
+            scrypto_encode(&ResourceManagerCreateInput {
                 resource_type,
                 metadata,
-                authorization,
+                access_rules,
                 mint_params,
-            )),
+            }),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()

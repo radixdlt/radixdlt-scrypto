@@ -8,6 +8,6 @@ pub use component::{
 };
 pub use kv_store::{KeyValueStore, ParseKeyValueStoreError};
 pub use package::{
-    BorrowedPackage, Package, PackageAddress, PackageFunction, ParsePackageAddressError,
+    BorrowedPackage, Package, PackageAddress, PackagePublishInput, ParsePackageAddressError,
 };
 pub use system::{component_system, init_component_system, ComponentSystem};

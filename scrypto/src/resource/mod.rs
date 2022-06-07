@@ -32,10 +32,7 @@ pub use proof_rule::{
 pub use resource_builder::{ResourceBuilder, DIVISIBILITY_MAXIMUM, DIVISIBILITY_NONE};
 pub use resource_manager::Mutability::*;
 pub use resource_manager::ResourceMethodAuthKey::*;
-pub use resource_manager::{
-    Mutability, ParseResourceAddressError, ResourceAddress, ResourceManager,
-    ResourceManagerFunction, ResourceManagerMethod, ResourceMethodAuthKey,
-};
+pub use resource_manager::*;
 pub use resource_type::ResourceType;
 pub use schema_path::SchemaPath;
 pub use system::{init_resource_system, resource_system, ResourceSystem};

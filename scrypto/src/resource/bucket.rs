@@ -12,7 +12,7 @@ use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
-use crate::sfunctions2;
+use crate::sfunctions;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct ConsumingBucketBurnInput {}
@@ -51,15 +51,16 @@ pub struct Bucket(pub BucketId);
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeSNode(
+        let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::ResourceRef(resource_address),
-            scrypto_encode(&ResourceManagerMethod::CreateBucket()),
+            "create_bucket".to_string(),
+            scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
         let output: Vec<u8> = call_engine(input);
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::Bucket(self.0) => {
            pub fn burn(self) -> () {
                 ConsumingBucketBurnInput {}
@@ -77,7 +78,7 @@ impl Bucket {
         scrypto_decode(&output).unwrap()
     }
 
-    sfunctions2! {
+    sfunctions! {
         SNodeRef::BucketRef(self.0) => {
             pub fn take_non_fungibles(&mut self, non_fungible_ids: &BTreeSet<NonFungibleId>) -> Self {
                 BucketTakeNonFungiblesInput {
