@@ -1,8 +1,6 @@
 use clap::Parser;
-use radix_engine::engine::TransactionExecutor;
-use radix_engine::wasm::*;
 use scrypto::engine::types::*;
-use transaction::builder::TransactionBuilder;
+use transaction::builder::ManifestBuilder;
 
 use crate::resim::*;
 
@@ -36,32 +34,28 @@ pub struct CallFunction {
 
 impl CallFunction {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        let mut wasm_engine = default_wasm_engine();
-        let mut executor =
-            TransactionExecutor::new(&mut substate_store, &mut wasm_engine, self.trace);
         let default_account = get_default_account()?;
 
-        let transaction = TransactionBuilder::new()
+        let manifest = ManifestBuilder::new()
             .call_function_with_abi(
                 self.package_address,
                 &self.blueprint_name,
                 &self.function_name,
                 self.arguments.clone(),
                 Some(default_account),
-                &executor
-                    .export_abi(self.package_address, &self.blueprint_name)
-                    .map_err(Error::AbiExportError)?,
+                &export_abi(self.package_address, &self.blueprint_name)?,
             )
             .map_err(Error::TransactionConstructionError)?
             .call_method_with_all_resources(default_account, "deposit_batch")
-            .build_with_no_nonce();
-        process_transaction(
-            &mut executor,
-            transaction,
+            .build();
+        handle_manifest(
+            manifest,
             &self.signing_keys,
             &self.manifest,
+            self.trace,
+            true,
             out,
         )
+        .map(|_| ())
     }
 }
