@@ -5,7 +5,6 @@ pub use crate::component::ComponentAddress;
 pub use crate::component::PackageAddress;
 pub use crate::core::Level;
 pub use crate::core::ScryptoActorInfo;
-pub use crate::crypto::EcdsaPrivateKey;
 pub use crate::crypto::EcdsaPublicKey;
 pub use crate::crypto::EcdsaSignature;
 pub use crate::crypto::Hash;

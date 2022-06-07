@@ -1,24 +1,22 @@
+#[rustfmt::skip]
+pub mod test_runner;
+
+use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use radix_engine::engine::TransactionExecutor;
-use radix_engine::ledger::*;
-use radix_engine::model::{extract_package, ResourceManagerError};
-use radix_engine::wasm::default_wasm_engine;
+use radix_engine::model::ResourceManagerError;
 use scrypto::call_data;
 use scrypto::prelude::*;
-use transaction::builder::TransactionBuilder;
+use transaction::builder::ManifestBuilder;
 
 #[test]
 fn test_resource_manager() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let (pk, sk, account) = executor.new_account();
-    let package = extract_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_account();
+    let package_address = test_runner.publish_package("resource");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "ResourceTest",
@@ -32,9 +30,8 @@ fn test_resource_manager() {
             call_data!(update_resource_metadata()),
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(executor.get_nonce([pk]))
-        .sign([&sk]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     println!("{:?}", receipt);
@@ -44,24 +41,20 @@ fn test_resource_manager() {
 #[test]
 fn mint_with_bad_granularity_should_fail() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let (pk, sk, account) = executor.new_account();
-    let package = extract_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_account();
+    let package_address = test_runner.publish_package("resource");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "ResourceTest",
             call_data![create_fungible_and_mint(0u8, dec!("0.1"))],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(executor.get_nonce([pk]))
-        .sign([&sk]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -77,24 +70,20 @@ fn mint_with_bad_granularity_should_fail() {
 #[test]
 fn mint_too_much_should_fail() {
     // Arrange
-    let mut substate_store = InMemorySubstateStore::with_bootstrap();
-    let mut wasm_engine = default_wasm_engine();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
-    let (pk, sk, account) = executor.new_account();
-    let package = extract_package(compile_package!(format!("./tests/{}", "resource"))).unwrap();
-    let package_address = executor.publish_package(package).unwrap();
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_account();
+    let package_address = test_runner.publish_package("resource");
 
     // Act
-    let transaction = TransactionBuilder::new()
+    let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
             "ResourceTest",
             call_data![create_fungible_and_mint(0u8, dec!(100_000_000_001i128))],
         )
         .call_method_with_all_resources(account, "deposit_batch")
-        .build(executor.get_nonce([pk]))
-        .sign([&sk]);
-    let receipt = executor.validate_and_execute(&transaction).unwrap();
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");

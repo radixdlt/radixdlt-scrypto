@@ -26,7 +26,7 @@ use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum TransactionProcessorFunction {
-    Run(ValidatedTransaction),
+    Run(Vec<ExecutableInstruction>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -64,17 +64,17 @@ impl TransactionProcessor {
             .map_err(|e| TransactionProcessorError::InvalidRequestData(e))?;
 
         match function {
-            TransactionProcessorFunction::Run(transaction) => {
+            TransactionProcessorFunction::Run(instructions) => {
                 let mut proof_id_mapping = HashMap::new();
                 let mut bucket_id_mapping = HashMap::new();
                 let mut outputs = Vec::new();
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
 
-                for inst in &transaction.instructions.clone() {
+                for inst in &instructions {
                     let result = match inst {
-                        ValidatedInstruction::TakeFromWorktop { resource_address } => id_allocator
+                        ExecutableInstruction::TakeFromWorktop { resource_address } => id_allocator
                             .new_bucket_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode2(
@@ -90,12 +90,12 @@ impl TransactionProcessor {
                                         ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
                                     })
                             }),
-                        ValidatedInstruction::TakeFromWorktopByAmount {
+                        ExecutableInstruction::TakeFromWorktopByAmount {
                             amount,
                             resource_address,
                         } => id_allocator
                             .new_bucket_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode2(
@@ -112,12 +112,12 @@ impl TransactionProcessor {
                                         ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
                                     })
                             }),
-                        ValidatedInstruction::TakeFromWorktopByIds {
+                        ExecutableInstruction::TakeFromWorktopByIds {
                             ids,
                             resource_address,
                         } => id_allocator
                             .new_bucket_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode2(
@@ -134,7 +134,7 @@ impl TransactionProcessor {
                                         ScryptoValue::from_value(&scrypto::resource::Bucket(new_id))
                                     })
                             }),
-                        ValidatedInstruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
+                        ExecutableInstruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
                             .remove(bucket_id)
                             .map(|real_id| {
                                 system_api.invoke_snode2(
@@ -146,7 +146,7 @@ impl TransactionProcessor {
                                 )
                             })
                             .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id))),
-                        ValidatedInstruction::AssertWorktopContains { resource_address } => {
+                        ExecutableInstruction::AssertWorktopContains { resource_address } => {
                             system_api.invoke_snode2(
                                 SNodeRef::WorktopRef,
                                 "assert_contains".to_string(),
@@ -155,7 +155,7 @@ impl TransactionProcessor {
                                 }),
                             )
                         }
-                        ValidatedInstruction::AssertWorktopContainsByAmount {
+                        ExecutableInstruction::AssertWorktopContainsByAmount {
                             amount,
                             resource_address,
                         } => system_api.invoke_snode2(
@@ -166,7 +166,7 @@ impl TransactionProcessor {
                                 resource_address: *resource_address,
                             }),
                         ),
-                        ValidatedInstruction::AssertWorktopContainsByIds {
+                        ExecutableInstruction::AssertWorktopContainsByIds {
                             ids,
                             resource_address,
                         } => system_api.invoke_snode2(
@@ -177,9 +177,9 @@ impl TransactionProcessor {
                                 resource_address: *resource_address,
                             }),
                         ),
-                        ValidatedInstruction::PopFromAuthZone {} => id_allocator
+                        ExecutableInstruction::PopFromAuthZone {} => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode2(
@@ -193,7 +193,7 @@ impl TransactionProcessor {
                                         ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        ValidatedInstruction::ClearAuthZone => {
+                        ExecutableInstruction::ClearAuthZone => {
                             proof_id_mapping.clear();
                             system_api.invoke_snode2(
                                 SNodeRef::AuthZoneRef,
@@ -201,7 +201,7 @@ impl TransactionProcessor {
                                 ScryptoValue::from_value(&AuthZoneClearInput {}),
                             )
                         }
-                        ValidatedInstruction::PushToAuthZone { proof_id } => proof_id_mapping
+                        ExecutableInstruction::PushToAuthZone { proof_id } => proof_id_mapping
                             .remove(proof_id)
                             .ok_or(RuntimeError::ProofNotFound(*proof_id))
                             .and_then(|real_id| {
@@ -213,10 +213,10 @@ impl TransactionProcessor {
                                     }),
                                 )
                             }),
-                        ValidatedInstruction::CreateProofFromAuthZone { resource_address } => {
+                        ExecutableInstruction::CreateProofFromAuthZone { resource_address } => {
                             id_allocator
                                 .new_proof_id()
-                                .map_err(RuntimeError::IdAllocatorError)
+                                .map_err(RuntimeError::IdAllocationError)
                                 .and_then(|new_id| {
                                     system_api
                                         .invoke_snode2(
@@ -235,12 +235,12 @@ impl TransactionProcessor {
                                         })
                                 })
                         }
-                        ValidatedInstruction::CreateProofFromAuthZoneByAmount {
+                        ExecutableInstruction::CreateProofFromAuthZoneByAmount {
                             amount,
                             resource_address,
                         } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode2(
@@ -259,12 +259,12 @@ impl TransactionProcessor {
                                         ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        ValidatedInstruction::CreateProofFromAuthZoneByIds {
+                        ExecutableInstruction::CreateProofFromAuthZoneByIds {
                             ids,
                             resource_address,
                         } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 system_api
                                     .invoke_snode2(
@@ -281,9 +281,9 @@ impl TransactionProcessor {
                                         ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        ValidatedInstruction::CreateProofFromBucket { bucket_id } => id_allocator
+                        ExecutableInstruction::CreateProofFromBucket { bucket_id } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 bucket_id_mapping
                                     .get(bucket_id)
@@ -304,9 +304,9 @@ impl TransactionProcessor {
                                         ScryptoValue::from_value(&scrypto::resource::Proof(new_id))
                                     })
                             }),
-                        ValidatedInstruction::CloneProof { proof_id } => id_allocator
+                        ExecutableInstruction::CloneProof { proof_id } => id_allocator
                             .new_proof_id()
-                            .map_err(RuntimeError::IdAllocatorError)
+                            .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
                                 proof_id_mapping
                                     .get(proof_id)
@@ -329,7 +329,7 @@ impl TransactionProcessor {
                                     })
                                     .unwrap_or(Err(RuntimeError::ProofNotFound(*proof_id)))
                             }),
-                        ValidatedInstruction::DropProof { proof_id } => proof_id_mapping
+                        ExecutableInstruction::DropProof { proof_id } => proof_id_mapping
                             .remove(proof_id)
                             .map(|real_id| {
                                 system_api.invoke_snode2(
@@ -339,7 +339,7 @@ impl TransactionProcessor {
                                 )
                             })
                             .unwrap_or(Err(ProofNotFound(*proof_id))),
-                        ValidatedInstruction::CallFunction {
+                        ExecutableInstruction::CallFunction {
                             package_address,
                             blueprint_name,
                             call_data,
@@ -386,7 +386,7 @@ impl TransactionProcessor {
                                 Ok(result)
                             })
                         }
-                        ValidatedInstruction::CallMethod {
+                        ExecutableInstruction::CallMethod {
                             component_address,
                             call_data,
                         } => {
@@ -429,7 +429,7 @@ impl TransactionProcessor {
                                 Ok(result)
                             })
                         }
-                        ValidatedInstruction::CallMethodWithAllResources {
+                        ExecutableInstruction::CallMethodWithAllResources {
                             component_address,
                             method,
                         } => system_api
@@ -468,7 +468,7 @@ impl TransactionProcessor {
                                     ScryptoValue::from_slice(&encoded).unwrap(),
                                 )
                             }),
-                        ValidatedInstruction::PublishPackage { package } => {
+                        ExecutableInstruction::PublishPackage { package } => {
                             scrypto_decode::<Package>(package)
                                 .map_err(|e| RuntimeError::InvalidPackage(e))
                                 .and_then(|package| {
