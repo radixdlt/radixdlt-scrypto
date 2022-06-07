@@ -10,7 +10,9 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
-use crate::engine::{FloatingKeyValueStore, StoredValue, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::{
+    FloatingKeyValueStore, StoredValue, SubstateOperation, SubstateOperationsReceipt,
+};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -588,13 +590,16 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
 
         for (child_kv_store_id, child_kv_store) in kv_store.child_kv_stores {
-            self.insert_kv_store_into_component(child_kv_store_id, child_kv_store, component_address.clone());
+            self.insert_kv_store_into_component(
+                child_kv_store_id,
+                child_kv_store,
+                component_address.clone(),
+            );
         }
         for (vault_id, vault) in kv_store.child_vaults {
             self.create_uuid_value_2((component_address, vault_id), vault);
         }
     }
-
 
     pub fn insert_objects_into_component(
         &mut self,
@@ -607,7 +612,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     self.create_uuid_value_2((component_address, vault_id), vault);
                 }
                 StoredValue::UnclaimedKeyValueStore(kv_store_id, kv_store) => {
-                    self.insert_kv_store_into_component(kv_store_id, kv_store, component_address.clone());
+                    self.insert_kv_store_into_component(
+                        kv_store_id,
+                        kv_store,
+                        component_address.clone(),
+                    );
                 }
             }
         }

@@ -176,7 +176,6 @@ pub struct ComponentState {
     pub initial_value: ScryptoValue,
 }
 
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveMethod {
     AsReturn,
@@ -355,10 +354,7 @@ where
             success = false;
         }
         for (_, value) in self.owned_values.take_all() {
-            self.sys_log(
-                Level::Warn,
-                format!("Dangling value: {:?}", value),
-            );
+            self.sys_log(Level::Warn, format!("Dangling value: {:?}", value));
             resource = match value {
                 StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
                 StoredValue::UnclaimedKeyValueStore(..) => ResourceFailure::UnclaimedKeyValueStore,
@@ -449,7 +445,7 @@ where
                 StoredValue::Vault(vault_id, vault) => {
                     vaults.insert(vault_id, vault);
                 }
-                _ => panic!("Expected vault but was {:?}", vault_to_take)
+                _ => panic!("Expected vault but was {:?}", vault_to_take),
             }
         }
 
@@ -912,8 +908,10 @@ where
         self.buckets.extend(received_buckets);
         self.proofs.extend(received_proofs);
         for (vault_id, vault) in received_vaults.drain() {
-            self.owned_values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, vault));
-
+            self.owned_values.insert(
+                StoredValueId::VaultId(vault_id.clone()),
+                StoredValue::Vault(vault_id, vault),
+            );
         }
 
         // Return borrowed snodes
@@ -996,8 +994,10 @@ where
 
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
         let vault_id = self.track.new_vault_id();
-        self.owned_values
-            .insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, Vault::new(container)));
+        self.owned_values.insert(
+            StoredValueId::VaultId(vault_id.clone()),
+            StoredValue::Vault(vault_id, Vault::new(container)),
+        );
         Ok(vault_id)
     }
 
@@ -1197,7 +1197,9 @@ where
         match kv_store_state {
             KeyValueStoreState::Uncommitted => {
                 // Check for cycles
-                let kv_store = self.owned_values.get_kv_store_mut(&kv_store_id)
+                let kv_store = self
+                    .owned_values
+                    .get_kv_store_mut(&kv_store_id)
                     .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values);
@@ -1237,11 +1239,10 @@ where
 
     fn create_kv_store(&mut self) -> KeyValueStoreId {
         let kv_store_id = self.track.new_kv_store_id();
-        self.owned_values
-            .insert(
-                StoredValueId::KeyValueStoreId(kv_store_id.clone()),
-                StoredValue::UnclaimedKeyValueStore(kv_store_id, FloatingKeyValueStore::new())
-            );
+        self.owned_values.insert(
+            StoredValueId::KeyValueStoreId(kv_store_id.clone()),
+            StoredValue::UnclaimedKeyValueStore(kv_store_id, FloatingKeyValueStore::new()),
+        );
         kv_store_id
     }
 

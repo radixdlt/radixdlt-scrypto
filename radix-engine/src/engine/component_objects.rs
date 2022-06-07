@@ -22,7 +22,10 @@ impl FloatingKeyValueStore {
         }
     }
 
-    fn find_child_kv_store(&mut self, kv_store_id: &KeyValueStoreId) -> Option<&mut FloatingKeyValueStore> {
+    fn find_child_kv_store(
+        &mut self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> Option<&mut FloatingKeyValueStore> {
         for (id, child_kv_store) in self.child_kv_stores.iter_mut() {
             if id.eq(kv_store_id) {
                 return Some(child_kv_store);
@@ -45,11 +48,7 @@ impl FloatingKeyValueStore {
         self.child_vaults.insert(vault_id, vault);
     }
 
-    fn insert_kv_store(
-        &mut self,
-        kv_store_id: KeyValueStoreId,
-        kv_store: FloatingKeyValueStore,
-    ) {
+    fn insert_kv_store(&mut self, kv_store_id: KeyValueStoreId, kv_store: FloatingKeyValueStore) {
         if self.child_kv_stores.contains_key(&kv_store_id) {
             panic!("duplicate store insertion: {:?}", kv_store_id);
         }
@@ -74,7 +73,7 @@ impl FloatingKeyValueStore {
 #[derive(Debug)]
 pub enum StoredValue {
     UnclaimedKeyValueStore(KeyValueStoreId, FloatingKeyValueStore),
-    Vault(VaultId, Vault)
+    Vault(VaultId, Vault),
 }
 
 /// Component type objects which will eventually move into a component
@@ -96,7 +95,7 @@ impl ComponentObjects {
         self.values.drain().collect()
     }
 
-    pub fn insert(&mut self, id : StoredValueId, value: StoredValue) {
+    pub fn insert(&mut self, id: StoredValueId, value: StoredValue) {
         self.values.insert(id, value);
     }
 
@@ -111,7 +110,9 @@ impl ComponentObjects {
         let mut taken_values = Vec::new();
 
         for id in other {
-            let value = self.values.remove(id)
+            let value = self
+                .values
+                .remove(id)
                 .ok_or(RuntimeError::ValueNotFound(*id))?;
             taken_values.push(value);
         }
@@ -166,7 +167,7 @@ impl ComponentObjects {
             self.borrowed_vault = Some((*vault_id, None));
             match vault {
                 StoredValue::Vault(_, vault) => return Some(vault),
-                _ => panic!("Expected vault but was {:?}", vault)
+                _ => panic!("Expected vault but was {:?}", vault),
             }
         }
 
@@ -185,17 +186,21 @@ impl ComponentObjects {
     pub fn return_borrowed_vault_mut(&mut self, vault: Vault) {
         if let Some((vault_id, maybe_ancestor)) = self.borrowed_vault.take() {
             if let Some(ancestor_id) = maybe_ancestor {
-                let value = self.values
+                let value = self
+                    .values
                     .get_mut(&StoredValueId::KeyValueStoreId(ancestor_id))
                     .unwrap();
                 match value {
                     StoredValue::UnclaimedKeyValueStore(_, unclaimed) => {
                         unclaimed.child_vaults.insert(vault_id, vault);
                     }
-                    _ => panic!("Expected kv store but was {:?}", value)
+                    _ => panic!("Expected kv store but was {:?}", value),
                 };
             } else {
-                self.values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id.clone(), vault));
+                self.values.insert(
+                    StoredValueId::VaultId(vault_id.clone()),
+                    StoredValue::Vault(vault_id.clone(), vault),
+                );
             }
         } else {
             panic!("Should never get here");
