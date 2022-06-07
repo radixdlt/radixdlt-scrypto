@@ -5,22 +5,28 @@ use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::wasm::DefaultWasmEngine;
 use scrypto::prelude::*;
+use test_runner::{TestEpochManager, TestIntentHashManager};
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
 use transaction::model::Network;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
-use transaction::validation::validate_transaction_from_slice;
+use transaction::validation::TransactionValidator;
 
 #[test]
 fn test_normal_transaction_flow() {
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
-    let current_epoch = 0;
+    let epoch_manager = TestEpochManager::new(0);
+    let intent_hash_manager = TestIntentHashManager::new();
 
     let raw_transaction = create_transaction();
-    let validated_transaction = validate_transaction_from_slice(&raw_transaction, current_epoch)
-        .expect("Invalid transaction");
+    let validated_transaction = TransactionValidator::validate_from_slice(
+        &raw_transaction,
+        &intent_hash_manager,
+        &epoch_manager,
+    )
+    .expect("Invalid transaction");
 
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let receipt = executor.execute(&validated_transaction);

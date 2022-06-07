@@ -4,7 +4,12 @@ use sbor::DecodeError;
 use scrypto::engine::types::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum HeaderValidationError {}
+pub enum HeaderValidationError {
+    UnknownVersion(u8),
+    InvalidEpochRange,
+    EpochRangeTooLarge,
+    OutOfEpochRange,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {
@@ -36,6 +41,7 @@ pub enum CallDataValidationError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionValidationError {
     DeserializationError(DecodeError),
+    IntentHashRejected,
     HeaderValidationError(HeaderValidationError),
     SignatureValidationError(SignatureValidationError),
     IdValidationError(IdValidationError),
