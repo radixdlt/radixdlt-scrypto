@@ -59,16 +59,15 @@ impl NewAccount {
             )
             .map_err(Error::IOError)?;
 
-            if get_configs()?.is_none() {
+            let mut configs = get_configs()?;
+            if configs.default_account.is_none() {
                 writeln!(
                     out,
                     "No configuration found on system. will use the above account as default."
                 )
                 .map_err(Error::IOError)?;
-                set_configs(&Configs {
-                    default_account: account,
-                    default_private_key: private_key.to_bytes(),
-                })?;
+                configs.default_account = Some((account, hex::encode(private_key.to_bytes())));
+                set_configs(&configs)?;
             }
         } else {
             writeln!(out, "A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!").map_err(Error::IOError)?;

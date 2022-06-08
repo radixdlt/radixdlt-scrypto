@@ -56,6 +56,10 @@ impl TransactionIntent {
         })
     }
 
+    pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
+        scrypto_decode(slice)
+    }
+
     pub fn hash(&self) -> Hash {
         hash(self.to_bytes())
     }
@@ -66,6 +70,10 @@ impl TransactionIntent {
 }
 
 impl SignedTransactionIntent {
+    pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
+        scrypto_decode(slice)
+    }
+
     pub fn hash(&self) -> Hash {
         hash(self.to_bytes())
     }
@@ -76,7 +84,7 @@ impl SignedTransactionIntent {
 }
 
 impl NotarizedTransaction {
-    pub fn from_slice(slice: &[u8]) -> Result<NotarizedTransaction, DecodeError> {
+    pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
         scrypto_decode(slice)
     }
 

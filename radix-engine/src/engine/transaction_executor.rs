@@ -91,7 +91,6 @@ where
                 panic!("There should be nothing borrowed by end of transaction.");
             }
             let commit_receipt = track_receipt.substates.commit(self.substate_store);
-            self.substate_store.increase_nonce();
             Some(commit_receipt)
         } else {
             None
