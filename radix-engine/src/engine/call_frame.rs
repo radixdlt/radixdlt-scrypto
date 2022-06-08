@@ -67,13 +67,13 @@ pub struct CallFrame<
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum ValueType {
+pub enum ValueType {
     Owned,
     Ref(ValueRefType),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-enum ValueRefType {
+pub enum ValueRefType {
     Uncommitted,
     Committed {
         component_address: ComponentAddress,
@@ -144,7 +144,7 @@ pub enum BorrowedSNodeState {
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, Bucket),
     Proof(ProofId, Proof),
-    Vault(VaultId, Option<ComponentAddress>, Vault),
+    Vault(VaultId, Vault, ValueType),
 }
 
 pub enum StaticSNodeState {
@@ -180,7 +180,7 @@ pub enum SNodeState<'a> {
     Bucket(Bucket),
     ProofRef(ProofId, &'a mut Proof),
     Proof(Proof),
-    VaultRef(VaultId, Option<ComponentAddress>, &'a mut Vault),
+    VaultRef(VaultId, &'a mut Vault),
 }
 
 #[derive(Debug)]
@@ -223,8 +223,8 @@ impl LoadedSNodeState {
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
-                BorrowedSNodeState::Vault(id, addr, s) => {
-                    SNodeState::VaultRef(*id, addr.clone(), s)
+                BorrowedSNodeState::Vault(id, vault, ..) => {
+                    SNodeState::VaultRef(*id, vault)
                 }
             },
         }
@@ -266,13 +266,19 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Proof(proof_id, proof) => {
                 frame.proofs.insert(proof_id, proof);
             }
-            BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
-                if let Some(component_address) = maybe_component_address {
-                    frame
-                        .track
-                        .return_borrowed_global_mut_value((component_address, vault_id), vault);
-                } else {
-                    frame.owned_values.return_borrowed_vault_mut(vault);
+            BorrowedSNodeState::Vault(vault_id, vault, value_type) => {
+                match value_type {
+                    ValueType::Owned => {
+                        frame.owned_values.return_borrowed_vault_mut(vault);
+                    }
+                    ValueType::Ref(ValueRefType::Uncommitted) => {
+                        frame.owned_values.return_borrowed_vault_mut(vault);
+                    }
+                    ValueType::Ref(ValueRefType::Committed { component_address }) => {
+                        frame
+                            .track
+                            .return_borrowed_global_mut_value((component_address, vault_id), vault);
+                    }
                 }
             }
         }
@@ -554,7 +560,7 @@ where
             SNodeState::Proof(proof) => proof
                 .main_consume(method_name, call_data)
                 .map_err(RuntimeError::ProofError),
-            SNodeState::VaultRef(vault_id, _, vault) => vault
+            SNodeState::VaultRef(vault_id, vault) => vault
                 .main(vault_id, method_name, call_data, self)
                 .map_err(RuntimeError::VaultError),
         }?;
@@ -848,19 +854,19 @@ where
                 Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
-                let (component, vault) = {
+                let (value_type, vault) = {
                     if let Some(vault) = self.owned_values.borrow_owned_vault_mut(vault_id) {
-                        (None, vault)
+                        (ValueType::Owned, vault)
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
-                        let value_ref = self.value_refs.get(&value_id);
-                        match value_ref {
+                        let maybe_value_ref = self.value_refs.get(&value_id);
+                        let (value_ref, vault) = match maybe_value_ref {
                             Option::None => {
                                 return Err(RuntimeError::ValueNotFound(value_id));
                             }
                             Option::Some(ValueRefType::Uncommitted) => {
                                 let vault = self.owned_values.borrow_ref_vault_mut(vault_id).expect("Expected to find vault");
-                                (None, vault)
+                                (ValueRefType::Uncommitted, vault)
                             }
                             Option::Some(ValueRefType::Committed { component_address }) => {
                                 let vault: Vault = self
@@ -871,9 +877,10 @@ where
                                         TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
                                     })?
                                     .into();
-                                (Some(*component_address), vault)
+                                (ValueRefType::Committed { component_address: *component_address }, vault)
                             }
-                        }
+                        };
+                        (ValueType::Ref(value_ref), vault)
                     }
                 };
 
@@ -888,8 +895,8 @@ where
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(
                         vault_id.clone(),
-                        component,
                         vault,
+                        value_type,
                     )),
                     vec![method_auth.clone()],
                 ))
