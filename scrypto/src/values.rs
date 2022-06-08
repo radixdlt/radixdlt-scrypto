@@ -72,6 +72,17 @@ impl ScryptoValue {
         })
     }
 
+    pub fn stored_value_ids(&self) -> HashSet<StoredValueId> {
+        let mut value_ids = HashSet::new();
+        for vault_id in &self.vault_ids {
+            value_ids.insert(StoredValueId::VaultId(vault_id.clone()));
+        }
+        for kv_store_id in &self.kv_store_ids {
+            value_ids.insert(StoredValueId::KeyValueStoreId(kv_store_id.clone()));
+        }
+        value_ids
+    }
+
     pub fn replace_ids(
         &mut self,
         proof_replacements: &mut HashMap<ProofId, ProofId>,

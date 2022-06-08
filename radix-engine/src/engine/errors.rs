@@ -50,17 +50,13 @@ pub enum RuntimeError {
     /// Key Value Store does not exist.
     KeyValueStoreNotFound(KeyValueStoreId),
 
-    /// Key Value Store removed.
-    KeyValueStoreRemoved(KeyValueStoreId),
-
     /// Cyclic Key Value Store added
     CyclicKeyValueStore(KeyValueStoreId),
 
     /// Vault does not exist.
     VaultNotFound(VaultId),
 
-    /// Vault removed.
-    VaultRemoved(VaultId),
+    StoredValueRemoved(StoredValueId),
 
     /// Bucket does not exist.
     BucketNotFound(BucketId),
