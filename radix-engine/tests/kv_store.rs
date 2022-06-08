@@ -304,7 +304,8 @@ fn cannot_directly_reference_inserted_vault() {
         .call_function(
             package_address,
             "RefCheck",
-            call_data!(cannot_directly_reference_inserted_vault()),
+            "cannot_directly_reference_inserted_vault",
+            to_struct!()
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -324,7 +325,8 @@ fn cannot_directly_reference_vault_after_container_moved() {
         .call_function(
             package_address,
             "RefCheck",
-            call_data!(cannot_directly_reference_vault_after_container_moved()),
+            "cannot_directly_reference_vault_after_container_moved",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -344,7 +346,8 @@ fn cannot_directly_reference_vault_after_container_stored() {
         .call_function(
             package_address,
             "RefCheck",
-            call_data!(cannot_directly_reference_vault_after_container_stored()),
+            "cannot_directly_reference_vault_after_container_stored",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
