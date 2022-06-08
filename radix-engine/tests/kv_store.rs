@@ -47,7 +47,7 @@ fn can_insert_in_child_nodes() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -206,7 +206,7 @@ fn create_key_value_store_and_get() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -227,5 +227,68 @@ fn create_key_value_store_and_put() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
+}
+
+#[test]
+fn can_reference_in_memory_vault() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "Precommitted",
+            "can_reference_precommitted_vault",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_success();
+}
+
+#[test]
+fn can_reference_deep_in_memory_value() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "Precommitted",
+            "can_reference_deep_precommitted_value",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_success();
+}
+
+#[test]
+fn can_reference_deep_in_memory_vault() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "Precommitted",
+            "can_reference_deep_precommitted_vault",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_success();
 }

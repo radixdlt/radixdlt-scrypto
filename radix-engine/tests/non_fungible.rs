@@ -26,7 +26,7 @@ fn create_non_fungible_mutable() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -45,7 +45,7 @@ fn can_burn_non_fungible() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
     let resource_address = receipt.new_resource_addresses[0];
     let non_fungible_address =
         NonFungibleAddress::new(resource_address, NonFungibleId::from_u32(0));
@@ -67,7 +67,7 @@ fn can_burn_non_fungible() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -122,8 +122,7 @@ fn test_non_fungible() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -142,6 +141,5 @@ fn test_singleton_non_fungible() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }

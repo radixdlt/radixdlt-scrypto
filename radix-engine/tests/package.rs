@@ -113,5 +113,5 @@ fn test_basic_package() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }

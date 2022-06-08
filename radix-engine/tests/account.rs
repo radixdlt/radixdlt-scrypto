@@ -24,7 +24,7 @@ fn can_withdraw_from_my_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -43,7 +43,7 @@ fn can_withdraw_non_fungible_from_my_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -87,7 +87,7 @@ fn account_to_bucket_to_account() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]

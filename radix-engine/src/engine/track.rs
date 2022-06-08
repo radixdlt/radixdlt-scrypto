@@ -10,9 +10,7 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
-use crate::engine::{
-    PreCommittedKeyValueStore, StoredValue, SubstateOperation, SubstateOperationsReceipt,
-};
+use crate::engine::{StoredValue, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -576,31 +574,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    fn insert_kv_store_into_component(
-        &mut self,
-        kv_store_id: KeyValueStoreId,
-        kv_store: PreCommittedKeyValueStore,
-        component_address: ComponentAddress,
-    ) {
-        self.create_key_space(component_address, kv_store_id);
-
-        for (k, v) in kv_store.store {
-            let parent_address = Address::KeyValueStore(component_address, kv_store_id);
-            self.set_key_value(parent_address, k, Some(v));
-        }
-
-        for (child_kv_store_id, child_kv_store) in kv_store.child_kv_stores {
-            self.insert_kv_store_into_component(
-                child_kv_store_id,
-                child_kv_store,
-                component_address.clone(),
-            );
-        }
-        for (vault_id, vault) in kv_store.child_vaults {
-            self.create_uuid_value_2((component_address, vault_id), vault);
-        }
-    }
-
     pub fn insert_objects_into_component(
         &mut self,
         values: Vec<StoredValue>,
@@ -612,11 +585,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     self.create_uuid_value_2((component_address, vault_id), vault);
                 }
                 StoredValue::KeyValueStore(kv_store_id, kv_store) => {
-                    self.insert_kv_store_into_component(
-                        kv_store_id,
-                        kv_store,
-                        component_address.clone(),
-                    );
+                    self.create_key_space(component_address, kv_store_id);
+                    let parent_address = Address::KeyValueStore(component_address, kv_store_id);
+                    for (k, v) in kv_store.store {
+                        self.set_key_value(parent_address.clone(), k, Some(v));
+                    }
+                    let child_values = kv_store.child_values.into_values().collect();
+                    self.insert_objects_into_component(child_values, component_address);
                 }
             }
         }

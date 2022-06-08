@@ -25,6 +25,14 @@ pub struct Receipt {
     pub execution_time: Option<u128>,
 }
 
+impl Receipt {
+    pub fn expect_success(&self) {
+        if self.result.is_err() {
+            panic!("Expected success but was:\n{:?}", self);
+        }
+    }
+}
+
 macro_rules! prefix {
     ($i:expr, $list:expr) => {
         if $i == $list.len() - 1 {

@@ -27,7 +27,7 @@ fn test_normal_transaction_flow() {
     let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, true);
     let receipt = executor.execute(&validated_transaction);
 
-    receipt.result.expect("Transaction failed");
+    receipt.expect_success();
 }
 
 fn create_transaction() -> Vec<u8> {
