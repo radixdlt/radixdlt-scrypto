@@ -112,17 +112,3 @@ impl PreCommittedKeyValueStore {
         }
     }
 }
-
-/// Component type objects which will eventually move into a component
-#[derive(Debug)]
-pub struct ComponentObjects {
-    pub values: HashMap<StoredValueId, StoredValue>,
-}
-
-impl ComponentObjects {
-    pub fn new() -> Self {
-        ComponentObjects {
-            values: HashMap::new(),
-        }
-    }
-}

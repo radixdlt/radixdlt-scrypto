@@ -52,13 +52,13 @@ pub struct CallFrame<
     /// Owned Values
     buckets: HashMap<BucketId, Bucket>,
     proofs: HashMap<ProofId, Proof>,
-    owned_values: ComponentObjects,
+    owned_values: HashMap<StoredValueId, StoredValue>,
 
     /// Referenced values
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
     component_state: Option<&'p mut ComponentState>,
-    value_refs: HashMap<StoredValueId, ValueRefType>,
+    refed_values: HashMap<StoredValueId, ValueRefType>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p AuthZone>,
@@ -272,7 +272,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Vault(vault_id, vault, value_type) => {
                 match value_type {
                     ValueType::Owned => {
-                        frame.owned_values.values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, vault));
+                        frame.owned_values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, vault));
                     }
                     ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
                         let store = frame.get_owned_kv_store_mut(&root).unwrap();
@@ -353,8 +353,8 @@ where
             wasm_engine,
             buckets,
             proofs,
-            owned_values: ComponentObjects::new(),
-            value_refs: HashMap::new(),
+            owned_values: HashMap::new(),
+            refed_values: HashMap::new(),
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -378,7 +378,7 @@ where
             success = false;
         }
 
-        let values: HashMap<StoredValueId, StoredValue> = self.owned_values.values.drain().collect();
+        let values: HashMap<StoredValueId, StoredValue> = self.owned_values.drain().collect();
         for (_, value) in values {
             self.sys_log(Level::Warn, format!("Dangling value: {:?}", value));
             resource = match value {
@@ -599,7 +599,7 @@ where
         for value in &values {
             if let StoredValue::KeyValueStore(_, store) = value {
                 for id in store.all_descendants() {
-                    self.value_refs.remove(&id);
+                    self.refed_values.remove(&id);
                 }
             }
         }
@@ -613,12 +613,12 @@ where
     ) -> Result<(Option<ScryptoValue>, ValueType), RuntimeError> {
         verify_stored_key(key)?;
 
-        let (maybe_value, value_type) = if self.owned_values.values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
+        let (maybe_value, value_type) = if self.owned_values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
             let store = self.get_owned_kv_store_mut(&kv_store_id).unwrap();
             let value = store.store.get(&key.raw).cloned();
             (value, ValueType::Owned)
         } else {
-            let maybe_value_ref = self.value_refs.get(&StoredValueId::KeyValueStoreId(kv_store_id.clone())).cloned();
+            let maybe_value_ref = self.refed_values.get(&StoredValueId::KeyValueStoreId(kv_store_id.clone())).cloned();
             let value_ref = maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
             let value = match &value_ref {
                 ValueRefType::Uncommitted { root, ancestors } => {
@@ -652,7 +652,6 @@ where
         for id in other {
             let value = self
                 .owned_values
-                .values
                 .remove(id)
                 .ok_or(RuntimeError::ValueNotFound(*id))?;
             taken_values.push(value);
@@ -665,7 +664,7 @@ where
         &mut self,
         kv_store_id: &KeyValueStoreId,
     ) -> Option<&mut PreCommittedKeyValueStore> {
-        self.owned_values.values.get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
+        self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
             .map(|v| {
                 match v {
                     StoredValue::KeyValueStore(_, store) => store,
@@ -887,14 +886,14 @@ where
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (value_type, vault) = {
-                    if let Some(value) = self.owned_values.values.remove(&StoredValueId::VaultId(*vault_id)) {
+                    if let Some(value) = self.owned_values.remove(&StoredValueId::VaultId(*vault_id)) {
                         match value {
                             StoredValue::Vault(_, vault) => (ValueType::Owned, vault),
                             _ => panic!("Expected vault"),
                         }
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
-                        let maybe_value_ref = self.value_refs.get(&value_id).cloned();
+                        let maybe_value_ref = self.refed_values.get(&value_id).cloned();
                         let value_ref = maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
                         let vault = match &value_ref {
                             ValueRefType::Uncommitted { root, ancestors } => {
@@ -1018,7 +1017,7 @@ where
         self.buckets.extend(received_buckets);
         self.proofs.extend(received_proofs);
         for (vault_id, vault) in received_vaults.drain() {
-            self.owned_values.values.insert(
+            self.owned_values.insert(
                 StoredValueId::VaultId(vault_id.clone()),
                 StoredValue::Vault(vault_id, vault),
             );
@@ -1104,7 +1103,7 @@ where
 
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
         let vault_id = self.track.new_vault_id();
-        self.owned_values.values.insert(
+        self.owned_values.insert(
             StoredValueId::VaultId(vault_id.clone()),
             StoredValue::Vault(vault_id, Vault::new(container)),
         );
@@ -1146,7 +1145,7 @@ where
         {
             if addr.eq(component_address) {
                 for value_id in initial_value.stored_value_ids() {
-                    self.value_refs.insert(value_id, ValueRefType::Committed { component_address: *component_address });
+                    self.refed_values.insert(value_id, ValueRefType::Committed { component_address: *component_address });
                 }
                 let state = component.state().to_vec();
                 return Ok(state);
@@ -1212,7 +1211,7 @@ where
         match maybe_value {
             Some(v) => {
                 for value_id in v.stored_value_ids() {
-                    self.value_refs.insert(value_id, ref_type.clone());
+                    self.refed_values.insert(value_id, ref_type.clone());
                 }
 
                 let value = Value::Option {
@@ -1296,7 +1295,7 @@ where
 
     fn create_kv_store(&mut self) -> KeyValueStoreId {
         let kv_store_id = self.track.new_kv_store_id();
-        self.owned_values.values.insert(
+        self.owned_values.insert(
             StoredValueId::KeyValueStoreId(kv_store_id.clone()),
             StoredValue::KeyValueStore(kv_store_id, PreCommittedKeyValueStore::new()),
         );
