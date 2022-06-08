@@ -145,6 +145,7 @@ jobs:
         toolchain: stable
     - uses: bmwill/rust-cache@v1
       with:
+        path: tests/**/target
         working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
@@ -167,6 +168,7 @@ jobs:
         toolchain: stable
     - uses: bmwill/rust-cache@v1
       with:
+        path: tests/**/target
         working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
