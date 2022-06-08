@@ -3,7 +3,6 @@ use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::*;
 use crate::model::*;
 
 #[derive(Debug)]
@@ -125,47 +124,5 @@ impl ComponentObjects {
         ComponentObjects {
             values: HashMap::new(),
         }
-    }
-
-    pub fn take_all(&mut self) -> HashMap<StoredValueId, StoredValue> {
-        self.values.drain().collect()
-    }
-
-    pub fn insert(&mut self, id: StoredValueId, value: StoredValue) {
-        self.values.insert(id, value);
-    }
-
-    pub fn take(&mut self, id: &StoredValueId) -> Option<StoredValue> {
-        self.values.remove(id)
-    }
-
-    pub fn take_set(
-        &mut self,
-        other: &HashSet<StoredValueId>,
-    ) -> Result<Vec<StoredValue>, RuntimeError> {
-        let mut taken_values = Vec::new();
-
-        for id in other {
-            let value = self
-                .values
-                .remove(id)
-                .ok_or(RuntimeError::ValueNotFound(*id))?;
-            taken_values.push(value);
-        }
-
-        Ok(taken_values)
-    }
-
-    pub fn get_owned_kv_store_mut(
-        &mut self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> Option<&mut PreCommittedKeyValueStore> {
-        self.values.get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
-            .map(|v| {
-                match v {
-                    StoredValue::KeyValueStore(_, store) => store,
-                    _ => panic!("Expected KV store")
-                }
-            })
     }
 }
