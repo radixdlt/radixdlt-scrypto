@@ -58,12 +58,24 @@ pub struct CallFrame<
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
     component_state: Option<&'p mut ComponentState>,
-    ref_values: HashSet<StoredValueId>,
+    value_refs: HashMap<StoredValueId, ValueRefType>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p AuthZone>,
 
     phantom: PhantomData<I>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum ValueType {
+    Owned,
+    Ref(ValueRefType),
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum ValueRefType {
+    Uncommitted,
+    Committed,
 }
 
 fn stored_value_update(
@@ -330,7 +342,7 @@ where
             buckets,
             proofs,
             owned_values: ComponentObjects::new(),
-            ref_values: HashSet::new(),
+            value_refs: HashMap::new(),
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -574,11 +586,53 @@ where
         for value in &values {
             if let StoredValue::KeyValueStore(_, store) = value {
                 for id in store.all_descendants() {
-                    self.ref_values.remove(&id);
+                    self.value_refs.remove(&id);
                 }
             }
         }
         Ok(values)
+    }
+
+    fn read_kv_store_entry_internal(
+        &mut self,
+        kv_store_id: KeyValueStoreId,
+        key: &ScryptoValue,
+    ) -> Result<(Option<ScryptoValue>, ValueType), RuntimeError> {
+        verify_stored_key(key)?;
+
+        let (maybe_value, value_type) = if self.owned_values.values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
+            let store = self.owned_values.get_owned_kv_store_mut(&kv_store_id).unwrap();
+            let value = store.store.get(&key.raw).cloned();
+            (value, ValueType::Owned)
+        } else {
+            let value_ref = self.value_refs.get(&StoredValueId::KeyValueStoreId(kv_store_id.clone()));
+            match value_ref {
+                Option::None => {
+                    return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
+                }
+                Option::Some(ValueRefType::Uncommitted) => {
+                    let store = self.owned_values
+                        .get_ref_kv_store_mut(&kv_store_id)
+                        .expect("Expected kv store to exist");
+                    let value = store.store.get(&key.raw).cloned();
+                    (value, ValueType::Ref(ValueRefType::Uncommitted))
+                }
+                Option::Some(ValueRefType::Committed) => {
+                    let ComponentState { component_address, .. } = self.component_state.as_ref().expect("Expected component to exist");
+                    let substate_value = self.track.read_key_value(
+                        Address::KeyValueStore(*component_address, kv_store_id),
+                        key.raw.to_vec(),
+                    );
+                    let value = match substate_value {
+                        SubstateValue::KeyValueStoreEntry(v) => v,
+                        _ => panic!("Substate value is not a KeyValueStore entry"),
+                    }.map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."));
+                    (value, ValueType::Ref(ValueRefType::Committed))
+                }
+            }
+        };
+
+        Ok((maybe_value, value_type))
     }
 }
 
@@ -798,25 +852,27 @@ where
                         (None, vault)
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
-                        if !self.ref_values.contains(&value_id) {
-                            return Err(RuntimeError::ValueNotFound(value_id));
-                        }
-
-                        if let Some(vault) = self.owned_values.borrow_ref_vault_mut(vault_id) {
-                            (None, vault)
-                        } else if let Some(ComponentState { component_address, .. }) = &self.component_state
-                        {
-                            let vault: Vault = self
-                                .track
-                                .borrow_global_mut_value((*component_address, *vault_id))
-                                .map_err(|e| match e {
-                                    TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
-                                    TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
-                                })?
-                                .into();
-                            (Some(*component_address), vault)
-                        } else {
-                            panic!("Should never get here");
+                        let value_ref = self.value_refs.get(&value_id);
+                        match value_ref {
+                            Option::None => {
+                                return Err(RuntimeError::ValueNotFound(value_id));
+                            }
+                            Option::Some(ValueRefType::Uncommitted) => {
+                                let vault = self.owned_values.borrow_ref_vault_mut(vault_id).expect("Expected to find vault");
+                                (None, vault)
+                            }
+                            Option::Some(ValueRefType::Committed) => {
+                                let ComponentState { component_address, .. } = self.component_state.as_ref().expect("Expected to find component");
+                                let vault: Vault = self
+                                    .track
+                                    .borrow_global_mut_value((*component_address, *vault_id))
+                                    .map_err(|e| match e {
+                                        TrackError::NotFound => panic!("Expected to find vault"),
+                                        TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
+                                    })?
+                                    .into();
+                                (Some(*component_address), vault)
+                            }
                         }
                     }
                 };
@@ -1051,7 +1107,7 @@ where
         {
             if addr.eq(component_address) {
                 for value_id in initial_value.stored_value_ids() {
-                    self.ref_values.insert(value_id);
+                    self.value_refs.insert(value_id, ValueRefType::Committed);
                 }
                 let state = component.state().to_vec();
                 return Ok(state);
@@ -1095,77 +1151,31 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         verify_stored_key(&key)?;
 
-        let maybe_store = if self.owned_values.values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
-            self.owned_values.get_owned_kv_store_mut(&kv_store_id)
-        } else {
-            self.owned_values.get_ref_kv_store_mut(&kv_store_id)
+        let (maybe_value, value_type) = self.read_kv_store_entry_internal(kv_store_id, &key)?;
+        let ref_type = match value_type {
+            ValueType::Owned => ValueRefType::Uncommitted,
+            ValueType::Ref(ref_type) => ref_type,
         };
-
-        if let Some(kv_store) = maybe_store {
-            let value = kv_store.store.get(&key.raw);
-            match value {
-                Some(v) => {
-                    self.ref_values.extend(v.stored_value_ids());
-
-                    let value = Value::Option {
-                        value: Box::new(Some(v.dom.clone())),
-                    };
-                    let encoded = encode_any(&value);
-                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
+        match maybe_value {
+            Some(v) => {
+                for value_id in v.stored_value_ids() {
+                    self.value_refs.insert(value_id, ref_type);
                 }
-                None => {
-                    let value = Value::Option {
-                        value: Box::new(Option::None),
-                    };
-                    let encoded = encode_any(&value);
-                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
-                }
-            }
-        }
 
-        if let Some(ComponentState {
-            component_address, ..
-        }) = &mut self.component_state
-        {
-            if self
-                .ref_values
-                .contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
-            {
-                let substate_value = self.track.read_key_value(
-                    Address::KeyValueStore(*component_address, kv_store_id),
-                    key.raw,
-                );
-                let value = match substate_value {
-                    SubstateValue::KeyValueStoreEntry(v) => v,
-                    _ => panic!("Substate value is not a KeyValueStore entry"),
+                let value = Value::Option {
+                    value: Box::new(Some(v.dom)),
                 };
-                if value.is_some() {
-                    let value_slice = &value.as_ref().unwrap();
-                    let scrypto_value = ScryptoValue::from_slice(value_slice).unwrap();
-                    for value_id in scrypto_value.stored_value_ids() {
-                        self.ref_values.insert(value_id);
-                    }
-
-                    let scrypto_value = ScryptoValue::from_slice(value_slice)
-                        .map_err(RuntimeError::ParseScryptoValueError)?;
-                    self.ref_values.extend(scrypto_value.stored_value_ids());
-
-                    let value = Value::Option {
-                        value: Box::new(Some(scrypto_value.dom)),
-                    };
-                    let encoded = encode_any(&value);
-                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
-                } else {
-                    let value = Value::Option {
-                        value: Box::new(Option::None),
-                    };
-                    let encoded = encode_any(&value);
-                    return Ok(ScryptoValue::from_slice(&encoded).unwrap());
-                }
+                let encoded = encode_any(&value);
+                Ok(ScryptoValue::from_slice(&encoded).unwrap())
+            }
+            None => {
+                let value = Value::Option {
+                    value: Box::new(Option::None),
+                };
+                let encoded = encode_any(&value);
+                Ok(ScryptoValue::from_slice(&encoded).unwrap())
             }
         }
-
-        return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
     }
 
     fn write_kv_store_entry(
@@ -1174,75 +1184,27 @@ where
         key: ScryptoValue,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
-        ///TODO: Remove
-        #[derive(Debug)]
-        enum KeyValueStoreState {
-            Uncommitted,
-            Committed { component_address: ComponentAddress },
-        }
-
         verify_stored_value(&value)?;
 
-        let (old_value, kv_store_state) = {
-            let maybe_store = if self.owned_values.values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
-                self.owned_values.get_owned_kv_store_mut(&kv_store_id)
-            } else {
-                self.owned_values.get_ref_kv_store_mut(&kv_store_id)
-            };
-            match maybe_store {
-                None => match &self.component_state {
-                    Some(ComponentState {
-                             component_address, ..
-                         }) => {
-                        if !self
-                            .ref_values
-                            .contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
-                        {
-                            return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
-                        }
-                        let old_substate_value = self.track.read_key_value(
-                            Address::KeyValueStore(*component_address, kv_store_id),
-                            key.raw.clone(),
-                        );
-                        let old_value = match old_substate_value {
-                            SubstateValue::KeyValueStoreEntry(v) => v,
-                            _ => panic!("Substate value is not a KeyValueStore entry"),
-                        }
-                            .map(|v| ScryptoValue::from_slice(&v).unwrap());
-                        Ok((
-                            old_value,
-                            KeyValueStoreState::Committed {
-                                component_address: *component_address,
-                            },
-                        ))
-                    }
-                    _ => Err(RuntimeError::KeyValueStoreNotFound(kv_store_id)),
-                },
-                Some(kv_store) => {
-                    let value = kv_store.store.get(&key.raw).cloned();
-                    Ok((value, KeyValueStoreState::Uncommitted))
-                }
-            }
-        }?;
-
+        let (old_value, store_type) = self.read_kv_store_entry_internal(kv_store_id, &key)?;
         let new_value_ids = match old_value {
             None => value.stored_value_ids(),
             Some(old_scrypto_value) => stored_value_update(&old_scrypto_value, &value)?,
         };
         let new_values = self.take_values(&new_value_ids)?;
-
-        match kv_store_state {
-            KeyValueStoreState::Uncommitted => {
-                // Check for cycles
-                let kv_store = if self.owned_values.values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
-                    self.owned_values.get_owned_kv_store_mut(&kv_store_id)
-                } else {
-                    self.owned_values.get_ref_kv_store_mut(&kv_store_id)
-                }.ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
+        match store_type {
+            ValueType::Owned => {
+                let kv_store = self.owned_values.get_owned_kv_store_mut(&kv_store_id).unwrap();
                 kv_store.store.insert(key.raw, value);
-                kv_store.insert_children(new_values);
+                kv_store.insert_children(new_values)
             }
-            KeyValueStoreState::Committed { component_address } => {
+            ValueType::Ref(ValueRefType::Uncommitted) => {
+                let kv_store = self.owned_values.get_ref_kv_store_mut(&kv_store_id).unwrap();
+                kv_store.store.insert(key.raw, value);
+                kv_store.insert_children(new_values)
+            }
+            ValueType::Ref(ValueRefType::Committed) => {
+                let component_address = self.component_state.as_ref().unwrap().component_address;
                 self.track.set_key_value(
                     Address::KeyValueStore(component_address, kv_store_id),
                     key.raw,
