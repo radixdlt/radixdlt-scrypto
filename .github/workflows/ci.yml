@@ -17,7 +17,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
     - name: Install Scrypto toolchain
       run: cargo install --path ./simulator
     - name: Check format
@@ -33,7 +32,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test
       working-directory: sbor
@@ -54,7 +52,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test
       working-directory: sbor-tests
@@ -75,7 +72,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test
       working-directory: scrypto
@@ -99,7 +95,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test
       working-directory: scrypto-tests
@@ -117,7 +112,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
@@ -145,7 +139,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
+    - uses: Swatinem/rust-cache@v1.3.0
+      with:
+        working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -165,7 +161,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
+    - uses: Swatinem/rust-cache@v1.3.0
+      with:
+        working-directory: radix-engine
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -185,7 +183,6 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test
       working-directory: transaction
@@ -200,7 +197,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: ./.github/workflows/cache
+    - uses: Swatinem/rust-cache@v1.3.0
+      with:
+        working-directory: simulator
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
