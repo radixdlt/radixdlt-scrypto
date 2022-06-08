@@ -781,29 +781,32 @@ where
                 Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
-                let (component, vault) = if let Some(vault) =
-                    self.owned_values.borrow_vault_mut(vault_id)
-                {
-                    (None, vault)
-                } else if let Some(ComponentState {
-                    component_address, ..
-                }) = &self.component_state
-                {
-                    let value_id = StoredValueId::VaultId(*vault_id);
-                    if !self.ref_values.contains(&value_id) {
-                        return Err(RuntimeError::ValueNotFound(value_id));
+                let (component, vault) = {
+                    if let Some(vault) = self.owned_values.borrow_owned_vault_mut(vault_id) {
+                        (None, vault)
+                    } else {
+                        let value_id = StoredValueId::VaultId(*vault_id);
+                        if !self.ref_values.contains(&value_id) {
+                            return Err(RuntimeError::ValueNotFound(value_id));
+                        }
+
+                        if let Some(vault) = self.owned_values.borrow_ref_vault_mut(vault_id) {
+                            (None, vault)
+                        } else if let Some(ComponentState { component_address, .. }) = &self.component_state
+                        {
+                            let vault: Vault = self
+                                .track
+                                .borrow_global_mut_value((*component_address, *vault_id))
+                                .map_err(|e| match e {
+                                    TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
+                                    TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
+                                })?
+                                .into();
+                            (Some(*component_address), vault)
+                        } else {
+                            panic!("Should never get here");
+                        }
                     }
-                    let vault: Vault = self
-                        .track
-                        .borrow_global_mut_value((*component_address, *vault_id))
-                        .map_err(|e| match e {
-                            TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
-                            TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
-                        })?
-                        .into();
-                    (Some(*component_address), vault)
-                } else {
-                    panic!("Should never get here");
                 };
 
                 let resource_address = vault.resource_address();
@@ -1081,6 +1084,8 @@ where
         if let Some(value) = self.owned_values.get_kv_store_entry(&kv_store_id, &key.raw) {
             match value {
                 Some(v) => {
+                    self.ref_values.extend(v.stored_value_ids());
+
                     let value = Value::Option {
                         value: Box::new(Some(v.dom)),
                     };
@@ -1122,6 +1127,8 @@ where
 
                     let scrypto_value = ScryptoValue::from_slice(value_slice)
                         .map_err(RuntimeError::ParseScryptoValueError)?;
+                    self.ref_values.extend(scrypto_value.stored_value_ids());
+
                     let value = Value::Option {
                         value: Box::new(Some(scrypto_value.dom)),
                     };

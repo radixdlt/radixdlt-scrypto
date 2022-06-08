@@ -168,7 +168,7 @@ impl ComponentObjects {
         self.get_kv_store_mut_internal(kv_store_id)
     }
 
-    pub fn borrow_vault_mut(&mut self, vault_id: &VaultId) -> Option<Vault> {
+    pub fn borrow_owned_vault_mut(&mut self, vault_id: &VaultId) -> Option<Vault> {
         if let Some(_) = self.borrowed_vault {
             panic!("Should not be able to borrow multiple times");
         }
@@ -179,6 +179,14 @@ impl ComponentObjects {
                 StoredValue::Vault(_, vault) => return Some(vault),
                 _ => panic!("Expected vault but was {:?}", vault),
             }
+        }
+
+        None
+    }
+
+    pub fn borrow_ref_vault_mut(&mut self, vault_id: &VaultId) -> Option<Vault> {
+        if let Some(_) = self.borrowed_vault {
+            panic!("Should not be able to borrow multiple times");
         }
 
         for (_, value) in self.values.iter_mut() {

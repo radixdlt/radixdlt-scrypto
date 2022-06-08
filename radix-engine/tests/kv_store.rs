@@ -278,3 +278,23 @@ fn can_reference_deep_in_memory_vault() {
     // Assert
     receipt.expect_success();
 }
+
+#[test]
+fn cannot_directly_reference_inserted_vault() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "RefCheck",
+            call_data!(cannot_directly_reference_inserted_vault()),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(StoredValueId::VaultId(_))));
+}
