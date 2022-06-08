@@ -17,8 +17,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@v1.3.0
+    - uses: bmwill/rust-cache@v1
       with:
+        path: ~/.cargo/registry/src/**/librocksdb-sys-*
         working-directory: simulator
     - name: Install Scrypto toolchain
       run: cargo install --path ./simulator
@@ -142,7 +143,7 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@v1.3.0
+    - uses: bmwill/rust-cache@v1
       with:
         working-directory: radix-engine
     - name: Add wasm target
@@ -164,7 +165,7 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@v1.3.0
+    - uses: bmwill/rust-cache@v1
       with:
         working-directory: radix-engine
     - name: Add wasm target
@@ -200,8 +201,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: Swatinem/rust-cache@v1.3.0
+    - uses: bmwill/rust-cache@v1
       with:
+        path: ~/.cargo/registry/src/**/librocksdb-sys-*
         working-directory: simulator
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
