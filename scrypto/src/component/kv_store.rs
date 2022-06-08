@@ -110,10 +110,12 @@ impl<K: Encode + Decode, V: Encode + Decode> TypeId for KeyValueStore<K, V> {
 }
 
 impl<K: Encode + Decode, V: Encode + Decode> Encode for KeyValueStore<K, V> {
+    #[inline]
     fn encode_type(&self, encoder: &mut Encoder) {
         encoder.write_type(Self::type_id());
     }
 
+    #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
         let bytes = self.to_vec();
         encoder.write_len(bytes.len());
