@@ -32,7 +32,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -63,7 +63,7 @@ fn can_create_clone_and_drop_vault_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -98,7 +98,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -132,10 +132,9 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -164,10 +163,9 @@ fn can_use_bucket_for_authorization() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -199,10 +197,9 @@ fn can_use_vault_for_authorization() {
         .unwrap()
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -227,10 +224,9 @@ fn can_create_proof_from_account_and_pass_on() {
         .unwrap()
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -293,10 +289,9 @@ fn can_compose_bucket_and_vault_proof() {
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -328,10 +323,9 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -373,10 +367,9 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -404,10 +397,9 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -448,8 +440,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }

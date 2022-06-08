@@ -28,7 +28,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
     let secured_component = receipt.new_component_addresses[0];
 
     let manifest = ManifestBuilder::new()
@@ -40,7 +40,7 @@ fn cannot_make_cross_component_call_without_authorization() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.result.expect("It should work");
+    receipt.expect_success();
     let my_component = receipt.new_component_addresses[0];
 
     // Act
@@ -79,7 +79,7 @@ fn can_make_cross_component_call_with_authorization() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
     let secured_component = receipt.new_component_addresses[0];
 
     let manifest = ManifestBuilder::new()
@@ -91,7 +91,7 @@ fn can_make_cross_component_call_with_authorization() {
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
     let my_component = receipt.new_component_addresses[0];
 
     let manifest = ManifestBuilder::new()
@@ -99,7 +99,7 @@ fn can_make_cross_component_call_with_authorization() {
         .call_method_with_all_resources(my_component, "put_auth")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -112,5 +112,5 @@ fn can_make_cross_component_call_with_authorization() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }

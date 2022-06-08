@@ -153,7 +153,7 @@ fn create_mutable_vault_into_map() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -199,7 +199,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -250,7 +250,7 @@ fn create_mutable_vault_into_vector() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -306,7 +306,7 @@ fn can_push_vault_into_vector() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -327,7 +327,7 @@ fn create_mutable_vault_with_take() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -348,7 +348,7 @@ fn create_mutable_vault_with_take_non_fungible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -369,7 +369,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -390,7 +390,7 @@ fn create_mutable_vault_with_get_amount() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -411,5 +411,5 @@ fn create_mutable_vault_with_get_resource_manager() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }

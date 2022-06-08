@@ -89,7 +89,7 @@ fn test_resource_auth(action: Action, update_auth: bool, use_other_auth: bool, e
         let err = receipt.result.expect_err("Should be a runtime error");
         assert_auth_error!(err);
     } else {
-        receipt.result.expect("Should be okay.");
+        receipt.expect_success();
     }
 }
 
