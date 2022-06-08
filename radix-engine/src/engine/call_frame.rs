@@ -269,7 +269,7 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Vault(vault_id, vault, value_type) => {
                 match value_type {
                     ValueType::Owned => {
-                        frame.owned_values.return_borrowed_vault_mut(vault);
+                        frame.owned_values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, vault));
                     }
                     ValueType::Ref(ValueRefType::Uncommitted) => {
                         frame.owned_values.return_borrowed_vault_mut(vault);
@@ -457,7 +457,7 @@ where
             vault_ids_to_take.insert(StoredValueId::VaultId(*vault_id));
         }
 
-        let vaults_to_take = self.owned_values.take(&vault_ids_to_take)?;
+        let vaults_to_take = self.owned_values.take_set(&vault_ids_to_take)?;
 
         let mut vaults = HashMap::new();
         for vault_to_take in vaults_to_take {
@@ -590,7 +590,7 @@ where
     }
 
     fn take_values(&mut self, value_ids: &HashSet<StoredValueId>) -> Result<Vec<StoredValue>, RuntimeError> {
-        let values = self.owned_values.take(value_ids)?;
+        let values = self.owned_values.take_set(value_ids)?;
         for value in &values {
             if let StoredValue::KeyValueStore(_, store) = value {
                 for id in store.all_descendants() {
@@ -855,8 +855,11 @@ where
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (value_type, vault) = {
-                    if let Some(vault) = self.owned_values.borrow_owned_vault_mut(vault_id) {
-                        (ValueType::Owned, vault)
+                    if let Some(value) = self.owned_values.take(&StoredValueId::VaultId(*vault_id)) {
+                        match value {
+                            StoredValue::Vault(_, vault) => (ValueType::Owned, vault),
+                            _ => panic!("Expected vault"),
+                        }
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
                         let maybe_value_ref = self.value_refs.get(&value_id);

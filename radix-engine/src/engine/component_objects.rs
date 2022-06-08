@@ -94,7 +94,7 @@ impl PreCommittedKeyValueStore {
 #[derive(Debug)]
 pub struct ComponentObjects {
     pub values: HashMap<StoredValueId, StoredValue>,
-    borrowed_vault: Option<(VaultId, Option<KeyValueStoreId>)>,
+    borrowed_vault: Option<(VaultId, KeyValueStoreId)>,
 }
 
 impl ComponentObjects {
@@ -113,7 +113,11 @@ impl ComponentObjects {
         self.values.insert(id, value);
     }
 
-    pub fn take(
+    pub fn take(&mut self, id: &StoredValueId) -> Option<StoredValue> {
+        self.values.remove(id)
+    }
+
+    pub fn take_set(
         &mut self,
         other: &HashSet<StoredValueId>,
     ) -> Result<Vec<StoredValue>, RuntimeError> {
@@ -184,22 +188,6 @@ impl ComponentObjects {
         self.get_ref_kv_store_mut_internal(kv_store_id)
     }
 
-    pub fn borrow_owned_vault_mut(&mut self, vault_id: &VaultId) -> Option<Vault> {
-        if let Some(_) = self.borrowed_vault {
-            panic!("Should not be able to borrow multiple times");
-        }
-
-        if let Some(vault) = self.values.remove(&StoredValueId::VaultId(*vault_id)) {
-            self.borrowed_vault = Some((*vault_id, None));
-            match vault {
-                StoredValue::Vault(_, vault) => return Some(vault),
-                _ => panic!("Expected vault but was {:?}", vault),
-            }
-        }
-
-        None
-    }
-
     pub fn borrow_ref_vault_mut(&mut self, vault_id: &VaultId) -> Option<Vault> {
         if let Some(_) = self.borrowed_vault {
             panic!("Should not be able to borrow multiple times");
@@ -209,7 +197,7 @@ impl ComponentObjects {
             if let StoredValue::KeyValueStore(kv_store_id, store) = value {
                 let maybe_vault = store.take_child_vault(*kv_store_id, vault_id);
                 if let Some((kv_store_id, vault)) = maybe_vault {
-                    self.borrowed_vault = Some((*vault_id, Some(kv_store_id)));
+                    self.borrowed_vault = Some((*vault_id, kv_store_id));
                     return Some(vault);
                 }
             }
@@ -219,24 +207,17 @@ impl ComponentObjects {
     }
 
     pub fn return_borrowed_vault_mut(&mut self, vault: Vault) {
-        if let Some((vault_id, maybe_parent)) = self.borrowed_vault.take() {
-            if let Some(parent_id) = maybe_parent {
-                let kv_store = if self.values.contains_key(&StoredValueId::KeyValueStoreId(parent_id.clone())) {
-                    self.get_owned_kv_store_mut_internal(&parent_id)
-                } else {
-                    self.get_ref_kv_store_mut_internal(&parent_id)
-                }.unwrap();
-
-                kv_store.child_values.insert(
-                    StoredValueId::VaultId(vault_id.clone()),
-                    StoredValue::Vault(vault_id.clone(), vault),
-                );
+        if let Some((vault_id, parent_id)) = self.borrowed_vault.take() {
+            let kv_store = if self.values.contains_key(&StoredValueId::KeyValueStoreId(parent_id.clone())) {
+                self.get_owned_kv_store_mut_internal(&parent_id)
             } else {
-                self.values.insert(
-                    StoredValueId::VaultId(vault_id.clone()),
-                    StoredValue::Vault(vault_id.clone(), vault),
-                );
-            }
+                self.get_ref_kv_store_mut_internal(&parent_id)
+            }.unwrap();
+
+            kv_store.child_values.insert(
+                StoredValueId::VaultId(vault_id.clone()),
+                StoredValue::Vault(vault_id.clone(), vault),
+            );
         } else {
             panic!("Should never get here");
         }
