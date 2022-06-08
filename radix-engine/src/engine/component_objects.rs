@@ -59,24 +59,45 @@ impl PreCommittedKeyValueStore {
 
     fn take_child_vault(
         &mut self,
-        self_id: KeyValueStoreId,
+        ancestors: &[KeyValueStoreId],
         vault_id: &VaultId,
-    ) -> Option<(KeyValueStoreId, Vault)> {
-        let maybe_vault = self.child_values.remove(&StoredValueId::VaultId(*vault_id));
-        if let Some(StoredValue::Vault(_, vault)) = maybe_vault {
-            return Option::Some((self_id, vault));
+    ) -> Vault {
+        if ancestors.is_empty() {
+            let value = self.child_values.remove(&StoredValueId::VaultId(*vault_id)).expect("Vault expected to exist");
+            let vault = match value {
+                StoredValue::Vault(_, vault) => vault,
+                _ => panic!("Expected to be a vault"),
+            };
+            return vault;
         }
 
-        for child_value in self.child_values.iter_mut() {
-            if let (_, StoredValue::KeyValueStore(ref id, kv_store)) = child_value {
-                let maybe_vault = kv_store.take_child_vault(*id, vault_id);
-                if let Some(vault) = maybe_vault {
-                    return Option::Some(vault);
-                }
-            }
-        }
+        let (first, rest) = ancestors.split_first().unwrap();
+        let value = self.child_values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap();
+        let store = match value {
+            StoredValue::KeyValueStore(_, store) => store,
+            _ => panic!("Expected to be store"),
+        };
 
-        None
+        store.take_child_vault(rest, vault_id)
+    }
+
+    fn put_child_vault(
+        &mut self,
+        ancestors: &[KeyValueStoreId],
+        vault_id: VaultId,
+        vault: Vault
+    ) {
+        if ancestors.is_empty() {
+            self.child_values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, vault));
+        } else {
+            let (first, rest) = ancestors.split_first().unwrap();
+            let value = self.child_values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap();
+            let store = match value {
+                StoredValue::KeyValueStore(_, store) => store,
+                _ => panic!("Expected to be store"),
+            };
+            store.put_child_vault(rest, vault_id, vault);
+        }
     }
 
     pub fn insert_children(&mut self, values: Vec<StoredValue>) {
@@ -94,14 +115,12 @@ impl PreCommittedKeyValueStore {
 #[derive(Debug)]
 pub struct ComponentObjects {
     pub values: HashMap<StoredValueId, StoredValue>,
-    borrowed_vault: Option<(VaultId, KeyValueStoreId)>,
 }
 
 impl ComponentObjects {
     pub fn new() -> Self {
         ComponentObjects {
             values: HashMap::new(),
-            borrowed_vault: None,
         }
     }
 
@@ -121,10 +140,6 @@ impl ComponentObjects {
         &mut self,
         other: &HashSet<StoredValueId>,
     ) -> Result<Vec<StoredValue>, RuntimeError> {
-        if self.borrowed_vault.is_some() {
-            panic!("Should not be taking while value is being borrowed");
-        }
-
         let mut taken_values = Vec::new();
 
         for id in other {
@@ -172,9 +187,6 @@ impl ComponentObjects {
         &mut self,
         kv_store_id: &KeyValueStoreId,
     ) -> Option<&mut PreCommittedKeyValueStore> {
-        if self.borrowed_vault.is_some() {
-            panic!("Should not be taking while value is being borrowed");
-        }
         self.get_owned_kv_store_mut_internal(kv_store_id)
     }
 
@@ -182,44 +194,24 @@ impl ComponentObjects {
         &mut self,
         kv_store_id: &KeyValueStoreId,
     ) -> Option<&mut PreCommittedKeyValueStore> {
-        if self.borrowed_vault.is_some() {
-            panic!("Should not be taking while value is being borrowed");
-        }
         self.get_ref_kv_store_mut_internal(kv_store_id)
     }
 
-    pub fn borrow_ref_vault_mut(&mut self, vault_id: &VaultId) -> Option<Vault> {
-        if let Some(_) = self.borrowed_vault {
-            panic!("Should not be able to borrow multiple times");
-        }
-
-        for (_, value) in self.values.iter_mut() {
-            if let StoredValue::KeyValueStore(kv_store_id, store) = value {
-                let maybe_vault = store.take_child_vault(*kv_store_id, vault_id);
-                if let Some((kv_store_id, vault)) = maybe_vault {
-                    self.borrowed_vault = Some((*vault_id, kv_store_id));
-                    return Some(vault);
-                }
-            }
-        }
-
-        None
+    pub fn borrow_ref_vault_mut(&mut self, ancestors: &[KeyValueStoreId], vault_id: &VaultId) -> Vault {
+        let (first, rest) = ancestors.split_first().unwrap();
+        let store = match self.values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap() {
+            StoredValue::KeyValueStore(_, store) => store,
+            _ => panic!("Should not get here"),
+        };
+        store.take_child_vault(rest, vault_id)
     }
 
-    pub fn return_borrowed_vault_mut(&mut self, vault: Vault) {
-        if let Some((vault_id, parent_id)) = self.borrowed_vault.take() {
-            let kv_store = if self.values.contains_key(&StoredValueId::KeyValueStoreId(parent_id.clone())) {
-                self.get_owned_kv_store_mut_internal(&parent_id)
-            } else {
-                self.get_ref_kv_store_mut_internal(&parent_id)
-            }.unwrap();
-
-            kv_store.child_values.insert(
-                StoredValueId::VaultId(vault_id.clone()),
-                StoredValue::Vault(vault_id.clone(), vault),
-            );
-        } else {
-            panic!("Should never get here");
-        }
+    pub fn return_borrowed_vault_mut(&mut self, ancestors: &[KeyValueStoreId], vault_id: VaultId, vault: Vault) {
+        let (first, rest) = ancestors.split_first().unwrap();
+        let store = match self.values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap() {
+            StoredValue::KeyValueStore(_, store) => store,
+            _ => panic!("Should not get here"),
+        };
+        store.put_child_vault(rest, vault_id, vault);
     }
 }
