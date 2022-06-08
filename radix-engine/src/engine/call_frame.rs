@@ -75,7 +75,9 @@ enum ValueType {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 enum ValueRefType {
     Uncommitted,
-    Committed,
+    Committed {
+        component_address: ComponentAddress,
+    },
 }
 
 fn stored_value_update(
@@ -617,8 +619,7 @@ where
                     let value = store.store.get(&key.raw).cloned();
                     (value, ValueType::Ref(ValueRefType::Uncommitted))
                 }
-                Option::Some(ValueRefType::Committed) => {
-                    let ComponentState { component_address, .. } = self.component_state.as_ref().expect("Expected component to exist");
+                Option::Some(ValueRefType::Committed { component_address }) => {
                     let substate_value = self.track.read_key_value(
                         Address::KeyValueStore(*component_address, kv_store_id),
                         key.raw.to_vec(),
@@ -627,7 +628,7 @@ where
                         SubstateValue::KeyValueStoreEntry(v) => v,
                         _ => panic!("Substate value is not a KeyValueStore entry"),
                     }.map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."));
-                    (value, ValueType::Ref(ValueRefType::Committed))
+                    (value, ValueType::Ref(ValueRefType::Committed { component_address: *component_address }))
                 }
             }
         };
@@ -861,8 +862,7 @@ where
                                 let vault = self.owned_values.borrow_ref_vault_mut(vault_id).expect("Expected to find vault");
                                 (None, vault)
                             }
-                            Option::Some(ValueRefType::Committed) => {
-                                let ComponentState { component_address, .. } = self.component_state.as_ref().expect("Expected to find component");
+                            Option::Some(ValueRefType::Committed { component_address }) => {
                                 let vault: Vault = self
                                     .track
                                     .borrow_global_mut_value((*component_address, *vault_id))
@@ -1107,7 +1107,7 @@ where
         {
             if addr.eq(component_address) {
                 for value_id in initial_value.stored_value_ids() {
-                    self.value_refs.insert(value_id, ValueRefType::Committed);
+                    self.value_refs.insert(value_id, ValueRefType::Committed { component_address: *component_address });
                 }
                 let state = component.state().to_vec();
                 return Ok(state);
@@ -1205,10 +1205,9 @@ where
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values)
             }
-            ValueType::Ref(ValueRefType::Committed) => {
-                let component_address = self.component_state.as_ref().unwrap().component_address;
+            ValueType::Ref(ValueRefType::Committed { component_address }) => {
                 self.track.set_key_value(
-                    Address::KeyValueStore(component_address, kv_store_id),
+                    Address::KeyValueStore(component_address.clone(), kv_store_id),
                     key.raw,
                     SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                 );
