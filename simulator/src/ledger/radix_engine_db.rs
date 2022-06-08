@@ -110,13 +110,6 @@ impl ReadableSubstateStore for RadixEngineDB {
             .map(|v| scrypto_decode(&v).unwrap())
             .unwrap_or(0)
     }
-
-    fn get_nonce(&self) -> u64 {
-        let id = scrypto_encode(&"nonce");
-        self.read(&id)
-            .map(|v| scrypto_decode(&v).unwrap())
-            .unwrap_or(0)
-    }
 }
 
 impl WriteableSubstateStore for RadixEngineDB {
@@ -131,12 +124,6 @@ impl WriteableSubstateStore for RadixEngineDB {
     fn set_epoch(&mut self, epoch: u64) {
         let id = scrypto_encode(&"epoch");
         let value = scrypto_encode(&epoch);
-        self.write(&id, &value)
-    }
-
-    fn increase_nonce(&mut self) {
-        let id = scrypto_encode(&"nonce");
-        let value = scrypto_encode(&(self.get_nonce() + 1));
         self.write(&id, &value)
     }
 }

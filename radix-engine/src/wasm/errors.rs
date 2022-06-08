@@ -1,6 +1,6 @@
 use sbor::rust::fmt;
 use sbor::rust::string::String;
-use scrypto::values::ParseScryptoValueError;
+use sbor::DecodeError;
 use wasmi::HostError;
 
 use crate::engine::RuntimeError;
@@ -47,7 +47,7 @@ pub enum InvokeError {
 
     MemoryAccessError,
 
-    InvalidScryptoValue(ParseScryptoValueError),
+    InvalidScryptoValue(DecodeError),
 
     WasmError(String),
 
