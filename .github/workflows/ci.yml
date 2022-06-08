@@ -14,6 +14,10 @@ jobs:
         os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Install Scrypto toolchain
       run: cargo install --path ./simulator
     - name: Check format
@@ -26,6 +30,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test --verbose
       working-directory: sbor
@@ -43,6 +51,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test --verbose
       working-directory: sbor-tests
@@ -60,6 +72,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test --verbose
       working-directory: scrypto
@@ -80,6 +96,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test --verbose
       working-directory: scrypto-tests
@@ -94,8 +114,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
-    - name: Upgrade rust toolchain
-      run: rustup upgrade
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Add wasm target (nightly)
@@ -120,8 +142,10 @@ jobs:
         os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v2
-    - name: Upgrade rust toolchain
-      run: rustup upgrade
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -138,8 +162,10 @@ jobs:
         os: [ubuntu-latest]
     steps:
     - uses: actions/checkout@v2
-    - name: Upgrade rust toolchain
-      run: rustup upgrade
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
@@ -156,6 +182,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Run tests
       run: cargo test --verbose
       working-directory: transaction
@@ -167,8 +197,10 @@ jobs:
         os: [ubuntu-latest, windows-latest]
     steps:
     - uses: actions/checkout@v2
-    - name: Upgrade rust toolchain
-      run: rustup upgrade
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: ./.github/workflows/cache
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Set LIBCLANG_PATH # See https://github.com/rust-lang/rust-bindgen/issues/1797
