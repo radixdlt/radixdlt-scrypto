@@ -568,6 +568,18 @@ where
 
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
+
+    fn take_values(&mut self, value_ids: &HashSet<StoredValueId>) -> Result<Vec<StoredValue>, RuntimeError> {
+        let values = self.owned_values.take(value_ids)?;
+        for value in &values {
+            if let StoredValue::KeyValueStore(_, store) = value {
+                for id in store.all_descendants() {
+                    self.ref_values.remove(&id);
+                }
+            }
+        }
+        Ok(values)
+    }
 }
 
 impl<'p, 's, 't, 'w, S, W, I> SystemApi<W, I> for CallFrame<'p, 's, 't, 'w, S, W, I>
@@ -1018,11 +1030,12 @@ where
         self.track.create_uuid_value(package).into()
     }
 
+
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
         let value = ScryptoValue::from_slice(component.state())
             .map_err(RuntimeError::ParseScryptoValueError)?;
         verify_stored_value(&value)?;
-        let values = self.owned_values.take(&value.stored_value_ids())?;
+        let values = self.take_values(&value.stored_value_ids())?;
         let address = self.track.create_uuid_value(component);
         self.track
             .insert_objects_into_component(values, address.clone().into());
@@ -1064,10 +1077,11 @@ where
         {
             if addr.eq(component_address) {
                 let new_value_ids = stored_value_update(initial_value, &state)?;
-                let new_values = self.owned_values.take(&new_value_ids)?;
-                self.track
-                    .insert_objects_into_component(new_values, *component_address);
                 component.set_state(state.raw);
+                let addr = *component_address;
+                let new_values = self.take_values(&new_value_ids)?;
+                self.track
+                    .insert_objects_into_component(new_values, addr);
                 return Ok(());
             }
         }
@@ -1199,7 +1213,7 @@ where
             None => value.stored_value_ids(),
             Some(old_scrypto_value) => stored_value_update(&old_scrypto_value, &value)?,
         };
-        let new_values = self.owned_values.take(&new_value_ids)?;
+        let new_values = self.take_values(&new_value_ids)?;
 
         match kv_store_state {
             KeyValueStoreState::Uncommitted => {

@@ -26,6 +26,17 @@ impl PreCommittedKeyValueStore {
         }
     }
 
+    pub fn all_descendants(&self) -> Vec<StoredValueId> {
+        let mut descendents = Vec::new();
+        for (id, value) in &self.child_values {
+            descendents.push(*id);
+            if let StoredValue::KeyValueStore(_, store) = value {
+                descendents.extend(store.all_descendants());
+            }
+        }
+        descendents
+    }
+
     fn find_child_kv_store(
         &mut self,
         kv_store_id: &KeyValueStoreId,
