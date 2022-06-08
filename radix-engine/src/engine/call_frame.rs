@@ -527,7 +527,7 @@ where
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, package, export_name, component_state) => {
                 self.component_state = component_state;
-                package.invoke(actor, export_name, call_data, self)
+                package.invoke(actor, export_name, method_name, call_data, self)
             }
             SNodeState::ResourceStatic => {
                 ResourceManager::static_main(method_name, call_data, self)
@@ -573,7 +573,7 @@ where
             self.invoke_snode2(
                 SNodeRef::AuthZoneRef,
                 "clear".to_string(),
-                ScryptoValue::from_value(&AuthZoneClearInput {}),
+                ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
         self.check_resource()?;
@@ -1088,8 +1088,8 @@ where
 
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
-        let value = ScryptoValue::from_slice(component.state())
-            .map_err(RuntimeError::ParseScryptoValueError)?;
+        let value =
+            ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
         verify_stored_value(&value)?;
         let values = self.take_values(&value.stored_value_ids())?;
         let address = self.track.create_uuid_value(component);
@@ -1299,7 +1299,7 @@ where
         simulated_auth_zone
             .main(
                 "clear",
-                ScryptoValue::from_value(&AuthZoneClearInput {}),
+                ScryptoValue::from_typed(&AuthZoneClearInput {}),
                 self,
             )
             .map_err(RuntimeError::AuthZoneError)?;

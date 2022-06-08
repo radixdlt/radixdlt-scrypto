@@ -52,25 +52,13 @@ where
 
     // FIXME: limit access to the API
 
-    fn handle_invoke_snode(
-        &mut self,
-        snode_ref: SNodeRef,
-        call_data: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        let call_data =
-            ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
-        let result = self.system_api.invoke_snode(snode_ref, call_data)?;
-        Ok(result.raw)
-    }
-
     fn handle_invoke_snode2(
         &mut self,
         snode_ref: SNodeRef,
         method_name: String,
         call_data: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let call_data =
-            ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
+        let call_data = ScryptoValue::from_slice(&call_data).map_err(RuntimeError::DecodeError)?;
         let result = self
             .system_api
             .invoke_snode2(snode_ref, method_name, call_data)?;
@@ -106,8 +94,7 @@ where
         component_address: ComponentAddress,
         state: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let value =
-            ScryptoValue::from_slice(&state).map_err(RuntimeError::ParseScryptoValueError)?;
+        let value = ScryptoValue::from_slice(&state).map_err(RuntimeError::DecodeError)?;
         self.system_api
             .write_component_state(component_address, value)?;
         Ok(())
@@ -132,8 +119,7 @@ where
         kv_store_id: KeyValueStoreId,
         key: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let scrypto_key =
-            ScryptoValue::from_slice(&key).map_err(RuntimeError::ParseScryptoValueError)?;
+        let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let value = self
             .system_api
             .read_kv_store_entry(kv_store_id, scrypto_key)?;
@@ -146,10 +132,8 @@ where
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let scrypto_key =
-            ScryptoValue::from_slice(&key).map_err(RuntimeError::ParseScryptoValueError)?;
-        let scrypto_value =
-            ScryptoValue::from_slice(&value).map_err(RuntimeError::ParseScryptoValueError)?;
+        let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
+        let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
         self.system_api
             .write_kv_store_entry(kv_store_id, scrypto_key, scrypto_value)?;
         Ok(())
@@ -179,7 +163,7 @@ where
 }
 
 fn encode<T: Encode>(output: T) -> ScryptoValue {
-    ScryptoValue::from_value(&output)
+    ScryptoValue::from_typed(&output)
 }
 
 impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
@@ -189,9 +173,6 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
         match input {
-            RadixEngineInput::InvokeSNode(snode_ref, call_data) => {
-                self.handle_invoke_snode(snode_ref, call_data).map(encode)
-            }
             RadixEngineInput::InvokeSNode2(snode_ref, method_name, call_data) => self
                 .handle_invoke_snode2(snode_ref, method_name, call_data)
                 .map(encode),

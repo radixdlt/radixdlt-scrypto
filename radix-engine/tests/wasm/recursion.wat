@@ -27,7 +27,7 @@
   )
 
   ;; Simple main function that always returns `()`
-  (func $Test_main (param $0 i32) (result i32)
+  (func $Test_main (param $0 i32) (param $1 i32) (result i32)
     ;; Recursion starts!
     (drop
       (call $f
@@ -55,7 +55,7 @@
   )
 
   ;; Simple ABI of unit blueprint with no function or method
-  (func $Test_abi (param $0 i32) (result i32)
+  (func $Test_abi (param $0 i32) (param $1 i32) (result i32)
     (local.set 
       $0
       (call $scrypto_alloc

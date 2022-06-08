@@ -5,8 +5,8 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 fn test_auth_rule(
@@ -28,7 +28,7 @@ fn test_auth_rule(
 
     // Assert
     if should_succeed {
-        receipt.result.expect("Should be okay");
+        receipt.expect_success();
     } else {
         let error = receipt.result.expect_err("Should be an error");
         assert_auth_error!(error);
@@ -221,7 +221,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(SYSTEM_COMPONENT, call_data![free_xrd()])
+        .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
@@ -236,7 +236,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -249,7 +249,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(SYSTEM_COMPONENT, call_data![free_xrd()])
+        .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);
@@ -264,7 +264,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -277,7 +277,7 @@ fn cannot_withdraw_from_my_any_xrd_auth_account_with_less_than_amount_of_proof()
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(SYSTEM_COMPONENT, call_data![free_xrd()])
+        .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
         .take_from_worktop_by_amount(Decimal::from("0.9"), RADIX_TOKEN, |builder, bucket_id| {
             builder.create_proof_from_bucket(bucket_id, |builder, proof_id| {
                 builder.push_to_auth_zone(proof_id);

@@ -3,8 +3,8 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -32,7 +32,7 @@ fn can_create_clone_and_drop_bucket_proof() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -55,14 +55,15 @@ fn can_create_clone_and_drop_vault_proof() {
     let manifest = ManifestBuilder::new()
         .call_method(
             component_address,
-            call_data!(create_clone_drop_vault_proof(Decimal::one())),
+            "create_clone_drop_vault_proof",
+            to_struct!(Decimal::one()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -97,7 +98,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -126,14 +127,14 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
     let manifest = ManifestBuilder::new()
         .call_method(
             component_address,
-            call_data!(create_clone_drop_vault_proof_by_ids(total_ids, proof_ids)),
+            "create_clone_drop_vault_proof_by_ids",
+            to_struct!(total_ids, proof_ids),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -162,10 +163,9 @@ fn can_use_bucket_for_authorization() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -197,10 +197,9 @@ fn can_use_vault_for_authorization() {
         .unwrap()
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -225,10 +224,9 @@ fn can_create_proof_from_account_and_pass_on() {
         .unwrap()
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -285,15 +283,15 @@ fn can_compose_bucket_and_vault_proof() {
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
-                call_data!(compose_vault_and_bucket_proof(Bucket(bucket_id))),
+                "compose_vault_and_bucket_proof",
+                to_struct!(Bucket(bucket_id)),
             )
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -319,18 +317,15 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
         .take_from_worktop_by_amount(99.into(), resource_address, |builder, bucket_id| {
             builder.call_method(
                 component_address,
-                call_data!(compose_vault_and_bucket_proof_by_amount(
-                    Bucket(bucket_id),
-                    Decimal::from(2)
-                )),
+                "compose_vault_and_bucket_proof_by_amount",
+                to_struct!(Bucket(bucket_id), Decimal::from(2)),
             )
         })
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -362,19 +357,19 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             |builder, bucket_id| {
                 builder.call_method(
                     component_address,
-                    call_data!(compose_vault_and_bucket_proof_by_ids(
+                    "compose_vault_and_bucket_proof_by_ids",
+                    to_struct!(
                         Bucket(bucket_id),
                         BTreeSet::from([NonFungibleId::from_u32(1), NonFungibleId::from_u32(2),])
-                    )),
+                    ),
                 )
             },
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -397,17 +392,14 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
     let manifest = ManifestBuilder::new()
         .call_method(
             component_address,
-            call_data![create_clone_drop_vault_proof_by_amount(
-                Decimal::from(3),
-                Decimal::from(1)
-            )],
+            "create_clone_drop_vault_proof_by_amount",
+            to_struct!(Decimal::from(3), Decimal::from(1)),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -437,18 +429,18 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
                 builder.call_function(
                     package_address,
                     "Receiver",
-                    call_data!(assert_ids(
+                    "assert_ids",
+                    to_struct!(
                         Proof(proof_id),
                         BTreeSet::from([NonFungibleId::from_u32(2), NonFungibleId::from_u32(3)]),
                         resource_address
-                    )),
+                    ),
                 )
             },
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }

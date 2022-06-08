@@ -3,8 +3,8 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 use transaction::signing::EcdsaPrivateKey;
 
@@ -35,37 +35,36 @@ fn test_dynamic_auth(
         .call_function(
             package,
             "AuthComponent",
-            call_data![create_component(
-                addresses.get(initial_auth).unwrap().clone()
-            )],
+            "create_component",
+            to_struct!(addresses.get(initial_auth).unwrap().clone()),
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.result.expect("Should be okay.");
+    receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
 
     if let Some(next_auth) = update_auth {
         let update_manifest = ManifestBuilder::new()
             .call_method(
                 component,
-                call_data![update_auth(addresses.get(next_auth).unwrap().clone())],
+                "update_auth",
+                to_struct!(addresses.get(next_auth).unwrap().clone()),
             )
             .build();
         test_runner
             .execute_manifest(update_manifest, vec![])
-            .result
-            .expect("Should be okay.");
+            .expect_success();
     }
 
     // Act
     let manifest2 = ManifestBuilder::new()
-        .call_method(component, call_data![get_secret()])
+        .call_method(component, "get_secret", to_struct!())
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, public_keys.to_vec());
 
     // Assert
     if should_succeed {
-        receipt2.result.expect("Should be okay.");
+        receipt2.expect_success();
     } else {
         let error = receipt2.result.expect_err("Should be an error.");
         assert_auth_error!(error);
@@ -99,22 +98,23 @@ fn test_dynamic_authlist(
         .call_function(
             package,
             "AuthListComponent",
-            call_data![create_component(2u8, list, authorization)],
+            "create_component",
+            to_struct!(2u8, list, authorization),
         )
         .build();
     let receipt0 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt0.result.expect("Should be okay.");
+    receipt0.expect_success();
     let component = receipt0.new_component_addresses[0];
 
     // Act
     let manifest2 = ManifestBuilder::new()
-        .call_method(component, call_data!(get_secret()))
+        .call_method(component, "get_secret", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, public_keys.to_vec());
 
     // Assert
     if should_succeed {
-        receipt.result.expect("Should be okay.");
+        receipt.expect_success();
     } else {
         let error = receipt.result.expect_err("Should be an error.");
         assert_auth_error!(error);
@@ -220,15 +220,15 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     );
     let players = [non_fungible_address, other_non_fungible_address];
     let manifest1 = ManifestBuilder::new()
-        .call_function(package, "Chess", call_data![create_game(players)])
+        .call_function(package, "Chess", "create_game", to_struct!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.result.expect("Should be okay.");
+    receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
 
     // Act
     let manifest2 = ManifestBuilder::new()
-        .call_method(component, call_data!(make_move()))
+        .call_method(component, "make_move", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
 
@@ -248,13 +248,13 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let other_non_fungible_address = NonFungibleAddress::from_public_key(&other_public_key);
     let players = [non_fungible_address, other_non_fungible_address];
     let manifest1 = ManifestBuilder::new()
-        .call_function(package, "Chess", call_data![create_game(players)])
+        .call_function(package, "Chess", "create_game", to_struct!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.result.expect("Should be okay.");
+    receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
     let manifest2 = ManifestBuilder::new()
-        .call_method(component, call_data!(make_move()))
+        .call_method(component, "make_move", to_struct!())
         .build();
     test_runner
         .execute_manifest(manifest2, vec![public_key])
@@ -263,7 +263,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
 
     // Act
     let manifest3 = ManifestBuilder::new()
-        .call_method(component, call_data!(make_move()))
+        .call_method(component, "make_move", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key]);
 

@@ -1,6 +1,5 @@
 use clap::Parser;
 use colored::*;
-use transaction::signing::EcdsaPrivateKey;
 
 use crate::resim::*;
 
@@ -10,33 +9,21 @@ pub struct ShowConfigs {}
 
 impl ShowConfigs {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        if let Some(configs) = get_configs()? {
-            writeln!(
-                out,
-                "{}: {}",
-                "Default Account".green().bold(),
-                configs.default_account
-            )
-            .map_err(Error::IOError)?;
-            writeln!(
-                out,
-                "{}: {}",
-                "Default Public Key".green().bold(),
-                EcdsaPrivateKey::from_bytes(&configs.default_private_key)
-                    .unwrap()
-                    .public_key()
-            )
-            .map_err(Error::IOError)?;
-            writeln!(
-                out,
-                "{}: {}",
-                "Default Private Key".green().bold(),
-                hex::encode(configs.default_private_key)
-            )
-            .map_err(Error::IOError)?;
-        } else {
-            writeln!(out, "No configuration found").map_err(Error::IOError)?;
-        }
+        let configs = get_configs()?;
+        writeln!(
+            out,
+            "{}: {:?}",
+            "Default Account".green().bold(),
+            configs.default_account
+        )
+        .map_err(Error::IOError)?;
+        writeln!(
+            out,
+            "{}: {:?}",
+            "Current Nonce".green().bold(),
+            configs.nonce
+        )
+        .map_err(Error::IOError)?;
         Ok(())
     }
 }

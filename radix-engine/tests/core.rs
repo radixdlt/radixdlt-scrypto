@@ -2,8 +2,8 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -12,10 +12,10 @@ fn test_process_and_transaction() {
     let package_address = test_runner.publish_package("core");
 
     let manifest1 = ManifestBuilder::new()
-        .call_function(package_address, "CoreTest", call_data![query()])
+        .call_function(package_address, "CoreTest", "query", to_struct![])
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.result.expect("Should be okay.");
+    receipt1.expect_success();
 }
 
 #[test]
@@ -25,10 +25,10 @@ fn test_call() {
     let package_address = test_runner.publish_package("core");
 
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "MoveTest", call_data![move_bucket()])
-        .call_function(package_address, "MoveTest", call_data![move_proof()])
+        .call_function(package_address, "MoveTest", "move_bucket", to_struct![])
+        .call_function(package_address, "MoveTest", "move_proof", to_struct![])
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }

@@ -1,5 +1,6 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::{format_ident, quote};
+use syn::parse::Parser;
 use syn::spanned::Spanned;
 use syn::token::Brace;
 use syn::*;
@@ -64,26 +65,25 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         }
     };
     trace!("Generated mod: \n{}", quote! { #output_mod });
-    let method_enum_ident = format_ident!("{}Method", bp_ident);
-    let method_enum = generate_method_enum(&method_enum_ident, bp_items);
+    let method_input_structs = generate_method_input_structs(bp_ident, bp_items);
 
     let dispatcher_ident = format_ident!("{}_main", bp_ident);
-    let (arm_guards, arm_bodies) = generate_dispatcher(&method_enum_ident, bp_ident, bp_items)?;
+    let (arm_guards, arm_bodies) = generate_dispatcher(bp_ident, bp_items)?;
     let output_dispatcher = if arm_guards.is_empty() {
         quote! {
-            #method_enum
+            #(#method_input_structs)*
 
             #[no_mangle]
-            pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
+            pub extern "C" fn #dispatcher_ident(method_ptr: *mut u8) -> *mut u8 {
                 panic!("No invocation expected")
             }
         }
     } else {
         quote! {
-            #method_enum
+            #(#method_input_structs)*
 
             #[no_mangle]
-            pub extern "C" fn #dispatcher_ident(input: *mut u8) -> *mut u8 {
+            pub extern "C" fn #dispatcher_ident(method_ptr: *mut u8, method_arg: *mut u8) -> *mut u8 {
                 // Set up panic hook
                 ::scrypto::misc::set_up_panic_hook();
 
@@ -92,10 +92,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                 // Dispatch the call
-                let method = ::scrypto::buffer::scrypto_decode_from_buffer::<#method_enum_ident>(input).unwrap();
+                let method = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
                 let rtn;
-                match method {
+                match method.as_str() {
                     #( #arm_guards => #arm_bodies )*
+                    _ => panic!("Invalid method")
                 }
 
                 // Return
@@ -110,7 +111,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     let (abi_functions, abi_methods) = generate_abi(bp_ident, bp_items)?;
     let output_abi = quote! {
         #[no_mangle]
-        pub extern "C" fn #abi_ident(input: *mut u8) -> *mut u8 {
+        pub extern "C" fn #abi_ident(input: *mut u8, input2: *mut u8) -> *mut u8 {
             use ::sbor::{Describe, Type};
             use ::scrypto::abi::{Function, Method};
             use ::sbor::rust::borrow::ToOwned;
@@ -149,8 +150,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     Ok(output)
 }
 
-fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEnum {
-    let mut variants = Vec::new();
+fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<ItemStruct> {
+    let mut method_input_structs = Vec::new();
 
     for item in items {
         if let ImplItem::Method(method) = item {
@@ -158,40 +159,43 @@ fn generate_method_enum(method_enum_ident: &Ident, items: &[ImplItem]) -> ItemEn
                 continue;
             }
 
-            let mut fields = Vec::new();
+            let mut args = Vec::new();
+            let mut index: usize = 0;
             for input in (&method.sig.inputs).into_iter() {
                 match input {
                     FnArg::Receiver(_) => {}
                     FnArg::Typed(ref t) => {
-                        fields.push(t.ty.as_ref());
+                        let arg_ident = format_ident!("arg{}", index);
+                        index += 1;
+                        let arg_type = t.ty.as_ref();
+                        let arg: Field = Field::parse_named
+                            .parse2(quote! {
+                                #arg_ident : #arg_type
+                            })
+                            .unwrap();
+                        args.push(arg)
                     }
                 }
             }
 
-            let method_ident = method.sig.ident.clone();
-            let variant: Variant = parse_quote! {
-                #method_ident(#(#fields),*)
-            };
-            variants.push(variant);
-        }
-    }
+            let input_struct_name = format_ident!("{}_{}_Input", bp_ident, method.sig.ident);
 
-    parse_quote! {
-        #[allow(non_camel_case_types)]
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-        enum #method_enum_ident {
-            #(#variants),*
+            let method_input_struct: ItemStruct = parse_quote! {
+                #[allow(non_camel_case_types)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                pub struct #input_struct_name {
+                    #(#args),*
+                }
+            };
+            method_input_structs.push(method_input_struct);
         }
     }
+    method_input_structs
 }
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(
-    method_enum_ident: &Ident,
-    bp_ident: &Ident,
-    items: &[ImplItem],
-) -> Result<(Vec<Expr>, Vec<Expr>)> {
+fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr>, Vec<Expr>)> {
     let mut arm_guards = Vec::<Expr>::new();
     let mut arm_bodies = Vec::<Expr>::new();
 
@@ -200,6 +204,7 @@ fn generate_dispatcher(
 
         if let ImplItem::Method(ref m) = item {
             if let Visibility::Public(_) = &m.vis {
+                let fn_name = &m.sig.ident.to_string();
                 let ident = &m.sig.ident;
 
                 let mut match_args: Vec<Expr> = vec![];
@@ -237,10 +242,16 @@ fn generate_dispatcher(
                             let arg = format_ident!("arg{}", arg_index);
 
                             match_args.push(parse_quote! { #arg });
-                            dispatch_args.push(parse_quote! { #arg });
+                            dispatch_args.push(parse_quote! { input.#arg });
                         }
                     }
                 }
+
+                // parse input
+                let input_struct_name = format_ident!("{}_{}_Input", bp_ident, ident);
+                stmts.push(parse_quote!{
+                    let input: #input_struct_name = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                });
 
                 // load state if needed
                 if let Some(stmt) = get_state {
@@ -266,7 +277,7 @@ fn generate_dispatcher(
                     stmts.push(stmt);
                 }
 
-                arm_guards.push(parse_quote! { #method_enum_ident::#ident(#(#match_args),*) });
+                arm_guards.push(parse_quote! { #fn_name });
                 arm_bodies.push(Expr::Block(ExprBlock {
                     attrs: vec![],
                     label: None,
@@ -553,33 +564,37 @@ mod tests {
 
                 #[allow(non_camel_case_types)]
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                enum TestMethod {
-                    x(u32),
-                    y(u32)
-                }
+                pub struct Test_x_Input { arg0 : u32 }
+
+                #[allow(non_camel_case_types)]
+                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_main(input: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_main(method_ptr: *mut u8, method_arg: *mut u8) -> *mut u8 {
                     ::scrypto::misc::set_up_panic_hook();
                     ::scrypto::component::init_component_system(::scrypto::component::ComponentSystem::new());
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
-                    let method = ::scrypto::buffer::scrypto_decode_from_buffer::<TestMethod>(input).unwrap();
+                    let method = ::scrypto::buffer::scrypto_decode_from_buffer::<String>(method_ptr).unwrap();
                     let rtn;
-                    match method {
-                        TestMethod::x(arg0) => {
+                    match method.as_str() {
+                        "x" => {
+                            let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                             let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
                             let state: blueprint::Test = borrow_component!(component_address).get_state();
-                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, arg0));
+                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, input.arg0));
                         }
-                        TestMethod::y(arg0) => {
-                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(arg0));
+                        "y" => {
+                            let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
+                            rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(input.arg0));
                         }
+                        _ => panic!("Invalid method")
                     }
                     rtn
                 }
                 #[no_mangle]
-                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_abi(input: *mut u8, input2: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{Function, Method};
                     use ::sbor::rust::borrow::ToOwned;
@@ -656,17 +671,12 @@ mod tests {
                     }
                 }
 
-                #[allow(non_camel_case_types)]
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                enum TestMethod {
-                }
-
                 #[no_mangle]
-                pub extern "C" fn Test_main(input: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_main(method_ptr: *mut u8) -> *mut u8 {
                     panic!("No invocation expected")
                 }
                 #[no_mangle]
-                pub extern "C" fn Test_abi(input: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_abi(input: *mut u8, input2: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
                     use ::scrypto::abi::{Function, Method};
                     use ::sbor::rust::borrow::ToOwned;

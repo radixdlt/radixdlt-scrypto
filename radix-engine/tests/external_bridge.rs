@@ -2,7 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use scrypto::{call_data, prelude::*};
+use scrypto::{prelude::*, to_struct};
 use transaction::builder::ManifestBuilder;
 
 /// This tests the external_blueprint! and external_component! macros
@@ -26,11 +26,12 @@ fn test_external_bridges() {
         .call_function(
             target_package_address,
             "ExternalBlueprintTarget",
-            call_data!(create()),
+            "create",
+            to_struct!(),
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    assert!(receipt1.result.is_ok());
+    receipt1.expect_success();
 
     let target_component_address = receipt1.new_component_addresses[0];
 
@@ -39,11 +40,12 @@ fn test_external_bridges() {
         .call_function(
             caller_package_address,
             "ExternalBlueprintCaller",
-            call_data!(create()),
+            "create",
+            to_struct!(),
         )
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![]);
-    assert!(receipt2.result.is_ok());
+    receipt2.expect_success();
 
     let caller_component_address = receipt2.new_component_addresses[0];
 
@@ -51,17 +53,19 @@ fn test_external_bridges() {
     let manifest3 = ManifestBuilder::new()
         .call_method(
             caller_component_address,
-            call_data!(run_tests_with_external_blueprint()),
+            "run_tests_with_external_blueprint",
+            to_struct!(),
         )
         .call_method(
             caller_component_address,
-            call_data!(run_tests_with_external_component(target_component_address)),
+            "run_tests_with_external_component",
+            to_struct!(target_component_address),
         )
         .build();
     let receipt3 = test_runner.execute_manifest(manifest3, vec![]);
 
     // ASSERT
-    assert!(receipt3.result.is_ok());
+    receipt3.expect_success();
 }
 
 fn fill_in_package_name_template(

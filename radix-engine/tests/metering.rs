@@ -3,7 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::wasm::InvokeError;
-use scrypto::call_data;
+use scrypto::to_struct;
 use test_runner::wat2wasm;
 use transaction::builder::ManifestBuilder;
 
@@ -16,12 +16,12 @@ fn test_loop() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
     let package_address = test_runner.publish_package_with_code(code);
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "Test", call_data!(f()))
+        .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]
@@ -33,7 +33,7 @@ fn test_loop_out_of_tbd() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
     let package_address = test_runner.publish_package_with_code(code);
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "Test", call_data!(f()))
+        .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -51,12 +51,12 @@ fn test_recursion() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
     let package_address = test_runner.publish_package_with_code(code);
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "Test", call_data!(f()))
+        .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]
@@ -68,7 +68,7 @@ fn test_recursion_stack_overflow() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
     let package_address = test_runner.publish_package_with_code(code);
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "Test", call_data!(f()))
+        .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -85,12 +85,12 @@ fn test_grow_memory() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "99999"));
     let package_address = test_runner.publish_package_with_code(code);
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "Test", call_data!(f()))
+        .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn test_grow_memory_out_of_tbd() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package_address = test_runner.publish_package_with_code(code);
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "Test", call_data!(f()))
+        .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

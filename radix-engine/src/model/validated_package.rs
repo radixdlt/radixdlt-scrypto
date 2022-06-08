@@ -86,7 +86,7 @@ impl ValidatedPackage {
                 let package =
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
                 let package_address = system_api.create_package(package);
-                Ok(ScryptoValue::from_value(&package_address))
+                Ok(ScryptoValue::from_typed(&package_address))
             }
             _ => Err(MethodNotFound(method_name.to_string())),
         }
@@ -96,8 +96,9 @@ impl ValidatedPackage {
         &self,
         actor: ScryptoActorInfo,
         export_name: String,
-        call_data: ScryptoValue,
-        system_api: &'s mut S,
+        method_name: &str,
+        arg: ScryptoValue,
+        system_api: &mut S,
     ) -> Result<ScryptoValue, RuntimeError>
     where
         S: SystemApi<W, I>,
@@ -108,7 +109,7 @@ impl ValidatedPackage {
         let runtime = RadixEngineWasmRuntime::new(actor, system_api, CALL_FUNCTION_TBD_LIMIT);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
         instance
-            .invoke_export(&export_name, &call_data, &mut runtime_boxed)
+            .invoke_export(&export_name, method_name, &arg, &mut runtime_boxed)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,
