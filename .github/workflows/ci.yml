@@ -17,6 +17,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - uses: Swatinem/rust-cache@v1.3.0
+      with:
+        working-directory: simulator
     - name: Install Scrypto toolchain
       run: cargo install --path ./simulator
     - name: Check format
