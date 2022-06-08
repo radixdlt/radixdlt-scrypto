@@ -1095,13 +1095,15 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         verify_stored_key(&key)?;
 
-        if let Some(value) = self.owned_values.get_kv_store_entry(&kv_store_id, &key.raw) {
+
+        if let Some(kv_store) = self.owned_values.get_kv_store_mut(&kv_store_id) {
+            let value = kv_store.store.get(&key.raw);
             match value {
                 Some(v) => {
                     self.ref_values.extend(v.stored_value_ids());
 
                     let value = Value::Option {
-                        value: Box::new(Some(v.dom)),
+                        value: Box::new(Some(v.dom.clone())),
                     };
                     let encoded = encode_any(&value);
                     return Ok(ScryptoValue::from_slice(&encoded).unwrap());
@@ -1176,12 +1178,13 @@ where
 
         verify_stored_value(&value)?;
 
-        let (old_value, kv_store_state) =
-            match self.owned_values.get_kv_store_entry(&kv_store_id, &key.raw) {
+        let (old_value, kv_store_state) = {
+            let kv_store = self.owned_values.get_kv_store_mut(&kv_store_id);
+            match kv_store {
                 None => match &self.component_state {
                     Some(ComponentState {
-                        component_address, ..
-                    }) => {
+                             component_address, ..
+                         }) => {
                         if !self
                             .ref_values
                             .contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
@@ -1196,7 +1199,7 @@ where
                             SubstateValue::KeyValueStoreEntry(v) => v,
                             _ => panic!("Substate value is not a KeyValueStore entry"),
                         }
-                        .map(|v| ScryptoValue::from_slice(&v).unwrap());
+                            .map(|v| ScryptoValue::from_slice(&v).unwrap());
                         Ok((
                             old_value,
                             KeyValueStoreState::Committed {
@@ -1206,8 +1209,12 @@ where
                     }
                     _ => Err(RuntimeError::KeyValueStoreNotFound(kv_store_id)),
                 },
-                Some(value) => Ok((value, KeyValueStoreState::Uncommitted)),
-            }?;
+                Some(kv_store) => {
+                    let value = kv_store.store.get(&key.raw).cloned();
+                    Ok((value, KeyValueStoreState::Uncommitted))
+                }
+            }
+        }?;
 
         let new_value_ids = match old_value {
             None => value.stored_value_ids(),

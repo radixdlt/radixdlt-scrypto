@@ -134,19 +134,6 @@ impl ComponentObjects {
         Ok(taken_values)
     }
 
-    pub fn get_kv_store_entry(
-        &mut self,
-        kv_store_id: &KeyValueStoreId,
-        key: &[u8],
-    ) -> Option<Option<ScryptoValue>> {
-        if self.borrowed_vault.is_some() {
-            panic!("Should not be taking while value is being borrowed");
-        }
-
-        self.get_kv_store_mut(kv_store_id)
-            .map(|kv_store| kv_store.store.get(key).map(|v| v.clone()))
-    }
-
     fn get_kv_store_mut_internal(
         &mut self,
         kv_store_id: &KeyValueStoreId,
