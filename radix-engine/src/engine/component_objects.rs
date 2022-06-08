@@ -37,7 +37,7 @@ impl PreCommittedKeyValueStore {
         descendents
     }
 
-    fn get_child_kv_store(
+    pub fn get_child_kv_store(
         &mut self,
         ancestors: &[KeyValueStoreId],
         kv_store_id: &KeyValueStoreId,
@@ -60,7 +60,7 @@ impl PreCommittedKeyValueStore {
         store.get_child_kv_store(rest, kv_store_id)
     }
 
-    fn take_child_vault(
+    pub fn take_child_vault(
         &mut self,
         ancestors: &[KeyValueStoreId],
         vault_id: &VaultId,
@@ -84,7 +84,7 @@ impl PreCommittedKeyValueStore {
         store.take_child_vault(rest, vault_id)
     }
 
-    fn put_child_vault(
+    pub fn put_child_vault(
         &mut self,
         ancestors: &[KeyValueStoreId],
         vault_id: VaultId,
@@ -167,36 +167,5 @@ impl ComponentObjects {
                     _ => panic!("Expected KV store")
                 }
             })
-    }
-
-    pub fn get_ref_kv_store_mut(
-        &mut self,
-        ancestors: &[KeyValueStoreId],
-        kv_store_id: &KeyValueStoreId,
-    ) -> &mut PreCommittedKeyValueStore {
-        let (first, rest) = ancestors.split_first().unwrap();
-        let store = match self.values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap() {
-            StoredValue::KeyValueStore(_, store) => store,
-            _ => panic!("Should not get here"),
-        };
-        store.get_child_kv_store(rest, kv_store_id)
-    }
-
-    pub fn borrow_ref_vault_mut(&mut self, ancestors: &[KeyValueStoreId], vault_id: &VaultId) -> Vault {
-        let (first, rest) = ancestors.split_first().unwrap();
-        let store = match self.values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap() {
-            StoredValue::KeyValueStore(_, store) => store,
-            _ => panic!("Should not get here"),
-        };
-        store.take_child_vault(rest, vault_id)
-    }
-
-    pub fn return_borrowed_vault_mut(&mut self, ancestors: &[KeyValueStoreId], vault_id: VaultId, vault: Vault) {
-        let (first, rest) = ancestors.split_first().unwrap();
-        let store = match self.values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap() {
-            StoredValue::KeyValueStore(_, store) => store,
-            _ => panic!("Should not get here"),
-        };
-        store.put_child_vault(rest, vault_id, vault);
     }
 }
