@@ -37,24 +37,27 @@ impl PreCommittedKeyValueStore {
         descendents
     }
 
-    fn find_child_kv_store(
+    fn get_child_kv_store(
         &mut self,
+        ancestors: &[KeyValueStoreId],
         kv_store_id: &KeyValueStoreId,
-    ) -> Option<&mut PreCommittedKeyValueStore> {
-        for (_, child_value) in self.child_values.iter_mut() {
-            if let StoredValue::KeyValueStore(ref id, kv_store) = child_value {
-                if id.eq(kv_store_id) {
-                    return Some(kv_store);
-                }
-
-                let maybe_store = kv_store.find_child_kv_store(kv_store_id);
-                if maybe_store.is_some() {
-                    return maybe_store;
-                }
-            }
+    ) -> &mut PreCommittedKeyValueStore {
+        if ancestors.is_empty() {
+            let value = self.child_values.get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id)).expect("Vault expected to exist");
+            let store = match value {
+                StoredValue::KeyValueStore(_, store) => store,
+                _ => panic!("Expected to be a store"),
+            };
+            return store;
         }
 
-        None
+        let (first, rest) = ancestors.split_first().unwrap();
+        let value = self.child_values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap();
+        let store = match value {
+            StoredValue::KeyValueStore(_, store) => store,
+            _ => panic!("Expected to be store"),
+        };
+        store.get_child_kv_store(rest, kv_store_id)
     }
 
     fn take_child_vault(
@@ -153,7 +156,7 @@ impl ComponentObjects {
         Ok(taken_values)
     }
 
-    fn get_owned_kv_store_mut_internal(
+    pub fn get_owned_kv_store_mut(
         &mut self,
         kv_store_id: &KeyValueStoreId,
     ) -> Option<&mut PreCommittedKeyValueStore> {
@@ -166,35 +169,17 @@ impl ComponentObjects {
             })
     }
 
-    fn get_ref_kv_store_mut_internal(
-        &mut self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> Option<&mut PreCommittedKeyValueStore> {
-        // TODO: Optimize to prevent search
-        for (_, value) in self.values.iter_mut() {
-            if let StoredValue::KeyValueStore(_, unclaimed) = value {
-                let maybe_store = unclaimed.find_child_kv_store(kv_store_id);
-                if maybe_store.is_some() {
-                    return maybe_store;
-                }
-            }
-        }
-
-        None
-    }
-
-    pub fn get_owned_kv_store_mut(
-        &mut self,
-        kv_store_id: &KeyValueStoreId,
-    ) -> Option<&mut PreCommittedKeyValueStore> {
-        self.get_owned_kv_store_mut_internal(kv_store_id)
-    }
-
     pub fn get_ref_kv_store_mut(
         &mut self,
+        ancestors: &[KeyValueStoreId],
         kv_store_id: &KeyValueStoreId,
-    ) -> Option<&mut PreCommittedKeyValueStore> {
-        self.get_ref_kv_store_mut_internal(kv_store_id)
+    ) -> &mut PreCommittedKeyValueStore {
+        let (first, rest) = ancestors.split_first().unwrap();
+        let store = match self.values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap() {
+            StoredValue::KeyValueStore(_, store) => store,
+            _ => panic!("Should not get here"),
+        };
+        store.get_child_kv_store(rest, kv_store_id)
     }
 
     pub fn borrow_ref_vault_mut(&mut self, ancestors: &[KeyValueStoreId], vault_id: &VaultId) -> Vault {

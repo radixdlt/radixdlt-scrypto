@@ -621,9 +621,7 @@ where
                     return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
                 }
                 Option::Some(ValueRefType::Uncommitted { ancestors }) => {
-                    let store = self.owned_values
-                        .get_ref_kv_store_mut(&kv_store_id)
-                        .expect("Expected kv store to exist");
+                    let store = self.owned_values.get_ref_kv_store_mut(&ancestors, &kv_store_id);
                     let value = store.store.get(&key.raw).cloned();
                     (value, ValueType::Ref(ValueRefType::Uncommitted { ancestors: ancestors.clone() }))
                 }
@@ -1219,9 +1217,11 @@ where
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values)
             }
-            ValueType::Ref(ValueRefType::Uncommitted { ancestors: _ }) => {
-                let kv_store = self.owned_values.get_ref_kv_store_mut(&kv_store_id)
-                    .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
+            ValueType::Ref(ValueRefType::Uncommitted { ancestors }) => {
+                if !self.owned_values.values.contains_key(&StoredValueId::KeyValueStoreId(ancestors[0].clone())) {
+                    return Err(RuntimeError::CyclicKeyValueStore(kv_store_id.clone()));
+                }
+                let kv_store = self.owned_values.get_ref_kv_store_mut(&ancestors, &kv_store_id);
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values)
             }
