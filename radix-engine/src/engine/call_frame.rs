@@ -226,9 +226,7 @@ impl LoadedSNodeState {
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
-                BorrowedSNodeState::Vault(id, vault, ..) => {
-                    SNodeState::VaultRef(*id, vault)
-                }
+                BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
             },
         }
     }
@@ -269,22 +267,23 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Proof(proof_id, proof) => {
                 frame.proofs.insert(proof_id, proof);
             }
-            BorrowedSNodeState::Vault(vault_id, vault, value_type) => {
-                match value_type {
-                    ValueType::Owned => {
-                        frame.owned_values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, vault));
-                    }
-                    ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                        let store = frame.get_owned_kv_store_mut(&root).unwrap();
-                        store.put_child_vault(&ancestors, vault_id, vault);
-                    }
-                    ValueType::Ref(ValueRefType::Committed { component_address }) => {
-                        frame
-                            .track
-                            .return_borrowed_global_mut_value((component_address, vault_id), vault);
-                    }
+            BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
+                ValueType::Owned => {
+                    frame.owned_values.insert(
+                        StoredValueId::VaultId(vault_id.clone()),
+                        StoredValue::Vault(vault_id, vault),
+                    );
                 }
-            }
+                ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
+                    let store = frame.get_owned_kv_store_mut(&root).unwrap();
+                    store.put_child_vault(&ancestors, vault_id, vault);
+                }
+                ValueType::Ref(ValueRefType::Committed { component_address }) => {
+                    frame
+                        .track
+                        .return_borrowed_global_mut_value((component_address, vault_id), vault);
+                }
+            },
         }
     }
 }
@@ -594,7 +593,10 @@ where
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
 
-    fn take_values(&mut self, value_ids: &HashSet<StoredValueId>) -> Result<Vec<StoredValue>, RuntimeError> {
+    fn take_values(
+        &mut self,
+        value_ids: &HashSet<StoredValueId>,
+    ) -> Result<Vec<StoredValue>, RuntimeError> {
         let values = self.take_set(value_ids)?;
         for value in &values {
             if let StoredValue::KeyValueStore(_, store) = value {
@@ -613,13 +615,20 @@ where
     ) -> Result<(Option<ScryptoValue>, ValueType), RuntimeError> {
         verify_stored_key(key)?;
 
-        let (maybe_value, value_type) = if self.owned_values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
+        let (maybe_value, value_type) = if self
+            .owned_values
+            .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+        {
             let store = self.get_owned_kv_store_mut(&kv_store_id).unwrap();
             let value = store.store.get(&key.raw).cloned();
             (value, ValueType::Owned)
         } else {
-            let maybe_value_ref = self.refed_values.get(&StoredValueId::KeyValueStoreId(kv_store_id.clone())).cloned();
-            let value_ref = maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
+            let maybe_value_ref = self
+                .refed_values
+                .get(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+                .cloned();
+            let value_ref =
+                maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
             let value = match &value_ref {
                 ValueRefType::Uncommitted { root, ancestors } => {
                     let root_store = self.get_owned_kv_store_mut(root).unwrap();
@@ -634,7 +643,8 @@ where
                     match substate_value {
                         SubstateValue::KeyValueStoreEntry(v) => v,
                         _ => panic!("Substate value is not a KeyValueStore entry"),
-                    }.map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
+                    }
+                    .map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
                 }
             };
             (value, ValueType::Ref(value_ref))
@@ -664,12 +674,11 @@ where
         &mut self,
         kv_store_id: &KeyValueStoreId,
     ) -> Option<&mut PreCommittedKeyValueStore> {
-        self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
-            .map(|v| {
-                match v {
-                    StoredValue::KeyValueStore(_, store) => store,
-                    _ => panic!("Expected KV store")
-                }
+        self.owned_values
+            .get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
+            .map(|v| match v {
+                StoredValue::KeyValueStore(_, store) => store,
+                _ => panic!("Expected KV store"),
             })
     }
 }
@@ -886,7 +895,9 @@ where
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (value_type, vault) = {
-                    if let Some(value) = self.owned_values.remove(&StoredValueId::VaultId(*vault_id)) {
+                    if let Some(value) =
+                        self.owned_values.remove(&StoredValueId::VaultId(*vault_id))
+                    {
                         match value {
                             StoredValue::Vault(_, vault) => (ValueType::Owned, vault),
                             _ => panic!("Expected vault"),
@@ -894,22 +905,23 @@ where
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
                         let maybe_value_ref = self.refed_values.get(&value_id).cloned();
-                        let value_ref = maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
+                        let value_ref =
+                            maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
                         let vault = match &value_ref {
                             ValueRefType::Uncommitted { root, ancestors } => {
                                 let root_store = self.get_owned_kv_store_mut(root).unwrap();
                                 root_store.take_child_vault(ancestors, vault_id)
                             }
-                            ValueRefType::Committed { component_address } => {
-                                self
-                                    .track
-                                    .borrow_global_mut_value((*component_address, *vault_id))
-                                    .map_err(|e| match e {
-                                        TrackError::NotFound => panic!("Expected to find vault"),
-                                        TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
-                                    })?
-                                    .into()
-                            }
+                            ValueRefType::Committed { component_address } => self
+                                .track
+                                .borrow_global_mut_value((*component_address, *vault_id))
+                                .map_err(|e| match e {
+                                    TrackError::NotFound => panic!("Expected to find vault"),
+                                    TrackError::Reentrancy => {
+                                        panic!("Vault logic is causing reentrancy")
+                                    }
+                                })?
+                                .into(),
                         };
                         (ValueType::Ref(value_ref), vault)
                     }
@@ -1124,7 +1136,6 @@ where
         self.track.create_uuid_value(package).into()
     }
 
-
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
         let value =
             ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
@@ -1145,7 +1156,12 @@ where
         {
             if addr.eq(component_address) {
                 for value_id in initial_value.stored_value_ids() {
-                    self.refed_values.insert(value_id, ValueRefType::Committed { component_address: *component_address });
+                    self.refed_values.insert(
+                        value_id,
+                        ValueRefType::Committed {
+                            component_address: *component_address,
+                        },
+                    );
                 }
                 let state = component.state().to_vec();
                 return Ok(state);
@@ -1174,8 +1190,7 @@ where
                 component.set_state(state.raw);
                 let addr = *component_address;
                 let new_values = self.take_values(&new_value_ids)?;
-                self.track
-                    .insert_objects_into_component(new_values, addr);
+                self.track.insert_objects_into_component(new_values, addr);
                 return Ok(());
             }
         }
@@ -1189,9 +1204,10 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         verify_stored_key(&key)?;
 
-        let (maybe_value, parent_type ) = self.read_kv_store_entry_internal(kv_store_id.clone(), &key)?;
+        let (maybe_value, parent_type) =
+            self.read_kv_store_entry_internal(kv_store_id.clone(), &key)?;
 
-        let ref_type = match parent_type  {
+        let ref_type = match parent_type {
             ValueType::Owned => ValueRefType::Uncommitted {
                 root: kv_store_id,
                 ancestors: vec![],
@@ -1206,7 +1222,7 @@ where
             }
             ValueType::Ref(ValueRefType::Committed { component_address }) => {
                 ValueRefType::Committed { component_address }
-            },
+            }
         };
         match maybe_value {
             Some(v) => {
@@ -1246,7 +1262,8 @@ where
         let new_values = self.take_values(&new_value_ids)?;
         match parent_type {
             ValueType::Owned => {
-                let kv_store = self.get_owned_kv_store_mut(&kv_store_id)
+                let kv_store = self
+                    .get_owned_kv_store_mut(&kv_store_id)
                     .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values)

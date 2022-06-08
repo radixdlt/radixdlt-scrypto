@@ -305,7 +305,7 @@ fn cannot_directly_reference_inserted_vault() {
             package_address,
             "RefCheck",
             "cannot_directly_reference_inserted_vault",
-            to_struct!()
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

@@ -42,7 +42,10 @@ impl PreCommittedKeyValueStore {
         kv_store_id: &KeyValueStoreId,
     ) -> &mut PreCommittedKeyValueStore {
         if ancestors.is_empty() {
-            let value = self.child_values.get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id)).expect("Vault expected to exist");
+            let value = self
+                .child_values
+                .get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
+                .expect("Vault expected to exist");
             let store = match value {
                 StoredValue::KeyValueStore(_, store) => store,
                 _ => panic!("Expected to be a store"),
@@ -51,7 +54,10 @@ impl PreCommittedKeyValueStore {
         }
 
         let (first, rest) = ancestors.split_first().unwrap();
-        let value = self.child_values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap();
+        let value = self
+            .child_values
+            .get_mut(&StoredValueId::KeyValueStoreId(*first))
+            .unwrap();
         let store = match value {
             StoredValue::KeyValueStore(_, store) => store,
             _ => panic!("Expected to be store"),
@@ -59,13 +65,12 @@ impl PreCommittedKeyValueStore {
         store.get_child_kv_store(rest, kv_store_id)
     }
 
-    pub fn take_child_vault(
-        &mut self,
-        ancestors: &[KeyValueStoreId],
-        vault_id: &VaultId,
-    ) -> Vault {
+    pub fn take_child_vault(&mut self, ancestors: &[KeyValueStoreId], vault_id: &VaultId) -> Vault {
         if ancestors.is_empty() {
-            let value = self.child_values.remove(&StoredValueId::VaultId(*vault_id)).expect("Vault expected to exist");
+            let value = self
+                .child_values
+                .remove(&StoredValueId::VaultId(*vault_id))
+                .expect("Vault expected to exist");
             let vault = match value {
                 StoredValue::Vault(_, vault) => vault,
                 _ => panic!("Expected to be a vault"),
@@ -74,7 +79,10 @@ impl PreCommittedKeyValueStore {
         }
 
         let (first, rest) = ancestors.split_first().unwrap();
-        let value = self.child_values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap();
+        let value = self
+            .child_values
+            .get_mut(&StoredValueId::KeyValueStoreId(*first))
+            .unwrap();
         let store = match value {
             StoredValue::KeyValueStore(_, store) => store,
             _ => panic!("Expected to be store"),
@@ -87,13 +95,19 @@ impl PreCommittedKeyValueStore {
         &mut self,
         ancestors: &[KeyValueStoreId],
         vault_id: VaultId,
-        vault: Vault
+        vault: Vault,
     ) {
         if ancestors.is_empty() {
-            self.child_values.insert(StoredValueId::VaultId(vault_id.clone()), StoredValue::Vault(vault_id, vault));
+            self.child_values.insert(
+                StoredValueId::VaultId(vault_id.clone()),
+                StoredValue::Vault(vault_id, vault),
+            );
         } else {
             let (first, rest) = ancestors.split_first().unwrap();
-            let value = self.child_values.get_mut(&StoredValueId::KeyValueStoreId(*first)).unwrap();
+            let value = self
+                .child_values
+                .get_mut(&StoredValueId::KeyValueStoreId(*first))
+                .unwrap();
             let store = match value {
                 StoredValue::KeyValueStore(_, store) => store,
                 _ => panic!("Expected to be store"),

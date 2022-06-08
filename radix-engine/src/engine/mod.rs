@@ -1,6 +1,6 @@
 mod call_frame;
-mod precommitted_kv_store;
 mod errors;
+mod precommitted_kv_store;
 mod runtime;
 mod substate_receipt;
 mod system_api;
@@ -12,8 +12,8 @@ pub use call_frame::{
     BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LoadedSNodeState,
     MoveMethod, SNodeState, StaticSNodeState,
 };
-pub use precommitted_kv_store::*;
 pub use errors::*;
+pub use precommitted_kv_store::*;
 pub use runtime::RadixEngineWasmRuntime;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
 pub use system_api::SystemApi;
