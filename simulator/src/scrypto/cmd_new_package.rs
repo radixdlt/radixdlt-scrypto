@@ -50,6 +50,7 @@ impl NewPackage {
         if path.exists() {
             Err(Error::PackageAlreadyExists)
         } else {
+            fs::create_dir_all(child_of(&path, ".cargo")).map_err(Error::IOError)?;
             fs::create_dir_all(child_of(&path, "src")).map_err(Error::IOError)?;
             fs::create_dir_all(child_of(&path, "tests")).map_err(Error::IOError)?;
 
@@ -61,6 +62,12 @@ impl NewPackage {
                     .replace("${scrypto}", &scrypto)
                     .replace("${transaction}", &transaction)
                     .replace("${radix-engine}", &radix_engine),
+            )
+            .map_err(Error::IOError)?;
+
+            fs::write(
+                child_of(&child_of(&path, ".cargo"), "config"),
+                include_str!("../../../assets/template/.cargo/config"),
             )
             .map_err(Error::IOError)?;
 
