@@ -28,7 +28,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
@@ -53,7 +53,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
@@ -77,7 +77,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
@@ -105,7 +105,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
@@ -171,7 +171,7 @@ fn invalid_double_ownership_of_vault() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error"),
     }
 }

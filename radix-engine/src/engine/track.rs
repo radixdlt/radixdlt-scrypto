@@ -10,7 +10,9 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
-use crate::engine::{ComponentObjects, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::{
+    PreCommittedKeyValueStore, StoredValue, SubstateOperation, SubstateOperationsReceipt,
+};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -574,31 +576,48 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn insert_objects_into_component(
+    fn insert_kv_store_into_component(
         &mut self,
-        new_objects: ComponentObjects,
+        kv_store_id: KeyValueStoreId,
+        kv_store: PreCommittedKeyValueStore,
         component_address: ComponentAddress,
     ) {
-        for (vault_id, vault) in new_objects.vaults {
+        self.create_key_space(component_address, kv_store_id);
+
+        for (k, v) in kv_store.store {
+            let parent_address = Address::KeyValueStore(component_address, kv_store_id);
+            self.set_key_value(parent_address, k, Some(v));
+        }
+
+        for (child_kv_store_id, child_kv_store) in kv_store.child_kv_stores {
+            self.insert_kv_store_into_component(
+                child_kv_store_id,
+                child_kv_store,
+                component_address.clone(),
+            );
+        }
+        for (vault_id, vault) in kv_store.child_vaults {
             self.create_uuid_value_2((component_address, vault_id), vault);
         }
-        for (kv_store_id, unclaimed) in new_objects.kv_stores {
-            self.create_key_space(component_address, kv_store_id);
-            for (k, v) in unclaimed.kv_store {
-                let parent_address = Address::KeyValueStore(component_address, kv_store_id);
-                self.set_key_value(parent_address, k, Some(v));
-            }
+    }
 
-            for (child_kv_store_id, child_kv_store) in unclaimed.descendent_kv_stores {
-                self.create_key_space(component_address, child_kv_store_id);
-                for (k, v) in child_kv_store {
-                    let parent_address =
-                        Address::KeyValueStore(component_address, child_kv_store_id);
-                    self.set_key_value(parent_address, k, Some(v));
+    pub fn insert_objects_into_component(
+        &mut self,
+        values: Vec<StoredValue>,
+        component_address: ComponentAddress,
+    ) {
+        for value in values {
+            match value {
+                StoredValue::Vault(vault_id, vault) => {
+                    self.create_uuid_value_2((component_address, vault_id), vault);
                 }
-            }
-            for (vault_id, vault) in unclaimed.descendent_vaults {
-                self.create_uuid_value_2((component_address, vault_id), vault);
+                StoredValue::KeyValueStore(kv_store_id, kv_store) => {
+                    self.insert_kv_store_into_component(
+                        kv_store_id,
+                        kv_store,
+                        component_address.clone(),
+                    );
+                }
             }
         }
     }

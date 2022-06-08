@@ -7,64 +7,75 @@ use crate::engine::*;
 use crate::model::*;
 
 #[derive(Debug)]
-pub struct UnclaimedKeyValueStore {
-    pub kv_store: HashMap<Vec<u8>, ScryptoValue>,
-    /// All descendents (not just direct children) of the store
-    pub descendent_kv_stores: HashMap<KeyValueStoreId, HashMap<Vec<u8>, ScryptoValue>>,
-    pub descendent_vaults: HashMap<VaultId, Vault>,
+pub enum StoredValue {
+    KeyValueStore(KeyValueStoreId, PreCommittedKeyValueStore),
+    Vault(VaultId, Vault),
 }
 
-impl UnclaimedKeyValueStore {
+#[derive(Debug)]
+pub struct PreCommittedKeyValueStore {
+    pub store: HashMap<Vec<u8>, ScryptoValue>,
+    pub child_kv_stores: HashMap<KeyValueStoreId, PreCommittedKeyValueStore>,
+    pub child_vaults: HashMap<VaultId, Vault>,
+}
+
+impl PreCommittedKeyValueStore {
     pub fn new() -> Self {
-        UnclaimedKeyValueStore {
-            kv_store: HashMap::new(),
-            descendent_kv_stores: HashMap::new(),
-            descendent_vaults: HashMap::new(),
+        PreCommittedKeyValueStore {
+            store: HashMap::new(),
+            child_kv_stores: HashMap::new(),
+            child_vaults: HashMap::new(),
         }
     }
 
+    fn find_child_kv_store(
+        &mut self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> Option<&mut PreCommittedKeyValueStore> {
+        for (id, child_kv_store) in self.child_kv_stores.iter_mut() {
+            if id.eq(kv_store_id) {
+                return Some(child_kv_store);
+            }
+
+            let maybe_store = child_kv_store.find_child_kv_store(kv_store_id);
+            if maybe_store.is_some() {
+                return maybe_store;
+            }
+        }
+
+        None
+    }
+
     fn insert_vault(&mut self, vault_id: VaultId, vault: Vault) {
-        if self.descendent_vaults.contains_key(&vault_id) {
+        if self.child_vaults.contains_key(&vault_id) {
             panic!("duplicate vault insertion: {:?}", vault_id);
         }
 
-        self.descendent_vaults.insert(vault_id, vault);
+        self.child_vaults.insert(vault_id, vault);
     }
 
     fn insert_kv_store(
         &mut self,
         kv_store_id: KeyValueStoreId,
-        kv_store: HashMap<Vec<u8>, ScryptoValue>,
+        kv_store: PreCommittedKeyValueStore,
     ) {
-        if self.descendent_kv_stores.contains_key(&kv_store_id) {
+        if self.child_kv_stores.contains_key(&kv_store_id) {
             panic!("duplicate store insertion: {:?}", kv_store_id);
         }
 
-        self.descendent_kv_stores.insert(kv_store_id, kv_store);
+        self.child_kv_stores.insert(kv_store_id, kv_store);
     }
 
-    fn insert_store_descendent(
-        &mut self,
-        unclaimed_kv_store: UnclaimedKeyValueStore,
-        kv_store_id: KeyValueStoreId,
-    ) {
-        self.insert_kv_store(kv_store_id, unclaimed_kv_store.kv_store);
-
-        for (kv_store_id, kv_store) in unclaimed_kv_store.descendent_kv_stores {
-            self.insert_kv_store(kv_store_id, kv_store);
-        }
-        for (vault_id, vault) in unclaimed_kv_store.descendent_vaults {
-            self.insert_vault(vault_id, vault);
-        }
-    }
-
-    pub fn insert_descendents(&mut self, new_descendents: ComponentObjects) {
-        for (vault_id, vault) in new_descendents.vaults {
-            self.insert_vault(vault_id, vault);
-        }
-
-        for (kv_store_id, child_kv_store) in new_descendents.kv_stores {
-            self.insert_store_descendent(child_kv_store, kv_store_id);
+    pub fn insert_children(&mut self, values: Vec<StoredValue>) {
+        for value in values {
+            match value {
+                StoredValue::KeyValueStore(id, kv_store) => {
+                    self.insert_kv_store(id, kv_store);
+                }
+                StoredValue::Vault(id, vault) => {
+                    self.insert_vault(id, vault);
+                }
+            }
         }
     }
 }
@@ -72,117 +83,79 @@ impl UnclaimedKeyValueStore {
 /// Component type objects which will eventually move into a component
 #[derive(Debug)]
 pub struct ComponentObjects {
-    /// Key/Value stores which haven't been assigned to a component or another store yet.
-    /// Keeps track of vault and store descendents.
-    pub kv_stores: HashMap<KeyValueStoreId, UnclaimedKeyValueStore>,
-    /// Vaults which haven't been assigned to a component or store yet.
-    pub vaults: HashMap<VaultId, Vault>,
+    values: HashMap<StoredValueId, StoredValue>,
     borrowed_vault: Option<(VaultId, Option<KeyValueStoreId>)>,
 }
 
 impl ComponentObjects {
     pub fn new() -> Self {
         ComponentObjects {
-            kv_stores: HashMap::new(),
-            vaults: HashMap::new(),
+            values: HashMap::new(),
             borrowed_vault: None,
         }
+    }
+
+    pub fn take_all(&mut self) -> HashMap<StoredValueId, StoredValue> {
+        self.values.drain().collect()
+    }
+
+    pub fn insert(&mut self, id: StoredValueId, value: StoredValue) {
+        self.values.insert(id, value);
     }
 
     pub fn take(
         &mut self,
-        other: HashSet<StoredValueId>,
-    ) -> Result<ComponentObjects, RuntimeError> {
+        other: &HashSet<StoredValueId>,
+    ) -> Result<Vec<StoredValue>, RuntimeError> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
-        let mut vaults = HashMap::new();
-        let mut kv_stores = HashMap::new();
+        let mut taken_values = Vec::new();
 
         for id in other {
-            match id {
-                StoredValueId::KeyValueStoreId(kv_store_id) => {
-                    let kv_store = self
-                        .kv_stores
-                        .remove(&kv_store_id)
-                        .ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id))?;
-                    kv_stores.insert(kv_store_id, kv_store);
-                }
-                StoredValueId::VaultId(vault_id) => {
-                    let vault = self
-                        .vaults
-                        .remove(&vault_id)
-                        .ok_or(RuntimeError::VaultNotFound(vault_id))?;
-                    vaults.insert(vault_id, vault);
-                }
-            }
+            let value = self
+                .values
+                .remove(id)
+                .ok_or(RuntimeError::ValueNotFound(*id))?;
+            taken_values.push(value);
         }
 
-        Ok(ComponentObjects {
-            vaults,
-            kv_stores,
-            borrowed_vault: None,
-        })
-    }
-
-    pub fn insert_objects_into_kv_store(
-        &mut self,
-        new_objects: ComponentObjects,
-        kv_store_id: &KeyValueStoreId,
-    ) {
-        if self.borrowed_vault.is_some() {
-            panic!("Should not be taking while value is being borrowed");
-        }
-
-        let unclaimed_kv_store = self.kv_stores.get_mut(kv_store_id).unwrap();
-        unclaimed_kv_store.insert_descendents(new_objects);
-    }
-
-    pub fn insert_kv_store_entry(
-        &mut self,
-        kv_store_id: &KeyValueStoreId,
-        key: Vec<u8>,
-        value: ScryptoValue,
-    ) {
-        if self.borrowed_vault.is_some() {
-            panic!("Should not be taking while value is being borrowed");
-        }
-
-        let (_, kv_store) = self.get_kv_store_mut(kv_store_id).unwrap();
-        kv_store.insert(key, value);
+        Ok(taken_values)
     }
 
     pub fn get_kv_store_entry(
         &mut self,
         kv_store_id: &KeyValueStoreId,
         key: &[u8],
-    ) -> Option<(KeyValueStoreId, Option<ScryptoValue>)> {
+    ) -> Option<Option<ScryptoValue>> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
         self.get_kv_store_mut(kv_store_id)
-            .map(|(kv_store_id, kv_store)| (kv_store_id, kv_store.get(key).map(|v| v.clone())))
+            .map(|kv_store| kv_store.store.get(key).map(|v| v.clone()))
     }
 
-    fn get_kv_store_mut(
+    pub fn get_kv_store_mut(
         &mut self,
         kv_store_id: &KeyValueStoreId,
-    ) -> Option<(KeyValueStoreId, &mut HashMap<Vec<u8>, ScryptoValue>)> {
+    ) -> Option<&mut PreCommittedKeyValueStore> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
 
-        // TODO: Optimize to prevent iteration
-        for (root, unclaimed) in self.kv_stores.iter_mut() {
-            if kv_store_id.eq(root) {
-                return Some((root.clone(), &mut unclaimed.kv_store));
-            }
+        // TODO: Optimize to prevent search
+        for (_, value) in self.values.iter_mut() {
+            if let StoredValue::KeyValueStore(ref id, unclaimed) = value {
+                if id.eq(kv_store_id) {
+                    return Some(unclaimed);
+                }
 
-            let kv_store = unclaimed.descendent_kv_stores.get_mut(kv_store_id);
-            if kv_store.is_some() {
-                return Some((root.clone(), kv_store.unwrap()));
+                let maybe_store = unclaimed.find_child_kv_store(kv_store_id);
+                if maybe_store.is_some() {
+                    return maybe_store;
+                }
             }
         }
 
@@ -194,15 +167,20 @@ impl ComponentObjects {
             panic!("Should not be able to borrow multiple times");
         }
 
-        if let Some(vault) = self.vaults.remove(vault_id) {
+        if let Some(vault) = self.values.remove(&StoredValueId::VaultId(*vault_id)) {
             self.borrowed_vault = Some((*vault_id, None));
-            return Some(vault);
+            match vault {
+                StoredValue::Vault(_, vault) => return Some(vault),
+                _ => panic!("Expected vault but was {:?}", vault),
+            }
         }
 
-        for (kv_store_id, unclaimed) in self.kv_stores.iter_mut() {
-            if let Some(vault) = unclaimed.descendent_vaults.remove(vault_id) {
-                self.borrowed_vault = Some((*vault_id, Some(*kv_store_id)));
-                return Some(vault);
+        for (_, value) in self.values.iter_mut() {
+            if let StoredValue::KeyValueStore(kv_store_id, unclaimed) = value {
+                if let Some(vault) = unclaimed.child_vaults.remove(vault_id) {
+                    self.borrowed_vault = Some((*vault_id, Some(*kv_store_id)));
+                    return Some(vault);
+                }
             }
         }
 
@@ -212,13 +190,21 @@ impl ComponentObjects {
     pub fn return_borrowed_vault_mut(&mut self, vault: Vault) {
         if let Some((vault_id, maybe_ancestor)) = self.borrowed_vault.take() {
             if let Some(ancestor_id) = maybe_ancestor {
-                self.kv_stores
-                    .get_mut(&ancestor_id)
-                    .unwrap()
-                    .descendent_vaults
-                    .insert(vault_id, vault);
+                let value = self
+                    .values
+                    .get_mut(&StoredValueId::KeyValueStoreId(ancestor_id))
+                    .unwrap();
+                match value {
+                    StoredValue::KeyValueStore(_, unclaimed) => {
+                        unclaimed.child_vaults.insert(vault_id, vault);
+                    }
+                    _ => panic!("Expected kv store but was {:?}", value),
+                };
             } else {
-                self.vaults.insert(vault_id, vault);
+                self.values.insert(
+                    StoredValueId::VaultId(vault_id.clone()),
+                    StoredValue::Vault(vault_id.clone(), vault),
+                );
             }
         } else {
             panic!("Should never get here");

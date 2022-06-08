@@ -47,14 +47,13 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
+    ValueNotFound(StoredValueId),
+
     /// Key Value Store does not exist.
     KeyValueStoreNotFound(KeyValueStoreId),
 
     /// Cyclic Key Value Store added
     CyclicKeyValueStore(KeyValueStoreId),
-
-    /// Vault does not exist.
-    VaultNotFound(VaultId),
 
     StoredValueRemoved(StoredValueId),
 
