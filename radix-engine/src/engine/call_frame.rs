@@ -1194,12 +1194,14 @@ where
         let new_values = self.take_values(&new_value_ids)?;
         match store_type {
             ValueType::Owned => {
-                let kv_store = self.owned_values.get_owned_kv_store_mut(&kv_store_id).unwrap();
+                let kv_store = self.owned_values.get_owned_kv_store_mut(&kv_store_id)
+                    .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values)
             }
             ValueType::Ref(ValueRefType::Uncommitted) => {
-                let kv_store = self.owned_values.get_ref_kv_store_mut(&kv_store_id).unwrap();
+                let kv_store = self.owned_values.get_ref_kv_store_mut(&kv_store_id)
+                    .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values)
             }
