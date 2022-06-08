@@ -5,8 +5,8 @@ use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::wasm::DefaultWasmEngine;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
@@ -32,7 +32,7 @@ fn test_say_hello() {
 
     // Test the `say_hello` function.
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "NoStd", call_data!(say_hello()))
+        .call_function(package_address, "NoStd", "say_hello", to_struct!())
         .build();
     let receipt = executor.execute(&TestTransaction::new(manifest, 2, vec![]));
     receipt.result.expect("Should be okay.");

@@ -1,7 +1,6 @@
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::crypto::*;
-use scrypto::values::*;
 
 use crate::model::*;
 
@@ -94,18 +93,22 @@ impl TestTransaction {
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    call_data,
+                    method_name,
+                    arg,
                 } => ExecutableInstruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    call_data: ScryptoValue::from_slice(&call_data).unwrap(),
+                    method_name,
+                    arg,
                 },
                 Instruction::CallMethod {
                     component_address,
-                    call_data,
+                    method_name,
+                    arg,
                 } => ExecutableInstruction::CallMethod {
                     component_address,
-                    call_data: ScryptoValue::from_slice(&call_data).unwrap(),
+                    method_name,
+                    arg,
                 },
                 Instruction::CallMethodWithAllResources {
                     component_address,

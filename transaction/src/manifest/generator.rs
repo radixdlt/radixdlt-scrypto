@@ -4,9 +4,9 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
-use scrypto::call_data_any_args;
 use scrypto::engine::types::*;
 use scrypto::values::*;
+use scrypto::vec_to_struct;
 
 use crate::errors::*;
 use crate::manifest::ast;
@@ -300,7 +300,8 @@ pub fn generate_instruction(
             Instruction::CallFunction {
                 package_address: generate_package_address(package_address)?,
                 blueprint_name: generate_string(blueprint_name)?,
-                call_data: call_data_any_args!(generate_string(function)?, fields),
+                method_name: generate_string(function)?,
+                arg: vec_to_struct!(fields),
             }
         }
         ast::Instruction::CallMethod {
@@ -318,15 +319,10 @@ pub fn generate_instruction(
                 fields.push(validated_arg.dom);
             }
 
-            let variant = ::sbor::Value::Enum {
-                name: generate_string(method)?,
-                fields,
-            };
-            let bytes = ::sbor::encode_any(&variant);
-
             Instruction::CallMethod {
                 component_address: generate_component_address(component_address)?,
-                call_data: bytes,
+                method_name: generate_string(method)?,
+                arg: vec_to_struct!(fields),
             }
         }
         ast::Instruction::CallMethodWithAllResources {
@@ -783,8 +779,8 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use scrypto::buffer::scrypto_encode;
-    use scrypto::call_data;
     use scrypto::prelude::Package;
+    use scrypto::to_struct;
 
     #[macro_export]
     macro_rules! generate_value_ok {
@@ -1011,7 +1007,8 @@ mod tests {
                 )
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
-                call_data: call_data!(new(500u32, HashMap::from([("key", 1u8),])))
+                method_name: "new".to_string(),
+                arg: to_struct!(500u32, HashMap::from([("key", 1u8),]))
             }
         );
         generate_instruction_ok!(
@@ -1021,7 +1018,8 @@ mod tests {
                     "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                 )
                 .unwrap(),
-                call_data: call_data!(refill())
+                method_name: "refill".to_string(),
+                arg: to_struct!()
             }
         );
         generate_instruction_ok!(
@@ -1069,13 +1067,14 @@ mod tests {
                         "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                     )
                     .unwrap(),
-                    call_data: call_data!(withdraw_by_amount(
+                    method_name: "withdraw_by_amount".to_string(),
+                    arg: to_struct!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap()
-                    ))
+                    )
                 },
                 Instruction::TakeFromWorktopByAmount {
                     amount: Decimal::from(2),
@@ -1089,7 +1088,8 @@ mod tests {
                         "0292566c83de7fd6b04fcc92b5e04b03228ccff040785673278ef1".into()
                     )
                     .unwrap(),
-                    call_data: call_data!(buy_gumball(scrypto::resource::Bucket(512)))
+                    method_name: "buy_gumball".to_string(),
+                    arg: to_struct!(scrypto::resource::Bucket(512))
                 },
                 Instruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),
@@ -1119,13 +1119,14 @@ mod tests {
                         "02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de".into()
                     )
                     .unwrap(),
-                    call_data: call_data!(create_proof_by_amount(
+                    method_name: "create_proof_by_amount".to_string(),
+                    arg: to_struct!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
                             "030000000000000000000000000000000000000000000000000004"
                         )
                         .unwrap()
-                    ))
+                    )
                 },
                 Instruction::PopFromAuthZone,
                 Instruction::DropProof { proof_id: 516 },
@@ -1138,7 +1139,7 @@ mod tests {
                     resource_address: ResourceAddress::from_str(
                         "030000000000000000000000000000000000000000000000000004"
                     )
-                    .unwrap(),
+                    .unwrap()
                 },
                 Instruction::CallMethodWithAllResources {
                     component_address: ComponentAddress::from_str(

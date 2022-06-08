@@ -2,11 +2,11 @@ mod constants;
 mod errors;
 mod prepare;
 mod traits;
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "wasmer")]
 mod wasmer;
 mod wasmi;
 
-#[cfg(not(feature = "alloc"))]
+#[cfg(feature = "wasmer")]
 pub use self::wasmer::*;
 pub use self::wasmi::*;
 pub use constants::*;

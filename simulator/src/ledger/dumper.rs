@@ -120,17 +120,14 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
         kv_store_id
     );
     for (last, (k, v)) in map.iter().identify_last() {
-        let k_validated = ScryptoValue::from_slice(k).unwrap();
-        let v_validated = ScryptoValue::from_slice(v).unwrap();
-        writeln!(
-            output,
-            "{} {} => {}",
-            list_item_prefix(last),
-            k_validated,
-            v_validated
-        );
-        referenced_maps.extend(v_validated.kv_store_ids);
-        referenced_vaults.extend(v_validated.vault_ids);
+        let key = ScryptoValue::from_slice(k).unwrap();
+        let value_wrapper: Option<Vec<u8>> = scrypto_decode(v).unwrap();
+        if let Some(v) = value_wrapper {
+            let value = ScryptoValue::from_slice(&v).unwrap();
+            writeln!(output, "{} {} => {}", list_item_prefix(last), key, value);
+            referenced_maps.extend(value.kv_store_ids);
+            referenced_vaults.extend(value.vault_ids);
+        }
     }
     Ok((referenced_maps, referenced_vaults))
 }

@@ -43,27 +43,38 @@ macro_rules! call_data_bytes_args {
 }
 
 #[macro_export]
-macro_rules! call_data {
-    ($name:expr, $($args: expr),*) => {
-        {
-            let mut fields = Vec::new();
-            $(
-                let encoded = ::scrypto::buffer::scrypto_encode(&$args);
-                fields.push(::sbor::decode_any(&encoded).unwrap());
-            )*
-            ::scrypto::call_data_any_args!($name, fields)
+macro_rules! to_struct {
+    ($($args: expr),*) => {{
+        let mut fields = Vec::new();
+        $(
+            let encoded = ::scrypto::buffer::scrypto_encode(&$args);
+            fields.push(::sbor::decode_any(&encoded).unwrap());
+        )*
+        let input_struct = ::sbor::Value::Struct {
+            fields,
+        };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
+
+#[macro_export]
+macro_rules! vec_to_struct {
+    ($args: expr) => {{
+        let input_struct = ::sbor::Value::Struct { fields: $args };
+        ::sbor::encode_any(&input_struct)
+    }};
+}
+
+#[macro_export]
+macro_rules! bytes_vec_to_struct {
+    ($args: expr) => {{
+        let mut fields = Vec::new();
+        for arg in $args {
+            fields.push(::sbor::decode_any(&arg).unwrap());
         }
-    };
-    ($name:ident($($args: expr),*)) => {
-        {
-            let mut fields = Vec::new();
-            $(
-                let encoded = ::scrypto::buffer::scrypto_encode(&$args);
-                fields.push(::sbor::decode_any(&encoded).unwrap());
-            )*
-            ::scrypto::call_data_any_args!(stringify!($name).to_string(), fields)
-        }
-    };
+        let input_struct = ::sbor::Value::Struct { fields };
+        ::sbor::encode_any(&input_struct)
+    }};
 }
 
 /// Logs an `ERROR` message.

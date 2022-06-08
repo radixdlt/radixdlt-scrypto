@@ -3,8 +3,8 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -13,7 +13,7 @@ fn test_package() {
     let package = test_runner.publish_package("component");
 
     let manifest1 = ManifestBuilder::new()
-        .call_function(package, "PackageTest", call_data!(publish()))
+        .call_function(package, "PackageTest", "publish", to_struct!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     assert!(receipt1.result.is_ok());
@@ -27,7 +27,7 @@ fn test_component() {
 
     // Create component
     let manifest1 = ManifestBuilder::new()
-        .call_function(package, "ComponentTest", call_data!(create_component()))
+        .call_function(package, "ComponentTest", "create_component", to_struct!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
     assert!(receipt1.result.is_ok());
@@ -40,10 +40,11 @@ fn test_component() {
         .call_function(
             package,
             "ComponentTest",
-            call_data![get_component_info(component)],
+            "get_component_info",
+            to_struct!(component),
         )
-        .call_method(component, call_data!(get_component_state()))
-        .call_method(component, call_data!(put_component_state()))
+        .call_method(component, "get_component_state", to_struct!())
+        .call_method(component, "put_component_state", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
@@ -61,7 +62,8 @@ fn invalid_blueprint_name_should_cause_error() {
         .call_function(
             package_address,
             "NonExistentBlueprint",
-            call_data![create_component()],
+            "create_component",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -80,7 +82,7 @@ fn reentrancy_should_not_be_possible() {
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.publish_package("component");
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "ReentrantComponent", call_data!(new()))
+        .call_function(package_address, "ReentrantComponent", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
     receipt.result.expect("Should be okay");
@@ -88,7 +90,7 @@ fn reentrancy_should_not_be_possible() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, call_data!(call_self()))
+        .call_method(component_address, "call_self", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -108,7 +110,7 @@ fn missing_component_address_should_cause_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, call_data!(get_component_state()))
+        .call_method(component_address, "get_component_state", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 

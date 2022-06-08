@@ -4,9 +4,9 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
-use scrypto::call_data;
 use scrypto::engine::types::StoredValueId;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -20,7 +20,8 @@ fn dangling_key_value_store_should_fail() {
         .call_function(
             package_address,
             "KeyValueStoreTest",
-            call_data!(dangling_key_value_store()),
+            "dangling_key_value_store",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -41,7 +42,7 @@ fn can_insert_in_child_nodes() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "SuperKeyValueStore", call_data!(new()))
+        .call_function(package_address, "SuperKeyValueStore", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -60,7 +61,8 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
         .call_function(
             package_address,
             "KeyValueStoreTest",
-            call_data!(new_key_value_store_into_map_then_get()),
+            "new_key_value_store_into_map_then_get",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -77,7 +79,7 @@ fn cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "CyclicMap", call_data!(new()))
+        .call_function(package_address, "CyclicMap", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -100,7 +102,12 @@ fn self_cyclic_map_fails_execution() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "CyclicMap", call_data!(new_self_cyclic()))
+        .call_function(
+            package_address,
+            "CyclicMap",
+            "new_self_cyclic",
+            to_struct!(),
+        )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -124,7 +131,8 @@ fn cannot_remove_key_value_stores() {
         .call_function(
             package_address,
             "KeyValueStoreTest",
-            call_data!(new_key_value_store_into_vector()),
+            "new_key_value_store_into_vector",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -132,7 +140,7 @@ fn cannot_remove_key_value_stores() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, call_data!(clear_vector()))
+        .call_method(component_address, "clear_vector", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -156,7 +164,8 @@ fn cannot_overwrite_key_value_stores() {
         .call_function(
             package_address,
             "KeyValueStoreTest",
-            call_data!(new_key_value_store_into_key_value_store()),
+            "new_key_value_store_into_key_value_store",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -164,7 +173,7 @@ fn cannot_overwrite_key_value_stores() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_method(component_address, call_data!(overwrite_key_value_store()))
+        .call_method(component_address, "overwrite_key_value_store", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -190,7 +199,8 @@ fn create_key_value_store_and_get() {
         .call_function(
             package_address,
             "KeyValueStoreTest",
-            call_data!(new_key_value_store_with_get()),
+            "new_key_value_store_with_get",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -210,7 +220,8 @@ fn create_key_value_store_and_put() {
         .call_function(
             package_address,
             "KeyValueStoreTest",
-            call_data!(new_key_value_store_with_put()),
+            "new_key_value_store_with_put",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -230,7 +241,8 @@ fn can_reference_in_memory_vault() {
         .call_function(
             package_address,
             "Precommitted",
-            call_data!(can_reference_precommitted_vault()),
+            "can_reference_precommitted_vault",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -250,7 +262,8 @@ fn can_reference_deep_in_memory_value() {
         .call_function(
             package_address,
             "Precommitted",
-            call_data!(can_reference_deep_precommitted_value()),
+            "can_reference_deep_precommitted_value",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -270,7 +283,8 @@ fn can_reference_deep_in_memory_vault() {
         .call_function(
             package_address,
             "Precommitted",
-            call_data!(can_reference_deep_precommitted_vault()),
+            "can_reference_deep_precommitted_vault",
+            to_struct!()
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

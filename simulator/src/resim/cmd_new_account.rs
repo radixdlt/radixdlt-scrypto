@@ -1,8 +1,8 @@
 use clap::Parser;
 use colored::*;
 use rand::Rng;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 use crate::resim::*;
 
@@ -26,7 +26,7 @@ impl NewAccount {
         let auth_address = NonFungibleAddress::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_address));
         let manifest = ManifestBuilder::new()
-            .call_method(SYSTEM_COMPONENT, call_data!(free_xrd()))
+            .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(&withdraw_auth, bucket_id)
             })
@@ -59,16 +59,15 @@ impl NewAccount {
             )
             .map_err(Error::IOError)?;
 
-            if get_configs()?.is_none() {
+            let mut configs = get_configs()?;
+            if configs.default_account.is_none() {
                 writeln!(
                     out,
                     "No configuration found on system. will use the above account as default."
                 )
                 .map_err(Error::IOError)?;
-                set_configs(&Configs {
-                    default_account: account,
-                    default_private_key: private_key.to_bytes(),
-                })?;
+                configs.default_account = Some((account, hex::encode(private_key.to_bytes())));
+                set_configs(&configs)?;
             }
         } else {
             writeln!(out, "A manifest has been produced for the following key pair. To complete account creation, you will need to run the manifest!").map_err(Error::IOError)?;
