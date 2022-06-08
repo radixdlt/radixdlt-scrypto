@@ -18,13 +18,6 @@ use crate::engine::types::*;
 use crate::math::*;
 use crate::resource::*;
 
-/// Represents an error when parsing a Scrypto value.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseScryptoValueError {
-    DecodeError(DecodeError),
-    CustomValueCheckError(ScryptoCustomValueCheckError),
-}
-
 pub enum ScryptoValueReplaceError {
     ProofIdNotFound(ProofId),
     BucketIdNotFound(BucketId),
@@ -41,51 +34,28 @@ pub struct ScryptoValue {
     pub kv_store_ids: HashSet<KeyValueStoreId>,
 }
 
-// FIXME: encode as the original type, rather than Vec<u8>
-
-impl TypeId for ScryptoValue {
-    fn type_id() -> u8 {
-        Vec::<u8>::type_id()
-    }
-}
-
-impl Encode for ScryptoValue {
-    fn encode_value(&self, encoder: &mut Encoder) {
-        self.raw.encode_value(encoder);
-    }
-}
-
-impl Decode for ScryptoValue {
-    fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        Ok(Self::from_slice(&Vec::<u8>::decode_value(decoder)?)
-            .expect("FIXME support untrusted ScryptoValue decoding"))
-    }
-}
-
 impl ScryptoValue {
     pub fn unit() -> Self {
-        Self::from_value(&())
+        Self::from_typed(&())
     }
 
-    pub fn from_value<T: Encode>(value: &T) -> Self {
-        ScryptoValue::from_slice(&scrypto_encode(value)).unwrap()
+    pub fn from_typed<T: Encode>(value: &T) -> Self {
+        let bytes = scrypto_encode(value);
+        Self::from_slice(&bytes).expect("Failed to convert trusted value into ScryptoValue")
     }
 
-    pub fn from_any(value: &Value) -> Result<Self, ParseScryptoValueError> {
-        ScryptoValue::from_slice(&encode_any(value))
+    pub fn from_slice(slice: &[u8]) -> Result<Self, DecodeError> {
+        let value = decode_any(slice)?;
+        Self::from_value(value)
     }
 
-    pub fn from_slice(slice: &[u8]) -> Result<Self, ParseScryptoValueError> {
-        // Decode with SBOR
-        let value = decode_any(slice).map_err(ParseScryptoValueError::DecodeError)?;
-
-        // Scrypto specific types checking
+    pub fn from_value(value: Value) -> Result<Self, DecodeError> {
         let mut checker = ScryptoCustomValueChecker::new();
         traverse_any(&mut MutableSborPath::new(), &value, &mut checker)
-            .map_err(ParseScryptoValueError::CustomValueCheckError)?;
+            .map_err(|e| DecodeError::CustomError(format!("{:?}", e)))?;
 
-        Ok(ScryptoValue {
-            raw: slice.to_vec(),
+        Ok(Self {
+            raw: encode_any(&value),
             dom: value,
             bucket_ids: checker
                 .buckets
@@ -199,8 +169,7 @@ pub struct ScryptoCustomValueChecker {
 /// Represents an error when validating a Scrypto-specific value.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ScryptoCustomValueCheckError {
-    DecodeError(DecodeError),
-    InvalidTypeId(u8),
+    UnknownTypeId(u8),
     InvalidDecimal(ParseDecimalError),
     InvalidPackageAddress(ParsePackageAddressError),
     InvalidComponentAddress(ParseComponentAddressError),
@@ -237,7 +206,7 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
         type_id: u8,
         data: &[u8],
     ) -> Result<(), Self::Err> {
-        match ScryptoType::from_id(type_id).ok_or(Self::Err::InvalidTypeId(type_id))? {
+        match ScryptoType::from_id(type_id).ok_or(Self::Err::UnknownTypeId(type_id))? {
             ScryptoType::PackageAddress => {
                 PackageAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidPackageAddress)?;
@@ -566,11 +535,6 @@ mod tests {
             scrypto::resource::Bucket(0),
         ]);
         let error = ScryptoValue::from_slice(&buckets).expect_err("Should be an error");
-        assert_eq!(
-            error,
-            ParseScryptoValueError::CustomValueCheckError(
-                ScryptoCustomValueCheckError::DuplicateIds
-            )
-        );
+        assert_eq!(error, DecodeError::CustomError("DuplicateIds".to_string()));
     }
 }

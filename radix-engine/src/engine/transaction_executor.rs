@@ -75,12 +75,12 @@ where
         // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
         let result = root_frame.invoke_snode(
             scrypto::core::SNodeRef::TransactionProcessor,
-            ScryptoValue::from_value(&TransactionProcessorFunction::Run(instructions.clone())),
+            ScryptoValue::from_typed(&TransactionProcessorFunction::Run(instructions.clone())),
         );
 
         let (outputs, error) = match result {
-            Ok(o) => (scrypto_decode::<Vec<ScryptoValue>>(&o.raw).unwrap(), None),
-            Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
+            Ok(o) => (scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap(), None),
+            Err(e) => (Vec::new(), Some(e)),
         };
 
         let track_receipt = track.to_receipt();

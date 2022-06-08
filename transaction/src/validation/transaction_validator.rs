@@ -1,5 +1,4 @@
 use sbor::rust::vec;
-use sbor::rust::vec::Vec;
 use scrypto::buffer::scrypto_decode;
 use scrypto::crypto::*;
 use scrypto::values::*;
@@ -164,21 +163,23 @@ impl TransactionValidator {
                     blueprint_name,
                     call_data,
                 } => {
+                    Self::validate_call_data(&call_data, &mut id_validator)
+                        .map_err(TransactionValidationError::CallDataValidationError)?;
                     instructions.push(ExecutableInstruction::CallFunction {
                         package_address,
                         blueprint_name,
-                        call_data: Self::validate_call_data(call_data, &mut id_validator)
-                            .map_err(TransactionValidationError::CallDataValidationError)?,
+                        call_data,
                     });
                 }
                 Instruction::CallMethod {
                     component_address,
                     call_data,
                 } => {
+                    Self::validate_call_data(&call_data, &mut id_validator)
+                        .map_err(TransactionValidationError::CallDataValidationError)?;
                     instructions.push(ExecutableInstruction::CallMethod {
                         component_address,
-                        call_data: Self::validate_call_data(call_data, &mut id_validator)
-                            .map_err(TransactionValidationError::CallDataValidationError)?,
+                        call_data,
                     });
                 }
                 Instruction::CallMethodWithAllResources {
@@ -253,11 +254,11 @@ impl TransactionValidator {
     }
 
     fn validate_call_data(
-        call_data: Vec<u8>,
+        call_data: &[u8],
         id_validator: &mut IdValidator,
     ) -> Result<ScryptoValue, CallDataValidationError> {
-        let value = ScryptoValue::from_slice(&call_data)
-            .map_err(CallDataValidationError::InvalidScryptoValue)?;
+        let value =
+            ScryptoValue::from_slice(call_data).map_err(CallDataValidationError::DecodeError)?;
         id_validator
             .move_resources(&value)
             .map_err(CallDataValidationError::IdValidationError)?;

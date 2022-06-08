@@ -17,7 +17,7 @@ pub struct Receipt {
     pub commit_receipt: Option<CommitReceipt>,
     pub instructions: Vec<ExecutableInstruction>,
     pub result: Result<(), RuntimeError>,
-    pub outputs: Vec<ScryptoValue>,
+    pub outputs: Vec<Vec<u8>>,
     pub logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
@@ -64,16 +64,38 @@ impl fmt::Debug for Receipt {
                 "\n{} {}",
                 prefix!(i, self.instructions),
                 match inst {
-                    ExecutableInstruction::PublishPackage { .. } =>
-                        "PublishPackage {..}".to_owned(),
+                    ExecutableInstruction::CallFunction {
+                        package_address,
+                        blueprint_name,
+                        call_data,
+                    } => format!(
+                        "CallFunction {{ package_address: {}, blueprint_name: {:?}, call_data: {:?} }}",
+                        package_address,
+                        blueprint_name,
+                        ScryptoValue::from_slice(&call_data).expect("Invalid call data")
+                    ),
+                    ExecutableInstruction::CallMethod {
+                        component_address,
+                        call_data,
+                    } => format!(
+                        "CallMethod {{ component_address: {}, call_data: {:?} }}",
+                        component_address,
+                        ScryptoValue::from_slice(&call_data).expect("Invalid call data")
+                    ),
+                    ExecutableInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),
                 }
             )?;
         }
 
         write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
-        for (i, result) in self.outputs.iter().enumerate() {
-            write!(f, "\n{} {:?}", prefix!(i, self.outputs), result)?;
+        for (i, output) in self.outputs.iter().enumerate() {
+            write!(
+                f,
+                "\n{} {:?}",
+                prefix!(i, self.outputs),
+                ScryptoValue::from_slice(output).expect("Invalid return data")
+            )?;
         }
 
         write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;

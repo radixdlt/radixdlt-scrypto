@@ -13,6 +13,9 @@ macro_rules! scrypto_type {
         }
 
         impl Encode for $t {
+            fn encode_type(&self, encoder: &mut Encoder) {
+                encoder.write_type(Self::type_id());
+            }
             fn encode_value(&self, encoder: &mut Encoder) {
                 let bytes = self.to_vec();
                 encoder.write_len(bytes.len());
@@ -21,10 +24,18 @@ macro_rules! scrypto_type {
         }
 
         impl Decode for $t {
+            fn decode_type(decoder: &mut Decoder) -> Result<(), DecodeError> {
+                decoder.check_type(Self::type_id())
+            }
             fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
                 let len = decoder.read_len()?;
                 let slice = decoder.read_bytes(len)?;
-                Self::try_from(slice).map_err(|_| DecodeError::InvalidCustomData($ct.id()))
+                Self::try_from(slice).map_err(|_| {
+                    DecodeError::CustomError(::sbor::rust::format!(
+                        "Failed to decode {}",
+                        stringify!($t)
+                    ))
+                })
             }
         }
 

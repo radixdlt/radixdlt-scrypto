@@ -79,7 +79,7 @@ pub enum Instruction {
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
-        call_data: Vec<u8>,
+        call_data: Vec<u8>, // TODO: restore function name
     },
 
     /// Calls a component method.
@@ -87,7 +87,7 @@ pub enum Instruction {
     /// Buckets and proofs in arguments moves from transaction context to the callee.
     CallMethod {
         component_address: ComponentAddress,
-        call_data: Vec<u8>,
+        call_data: Vec<u8>, // TODO: restore method name
     },
 
     /// Calls a component method with all resources owned by the transaction.
