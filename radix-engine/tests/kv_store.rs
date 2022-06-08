@@ -4,6 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
+use scrypto::engine::types::StoredValueId;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -146,7 +147,7 @@ fn cannot_remove_key_value_stores() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::KeyValueStoreRemoved(_) => {}
+        RuntimeError::StoredValueRemoved(StoredValueId::KeyValueStoreId(_)) => {}
         _ => panic!(
             "Should be key value store removed error but was {}",
             runtime_error
@@ -179,7 +180,7 @@ fn cannot_overwrite_key_value_stores() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::KeyValueStoreRemoved(_) => {}
+        RuntimeError::StoredValueRemoved(StoredValueId::KeyValueStoreId(_)) => {}
         _ => panic!(
             "Should be key value store removed error but was {}",
             runtime_error

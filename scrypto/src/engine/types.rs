@@ -20,4 +20,10 @@ pub type BucketId = u32;
 pub type ProofId = u32;
 pub type VaultId = (Hash, u32);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum StoredValueId {
+    KeyValueStoreId(KeyValueStoreId),
+    VaultId(VaultId),
+}
+
 pub use crate::constants::*;
