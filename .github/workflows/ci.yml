@@ -102,7 +102,7 @@ jobs:
     - name: Run tests
       run: cargo test
       working-directory: scrypto-tests
-    - name: Run tests (no_std)
+    - name: Run tests with no_std
       run: cargo test --no-default-features --features alloc
       working-directory: scrypto-tests
   scrypto-examples:
@@ -155,7 +155,7 @@ jobs:
       run: cargo bench
       working-directory: radix-engine
   radix-engine-wasmer:
-    name: Run Radix Engine tests (with Wasmer)
+    name: Run Radix Engine tests with Wasmer
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -177,7 +177,7 @@ jobs:
       run: cargo bench --features wasmer
       working-directory: radix-engine
   transaction:
-    name: Run transaction manifest tests
+    name: Run transaction tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -191,7 +191,7 @@ jobs:
       run: cargo test
       working-directory: transaction
   simulator:
-    name: Run Simulator tests (resim)
+    name: Run CLI tests
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
