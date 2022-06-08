@@ -35,13 +35,13 @@ jobs:
         toolchain: stable
     - uses: ./.github/workflows/cache
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
       working-directory: sbor
     - name: Run tests (no_std)
-      run: cargo test --verbose --no-default-features --features alloc
+      run: cargo test --no-default-features --features alloc
       working-directory: sbor
     - name: Run derive tests
-      run: cargo test --verbose
+      run: cargo test
       working-directory: sbor-derive
   sbor-integration-tests:
     name: Run SBOR integration tests
@@ -56,13 +56,13 @@ jobs:
         toolchain: stable
     - uses: ./.github/workflows/cache
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
       working-directory: sbor-tests
     - name: Run tests (no_std)
-      run: cargo test --verbose --no-default-features --features alloc
+      run: cargo test --no-default-features --features alloc
       working-directory: sbor-tests
     - name: Run bench
-      run: cargo bench --verbose
+      run: cargo bench
       working-directory: sbor-tests
   scrypto-unit-tests:
     name: Run Scrypto unit tests
@@ -77,16 +77,16 @@ jobs:
         toolchain: stable
     - uses: ./.github/workflows/cache
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
       working-directory: scrypto
     - name: Run tests (no_std)
-      run: cargo test --verbose --no-default-features --features alloc
+      run: cargo test --no-default-features --features alloc
       working-directory: scrypto
     - name: Run abi tests
-      run: cargo test --verbose
+      run: cargo test
       working-directory: scrypto-abi
     - name: Run derive tests
-      run: cargo test --verbose
+      run: cargo test
       working-directory: scrypto-derive
   scrypto-integration-tests:
     name: Run Scrypto integration tests
@@ -101,10 +101,10 @@ jobs:
         toolchain: stable
     - uses: ./.github/workflows/cache
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
       working-directory: scrypto-tests
     - name: Run tests (no_std)
-      run: cargo test --verbose --no-default-features --features alloc
+      run: cargo test --no-default-features --features alloc
       working-directory: scrypto-tests
   scrypto-examples:
     name: Run Scrypto examples
@@ -149,7 +149,7 @@ jobs:
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
       working-directory: radix-engine
     - name: Run bench
       run: cargo bench
@@ -169,7 +169,7 @@ jobs:
     - name: Add wasm target
       run: rustup target add wasm32-unknown-unknown
     - name: Run tests
-      run: cargo test --verbose --features wasmer
+      run: cargo test --features wasmer
       working-directory: radix-engine
     - name: Run bench
       run: cargo bench --features wasmer
@@ -187,7 +187,7 @@ jobs:
         toolchain: stable
     - uses: ./.github/workflows/cache
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test
       working-directory: transaction
   simulator:
     name: Run Simulator tests (resim)
