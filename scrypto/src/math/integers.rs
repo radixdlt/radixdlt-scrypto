@@ -8,20 +8,21 @@ use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use forward_ref::*;
 use num_bigint::BigInt;
 use num_traits::{FromPrimitive, Num, Signed, ToPrimitive, Zero};
-use std::default::Default;
 use paste::paste;
+use std::cmp::min;
+use std::default::Default;
 
 macro_rules! types {
 
-    ($(
-            {
-                type: $t:ident ( $wrap:ty ),
-                self.zero(): $tt:ident($zero:expr),
-                self.default(): $default:expr,
-                self: $self:ident,
-                self_expr: $self_expr:expr
-            }
-      ),*) => {
+    (self: $self:ident,
+     $(
+         {
+             type: $t:ident ( $wrap:ty ),
+             self.zero(): $tt:ident($zero:expr),
+             self.default(): $default:expr,
+             self_expr: $self_expr:expr
+         }
+     ),*) => {
         paste!{
             $(
                 /// Provides safe integer arithmetic.
@@ -48,7 +49,7 @@ macro_rules! types {
 
             impl Default for $t {
                 fn default() -> Self {
-                    Self($default)
+                    $default
                 }
             }
 
@@ -92,6 +93,14 @@ macro_rules! types {
                 fn zero() -> Self {
                     Self($zero)
                 }
+
+                fn is_zero(&self) -> bool {
+                    $zero == self.0
+                }
+
+                fn set_zero(&mut self) {
+                    self.0 = $zero;
+                }
             }
 
             )*
@@ -100,116 +109,101 @@ macro_rules! types {
 }
 
 types! {
+    self: self,
     {
         type: U8(u8),
-        zero: 0,
-        self.default(): self.zero(),
-        self: self,
+        self.zero(): U8(0),
+        self.default(): U8(0),
         self_expr: self.0
     },
     {
         type: U16(u16),
         self.zero(): U16(0),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): U16(0),
         self_expr: self.0
     },
     {
         type: U32(u32),
         self.zero(): U32(0),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): U32(0),
         self_expr: self.0
     },
     {
         type: U64(u64),
         self.zero(): U64(0),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): U64(0),
         self_expr: self.0
     },
     {
         type: U128(u128),
         self.zero(): U128(0),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): U128(0),
         self_expr: self.0
     },
     {
         type: U256([u8; 32]),
         self.zero(): U256([0u8; 32]),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): U256([0u8; 32]),
         self_expr: BigInt::from_signed_bytes_le(&self.0)
     },
     {
         type: U384([u8; 48]),
         self.zero(): U384([0u8; 48]),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): U384([0u8; 48]),
         self_expr: BigInt::from_signed_bytes_le(&self.0)
     },
     {
         type: U512([u8; 64]),
         self.zero(): U512([0u8; 64]),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): U512([0u8; 64]),
         self_expr: BigInt::from_signed_bytes_le(&self.0)
     },
     {
         type: I8(i8),
         self.zero(): I8(0),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): I8(0),
         self_expr: self.0
     },
     {
         type: I16(i16),
         self.zero(): I16(0),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): I16(0),
         self_expr: self.0
     },
     {
         type: I32(i32),
         self.zero(): I32(0),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): I32(0),
         self_expr: self.0
     },
     {
         type: I64(i64),
         self.zero(): I64(0),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): I64(0),
         self_expr: self.0
     },
     {
         type: I128(i128),
         self.zero(): I128(0),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): I128(0),
         self_expr: self.0
     },
     {
         type: I256([u8; 32]),
         self.zero(): I256([0u8; 32]),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): I256([0u8; 32]),
         self_expr: BigInt::from_signed_bytes_le(&self.0)
     },
     {
         type: I384([u8; 48]),
         self.zero(): I384([0u8; 48]),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): I384([0u8; 48]),
         self_expr: BigInt::from_signed_bytes_le(&self.0)
     },
     {
         type: I512([u8; 64]),
         self.zero(): I512([0u8; 64]),
-        self.default(): self.zero(),
-        self: self,
+        self.default(): I512([0u8; 64]),
         self_expr: BigInt::from_signed_bytes_le(&self.0)
     }
 }
@@ -271,8 +265,14 @@ macro_rules! sh {
             panic!("overflow");
         } else {
             let to_shift = BigInt::from_signed_bytes_le(&$self.0);
+            let len = min(
+                (<$t>::BITS / 8) as usize,
+                to_shift.to_signed_bytes_le().len(),
+                );
             let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
-            to_shift.shl(shift).try_into().unwrap()
+            to_shift.shl(shift).to_signed_bytes_le()[..len]
+                .try_into()
+                .unwrap()
         }
     };
     (large.shr(large_signed), $self:tt, $other:tt, $t:tt) => {
@@ -285,20 +285,20 @@ macro_rules! sh {
         }
     };
     (large.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {{
-        let to_shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
-        // FIXME: line below might create a BigInt whose size might become larger than self.
-        // Check this!!!
-        BigInt::from_signed_bytes_le(&$self.0)
-            .shl(to_shift)
+        let to_shift = BigInt::from_signed_bytes_le(&$self.0);
+        let len = min(
+            (<$t>::BITS / 8) as usize,
+            to_shift.to_signed_bytes_le().len(),
+            );
+        let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
+        to_shift.shl(shift).to_signed_bytes_le()[..len]
             .try_into()
             .unwrap()
     }};
     (large.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {{
-        let to_shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
-        // FIXME: line below might create a BigInt whose size might become larger than self.
-        // Check this!!!
+        let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
         BigInt::from_signed_bytes_le(&$self.0)
-            .shr(to_shift)
+            .shr(shift)
             .try_into()
             .unwrap()
     }};
@@ -306,10 +306,13 @@ macro_rules! sh {
         if $other > <$t>::BITS.try_into().unwrap() {
             panic!("overflow");
         } else {
-            // FIXME: line below might create a BigInt whose size might become larger than self.
-            // Check this!!!
-            BigInt::from_signed_bytes_le(&$self.0)
-                .shl($other)
+            let to_shift = BigInt::from_signed_bytes_le(&$self.0);
+            let len = min(
+                (<$t>::BITS / 8) as usize,
+                to_shift.to_signed_bytes_le().len(),
+                );
+            let shift = $other;
+            to_shift.shl(shift).to_signed_bytes_le()[..len]
                 .try_into()
                 .unwrap()
         }
@@ -318,8 +321,6 @@ macro_rules! sh {
         if $other > <$t>::BITS.try_into().unwrap() {
             panic!("overflow");
         } else {
-            // FIXME: line below might create a BigInt whose size might become larger than self.
-            // Check this!!!
             BigInt::from_signed_bytes_le(&$self.0)
                 .shr($other)
                 .try_into()
@@ -327,16 +328,17 @@ macro_rules! sh {
         }
     };
     (large.shl(small), $self:tt, $other:tt, $t:tt) => {
-        // FIXME: line below might create a BigInt whose size might become larger than self.
-        // Check this!!!
-        BigInt::from_signed_bytes_le(&$self.0)
-            .shl($other.0)
+        let to_shift = BigInt::from_signed_bytes_le(&$self.0);
+        let len = min(
+            (<$t>::BITS / 8) as usize,
+            to_shift.to_signed_bytes_le().len(),
+            );
+        let shift = $other.0;
+        to_shift.shl(shift).to_signed_bytes_le()[..len]
             .try_into()
             .unwrap()
     };
     (large.shr(small), $self:tt, $other:tt, $t:tt) => {
-        // FIXME: line below might create a BigInt whose size might become larger than self.
-        // Check this!!!
         BigInt::from_signed_bytes_le(&$self.0)
             .shr($other.0)
             .try_into()
@@ -652,7 +654,7 @@ macro_rules! shift_impl_all {
                 shl_expr: sh!{large.shl(small), self, other, $t},
                 shr_expr: sh!{large.shr(small), self, other, $t}
             }
-        )*
+            )*
     };
     (small: $($t:ty),*) => {
         $(
@@ -872,8 +874,8 @@ shift_impl_all! {large: I256, I384, I512, U256, U384, U512}
 
 shift_impl_all! {small: I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
 
-macro_rules! checked_impl {
-    ($((impl Op<$o:ty> for $t:ty { fn op($self:ident, $other:ident: $oo:ty) -> $ot:ty { $sexpr:expr=>op($oexpr:expr)}}), small: $small:expr),*) => {
+macro_rules! checked_impl_large {
+    ($((impl Op<$o:ty> for $t:ty { fn op($self:ident, $other:ident: $oo:ty) -> $ot:ty { $sexpr:expr=>op($oexpr:expr)}})),*) => {
         paste! {
             $(
                 impl Add<$o> for $t {
@@ -882,11 +884,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn add($self, $other: $o) -> $t {
-                        if $small {
-                            $sexpr.checked_add($oexpr).unwrap().try_into().unwrap()
-                        } else {
-                            $sexpr.add($oexpr).try_into().unwrap()
-                        }
+                        $sexpr.add($oexpr).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Add, add for $t, $o }
@@ -904,11 +902,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn sub($self, $other: $o) -> $t {
-                        if $small {
-                            $sexpr.checked_sub($oexpr).unwrap().try_into().unwrap()
-                        } else {
-                            $sexpr.sub($oexpr).try_into().unwrap()
-                        }
+                        $sexpr.sub($oexpr).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Sub, sub for $t, $o }
@@ -926,11 +920,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn mul($self, $other: $o) -> $t {
-                        if $small {
-                            $sexpr.checked_mul($oexpr).unwrap().try_into().unwrap()
-                        } else {
-                            $sexpr.mul($oexpr).try_into().unwrap()
-                        }
+                        $sexpr.mul($oexpr).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Mul, mul for $t, $o }
@@ -948,11 +938,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn div($self, $other: $o) -> $t {
-                        if $small {
-                            $sexpr.checked_div($oexpr).unwrap().try_into().unwrap()
-                        } else {
-                            $sexpr.div($oexpr).try_into().unwrap()
-                        }
+                        $sexpr.div($oexpr).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Div, div for $t, $o }
@@ -970,11 +956,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn rem($self, $other: $o) -> $t {
-                        if $small {
-                            $sexpr.rem($oexpr).try_into().unwrap()
-                        } else {
-                            $sexpr.rem($oexpr).try_into().unwrap()
-                        }
+                        $sexpr.rem($oexpr).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl Rem, rem for $t, $o }
@@ -993,11 +975,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn bitxor($self, $other: $o) -> $t {
-                        if $small {
-                            $sexpr.bitxor($oexpr).try_into().unwrap()
-                        } else {
-                            $sexpr.bitxor($oexpr).try_into().unwrap()
-                        }
+                        $sexpr.bitxor($oexpr).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl BitXor, bitxor for $t, $o }
@@ -1015,11 +993,7 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn bitor($self, $other: $o) -> $t {
-                        if $small {
-                            $sexpr.bitor($oexpr).try_into().unwrap()
-                        } else {
-                            $sexpr.bitor($oexpr).try_into().unwrap()
-                        }
+                        $sexpr.bitor($oexpr).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl BitOr, bitor for $t, $o }
@@ -1037,11 +1011,161 @@ macro_rules! checked_impl {
 
                     #[inline]
                     fn bitand($self, $other: $o) -> $t {
-                        if $small {
-                            $sexpr.bitand($oexpr).try_into().unwrap()
-                        } else {
-                            $sexpr.bitand($oexpr).try_into().unwrap()
-                        }
+                        $sexpr.bitand($oexpr).try_into().unwrap()
+                    }
+                }
+                forward_ref_binop! { impl BitAnd, bitand for $t, $o }
+
+                impl BitAndAssign<$o> for $t {
+                    #[inline]
+                    fn bitand_assign(&mut $self, $other: $o) {
+                        *$self = *$self & $other;
+                    }
+                }
+                forward_ref_op_assign! { impl BitAndAssign, bitand_assign for $t, $o }
+                )*
+        }
+    };
+}
+
+macro_rules! checked_impl_small {
+    ($((impl Op<$o:ty> for $t:ty { fn op($self:ident, $other:ident: $oo:ty) -> $ot:ty { $sexpr:expr=>op($oexpr:expr)}})),*) => {
+        paste! {
+            $(
+                impl Add<$o> for $t {
+                    // FIXME: set output type the one that has the larger size
+                    type Output = $t;
+
+                    #[inline]
+                    fn add($self, $other: $o) -> $t {
+                        $sexpr.checked_add($oexpr).unwrap().try_into().unwrap()
+                    }
+                }
+                forward_ref_binop! { impl Add, add for $t, $o }
+
+                impl AddAssign<$o> for $t {
+                    #[inline]
+                    fn add_assign(&mut $self, $other: $o) {
+                        *$self = *$self + $other;
+                    }
+                }
+                forward_ref_op_assign! { impl AddAssign, add_assign for $t, $o }
+
+                impl Sub<$o> for $t {
+                    type Output = $t;
+
+                    #[inline]
+                    fn sub($self, $other: $o) -> $t {
+                        $sexpr.checked_sub($oexpr).unwrap().try_into().unwrap()
+                    }
+                }
+                forward_ref_binop! { impl Sub, sub for $t, $o }
+
+                impl SubAssign<$o> for $t {
+                    #[inline]
+                    fn sub_assign(&mut $self, $other: $o) {
+                        *$self = *$self - $other;
+                    }
+                }
+                forward_ref_op_assign! { impl SubAssign, sub_assign for $t, $o }
+
+                impl Mul<$o> for $t {
+                    type Output = $t;
+
+                    #[inline]
+                    fn mul($self, $other: $o) -> $t {
+                        $sexpr.checked_mul($oexpr).unwrap().try_into().unwrap()
+                    }
+                }
+                forward_ref_binop! { impl Mul, mul for $t, $o }
+
+                impl MulAssign<$o> for $t {
+                    #[inline]
+                    fn mul_assign(&mut $self, $other: $o) {
+                        *$self = *$self * $other;
+                    }
+                }
+                forward_ref_op_assign! { impl MulAssign, mul_assign for $t, $o }
+
+                impl Div<$o> for $t {
+                    type Output = $t;
+
+                    #[inline]
+                    fn div($self, $other: $o) -> $t {
+                        $sexpr.checked_div($oexpr).unwrap().try_into().unwrap()
+                    }
+                }
+                forward_ref_binop! { impl Div, div for $t, $o }
+
+                impl DivAssign<$o> for $t {
+                    #[inline]
+                    fn div_assign(&mut $self, $other: $o) {
+                        *$self = *$self / $other;
+                    }
+                }
+                forward_ref_op_assign! { impl DivAssign, div_assign for $t, $o }
+
+                impl Rem<$o> for $t {
+                    type Output = $t;
+
+                    #[inline]
+                    fn rem($self, $other: $o) -> $t {
+                        $sexpr.rem($oexpr).try_into().unwrap()
+                    }
+                }
+                forward_ref_binop! { impl Rem, rem for $t, $o }
+
+                impl RemAssign<$o> for $t {
+                    #[inline]
+                    fn rem_assign(&mut $self, $other: $o) {
+                        *$self = *$self % $other;
+                    }
+                }
+                forward_ref_op_assign! { impl RemAssign, rem_assign for $t, $o }
+
+
+                impl BitXor<$o> for $t {
+                    type Output = $t;
+
+                    #[inline]
+                    fn bitxor($self, $other: $o) -> $t {
+                        $sexpr.bitxor($oexpr).try_into().unwrap()
+                    }
+                }
+                forward_ref_binop! { impl BitXor, bitxor for $t, $o }
+
+                impl BitXorAssign<$o> for $t {
+                    #[inline]
+                    fn bitxor_assign(&mut $self, $other: $o) {
+                        *$self = *$self ^ $other;
+                    }
+                }
+                forward_ref_op_assign! { impl BitXorAssign, bitxor_assign for $t, $o }
+
+                impl BitOr<$o> for $t {
+                    type Output = $t;
+
+                    #[inline]
+                    fn bitor($self, $other: $o) -> $t {
+                        $sexpr.bitor($oexpr).try_into().unwrap()
+                    }
+                }
+                forward_ref_binop! { impl BitOr, bitor for $t, $o }
+
+                impl BitOrAssign<$o> for $t {
+                    #[inline]
+                    fn bitor_assign(&mut $self, $other: $o) {
+                        *$self = *$self | $other;
+                    }
+                }
+                forward_ref_op_assign! { impl BitOrAssign, bitor_assign for $t, $o }
+
+                impl BitAnd<$o> for $t {
+                    type Output = $t;
+
+                    #[inline]
+                    fn bitand($self, $other: $o) -> $t {
+                        $sexpr.bitand($oexpr).try_into().unwrap()
                     }
                 }
                 forward_ref_binop! { impl BitAnd, bitand for $t, $o }
@@ -1064,36 +1188,36 @@ macro_rules! checked_int_ops_large {
     ($($t:ident),*) => {
         $(
             paste! {
-                checked_impl! {
-                    (impl Op<u8> for $t { fn op(self, other: u8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
-                    (impl Op<u16> for $t { fn op(self, other: u16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
-                    (impl Op<u32> for $t { fn op(self, other: u32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
-                    (impl Op<u64> for $t { fn op(self, other: u64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
-                    (impl Op<u128> for $t { fn op(self, other: u128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
+                checked_impl_large! {
+                    (impl Op<u8> for $t { fn op(self, other: u8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
+                    (impl Op<u16> for $t { fn op(self, other: u16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
+                    (impl Op<u32> for $t { fn op(self, other: u32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
+                    (impl Op<u64> for $t { fn op(self, other: u64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
+                    (impl Op<u128> for $t { fn op(self, other: u128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
 
-                    (impl Op<i8> for $t { fn op(self, other: i8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
-                    (impl Op<i16> for $t { fn op(self, other: i16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
-                    (impl Op<i32> for $t { fn op(self, other: i32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
-                    (impl Op<i64> for $t { fn op(self, other: i64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
-                    (impl Op<i128> for $t { fn op(self, other: i128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}), small: false,
+                    (impl Op<i8> for $t { fn op(self, other: i8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
+                    (impl Op<i16> for $t { fn op(self, other: i16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
+                    (impl Op<i32> for $t { fn op(self, other: i32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
+                    (impl Op<i64> for $t { fn op(self, other: i64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
+                    (impl Op<i128> for $t { fn op(self, other: i128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other))}}),
 
-                    (impl Op<U8> for $t { fn op(self, other: U8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<U16> for $t { fn op(self, other: U16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<U32> for $t { fn op(self, other: U32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<U64> for $t { fn op(self, other: U64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<U128> for $t { fn op(self, other: U128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<U256> for $t { fn op(self, other: U256) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), small: false,
-                    (impl Op<U384> for $t { fn op(self, other: U384) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), small: false,
-                    (impl Op<U512> for $t { fn op(self, other: U512) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), small: false,
+                    (impl Op<U8> for $t { fn op(self, other: U8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<U16> for $t { fn op(self, other: U16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<U32> for $t { fn op(self, other: U32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<U64> for $t { fn op(self, other: U64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<U128> for $t { fn op(self, other: U128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<U256> for $t { fn op(self, other: U256) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}),
+                    (impl Op<U384> for $t { fn op(self, other: U384) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}),
+                    (impl Op<U512> for $t { fn op(self, other: U512) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}),
 
-                    (impl Op<I8> for $t { fn op(self, other: I8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<I16> for $t { fn op(self, other: I16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<I32> for $t { fn op(self, other: I32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<I64> for $t { fn op(self, other: I64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<I128> for $t { fn op(self, other: I128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}), small: false,
-                    (impl Op<I256> for $t { fn op(self, other: I256) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), small: false,
-                    (impl Op<I384> for $t { fn op(self, other: I384) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), small: false,
-                    (impl Op<I512> for $t { fn op(self, other: I512) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}), small: false
+                    (impl Op<I8> for $t { fn op(self, other: I8) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<I16> for $t { fn op(self, other: I16) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<I32> for $t { fn op(self, other: I32) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<I64> for $t { fn op(self, other: I64) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<I128> for $t { fn op(self, other: I128) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from(other.0))}}),
+                    (impl Op<I256> for $t { fn op(self, other: I256) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}),
+                    (impl Op<I384> for $t { fn op(self, other: I384) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}}),
+                    (impl Op<I512> for $t { fn op(self, other: I512) -> $t {BigInt::from_signed_bytes_le(&self.0)=>op(&BigInt::from_signed_bytes_le(&other.0))}})
                 }
             }
         )*
@@ -1103,37 +1227,37 @@ macro_rules! checked_int_ops_small {
     ($($t:ident),*) => {
         $(
             paste!{
-            checked_impl! {
-                (impl Op<u8> for $t { fn op(self, other: u8) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
-                (impl Op<u16> for $t { fn op(self, other: u16) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
-                (impl Op<u32> for $t { fn op(self, other: u32) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
-                (impl Op<u64> for $t { fn op(self, other: u64) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
-                (impl Op<u128> for $t { fn op(self, other: u128) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
+                checked_impl_small! {
+                    (impl Op<u8> for $t { fn op(self, other: u8) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
+                    (impl Op<u16> for $t { fn op(self, other: u16) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
+                    (impl Op<u32> for $t { fn op(self, other: u32) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
+                    (impl Op<u64> for $t { fn op(self, other: u64) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
+                    (impl Op<u128> for $t { fn op(self, other: u128) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
 
-                (impl Op<i8> for $t { fn op(self, other: i8) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
-                (impl Op<i16> for $t { fn op(self, other: i16) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
-                (impl Op<i32> for $t { fn op(self, other: i32) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
-                (impl Op<i64> for $t { fn op(self, other: i64) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
-                (impl Op<i128> for $t { fn op(self, other: i128) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}), small: true,
+                    (impl Op<i8> for $t { fn op(self, other: i8) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
+                    (impl Op<i16> for $t { fn op(self, other: i16) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
+                    (impl Op<i32> for $t { fn op(self, other: i32) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
+                    (impl Op<i64> for $t { fn op(self, other: i64) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
+                    (impl Op<i128> for $t { fn op(self, other: i128) -> $t {self.0=>op([<$t:lower>]::try_from(other).unwrap())}}),
 
-                (impl Op<U8> for $t { fn op(self, other: U8) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<U16> for $t { fn op(self, other: U16) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<U32> for $t { fn op(self, other: U32) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<U64> for $t { fn op(self, other: U64) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<U128> for $t { fn op(self, other: U128) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<U256> for $t { fn op(self, other: U256) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}), small: true,
-                (impl Op<U384> for $t { fn op(self, other: U384) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}), small: true,
-                (impl Op<U512> for $t { fn op(self, other: U512) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}), small: true,
+                    (impl Op<U8> for $t { fn op(self, other: U8) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<U16> for $t { fn op(self, other: U16) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<U32> for $t { fn op(self, other: U32) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<U64> for $t { fn op(self, other: U64) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<U128> for $t { fn op(self, other: U128) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<U256> for $t { fn op(self, other: U256) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}),
+                    (impl Op<U384> for $t { fn op(self, other: U384) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}),
+                    (impl Op<U512> for $t { fn op(self, other: U512) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}),
 
-                (impl Op<I8> for $t { fn op(self, other: I8) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<I16> for $t { fn op(self, other: I16) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<I32> for $t { fn op(self, other: I32) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<I64> for $t { fn op(self, other: I64) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<I128> for $t { fn op(self, other: I128) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}), small: true,
-                (impl Op<I256> for $t { fn op(self, other: I256) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}), small: true,
-                (impl Op<I384> for $t { fn op(self, other: I384) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}), small: true,
-                (impl Op<I512> for $t { fn op(self, other: I512) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}), small: true
-            }
+                    (impl Op<I8> for $t { fn op(self, other: I8) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<I16> for $t { fn op(self, other: I16) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<I32> for $t { fn op(self, other: I32) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<I64> for $t { fn op(self, other: I64) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<I128> for $t { fn op(self, other: I128) -> $t {self.0=>op([<$t:lower>]::try_from(other.0).unwrap())}}),
+                    (impl Op<I256> for $t { fn op(self, other: I256) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}),
+                    (impl Op<I384> for $t { fn op(self, other: I384) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}}),
+                    (impl Op<I512> for $t { fn op(self, other: I512) -> $t {self.0=>op([<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&other.0)).unwrap())}})
+                }
             }
         )*
     }
@@ -1177,14 +1301,14 @@ macro_rules! checked_impl_not_small {
 checked_impl_not_large! {I256, I384, I512, U256, U384, U512}
 checked_impl_not_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
 
-macro_rules! checked_impl_neg_large {
+macro_rules! checked_impl_neg_signed {
     ($($i:ident),*) => {
         $(
             impl Neg for $i {
                 type Output = Self;
                 #[inline]
                 fn neg(self) -> Self {
-                    self.zero() - self
+                    Self::zero() - self
                 }
             }
             forward_ref_unop! { impl Neg, neg for $i }
@@ -1192,22 +1316,7 @@ macro_rules! checked_impl_neg_large {
     }
 }
 
-macro_rules! checked_impl_neg_small {
-    ($($i:ident),*) => {
-        $(
-            impl Neg for $i {
-                type Output = Self;
-                #[inline]
-                fn neg(self) -> Self {
-                    self.0.neg().try_into().unwrap()
-                }
-            }
-            forward_ref_unop! { impl Neg, neg for $i }
-        )*
-    }
-}
-checked_impl_neg_large! { I256, I384, I512 }
-checked_impl_neg_small! { I8, I16, I32, I64, I128 }
+checked_impl_neg_signed! {I8, I16, I32, I64, I128, I256, I384, I512}
 
 macro_rules! checked_int_impl {
     (type_id: $i:ident, bytes_len: $bytes_len:literal, MIN: $min: expr, MAX: $max: expr) => {
@@ -1647,111 +1756,111 @@ macro_rules! leading_zeros_small {
 
 macro_rules! checked_int_impl_signed {
     ($($t:ident, $self:ident, $leading_zeros:item, $base:expr),*) => ($(
-        paste! {
-            impl $t {
+            paste! {
+                impl $t {
 
-                $leading_zeros
+                    $leading_zeros
 
-                /// Computes the absolute value of `self`, with overflow causing panic.
-                ///
-                /// The only case where such overflow can occur is when one takes the absolute value of the negative
-                /// minimal value for the type this is a positive value that is too large to represent in the type. In
-                /// such a case, this function panics.
-                ///
-                #[inline]
-                #[must_use = "this returns the result of the operation, \
+                        /// Computes the absolute value of `self`, with overflow causing panic.
+                        ///
+                        /// The only case where such overflow can occur is when one takes the absolute value of the negative
+                        /// minimal value for the type this is a positive value that is too large to represent in the type. In
+                        /// such a case, this function panics.
+                        ///
+                        #[inline]
+                        #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub fn abs($self) -> $t {
-                    $base.abs().try_into().unwrap()
-                }
+                        pub fn abs($self) -> $t {
+                            $base.abs().try_into().unwrap()
+                        }
 
-                /// Returns a number representing sign of `self`.
-                ///
-                ///  - `0` if the number is zero
-                ///  - `1` if the number is positive
-                ///  - `-1` if the number is negative
-                ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
-                ///
-                #[doc = concat!("assert_eq!($t(10", stringify!($t:lower), ").signum(), $t(1));")]
-                #[doc = concat!("assert_eq!($t(0", stringify!($t:lower), ").signum(), $t(0));")]
-                #[doc = concat!("assert_eq!($t(-10", stringify!($t:lower), ").signum(), $t(-1));")]
-                /// ```
-                #[inline]
-                #[must_use = "this returns the result of the operation, \
+                    /// Returns a number representing sign of `self`.
+                    ///
+                    ///  - `0` if the number is zero
+                    ///  - `1` if the number is positive
+                    ///  - `-1` if the number is negative
+                    ///
+                    /// # Examples
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
+                    ///
+                    #[doc = concat!("assert_eq!($t(10", stringify!($t:lower), ").signum(), $t(1));")]
+                    #[doc = concat!("assert_eq!($t(0", stringify!($t:lower), ").signum(), $t(0));")]
+                    #[doc = concat!("assert_eq!($t(-10", stringify!($t:lower), ").signum(), $t(-1));")]
+                    /// ```
+                    #[inline]
+                    #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub fn signum($self) -> $t {
-                    $base.signum().try_into().unwrap()
-                }
+                    pub fn signum($self) -> $t {
+                        $base.signum().try_into().unwrap()
+                    }
 
-                /// Returns `true` if `self` is positive and `false` if the number is zero or
-                /// negative.
-                ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
-                ///
-                #[doc = concat!("assert!($t(10", stringify!($t:lower), ").is_positive());")]
-                #[doc = concat!("assert!(!$t(-10", stringify!($t:lower), ").is_positive());")]
-                /// ```
-                #[must_use]
-                #[inline]
-                pub fn is_positive($self) -> bool {
-                    $base.is_positive().try_into().unwrap()
-                   // large: self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 == 0
-                }
+                    /// Returns `true` if `self` is positive and `false` if the number is zero or
+                    /// negative.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
+                    ///
+                    #[doc = concat!("assert!($t(10", stringify!($t:lower), ").is_positive());")]
+                    #[doc = concat!("assert!(!$t(-10", stringify!($t:lower), ").is_positive());")]
+                    /// ```
+                    #[must_use]
+                    #[inline]
+                    pub fn is_positive($self) -> bool {
+                        $base.is_positive().try_into().unwrap()
+                            // large: self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 == 0
+                    }
 
-                /// Returns `true` if `self` is negative and `false` if the number is zero or
-                /// positive.
-                ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
-                ///
-                #[doc = concat!("assert!($t(-10", stringify!($t:lower), ").is_negative());")]
-                #[doc = concat!("assert!(!$t(10", stringify!($t:lower), ").is_negative());")]
-                /// ```
-                #[must_use]
-                #[inline]
-                pub fn is_negative($self) -> bool {
-                    $base.is_negative().try_into().unwrap()
-                   // large: self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 == 1
+                    /// Returns `true` if `self` is negative and `false` if the number is zero or
+                    /// positive.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
+                    ///
+                    #[doc = concat!("assert!($t(-10", stringify!($t:lower), ").is_negative());")]
+                    #[doc = concat!("assert!(!$t(10", stringify!($t:lower), ").is_negative());")]
+                    /// ```
+                    #[must_use]
+                    #[inline]
+                    pub fn is_negative($self) -> bool {
+                        $base.is_negative().try_into().unwrap()
+                            // large: self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 == 1
+                    }
                 }
             }
-        }
     )*)
 }
 
 macro_rules! checked_int_impl_signed_all_large {
     ($($t:ident),*) => {$(
-            checked_int_impl_signed! {
-                $t,
-                self,
-                leading_zeros_large!{},
-                BigInt::from_signed_bytes_le(&self.0)
-            }
-            )*}
+        checked_int_impl_signed! {
+            $t,
+            self,
+            leading_zeros_large!{},
+            BigInt::from_signed_bytes_le(&self.0)
+        }
+    )*}
 }
 macro_rules! checked_int_impl_signed_all_small {
     ($($t:ident),*) => {$(
-            checked_int_impl_signed! {
-                $t,
-                self,
-                leading_zeros_small!{},
-                self.0
-            }
-            )*}
+        checked_int_impl_signed! {
+            $t,
+            self,
+            leading_zeros_small!{},
+            self.0
+        }
+    )*}
 }
 
 checked_int_impl_signed_all_large! { I256, I384, I512 }
@@ -1759,61 +1868,61 @@ checked_int_impl_signed_all_small! { I8, I16, I32, I64, I128 }
 
 macro_rules! checked_int_impl_unsigned_large {
     ($($t:ty),*) => ($(
-        impl $t {
-            leading_zeros_large!();
+            impl $t {
+                leading_zeros_large!();
 
-            /// Returns `true` if and only if `self == 2^k` for some `k`.
-            ///
-            #[must_use]
-            #[inline]
-            pub fn is_power_of_two(self) -> bool {
-                if self.0.iter().map(|x| x.count_ones()).sum::<u32>() == 1 {
-                    true
-                } else {
-                    false
+                /// Returns `true` if and only if `self == 2^k` for some `k`.
+                ///
+                #[must_use]
+                #[inline]
+                pub fn is_power_of_two(self) -> bool {
+                    if self.0.iter().map(|x| x.count_ones()).sum::<u32>() == 1 {
+                        true
+                    } else {
+                        false
+                    }
+                }
+
+                /// Returns the smallest power of two greater than or equal to `self`.
+                ///
+                /// When return value overflows (i.e., `self > (1 << (N-1))` for type
+                /// `uN`), overflows to `2^N = 0`.
+                ///
+                #[inline]
+                #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                pub fn next_power_of_two(self) -> Self {
+                    (Self::BITS - self.leading_zeros()).into()
                 }
             }
-
-            /// Returns the smallest power of two greater than or equal to `self`.
-            ///
-            /// When return value overflows (i.e., `self > (1 << (N-1))` for type
-            /// `uN`), overflows to `2^N = 0`.
-            ///
-            #[inline]
-            #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-            pub fn next_power_of_two(self) -> Self {
-                (Self::BITS - self.leading_zeros()).into()
-            }
-        }
     )*)
 }
 
 macro_rules! checked_int_impl_unsigned_small {
     ($($t:ty),*) => ($(
-        impl $t {
-            leading_zeros_large!();
+            impl $t {
+                leading_zeros_small!();
 
-            /// Returns `true` if and only if `self == 2^k` for some `k`.
-            ///
-            #[must_use]
-            #[inline]
-            pub fn is_power_of_two(self) -> bool {
-                self.0.is_power_of_two()
-            }
+                /// Returns `true` if and only if `self == 2^k` for some `k`.
+                ///
+                #[must_use]
+                #[inline]
+                pub fn is_power_of_two(self) -> bool {
+                    self.0.is_power_of_two()
+                }
 
-            /// Returns the smallest power of two greater than or equal to `self`.
-            ///
-            /// When return value overflows (i.e., `self > (1 << (N-1))` for type
-            /// `uN`), overflows to `2^N = 0`.
-            ///
-            #[inline]
-            #[must_use = "this returns the result of the operation, \
+                /// Returns the smallest power of two greater than or equal to `self`.
+                ///
+                /// When return value overflows (i.e., `self > (1 << (N-1))` for type
+                /// `uN`), overflows to `2^N = 0`.
+                ///
+                #[inline]
+                #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-            pub fn next_power_of_two(self) -> Self {
-                Self(self.0.checked_next_power_of_two().unwrap())
+                pub fn next_power_of_two(self) -> Self {
+                    Self(self.0.checked_next_power_of_two().unwrap())
+                }
             }
-        }
     )*)
 }
 
@@ -1826,14 +1935,14 @@ macro_rules! impl_bigint_to_large {
             paste! {
                 fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseBigIntError> {
                     let bytes = b.to_signed_bytes_le();
-                    const t_bytes: usize = (<$t>::BITS / 8 ) as usize;
-                    if bytes.len() > t_bytes {
+                    const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
+                    if bytes.len() > T_BYTES {
                         return Err(ParseBigIntError::Overflow);
                     }
                     let mut buf = if b.is_negative() {
-                        [255u8; t_bytes]
+                        [255u8; T_BYTES]
                     } else {
-                        [0u8; t_bytes]
+                        [0u8; T_BYTES]
                     };
                     buf[..bytes.len()].copy_from_slice(&bytes);
                     Ok($t(buf))
@@ -1864,13 +1973,13 @@ impl_bigint_to_small! { I8, I16, I32, I64, I128, U8, U16, U32, U64, U128 }
 macro_rules! from_int {
     ($(($t:ident, $o:ident)),*) => {
         $(
-        paste! {
-            impl From<$o> for $t {
-                fn from(val: $o) -> Self {
-                    (BigInt::from(val)).try_into().unwrap()
+            paste! {
+                impl From<$o> for $t {
+                    fn from(val: $o) -> Self {
+                        (BigInt::from(val)).try_into().unwrap()
+                    }
                 }
             }
-        }
         )*
     };
 }
@@ -1934,10 +2043,12 @@ macro_rules! try_from_vec_and_slice {
             impl TryFrom<&[u8]> for $t {
                 type Error = ParseSliceError;
                 fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-                    if bytes.len() != (<$t>::BITS / 8) as usize {
+                    if bytes.len() > (<$t>::BITS / 8) as usize {
                         Err(ParseSliceError::InvalidLength)
                     } else {
-                        Ok(Self(bytes.try_into().unwrap()))
+                        let mut buf = [0u8; (<$t>::BITS / 8) as usize];
+                        buf[..bytes.len()].copy_from_slice(bytes);
+                        Ok(Self(buf))
                     }
                 }
             }
@@ -1945,35 +2056,58 @@ macro_rules! try_from_vec_and_slice {
             impl TryFrom<Vec<u8>> for $t {
                 type Error = ParseSliceError;
                 fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-                    if bytes.len() != (<$t>::BITS / 8) as usize {
+                    if bytes.len() > (<$t>::BITS / 8) as usize {
                         Err(ParseSliceError::InvalidLength)
                     } else {
-                        Ok(Self(bytes.try_into().unwrap()))
+                        let mut buf = [0u8; (<$t>::BITS / 8) as usize];
+                        buf[..bytes.len()].copy_from_slice(&bytes);
+                        Ok(Self(buf))
                     }
                 }
             }
-        )*
-    };
-}
-macro_rules! try_from_builtin {
-    ($($t:ident),*) => {
-        $(
-            from_int!{($t, u8), ($t, u16), ($t, u32), ($t, u64), ($t, u128)}
-            from_int!{($t, i8), ($t, i16), ($t, i32), ($t, i64), ($t, i128)}
-        )*
+            )*
     };
 }
 
-macro_rules! try_from_unsigned_builtin {
-    ($($t:ident),*) => {
-        $(
-            from_int!{($t, u8), ($t, u16), ($t, u32), ($t, u64), ($t, u128)}
-        )*
-    };
-}
+from_int! {(I8, i8)}
 
-try_from_builtin! { I8, I16, I32, I64, I128, I256, I384, I512 }
-try_from_unsigned_builtin! { U8, U16, U32, U64, U128, U256, U384, U512 }
+from_int! {(I16, i8), (I16, i16)}
+from_int! {(I16, u8)}
+
+from_int! {(I32, i8), (I32, i16), (I32, i32)}
+from_int! {(I32, u8), (I32, u16)}
+
+from_int! {(I64, i8), (I64, i16), (I64, i32), (I64, i64)}
+from_int! {(I64, u8), (I64, u16), (I64, u32)}
+
+from_int! {(I128, i8), (I128, i16), (I128, i32), (I128, i64), (I128, i128)}
+from_int! {(I128, u8), (I128, u16), (I128, u32), (I128, u64)}
+
+from_int! {(I256, i8), (I256, i16), (I256, i32), (I256, i64), (I256, i128)}
+from_int! {(I256, u8), (I256, u16), (I256, u32), (I256, u64), (I256, u128)}
+
+from_int! {(I384, i8), (I384, i16), (I384, i32), (I384, i64), (I384, i128)}
+from_int! {(I384, u8), (I384, u16), (I384, u32), (I384, u64), (I384, u128)}
+
+from_int! {(I512, i8), (I512, i16), (I512, i32), (I512, i64), (I512, i128)}
+from_int! {(I512, u8), (I512, u16), (I512, u32), (I512, u64), (I512, u128)}
+
+from_int! {(U8, u8)}
+
+from_int! {(U16, u8), (U16, u16)}
+
+from_int! {(U32, u8), (U32, u16), (U32, u32)}
+
+from_int! {(U64, u8), (U64, u16), (U64, u32), (U64, u64)}
+
+from_int! {(U128, u8), (U128, u16), (U128, u32), (U128, u64), (U128, u128)}
+
+from_int! {(U256, u8), (U256, u16), (U256, u32), (U256, u64), (U256, u128)}
+
+from_int! {(U384, u8), (U384, u16), (U384, u32), (U384, u64), (U384, u128)}
+
+from_int! {(U512, u8), (U512, u16), (U512, u32), (U512, u64), (U512, u128)}
+
 try_from_big_int_to_signed! { I8, I16, I32, I64, I128, I256, I384, I512 }
 try_from_big_int_to_unsigned! { U8, U16, U32, U64, U128, U256, U384, U512 }
 try_from_vec_and_slice! { I256, I384, I512, U256, U384, U512 }
@@ -1984,7 +2118,7 @@ mod tests {
     use super::*;
 
     macro_rules! test_impl {
-    ($(($I:ident, $i: ident)),*) => ($(
+        ($(($I:ident, $i: ident)),*) => ($(
 
                 paste::item! {
                     #[test]
@@ -2048,10 +2182,13 @@ mod tests {
                         let _ = $I(<$i>::MAX).pow(2u32);          // panics because of overflow
                     }
                 }
-                )*)
+        )*)
     }
     test_impl! { (I8, i8), (I16, i16), (I32, i32), (I64, i64), (I128, i128), (U8, u8), (U16, u16), (U32, u32), (U64, u64), (U128, u128) }
 }
 
-// TODO: implement from
+// TODO: methods should return the larger type
+// TODO: from string
+// TODO: test write
 // TODO: documentationpart update
+// TODO: sbor integration
