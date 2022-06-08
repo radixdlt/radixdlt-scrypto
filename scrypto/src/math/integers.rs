@@ -7,8 +7,7 @@ use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use forward_ref::*;
 use num_bigint::BigInt;
-use num_traits::{FromPrimitive, Num, Signed, ToPrimitive, Zero, Zero};
-use num_traits::{Signed, Zero};
+use num_traits::{FromPrimitive, Num, Signed, ToPrimitive, Zero};
 use paste::paste;
 
 macro_rules! types {
@@ -1538,7 +1537,7 @@ checked_unsigned! {
     U512, 64
 }
 
-macro_rules! leading_zeros {
+macro_rules! leading_zeros_large {
     () => {
         /// Returns the number of leading zeros in the binary representation of `self`.
         ///
@@ -1558,12 +1557,25 @@ macro_rules! leading_zeros {
     };
 }
 
+macro_rules! leading_zeros_small {
+    () => {
+        /// Returns the number of leading zeros in the binary representation of `self`.
+        ///
+        #[inline]
+        #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+        pub fn leading_zeros(self) -> u32 {
+            self.0.leading_zeros()
+        }
+    };
+}
+
 macro_rules! checked_int_impl_signed {
-    ($($t:ident),*) => ($(
+    ($($t:ident, $self:ident, $leading_zeros:item, $base:expr),*) => ($(
         paste! {
             impl $t {
 
-                leading_zeros!();
+                $leading_zeros
 
                 /// Computes the absolute value of `self`, with overflow causing panic.
                 ///
@@ -1574,8 +1586,8 @@ macro_rules! checked_int_impl_signed {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub fn abs(self) -> $t {
-                    BigInt::from_signed_bytes_le(&self.0).abs().try_into().unwrap()
+                pub fn abs($self) -> $t {
+                    $base.abs().try_into().unwrap()
                 }
 
                 /// Returns a number representing sign of `self`.
@@ -1598,8 +1610,8 @@ macro_rules! checked_int_impl_signed {
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                pub fn signum(self) -> $t {
-                    BigInt::from_signed_bytes_le(&self.0).signum().try_into().unwrap()
+                pub fn signum($self) -> $t {
+                    $base.signum().try_into().unwrap()
                 }
 
                 /// Returns `true` if `self` is positive and `false` if the number is zero or
@@ -1617,8 +1629,9 @@ macro_rules! checked_int_impl_signed {
                 /// ```
                 #[must_use]
                 #[inline]
-                pub fn is_positive(self) -> bool {
-                    BigInt::from_signed_bytes_le(&self.0).is_positive().try_into().unwrap()
+                pub fn is_positive($self) -> bool {
+                    $base.is_positive().try_into().unwrap()
+                   // large: self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 == 0
                 }
 
                 /// Returns `true` if `self` is negative and `false` if the number is zero or
@@ -1636,20 +1649,43 @@ macro_rules! checked_int_impl_signed {
                 /// ```
                 #[must_use]
                 #[inline]
-                pub fn is_negative(self) -> bool {
-                   self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 == 1
+                pub fn is_negative($self) -> bool {
+                    $base.is_negative().try_into().unwrap()
+                   // large: self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 == 1
                 }
             }
         }
     )*)
 }
 
-checked_int_impl_signed! { I256, I384, I512 }
+macro_rules! checked_int_impl_signed_all_large {
+    ($($t:ident),*) => {$(
+            checked_int_impl_signed! {
+                $t,
+                self,
+                leading_zeros_large!{},
+                BigInt::from_signed_bytes_le(&self.0)
+            }
+            )*}
+}
+macro_rules! checked_int_impl_signed_all_small {
+    ($($t:ident),*) => {$(
+            checked_int_impl_signed! {
+                $t,
+                self,
+                leading_zeros_small!{},
+                self.0
+            }
+            )*}
+}
 
-macro_rules! checked_int_impl_unsigned {
+checked_int_impl_signed_all_large! { I256, I384, I512 }
+checked_int_impl_signed_all_small! { I8, I16, I32, I64, I128 }
+
+macro_rules! checked_int_impl_unsigned_large {
     ($($t:ty),*) => ($(
         impl $t {
-            leading_zeros!();
+            leading_zeros_large!();
 
             /// Returns `true` if and only if `self == 2^k` for some `k`.
             ///
@@ -1678,7 +1714,36 @@ macro_rules! checked_int_impl_unsigned {
     )*)
 }
 
-checked_int_impl_unsigned! { U256, U384, U512 }
+macro_rules! checked_int_impl_unsigned_small {
+    ($($t:ty),*) => ($(
+        impl $t {
+            leading_zeros_large!();
+
+            /// Returns `true` if and only if `self == 2^k` for some `k`.
+            ///
+            #[must_use]
+            #[inline]
+            pub fn is_power_of_two(self) -> bool {
+                self.0.is_power_of_two()
+            }
+
+            /// Returns the smallest power of two greater than or equal to `self`.
+            ///
+            /// When return value overflows (i.e., `self > (1 << (N-1))` for type
+            /// `uN`), overflows to `2^N = 0`.
+            ///
+            #[inline]
+            #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+            pub fn next_power_of_two(self) -> Self {
+                Self(self.0.checked_next_power_of_two().unwrap())
+            }
+        }
+    )*)
+}
+
+checked_int_impl_unsigned_large! { U256, U384, U512 }
+checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
 
 macro_rules! impl_bigint_to_large {
     ($($t:ty),*) => {
@@ -1815,7 +1880,7 @@ macro_rules! try_from_vec_and_slice {
         )*
     };
 }
-macro_rules! from_int_type {
+macro_rules! try_from_builtin {
     ($($t:ident),*) => {
         $(
             from_int!{($t, u8), ($t, u16), ($t, u32), ($t, u64), ($t, u128)}
@@ -1824,7 +1889,7 @@ macro_rules! from_int_type {
     };
 }
 
-macro_rules! from_uint_type {
+macro_rules! try_from_unsigned_builtin {
     ($($t:ident),*) => {
         $(
             from_int!{($t, u8), ($t, u16), ($t, u32), ($t, u64), ($t, u128)}
@@ -1832,12 +1897,12 @@ macro_rules! from_uint_type {
     };
 }
 
-from_int_type! { I8, I16, I32, I64, I128, I256, I384, I512 }
-from_uint_type! { U8, U16, U32, U64, U128, U256, U384, U512 }
+try_from_builtin! { I8, I16, I32, I64, I128, I256, I384, I512 }
+try_from_unsigned_builtin! { U8, U16, U32, U64, U128, U256, U384, U512 }
 try_from_big_int_to_signed! { I8, I16, I32, I64, I128, I256, I384, I512 }
 try_from_big_int_to_unsigned! { U8, U16, U32, U64, U128, U256, U384, U512 }
-from_array! { I256, I384, I512, U256, U384, U512 }
 try_from_vec_and_slice! { I256, I384, I512, U256, U384, U512 }
+from_array! { I256, I384, I512, U256, U384, U512 }
 
 #[cfg(test)]
 mod tests {
