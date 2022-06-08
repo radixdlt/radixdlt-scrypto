@@ -93,7 +93,7 @@ impl PreCommittedKeyValueStore {
 /// Component type objects which will eventually move into a component
 #[derive(Debug)]
 pub struct ComponentObjects {
-    values: HashMap<StoredValueId, StoredValue>,
+    pub values: HashMap<StoredValueId, StoredValue>,
     borrowed_vault: Option<(VaultId, Option<KeyValueStoreId>)>,
 }
 
@@ -134,17 +134,26 @@ impl ComponentObjects {
         Ok(taken_values)
     }
 
-    fn get_kv_store_mut_internal(
+    fn get_owned_kv_store_mut_internal(
+        &mut self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> Option<&mut PreCommittedKeyValueStore> {
+        self.values.get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
+            .map(|v| {
+                match v {
+                    StoredValue::KeyValueStore(_, store) => store,
+                    _ => panic!("Expected KV store")
+                }
+            })
+    }
+
+    fn get_ref_kv_store_mut_internal(
         &mut self,
         kv_store_id: &KeyValueStoreId,
     ) -> Option<&mut PreCommittedKeyValueStore> {
         // TODO: Optimize to prevent search
         for (_, value) in self.values.iter_mut() {
-            if let StoredValue::KeyValueStore(ref id, unclaimed) = value {
-                if id.eq(kv_store_id) {
-                    return Some(unclaimed);
-                }
-
+            if let StoredValue::KeyValueStore(_, unclaimed) = value {
                 let maybe_store = unclaimed.find_child_kv_store(kv_store_id);
                 if maybe_store.is_some() {
                     return maybe_store;
@@ -155,15 +164,24 @@ impl ComponentObjects {
         None
     }
 
-    pub fn get_kv_store_mut(
+    pub fn get_owned_kv_store_mut(
         &mut self,
         kv_store_id: &KeyValueStoreId,
     ) -> Option<&mut PreCommittedKeyValueStore> {
         if self.borrowed_vault.is_some() {
             panic!("Should not be taking while value is being borrowed");
         }
+        self.get_owned_kv_store_mut_internal(kv_store_id)
+    }
 
-        self.get_kv_store_mut_internal(kv_store_id)
+    pub fn get_ref_kv_store_mut(
+        &mut self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> Option<&mut PreCommittedKeyValueStore> {
+        if self.borrowed_vault.is_some() {
+            panic!("Should not be taking while value is being borrowed");
+        }
+        self.get_ref_kv_store_mut_internal(kv_store_id)
     }
 
     pub fn borrow_owned_vault_mut(&mut self, vault_id: &VaultId) -> Option<Vault> {
@@ -203,7 +221,12 @@ impl ComponentObjects {
     pub fn return_borrowed_vault_mut(&mut self, vault: Vault) {
         if let Some((vault_id, maybe_parent)) = self.borrowed_vault.take() {
             if let Some(parent_id) = maybe_parent {
-                let kv_store = self.get_kv_store_mut_internal(&parent_id).unwrap();
+                let kv_store = if self.values.contains_key(&StoredValueId::KeyValueStoreId(parent_id.clone())) {
+                    self.get_owned_kv_store_mut_internal(&parent_id)
+                } else {
+                    self.get_ref_kv_store_mut_internal(&parent_id)
+                }.unwrap();
+
                 kv_store.child_values.insert(
                     StoredValueId::VaultId(vault_id.clone()),
                     StoredValue::Vault(vault_id.clone(), vault),

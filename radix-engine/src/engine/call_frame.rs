@@ -1095,8 +1095,13 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         verify_stored_key(&key)?;
 
+        let maybe_store = if self.owned_values.values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
+            self.owned_values.get_owned_kv_store_mut(&kv_store_id)
+        } else {
+            self.owned_values.get_ref_kv_store_mut(&kv_store_id)
+        };
 
-        if let Some(kv_store) = self.owned_values.get_kv_store_mut(&kv_store_id) {
+        if let Some(kv_store) = maybe_store {
             let value = kv_store.store.get(&key.raw);
             match value {
                 Some(v) => {
@@ -1179,8 +1184,12 @@ where
         verify_stored_value(&value)?;
 
         let (old_value, kv_store_state) = {
-            let kv_store = self.owned_values.get_kv_store_mut(&kv_store_id);
-            match kv_store {
+            let maybe_store = if self.owned_values.values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
+                self.owned_values.get_owned_kv_store_mut(&kv_store_id)
+            } else {
+                self.owned_values.get_ref_kv_store_mut(&kv_store_id)
+            };
+            match maybe_store {
                 None => match &self.component_state {
                     Some(ComponentState {
                              component_address, ..
@@ -1225,10 +1234,11 @@ where
         match kv_store_state {
             KeyValueStoreState::Uncommitted => {
                 // Check for cycles
-                let kv_store = self
-                    .owned_values
-                    .get_kv_store_mut(&kv_store_id)
-                    .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
+                let kv_store = if self.owned_values.values.contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone())) {
+                    self.owned_values.get_owned_kv_store_mut(&kv_store_id)
+                } else {
+                    self.owned_values.get_ref_kv_store_mut(&kv_store_id)
+                }.ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values);
             }
