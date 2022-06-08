@@ -93,18 +93,22 @@ impl TestTransaction {
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    call_data,
+                    method_name,
+                    arg,
                 } => ExecutableInstruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    call_data,
+                    method_name,
+                    arg,
                 },
                 Instruction::CallMethod {
                     component_address,
-                    call_data,
+                    method_name,
+                    arg,
                 } => ExecutableInstruction::CallMethod {
                     component_address,
-                    call_data,
+                    method_name,
+                    arg,
                 },
                 Instruction::CallMethodWithAllResources {
                     component_address,

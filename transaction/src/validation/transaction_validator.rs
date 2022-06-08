@@ -170,25 +170,31 @@ impl TransactionValidator {
                 Instruction::CallFunction {
                     package_address,
                     blueprint_name,
-                    call_data,
+                    method_name,
+                    arg,
                 } => {
-                    Self::validate_call_data(&call_data, &mut id_validator)
+                    // TODO: decode into Value
+                    Self::validate_call_data(&arg, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                     instructions.push(ExecutableInstruction::CallFunction {
                         package_address,
                         blueprint_name,
-                        call_data,
+                        method_name,
+                        arg,
                     });
                 }
                 Instruction::CallMethod {
                     component_address,
-                    call_data,
+                    method_name,
+                    arg,
                 } => {
-                    Self::validate_call_data(&call_data, &mut id_validator)
+                    // TODO: decode into Value
+                    Self::validate_call_data(&arg, &mut id_validator)
                         .map_err(TransactionValidationError::CallDataValidationError)?;
                     instructions.push(ExecutableInstruction::CallMethod {
                         component_address,
-                        call_data,
+                        method_name,
+                        arg,
                     });
                 }
                 Instruction::CallMethodWithAllResources {
@@ -290,7 +296,7 @@ impl TransactionValidator {
     fn validate_call_data(
         call_data: &[u8],
         id_validator: &mut IdValidator,
-    ) -> Result<ScryptoValue, CallDataValidationError> {
+    ) -> Result<(), CallDataValidationError> {
         let value =
             ScryptoValue::from_slice(call_data).map_err(CallDataValidationError::DecodeError)?;
         id_validator
@@ -304,7 +310,7 @@ impl TransactionValidator {
                 kv_store_id.clone(),
             ));
         }
-        Ok(value)
+        Ok(())
     }
 }
 

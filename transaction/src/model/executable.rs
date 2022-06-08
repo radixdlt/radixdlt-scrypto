@@ -61,11 +61,13 @@ pub enum ExecutableInstruction {
     CallFunction {
         package_address: PackageAddress,
         blueprint_name: String,
-        call_data: Vec<u8>, // TODO: restore function name
+        method_name: String,
+        arg: Vec<u8>,
     },
     CallMethod {
         component_address: ComponentAddress,
-        call_data: Vec<u8>, // TODO: restore method name
+        method_name: String,
+        arg: Vec<u8>,
     },
     CallMethodWithAllResources {
         component_address: ComponentAddress,

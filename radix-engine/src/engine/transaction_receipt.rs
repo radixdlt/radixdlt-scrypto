@@ -67,20 +67,24 @@ impl fmt::Debug for Receipt {
                     ExecutableInstruction::CallFunction {
                         package_address,
                         blueprint_name,
-                        call_data,
+                        method_name,
+                        arg,
                     } => format!(
-                        "CallFunction {{ package_address: {}, blueprint_name: {:?}, call_data: {:?} }}",
+                        "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, arg: {:?} }}",
                         package_address,
                         blueprint_name,
-                        ScryptoValue::from_slice(&call_data).expect("Invalid call data")
+                        method_name,
+                        ScryptoValue::from_slice(&arg).expect("Invalid call data")
                     ),
                     ExecutableInstruction::CallMethod {
                         component_address,
-                        call_data,
+                        method_name,
+                        arg,
                     } => format!(
-                        "CallMethod {{ component_address: {}, call_data: {:?} }}",
+                        "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
                         component_address,
-                        ScryptoValue::from_slice(&call_data).expect("Invalid call data")
+                        method_name,
+                        ScryptoValue::from_slice(&arg).expect("Invalid call data")
                     ),
                     ExecutableInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),

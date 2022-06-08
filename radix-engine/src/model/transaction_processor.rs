@@ -3,7 +3,6 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::call_data;
 use scrypto::component::Package;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
@@ -13,6 +12,7 @@ use scrypto::prelude::{
     ProofCloneInput,
 };
 use scrypto::resource::{AuthZonePopInput, ConsumingProofDropInput};
+use scrypto::to_struct;
 use scrypto::values::*;
 use transaction::model::*;
 use transaction::validation::*;
@@ -343,19 +343,21 @@ impl TransactionProcessor {
                         ExecutableInstruction::CallFunction {
                             package_address,
                             blueprint_name,
-                            call_data,
+                            method_name,
+                            arg,
                         } => {
                             Self::replace_ids(
                                 &mut proof_id_mapping,
                                 &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(call_data).expect("Invalid call data"),
+                                ScryptoValue::from_slice(arg).expect("Should be valid arg"),
                             )
                             .and_then(|call_data| {
-                                system_api.invoke_snode(
+                                system_api.invoke_snode2(
                                     SNodeRef::Scrypto(ScryptoActor::Blueprint(
                                         *package_address,
                                         blueprint_name.to_string(),
                                     )),
+                                    method_name.to_string(),
                                     call_data,
                                 )
                             })
@@ -389,16 +391,18 @@ impl TransactionProcessor {
                         }
                         ExecutableInstruction::CallMethod {
                             component_address,
-                            call_data,
+                            method_name,
+                            arg,
                         } => {
                             Self::replace_ids(
                                 &mut proof_id_mapping,
                                 &mut bucket_id_mapping,
-                                ScryptoValue::from_slice(call_data).expect("Invalid call data"),
+                                ScryptoValue::from_slice(arg).expect("Should be valid arg"),
                             )
                             .and_then(|call_data| {
-                                system_api.invoke_snode(
+                                system_api.invoke_snode2(
                                     SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
+                                    method_name.to_string(),
                                     call_data,
                                 )
                             })
@@ -463,9 +467,10 @@ impl TransactionProcessor {
                                 for (_, real_id) in bucket_id_mapping.drain() {
                                     buckets.push(scrypto::resource::Bucket(real_id));
                                 }
-                                let encoded = call_data!(method.to_string(), buckets);
-                                system_api.invoke_snode(
+                                let encoded = to_struct!(buckets);
+                                system_api.invoke_snode2(
                                     SNodeRef::Scrypto(ScryptoActor::Component(*component_address)),
+                                    method.to_string(),
                                     ScryptoValue::from_slice(&encoded).unwrap(),
                                 )
                             }),

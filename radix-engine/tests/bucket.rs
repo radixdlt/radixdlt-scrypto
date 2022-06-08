@@ -4,8 +4,8 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::*;
 use radix_engine::model::{BucketError, ResourceContainerError};
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -15,30 +15,34 @@ fn test_bucket() {
     let package_address = test_runner.publish_package("bucket");
 
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "BucketTest", call_data!(combine()))
-        .call_function(package_address, "BucketTest", call_data!(split()))
-        .call_function(package_address, "BucketTest", call_data!(borrow()))
-        .call_function(package_address, "BucketTest", call_data!(query()))
+        .call_function(package_address, "BucketTest", "combine", to_struct!())
+        .call_function(package_address, "BucketTest", "split", to_struct!())
+        .call_function(package_address, "BucketTest", "borrow", to_struct!())
+        .call_function(package_address, "BucketTest", "query", to_struct!())
         .call_function(
             package_address,
             "BucketTest",
-            call_data!(test_restricted_transfer()),
+            "test_restricted_transfer",
+            to_struct!(),
         )
-        .call_function(package_address, "BucketTest", call_data!(test_burn()))
+        .call_function(package_address, "BucketTest", "test_burn", to_struct!())
         .call_function(
             package_address,
             "BucketTest",
-            call_data!(test_burn_freely()),
-        )
-        .call_function(
-            package_address,
-            "BucketTest",
-            call_data!(create_empty_bucket_fungible()),
+            "test_burn_freely",
+            to_struct!(),
         )
         .call_function(
             package_address,
             "BucketTest",
-            call_data!(create_empty_bucket_non_fungible()),
+            "create_empty_bucket_fungible",
+            to_struct!(),
+        )
+        .call_function(
+            package_address,
+            "BucketTest",
+            "create_empty_bucket_non_fungible",
+            to_struct!(),
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
@@ -53,10 +57,10 @@ fn test_bucket_of_badges() {
     let package_address = test_runner.publish_package("bucket");
 
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "BadgeTest", call_data!(combine()))
-        .call_function(package_address, "BadgeTest", call_data!(split()))
-        .call_function(package_address, "BadgeTest", call_data!(borrow()))
-        .call_function(package_address, "BadgeTest", call_data!(query()))
+        .call_function(package_address, "BadgeTest", "combine", to_struct!())
+        .call_function(package_address, "BadgeTest", "split", to_struct!())
+        .call_function(package_address, "BadgeTest", "borrow", to_struct!())
+        .call_function(package_address, "BadgeTest", "query", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);

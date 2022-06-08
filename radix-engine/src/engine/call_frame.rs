@@ -515,7 +515,7 @@ where
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, package, export_name, component_state) => {
                 self.component_state = component_state;
-                package.invoke(actor, export_name, call_data, self)
+                package.invoke(actor, export_name, method_name, call_data, self)
             }
             SNodeState::ResourceStatic => {
                 ResourceManager::static_main(method_name, call_data, self)

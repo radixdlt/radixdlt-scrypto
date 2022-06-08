@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::buffer::{scrypto_decode, scrypto_encode};
-use crate::call_data_bytes_args;
+use crate::bytes_vec_to_struct;
 use crate::component::*;
 use crate::core::*;
 use crate::crypto::*;
@@ -50,13 +50,13 @@ impl Runtime {
         function: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
-        let call_data = call_data_bytes_args!(function.as_ref().to_owned(), args);
-        let input = RadixEngineInput::InvokeSNode(
+        let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::Scrypto(ScryptoActor::Blueprint(
                 package_address,
                 blueprint_name.as_ref().to_owned(),
             )),
-            call_data,
+            function.as_ref().to_string(),
+            bytes_vec_to_struct!(args),
         );
         let output: Vec<u8> = call_engine(input);
 
@@ -69,18 +69,10 @@ impl Runtime {
         method: S,
         args: Vec<Vec<u8>>,
     ) -> Vec<u8> {
-        let mut fields = Vec::new();
-        for arg in args {
-            fields.push(::sbor::decode_any(&arg).unwrap());
-        }
-        let variant = ::sbor::Value::Enum {
-            name: method.as_ref().to_owned(),
-            fields,
-        };
-
-        let input = RadixEngineInput::InvokeSNode(
+        let input = RadixEngineInput::InvokeSNode2(
             SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
-            ::sbor::encode_any(&variant),
+            method.as_ref().to_string(),
+            bytes_vec_to_struct!(args),
         );
         let output: Vec<u8> = call_engine(input);
 

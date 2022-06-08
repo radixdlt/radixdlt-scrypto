@@ -3,8 +3,8 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use scrypto::values::ScryptoValue;
 use transaction::builder::ManifestBuilder;
 use transaction::model::*;
@@ -76,7 +76,8 @@ fn account_to_bucket_to_account() {
             builder
                 .add_instruction(Instruction::CallMethod {
                     component_address: account,
-                    call_data: call_data!(deposit(scrypto::resource::Bucket(bucket_id))),
+                    method_name: "deposit".to_string(),
+                    arg: to_struct!(scrypto::resource::Bucket(bucket_id)),
                 })
                 .0
         })
@@ -95,7 +96,7 @@ fn test_account_balance() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
     let manifest = ManifestBuilder::new()
-        .call_method(account, call_data![balance(RADIX_TOKEN)])
+        .call_method(account, "balance", to_struct!(RADIX_TOKEN))
         .build();
 
     // Act

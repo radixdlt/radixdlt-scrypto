@@ -6,8 +6,8 @@ use radix_engine::model::extract_package;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::InvokeError;
 use radix_engine::wasm::PrepareError::NoMemory;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use test_runner::{wat2wasm, TestRunner};
 use transaction::builder::ManifestBuilder;
 
@@ -49,7 +49,7 @@ fn large_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_function(package, "LargeReturnSize", call_data!(something()))
+        .call_function(package, "LargeReturnSize", "something", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -69,7 +69,7 @@ fn overflow_return_len_should_cause_memory_access_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_function(package, "MaxReturnSize", call_data!(something()))
+        .call_function(package, "MaxReturnSize", "something", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
@@ -89,7 +89,7 @@ fn zero_return_len_should_cause_data_validation_error() {
 
     // Act
     let manifest = ManifestBuilder::new()
-        .call_function(package, "ZeroReturnSize", call_data!(something()))
+        .call_function(package, "ZeroReturnSize", "something", to_struct!())
         .build();
 
     let receipt = test_runner.execute_manifest(manifest, vec![]);

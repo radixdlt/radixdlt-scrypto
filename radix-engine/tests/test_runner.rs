@@ -3,7 +3,7 @@ use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
 use radix_engine::wasm::DefaultWasmEngine;
 use scrypto::prelude::*;
-use scrypto::{abi, call_data};
+use scrypto::{abi, to_struct};
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::model::TransactionManifest;
@@ -49,7 +49,7 @@ impl TestRunner {
 
     pub fn new_account_with_auth_rule(&mut self, withdraw_auth: &AccessRule) -> ComponentAddress {
         let manifest = ManifestBuilder::new()
-            .call_method(SYSTEM_COMPONENT, call_data!(free_xrd()))
+            .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(withdraw_auth, bucket_id)
             })
@@ -128,7 +128,8 @@ impl TestRunner {
             .call_function(
                 package,
                 "ResourceCreator",
-                call_data!(function.to_string(), token, set_auth),
+                function,
+                to_struct!(token, set_auth),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
@@ -157,12 +158,8 @@ impl TestRunner {
             .call_function(
                 package,
                 "ResourceCreator",
-                call_data!(create_restricted_token(
-                    mint_auth,
-                    burn_auth,
-                    withdraw_auth,
-                    admin_auth
-                )),
+                "create_restricted_token",
+                to_struct!(mint_auth, burn_auth, withdraw_auth, admin_auth),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
@@ -186,7 +183,8 @@ impl TestRunner {
             .call_function(
                 package,
                 "ResourceCreator",
-                call_data!(create_restricted_burn(auth_resource_address)),
+                "create_restricted_burn",
+                to_struct!(auth_resource_address),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
@@ -205,7 +203,8 @@ impl TestRunner {
             .call_function(
                 package,
                 "ResourceCreator",
-                call_data![create_restricted_transfer(auth_resource_address)],
+                "create_restricted_transfer",
+                to_struct![auth_resource_address],
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
@@ -219,7 +218,8 @@ impl TestRunner {
             .call_function(
                 package,
                 "ResourceCreator",
-                call_data!(create_non_fungible_fixed()),
+                "create_non_fungible_fixed",
+                to_struct!(),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
@@ -239,7 +239,8 @@ impl TestRunner {
             .call_function(
                 package,
                 "ResourceCreator",
-                call_data!(create_fungible_fixed(amount, divisibility)),
+                "create_fungible_fixed",
+                to_struct!(amount, divisibility),
             )
             .call_method_with_all_resources(account, "deposit_batch")
             .build();

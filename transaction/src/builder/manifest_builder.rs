@@ -92,9 +92,8 @@ impl ManifestBuilder {
             Instruction::DropProof { proof_id } => {
                 self.id_validator.drop_proof(proof_id).unwrap();
             }
-            Instruction::CallFunction { call_data, .. }
-            | Instruction::CallMethod { call_data, .. } => {
-                let scrypt_value = ScryptoValue::from_slice(&call_data).unwrap();
+            Instruction::CallFunction { arg, .. } | Instruction::CallMethod { arg, .. } => {
+                let scrypt_value = ScryptoValue::from_slice(&arg).unwrap();
                 self.id_validator.move_resources(&scrypt_value).unwrap();
             }
             Instruction::CallMethodWithAllResources { .. } => {
@@ -289,12 +288,14 @@ impl ManifestBuilder {
         &mut self,
         package_address: PackageAddress,
         blueprint_name: &str,
-        call_data: Vec<u8>,
+        method_name: &str,
+        arg: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallFunction {
             package_address,
             blueprint_name: blueprint_name.to_owned(),
-            call_data,
+            method_name: method_name.to_string(),
+            arg,
         });
         self
     }
@@ -330,17 +331,15 @@ impl ManifestBuilder {
         for arg in arguments {
             fields.push(::sbor::decode_any(&arg).unwrap());
         }
-        let variant = ::sbor::Value::Enum {
-            name: function.to_owned(),
-            fields,
-        };
-        let bytes = ::sbor::encode_any(&variant);
+        let input_struct = ::sbor::Value::Struct { fields };
+        let bytes = ::sbor::encode_any(&input_struct);
 
         Ok(self
             .add_instruction(Instruction::CallFunction {
                 package_address,
                 blueprint_name: blueprint_name.to_owned(),
-                call_data: bytes,
+                method_name: function.to_string(),
+                arg: bytes,
             })
             .0)
     }
@@ -349,11 +348,13 @@ impl ManifestBuilder {
     pub fn call_method(
         &mut self,
         component_address: ComponentAddress,
-        call_data: Vec<u8>,
+        method_name: &str,
+        arg: Vec<u8>,
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address,
-            call_data,
+            method_name: method_name.to_owned(),
+            arg,
         });
         self
     }
@@ -384,11 +385,11 @@ impl ManifestBuilder {
             .parse_args(&abi.inputs, args, account)
             .map_err(|e| BuildCallWithAbiError::FailedToBuildArgs(e))?;
 
-        let call_data = call_data_bytes_args!(method.to_owned(), arguments);
         Ok(self
             .add_instruction(Instruction::CallMethod {
                 component_address,
-                call_data,
+                method_name: method.to_owned(),
+                arg: bytes_vec_to_struct!(arguments),
             })
             .0)
     }
@@ -446,12 +447,13 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            call_data: call_data!(new_resource(
+            method_name: "new_resource".to_string(),
+            arg: to_struct!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 resource_auth,
                 mint_params
-            )),
+            ),
         })
         .0
     }
@@ -468,14 +470,15 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            call_data: call_data!(new_resource(
+            method_name: "new_resource".to_string(),
+            arg: to_struct!(
                 ResourceType::Fungible { divisibility: 18 },
                 metadata,
                 resource_auth,
                 Option::Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })
-            )),
+            ),
         })
         .0
     }
@@ -502,12 +505,13 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            call_data: call_data!(new_resource(
+            method_name: "new_resource".to_string(),
+            arg: to_struct!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
                 resource_auth,
                 mint_params
-            )),
+            ),
         })
         .0
     }
@@ -524,14 +528,15 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            call_data: call_data!(new_resource(
+            method_name: "new_resource".to_string(),
+            arg: to_struct!(
                 ResourceType::Fungible { divisibility: 0 },
                 metadata,
                 resource_auth,
                 Option::Some(MintParams::Fungible {
                     amount: initial_supply.into(),
                 })
-            )),
+            ),
         })
         .0
     }
@@ -541,7 +546,8 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: SYSTEM_PACKAGE,
             blueprint_name: "System".to_owned(),
-            call_data: call_data!(mint(amount, resource_address)),
+            method_name: "mint".to_string(),
+            arg: to_struct!(amount, resource_address),
         });
         self
     }
@@ -553,7 +559,8 @@ impl ManifestBuilder {
                 .add_instruction(Instruction::CallFunction {
                     package_address: SYSTEM_PACKAGE,
                     blueprint_name: "System".to_owned(),
-                    call_data: call_data!(burn(scrypto::resource::Bucket(bucket_id))),
+                    method_name: "burn".to_string(),
+                    arg: to_struct!(scrypto::resource::Bucket(bucket_id)),
                 })
                 .0
         })
@@ -570,7 +577,8 @@ impl ManifestBuilder {
                     .add_instruction(Instruction::CallFunction {
                         package_address: SYSTEM_PACKAGE,
                         blueprint_name: "System".to_owned(),
-                        call_data: call_data!(burn(scrypto::resource::Bucket(bucket_id))),
+                        method_name: "burn".to_string(),
+                        arg: to_struct!(scrypto::resource::Bucket(bucket_id)),
                     })
                     .0
             },
@@ -582,7 +590,8 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
-            call_data: call_data!(new(withdraw_auth.clone())),
+            method_name: "new".to_string(),
+            arg: to_struct!(withdraw_auth.clone()),
         })
         .0
     }
@@ -596,10 +605,8 @@ impl ManifestBuilder {
         self.add_instruction(Instruction::CallFunction {
             package_address: ACCOUNT_PACKAGE,
             blueprint_name: "Account".to_owned(),
-            call_data: call_data!(new_with_resource(
-                withdraw_auth.clone(),
-                scrypto::resource::Bucket(bucket_id)
-            )),
+            method_name: "new_with_resource".to_string(),
+            arg: to_struct!(withdraw_auth.clone(), scrypto::resource::Bucket(bucket_id)),
         })
         .0
     }
@@ -612,7 +619,8 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            call_data: call_data!(withdraw(resource_address)),
+            method_name: "withdraw".to_string(),
+            arg: to_struct!(resource_address),
         })
         .0
     }
@@ -626,7 +634,8 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            call_data: call_data!(withdraw_by_amount(amount, resource_address)),
+            method_name: "withdraw_by_amount".to_string(),
+            arg: to_struct!(amount, resource_address),
         })
         .0
     }
@@ -640,7 +649,8 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            call_data: call_data!(withdraw_by_ids(ids.clone(), resource_address)),
+            method_name: "withdraw_by_ids".to_string(),
+            arg: to_struct!(ids.clone(), resource_address),
         })
         .0
     }
@@ -653,7 +663,8 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            call_data: call_data!(create_proof(resource_address)),
+            method_name: "create_proof".to_string(),
+            arg: to_struct!(resource_address),
         })
         .0
     }
@@ -667,7 +678,8 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            call_data: call_data!(create_proof_by_amount(amount, resource_address)),
+            method_name: "create_proof_by_amount".to_string(),
+            arg: to_struct!(amount, resource_address),
         })
         .0
     }
@@ -681,7 +693,8 @@ impl ManifestBuilder {
     ) -> &mut Self {
         self.add_instruction(Instruction::CallMethod {
             component_address: account,
-            call_data: call_data!(create_proof_by_ids(ids.clone(), resource_address)),
+            method_name: "create_proof_by_ids".to_string(),
+            arg: to_struct!(ids.clone(), resource_address),
         })
         .0
     }

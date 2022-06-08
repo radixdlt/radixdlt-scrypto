@@ -1,8 +1,8 @@
 use clap::Parser;
 use colored::*;
 use rand::Rng;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 
 use crate::resim::*;
 
@@ -26,7 +26,7 @@ impl NewAccount {
         let auth_address = NonFungibleAddress::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_address));
         let manifest = ManifestBuilder::new()
-            .call_method(SYSTEM_COMPONENT, call_data!(free_xrd()))
+            .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(&withdraw_auth, bucket_id)
             })

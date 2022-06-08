@@ -3,8 +3,8 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use scrypto::call_data;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -23,7 +23,8 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            call_data!(create_component_with_auth(authorization)),
+            "create_component_with_auth",
+            to_struct!(authorization),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -34,7 +35,8 @@ fn cannot_make_cross_component_call_without_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            call_data!(create_component()),
+            "create_component",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -45,7 +47,8 @@ fn cannot_make_cross_component_call_without_authorization() {
     let manifest = ManifestBuilder::new()
         .call_method(
             my_component,
-            call_data!(cross_component_call(secured_component)),
+            "cross_component_call",
+            to_struct!(secured_component),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -71,7 +74,8 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            call_data!(create_component_with_auth(authorization)),
+            "create_component_with_auth",
+            to_struct!(authorization),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -82,7 +86,8 @@ fn can_make_cross_component_call_with_authorization() {
         .call_function(
             package_address,
             "CrossComponent",
-            call_data!(create_component()),
+            "create_component",
+            to_struct!(),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -100,7 +105,8 @@ fn can_make_cross_component_call_with_authorization() {
     let manifest = ManifestBuilder::new()
         .call_method(
             my_component,
-            call_data!(cross_component_call(secured_component)),
+            "cross_component_call",
+            to_struct!(secured_component),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

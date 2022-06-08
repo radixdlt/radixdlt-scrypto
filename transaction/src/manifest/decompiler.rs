@@ -214,15 +214,16 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
             Instruction::CallFunction {
                 package_address,
                 blueprint_name,
-                call_data: arg,
+                method_name,
+                arg,
             } => {
+                buf.push_str(&format!(
+                    "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
+                    package_address, blueprint_name, method_name
+                ));
                 let validated_arg =
                     ScryptoValue::from_slice(&arg).map_err(DecompileError::DecodeError)?;
-                if let Value::Enum { name, fields } = validated_arg.dom {
-                    buf.push_str(&format!(
-                        "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                        package_address, blueprint_name, name
-                    ));
+                if let Value::Struct { fields } = validated_arg.dom {
                     for field in fields {
                         let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
@@ -241,16 +242,17 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
             }
             Instruction::CallMethod {
                 component_address,
-                call_data: arg,
+                method_name,
+                arg,
             } => {
+                buf.push_str(&format!(
+                    "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
+                    component_address, method_name
+                ));
+
                 let validated_arg =
                     ScryptoValue::from_slice(&arg).map_err(DecompileError::DecodeError)?;
-                if let Value::Enum { name, fields } = validated_arg.dom {
-                    buf.push_str(&format!(
-                        "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                        component_address, name
-                    ));
-
+                if let Value::Struct { fields } = validated_arg.dom {
                     for field in fields {
                         let bytes = encode_any(&field);
                         let validated_arg = ScryptoValue::from_slice(&bytes)
