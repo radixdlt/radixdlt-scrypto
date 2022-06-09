@@ -19,7 +19,8 @@ fn test_external_bridges() {
         target_package_address,
     )
     .expect("Package address rewrite expected to succeed");
-    let caller_package_address = test_runner.extract_and_publish_package("external_blueprint_caller");
+    let caller_package_address =
+        test_runner.extract_and_publish_package("external_blueprint_caller");
 
     // Part 2 - Get a target component address
     let manifest1 = ManifestBuilder::new()

@@ -67,9 +67,7 @@ impl TestRunner {
     }
 
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let manifest = ManifestBuilder::new()
-            .publish_package(package)
-            .build();
+        let manifest = ManifestBuilder::new().publish_package(package).build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
         receipt.new_package_addresses[0]

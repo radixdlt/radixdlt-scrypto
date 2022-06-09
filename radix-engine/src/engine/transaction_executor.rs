@@ -1,6 +1,6 @@
 use sbor::rust::marker::PhantomData;
-use sbor::rust::vec::Vec;
 use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
 use scrypto::values::ScryptoValue;
 use transaction::model::*;

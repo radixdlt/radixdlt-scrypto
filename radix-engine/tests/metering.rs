@@ -1,11 +1,11 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
+use crate::test_runner::TestRunner;
+use radix_engine::wasm::InvokeError;
 use sbor::Type;
 use scrypto::abi::BlueprintAbi;
 use scrypto::prelude::{HashMap, Package};
-use crate::test_runner::TestRunner;
-use radix_engine::wasm::InvokeError;
 use scrypto::to_struct;
 use test_runner::wat2wasm;
 use transaction::builder::ManifestBuilder;
