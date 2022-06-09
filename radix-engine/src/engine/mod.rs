@@ -1,5 +1,6 @@
 mod call_frame;
 mod component_objects;
+mod cost_unit_counter;
 mod errors;
 mod runtime;
 mod substate_receipt;
@@ -13,6 +14,7 @@ pub use call_frame::{
     MoveMethod, SNodeState, StaticSNodeState,
 };
 pub use component_objects::*;
+pub use cost_unit_counter::*;
 pub use errors::*;
 pub use runtime::RadixEngineWasmRuntime;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
