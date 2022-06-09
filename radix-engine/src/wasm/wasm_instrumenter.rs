@@ -1,6 +1,6 @@
 use sbor::rust::vec::Vec;
 
-use super::{WasmFeeTable, WasmModule};
+use crate::wasm::{WasmFeeTable, WasmModule};
 
 // TODO: Add instrumented code cache since WASM engine is no longer responsible for this.
 pub struct WasmInstrumenter {}

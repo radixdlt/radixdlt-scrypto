@@ -100,13 +100,9 @@ impl ValidatedPackage {
         I: WasmInstance,
     {
         let instrumented_code = self.instrumented_code();
-        let mut cost_unit_counter = CostUnitCounter::new(0, 0); // FIXME
         let mut instance = system_api.wasm_engine().instantiate(&instrumented_code);
-        let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(
-            actor,
-            system_api,
-            &mut cost_unit_counter,
-        ));
+        let mut runtime: Box<dyn WasmRuntime> =
+            Box::new(RadixEngineWasmRuntime::new(actor, system_api));
         instance
             .invoke_export(&export_name, method_name, &arg, &mut runtime)
             .map_err(|e| match e {

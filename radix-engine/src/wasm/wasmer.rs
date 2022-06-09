@@ -126,11 +126,11 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
-        fn consume_cost_unit(env: &WasmerInstanceEnv, cost_unit: i32) -> Result<(), RuntimeError> {
+        fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: i32) -> Result<(), RuntimeError> {
             let ptr = env.runtime_ptr.lock().unwrap();
             let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             runtime
-                .consume_cost_unit(cost_unit as u32)
+                .consume_cost_units(cost_unit as u32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
@@ -144,7 +144,7 @@ impl WasmerModule {
         let import_object = imports! {
             MODULE_ENV_NAME => {
                 RADIX_ENGINE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), radix_engine),
-                CONSUME_COST_UNIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_unit),
+                CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
             }
         };
 

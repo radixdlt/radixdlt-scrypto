@@ -1,6 +1,5 @@
 mod call_frame;
 mod component_objects;
-mod cost_unit_counter;
 mod errors;
 mod substate_receipt;
 mod system_api;
@@ -14,7 +13,6 @@ pub use call_frame::{
     MoveMethod, SNodeState, StaticSNodeState,
 };
 pub use component_objects::*;
-pub use cost_unit_counter::*;
 pub use errors::*;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
 pub use system_api::SystemApi;
@@ -24,4 +22,4 @@ pub use track::{
 };
 pub use transaction_executor::TransactionExecutor;
 pub use transaction_receipt::*;
-pub use wasm_runtime::RadixEngineWasmRuntime;
+pub use wasm_runtime::*;

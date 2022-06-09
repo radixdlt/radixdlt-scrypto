@@ -5,6 +5,7 @@ use scrypto::values::ScryptoValue;
 use transaction::model::*;
 
 use crate::engine::*;
+use crate::fee::CostUnitCounter;
 use crate::fee::MAX_TRANSACTION_COST;
 use crate::fee::SYSTEM_LOAN_AMOUNT;
 use crate::ledger::*;

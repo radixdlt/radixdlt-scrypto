@@ -3,7 +3,9 @@ use sbor::rust::string::String;
 use sbor::DecodeError;
 use wasmi::HostError;
 
-use crate::engine::{CostUnitCounterError, RuntimeError};
+// TODO: this is the only place in the `wasm` module that introduces circular dependencies. Better solution?
+use crate::engine::RuntimeError;
+use crate::fee::CostUnitCounterError;
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]

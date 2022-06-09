@@ -10,8 +10,7 @@ use wasmi_validation::{validate_module, PlainValidator};
 
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
-
-use super::WasmFeeTable;
+use crate::wasm::WasmFeeTable;
 
 pub struct WasmModule {
     module: Module,

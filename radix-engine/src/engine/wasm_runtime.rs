@@ -12,12 +12,11 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::RuntimeError;
 use crate::engine::SystemApi;
+use crate::fee::*;
 use crate::model::Component;
 use crate::wasm::*;
 
-use super::CostUnitCounter;
-
-pub struct RadixEngineWasmRuntime<'s, 'c, S, W, I>
+pub struct RadixEngineWasmRuntime<'s, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
@@ -25,29 +24,27 @@ where
 {
     this: ScryptoActorInfo,
     system_api: &'s mut S,
-    cost_unit_counter: &'c mut CostUnitCounter,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
 }
 
-impl<'s, 'c, S, W, I> RadixEngineWasmRuntime<'s, 'c, S, W, I>
+impl<'s, S, W, I> RadixEngineWasmRuntime<'s, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn new(
-        this: ScryptoActorInfo,
-        system_api: &'s mut S,
-        cost_unit_counter: &'c mut CostUnitCounter,
-    ) -> Self {
+    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S) -> Self {
         RadixEngineWasmRuntime {
             this,
             system_api,
-            cost_unit_counter,
             phantom1: PhantomData,
             phantom2: PhantomData,
         }
+    }
+
+    fn handle_consume_cost_units(&mut self, n: u32) -> Result<(), CostUnitCounterError> {
+        self.system_api.cost_unit_counter().consume(n)
     }
 
     // FIXME: limit access to the API
@@ -166,8 +163,8 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'s, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'s, 'c, S, W, I>
+impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'s, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =
@@ -207,7 +204,31 @@ impl<'s, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
         .map_err(InvokeError::RuntimeError)
     }
 
-    fn consume_cost_unit(&mut self, n: u32) -> Result<(), InvokeError> {
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
+        self.handle_consume_cost_units(n)
+            .map_err(InvokeError::MeteringError)
+    }
+}
+
+/// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
+pub struct NopWasmRuntime {
+    cost_unit_counter: CostUnitCounter,
+}
+
+impl NopWasmRuntime {
+    pub fn new(cost_unit_limit: u32) -> Self {
+        Self {
+            cost_unit_counter: CostUnitCounter::new(cost_unit_limit, cost_unit_limit),
+        }
+    }
+}
+
+impl WasmRuntime for NopWasmRuntime {
+    fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
+        Ok(ScryptoValue::unit())
+    }
+
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter
             .consume(n)
             .map_err(InvokeError::MeteringError)

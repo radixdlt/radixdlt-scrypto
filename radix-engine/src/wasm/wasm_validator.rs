@@ -1,4 +1,4 @@
-use super::{PrepareError, WasmFeeTable, WasmModule};
+use crate::wasm::{PrepareError, WasmFeeTable, WasmModule};
 
 pub struct WasmValidator {}
 

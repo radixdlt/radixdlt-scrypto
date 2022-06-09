@@ -18,6 +18,7 @@ use transaction::validation::*;
 
 use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::engine::*;
+use crate::fee::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::wasm::*;
@@ -1319,5 +1320,11 @@ where
             .map_err(RuntimeError::AuthZoneError)?;
 
         Ok(is_authorized)
+    }
+
+    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+        self.cost_unit_counter
+            .as_mut()
+            .expect("Frame doens't own a cost unit counter")
     }
 }

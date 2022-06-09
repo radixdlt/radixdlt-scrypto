@@ -8,6 +8,7 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::prelude::Package;
 use scrypto::values::ScryptoValue;
 
+use crate::engine::NopWasmRuntime;
 use crate::wasm::*;
 
 #[derive(Debug)]
