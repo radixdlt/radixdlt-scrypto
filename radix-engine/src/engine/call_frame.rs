@@ -63,6 +63,9 @@ pub struct CallFrame<
     /// Caller's auth zone
     caller_auth_zone: Option<&'p AuthZone>,
 
+    /// Costing
+    cost_unit_counter: Option<CostUnitCounter>,
+
     phantom: PhantomData<I>,
 }
 
@@ -277,19 +280,20 @@ where
         signer_public_keys: Vec<EcdsaPublicKey>,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
+        cost_unit_counter: CostUnitCounter,
     ) -> Self {
-        let signer_public_keys: BTreeSet<NonFungibleId> = signer_public_keys
+        let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
             .into_iter()
             .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
             .collect();
 
         let mut initial_auth_zone_proofs = Vec::new();
-        if !signer_public_keys.is_empty() {
+        if !signer_non_fungible_ids.is_empty() {
             // Proofs can't be zero amount
             let mut ecdsa_bucket = Bucket::new(ResourceContainer::new_non_fungible(
                 ECDSA_TOKEN,
-                signer_public_keys,
+                signer_non_fungible_ids,
             ));
             let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
             initial_auth_zone_proofs.push(ecdsa_proof);
@@ -306,6 +310,7 @@ where
             HashMap::new(),
             HashMap::new(),
             None,
+            cost_unit_counter,
         )
     }
 
@@ -320,6 +325,7 @@ where
         buckets: HashMap<BucketId, Bucket>,
         proofs: HashMap<ProofId, Proof>,
         caller_auth_zone: Option<&'p AuthZone>,
+        cost_unit_counter: CostUnitCounter,
     ) -> Self {
         Self {
             transaction_hash,
@@ -335,8 +341,15 @@ where
             auth_zone,
             caller_auth_zone,
             component_state: None,
+            cost_unit_counter: Some(cost_unit_counter),
             phantom: PhantomData,
         }
+    }
+
+    pub fn take_cost_unit_counter(&mut self) -> CostUnitCounter {
+        self.cost_unit_counter
+            .take()
+            .expect("Frame doesn't own a cost unit counter")
     }
 
     /// Checks resource leak.
@@ -871,6 +884,7 @@ where
         self.sys_log(Level::Debug, format!("Sending proofs: {:?}", moving_proofs));
 
         // start a new frame
+        let cost_unit_counter = self.take_cost_unit_counter();
         let mut frame = CallFrame::new(
             self.transaction_hash,
             self.depth + 1,
@@ -889,12 +903,16 @@ where
             moving_buckets,
             moving_proofs,
             self.auth_zone.as_ref(),
+            cost_unit_counter,
         );
 
         // invoke the main function
         let snode = loaded_snode.to_snode_state();
         let (result, received_buckets, received_proofs, mut received_vaults) =
             frame.run(Some(snode_ref), snode, &method_name, call_data)?;
+
+        // re-gain ownership of the cost unit counter
+        self.cost_unit_counter = Some(frame.take_cost_unit_counter());
 
         // move buckets and proofs to this process.
         self.sys_log(

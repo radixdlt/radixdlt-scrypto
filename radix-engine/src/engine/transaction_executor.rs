@@ -5,6 +5,8 @@ use scrypto::values::ScryptoValue;
 use transaction::model::*;
 
 use crate::engine::*;
+use crate::fee::MAX_TRANSACTION_COST;
+use crate::fee::SYSTEM_LOAN_AMOUNT;
 use crate::ledger::*;
 use crate::model::*;
 use crate::wasm::*;
@@ -62,6 +64,9 @@ where
         // Start state track
         let mut track = Track::new(self.substate_store, transaction_hash);
 
+        // Start costing
+        let cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
+
         // Create root call frame.
         let mut root_frame = CallFrame::new_root(
             self.trace,
@@ -69,6 +74,7 @@ where
             signer_public_keys,
             &mut track,
             self.wasm_engine,
+            cost_unit_counter,
         );
 
         // Invoke the transaction processor
