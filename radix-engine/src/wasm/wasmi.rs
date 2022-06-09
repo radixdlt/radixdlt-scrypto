@@ -48,7 +48,7 @@ impl ModuleImportResolver for WasmiEnvModule {
                     RADIX_ENGINE_FUNCTION_INDEX,
                 ))
             }
-            USE_TBD_FUNCTION_NAME => {
+            CONSUME_COST_UNIT_FUNCTION_NAME => {
                 if signature.params() != [ValueType::I32] || signature.return_type() != None {
                     return Err(Error::Instantiation(
                         "Function signature does not match".into(),
@@ -56,7 +56,7 @@ impl ModuleImportResolver for WasmiEnvModule {
                 }
                 Ok(FuncInstance::alloc_host(
                     signature.clone(),
-                    USE_TBD_FUNCTION_INDEX,
+                    CONSUME_COST_UNIT_FUNCTION_INDEX,
                 ))
             }
             _ => Err(Error::Instantiation(format!(
@@ -149,10 +149,10 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(Option::Some)
                     .map_err(|e| e.into())
             }
-            USE_TBD_FUNCTION_INDEX => {
+            CONSUME_COST_UNIT_FUNCTION_INDEX => {
                 let amount: u32 = args.nth_checked(0)?;
                 self.runtime
-                    .use_tbd(amount)
+                    .consume_cost_unit(amount)
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }

@@ -106,7 +106,7 @@ impl ValidatedPackage {
         I: WasmInstance,
     {
         let mut instance = system_api.wasm_engine().instantiate(self.code());
-        let runtime = RadixEngineWasmRuntime::new(actor, system_api, CALL_FUNCTION_TBD_LIMIT);
+        let runtime = RadixEngineWasmRuntime::new(actor, system_api, CALL_FUNCTION_COST_UNIT_LIMIT);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
         instance
             .invoke_export(&export_name, method_name, &arg, &mut runtime_boxed)

@@ -25,7 +25,7 @@ fn test_loop() {
 }
 
 #[test]
-fn test_loop_out_of_tbd() {
+fn test_loop_out_of_cost_unit() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
 
@@ -38,7 +38,7 @@ fn test_loop_out_of_tbd() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. })
+    assert_invoke_error!(receipt.result, InvokeError::OutOfCostUnit { .. })
 }
 
 #[test]
@@ -94,7 +94,7 @@ fn test_grow_memory() {
 }
 
 #[test]
-fn test_grow_memory_out_of_tbd() {
+fn test_grow_memory_out_of_cost_unit() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
 
@@ -107,5 +107,5 @@ fn test_grow_memory_out_of_tbd() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. })
+    assert_invoke_error!(receipt.result, InvokeError::OutOfCostUnit { .. })
 }

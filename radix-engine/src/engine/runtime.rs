@@ -23,8 +23,8 @@ where
 {
     this: ScryptoActorInfo,
     system_api: &'s mut S,
-    tbd_limit: u32,
-    tbd_balance: u32,
+    cost_unit_limit: u32,
+    cost_unit_balance: u32,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
 }
@@ -35,19 +35,19 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S, tbd_limit: u32) -> Self {
+    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S, cost_unit_limit: u32) -> Self {
         RadixEngineWasmRuntime {
             this,
             system_api,
-            tbd_limit,
-            tbd_balance: tbd_limit,
+            cost_unit_limit,
+            cost_unit_balance: cost_unit_limit,
             phantom1: PhantomData,
             phantom2: PhantomData,
         }
     }
 
-    pub fn tbd_used(&self) -> u32 {
-        self.tbd_limit - self.tbd_balance
+    pub fn cost_unit_used(&self) -> u32 {
+        self.cost_unit_limit - self.cost_unit_balance
     }
 
     // FIXME: limit access to the API
@@ -207,16 +207,16 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
         .map_err(InvokeError::RuntimeError)
     }
 
-    fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError> {
-        if self.tbd_balance >= tbd {
-            self.tbd_balance -= tbd;
+    fn consume_cost_unit(&mut self, cost_unit: u32) -> Result<(), InvokeError> {
+        if self.cost_unit_balance >= cost_unit {
+            self.cost_unit_balance -= cost_unit;
             Ok(())
         } else {
-            self.tbd_balance = 0;
-            Err(InvokeError::OutOfTbd {
-                limit: self.tbd_limit,
-                balance: self.tbd_balance,
-                required: tbd,
+            self.cost_unit_balance = 0;
+            Err(InvokeError::OutOfCostUnit {
+                limit: self.cost_unit_limit,
+                balance: self.cost_unit_balance,
+                required: cost_unit,
             })
         }
     }

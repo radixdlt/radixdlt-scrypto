@@ -61,7 +61,7 @@ pub enum InvokeError {
 
     InvalidReturnData,
 
-    OutOfTbd {
+    OutOfCostUnit {
         limit: u32,
         balance: u32,
         required: u32,
