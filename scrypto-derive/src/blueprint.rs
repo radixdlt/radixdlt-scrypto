@@ -119,9 +119,9 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             use ::sbor::rust::vec::Vec;
 
             let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
-            let value: Type = blueprint::#bp_ident::describe();
+            let structure: Type = blueprint::#bp_ident::describe();
             let output = BlueprintAbi {
-                value,
+                structure,
                 fns,
             };
 
@@ -621,9 +621,9 @@ mod tests {
                             output: <u32>::describe(),
                         }
                     ];
-                    let value: Type = blueprint::Test::describe();
+                    let structure: Type = blueprint::Test::describe();
                     let output = BlueprintAbi {
-                        value,
+                        structure,
                         fns,
                     };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
@@ -696,9 +696,9 @@ mod tests {
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
                     let fns: Vec<Fn> = vec![];
-                    let value: Type = blueprint::Test::describe();
+                    let structure: Type = blueprint::Test::describe();
                     let output = BlueprintAbi {
-                        value,
+                        structure,
                         fns,
                     };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)

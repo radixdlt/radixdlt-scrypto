@@ -39,7 +39,7 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiE
         let abi: BlueprintAbi =
             scrypto_decode(&rtn.raw).map_err(ExtractAbiError::AbiDecodeError)?;
 
-        if let Type::Struct { name, fields: _ } = &abi.value {
+        if let Type::Struct { name, fields: _ } = &abi.structure {
             blueprints.insert(name.clone(), abi);
         } else {
             return Err(ExtractAbiError::InvalidBlueprintAbi);

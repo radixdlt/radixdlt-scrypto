@@ -15,7 +15,7 @@ fn mocked_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
     blueprint_abis.insert(
         blueprint_name,
         BlueprintAbi {
-            value: Type::Unit,
+            structure: Type::Unit,
             fns: Vec::new(),
         },
     );

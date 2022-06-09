@@ -46,7 +46,7 @@ fn test_simple_abi() {
     assert_json_eq(
         abi,
         json!({
-            "value": {
+            "structure": {
                 "fields":{
                     "named":[
                         [

@@ -15,7 +15,7 @@ r#"
     "package_address": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
     "blueprint_name": "Simple",
     "abi": {
-        "value": {
+        "structure": {
             "type": "Struct",
             "name": "Simple",
             "fields": {

@@ -62,7 +62,7 @@ impl ValidatedPackage {
 
     pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
         self.blueprint_abi(blueprint_name)
-            .map(|v| &v.value)
+            .map(|v| &v.structure)
             .ok_or(PackageError::BlueprintNotFound)
     }
 
