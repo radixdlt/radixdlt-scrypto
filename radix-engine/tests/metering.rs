@@ -82,7 +82,7 @@ fn test_grow_memory() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "99999"));
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
     let package_address = test_runner.publish_package_with_code(code);
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())

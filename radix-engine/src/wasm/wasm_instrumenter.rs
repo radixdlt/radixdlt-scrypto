@@ -8,7 +8,7 @@ pub struct WasmInstrumenter {}
 impl WasmInstrumenter {
     pub fn instrument_v1(code: &[u8]) -> Vec<u8> {
         let wasm_fee_table = WasmFeeTable::new(1, 100);
-        let wasm_max_stack_size = 100;
+        let wasm_max_stack_size = 512;
 
         WasmModule::init(code)
             .and_then(|m| m.inject_instruction_metering(&wasm_fee_table))

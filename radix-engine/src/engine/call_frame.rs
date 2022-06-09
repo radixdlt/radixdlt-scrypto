@@ -608,7 +608,14 @@ where
         method_name: String,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.sys_log(Level::Debug, format!("{:?}", snode_ref));
+        let remining_cost_units = self.cost_unit_counter().remaining();
+        self.sys_log(
+            Level::Debug,
+            format!(
+                "Invoking: {:?}, remaining cost units: {}",
+                snode_ref, remining_cost_units
+            ),
+        );
         let function = if let Value::Enum { name, .. } = &call_data.dom {
             name.clone()
         } else {
