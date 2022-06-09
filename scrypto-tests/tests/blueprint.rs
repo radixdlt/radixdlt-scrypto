@@ -59,7 +59,7 @@ fn test_simple_abi() {
                 "name":"Simple",
                 "type":"Struct"
             },
-            "functions": [
+            "fns": [
                 {
                     "name": "new",
                     "mutability": null,

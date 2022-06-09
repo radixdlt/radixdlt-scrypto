@@ -23,7 +23,7 @@ r#"
                 "named": []
             }
         },
-        "functions": [
+        "fns": [
             {
                 "name": "stateless_func",
                 "input": {

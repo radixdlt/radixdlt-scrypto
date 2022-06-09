@@ -23,13 +23,13 @@ pub struct Blueprint {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct BlueprintAbi {
     pub value: Type,
-    pub functions: Vec<Function>,
+    pub fns: Vec<Fn>,
 }
 
-/// Represents a function.
+/// Represents a method/function.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Function {
+pub struct Fn {
     pub name: String,
     pub mutability: Option<SelfMutability>,
     pub input: Type,

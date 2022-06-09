@@ -113,16 +113,16 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         #[no_mangle]
         pub extern "C" fn #abi_ident(input: *mut u8, input2: *mut u8) -> *mut u8 {
             use ::sbor::{Describe, Type};
-            use ::scrypto::abi::{BlueprintAbi, Function};
+            use ::scrypto::abi::{BlueprintAbi, Fn};
             use ::sbor::rust::borrow::ToOwned;
             use ::sbor::rust::vec;
             use ::sbor::rust::vec::Vec;
 
-            let functions: Vec<Function> = vec![ #(#abi_functions),* ];
+            let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
             let value: Type = blueprint::#bp_ident::describe();
             let output = BlueprintAbi {
                 value,
-                functions,
+                fns,
             };
 
             ::scrypto::buffer::scrypto_encode_to_buffer(&output)
@@ -299,7 +299,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<(Vec<Expr
 
 // Parses function items of an `Impl` and returns ABI of functions.
 fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
-    let mut functions = Vec::<Expr>::new();
+    let mut fns = Vec::<Expr>::new();
 
     for item in items {
         trace!("Processing item: {}", quote! { #item });
@@ -352,8 +352,8 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                     };
 
                     if mutability.is_none() {
-                        functions.push(parse_quote! {
-                            ::scrypto::abi::Function {
+                        fns.push(parse_quote! {
+                            ::scrypto::abi::Fn {
                                 name: #name.to_owned(),
                                 mutability: Option::None,
                                 input: #input,
@@ -361,8 +361,8 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                             }
                         });
                     } else {
-                        functions.push(parse_quote! {
-                            ::scrypto::abi::Function {
+                        fns.push(parse_quote! {
+                            ::scrypto::abi::Fn {
                                 name: #name.to_owned(),
                                 mutability: Option::Some(#mutability),
                                 input: #input,
@@ -381,7 +381,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
         };
     }
 
-    Ok(functions)
+    Ok(fns)
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
@@ -603,18 +603,18 @@ mod tests {
                 #[no_mangle]
                 pub extern "C" fn Test_abi(input: *mut u8, input2: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
-                    use ::scrypto::abi::{BlueprintAbi, Function};
+                    use ::scrypto::abi::{BlueprintAbi, Fn};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
-                    let functions: Vec<Function> = vec![
-                        ::scrypto::abi::Function {
+                    let fns: Vec<Fn> = vec![
+                        ::scrypto::abi::Fn {
                             name: "x".to_owned(),
                             mutability: Option::Some(::scrypto::abi::SelfMutability::Immutable),
                             input: Test_x_Input::describe(),
                             output: <u32>::describe(),
                         },
-                        ::scrypto::abi::Function {
+                        ::scrypto::abi::Fn {
                             name: "y".to_owned(),
                             mutability: Option::None,
                             input: Test_y_Input::describe(),
@@ -624,7 +624,7 @@ mod tests {
                     let value: Type = blueprint::Test::describe();
                     let output = BlueprintAbi {
                         value,
-                        functions,
+                        fns,
                     };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
@@ -691,15 +691,15 @@ mod tests {
                 #[no_mangle]
                 pub extern "C" fn Test_abi(input: *mut u8, input2: *mut u8) -> *mut u8 {
                     use ::sbor::{Describe, Type};
-                    use ::scrypto::abi::{BlueprintAbi, Function};
+                    use ::scrypto::abi::{BlueprintAbi, Fn};
                     use ::sbor::rust::borrow::ToOwned;
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
-                    let functions: Vec<Function> = vec![];
+                    let fns: Vec<Fn> = vec![];
                     let value: Type = blueprint::Test::describe();
                     let output = BlueprintAbi {
                         value,
-                        functions,
+                        fns,
                     };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }

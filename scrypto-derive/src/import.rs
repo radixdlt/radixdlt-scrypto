@@ -32,8 +32,8 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
     let mut structs: Vec<Item> = vec![];
 
-    let mut functions = Vec::<ItemFn>::new();
-    for function in &blueprint.abi.functions {
+    let mut fns = Vec::<ItemFn>::new();
+    for function in &blueprint.abi.fns {
         trace!("Processing function: {:?}", function);
 
         let func_name = &function.name;
@@ -61,7 +61,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         structs.extend(new_structs);
 
         if let None = function.mutability {
-            functions.push(parse_quote! {
+            fns.push(parse_quote! {
                 pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
                     let rtn = ::scrypto::core::Runtime::call_function(
                         ::scrypto::component::PackageAddress::from_str(#package_address).unwrap(),
@@ -73,7 +73,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
                 }
             });
         } else {
-            functions.push(parse_quote! {
+            fns.push(parse_quote! {
                 pub fn #func_indent(&self #(, #func_args: #func_types)*) -> #func_output {
                     let rtn = ::scrypto::core::Runtime::call_method(
                         self.component_address,
@@ -95,7 +95,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         }
 
         impl #ident {
-            #(#functions)*
+            #(#fns)*
         }
 
         impl From<::scrypto::component::ComponentAddress> for #ident {
@@ -374,7 +374,7 @@ mod tests {
                                 "named": []
                             }
                         },
-                        "functions": [
+                        "fns": [
                             {
                                 "name": "new",
                                 "input": {

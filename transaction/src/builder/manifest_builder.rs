@@ -317,7 +317,7 @@ impl ManifestBuilder {
         blueprint_abi: &abi::BlueprintAbi,
     ) -> Result<&mut Self, BuildCallWithAbiError> {
         let abi = blueprint_abi
-            .functions
+            .fns
             .iter()
             .find(|f| f.name == function)
             .map(Clone::clone)
@@ -375,7 +375,7 @@ impl ManifestBuilder {
         blueprint_abi: &abi::BlueprintAbi,
     ) -> Result<&mut Self, BuildCallWithAbiError> {
         let abi = blueprint_abi
-            .functions
+            .fns
             .iter()
             .find(|m| m.name == method)
             .map(Clone::clone)
