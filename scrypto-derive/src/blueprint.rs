@@ -354,7 +354,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                     if mutability.is_none() {
                         fns.push(parse_quote! {
                             ::scrypto::abi::Fn {
-                                name: #name.to_owned(),
+                                ident: #name.to_owned(),
                                 mutability: Option::None,
                                 input: #input,
                                 output: #output,
@@ -363,7 +363,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                     } else {
                         fns.push(parse_quote! {
                             ::scrypto::abi::Fn {
-                                name: #name.to_owned(),
+                                ident: #name.to_owned(),
                                 mutability: Option::Some(#mutability),
                                 input: #input,
                                 output: #output,
@@ -609,13 +609,13 @@ mod tests {
                     use ::sbor::rust::vec::Vec;
                     let fns: Vec<Fn> = vec![
                         ::scrypto::abi::Fn {
-                            name: "x".to_owned(),
+                            ident: "x".to_owned(),
                             mutability: Option::Some(::scrypto::abi::SelfMutability::Immutable),
                             input: Test_x_Input::describe(),
                             output: <u32>::describe(),
                         },
                         ::scrypto::abi::Fn {
-                            name: "y".to_owned(),
+                            ident: "y".to_owned(),
                             mutability: Option::None,
                             input: Test_y_Input::describe(),
                             output: <u32>::describe(),

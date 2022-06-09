@@ -30,7 +30,7 @@ pub struct BlueprintAbi {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Fn {
-    pub name: String,
+    pub ident: String,
     pub mutability: Option<SelfMutability>,
     pub input: Type,
     pub output: Type,

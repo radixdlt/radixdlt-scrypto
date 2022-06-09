@@ -36,7 +36,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
     for function in &blueprint.abi.fns {
         trace!("Processing function: {:?}", function);
 
-        let func_name = &function.name;
+        let func_name = &function.ident;
         let func_indent = format_ident!("{}", func_name);
         let mut func_types = Vec::<Type>::new();
         let mut func_args = Vec::<Ident>::new();
@@ -376,7 +376,7 @@ mod tests {
                         },
                         "fns": [
                             {
-                                "name": "new",
+                                "ident": "new",
                                 "input": {
                                     "type": "Struct",
                                     "name": "",
@@ -392,7 +392,7 @@ mod tests {
                                 }
                             },
                             {
-                                "name": "free_token",
+                                "ident": "free_token",
                                 "mutability": "Mutable",
                                 "input": {
                                     "type": "Struct",

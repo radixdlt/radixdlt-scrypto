@@ -25,7 +25,7 @@ r#"
         },
         "fns": [
             {
-                "name": "stateless_func",
+                "ident": "stateless_func",
                 "input": {
                     "type": "Struct",
                     "name": "",
@@ -39,7 +39,7 @@ r#"
                 }
             },
             {
-                "name": "test_custom_types",
+                "ident": "test_custom_types",
                 "input": {
                     "type": "Struct",
                     "name": "",
@@ -127,7 +127,7 @@ r#"
                 }
             },
             {
-                "name": "calculate_volume",
+                "ident": "calculate_volume",
                 "mutability": "Immutable",
                 "input": {
                     "type": "Struct",

@@ -319,7 +319,7 @@ impl ManifestBuilder {
         let abi = blueprint_abi
             .fns
             .iter()
-            .find(|f| f.name == function)
+            .find(|f| f.ident == function)
             .map(Clone::clone)
             .ok_or_else(|| BuildCallWithAbiError::FunctionNotFound(function.to_owned()))?;
 
@@ -377,7 +377,7 @@ impl ManifestBuilder {
         let abi = blueprint_abi
             .fns
             .iter()
-            .find(|m| m.name == method)
+            .find(|m| m.ident == method)
             .map(Clone::clone)
             .ok_or_else(|| BuildCallWithAbiError::MethodNotFound(method.to_owned()))?;
 
