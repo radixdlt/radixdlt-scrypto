@@ -2,12 +2,12 @@ mod call_frame;
 mod component_objects;
 mod cost_unit_counter;
 mod errors;
-mod runtime;
 mod substate_receipt;
 mod system_api;
 mod track;
 mod transaction_executor;
 mod transaction_receipt;
+mod wasm_runtime;
 
 pub use call_frame::{
     BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LoadedSNodeState,
@@ -16,7 +16,6 @@ pub use call_frame::{
 pub use component_objects::*;
 pub use cost_unit_counter::*;
 pub use errors::*;
-pub use runtime::RadixEngineWasmRuntime;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
 pub use system_api::SystemApi;
 pub use track::{
@@ -25,3 +24,4 @@ pub use track::{
 };
 pub use transaction_executor::TransactionExecutor;
 pub use transaction_receipt::*;
+pub use wasm_runtime::RadixEngineWasmRuntime;
