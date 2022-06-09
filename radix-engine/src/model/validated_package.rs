@@ -83,7 +83,7 @@ impl ValidatedPackage {
                 let package =
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
                 let package_address = system_api.create_package(package);
-                Ok(ScryptoValue::from_value(&package_address))
+                Ok(ScryptoValue::from_typed(&package_address))
             }
             _ => Err(MethodNotFound(method_name.to_string())),
         }

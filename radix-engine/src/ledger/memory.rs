@@ -9,7 +9,6 @@ use crate::ledger::{Substate, WriteableSubstateStore};
 pub struct InMemorySubstateStore {
     substates: HashMap<Vec<u8>, Vec<u8>>,
     current_epoch: u64,
-    nonce: u64,
 }
 
 impl InMemorySubstateStore {
@@ -17,7 +16,6 @@ impl InMemorySubstateStore {
         Self {
             substates: HashMap::new(),
             current_epoch: 0,
-            nonce: 0,
         }
     }
 
@@ -50,10 +48,6 @@ impl ReadableSubstateStore for InMemorySubstateStore {
     fn get_epoch(&self) -> u64 {
         self.current_epoch
     }
-
-    fn get_nonce(&self) -> u64 {
-        self.nonce
-    }
 }
 
 impl WriteableSubstateStore for InMemorySubstateStore {
@@ -69,9 +63,5 @@ impl WriteableSubstateStore for InMemorySubstateStore {
 
     fn set_epoch(&mut self, epoch: u64) {
         self.current_epoch = epoch;
-    }
-
-    fn increase_nonce(&mut self) {
-        self.nonce += 1;
     }
 }

@@ -92,8 +92,11 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
-        TransactionExecutor::new(&mut self.substate_store, &mut self.wasm_engine, self.trace)
-            .execute(&transaction)
+        let receipt =
+            TransactionExecutor::new(&mut self.substate_store, &mut self.wasm_engine, self.trace)
+                .execute(&transaction);
+
+        receipt
     }
 
     pub fn inspect_component(&self, component_address: ComponentAddress) -> Component {
@@ -141,8 +144,7 @@ impl TestRunner {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         self.execute_manifest(manifest, vec![signer_public_key])
-            .result
-            .expect("Should be okay");
+            .expect_success();
     }
 
     pub fn create_restricted_token(
@@ -231,7 +233,7 @@ impl TestRunner {
             .call_method_with_all_resources(account, "deposit_batch")
             .build();
         let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.result.expect("Should be okay.");
+        receipt.expect_success();
         receipt.new_resource_addresses[0]
     }
 

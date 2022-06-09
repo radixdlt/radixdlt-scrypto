@@ -131,7 +131,7 @@ impl TypeId for String {
     }
 }
 
-impl<T: TypeId> TypeId for Option<T> {
+impl<T> TypeId for Option<T> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_OPTION
@@ -159,7 +159,7 @@ impl<T: TypeId> TypeId for RefCell<T> {
     }
 }
 
-impl<T: TypeId, const N: usize> TypeId for [T; N] {
+impl<T, const N: usize> TypeId for [T; N] {
     #[inline]
     fn type_id() -> u8 {
         TYPE_ARRAY
@@ -167,7 +167,7 @@ impl<T: TypeId, const N: usize> TypeId for [T; N] {
 }
 macro_rules! type_id_tuple {
     ($n:tt $($idx:tt $name:ident)+) => {
-        impl<$($name: TypeId),+> TypeId for ($($name,)+) {
+        impl<$($name),+> TypeId for ($($name,)+) {
             #[inline]
             fn type_id() -> u8 {
                 TYPE_TUPLE
@@ -186,49 +186,49 @@ type_id_tuple! { 8 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H }
 type_id_tuple! { 9 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I }
 type_id_tuple! { 10 0 A 1 B 2 C 3 D 4 E 5 F 6 G 7 H 8 I 9 J }
 
-impl<T: TypeId, E: TypeId> TypeId for Result<T, E> {
+impl<T, E> TypeId for Result<T, E> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_RESULT
     }
 }
 
-impl<T: TypeId> TypeId for Vec<T> {
+impl<T> TypeId for Vec<T> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_VEC
     }
 }
 
-impl<T: TypeId> TypeId for [T] {
+impl<T> TypeId for [T] {
     #[inline]
     fn type_id() -> u8 {
         TYPE_VEC
     }
 }
 
-impl<T: TypeId> TypeId for BTreeSet<T> {
+impl<T> TypeId for BTreeSet<T> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_TREE_SET
     }
 }
 
-impl<K: TypeId, V: TypeId> TypeId for BTreeMap<K, V> {
+impl<K, V> TypeId for BTreeMap<K, V> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_TREE_MAP
     }
 }
 
-impl<T: TypeId> TypeId for HashSet<T> {
+impl<T> TypeId for HashSet<T> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_HASH_SET
     }
 }
 
-impl<K: TypeId, V: TypeId> TypeId for HashMap<K, V> {
+impl<K, V> TypeId for HashMap<K, V> {
     #[inline]
     fn type_id() -> u8 {
         TYPE_HASH_MAP

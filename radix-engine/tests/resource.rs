@@ -36,8 +36,7 @@ fn test_resource_manager() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    println!("{:?}", receipt);
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]

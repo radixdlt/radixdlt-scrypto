@@ -40,7 +40,7 @@ fn test_loop() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]
@@ -83,7 +83,7 @@ fn test_recursion() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn test_grow_memory() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]

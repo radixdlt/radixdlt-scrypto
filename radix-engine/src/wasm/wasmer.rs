@@ -175,7 +175,7 @@ impl WasmInstance for WasmerInstance {
             *guard = runtime as *mut _ as usize;
         }
 
-        let method_name_value = ScryptoValue::from_value(&method_name.to_string());
+        let method_name_value = ScryptoValue::from_typed(&method_name.to_string());
         let method_name_ptr = send_value(&self.instance, &method_name_value)?;
         let pointer = send_value(&self.instance, arg)?;
         let result = self

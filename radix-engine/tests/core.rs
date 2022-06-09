@@ -15,7 +15,7 @@ fn test_process_and_transaction() {
         .call_function(package_address, "CoreTest", "query", to_struct![])
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.result.expect("Should be okay.");
+    receipt1.expect_success();
 }
 
 #[test]
@@ -30,5 +30,5 @@ fn test_call() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }

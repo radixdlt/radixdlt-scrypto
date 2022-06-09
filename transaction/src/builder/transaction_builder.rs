@@ -3,20 +3,25 @@ use scrypto::{buffer::scrypto_encode, crypto::*};
 use crate::{model::*, signing::Signer};
 
 pub struct TransactionBuilder {
-    manifest: TransactionManifest,
+    manifest: Option<TransactionManifest>,
     header: Option<TransactionHeader>,
     intent_signatures: Vec<(EcdsaPublicKey, EcdsaSignature)>,
     notary_signature: Option<EcdsaSignature>,
 }
 
 impl TransactionBuilder {
-    pub fn new(manifest: TransactionManifest) -> Self {
+    pub fn new() -> Self {
         Self {
-            manifest,
+            manifest: None,
             header: None,
             intent_signatures: Vec::new(),
             notary_signature: None,
         }
+    }
+
+    pub fn manifest(mut self, manifest: TransactionManifest) -> Self {
+        self.manifest = Some(manifest);
+        self
     }
 
     pub fn header(mut self, header: TransactionHeader) -> Self {
@@ -48,7 +53,7 @@ impl TransactionBuilder {
 
     fn transaction_intent(&self) -> TransactionIntent {
         TransactionIntent {
-            manifest: self.manifest.clone(),
+            manifest: self.manifest.clone().expect("Manifest not specified"),
             header: self.header.clone().expect("Header not specified"),
         }
     }

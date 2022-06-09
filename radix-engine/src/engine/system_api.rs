@@ -66,7 +66,7 @@ where
     fn write_component_state(
         &mut self,
         addr: ComponentAddress,
-        state: Vec<u8>,
+        state: ScryptoValue,
     ) -> Result<(), RuntimeError>;
 
     fn get_component_info(
