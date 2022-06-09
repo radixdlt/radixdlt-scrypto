@@ -8,6 +8,8 @@ compile_error!("Feature `std` and `alloc` can't be enabled at the same time.");
 
 /// Radix Engine implementation.
 pub mod engine;
+/// Radix Engine fee model.
+pub mod fee;
 /// Radix Engine state abstraction.
 pub mod ledger;
 /// Radix Engine models.

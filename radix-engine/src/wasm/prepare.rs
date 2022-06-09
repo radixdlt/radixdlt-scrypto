@@ -11,6 +11,8 @@ use wasmi_validation::{validate_module, PlainValidator};
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 
+use super::WasmFeeTable;
+
 pub struct WasmModule {
     module: Module,
 }
@@ -204,10 +206,16 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn inject_instruction_metering(mut self) -> Result<Self, PrepareError> {
+    pub fn inject_instruction_metering(
+        mut self,
+        wasm_fee_table: &WasmFeeTable,
+    ) -> Result<Self, PrepareError> {
         self.module = gas_metering::inject(
             self.module,
-            &gas_metering::ConstantCostRules::new(INSTRUCTION_COST, MEMORY_GROW_COST),
+            &gas_metering::ConstantCostRules::new(
+                wasm_fee_table.instruction_cost(),
+                wasm_fee_table.grow_memory_cost(),
+            ),
             MODULE_ENV_NAME,
         )
         .map_err(|_| PrepareError::RejectedByInstructionMetering)?;
@@ -215,8 +223,8 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn inject_stack_metering(mut self) -> Result<Self, PrepareError> {
-        self.module = inject_stack_limiter(self.module, MAX_STACK_DEPTH)
+    pub fn inject_stack_metering(mut self, wasm_max_stack_size: u32) -> Result<Self, PrepareError> {
+        self.module = inject_stack_limiter(self.module, wasm_max_stack_size)
             .map_err(|_| PrepareError::RejectedByStackMetering)?;
         Ok(self)
     }

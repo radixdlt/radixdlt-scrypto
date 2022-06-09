@@ -28,14 +28,14 @@ fn extract_abi(
         .into_iter()
         .filter(|s| s.ends_with("_abi"));
 
-    let runtime = NopWasmRuntime::new(EXPORT_ABI_COST_UNIT_LIMIT);
-    let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
+    let instrumented_code = WasmInstrumenter::instrument_v1(code);
+    let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(0)); // FIXME
     let mut wasm_engine = WasmiEngine::new();
-    let mut instance = wasm_engine.instantiate(code);
+    let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = HashMap::new();
     for method_name in function_exports {
         let rtn = instance
-            .invoke_export(&method_name, "", &ScryptoValue::unit(), &mut runtime_boxed)
+            .invoke_export(&method_name, "", &ScryptoValue::unit(), &mut runtime)
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: (Type, Vec<Function>, Vec<Method>) =
