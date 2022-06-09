@@ -39,7 +39,7 @@ harness = false
 
 [features]
 # You should enable either `std` or `alloc`
-default = ["std", "wasmer"]
+default = ["std"]
 std = ["sbor/std", "scrypto/std", "wasmi/std", "transaction/std"]
 alloc = ["sbor/alloc", "scrypto/alloc", "transaction/alloc"]
 
