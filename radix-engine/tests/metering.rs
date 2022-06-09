@@ -38,7 +38,7 @@ fn test_loop_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::OutOfCostUnit { .. })
+    assert_invoke_error!(receipt.result, InvokeError::MeteringError { .. })
 }
 
 #[test]
@@ -107,5 +107,5 @@ fn test_grow_memory_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::OutOfCostUnit { .. })
+    assert_invoke_error!(receipt.result, InvokeError::MeteringError { .. })
 }

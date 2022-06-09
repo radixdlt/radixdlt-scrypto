@@ -150,9 +150,9 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map_err(|e| e.into())
             }
             CONSUME_COST_UNIT_FUNCTION_INDEX => {
-                let amount: u32 = args.nth_checked(0)?;
+                let n: u32 = args.nth_checked(0)?;
                 self.runtime
-                    .consume_cost_unit(amount)
+                    .consume_cost_unit(n)
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }
