@@ -28,7 +28,7 @@ fn test_auth_rule(
 
     // Assert
     if should_succeed {
-        receipt.result.expect("Should be okay");
+        receipt.expect_success();
     } else {
         let error = receipt.result.expect_err("Should be an error");
         assert_auth_error!(error);
@@ -236,7 +236,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_no_signature() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]
@@ -264,7 +264,7 @@ fn can_withdraw_from_my_any_xrd_auth_account_with_right_amount_of_proof() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }
 
 #[test]

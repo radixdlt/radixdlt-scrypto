@@ -174,7 +174,7 @@ impl WasmInstance for WasmiInstance {
             runtime,
         };
 
-        let method_name_value = ScryptoValue::from_value(&method_name.to_string());
+        let method_name_value = ScryptoValue::from_typed(&method_name.to_string());
         let method_name_ptr = externals.send_value(&method_name_value)?;
         let pointer = externals.send_value(arg)?;
         let result = self.module_ref.clone().invoke_export(
