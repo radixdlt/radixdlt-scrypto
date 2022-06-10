@@ -87,6 +87,7 @@ where
             scrypto::core::SNodeRef::TransactionProcessor,
             ScryptoValue::from_typed(&TransactionProcessorFunction::Run(instructions.clone())),
         );
+        let cost_units_consumed = root_frame.cost_unit_counter().consumed();
 
         let (outputs, error) = match result {
             Ok(o) => (scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap(), None),
@@ -140,6 +141,7 @@ where
             new_component_addresses,
             new_resource_addresses,
             execution_time,
+            cost_units_consumed,
         }
     }
 }

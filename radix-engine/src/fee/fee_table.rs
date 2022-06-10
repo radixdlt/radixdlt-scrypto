@@ -1,6 +1,6 @@
 use crate::wasm::WasmMeteringParams;
 
-pub const COST_ENGINE_CALL: u32 = 1000;
+pub const COST_ENGINE_CALL: u32 = 10_000;
 
 pub const WASM_METERING_V1: u8 = 1;
 pub const WASM_INSTRUCTION: u32 = 1;

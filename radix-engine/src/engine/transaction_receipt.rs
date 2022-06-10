@@ -23,6 +23,7 @@ pub struct Receipt {
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
     pub execution_time: Option<u128>,
+    pub cost_units_consumed: u32,
 }
 
 impl Receipt {
@@ -54,6 +55,13 @@ impl fmt::Debug for Receipt {
                 Err(e) => e.to_string().red(),
             }
             .bold()
+        )?;
+
+        write!(
+            f,
+            "\n{} {}",
+            "Cost Units Consumed:".bold().green(),
+            self.cost_units_consumed
         )?;
 
         write!(
