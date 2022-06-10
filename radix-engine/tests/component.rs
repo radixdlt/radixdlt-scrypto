@@ -16,7 +16,7 @@ fn test_package() {
         .call_function(package, "PackageTest", "publish", to_struct!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    assert!(receipt1.result.is_ok());
+    receipt1.expect_success();
 }
 
 #[test]
@@ -30,7 +30,7 @@ fn test_component() {
         .call_function(package, "ComponentTest", "create_component", to_struct!())
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    assert!(receipt1.result.is_ok());
+    receipt1.expect_success();
 
     // Find the component address from receipt
     let component = receipt1.new_component_addresses[0];
@@ -48,7 +48,7 @@ fn test_component() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt2 = test_runner.execute_manifest(manifest2, vec![public_key]);
-    receipt2.result.expect("Should be okay.");
+    receipt2.expect_success();
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn reentrancy_should_not_be_possible() {
         .call_function(package_address, "ReentrantComponent", "new", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
     let component_address = receipt.new_component_addresses[0];
 
     // Act

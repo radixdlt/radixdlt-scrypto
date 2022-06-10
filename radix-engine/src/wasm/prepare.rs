@@ -167,7 +167,7 @@ impl WasmModule {
         // only allow `env::radix_engine` import
         let exports = self.module.export_section().ok_or(PrepareError::NoExports)?;
         for (_, blueprint_abi) in blueprints {
-            for func in &blueprint_abi.functions {
+            for func in &blueprint_abi.fns {
                 let func_name = &func.export_name;
                 // TODO: Check if signature matches
                 if !exports.entries().iter()

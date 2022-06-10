@@ -74,7 +74,7 @@ impl ValidatedPackage {
                 let package =
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
                 let package_address = system_api.create_package(package);
-                Ok(ScryptoValue::from_value(&package_address))
+                Ok(ScryptoValue::from_typed(&package_address))
             }
             _ => Err(MethodNotFound(method_name.to_string())),
         }
@@ -84,8 +84,8 @@ impl ValidatedPackage {
         &self,
         actor: ScryptoActorInfo,
         blueprint_abi: &BlueprintAbi,
-        func_name: &str,
-        arg: ScryptoValue,
+        fn_ident: &str,
+        input: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, RuntimeError>
     where
@@ -93,12 +93,15 @@ impl ValidatedPackage {
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        let func_name = &blueprint_abi.get_function_abi(func_name).unwrap().export_name;
+        let export_name = &blueprint_abi.get_fn_abi(fn_ident).unwrap().export_name;
         let mut instance = system_api.wasm_engine().instantiate(self.code());
-        let runtime = RadixEngineWasmRuntime::new(actor, blueprint_abi, system_api, CALL_FUNCTION_TBD_LIMIT);
+        let mut cost_unit_counter =
+            CostUnitCounter::new(CALL_FUNCTION_COST_UNIT_LIMIT, CALL_FUNCTION_COST_UNIT_LIMIT);
+        let runtime =
+            RadixEngineWasmRuntime::new(actor, blueprint_abi, system_api, &mut cost_unit_counter);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
         instance
-            .invoke_export(func_name, &arg, &mut runtime_boxed)
+            .invoke_export(export_name, &input, &mut runtime_boxed)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,

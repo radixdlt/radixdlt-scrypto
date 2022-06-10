@@ -2,11 +2,11 @@
 pub mod test_runner;
 
 use sbor::describe::Fields;
-use sbor::Type;
-use scrypto::abi::{BlueprintAbi, Function};
-use scrypto::prelude::{HashMap, Package};
 use crate::test_runner::TestRunner;
 use radix_engine::wasm::InvokeError;
+use sbor::Type;
+use scrypto::abi::{BlueprintAbi, Fn};
+use scrypto::prelude::{HashMap, Package};
 use scrypto::to_struct;
 use test_runner::wat2wasm;
 use transaction::builder::ManifestBuilder;
@@ -16,10 +16,10 @@ fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
     blueprint_abis.insert(
         blueprint_name,
         BlueprintAbi {
-            value: Type::Unit,
-            functions: vec![
-                Function {
-                    name: "f".to_string(),
+            structure: Type::Unit,
+            fns: vec![
+                Fn {
+                    ident: "f".to_string(),
                     mutability: Option::None,
                     input: Type::Struct {
                         name: "Any".to_string(),
@@ -52,11 +52,11 @@ fn test_loop() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]
-fn test_loop_out_of_tbd() {
+fn test_loop_out_of_cost_unit() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
 
@@ -73,7 +73,7 @@ fn test_loop_out_of_tbd() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. })
+    assert_invoke_error!(receipt.result, InvokeError::MeteringError { .. })
 }
 
 #[test]
@@ -95,7 +95,7 @@ fn test_recursion() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]
@@ -137,11 +137,11 @@ fn test_grow_memory() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]
-fn test_grow_memory_out_of_tbd() {
+fn test_grow_memory_out_of_cost_unit() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
 
@@ -158,5 +158,5 @@ fn test_grow_memory_out_of_tbd() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::OutOfTbd { .. })
+    assert_invoke_error!(receipt.result, InvokeError::MeteringError { .. })
 }

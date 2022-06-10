@@ -2,7 +2,7 @@
 pub mod test_runner;
 
 use sbor::Type;
-use scrypto::abi::{BlueprintAbi, Function};
+use scrypto::abi::{BlueprintAbi, Fn};
 use radix_engine::engine::RuntimeError;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::InvokeError;
@@ -118,7 +118,7 @@ fn test_basic_package() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("It should work")
+    receipt.expect_success();
 }
 
 #[test]
@@ -127,10 +127,10 @@ fn test_basic_package_missing_export() {
     let mut test_runner = TestRunner::new(true);
     let mut blueprints = HashMap::new();
     blueprints.insert("some_blueprint".to_string(), BlueprintAbi {
-        value: Type::Unit,
-        functions: vec![
-            Function {
-                name: "f".to_string(),
+        structure: Type::Unit,
+        fns: vec![
+            Fn {
+                ident: "f".to_string(),
                 mutability: Option::None,
                 input: Type::Unit,
                 output: Type::Unit,

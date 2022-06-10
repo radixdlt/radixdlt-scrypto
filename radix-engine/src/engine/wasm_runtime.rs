@@ -17,7 +17,9 @@ use crate::engine::SystemApi;
 use crate::model::Component;
 use crate::wasm::*;
 
-pub struct RadixEngineWasmRuntime<'s, S, W, I>
+use super::CostUnitCounter;
+
+pub struct RadixEngineWasmRuntime<'s, 'c, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
@@ -26,32 +28,31 @@ where
     this: ScryptoActorInfo,
     blueprint_abi: &'s BlueprintAbi,
     system_api: &'s mut S,
-    tbd_limit: u32,
-    tbd_balance: u32,
+    cost_unit_counter: &'c mut CostUnitCounter,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
 }
 
-impl<'s, S, W, I> RadixEngineWasmRuntime<'s, S, W, I>
+impl<'s, 'c, S, W, I> RadixEngineWasmRuntime<'s, 'c, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn new(this: ScryptoActorInfo, blueprint_abi: &'s BlueprintAbi, system_api: &'s mut S, tbd_limit: u32) -> Self {
+    pub fn new(
+        this: ScryptoActorInfo,
+        blueprint_abi: &'s BlueprintAbi,
+        system_api: &'s mut S,
+        cost_unit_counter: &'c mut CostUnitCounter,
+    ) -> Self {
         RadixEngineWasmRuntime {
             this,
             blueprint_abi,
             system_api,
-            tbd_limit,
-            tbd_balance: tbd_limit,
+            cost_unit_counter,
             phantom1: PhantomData,
             phantom2: PhantomData,
         }
-    }
-
-    pub fn tbd_used(&self) -> u32 {
-        self.tbd_limit - self.tbd_balance
     }
 
     // FIXME: limit access to the API
@@ -59,14 +60,13 @@ where
     fn handle_invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        method_name: String,
-        call_data: Vec<u8>,
+        fn_ident: String,
+        input: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let call_data =
-            ScryptoValue::from_slice(&call_data).map_err(RuntimeError::ParseScryptoValueError)?;
+        let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
         let result = self
             .system_api
-            .invoke_snode(snode_ref, method_name, call_data)?;
+            .invoke_snode(snode_ref, fn_ident, call_data)?;
         Ok(result.raw)
     }
 
@@ -80,9 +80,7 @@ where
         // TODO: Move this to a more appropriate place
         for access_rules in &access_rules_list {
             for (func_name, _) in access_rules.iter() {
-                if !self.blueprint_abi
-                    .contains_function(func_name.as_str())
-                {
+                if !self.blueprint_abi.contains_fn(func_name.as_str()) {
                     return Err(BlueprintFunctionDoesNotExist(func_name.to_string()));
                 }
             }
@@ -112,8 +110,9 @@ where
         component_address: ComponentAddress,
         state: Vec<u8>,
     ) -> Result<(), RuntimeError> {
+        let value = ScryptoValue::from_slice(&state).map_err(RuntimeError::DecodeError)?;
         self.system_api
-            .write_component_state(component_address, state)?;
+            .write_component_state(component_address, value)?;
         Ok(())
     }
 
@@ -136,8 +135,7 @@ where
         kv_store_id: KeyValueStoreId,
         key: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let scrypto_key =
-            ScryptoValue::from_slice(&key).map_err(RuntimeError::ParseScryptoValueError)?;
+        let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let value = self
             .system_api
             .read_kv_store_entry(kv_store_id, scrypto_key)?;
@@ -150,10 +148,8 @@ where
         key: Vec<u8>,
         value: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let scrypto_key =
-            ScryptoValue::from_slice(&key).map_err(RuntimeError::ParseScryptoValueError)?;
-        let scrypto_value =
-            ScryptoValue::from_slice(&value).map_err(RuntimeError::ParseScryptoValueError)?;
+        let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
+        let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
         self.system_api
             .write_kv_store_entry(kv_store_id, scrypto_key, scrypto_value)?;
         Ok(())
@@ -183,18 +179,18 @@ where
 }
 
 fn encode<T: Encode>(output: T) -> ScryptoValue {
-    ScryptoValue::from_value(&output)
+    ScryptoValue::from_typed(&output)
 }
 
-impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'s, S, W, I>
+impl<'s, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'s, 'c, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
         match input {
-            RadixEngineInput::InvokeSNode(snode_ref, method_name, call_data) => self
-                .handle_invoke_snode(snode_ref, method_name, call_data)
+            RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => self
+                .handle_invoke_snode(snode_ref, fn_ident, input_bytes)
                 .map(encode),
             RadixEngineInput::CreateComponent(blueprint_name, state, access_rules_list) => self
                 .handle_create_component(blueprint_name, state, access_rules_list)
@@ -227,17 +223,9 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
         .map_err(InvokeError::RuntimeError)
     }
 
-    fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError> {
-        if self.tbd_balance >= tbd {
-            self.tbd_balance -= tbd;
-            Ok(())
-        } else {
-            self.tbd_balance = 0;
-            Err(InvokeError::OutOfTbd {
-                limit: self.tbd_limit,
-                balance: self.tbd_balance,
-                required: tbd,
-            })
-        }
+    fn consume_cost_unit(&mut self, n: u32) -> Result<(), InvokeError> {
+        self.cost_unit_counter
+            .consume(n)
+            .map_err(InvokeError::MeteringError)
     }
 }

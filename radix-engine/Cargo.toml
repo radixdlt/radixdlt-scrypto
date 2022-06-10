@@ -27,8 +27,8 @@ wasm-instrument = { git = "https://github.com/paritytech/wasm-instrument", rev =
 # Wasmi is a WASM interpreter that supports WebAssembly MVP;
 # Wasmer supports multiple JIT backends: `singlepass` (linear time), `LLVM` and `cranelift`
 wasmi = { version = "0.11.0" }
-wasmer = { version = "2.2.1" }
-wasmer-compiler-singlepass = { version = "2.2.1" }
+wasmer = { version = "2.2.1", optional = true }
+wasmer-compiler-singlepass = { version = "2.2.1", optional = true }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }
@@ -44,4 +44,4 @@ std = ["sbor/std", "scrypto/std", "wasmi/std", "transaction/std"]
 alloc = ["sbor/alloc", "scrypto/alloc", "transaction/alloc"]
 
 # Use `wasmer` as WASM engine, otherwise `wasmi`
-wasmer = []
+wasmer = ["dep:wasmer", "dep:wasmer-compiler-singlepass"]

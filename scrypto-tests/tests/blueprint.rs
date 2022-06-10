@@ -46,7 +46,7 @@ fn test_simple_abi() {
     assert_json_eq(
         abi,
         json!({
-            "value": {
+            "structure": {
                 "fields":{
                     "named":[
                         [
@@ -59,9 +59,9 @@ fn test_simple_abi() {
                 "name":"Simple",
                 "type":"Struct"
             },
-            "functions": [
+            "fns": [
                 {
-                    "name": "new",
+                    "ident": "new",
                     "mutability": null,
                     "input": {
                         "type": "Struct",
@@ -80,7 +80,7 @@ fn test_simple_abi() {
                 },
 
                 {
-                    "name": "get_state",
+                    "ident": "get_state",
                     "mutability": "Immutable",
                     "input": {
                         "type": "Struct",
@@ -96,7 +96,7 @@ fn test_simple_abi() {
                     "export_name": "Simple_get_state_main"
                 },
                 {
-                    "name": "set_state",
+                    "ident": "set_state",
                     "mutability": "Mutable",
                     "input": {
                         "type": "Struct",
@@ -119,7 +119,7 @@ fn test_simple_abi() {
                     "export_name": "Simple_set_state_main"
                 },
                 {
-                    "name": "custom_types",
+                    "ident": "custom_types",
                     "mutability": null,
                     "input": {
                         "type": "Struct",

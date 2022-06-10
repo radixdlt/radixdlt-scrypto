@@ -1,6 +1,6 @@
 use sbor::describe::Fields;
 use sbor::Type;
-use scrypto::abi::{BlueprintAbi, Function};
+use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::prelude::*;
 
 static mut LARGE: [u8; 4] = (u32::MAX / 2).to_le_bytes();
@@ -24,15 +24,15 @@ pub extern "C" fn ZeroReturnSize_f_main(_input: *mut u8) -> *mut u8 {
 
 #[no_mangle]
 pub extern "C" fn LargeReturnSize_abi(_input: *mut u8) -> *mut u8 {
-    let value = Type::Struct {
+    let structure = Type::Struct {
         name: "LargeReturnSize".to_string(),
         fields: Fields::Unit,
     };
     let abi = BlueprintAbi {
-        value,
-        functions: vec![
-            Function {
-                name: "f".to_string(),
+        structure,
+        fns: vec![
+            Fn {
+                ident: "f".to_string(),
                 mutability: Option::None,
                 input: Type::Struct {
                     name: "Any".to_string(),
@@ -48,15 +48,15 @@ pub extern "C" fn LargeReturnSize_abi(_input: *mut u8) -> *mut u8 {
 
 #[no_mangle]
 pub extern "C" fn MaxReturnSize_abi(_input: *mut u8) -> *mut u8 {
-    let value = Type::Struct {
+    let structure = Type::Struct {
         name: "MaxReturnSize".to_string(),
         fields: Fields::Unit,
     };
     let abi = BlueprintAbi {
-        value,
-        functions: vec![
-            Function {
-                name: "f".to_string(),
+        structure,
+        fns: vec![
+            Fn {
+                ident: "f".to_string(),
                 mutability: Option::None,
                 input: Type::Struct {
                     name: "Any".to_string(),
@@ -73,15 +73,15 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8) -> *mut u8 {
 
 #[no_mangle]
 pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8) -> *mut u8 {
-    let value = Type::Struct {
+    let structure = Type::Struct {
         name: "ZeroReturnSize".to_string(),
         fields: Fields::Unit,
     };
     let abi = BlueprintAbi {
-        value,
-        functions: vec![
-            Function {
-                name: "f".to_string(),
+        structure,
+        fns: vec![
+            Fn {
+                ident: "f".to_string(),
                 mutability: Option::None,
                 input: Type::Struct {
                     name: "Any".to_string(),
