@@ -43,8 +43,12 @@ where
         }
     }
 
-    fn handle_consume_cost_units(&mut self, n: u32) -> Result<(), CostUnitCounterError> {
-        self.system_api.cost_unit_counter().consume(n)
+    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+        self.system_api.cost_unit_counter()
+    }
+
+    fn fee_table(&mut self) -> &mut FeeTable {
+        self.system_api.fee_table()
     }
 
     // FIXME: limit access to the API
@@ -167,6 +171,9 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
     for RadixEngineWasmRuntime<'s, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
+        let cost = self.fee_table().engine_call_cost();
+        self.consume_cost_units(cost)?;
+
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
         match input {
@@ -205,8 +212,9 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
     }
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
-        self.handle_consume_cost_units(n)
-            .map_err(InvokeError::MeteringError)
+        self.cost_unit_counter()
+            .consume(n)
+            .map_err(InvokeError::CostingError)
     }
 }
 
@@ -231,6 +239,6 @@ impl WasmRuntime for NopWasmRuntime {
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter
             .consume(n)
-            .map_err(InvokeError::MeteringError)
+            .map_err(InvokeError::CostingError)
     }
 }

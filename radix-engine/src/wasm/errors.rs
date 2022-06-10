@@ -63,7 +63,7 @@ pub enum InvokeError {
 
     InvalidReturnData,
 
-    MeteringError(CostUnitCounterError),
+    CostingError(CostUnitCounterError),
 }
 
 impl fmt::Display for InvokeError {
