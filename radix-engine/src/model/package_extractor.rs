@@ -26,7 +26,7 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiE
         .into_iter()
         .filter(|s| s.ends_with("_abi"));
 
-    let runtime = NopWasmRuntime::new(EXPORT_ABI_TBD_LIMIT);
+    let runtime = NopWasmRuntime::new(EXPORT_ABI_COST_UNIT_LIMIT);
     let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
     let mut wasm_engine = WasmiEngine::new();
     let mut instance = wasm_engine.instantiate(code);
