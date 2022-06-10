@@ -3,7 +3,7 @@ use sbor::rust::string::String;
 use sbor::DecodeError;
 use wasmi::HostError;
 
-use crate::engine::RuntimeError;
+use crate::engine::{CostUnitCounterError, RuntimeError};
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]
@@ -61,11 +61,7 @@ pub enum InvokeError {
 
     InvalidReturnData,
 
-    OutOfTbd {
-        limit: u32,
-        balance: u32,
-        required: u32,
-    },
+    MeteringError(CostUnitCounterError),
 }
 
 impl fmt::Display for InvokeError {
