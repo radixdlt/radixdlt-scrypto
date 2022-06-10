@@ -1,6 +1,6 @@
 use sbor::describe::Fields;
 use sbor::Type;
-use scrypto::abi::{BlueprintAbi, Function};
+use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::prelude::*;
 
 static mut LARGE: [u8; 4] = (u32::MAX / 2).to_le_bytes();

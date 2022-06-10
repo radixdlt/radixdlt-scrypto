@@ -1,6 +1,6 @@
 use sbor::describe::Fields;
 use sbor::Type;
-use scrypto::abi::{BlueprintAbi, Function};
+use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::prelude::*;
 
 blueprint! {
@@ -31,87 +31,87 @@ pub extern "C" fn AbiComponent2_main(_input: *mut u8, _input2: *mut u8) -> *mut 
 
 #[no_mangle]
 pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
-    let value = Type::Struct {
+    let structure = Type::Struct {
         name: "AbiComponent2".to_string(),
         fields: Fields::Unit,
     };
     let abi = BlueprintAbi {
-        value,
-        functions: vec![
-            Function {
-                name: "unit".to_string(),
+        structure,
+        fns: vec![
+            Fn {
+                ident: "unit".to_string(),
                 mutability: Option::None,
                 input: Type::Unit,
                 output: Type::Unit,
             },
-            Function {
-                name: "bool".to_string(),
+            Fn {
+                ident: "bool".to_string(),
                 mutability: Option::None,
                 input: Type::Bool,
                 output: Type::Unit,
             },
-            Function {
-                name: "i8".to_string(),
+            Fn {
+                ident: "i8".to_string(),
                 mutability: Option::None,
                 input: Type::I8,
                 output: Type::Unit,
             },
-            Function {
-                name: "i16".to_string(),
+            Fn {
+                ident: "i16".to_string(),
                 mutability: Option::None,
                 input: Type::I16,
                 output: Type::Unit,
             },
-            Function {
-                name: "i32".to_string(),
+            Fn {
+                ident: "i32".to_string(),
                 mutability: Option::None,
                 input: Type::I32,
                 output: Type::Unit,
             },
-            Function {
-                name: "i64".to_string(),
+            Fn {
+                ident: "i64".to_string(),
                 mutability: Option::None,
                 input: Type::I64,
                 output: Type::Unit,
             },
-            Function {
-                name: "i128".to_string(),
+            Fn {
+                ident: "i128".to_string(),
                 mutability: Option::None,
                 input: Type::I128,
                 output: Type::Unit,
             },
-            Function {
-                name: "u8".to_string(),
+            Fn {
+                ident: "u8".to_string(),
                 mutability: Option::None,
                 input: Type::U8,
                 output: Type::Unit,
             },
-            Function {
-                name: "u16".to_string(),
+            Fn {
+                ident: "u16".to_string(),
                 mutability: Option::None,
                 input: Type::U16,
                 output: Type::Unit,
             },
-            Function {
-                name: "u32".to_string(),
+            Fn {
+                ident: "u32".to_string(),
                 mutability: Option::None,
                 input: Type::U32,
                 output: Type::Unit,
             },
-            Function {
-                name: "u64".to_string(),
+            Fn {
+                ident: "u64".to_string(),
                 mutability: Option::None,
                 input: Type::U64,
                 output: Type::Unit,
             },
-            Function {
-                name: "u128".to_string(),
+            Fn {
+                ident: "u128".to_string(),
                 mutability: Option::None,
                 input: Type::U128,
                 output: Type::Unit,
             },
-            Function {
-                name: "result".to_string(),
+            Fn {
+                ident: "result".to_string(),
                 mutability: Option::None,
                 input: Type::Result {
                     okay: Box::new(Type::Unit),
@@ -119,8 +119,8 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
                 },
                 output: Type::Unit,
             },
-            Function {
-                name: "tree_map".to_string(),
+            Fn {
+                ident: "tree_map".to_string(),
                 mutability: Option::None,
                 input: Type::TreeMap {
                     key: Box::new(Type::Unit),
@@ -128,8 +128,8 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
                 },
                 output: Type::Unit,
             },
-            Function {
-                name: "hash_set".to_string(),
+            Fn {
+                ident: "hash_set".to_string(),
                 mutability: Option::None,
                 input: Type::HashSet {
                     element: Box::new(Type::Unit),
