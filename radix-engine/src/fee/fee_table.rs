@@ -1,10 +1,10 @@
 use crate::wasm::WasmMeteringParams;
 
-pub const COST_ENGINE_CALL: u32 = 10_000;
+pub const CALL_ENGINE_COST: u32 = 10_000;
 
 pub const WASM_METERING_V1: u8 = 1;
-pub const WASM_INSTRUCTION: u32 = 1;
-pub const WASM_GROW_MEMORY: u32 = 100;
+pub const WASM_INSTRUCTION_COST: u32 = 1;
+pub const WASM_GROW_MEMORY_COST: u32 = 100;
 pub const WASM_MAX_STACK_SIZE: u32 = 512;
 
 pub struct FeeTable {
@@ -15,11 +15,11 @@ pub struct FeeTable {
 impl FeeTable {
     pub fn new() -> Self {
         Self {
-            engine_call_cost: COST_ENGINE_CALL,
+            engine_call_cost: CALL_ENGINE_COST,
             wasm_metering_params: WasmMeteringParams::new(
                 WASM_METERING_V1,
-                WASM_INSTRUCTION,
-                WASM_GROW_MEMORY,
+                WASM_INSTRUCTION_COST,
+                WASM_GROW_MEMORY_COST,
                 WASM_MAX_STACK_SIZE,
             ),
         }
