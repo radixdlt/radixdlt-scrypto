@@ -59,6 +59,8 @@ pub enum BuildArgsError {
     /// The argument is of unsupported type.
     UnsupportedType(usize, Type),
 
+    UnsupportedRootType(Type),
+
     /// Failure when parsing an argument.
     FailedToParse(usize, Type, String),
 }

@@ -25,7 +25,7 @@ pub struct Blueprint {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Function {
     pub name: String,
-    pub inputs: Vec<Type>,
+    pub input: Type,
     pub output: Type,
 }
 
@@ -35,7 +35,7 @@ pub struct Function {
 pub struct Method {
     pub name: String,
     pub mutability: SelfMutability,
-    pub inputs: Vec<Type>,
+    pub input: Type,
     pub output: Type,
 }
 
