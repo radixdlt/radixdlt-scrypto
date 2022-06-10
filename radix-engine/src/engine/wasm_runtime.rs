@@ -78,9 +78,7 @@ where
     ) -> Result<ComponentAddress, RuntimeError> {
         for access_rules in &access_rules_list {
             for (func_name, _) in access_rules.iter() {
-                if !self.blueprint_abi
-                    .contains_fn(func_name.as_str())
-                {
+                if !self.blueprint_abi.contains_fn(func_name.as_str()) {
                     return Err(BlueprintFunctionDoesNotExist(func_name.to_string()));
                 }
             }

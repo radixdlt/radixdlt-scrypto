@@ -201,15 +201,19 @@ impl LoadedSNodeState {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
-                BorrowedSNodeState::Scrypto(info, blueprint_abi, package, export_name, component_state) => {
-                    SNodeState::Scrypto(
-                        info.clone(),
-                        blueprint_abi.clone(),
-                        package.clone(),
-                        export_name.clone(),
-                        component_state.as_mut(),
-                    )
-                }
+                BorrowedSNodeState::Scrypto(
+                    info,
+                    blueprint_abi,
+                    package,
+                    export_name,
+                    component_state,
+                ) => SNodeState::Scrypto(
+                    info.clone(),
+                    blueprint_abi.clone(),
+                    package.clone(),
+                    export_name.clone(),
+                    component_state.as_mut(),
+                ),
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),

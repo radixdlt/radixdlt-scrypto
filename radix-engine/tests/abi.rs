@@ -14,12 +14,14 @@ fn test_invalid_access_rule_methods() {
     let package_address = test_runner.extract_and_publish_package("abi");
 
     // Act
-    let manifest = ManifestBuilder::new().call_function(
-        package_address,
-        "AbiComponent",
-        "create_invalid_abi_component",
-        to_struct!(),
-    ).build();
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "AbiComponent",
+            "create_invalid_abi_component",
+            to_struct!(),
+        )
+        .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
