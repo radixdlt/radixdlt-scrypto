@@ -9,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_process_and_transaction() {
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("core");
+    let package_address = test_runner.extract_and_publish_package("core");
 
     let manifest1 = ManifestBuilder::new()
         .call_function(package_address, "CoreTest", "query", to_struct![])
@@ -22,7 +22,7 @@ fn test_process_and_transaction() {
 fn test_call() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package("core");
+    let package_address = test_runner.extract_and_publish_package("core");
 
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "MoveTest", "move_bucket", to_struct![])

@@ -52,16 +52,16 @@ where
 
     // FIXME: limit access to the API
 
-    fn handle_invoke_snode2(
+    fn handle_invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        method_name: String,
-        call_data: Vec<u8>,
+        fn_ident: String,
+        input: Vec<u8>,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let call_data = ScryptoValue::from_slice(&call_data).map_err(RuntimeError::DecodeError)?;
+        let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
         let result = self
             .system_api
-            .invoke_snode2(snode_ref, method_name, call_data)?;
+            .invoke_snode(snode_ref, fn_ident, call_data)?;
         Ok(result.raw)
     }
 
@@ -173,8 +173,8 @@ impl<'s, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
         match input {
-            RadixEngineInput::InvokeSNode2(snode_ref, method_name, call_data) => self
-                .handle_invoke_snode2(snode_ref, method_name, call_data)
+            RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => self
+                .handle_invoke_snode(snode_ref, fn_ident, input_bytes)
                 .map(encode),
             RadixEngineInput::CreateComponent(blueprint_name, state, access_rules_list) => self
                 .handle_create_component(blueprint_name, state, access_rules_list)

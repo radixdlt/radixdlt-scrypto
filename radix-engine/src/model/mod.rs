@@ -30,7 +30,7 @@ pub use resource::*;
 pub use resource_manager::{ResourceManager, ResourceManagerError};
 pub use system::{System, SystemError};
 pub use transaction_processor::{
-    TransactionProcessor, TransactionProcessorError, TransactionProcessorFunction,
+    TransactionProcessor, TransactionProcessorError, TransactionProcessorRunInput,
 };
 pub use validated_package::{PackageError, ValidatedPackage};
 pub use vault::{Vault, VaultError};

@@ -12,7 +12,7 @@ use transaction::builder::ManifestBuilder;
 fn test_bucket() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package("bucket");
+    let package_address = test_runner.extract_and_publish_package("bucket");
 
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "BucketTest", "combine", to_struct!())
@@ -54,7 +54,7 @@ fn test_bucket() {
 fn test_bucket_of_badges() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package("bucket");
+    let package_address = test_runner.extract_and_publish_package("bucket");
 
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "BadgeTest", "combine", to_struct!())
@@ -73,7 +73,7 @@ fn test_take_with_invalid_granularity() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.publish_package("bucket");
+    let package_address = test_runner.extract_and_publish_package("bucket");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -108,7 +108,7 @@ fn test_take_with_negative_amount() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
     let resource_address = test_runner.create_fungible_resource(100.into(), 2, account);
-    let package_address = test_runner.publish_package("bucket");
+    let package_address = test_runner.extract_and_publish_package("bucket");
 
     // Act
     let manifest = ManifestBuilder::new()

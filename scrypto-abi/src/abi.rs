@@ -16,25 +16,22 @@ use sbor::{Decode, Encode, TypeId};
 pub struct Blueprint {
     pub package_address: String,
     pub blueprint_name: String,
-    pub functions: Vec<Function>,
-    pub methods: Vec<Method>,
+    pub abi: BlueprintAbi,
 }
 
-/// Represents a function.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Function {
-    pub name: String,
-    pub input: Type,
-    pub output: Type,
+pub struct BlueprintAbi {
+    pub structure: Type,
+    pub fns: Vec<Fn>,
 }
 
-/// Represents a method.
+/// Represents a method/function.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Method {
-    pub name: String,
-    pub mutability: SelfMutability,
+pub struct Fn {
+    pub ident: String,
+    pub mutability: Option<SelfMutability>,
     pub input: Type,
     pub output: Type,
 }

@@ -1,7 +1,6 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use sbor::Type;
-use scrypto::abi;
+use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::*;
 use scrypto::prelude::*;
 use serde::Serialize;
@@ -42,13 +41,12 @@ fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 #[test]
 fn test_simple_abi() {
     let ptr = Simple_abi(core::ptr::null_mut::<u8>(), core::ptr::null_mut::<u8>());
-    let abi: (Type, Vec<abi::Function>, Vec<abi::Method>) =
-        scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap());
+    let abi: BlueprintAbi = scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap());
 
     assert_json_eq(
         abi,
-        json!([
-            {
+        json!({
+            "structure": {
                 "fields":{
                     "named":[
                         [
@@ -61,9 +59,10 @@ fn test_simple_abi() {
                 "name":"Simple",
                 "type":"Struct"
             },
-            [
+            "fns": [
                 {
-                    "name": "new",
+                    "ident": "new",
+                    "mutability": null,
                     "input": {
                         "type": "Struct",
                         "name": "Simple_new_Input",
@@ -78,8 +77,47 @@ fn test_simple_abi() {
                         "generics": []
                     }
                 },
+
                 {
-                    "name": "custom_types",
+                    "ident": "get_state",
+                    "mutability": "Immutable",
+                    "input": {
+                        "type": "Struct",
+                        "name": "Simple_get_state_Input",
+                        "fields": {
+                            "type": "Named",
+                            "named": []
+                        }
+                    },
+                    "output": {
+                        "type": "U32"
+                    }
+                },
+                {
+                    "ident": "set_state",
+                    "mutability": "Mutable",
+                    "input": {
+                        "type": "Struct",
+                        "name": "Simple_set_state_Input",
+                        "fields": {
+                            "type": "Named",
+                            "named": [
+                                [
+                                    "arg0",
+                                    {
+                                        "type": "U32"
+                                    }
+                                ]
+                            ]
+                        }
+                    },
+                    "output": {
+                        "type": "Unit"
+                    }
+                },
+                {
+                    "ident": "custom_types",
+                    "mutability": null,
                     "input": {
                         "type": "Struct",
                         "name": "Simple_custom_types_Input",
@@ -136,46 +174,7 @@ fn test_simple_abi() {
                         ]
                     }
                 }
-            ],
-            [
-                {
-                    "name": "get_state",
-                    "mutability": "Immutable",
-                    "input": {
-                        "type": "Struct",
-                        "name": "Simple_get_state_Input",
-                        "fields": {
-                            "type": "Named",
-                            "named": []
-                        }
-                    },
-                    "output": {
-                        "type": "U32"
-                    }
-                },
-                {
-                    "name": "set_state",
-                    "mutability": "Mutable",
-                    "input": {
-                        "type": "Struct",
-                        "name": "Simple_set_state_Input",
-                        "fields": {
-                            "type": "Named",
-                            "named": [
-                                [
-                                    "arg0",
-                                    {
-                                        "type": "U32"
-                                    }
-                                ]
-                            ]
-                        }
-                    },
-                    "output": {
-                        "type": "Unit"
-                    }
-                }
             ]
-        ]),
+        }),
     );
 }

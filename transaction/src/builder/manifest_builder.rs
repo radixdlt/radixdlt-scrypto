@@ -314,12 +314,12 @@ impl ManifestBuilder {
         function: &str,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-        blueprint_abi: &abi::Blueprint,
+        blueprint_abi: &abi::BlueprintAbi,
     ) -> Result<&mut Self, BuildCallWithAbiError> {
         let abi = blueprint_abi
-            .functions
+            .fns
             .iter()
-            .find(|f| f.name == function)
+            .find(|f| f.ident == function)
             .map(Clone::clone)
             .ok_or_else(|| BuildCallWithAbiError::FunctionNotFound(function.to_owned()))?;
 
@@ -372,12 +372,12 @@ impl ManifestBuilder {
         method: &str,
         args: Vec<String>,
         account: Option<ComponentAddress>,
-        blueprint_abi: &abi::Blueprint,
+        blueprint_abi: &abi::BlueprintAbi,
     ) -> Result<&mut Self, BuildCallWithAbiError> {
         let abi = blueprint_abi
-            .methods
+            .fns
             .iter()
-            .find(|m| m.name == method)
+            .find(|m| m.ident == method)
             .map(Clone::clone)
             .ok_or_else(|| BuildCallWithAbiError::MethodNotFound(method.to_owned()))?;
 

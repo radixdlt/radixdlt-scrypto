@@ -51,7 +51,7 @@ pub struct Bucket(pub BucketId);
 impl Bucket {
     /// Creates a new bucket to hold resources of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeSNode2(
+        let input = RadixEngineInput::InvokeSNode(
             SNodeRef::ResourceRef(resource_address),
             "create_bucket".to_string(),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
@@ -69,7 +69,7 @@ impl Bucket {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Self {
-        let input = RadixEngineInput::InvokeSNode2(
+        let input = RadixEngineInput::InvokeSNode(
             SNodeRef::BucketRef(self.0),
             "take".to_string(),
             scrypto_encode(&BucketTakeInput { amount }),
