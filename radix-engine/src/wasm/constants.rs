@@ -1,7 +1,7 @@
 pub const RADIX_ENGINE_FUNCTION_INDEX: usize = 0;
 pub const RADIX_ENGINE_FUNCTION_NAME: &str = "radix_engine";
-pub const USE_TBD_FUNCTION_INDEX: usize = 1;
-pub const USE_TBD_FUNCTION_NAME: &str = "gas";
+pub const CONSUME_COST_UNIT_FUNCTION_INDEX: usize = 1;
+pub const CONSUME_COST_UNIT_FUNCTION_NAME: &str = "gas";
 
 pub const MODULE_ENV_NAME: &str = "env";
 
@@ -14,5 +14,5 @@ pub const MAX_STACK_DEPTH: u32 = 512;
 pub const INSTRUCTION_COST: u32 = 1;
 pub const MEMORY_GROW_COST: u32 = 100;
 
-pub const EXPORT_ABI_TBD_LIMIT: u32 = 1_000_000;
-pub const CALL_FUNCTION_TBD_LIMIT: u32 = 10_000_000;
+pub const EXPORT_ABI_COST_UNIT_LIMIT: u32 = 1_000_000;
+pub const CALL_FUNCTION_COST_UNIT_LIMIT: u32 = 10_000_000;

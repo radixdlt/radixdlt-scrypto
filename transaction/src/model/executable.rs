@@ -4,7 +4,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
-use scrypto::values::*;
 
 /// Represents an instruction that can be executed by Radix Engine.
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode, TypeId)]
@@ -63,12 +62,12 @@ pub enum ExecutableInstruction {
         package_address: PackageAddress,
         blueprint_name: String,
         method_name: String,
-        arg: ScryptoValue,
+        arg: Vec<u8>,
     },
     CallMethod {
         component_address: ComponentAddress,
         method_name: String,
-        arg: ScryptoValue,
+        arg: Vec<u8>,
     },
     CallMethodWithAllResources {
         component_address: ComponentAddress,

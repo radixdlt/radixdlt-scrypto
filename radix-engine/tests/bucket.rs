@@ -47,7 +47,7 @@ fn test_bucket() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -64,7 +64,7 @@ fn test_bucket_of_badges() {
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }
 
 #[test]
@@ -162,5 +162,5 @@ fn create_empty_bucket() {
     println!("{:?}", receipt);
 
     // Assert
-    receipt.result.expect("It should work");
+    receipt.expect_success();
 }

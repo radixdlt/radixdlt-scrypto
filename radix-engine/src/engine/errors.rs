@@ -4,7 +4,6 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::{DecodeError, Value};
 use scrypto::engine::types::*;
-use scrypto::values::*;
 use transaction::errors::*;
 
 use crate::model::*;
@@ -17,7 +16,7 @@ pub enum RuntimeError {
     InvokeError(Box<InvokeError>),
 
     /// The data is not a valid SBOR value.
-    ParseScryptoValueError(ParseScryptoValueError),
+    DecodeError(DecodeError),
 
     AuthZoneDoesNotExist,
 
@@ -28,13 +27,13 @@ pub enum RuntimeError {
 
     /// Invalid request code.
     MethodDoesNotExist(String),
-    InvalidMethodInput {
-        function_name: String,
-        arg: Value,
+    InvalidFnInput {
+        fn_ident: String,
+        input: Value,
     },
-    InvalidMethodOutput {
-        function_name: String,
-        value: Value,
+    InvalidFnOutput {
+        fn_ident: String,
+        output: Value,
     },
 
     /// Package does not exist.
@@ -59,20 +58,15 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
+    ValueNotFound(StoredValueId),
+
     /// Key Value Store does not exist.
     KeyValueStoreNotFound(KeyValueStoreId),
-
-    /// Key Value Store removed.
-    KeyValueStoreRemoved(KeyValueStoreId),
 
     /// Cyclic Key Value Store added
     CyclicKeyValueStore(KeyValueStoreId),
 
-    /// Vault does not exist.
-    VaultNotFound(VaultId),
-
-    /// Vault removed.
-    VaultRemoved(VaultId),
+    StoredValueRemoved(StoredValueId),
 
     /// Bucket does not exist.
     BucketNotFound(BucketId),

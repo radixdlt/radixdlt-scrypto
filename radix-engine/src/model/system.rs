@@ -26,12 +26,12 @@ impl System {
                 let _: SystemGetCurrentEpochInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 // TODO: Make this stateful
-                Ok(ScryptoValue::from_value(&system_api.get_epoch()))
+                Ok(ScryptoValue::from_typed(&system_api.get_epoch()))
             }
             "transaction_hash" => {
                 let _: SystemGetTransactionHashInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
-                Ok(ScryptoValue::from_value(&system_api.get_transaction_hash()))
+                Ok(ScryptoValue::from_typed(&system_api.get_transaction_hash()))
             }
             _ => Err(InvalidMethod),
         }

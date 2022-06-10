@@ -1,9 +1,9 @@
 use sbor::rust::fmt;
 use sbor::rust::string::String;
-use scrypto::values::ParseScryptoValueError;
+use sbor::DecodeError;
 use wasmi::HostError;
 
-use crate::engine::RuntimeError;
+use crate::engine::{CostUnitCounterError, RuntimeError};
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]
@@ -47,7 +47,7 @@ pub enum InvokeError {
 
     MemoryAccessError,
 
-    InvalidScryptoValue(ParseScryptoValueError),
+    InvalidScryptoValue(DecodeError),
 
     WasmError(String),
 
@@ -61,11 +61,7 @@ pub enum InvokeError {
 
     InvalidReturnData,
 
-    OutOfTbd {
-        limit: u32,
-        balance: u32,
-        required: u32,
-    },
+    MeteringError(CostUnitCounterError),
 }
 
 impl fmt::Display for InvokeError {

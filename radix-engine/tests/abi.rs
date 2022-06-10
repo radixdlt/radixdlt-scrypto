@@ -15,12 +15,14 @@ fn test_invalid_access_rule_methods() {
     let package_address = test_runner.extract_and_publish_package("abi");
 
     // Act
-    let manifest = ManifestBuilder::new().call_function(
-        package_address,
-        "AbiComponent",
-        "create_invalid_abi_component",
-        to_struct!(),
-    ).build();
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "AbiComponent",
+            "create_invalid_abi_component",
+            to_struct!(),
+        )
+        .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
@@ -58,13 +60,13 @@ fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
         ExpectedResult::Success => receipt.result.expect("Should be okay."),
         ExpectedResult::InvalidInput => {
             let error = receipt.result.expect_err("Should be an error.");
-            if !matches!(error, RuntimeError::InvalidMethodInput { .. }) {
+            if !matches!(error, RuntimeError::InvalidFnInput { .. }) {
                 panic!("Error should be InvalidMethodArgument but was {:?}", error)
             }
         }
         ExpectedResult::InvalidOutput => {
             let error = receipt.result.expect_err("Should be an error.");
-            if !matches!(error, RuntimeError::InvalidMethodOutput { .. }) {
+            if !matches!(error, RuntimeError::InvalidFnOutput { .. }) {
                 panic!("Error should be InvalidMethodArgument but was {:?}", error)
             }
         }

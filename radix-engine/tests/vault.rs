@@ -4,6 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
+use scrypto::engine::types::StoredValueId;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -28,7 +29,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
@@ -53,7 +54,7 @@ fn non_existent_vault_in_committed_component_should_fail() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
@@ -78,7 +79,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
@@ -107,7 +108,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
@@ -152,7 +153,7 @@ fn create_mutable_vault_into_map() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -175,7 +176,7 @@ fn invalid_double_ownership_of_vault() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultNotFound(_) => {}
+        RuntimeError::ValueNotFound(StoredValueId::VaultId(_)) => {}
         _ => panic!("Should be vault not found error"),
     }
 }
@@ -198,7 +199,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -226,8 +227,8 @@ fn cannot_overwrite_vault_in_map() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultRemoved(_) => {}
-        _ => panic!("Should be vault not found error"),
+        RuntimeError::StoredValueRemoved(StoredValueId::VaultId(_)) => {}
+        _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
 
@@ -249,7 +250,7 @@ fn create_mutable_vault_into_vector() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -277,8 +278,8 @@ fn cannot_remove_vaults() {
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
     match runtime_error {
-        RuntimeError::VaultRemoved(_) => {}
-        _ => panic!("Should be vault not found error"),
+        RuntimeError::StoredValueRemoved(StoredValueId::VaultId(_)) => {}
+        _ => panic!("Should be vault not found error but was {}", runtime_error),
     }
 }
 
@@ -305,7 +306,7 @@ fn can_push_vault_into_vector() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -326,7 +327,7 @@ fn create_mutable_vault_with_take() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -347,7 +348,7 @@ fn create_mutable_vault_with_take_non_fungible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -368,7 +369,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -389,7 +390,7 @@ fn create_mutable_vault_with_get_amount() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }
 
 #[test]
@@ -410,5 +411,5 @@ fn create_mutable_vault_with_get_resource_manager() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.result.expect("Should be okay");
+    receipt.expect_success();
 }

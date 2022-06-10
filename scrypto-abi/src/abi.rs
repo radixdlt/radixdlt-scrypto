@@ -22,30 +22,30 @@ pub struct Blueprint {
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct BlueprintAbi {
-    pub value: Type,
-    pub functions: Vec<Function>,
+    pub structure: Type,
+    pub fns: Vec<Fn>,
 }
 
 impl BlueprintAbi {
-    pub fn get_function_abi(&self, function_name: &str) -> Option<&Function> {
-        for func in &self.functions {
-            if func.name.eq(function_name) {
+    pub fn get_fn_abi(&self, fn_ident: &str) -> Option<&Fn> {
+        for func in &self.fns {
+            if func.ident.eq(fn_ident) {
                 return Option::Some(func);
             }
         }
         Option::None
     }
 
-    pub fn contains_function(&self, function_name: &str) -> bool {
-        self.get_function_abi(function_name).is_some()
+    pub fn contains_fn(&self, fn_ident: &str) -> bool {
+        self.get_fn_abi(fn_ident).is_some()
     }
 }
 
-/// Represents a function.
+/// Represents a method/function.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
-pub struct Function {
-    pub name: String,
+pub struct Fn {
+    pub ident: String,
     pub mutability: Option<SelfMutability>,
     pub input: Type,
     pub output: Type,
