@@ -15,7 +15,7 @@ r#"
     "package_address": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
     "blueprint_name": "Simple",
     "abi": {
-        "value": {
+        "structure": {
             "type": "Struct",
             "name": "Simple",
             "fields": {
@@ -23,9 +23,9 @@ r#"
                 "named": []
             }
         },
-        "functions": [
+        "fns": [
             {
-                "name": "stateless_func",
+                "ident": "stateless_func",
                 "input": {
                     "type": "Struct",
                     "name": "",
@@ -39,7 +39,7 @@ r#"
                 }
             },
             {
-                "name": "test_custom_types",
+                "ident": "test_custom_types",
                 "input": {
                     "type": "Struct",
                     "name": "",
@@ -127,7 +127,7 @@ r#"
                 }
             },
             {
-                "name": "calculate_volume",
+                "ident": "calculate_volume",
                 "mutability": "Immutable",
                 "input": {
                     "type": "Struct",

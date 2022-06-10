@@ -40,7 +40,7 @@ fn test_dynamic_auth(
         )
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.result.expect("Should be okay.");
+    receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
 
     if let Some(next_auth) = update_auth {
@@ -53,8 +53,7 @@ fn test_dynamic_auth(
             .build();
         test_runner
             .execute_manifest(update_manifest, vec![])
-            .result
-            .expect("Should be okay.");
+            .expect_success();
     }
 
     // Act
@@ -65,7 +64,7 @@ fn test_dynamic_auth(
 
     // Assert
     if should_succeed {
-        receipt2.result.expect("Should be okay.");
+        receipt2.expect_success();
     } else {
         let error = receipt2.result.expect_err("Should be an error.");
         assert_auth_error!(error);
@@ -104,7 +103,7 @@ fn test_dynamic_authlist(
         )
         .build();
     let receipt0 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt0.result.expect("Should be okay.");
+    receipt0.expect_success();
     let component = receipt0.new_component_addresses[0];
 
     // Act
@@ -115,7 +114,7 @@ fn test_dynamic_authlist(
 
     // Assert
     if should_succeed {
-        receipt.result.expect("Should be okay.");
+        receipt.expect_success();
     } else {
         let error = receipt.result.expect_err("Should be an error.");
         assert_auth_error!(error);
@@ -224,7 +223,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
         .call_function(package, "Chess", "create_game", to_struct!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.result.expect("Should be okay.");
+    receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
 
     // Act
@@ -252,7 +251,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
         .call_function(package, "Chess", "create_game", to_struct!(players))
         .build();
     let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
-    receipt1.result.expect("Should be okay.");
+    receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
     let manifest2 = ManifestBuilder::new()
         .call_method(component, "make_move", to_struct!())

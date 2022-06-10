@@ -2,15 +2,21 @@ use sbor::describe::Type;
 use sbor::rust::string::String;
 use sbor::DecodeError;
 use scrypto::engine::types::*;
-use scrypto::values::*;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum HeaderValidationError {}
+pub enum HeaderValidationError {
+    UnknownVersion(u8),
+    InvalidEpochRange,
+    EpochRangeTooLarge,
+    OutOfEpochRange,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {
+    TooManySignatures,
     InvalidIntentSignature,
     InvalidNotarySignature,
+    DuplicateSigner,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,7 +34,7 @@ pub enum IdValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum CallDataValidationError {
-    InvalidScryptoValue(ParseScryptoValueError),
+    DecodeError(DecodeError),
     IdValidationError(IdValidationError),
     VaultNotAllowed(VaultId),
     KeyValueStoreNotAllowed(KeyValueStoreId),
@@ -37,6 +43,7 @@ pub enum CallDataValidationError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionValidationError {
     DeserializationError(DecodeError),
+    IntentHashRejected,
     HeaderValidationError(HeaderValidationError),
     SignatureValidationError(SignatureValidationError),
     IdValidationError(IdValidationError),

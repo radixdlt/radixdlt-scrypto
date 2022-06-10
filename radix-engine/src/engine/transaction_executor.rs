@@ -77,14 +77,14 @@ where
         let result = root_frame.invoke_snode(
             scrypto::core::SNodeRef::TransactionProcessor,
             "run".to_string(),
-            ScryptoValue::from_value(&TransactionProcessorRunInput {
+            ScryptoValue::from_typed(&TransactionProcessorRunInput {
                 instructions: instructions.clone(),
             }),
         );
 
         let (outputs, error) = match result {
-            Ok(o) => (scrypto_decode::<Vec<ScryptoValue>>(&o.raw).unwrap(), None),
-            Err(e) => (Vec::<ScryptoValue>::new(), Some(e)),
+            Ok(o) => (scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap(), None),
+            Err(e) => (Vec::new(), Some(e)),
         };
 
         let track_receipt = track.to_receipt();
@@ -95,7 +95,6 @@ where
                 panic!("There should be nothing borrowed by end of transaction.");
             }
             let commit_receipt = track_receipt.substates.commit(self.substate_store);
-            self.substate_store.increase_nonce();
             Some(commit_receipt)
         } else {
             None

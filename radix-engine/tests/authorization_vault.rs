@@ -58,5 +58,5 @@ fn can_withdraw_restricted_transfer_from_my_account_with_auth() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.result.expect("Should be okay.");
+    receipt.expect_success();
 }

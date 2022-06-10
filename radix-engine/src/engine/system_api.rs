@@ -19,8 +19,8 @@ where
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        method_name: String,
-        call_data: ScryptoValue,
+        fn_ident: String,
+        input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
     fn get_non_fungible(
@@ -66,7 +66,7 @@ where
     fn write_component_state(
         &mut self,
         addr: ComponentAddress,
-        state: Vec<u8>,
+        state: ScryptoValue,
     ) -> Result<(), RuntimeError>;
 
     fn get_component_info(

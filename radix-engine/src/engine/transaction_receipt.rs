@@ -17,12 +17,20 @@ pub struct Receipt {
     pub commit_receipt: Option<CommitReceipt>,
     pub instructions: Vec<ExecutableInstruction>,
     pub result: Result<(), RuntimeError>,
-    pub outputs: Vec<ScryptoValue>,
+    pub outputs: Vec<Vec<u8>>,
     pub logs: Vec<(Level, String)>,
     pub new_package_addresses: Vec<PackageAddress>,
     pub new_component_addresses: Vec<ComponentAddress>,
     pub new_resource_addresses: Vec<ResourceAddress>,
     pub execution_time: Option<u128>,
+}
+
+impl Receipt {
+    pub fn expect_success(&self) {
+        if self.result.is_err() {
+            panic!("Expected success but was:\n{:?}", self);
+        }
+    }
 }
 
 macro_rules! prefix {
@@ -64,16 +72,42 @@ impl fmt::Debug for Receipt {
                 "\n{} {}",
                 prefix!(i, self.instructions),
                 match inst {
-                    ExecutableInstruction::PublishPackage { .. } =>
-                        "PublishPackage {..}".to_owned(),
+                    ExecutableInstruction::CallFunction {
+                        package_address,
+                        blueprint_name,
+                        method_name,
+                        arg,
+                    } => format!(
+                        "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, arg: {:?} }}",
+                        package_address,
+                        blueprint_name,
+                        method_name,
+                        ScryptoValue::from_slice(&arg).expect("Invalid call data")
+                    ),
+                    ExecutableInstruction::CallMethod {
+                        component_address,
+                        method_name,
+                        arg,
+                    } => format!(
+                        "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
+                        component_address,
+                        method_name,
+                        ScryptoValue::from_slice(&arg).expect("Invalid call data")
+                    ),
+                    ExecutableInstruction::PublishPackage { .. } => "PublishPackage {..}".to_owned(),
                     i @ _ => format!("{:?}", i),
                 }
             )?;
         }
 
         write!(f, "\n{}", "Instruction Outputs:".bold().green())?;
-        for (i, result) in self.outputs.iter().enumerate() {
-            write!(f, "\n{} {:?}", prefix!(i, self.outputs), result)?;
+        for (i, output) in self.outputs.iter().enumerate() {
+            write!(
+                f,
+                "\n{} {:?}",
+                prefix!(i, self.outputs),
+                ScryptoValue::from_slice(output).expect("Invalid return data")
+            )?;
         }
 
         write!(f, "\n{} {}", "Logs:".bold().green(), self.logs.len())?;

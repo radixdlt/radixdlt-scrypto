@@ -317,9 +317,9 @@ impl ManifestBuilder {
         blueprint_abi: &abi::BlueprintAbi,
     ) -> Result<&mut Self, BuildCallWithAbiError> {
         let abi = blueprint_abi
-            .functions
+            .fns
             .iter()
-            .find(|f| f.name == function)
+            .find(|f| f.ident == function)
             .map(Clone::clone)
             .ok_or_else(|| BuildCallWithAbiError::FunctionNotFound(function.to_owned()))?;
 
@@ -375,9 +375,9 @@ impl ManifestBuilder {
         blueprint_abi: &abi::BlueprintAbi,
     ) -> Result<&mut Self, BuildCallWithAbiError> {
         let abi = blueprint_abi
-            .functions
+            .fns
             .iter()
-            .find(|m| m.name == method)
+            .find(|m| m.ident == method)
             .map(Clone::clone)
             .ok_or_else(|| BuildCallWithAbiError::MethodNotFound(method.to_owned()))?;
 
@@ -712,7 +712,10 @@ impl ManifestBuilder {
         let mut encoded = Vec::new();
 
         match arg_type {
-            sbor::Type::Struct { name: _, fields: Fields::Named { named } } => {
+            sbor::Type::Struct {
+                name: _,
+                fields: Fields::Named { named },
+            } => {
                 for (i, (_, t)) in named.iter().enumerate() {
                     let arg = args
                         .get(i)
@@ -730,14 +733,16 @@ impl ManifestBuilder {
                         Type::U64 => self.parse_basic_ty::<u64>(i, t, arg),
                         Type::U128 => self.parse_basic_ty::<u128>(i, t, arg),
                         Type::String => self.parse_basic_ty::<String>(i, t, arg),
-                        Type::Custom { type_id, .. } => self.parse_custom_ty(i, t, arg, *type_id, account),
+                        Type::Custom { type_id, .. } => {
+                            self.parse_custom_ty(i, t, arg, *type_id, account)
+                        }
                         _ => Err(BuildArgsError::UnsupportedType(i, t.clone())),
                     };
                     encoded.push(res?);
                 }
                 Ok(())
             }
-            _ => Err(BuildArgsError::UnsupportedRootType(arg_type.clone()))
+            _ => Err(BuildArgsError::UnsupportedRootType(arg_type.clone())),
         }?;
 
         Ok(encoded)
