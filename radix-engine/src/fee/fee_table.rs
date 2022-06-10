@@ -1,21 +1,35 @@
-pub trait FeeTable {
-    fn engine_call_cost(&self) -> u32;
+use crate::wasm::WasmMeteringParams;
+
+pub const COST_ENGINE_CALL: u32 = 1000;
+
+pub const WASM_METERING_V1: u8 = 1;
+pub const WASM_INSTRUCTION: u32 = 1;
+pub const WASM_GROW_MEMORY: u32 = 100;
+pub const WASM_MAX_STACK_SIZE: u32 = 500;
+
+pub struct FeeTable {
+    engine_call_cost: u32,
+    wasm_metering_params: WasmMeteringParams,
 }
 
-pub struct BasicFeeTable {
-    flat_engine_call_cost: u32,
-}
-
-impl BasicFeeTable {
-    pub fn new(flat_engine_call_cost: u32) -> Self {
+impl FeeTable {
+    pub fn new() -> Self {
         Self {
-            flat_engine_call_cost,
+            engine_call_cost: COST_ENGINE_CALL,
+            wasm_metering_params: WasmMeteringParams::new(
+                WASM_METERING_V1,
+                WASM_INSTRUCTION,
+                WASM_GROW_MEMORY,
+                WASM_MAX_STACK_SIZE,
+            ),
         }
     }
-}
 
-impl FeeTable for BasicFeeTable {
-    fn engine_call_cost(&self) -> u32 {
-        self.flat_engine_call_cost
+    pub fn engine_call_cost(&self) -> u32 {
+        self.engine_call_cost
+    }
+
+    pub fn wasm_metering_params(&self) -> &WasmMeteringParams {
+        &self.wasm_metering_params
     }
 }

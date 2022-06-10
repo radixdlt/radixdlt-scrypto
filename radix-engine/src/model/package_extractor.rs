@@ -9,7 +9,9 @@ use scrypto::prelude::Package;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::NopWasmRuntime;
-use crate::fee::MAX_EXTRACT_ABI_COST;
+use crate::fee::{
+    MAX_EXTRACT_ABI_COST, WASM_GROW_MEMORY, WASM_INSTRUCTION, WASM_MAX_STACK_SIZE, WASM_METERING_V1,
+};
 use crate::wasm::*;
 
 #[derive(Debug)]
@@ -30,7 +32,13 @@ fn extract_abi(
         .into_iter()
         .filter(|s| s.ends_with("_abi"));
 
-    let instrumented_code = WasmInstrumenter::instrument_v1(code);
+    let metering_params = WasmMeteringParams::new(
+        WASM_METERING_V1,
+        WASM_INSTRUCTION,
+        WASM_GROW_MEMORY,
+        WASM_MAX_STACK_SIZE,
+    );
+    let instrumented_code = WasmInstrumenter::instrument(code, &metering_params);
     let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(MAX_EXTRACT_ABI_COST));
     let mut wasm_engine = WasmiEngine::new();
     let mut instance = wasm_engine.instantiate(&instrumented_code);

@@ -10,7 +10,6 @@ use wasmi_validation::{validate_module, PlainValidator};
 
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
-use crate::wasm::WasmFeeTable;
 
 pub struct WasmModule {
     module: Module,
@@ -207,14 +206,12 @@ impl WasmModule {
 
     pub fn inject_instruction_metering(
         mut self,
-        wasm_fee_table: &WasmFeeTable,
+        instruction_cost: u32,
+        grow_memory_cost: u32,
     ) -> Result<Self, PrepareError> {
         self.module = gas_metering::inject(
             self.module,
-            &gas_metering::ConstantCostRules::new(
-                wasm_fee_table.instruction_cost(),
-                wasm_fee_table.grow_memory_cost(),
-            ),
+            &gas_metering::ConstantCostRules::new(instruction_cost, grow_memory_cost),
             MODULE_ENV_NAME,
         )
         .map_err(|_| PrepareError::RejectedByInstructionMetering)?;

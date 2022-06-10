@@ -1,4 +1,4 @@
-use crate::wasm::{PrepareError, WasmFeeTable, WasmModule};
+use crate::wasm::{PrepareError, WasmMeteringParams, WasmModule};
 
 pub struct WasmValidator {}
 
@@ -7,8 +7,7 @@ impl WasmValidator {
         // Not all "valid" wasm modules are instrumentable, with the instrumentation library
         // we are using. To deal with this, we attempt to instrument the input module with
         // some mocked parameters and reject it if fails to do so.
-        let mocked_wasm_fee_table = WasmFeeTable::new(1, 100);
-        let mocked_wasm_max_stack_size = 100;
+        let mocked_wasm_metering_params = WasmMeteringParams::new(1, 1, 100, 500);
 
         WasmModule::init(code)?
             .reject_floating_point()?
@@ -18,8 +17,11 @@ impl WasmValidator {
             .enforce_initial_memory_limit()?
             .enforce_functions_limit()?
             .enforce_locals_limit()?
-            .inject_instruction_metering(&mocked_wasm_fee_table)?
-            .inject_stack_metering(mocked_wasm_max_stack_size)?
+            .inject_instruction_metering(
+                mocked_wasm_metering_params.instruction_cost(),
+                mocked_wasm_metering_params.grow_memory_cost(),
+            )?
+            .inject_stack_metering(mocked_wasm_metering_params.max_stack_size())?
             .to_bytes()?;
 
         Ok(())

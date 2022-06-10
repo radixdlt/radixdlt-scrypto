@@ -64,8 +64,11 @@ pub struct CallFrame<
     /// Caller's auth zone
     caller_auth_zone: Option<&'p AuthZone>,
 
-    /// Costing
+    /// There is a single cost unit counter and a single fee table per transaction execution.
+    /// When a call ocurrs, they're passed from the parent to the child, and returned
+    /// after the invocation.
     cost_unit_counter: Option<CostUnitCounter>,
+    fee_table: Option<FeeTable>,
 
     phantom: PhantomData<I>,
 }
@@ -282,6 +285,7 @@ where
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
         cost_unit_counter: CostUnitCounter,
+        fee_table: FeeTable,
     ) -> Self {
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
@@ -312,6 +316,7 @@ where
             HashMap::new(),
             None,
             cost_unit_counter,
+            fee_table,
         )
     }
 
@@ -327,6 +332,7 @@ where
         proofs: HashMap<ProofId, Proof>,
         caller_auth_zone: Option<&'p AuthZone>,
         cost_unit_counter: CostUnitCounter,
+        fee_table: FeeTable,
     ) -> Self {
         Self {
             transaction_hash,
@@ -343,14 +349,9 @@ where
             caller_auth_zone,
             component_state: None,
             cost_unit_counter: Some(cost_unit_counter),
+            fee_table: Some(fee_table),
             phantom: PhantomData,
         }
-    }
-
-    pub fn take_cost_unit_counter(&mut self) -> CostUnitCounter {
-        self.cost_unit_counter
-            .take()
-            .expect("Frame doesn't own a cost unit counter")
     }
 
     /// Checks resource leak.
@@ -504,6 +505,15 @@ where
         ),
         RuntimeError,
     > {
+        let remaining_cost_units = self.cost_unit_counter().remaining();
+        self.sys_log(
+            Level::Debug,
+            format!(
+                "Run started. Remaining cost units: {}",
+                remaining_cost_units
+            ),
+        );
+
         let output = match snode {
             SNodeState::Root => {
                 panic!("Root is not runnable")
@@ -582,6 +592,30 @@ where
 
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
+
+    pub fn take_cost_unit_counter(&mut self) -> CostUnitCounter {
+        self.cost_unit_counter
+            .take()
+            .expect("Frame doesn't own a cost unit counter")
+    }
+
+    pub fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+        self.cost_unit_counter
+            .as_mut()
+            .expect("Frame doens't own a cost unit counter")
+    }
+
+    pub fn take_fee_table(&mut self) -> FeeTable {
+        self.fee_table
+            .take()
+            .expect("Frame doesn't own a fee table")
+    }
+
+    pub fn fee_table(&mut self) -> &mut FeeTable {
+        self.fee_table
+            .as_mut()
+            .expect("Frame doens't own a fee table")
+    }
 }
 
 impl<'p, 's, 't, 'w, S, W, I> SystemApi<W, I> for CallFrame<'p, 's, 't, 'w, S, W, I>
@@ -608,14 +642,7 @@ where
         method_name: String,
         call_data: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let remining_cost_units = self.cost_unit_counter().remaining();
-        self.sys_log(
-            Level::Debug,
-            format!(
-                "Invoking: {:?}, remaining cost units: {}",
-                snode_ref, remining_cost_units
-            ),
-        );
+        self.sys_log(Level::Debug, format!("Invoking: {:?}", snode_ref));
         let function = if let Value::Enum { name, .. } = &call_data.dom {
             name.clone()
         } else {
@@ -893,6 +920,7 @@ where
 
         // start a new frame
         let cost_unit_counter = self.take_cost_unit_counter();
+        let fee_table = self.take_fee_table();
         let mut frame = CallFrame::new(
             self.transaction_hash,
             self.depth + 1,
@@ -912,6 +940,7 @@ where
             moving_proofs,
             self.auth_zone.as_ref(),
             cost_unit_counter,
+            fee_table,
         );
 
         // invoke the main function
@@ -919,8 +948,9 @@ where
         let (result, received_buckets, received_proofs, mut received_vaults) =
             frame.run(Some(snode_ref), snode, &method_name, call_data)?;
 
-        // re-gain ownership of the cost unit counter
+        // re-gain ownership of the cost unit counter and fee table
         self.cost_unit_counter = Some(frame.take_cost_unit_counter());
+        self.fee_table = Some(frame.take_fee_table());
 
         // move buckets and proofs to this process.
         self.sys_log(
@@ -1330,8 +1360,10 @@ where
     }
 
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
-        self.cost_unit_counter
-            .as_mut()
-            .expect("Frame doens't own a cost unit counter")
+        self.cost_unit_counter()
+    }
+
+    fn fee_table(&mut self) -> &mut FeeTable {
+        self.fee_table()
     }
 }

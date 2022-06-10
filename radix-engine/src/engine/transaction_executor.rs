@@ -6,6 +6,7 @@ use transaction::model::*;
 
 use crate::engine::*;
 use crate::fee::CostUnitCounter;
+use crate::fee::FeeTable;
 use crate::fee::MAX_TRANSACTION_COST;
 use crate::fee::SYSTEM_LOAN_AMOUNT;
 use crate::ledger::*;
@@ -65,8 +66,9 @@ where
         // Start state track
         let mut track = Track::new(self.substate_store, transaction_hash);
 
-        // Start costing
+        // Metering
         let cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
+        let fee_table = FeeTable::new();
 
         // Create root call frame.
         let mut root_frame = CallFrame::new_root(
@@ -76,6 +78,7 @@ where
             &mut track,
             self.wasm_engine,
             cost_unit_counter,
+            fee_table,
         );
 
         // Invoke the transaction processor

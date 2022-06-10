@@ -42,10 +42,6 @@ impl ValidatedPackage {
         &self.code
     }
 
-    pub fn instrumented_code(&self) -> Vec<u8> {
-        WasmInstrumenter::instrument_v1(&self.code)
-    }
-
     pub fn blueprint_abi(
         &self,
         blueprint_name: &str,
@@ -99,7 +95,8 @@ impl ValidatedPackage {
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        let instrumented_code = self.instrumented_code();
+        let instrumented_code =
+            WasmInstrumenter::instrument(&self.code, system_api.fee_table().wasm_metering_params());
         let mut instance = system_api.wasm_engine().instantiate(&instrumented_code);
         let mut runtime: Box<dyn WasmRuntime> =
             Box::new(RadixEngineWasmRuntime::new(actor, system_api));
