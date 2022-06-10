@@ -68,17 +68,19 @@ impl TestRunner {
         (key_pair.0, key_pair.1, account)
     }
 
-    pub fn publish_package(&mut self, name: &str) -> PackageAddress {
+    pub fn publish_package(&mut self, package: Package) -> PackageAddress {
+        let manifest = ManifestBuilder::new().publish_package(package).build();
+
+        let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.new_package_addresses[0]
+    }
+
+    pub fn extract_and_publish_package(&mut self, name: &str) -> PackageAddress {
         self.publish_package_with_code(compile_package!(format!("./tests/{}", name)))
     }
 
     pub fn publish_package_with_code(&mut self, code: Vec<u8>) -> PackageAddress {
-        let manifest = ManifestBuilder::new()
-            .publish_package(extract_package(code).expect("Failed to extract package"))
-            .build();
-
-        let receipt = self.execute_manifest(manifest, vec![]);
-        receipt.new_package_addresses[0]
+        self.publish_package(extract_package(code).expect("Failed to extract package"))
     }
 
     pub fn execute_manifest(
@@ -108,12 +110,15 @@ impl TestRunner {
         &self,
         package_address: PackageAddress,
         blueprint_name: &str,
-    ) -> abi::Blueprint {
+    ) -> abi::BlueprintAbi {
         export_abi(&self.substate_store, package_address, blueprint_name)
             .expect("Failed to export ABI")
     }
 
-    pub fn export_abi_by_component(&self, component_address: ComponentAddress) -> abi::Blueprint {
+    pub fn export_abi_by_component(
+        &self,
+        component_address: ComponentAddress,
+    ) -> abi::BlueprintAbi {
         export_abi_by_component(&self.substate_store, component_address)
             .expect("Failed to export ABI")
     }
@@ -127,7 +132,7 @@ impl TestRunner {
         account: ComponentAddress,
         signer_public_key: EcdsaPublicKey,
     ) {
-        let package = self.publish_package("resource_creator");
+        let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new()
             .create_proof_from_account(auth, account)
             .call_function(
@@ -157,7 +162,7 @@ impl TestRunner {
         let withdraw_auth = self.create_non_fungible_resource(account);
         let admin_auth = self.create_non_fungible_resource(account);
 
-        let package = self.publish_package("resource_creator");
+        let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new()
             .call_function(
                 package,
@@ -182,7 +187,7 @@ impl TestRunner {
         account: ComponentAddress,
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
-        let package = self.publish_package("resource_creator");
+        let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new()
             .call_function(
                 package,
@@ -202,7 +207,7 @@ impl TestRunner {
     ) -> (ResourceAddress, ResourceAddress) {
         let auth_resource_address = self.create_non_fungible_resource(account);
 
-        let package = self.publish_package("resource_creator");
+        let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new()
             .call_function(
                 package,
@@ -217,7 +222,7 @@ impl TestRunner {
     }
 
     pub fn create_non_fungible_resource(&mut self, account: ComponentAddress) -> ResourceAddress {
-        let package = self.publish_package("resource_creator");
+        let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new()
             .call_function(
                 package,
@@ -238,7 +243,7 @@ impl TestRunner {
         divisibility: u8,
         account: ComponentAddress,
     ) -> ResourceAddress {
-        let package = self.publish_package("resource_creator");
+        let package = self.extract_and_publish_package("resource_creator");
         let manifest = ManifestBuilder::new()
             .call_function(
                 package,

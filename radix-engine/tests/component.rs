@@ -10,7 +10,7 @@ use transaction::builder::ManifestBuilder;
 #[test]
 fn test_package() {
     let mut test_runner = TestRunner::new(true);
-    let package = test_runner.publish_package("component");
+    let package = test_runner.extract_and_publish_package("component");
 
     let manifest1 = ManifestBuilder::new()
         .call_function(package, "PackageTest", "publish", to_struct!())
@@ -23,7 +23,7 @@ fn test_package() {
 fn test_component() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.publish_package("component");
+    let package = test_runner.extract_and_publish_package("component");
 
     // Create component
     let manifest1 = ManifestBuilder::new()
@@ -55,7 +55,7 @@ fn test_component() {
 fn invalid_blueprint_name_should_cause_error() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -80,7 +80,7 @@ fn invalid_blueprint_name_should_cause_error() {
 fn reentrancy_should_not_be_possible() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("component");
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "ReentrantComponent", "new", to_struct!())
         .build();
@@ -103,7 +103,7 @@ fn reentrancy_should_not_be_possible() {
 fn missing_component_address_should_cause_error() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let _ = test_runner.publish_package("component");
+    let _ = test_runner.extract_and_publish_package("component");
     let component_address =
         ComponentAddress::from_str("0200000000000000000000000000000000000000000000deadbeef")
             .unwrap();

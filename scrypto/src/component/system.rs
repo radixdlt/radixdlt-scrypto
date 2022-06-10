@@ -48,7 +48,7 @@ impl ComponentSystem {
 
     /// Publishes a package.
     pub fn publish_package(&mut self, package: Package) -> PackageAddress {
-        let input = RadixEngineInput::InvokeSNode2(
+        let input = RadixEngineInput::InvokeSNode(
             SNodeRef::PackageStatic,
             "publish".to_string(),
             scrypto_encode(&PackagePublishInput { package }),

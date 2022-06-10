@@ -503,8 +503,8 @@ where
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'p>,
-        method_name: &str,
-        call_data: ScryptoValue,
+        fn_ident: &str,
+        input: ScryptoValue,
     ) -> Result<
         (
             ScryptoValue,
@@ -519,53 +519,50 @@ where
                 panic!("Root is not runnable")
             }
             SNodeState::SystemStatic => {
-                System::static_main(method_name, call_data, self).map_err(RuntimeError::SystemError)
+                System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
             }
             SNodeState::TransactionProcessorStatic => {
-                TransactionProcessor::static_main(call_data, self).map_err(|e| match e {
+                TransactionProcessor::static_main(fn_ident, input, self).map_err(|e| match e {
                     TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                    TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
                     TransactionProcessorError::RuntimeError(e) => e,
                 })
             }
-            SNodeState::PackageStatic => {
-                ValidatedPackage::static_main(method_name, call_data, self)
-                    .map_err(RuntimeError::PackageError)
-            }
+            SNodeState::PackageStatic => ValidatedPackage::static_main(fn_ident, input, self)
+                .map_err(RuntimeError::PackageError),
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
-                .main(method_name, call_data, self)
+                .main(fn_ident, input, self)
                 .map_err(RuntimeError::AuthZoneError),
             SNodeState::Worktop(worktop) => worktop
-                .main(method_name, call_data, self)
+                .main(fn_ident, input, self)
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, package, export_name, component_state) => {
                 self.component_state = component_state;
-                package.invoke(actor, export_name, method_name, call_data, self)
+                package.invoke(actor, export_name, fn_ident, input, self)
             }
-            SNodeState::ResourceStatic => {
-                ResourceManager::static_main(method_name, call_data, self)
-                    .map_err(RuntimeError::ResourceManagerError)
-            }
+            SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
+                .map_err(RuntimeError::ResourceManagerError),
             SNodeState::ResourceRef(resource_address, resource_manager) => {
                 let return_value = resource_manager
-                    .main(resource_address, method_name, call_data, self)
+                    .main(resource_address, fn_ident, input, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
 
                 Ok(return_value)
             }
             SNodeState::BucketRef(bucket_id, bucket) => bucket
-                .main(bucket_id, method_name, call_data, self)
+                .main(bucket_id, fn_ident, input, self)
                 .map_err(RuntimeError::BucketError),
             SNodeState::Bucket(bucket) => bucket
-                .consuming_main(method_name, call_data, self)
+                .consuming_main(fn_ident, input, self)
                 .map_err(RuntimeError::BucketError),
             SNodeState::ProofRef(_, proof) => proof
-                .main(method_name, call_data, self)
+                .main(fn_ident, input, self)
                 .map_err(RuntimeError::ProofError),
             SNodeState::Proof(proof) => proof
-                .main_consume(method_name, call_data)
+                .main_consume(fn_ident, input)
                 .map_err(RuntimeError::ProofError),
             SNodeState::VaultRef(vault_id, vault) => vault
-                .main(vault_id, method_name, call_data, self)
+                .main(vault_id, fn_ident, input, self)
                 .map_err(RuntimeError::VaultError),
         }?;
 
@@ -582,7 +579,7 @@ where
         }
 
         if let Some(_) = &mut self.auth_zone {
-            self.invoke_snode2(
+            self.invoke_snode(
                 SNodeRef::AuthZoneRef,
                 "clear".to_string(),
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
@@ -696,23 +693,10 @@ where
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,
-        call_data: ScryptoValue,
+        fn_ident: String,
+        input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.invoke_snode2(snode_ref, "".to_string(), call_data)
-    }
-
-    fn invoke_snode2(
-        &mut self,
-        snode_ref: SNodeRef,
-        method_name: String,
-        call_data: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        self.sys_log(Level::Debug, format!("{:?}", snode_ref));
-        let function = if let Value::Enum { name, .. } = &call_data.dom {
-            name.clone()
-        } else {
-            method_name.to_string()
-        };
+        self.sys_log(Level::Debug, format!("{:?} {:?}", snode_ref, &fn_ident));
 
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
@@ -802,7 +786,7 @@ where
                             .unwrap()
                             .clone();
 
-                        let (_, method_auths) = component.method_authorization(&schema, &function);
+                        let (_, method_auths) = component.method_authorization(&schema, &fn_ident);
 
                         // set up component state
                         let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
@@ -840,7 +824,7 @@ where
                     })?
                     .into();
 
-                let method_auth = resource_manager.get_auth(&method_name, &call_data).clone();
+                let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
                 Ok((
                     Borrowed(BorrowedSNodeState::Resource(
                         resource_address.clone(),
@@ -860,7 +844,7 @@ where
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
-                let method_auth = resource_manager.get_consuming_bucket_auth(&method_name);
+                let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
                 Ok((
                     Consumed(Some(ConsumedSNodeState::Bucket(bucket))),
                     vec![method_auth.clone()],
@@ -934,7 +918,7 @@ where
                     _ => panic!("Value is not a resource manager"),
                 };
 
-                let method_auth = resource_manager.get_vault_auth(&method_name);
+                let method_auth = resource_manager.get_vault_auth(&fn_ident);
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(
                         vault_id.clone(),
@@ -971,7 +955,7 @@ where
             for method_auth in method_auths {
                 method_auth.check(&auth_zones).map_err(|error| {
                     RuntimeError::AuthorizationError {
-                        function: function.clone(),
+                        function: fn_ident.clone(),
                         authorization: method_auth,
                         error,
                     }
@@ -982,9 +966,9 @@ where
         // Figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
-        self.process_call_data(&call_data)?;
-        moving_buckets.extend(self.send_buckets(&call_data.bucket_ids)?);
-        moving_proofs.extend(self.send_proofs(&call_data.proof_ids, MoveMethod::AsArgument)?);
+        self.process_call_data(&input)?;
+        moving_buckets.extend(self.send_buckets(&input.bucket_ids)?);
+        moving_proofs.extend(self.send_proofs(&input.proof_ids, MoveMethod::AsArgument)?);
         self.sys_log(
             Level::Debug,
             format!("Sending buckets: {:?}", moving_buckets),
@@ -1015,7 +999,7 @@ where
         // invoke the main function
         let snode = loaded_snode.to_snode_state();
         let (result, received_buckets, received_proofs, mut received_vaults) =
-            frame.run(Some(snode_ref), snode, &method_name, call_data)?;
+            frame.run(Some(snode_ref), snode, &fn_ident, input)?;
 
         // move buckets and proofs to this process.
         self.sys_log(

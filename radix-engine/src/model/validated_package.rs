@@ -3,7 +3,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::abi::{Function, Method};
+use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActorInfo;
 use scrypto::prelude::PackagePublishInput;
@@ -17,7 +17,7 @@ use crate::wasm::*;
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct ValidatedPackage {
     code: Vec<u8>,
-    blueprint_abis: HashMap<String, (Type, Vec<Function>, Vec<Method>)>,
+    blueprint_abis: HashMap<String, BlueprintAbi>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,10 +52,7 @@ impl ValidatedPackage {
         &self.code
     }
 
-    pub fn blueprint_abi(
-        &self,
-        blueprint_name: &str,
-    ) -> Option<&(Type, Vec<Function>, Vec<Method>)> {
+    pub fn blueprint_abi(&self, blueprint_name: &str) -> Option<&BlueprintAbi> {
         self.blueprint_abis.get(blueprint_name)
     }
 
@@ -65,7 +62,7 @@ impl ValidatedPackage {
 
     pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
         self.blueprint_abi(blueprint_name)
-            .map(|v| &v.0)
+            .map(|v| &v.structure)
             .ok_or(PackageError::BlueprintNotFound)
     }
 
@@ -106,7 +103,9 @@ impl ValidatedPackage {
         I: WasmInstance,
     {
         let mut instance = system_api.wasm_engine().instantiate(self.code());
-        let runtime = RadixEngineWasmRuntime::new(actor, system_api, CALL_FUNCTION_TBD_LIMIT);
+        let mut cost_unit_counter =
+            CostUnitCounter::new(CALL_FUNCTION_COST_UNIT_LIMIT, CALL_FUNCTION_COST_UNIT_LIMIT);
+        let runtime = RadixEngineWasmRuntime::new(actor, system_api, &mut cost_unit_counter);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
         instance
             .invoke_export(&export_name, method_name, &arg, &mut runtime_boxed)

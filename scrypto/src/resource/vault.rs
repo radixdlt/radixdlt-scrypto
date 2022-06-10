@@ -61,7 +61,7 @@ pub struct Vault(pub VaultId);
 impl Vault {
     /// Creates an empty vault to permanently hold resource of the given definition.
     pub fn new(resource_address: ResourceAddress) -> Self {
-        let input = RadixEngineInput::InvokeSNode2(
+        let input = RadixEngineInput::InvokeSNode(
             SNodeRef::ResourceRef(resource_address),
             "create_vault".to_string(),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
@@ -78,7 +78,7 @@ impl Vault {
     }
 
     fn take_internal(&mut self, amount: Decimal) -> Bucket {
-        let input = RadixEngineInput::InvokeSNode2(
+        let input = RadixEngineInput::InvokeSNode(
             SNodeRef::VaultRef(self.0),
             "take".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),

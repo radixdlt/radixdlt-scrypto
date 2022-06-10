@@ -1,20 +1,21 @@
 mod call_frame;
-mod errors;
 mod precommitted_kv_store;
-mod runtime;
+mod cost_unit_counter;
+mod errors;
 mod substate_receipt;
 mod system_api;
 mod track;
 mod transaction_executor;
 mod transaction_receipt;
+mod wasm_runtime;
 
 pub use call_frame::{
     BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LoadedSNodeState,
     MoveMethod, SNodeState, StaticSNodeState,
 };
-pub use errors::*;
 pub use precommitted_kv_store::*;
-pub use runtime::RadixEngineWasmRuntime;
+pub use cost_unit_counter::*;
+pub use errors::*;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
 pub use system_api::SystemApi;
 pub use track::{
@@ -23,3 +24,4 @@ pub use track::{
 };
 pub use transaction_executor::TransactionExecutor;
 pub use transaction_receipt::*;
+pub use wasm_runtime::RadixEngineWasmRuntime;

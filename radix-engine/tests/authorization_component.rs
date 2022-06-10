@@ -18,7 +18,7 @@ fn cannot_make_cross_component_call_without_authorization() {
     let authorization =
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
-    let package_address = test_runner.publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("component");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
@@ -69,7 +69,7 @@ fn can_make_cross_component_call_with_authorization() {
     let authorization =
         AccessRules::new().method("get_component_state", rule!(require(auth_address.clone())));
 
-    let package_address = test_runner.publish_package("component");
+    let package_address = test_runner.extract_and_publish_package("component");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
