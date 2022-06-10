@@ -1,4 +1,5 @@
 use sbor::rust::marker::PhantomData;
+use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::buffer::*;
 use scrypto::values::ScryptoValue;
@@ -85,7 +86,10 @@ where
         // TODO: may consider moving transaction parsing to `TransactionProcessor` as well.
         let result = root_frame.invoke_snode(
             scrypto::core::SNodeRef::TransactionProcessor,
-            ScryptoValue::from_typed(&TransactionProcessorFunction::Run(instructions.clone())),
+            "run".to_string(),
+            ScryptoValue::from_typed(&TransactionProcessorRunInput {
+                instructions: instructions.clone(),
+            }),
         );
         let cost_units_consumed = root_frame.cost_unit_counter().consumed();
 

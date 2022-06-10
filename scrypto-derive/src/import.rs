@@ -32,11 +32,11 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
 
     let mut structs: Vec<Item> = vec![];
 
-    let mut functions = Vec::<ItemFn>::new();
-    for function in &blueprint.functions {
+    let mut fns = Vec::<ItemFn>::new();
+    for function in &blueprint.abi.fns {
         trace!("Processing function: {:?}", function);
 
-        let func_name = &function.name;
+        let func_name = &function.ident;
         let func_indent = format_ident!("{}", func_name);
         let mut func_types = Vec::<Type>::new();
         let mut func_args = Vec::<Ident>::new();
@@ -60,58 +60,30 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         let (func_output, new_structs) = get_native_type(&function.output)?;
         structs.extend(new_structs);
 
-        functions.push(parse_quote! {
-            pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
-                let rtn = ::scrypto::core::Runtime::call_function(
-                    ::scrypto::component::PackageAddress::from_str(#package_address).unwrap(),
-                    #blueprint_name,
-                    #func_name,
-                    ::scrypto::args!(#(#func_args),*)
-                );
-                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
-            }
-        });
-    }
-
-    let mut methods = Vec::<ItemFn>::new();
-    for method in &blueprint.methods {
-        trace!("Processing method: {:?}", method);
-
-        let method_name = &method.name;
-        let method_indent = format_ident!("{}", method_name);
-        let mut method_types = Vec::<Type>::new();
-        let mut method_args = Vec::<Ident>::new();
-
-        match &method.input {
-            sbor::Type::Struct {
-                name: _,
-                fields: sbor::describe::Fields::Named { named },
-            } => {
-                for (i, (_, input)) in named.iter().enumerate() {
-                    let ident = format_ident!("arg{}", i);
-                    let (new_type, new_structs) = get_native_type(input)?;
-                    method_args.push(parse_quote! { #ident });
-                    method_types.push(parse_quote! { #new_type });
-                    structs.extend(new_structs);
+        if let None = function.mutability {
+            fns.push(parse_quote! {
+                pub fn #func_indent(#(#func_args: #func_types),*) -> #func_output {
+                    let rtn = ::scrypto::core::Runtime::call_function(
+                        ::scrypto::component::PackageAddress::from_str(#package_address).unwrap(),
+                        #blueprint_name,
+                        #func_name,
+                        ::scrypto::args!(#(#func_args),*)
+                    );
+                    ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
                 }
-            }
-            _ => panic!("Cannot construct abi"),
+            });
+        } else {
+            fns.push(parse_quote! {
+                pub fn #func_indent(&self #(, #func_args: #func_types)*) -> #func_output {
+                    let rtn = ::scrypto::core::Runtime::call_method(
+                        self.component_address,
+                        #func_name,
+                        ::scrypto::args!(#(#func_args),*)
+                    );
+                    ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
+                }
+            });
         }
-
-        let (method_output, new_structs) = get_native_type(&method.output)?;
-        structs.extend(new_structs);
-
-        let m = parse_quote! {
-            pub fn #method_indent(&self #(, #method_args: #method_types)*) -> #method_output {
-                let rtn = ::scrypto::core::Runtime::call_method(
-                    self.component_address,
-                    #method_name,
-                    ::scrypto::args!(#(#method_args),*)
-                );
-                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
-            }
-        };
-        methods.push(m);
     }
 
     let output = quote! {
@@ -123,9 +95,7 @@ pub fn handle_import(input: TokenStream) -> Result<TokenStream> {
         }
 
         impl #ident {
-            #(#functions)*
-
-            #(#methods)*
+            #(#fns)*
         }
 
         impl From<::scrypto::component::ComponentAddress> for #ident {
@@ -395,43 +365,51 @@ mod tests {
                 {
                     "package_address": "056967d3d49213394892980af59be76e9b3e7cc4cb78237460d0c7",
                     "blueprint_name": "Simple",
-                    "functions": [
-                        {
-                            "name": "new",
-                            "input": {
-                                "type": "Struct",
-                                "name": "",
-                                "fields": {
-                                    "type": "Named",
-                                    "named": []
+                    "abi": {
+                        "structure": {
+                            "type": "Struct",
+                            "name": "Simple",
+                            "fields": {
+                                "type": "Named",
+                                "named": []
+                            }
+                        },
+                        "fns": [
+                            {
+                                "ident": "new",
+                                "input": {
+                                    "type": "Struct",
+                                    "name": "",
+                                    "fields": {
+                                        "type": "Named",
+                                        "named": []
+                                    }
+                                },
+                                "output": {
+                                    "type": "Custom",
+                                    "type_id": 129,
+                                    "generics": []
                                 }
                             },
-                            "output": {
-                                "type": "Custom",
-                                "type_id": 129,
-                                "generics": []
-                            }
-                        }
-                    ],
-                    "methods": [
-                        {
-                            "name": "free_token",
-                            "mutability": "Mutable",
-                            "input": {
-                                "type": "Struct",
-                                "name": "",
-                                "fields": {
-                                    "type": "Named",
-                                    "named": []
+                            {
+                                "ident": "free_token",
+                                "mutability": "Mutable",
+                                "input": {
+                                    "type": "Struct",
+                                    "name": "",
+                                    "fields": {
+                                        "type": "Named",
+                                        "named": []
+                                    }
+                                },
+                                "output": {
+                                    "type": "Custom",
+                                    "type_id": 177,
+                                    "generics": []
                                 }
-                            },
-                            "output": {
-                                "type": "Custom",
-                                "type_id": 177,
-                                "generics": []
                             }
-                        }
-                    ]
+                        ]
+                    }
                 }
                 "#
             "###,

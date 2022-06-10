@@ -202,7 +202,7 @@ pub fn get_signing_keys(signing_keys: &Option<String>) -> Result<Vec<EcdsaPrivat
 pub fn export_abi(
     package_address: PackageAddress,
     blueprint_name: &str,
-) -> Result<abi::Blueprint, Error> {
+) -> Result<abi::BlueprintAbi, Error> {
     let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
     radix_engine::model::export_abi(&mut substate_store, package_address, blueprint_name)
         .map_err(Error::AbiExportError)
@@ -210,7 +210,7 @@ pub fn export_abi(
 
 pub fn export_abi_by_component(
     component_address: ComponentAddress,
-) -> Result<abi::Blueprint, Error> {
+) -> Result<abi::BlueprintAbi, Error> {
     let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
     radix_engine::model::export_abi_by_component(&mut substate_store, component_address)
         .map_err(Error::AbiExportError)

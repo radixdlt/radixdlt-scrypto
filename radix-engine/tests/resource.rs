@@ -13,7 +13,7 @@ fn test_resource_manager() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package("resource");
+    let package_address = test_runner.extract_and_publish_package("resource");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -44,7 +44,7 @@ fn mint_with_bad_granularity_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package("resource");
+    let package_address = test_runner.extract_and_publish_package("resource");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -74,7 +74,7 @@ fn mint_too_much_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package("resource");
+    let package_address = test_runner.extract_and_publish_package("resource");
 
     // Act
     let manifest = ManifestBuilder::new()

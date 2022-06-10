@@ -30,7 +30,7 @@ fn test_dynamic_auth(
         .map(|index| key_and_addresses.get(*index).unwrap().0)
         .collect();
 
-    let package = test_runner.publish_package("component");
+    let package = test_runner.extract_and_publish_package("component");
     let manifest1 = ManifestBuilder::new()
         .call_function(
             package,
@@ -93,7 +93,7 @@ fn test_dynamic_authlist(
     let authorization = AccessRules::new().method("get_secret", auth_rule);
 
     // Arrange
-    let package = test_runner.publish_package("component");
+    let package = test_runner.extract_and_publish_package("component");
     let manifest1 = ManifestBuilder::new()
         .call_function(
             package,
@@ -211,7 +211,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let mut test_runner = TestRunner::new(true);
     let (pk, _, _) = test_runner.new_account();
     let (other_public_key, _, _) = test_runner.new_account();
-    let package = test_runner.publish_package("component");
+    let package = test_runner.extract_and_publish_package("component");
     let non_fungible_address =
         NonFungibleAddress::new(ECDSA_TOKEN, NonFungibleId::from_bytes(pk.to_vec()));
     let other_non_fungible_address = NonFungibleAddress::new(
@@ -243,7 +243,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, _) = test_runner.new_account();
     let (other_public_key, _, _) = test_runner.new_account();
-    let package = test_runner.publish_package("component");
+    let package = test_runner.extract_and_publish_package("component");
     let non_fungible_address = NonFungibleAddress::from_public_key(&public_key);
     let other_non_fungible_address = NonFungibleAddress::from_public_key(&other_public_key);
     let players = [non_fungible_address, other_non_fungible_address];

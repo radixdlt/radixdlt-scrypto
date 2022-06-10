@@ -13,7 +13,7 @@ use transaction::builder::ManifestBuilder;
 fn dangling_key_value_store_should_fail() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -38,7 +38,7 @@ fn dangling_key_value_store_should_fail() {
 fn can_insert_in_child_nodes() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -54,7 +54,7 @@ fn can_insert_in_child_nodes() {
 fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -75,7 +75,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
 fn cyclic_map_fails_execution() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -98,7 +98,7 @@ fn cyclic_map_fails_execution() {
 fn self_cyclic_map_fails_execution() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -126,7 +126,7 @@ fn self_cyclic_map_fails_execution() {
 fn cannot_remove_key_value_stores() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
@@ -159,7 +159,7 @@ fn cannot_remove_key_value_stores() {
 fn cannot_overwrite_key_value_stores() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
@@ -192,7 +192,7 @@ fn cannot_overwrite_key_value_stores() {
 fn create_key_value_store_and_get() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -213,7 +213,7 @@ fn create_key_value_store_and_get() {
 fn create_key_value_store_and_put() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -234,7 +234,7 @@ fn create_key_value_store_and_put() {
 fn can_reference_in_memory_vault() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -255,7 +255,7 @@ fn can_reference_in_memory_vault() {
 fn can_reference_deep_in_memory_value() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -276,7 +276,7 @@ fn can_reference_deep_in_memory_value() {
 fn can_reference_deep_in_memory_vault() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
-    let package_address = test_runner.publish_package("kv_store");
+    let package_address = test_runner.extract_and_publish_package("kv_store");
 
     // Act
     let manifest = ManifestBuilder::new()

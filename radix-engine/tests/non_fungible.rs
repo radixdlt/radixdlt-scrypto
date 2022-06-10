@@ -11,7 +11,7 @@ fn create_non_fungible_mutable() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.publish_package("non_fungible");
+    let package = test_runner.extract_and_publish_package("non_fungible");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -34,7 +34,7 @@ fn can_burn_non_fungible() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package = test_runner.publish_package("non_fungible");
+    let package = test_runner.extract_and_publish_package("non_fungible");
     let manifest = ManifestBuilder::new()
         .call_function(
             package,
@@ -74,7 +74,7 @@ fn can_burn_non_fungible() {
 fn test_non_fungible() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package("non_fungible");
+    let package_address = test_runner.extract_and_publish_package("non_fungible");
 
     let manifest = ManifestBuilder::new()
         .call_function(
@@ -129,7 +129,7 @@ fn test_non_fungible() {
 fn test_singleton_non_fungible() {
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.publish_package("non_fungible");
+    let package_address = test_runner.extract_and_publish_package("non_fungible");
 
     let manifest = ManifestBuilder::new()
         .call_function(

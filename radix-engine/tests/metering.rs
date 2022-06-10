@@ -3,9 +3,24 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::wasm::InvokeError;
+use sbor::Type;
+use scrypto::abi::BlueprintAbi;
+use scrypto::prelude::{HashMap, Package};
 use scrypto::to_struct;
 use test_runner::wat2wasm;
 use transaction::builder::ManifestBuilder;
+
+fn mocked_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
+    let mut blueprint_abis = HashMap::new();
+    blueprint_abis.insert(
+        blueprint_name,
+        BlueprintAbi {
+            structure: Type::Unit,
+            fns: Vec::new(),
+        },
+    );
+    blueprint_abis
+}
 
 #[test]
 fn test_loop() {
@@ -14,7 +29,11 @@ fn test_loop() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
-    let package_address = test_runner.publish_package_with_code(code);
+    let package = Package {
+        code,
+        blueprints: mocked_abi("Test".to_string()),
+    };
+    let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
@@ -31,7 +50,11 @@ fn test_loop_out_of_cost_unit() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
-    let package_address = test_runner.publish_package_with_code(code);
+    let package = Package {
+        code,
+        blueprints: mocked_abi("Test".to_string()),
+    };
+    let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
@@ -49,7 +72,11 @@ fn test_recursion() {
     // Act
     // In this test case, each call frame costs 4 stack units
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
-    let package_address = test_runner.publish_package_with_code(code);
+    let package = Package {
+        code,
+        blueprints: mocked_abi("Test".to_string()),
+    };
+    let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
@@ -66,7 +93,11 @@ fn test_recursion_stack_overflow() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
-    let package_address = test_runner.publish_package_with_code(code);
+    let package = Package {
+        code,
+        blueprints: mocked_abi("Test".to_string()),
+    };
+    let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
@@ -83,7 +114,11 @@ fn test_grow_memory() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
-    let package_address = test_runner.publish_package_with_code(code);
+    let package = Package {
+        code,
+        blueprints: mocked_abi("Test".to_string()),
+    };
+    let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
@@ -100,7 +135,11 @@ fn test_grow_memory_out_of_cost_unit() {
 
     // Act
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
-    let package_address = test_runner.publish_package_with_code(code);
+    let package = Package {
+        code,
+        blueprints: mocked_abi("Test".to_string()),
+    };
+    let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
