@@ -5,7 +5,7 @@ pub const COST_ENGINE_CALL: u32 = 10_000;
 pub const WASM_METERING_V1: u8 = 1;
 pub const WASM_INSTRUCTION: u32 = 1;
 pub const WASM_GROW_MEMORY: u32 = 100;
-pub const WASM_MAX_STACK_SIZE: u32 = 500;
+pub const WASM_MAX_STACK_SIZE: u32 = 512;
 
 pub struct FeeTable {
     engine_call_cost: u32,

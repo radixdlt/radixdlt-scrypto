@@ -92,8 +92,8 @@ impl ValidatedPackage {
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        let instrumented_code =
-            WasmInstrumenter::instrument(&self.code, system_api.fee_table().wasm_metering_params());
+        let wasm_metering_params = system_api.fee_table().wasm_metering_params();
+        let instrumented_code = WasmInstrumenter::instrument(&self.code, &wasm_metering_params);
         let mut instance = system_api.wasm_engine().instantiate(&instrumented_code);
         let mut runtime: Box<dyn WasmRuntime> =
             Box::new(RadixEngineWasmRuntime::new(actor, system_api));
