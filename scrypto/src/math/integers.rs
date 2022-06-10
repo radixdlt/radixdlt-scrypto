@@ -674,7 +674,8 @@ macro_rules! shift_impl_all_large {
             )*
     };
 }
-macro_rules shift_impl_all_small {
+
+macro_rules! shift_impl_all_small {
     ($($t:ty),*) => {
         $(
             sh_impl!{
