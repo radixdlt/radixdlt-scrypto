@@ -24,26 +24,26 @@ pub extern "C" fn ZeroReturnSize_main(_input: *mut u8, _input2: *mut u8) -> *mut
 
 #[no_mangle]
 pub extern "C" fn LargeReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
-    let value = Type::Struct {
+    let structure = Type::Struct {
         name: "LargeReturnSize".to_string(),
         fields: Fields::Unit,
     };
     let abi = BlueprintAbi {
-        value,
-        functions: vec![],
+        structure,
+        fns: vec![],
     };
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
 }
 
 #[no_mangle]
 pub extern "C" fn MaxReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
-    let value = Type::Struct {
+    let structure = Type::Struct {
         name: "MaxReturnSize".to_string(),
         fields: Fields::Unit,
     };
     let abi = BlueprintAbi {
-        value,
-        functions: vec![],
+        structure,
+        fns: vec![],
     };
 
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
@@ -51,13 +51,13 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
 
 #[no_mangle]
 pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
-    let value = Type::Struct {
+    let structure = Type::Struct {
         name: "ZeroReturnSize".to_string(),
         fields: Fields::Unit,
     };
     let abi = BlueprintAbi {
-        value,
-        functions: vec![],
+        structure,
+        fns: vec![],
     };
 
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)

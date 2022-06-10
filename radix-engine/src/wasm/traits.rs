@@ -1,13 +1,13 @@
 use sbor::rust::boxed::Box;
 use scrypto::values::ScryptoValue;
 
-use crate::wasm::errors::*;
+use crate::{engine::CostUnitCounter, wasm::errors::*};
 
 /// Represents the runtime that can be invoked by Scrypto modules.
 pub trait WasmRuntime {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError>;
 
-    fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError>;
+    fn consume_cost_unit(&mut self, n: u32) -> Result<(), InvokeError>;
 }
 
 /// Represents an instantiated, invokable Scrypto module.
@@ -36,15 +36,13 @@ pub trait WasmEngine<I: WasmInstance> {
 
 /// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
 pub struct NopWasmRuntime {
-    tbd_limit: u32,
-    tbd_balance: u32,
+    cost_unit_counter: CostUnitCounter,
 }
 
 impl NopWasmRuntime {
-    pub fn new(tbd_limit: u32) -> Self {
+    pub fn new(cost_unit_limit: u32) -> Self {
         Self {
-            tbd_limit,
-            tbd_balance: tbd_limit,
+            cost_unit_counter: CostUnitCounter::new(cost_unit_limit, cost_unit_limit),
         }
     }
 }
@@ -54,17 +52,9 @@ impl WasmRuntime for NopWasmRuntime {
         Ok(ScryptoValue::unit())
     }
 
-    fn use_tbd(&mut self, tbd: u32) -> Result<(), InvokeError> {
-        if self.tbd_balance >= tbd {
-            self.tbd_balance -= tbd;
-            Ok(())
-        } else {
-            self.tbd_balance = 0;
-            Err(InvokeError::OutOfTbd {
-                limit: self.tbd_limit,
-                balance: self.tbd_balance,
-                required: tbd,
-            })
-        }
+    fn consume_cost_unit(&mut self, n: u32) -> Result<(), InvokeError> {
+        self.cost_unit_counter
+            .consume(n)
+            .map_err(InvokeError::MeteringError)
     }
 }

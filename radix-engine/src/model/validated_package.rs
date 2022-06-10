@@ -1,4 +1,3 @@
-use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
@@ -73,7 +72,7 @@ impl ValidatedPackage {
                 let package =
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
                 let package_address = system_api.create_package(package);
-                Ok(ScryptoValue::from_value(&package_address))
+                Ok(ScryptoValue::from_typed(&package_address))
             }
             _ => Err(MethodNotFound(method_name.to_string())),
         }
@@ -94,7 +93,9 @@ impl ValidatedPackage {
         I: WasmInstance,
     {
         let mut instance = system_api.wasm_engine().instantiate(self.code());
-        let runtime = RadixEngineWasmRuntime::new(actor, blueprint_abi, system_api, CALL_FUNCTION_TBD_LIMIT);
+        let mut cost_unit_counter =
+            CostUnitCounter::new(CALL_FUNCTION_COST_UNIT_LIMIT, CALL_FUNCTION_COST_UNIT_LIMIT);
+        let runtime = RadixEngineWasmRuntime::new(actor, blueprint_abi, system_api, &mut cost_unit_counter);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
         instance
             .invoke_export(&export_name, method_name, &arg, &mut runtime_boxed)
