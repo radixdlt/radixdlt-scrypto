@@ -356,7 +356,6 @@ where
 
     /// Checks resource leak.
     fn check_resource(&mut self) -> Result<(), RuntimeError> {
-        self.sys_log(Level::Info, "Resource check started".to_string());
         let mut success = true;
         let mut resource = ResourceFailure::Unknown;
 
@@ -385,7 +384,6 @@ where
             }
         }
 
-        self.sys_log(Level::Info, "Resource check ended".to_string());
         if success {
             Ok(())
         } else {
@@ -905,6 +903,7 @@ where
                 })?;
             }
         }
+        self.sys_log(Level::Debug, format!("Auth check success!"));
 
         // Figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
@@ -912,11 +911,12 @@ where
         self.process_call_data(&call_data)?;
         moving_buckets.extend(self.send_buckets(&call_data.bucket_ids)?);
         moving_proofs.extend(self.send_proofs(&call_data.proof_ids, MoveMethod::AsArgument)?);
-        self.sys_log(
-            Level::Debug,
-            format!("Sending buckets: {:?}", moving_buckets),
-        );
-        self.sys_log(Level::Debug, format!("Sending proofs: {:?}", moving_proofs));
+        for bucket in &moving_buckets {
+            self.sys_log(Level::Debug, format!("Sending bucket: {:?}", bucket));
+        }
+        for proof in &moving_proofs {
+            self.sys_log(Level::Debug, format!("Sending proof: {:?}", proof));
+        }
 
         // start a new frame
         let cost_unit_counter = self.take_cost_unit_counter();
@@ -945,22 +945,22 @@ where
 
         // invoke the main function
         let snode = loaded_snode.to_snode_state();
-        let (result, received_buckets, received_proofs, mut received_vaults) =
-            frame.run(Some(snode_ref), snode, &method_name, call_data)?;
+        let run_result = frame.run(Some(snode_ref), snode, &method_name, call_data);
 
         // re-gain ownership of the cost unit counter and fee table
         self.cost_unit_counter = Some(frame.take_cost_unit_counter());
         self.fee_table = Some(frame.take_fee_table());
 
+        // unwrap and contine
+        let (result, received_buckets, received_proofs, mut received_vaults) = run_result?;
+
         // move buckets and proofs to this process.
-        self.sys_log(
-            Level::Debug,
-            format!("Received buckets: {:?}", received_buckets),
-        );
-        self.sys_log(
-            Level::Debug,
-            format!("Received proofs: {:?}", received_proofs),
-        );
+        for bucket in &received_buckets {
+            self.sys_log(Level::Debug, format!("Received bucket: {:?}", bucket));
+        }
+        for proof in &received_proofs {
+            self.sys_log(Level::Debug, format!("Received proof: {:?}", proof));
+        }
         self.buckets.extend(received_buckets);
         self.proofs.extend(received_proofs);
         for (vault_id, vault) in received_vaults.drain() {
@@ -975,6 +975,7 @@ where
             borrowed.return_borrowed_state(self);
         }
 
+        self.sys_log(Level::Debug, format!("Done!"));
         Ok(result)
     }
 
