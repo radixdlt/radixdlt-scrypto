@@ -492,8 +492,8 @@ macro_rules! sh {
 // large: U256, U384, U512, I256, I384, I512
 // small: U8, U16, U32, U64, U128, I8, I16, I32, I64, I128
 // builtin: u8, u16, u32, u64, u128, i8, i16, i32, i64, i128
-macro_rules! shift_impl_all {
-    (large: $($t:ty),*) => {
+macro_rules! shift_impl_all_large {
+    ($($t:ty),*) => {
         $(
             sh_impl!{
                 to_sh: $t,
@@ -673,7 +673,9 @@ macro_rules! shift_impl_all {
             }
             )*
     };
-    (small: $($t:ty),*) => {
+}
+macro_rules shift_impl_all_small {
+    ($($t:ty),*) => {
         $(
             sh_impl!{
                 to_sh: $t,
@@ -887,23 +889,25 @@ macro_rules! shift_impl_all {
     };
 }
 
-shift_impl_all! {large: I256, I384, I512, U256, U384, U512}
+shift_impl_all_large! {I256, I384, I512, U256, U384, U512}
 
-shift_impl_all! {small: I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
+shift_impl_all_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
 
 macro_rules! other_expr {
     ($t:ty, $o:ty, $other:ident) => {
-        if <$t>::BITS >= 256 {
-            if <$o>::BITS >= 256 {
-                &BigInt::from_signed_bytes_le(&$other.0)
+        paste! {
+            if <$t>::BITS >= 256 {
+                if <$o>::BITS >= 256 {
+                    &BigInt::from_signed_bytes_le(&$other.0)
+                } else {
+                    &BigInt::from($other.0)
+                }
             } else {
-                &BigInt::from($other.0)
-            }
-        } else {
-            if <$o>::BITS >= 256 {
-                [<$t:lower>]::try_from(BigInt::from_signed_bytes_le(&$other.0)).unwrap()
-            } else {
-                [<$t:lower>]::try_from($other.0).unwrap()
+                if <$o>::BITS >= 256 {
+                    BigInt::from_signed_bytes_le(&$other.0).try_into().unwrap()
+                } else {
+                    $other.0.try_into().unwrap()
+                }
             }
         }
     }
@@ -920,11 +924,10 @@ macro_rules! self_expr {
 }
 
 macro_rules! checked_impl_large {
-    ($($t:ty, $o:ty, $out:ty),*) => {
+    ($(($t:ty, $o:ty, $out:ty)),*) => {
         paste! {
             $(
                 impl Add<$o> for $t {
-                    // FIXME: set output type the one that has the larger size
                     type Output = $out;
 
                     #[inline]
@@ -1074,11 +1077,10 @@ macro_rules! checked_impl_large {
 }
 
 macro_rules! checked_impl_small {
-    ($($t:ty, $o:ty, $out:ty),*) => {
+    ($(($t:ty, $o:ty, $out:ty)),*) => {
         paste! {
             $(
                 impl Add<$o> for $t {
-                    // FIXME: set output type the one that has the larger size
                     type Output = $out;
 
                     #[inline]
@@ -1281,9 +1283,8 @@ checked_impl_large! {
     (I512, U8, I512), (I512, U16, I512), (I512, U32, I512), (I512, U64, I512), 
 (I512, U128, I512), (I512, U256, I256), (I512, U384, I384), (I512, U512, I512), 
 (I512, I8, I512), (I512, I16, I512), (I512, I32, I512), (I512, I64, I512), 
-(I512, I128, I512), (I512, I256, I256), (I512, I384, I384), (I512, I512, I512)
+(I512, I128, I512), (I512, I256, I256), (I512, I384, I384), (I512, I512, I512) }
 
-}
 checked_impl_small! { 
     //(self, other, output)
     (U8, u8, U8), (U8, u16, U16), (U8, u32, U32), (U8, u64, U64), (U8, u128, U128), 
@@ -1361,8 +1362,7 @@ checked_impl_small! {
     (I128, U8, I128), (I128, U16, I128), (I128, U32, I128), (I128, U64, I128), 
 (I128, U128, I128), (I128, U256, I256), (I128, U384, I384), (I128, U512, I512), 
 (I128, I8, I128), (I128, I16, I128), (I128, I32, I128), (I128, I64, I128), 
-(I128, I128, I128), (I128, I256, I256), (I128, I384, I384), (I128, I512, I512)
-}
+(I128, I128, I128), (I128, I256, I256), (I128, I384, I384), (I128, I512, I512) }
 
 macro_rules! checked_impl_not_large {
     ($($t:ident),*) => {
