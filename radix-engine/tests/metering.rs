@@ -5,7 +5,7 @@ use crate::test_runner::TestRunner;
 use radix_engine::wasm::InvokeError;
 use sbor::Type;
 use scrypto::abi::BlueprintAbi;
-use scrypto::prelude::{HashMap, Package};
+use scrypto::prelude::{HashMap, Package, RADIX_TOKEN};
 use scrypto::to_struct;
 use test_runner::wat2wasm;
 use transaction::builder::ManifestBuilder;
@@ -147,4 +147,22 @@ fn test_grow_memory_out_of_cost_unit() {
 
     // Assert
     assert_invoke_error!(receipt.result, InvokeError::CostingError { .. })
+}
+
+#[test]
+fn test_total_cost_units_consumed() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+
+    // Act
+    let (pk1, _, account1) = test_runner.new_account();
+    let (_, _, account2) = test_runner.new_account();
+    let manifest = ManifestBuilder::new()
+        .withdraw_from_account(RADIX_TOKEN, account1)
+        .call_method_with_all_resources(account2, "deposit_batch")
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![pk1]);
+
+    // Assert
+    assert_eq!(237268, receipt.cost_units_consumed);
 }
