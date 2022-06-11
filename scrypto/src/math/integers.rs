@@ -1072,6 +1072,75 @@ macro_rules! checked_impl_large {
                     }
                 }
                 forward_ref_op_assign! { impl BitAndAssign, bitand_assign for $t, $o }
+                
+                impl $t {
+                    /// Raises self to the power of `exp`, using exponentiation by squaring.
+                    ///
+                    #[inline]
+                    #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                    pub fn pow(self, exp: $o) -> $t {
+                        BigInt::from_signed_bytes_le(&self.0).pow(exp).try_into().unwrap()
+                    }
+
+                    /// Shifts the bits to the left by a specified amount, `n`,
+                    /// wrapping the truncated bits to the end of the resulting
+                    /// integer.
+                    ///
+                    /// Please note this isn't the same operation as the `<<` shifting
+                    /// operator! This method can not overflow as opposed to '<<'.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
+                    ///
+                    /// let n: $t = $t(0x0123456789ABCDEF);
+                    /// let m: $t = $t(-0x76543210FEDCBA99);
+                    ///
+                    /// assert_eq!(n.rotate_left(32), m);
+                    /// ```
+                    #[inline]
+                    #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                    pub fn rotate_left(self, n: $o) -> $t {
+                        let rot: u32 = n % Self::BITS;
+                        let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
+                        let big_rot = big.clone().shl(rot);
+                        big_rot.bitor(big.shr(Self::BITS - rot)).try_into().unwrap()
+                    }
+
+                    /// Shifts the bits to the right by a specified amount, `n`,
+                    /// wrapping the truncated bits to the beginning of the resulting
+                    /// integer.
+                    ///
+                    /// Please note this isn't the same operation as the `>>` shifting
+                    /// operator! This method can not overflow as opposed to '>>'.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
+                    ///
+                    /// let n: $t = $t(0x0123456789ABCDEF);
+                    /// let m: $t = $t(-0xFEDCBA987654322);
+                    ///
+                    /// assert_eq!(n.rotate_right(4), m);
+                    /// ```
+                    #[inline]
+                    #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                    pub fn rotate_right(self, n: $o) -> $t {
+                        let rot: u32 = n % Self::BITS;
+                        let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
+                        let big_rot = big.clone().shr(rot);
+                        big_rot.bitor(big.shl(Self::BITS - rot)).try_into().unwrap()
+                    }
+                }
                 )*
         }
     };
@@ -1225,6 +1294,70 @@ macro_rules! checked_impl_small {
                     }
                 }
                 forward_ref_op_assign! { impl BitAndAssign, bitand_assign for $t, $o }
+
+                impl $t {
+                    /// Raises self to the power of `exp`, using exponentiation by squaring.
+                    ///
+                    #[inline]
+                    #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                    pub fn pow(self, exp: $o) -> $t {
+                        $t(self.0.checked_pow(exp.try_into().unwrap()).unwrap())
+                    }
+
+                    /// Shifts the bits to the left by a specified amount, `n`,
+                    /// wrapping the truncated bits to the end of the resulting
+                    /// integer. 
+                    ///
+                    /// Please note this isn't the same operation as the `<<` shifting
+                    /// operator! This method can not overflow as opposed to '<<'.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
+                    ///
+                    /// let n: $t = $t(0x0123456789ABCDEF);
+                    /// let m: $t = $t(-0x76543210FEDCBA99);
+                    ///
+                    /// assert_eq!(n.rotate_left(32), m);
+                    /// ```
+                    #[inline]
+                    #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                    pub const fn rotate_left(self, n: $o) -> $t {
+                        $t(self.0.rotate_left(n))
+                    }
+
+                    /// Shifts the bits to the right by a specified amount, `n`,
+                    /// wrapping the truncated bits to the beginning of the resulting
+                    /// integer.
+                    ///
+                    /// Please note this isn't the same operation as the `>>` shifting
+                    /// operator! This method can not overflow as opposed to '>>'.
+                    ///
+                    /// # Examples
+                    ///
+                    /// Basic usage:
+                    ///
+                    /// ```
+                    #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
+                    ///
+                    /// let n: $t = $t(0x0123456789ABCDEF);
+                    /// let m: $t = $t(-0xFEDCBA987654322);
+                    ///
+                    /// assert_eq!(n.rotate_right(4), m);
+                    /// ```
+                    #[inline]
+                    #[must_use = "this returns the result of the operation, \
+                          without modifying the original"]
+                    pub const fn rotate_right(self, n: u32) -> $t {
+                        $t(self.0.rotate_right(n))
+                    }
+                }
+
                 )*
         }
     };
@@ -1528,64 +1661,6 @@ macro_rules! checked_int_impl_large {
                     zeros
                 }
 
-                /// Shifts the bits to the left by a specified amount, `n`,
-                /// wrapping the truncated bits to the end of the resulting
-                /// integer.
-                ///
-                /// Please note this isn't the same operation as the `<<` shifting
-                /// operator! This method can not overflow as opposed to '<<'.
-                ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
-                ///
-                /// let n: $t = $t(0x0123456789ABCDEF);
-                /// let m: $t = $t(-0x76543210FEDCBA99);
-                ///
-                /// assert_eq!(n.rotate_left(32), m);
-                /// ```
-                #[inline]
-                #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                pub fn rotate_left(self, n: u32) -> Self {
-                    let rot: u32 = n % Self::BITS;
-                    let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
-                    let big_rot = big.clone().shl(rot);
-                    big_rot.bitor(big.shr(Self::BITS - rot)).try_into().unwrap()
-                }
-
-                /// Shifts the bits to the right by a specified amount, `n`,
-                /// wrapping the truncated bits to the beginning of the resulting
-                /// integer.
-                ///
-                /// Please note this isn't the same operation as the `>>` shifting
-                /// operator! This method can not overflow as opposed to '>>'.
-                ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
-                ///
-                /// let n: $t = $t(0x0123456789ABCDEF);
-                /// let m: $t = $t(-0xFEDCBA987654322);
-                ///
-                /// assert_eq!(n.rotate_right(4), m);
-                /// ```
-                #[inline]
-                #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                pub fn rotate_right(self, n: u32) -> Self {
-                    let rot: u32 = n % Self::BITS;
-                    let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
-                    let big_rot = big.clone().shr(rot);
-                    big_rot.bitor(big.shl(Self::BITS - rot)).try_into().unwrap()
-                }
-
                 /// Reverses the byte order of the integer.
                 ///
                 /// # Examples
@@ -1759,14 +1834,6 @@ macro_rules! checked_int_impl_large {
                     }
                 }
 
-                /// Raises self to the power of `exp`, using exponentiation by squaring.
-                ///
-                #[inline]
-                #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                pub fn pow(self, exp: $o) -> Self {
-                    BigInt::from_signed_bytes_le(&self.0).pow(exp).try_into().unwrap()
-                }
             }
         }
     }
@@ -1779,7 +1846,7 @@ macro_rules! checked_unsigned_large {
                 type_id: $t,
                 bytes_len: $bytes_len,
                 MIN: $t([0u8; $bytes_len]),
-                MAX: $t([0xffu8; $bytes_len])
+                MAX: $t([0xffu8; $bytes_len]),
                 fn pow(self, exp: $o)
             }
         )*
@@ -1930,59 +1997,6 @@ macro_rules! checked_int_impl_small {
                 pub const fn trailing_zeros(self) -> u32 {
                     self.0.trailing_zeros()
                 }
-
-                /// Shifts the bits to the left by a specified amount, `n`,
-                /// wrapping the truncated bits to the end of the resulting
-                /// integer. 
-                ///
-                /// Please note this isn't the same operation as the `<<` shifting
-                /// operator! This method can not overflow as opposed to '<<'.
-                ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
-                ///
-                /// let n: $t = $t(0x0123456789ABCDEF);
-                /// let m: $t = $t(-0x76543210FEDCBA99);
-                ///
-                /// assert_eq!(n.rotate_left(32), m);
-                /// ```
-                #[inline]
-                #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                pub const fn rotate_left(self, n: u32) -> Self {
-                    $t(self.0.rotate_left(n))
-                }
-
-                /// Shifts the bits to the right by a specified amount, `n`,
-                /// wrapping the truncated bits to the beginning of the resulting
-                /// integer.
-                ///
-                /// Please note this isn't the same operation as the `>>` shifting
-                /// operator! This method can not overflow as opposed to '>>'.
-                ///
-                /// # Examples
-                ///
-                /// Basic usage:
-                ///
-                /// ```
-                #[doc = concat!("use scrypto::math::" ,stringify!($t), ";")]
-                ///
-                /// let n: $t = $t(0x0123456789ABCDEF);
-                /// let m: $t = $t(-0xFEDCBA987654322);
-                ///
-                /// assert_eq!(n.rotate_right(4), m);
-                /// ```
-                #[inline]
-                #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                pub const fn rotate_right(self, n: u32) -> Self {
-                    $t(self.0.rotate_right(n))
-                }
-
                 /// Reverses the byte order of the integer.
                 ///
                 /// # Examples
@@ -2154,15 +2168,6 @@ macro_rules! checked_int_impl_small {
                     } else {
                         self
                     }
-                }
-
-                /// Raises self to the power of `exp`, using exponentiation by squaring.
-                ///
-                #[inline]
-                #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                pub fn pow(self, exp: $o) -> Self {
-                    $t(self.0.checked_pow(exp.try_into().unwrap()).unwrap())
                 }
             }
         }
@@ -2644,7 +2649,6 @@ mod tests {
     test_impl! { (I8, i8), (I16, i16), (I32, i32), (I64, i64), (I128, i128), (U8, u8), (U16, u16), (U32, u32), (U64, u64), (U128, u128) }
 }
 
-// TODO: methods should return the larger type
 // TODO: from string
 // TODO: test write
 // TODO: documentationpart update
