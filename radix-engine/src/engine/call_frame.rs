@@ -240,62 +240,6 @@ impl LoadedSNodeState {
     }
 }
 
-impl BorrowedSNodeState {
-    fn return_borrowed_state<'p, 's, 't, 'w, S, W, I>(
-        self,
-        frame: &mut CallFrame<'p, 's, 't, 'w, S, W, I>,
-    ) where
-        S: ReadableSubstateStore,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-    {
-        match self {
-            BorrowedSNodeState::AuthZone(auth_zone) => {
-                frame.auth_zone = Some(auth_zone);
-            }
-            BorrowedSNodeState::Worktop(worktop) => {
-                frame.worktop = Some(worktop);
-            }
-            BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
-                if let Some(component_address) = actor.component_address() {
-                    frame.track.return_borrowed_global_mut_value(
-                        component_address,
-                        component_state.unwrap().component, // TODO: how about the refs?
-                    );
-                }
-            }
-            BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                frame
-                    .track
-                    .return_borrowed_global_mut_value(resource_address, resource_manager);
-            }
-            BorrowedSNodeState::Bucket(bucket_id, bucket) => {
-                frame.buckets.insert(bucket_id, bucket);
-            }
-            BorrowedSNodeState::Proof(proof_id, proof) => {
-                frame.proofs.insert(proof_id, proof);
-            }
-            BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
-                ValueType::Owned => {
-                    frame.owned_values.insert(
-                        StoredValueId::VaultId(vault_id.clone()),
-                        StoredValue::Vault(vault_id, vault),
-                    );
-                }
-                ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                    let store = frame.get_owned_kv_store_mut(&root).unwrap();
-                    store.put_child_vault(&ancestors, vault_id, vault);
-                }
-                ValueType::Ref(ValueRefType::Committed { component_address }) => {
-                    frame
-                        .track
-                        .return_borrowed_global_mut_value((component_address, vault_id), vault);
-                }
-            },
-        }
-    }
-}
-
 impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
@@ -1047,7 +991,50 @@ where
 
         // Return borrowed snodes
         if let Borrowed(borrowed) = loaded_snode {
-            borrowed.return_borrowed_state(self);
+            match borrowed {
+                BorrowedSNodeState::AuthZone(auth_zone) => {
+                    self.auth_zone = Some(auth_zone);
+                }
+                BorrowedSNodeState::Worktop(worktop) => {
+                    self.worktop = Some(worktop);
+                }
+                BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
+                    if let Some(component_address) = actor.component_address() {
+                        self.track.return_borrowed_global_mut_value(
+                            component_address,
+                            component_state.unwrap().component, // TODO: how about the refs?
+                        );
+                    }
+                }
+                BorrowedSNodeState::Resource(resource_address, resource_manager) => {
+                    self
+                        .track
+                        .return_borrowed_global_mut_value(resource_address, resource_manager);
+                }
+                BorrowedSNodeState::Bucket(bucket_id, bucket) => {
+                    self.buckets.insert(bucket_id, bucket);
+                }
+                BorrowedSNodeState::Proof(proof_id, proof) => {
+                    self.proofs.insert(proof_id, proof);
+                }
+                BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
+                    ValueType::Owned => {
+                        self.owned_values.insert(
+                            StoredValueId::VaultId(vault_id.clone()),
+                            StoredValue::Vault(vault_id, vault),
+                        );
+                    }
+                    ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
+                        let store = self.get_owned_kv_store_mut(&root).unwrap();
+                        store.put_child_vault(&ancestors, vault_id, vault);
+                    }
+                    ValueType::Ref(ValueRefType::Committed { component_address }) => {
+                        self
+                            .track
+                            .return_borrowed_global_mut_value((component_address, vault_id), vault);
+                    }
+                },
+            }
         }
 
         Ok(result)
