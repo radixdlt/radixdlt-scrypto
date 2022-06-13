@@ -292,3 +292,66 @@ fn can_reference_deep_in_memory_vault() {
     // Assert
     receipt.expect_success();
 }
+
+#[test]
+fn cannot_directly_reference_inserted_vault() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "RefCheck",
+            "cannot_directly_reference_inserted_vault",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(StoredValueId::VaultId(_))));
+}
+
+#[test]
+fn cannot_directly_reference_vault_after_container_moved() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "RefCheck",
+            "cannot_directly_reference_vault_after_container_moved",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(StoredValueId::VaultId(_))));
+}
+
+#[test]
+fn cannot_directly_reference_vault_after_container_stored() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("kv_store");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "RefCheck",
+            "cannot_directly_reference_vault_after_container_stored",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(StoredValueId::VaultId(_))));
+}
