@@ -1,3 +1,4 @@
+#[derive(Debug, Clone)]
 pub struct WasmMeteringParams {
     /// Wasm fee table is staticially applied to the wasm code.
     /// This identifier helps decide whether or not re-instrumentation is required.

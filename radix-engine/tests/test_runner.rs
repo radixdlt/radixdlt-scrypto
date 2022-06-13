@@ -1,7 +1,7 @@
 use radix_engine::engine::{Receipt, TransactionExecutor};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
-use radix_engine::wasm::DefaultWasmEngine;
+use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
 use scrypto::prelude::*;
 use scrypto::{abi, to_struct};
 use transaction::builder::ManifestBuilder;
@@ -12,6 +12,7 @@ use transaction::signing::EcdsaPrivateKey;
 pub struct TestRunner {
     substate_store: InMemorySubstateStore,
     wasm_engine: DefaultWasmEngine,
+    wasm_instrumenter: WasmInstrumenter,
     next_private_key: u64,
     next_transaction_nonce: u64,
     trace: bool,
@@ -22,6 +23,7 @@ impl TestRunner {
         Self {
             substate_store: InMemorySubstateStore::with_bootstrap(),
             wasm_engine: DefaultWasmEngine::new(),
+            wasm_instrumenter: WasmInstrumenter::new(),
             next_private_key: 1, // 0 is invalid
             next_transaction_nonce: 0,
             trace,
@@ -90,9 +92,13 @@ impl TestRunner {
             TestTransaction::new(manifest, self.next_transaction_nonce, signer_public_keys);
         self.next_transaction_nonce += 1;
 
-        let receipt =
-            TransactionExecutor::new(&mut self.substate_store, &mut self.wasm_engine, self.trace)
-                .execute(&transaction);
+        let receipt = TransactionExecutor::new(
+            &mut self.substate_store,
+            &mut self.wasm_engine,
+            &mut self.wasm_instrumenter,
+            self.trace,
+        )
+        .execute(&transaction);
 
         receipt
     }

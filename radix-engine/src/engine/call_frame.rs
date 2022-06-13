@@ -49,6 +49,8 @@ pub struct CallFrame<
     track: &'t mut Track<'s, S>,
     /// Wasm engine
     wasm_engine: &'w mut W,
+    /// Wasm Instrumenter
+    wasm_instrumenter: &'w mut WasmInstrumenter,
 
     /// Owned Values
     buckets: HashMap<BucketId, Bucket>,
@@ -284,6 +286,7 @@ where
         signer_public_keys: Vec<EcdsaPublicKey>,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
+        wasm_instrumenter: &'w mut WasmInstrumenter,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
     ) -> Self {
@@ -310,6 +313,7 @@ where
             verbose,
             track,
             wasm_engine,
+            wasm_instrumenter,
             Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
             Some(Worktop::new()),
             HashMap::new(),
@@ -326,6 +330,7 @@ where
         trace: bool,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
+        wasm_instrumenter: &'w mut WasmInstrumenter,
         auth_zone: Option<AuthZone>,
         worktop: Option<Worktop>,
         buckets: HashMap<BucketId, Bucket>,
@@ -340,6 +345,7 @@ where
             trace,
             track,
             wasm_engine,
+            wasm_instrumenter,
             buckets,
             proofs,
             owned_values: ComponentObjects::new(),
@@ -621,6 +627,10 @@ where
 {
     fn wasm_engine(&mut self) -> &mut W {
         self.wasm_engine
+    }
+
+    fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter {
+        self.wasm_instrumenter
     }
 
     fn invoke_snode(
@@ -914,6 +924,7 @@ where
             self.trace,
             self.track,
             self.wasm_engine,
+            self.wasm_instrumenter,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Scrypto(_, _, _, _))
                 | Static(StaticSNodeState::TransactionProcessor) => Some(AuthZone::new()),
