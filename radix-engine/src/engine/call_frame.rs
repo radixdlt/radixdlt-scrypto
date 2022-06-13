@@ -632,7 +632,8 @@ where
                                 blueprint_name.clone(),
                             ),
                         )?;
-                        let fn_abi = abi.get_fn_abi(&fn_ident)
+                        let fn_abi = abi
+                            .get_fn_abi(&fn_ident)
                             .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
                         if !fn_abi.input.matches(&input.dom) {
                             return Err(RuntimeError::InvalidMethodArgument {
@@ -687,7 +688,8 @@ where
                         let abi = package
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint not found for existing component");
-                        let fn_abi = abi.get_fn_abi(&fn_ident)
+                        let fn_abi = abi
+                            .get_fn_abi(&fn_ident)
                             .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
                         if !fn_abi.input.matches(&input.dom) {
                             return Err(RuntimeError::InvalidMethodArgument {
