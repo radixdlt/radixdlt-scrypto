@@ -4,7 +4,6 @@ use scrypto::crypto::{hash, Hash};
 
 use crate::wasm::{WasmMeteringParams, WasmModule};
 
-// TODO: Add instrumented code cache since WASM engine is no longer responsible for this.
 pub struct WasmInstrumenter {
     cache: HashMap<(Hash, u8), Vec<u8>>,
 }

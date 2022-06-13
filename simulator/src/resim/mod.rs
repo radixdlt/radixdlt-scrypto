@@ -151,8 +151,13 @@ pub fn handle_manifest<O: std::io::Write>(
         None => {
             let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
             let mut wasm_engine = DefaultWasmEngine::new();
-            let mut executor =
-                TransactionExecutor::new(&mut substate_store, &mut wasm_engine, trace);
+            let mut wasm_instrumenter = WasmInstrumenter::new();
+            let mut executor = TransactionExecutor::new(
+                &mut substate_store,
+                &mut wasm_engine,
+                &mut wasm_instrumenter,
+                trace,
+            );
 
             let sks = get_signing_keys(signing_keys)?;
             let pks = sks
