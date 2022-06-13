@@ -66,3 +66,32 @@ impl TransactionBuilder {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::builder::*;
+    use crate::signing::*;
+
+    #[test]
+    fn notary_as_signatory() {
+        let private_key = EcdsaPrivateKey::from_u64(1).unwrap();
+
+        let transaction = TransactionBuilder::new()
+            .header(TransactionHeader {
+                version: 1,
+                network: Network::InternalTestnet,
+                start_epoch_inclusive: 0,
+                end_epoch_exclusive: 100,
+                nonce: 5,
+                notary_public_key: private_key.public_key(),
+                notary_as_signatory: true,
+            })
+            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .notarize(&private_key)
+            .build();
+
+        let bytes = transaction.to_bytes();
+        NotarizedTransaction::from_slice(&bytes).unwrap();
+    }
+}

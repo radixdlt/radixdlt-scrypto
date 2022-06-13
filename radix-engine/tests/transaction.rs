@@ -44,6 +44,7 @@ fn create_transaction() -> Vec<u8> {
             end_epoch_exclusive: 100,
             nonce: 5,
             notary_public_key: sk_notary.public_key(),
+            notary_as_signatory: false,
         })
         .manifest(ManifestBuilder::new().clear_auth_zone().build())
         .sign(&sk1)
