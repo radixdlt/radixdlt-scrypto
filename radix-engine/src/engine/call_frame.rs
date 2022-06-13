@@ -355,7 +355,7 @@ where
         }
     }
 
-    fn process_call_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
+    fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
             return Err(RuntimeError::KeyValueStoreNotAllowed);
         }
@@ -568,7 +568,7 @@ where
             .owned_values
             .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
         {
-            let store = self.get_owned_kv_store_mut(&kv_store_id).unwrap();
+            let store = Self::get_owned_kv_store_mut(&mut self.owned_values, &kv_store_id).unwrap();
             let value = store.store.get(&key.raw).cloned();
             (value, ValueType::Owned)
         } else {
@@ -580,7 +580,7 @@ where
                 maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
             let value = match &value_ref {
                 ValueRefType::Uncommitted { root, ancestors } => {
-                    let root_store = self.get_owned_kv_store_mut(root).unwrap();
+                    let root_store = Self::get_owned_kv_store_mut(&mut self.owned_values, root).unwrap();
                     let store = root_store.get_child_kv_store(ancestors, &kv_store_id);
                     store.store.get(&key.raw).cloned()
                 }
@@ -619,11 +619,11 @@ where
         Ok(taken_values)
     }
 
-    pub fn get_owned_kv_store_mut(
-        &mut self,
+    pub fn get_owned_kv_store_mut<'a>(
+        owned_values: &'a mut HashMap<StoredValueId, StoredValue>,
         kv_store_id: &KeyValueStoreId,
-    ) -> Option<&mut PreCommittedKeyValueStore> {
-        self.owned_values
+    ) -> Option<&'a mut PreCommittedKeyValueStore> {
+        owned_values
             .get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
             .map(|v| match v {
                 StoredValue::KeyValueStore(_, store) => store,
@@ -863,7 +863,7 @@ where
                             maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
                         let vault = match &value_ref {
                             ValueRefType::Uncommitted { root, ancestors } => {
-                                let root_store = self.get_owned_kv_store_mut(root).unwrap();
+                                let root_store = Self::get_owned_kv_store_mut(&mut self.owned_values, root).unwrap();
                                 root_store.take_child_vault(ancestors, vault_id)
                             }
                             ValueRefType::Committed { component_address } => self
@@ -936,7 +936,7 @@ where
         // Figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
-        self.process_call_data(&input)?;
+        Self::process_call_data(&input)?;
         moving_buckets.extend(self.send_buckets(&input.bucket_ids)?);
         moving_proofs.extend(self.send_proofs(&input.proof_ids, MoveMethod::AsArgument)?);
         self.sys_log(
@@ -1025,7 +1025,7 @@ where
                         );
                     }
                     ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                        let store = self.get_owned_kv_store_mut(&root).unwrap();
+                        let store = Self::get_owned_kv_store_mut(&mut self.owned_values, &root).unwrap();
                         store.put_child_vault(&ancestors, vault_id, vault);
                     }
                     ValueType::Ref(ValueRefType::Committed { component_address }) => {
@@ -1259,14 +1259,13 @@ where
         let new_values = self.take_values(&new_value_ids)?;
         match parent_type {
             ValueType::Owned => {
-                let kv_store = self
-                    .get_owned_kv_store_mut(&kv_store_id)
+                let kv_store = Self::get_owned_kv_store_mut(&mut self.owned_values, &kv_store_id)
                     .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values)
             }
             ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                if let Some(root_store) = self.get_owned_kv_store_mut(&root) {
+                if let Some(root_store) = Self::get_owned_kv_store_mut(&mut self.owned_values, &root) {
                     let kv_store = root_store.get_child_kv_store(&ancestors, &kv_store_id);
                     kv_store.store.insert(key.raw, value);
                     kv_store.insert_children(new_values)
