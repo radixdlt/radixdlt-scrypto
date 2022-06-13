@@ -58,7 +58,7 @@ pub struct CallFrame<
     owned_values: HashMap<StoredValueId, StoredValue>,
 
     /// Referenced values
-    worktop: Option<Worktop>,
+    worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
     component_state: Option<&'p mut ComponentState>,
     refed_values: HashMap<StoredValueId, ValueRefType>,
@@ -140,7 +140,7 @@ pub enum ConsumedSNodeState {
 
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
-    Worktop(Worktop),
+    Worktop(RefMut<'a, Worktop>),
     Scrypto(
         ScryptoActorInfo,
         BlueprintAbi,
@@ -173,7 +173,7 @@ pub enum SNodeState<'a> {
     TransactionProcessorStatic,
     PackageStatic,
     AuthZoneRef(&'a mut AuthZone),
-    Worktop(&'a mut Worktop),
+    WorktopRef(&'a mut Worktop),
     // TODO: use reference to the package
     Scrypto(
         ScryptoActorInfo,
@@ -219,7 +219,7 @@ impl LoadedSNodeState<'_> {
             },
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
-                BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
+                BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
                 BorrowedSNodeState::Scrypto(
                     info,
                     blueprint_abi,
@@ -279,7 +279,7 @@ where
             track,
             wasm_engine,
             Some(RefCell::new(AuthZone::new_with_proofs(initial_auth_zone_proofs))),
-            Some(Worktop::new()),
+            Some(RefCell::new(Worktop::new())),
             HashMap::new(),
             HashMap::new(),
             None,
@@ -293,7 +293,7 @@ where
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
         auth_zone: Option<RefCell<AuthZone>>,
-        worktop: Option<Worktop>,
+        worktop: Option<RefCell<Worktop>>,
         buckets: HashMap<BucketId, Bucket>,
         proofs: HashMap<ProofId, Proof>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
@@ -341,7 +341,8 @@ where
             success = false;
         }
 
-        if let Some(worktop) = &self.worktop {
+        if let Some(ref_worktop) = &self.worktop {
+            let worktop = ref_worktop.borrow();
             if !worktop.is_empty() {
                 self.sys_log(Level::Warn, "Resource worktop is not empty".to_string());
                 resource = ResourceFailure::Resources(worktop.resource_addresses());
@@ -485,7 +486,7 @@ where
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::AuthZoneError),
-            SNodeState::Worktop(worktop) => worktop
+            SNodeState::WorktopRef(worktop) => worktop
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
@@ -668,7 +669,8 @@ where
                 }
             }
             SNodeRef::WorktopRef => {
-                if let Some(worktop) = self.worktop.take() {
+                if let Some(worktop_ref) = &self.worktop {
+                    let worktop = worktop_ref.borrow_mut();
                     Ok((Borrowed(BorrowedSNodeState::Worktop(worktop)), vec![]))
                 } else {
                     Err(RuntimeError::WorktopDoesNotExist)
@@ -964,7 +966,7 @@ where
                 _ => None,
             },
             match loaded_snode {
-                Static(StaticSNodeState::TransactionProcessor) => Some(Worktop::new()),
+                Static(StaticSNodeState::TransactionProcessor) => Some(RefCell::new(Worktop::new())),
                 _ => None,
             },
             moving_buckets,
@@ -1000,8 +1002,7 @@ where
             match borrowed {
                 BorrowedSNodeState::AuthZone(_auth_zone) => {
                 }
-                BorrowedSNodeState::Worktop(worktop) => {
-                    self.worktop = Some(worktop);
+                BorrowedSNodeState::Worktop(_worktop) => {
                 }
                 BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
                     if let Some(component_address) = actor.component_address() {
