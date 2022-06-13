@@ -1,3 +1,5 @@
+use sbor::rust::cell::{RefCell, RefMut};
+use sbor::rust::ops::{Deref};
 use colored::*;
 use sbor::path::SborPath;
 use sbor::rust::borrow::ToOwned;
@@ -57,12 +59,12 @@ pub struct CallFrame<
 
     /// Referenced values
     worktop: Option<Worktop>,
-    auth_zone: Option<AuthZone>,
+    auth_zone: Option<RefCell<AuthZone>>,
     component_state: Option<&'p mut ComponentState>,
     refed_values: HashMap<StoredValueId, ValueRefType>,
 
     /// Caller's auth zone
-    caller_auth_zone: Option<&'p AuthZone>,
+    caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
     phantom: PhantomData<I>,
 }
@@ -136,8 +138,8 @@ pub enum ConsumedSNodeState {
     Proof(Proof),
 }
 
-pub enum BorrowedSNodeState {
-    AuthZone(AuthZone),
+pub enum BorrowedSNodeState<'a> {
+    AuthZone(RefMut<'a, AuthZone>),
     Worktop(Worktop),
     Scrypto(
         ScryptoActorInfo,
@@ -159,10 +161,10 @@ pub enum StaticSNodeState {
     TransactionProcessor,
 }
 
-pub enum LoadedSNodeState {
+pub enum LoadedSNodeState<'a> {
     Static(StaticSNodeState),
     Consumed(Option<ConsumedSNodeState>),
-    Borrowed(BorrowedSNodeState),
+    Borrowed(BorrowedSNodeState<'a>),
 }
 
 pub enum SNodeState<'a> {
@@ -202,7 +204,7 @@ pub enum MoveMethod {
     AsArgument,
 }
 
-impl LoadedSNodeState {
+impl LoadedSNodeState<'_> {
     fn to_snode_state(&mut self) -> SNodeState {
         match self {
             Static(static_state) => match static_state {
@@ -276,7 +278,7 @@ where
             verbose,
             track,
             wasm_engine,
-            Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
+            Some(RefCell::new(AuthZone::new_with_proofs(initial_auth_zone_proofs))),
             Some(Worktop::new()),
             HashMap::new(),
             HashMap::new(),
@@ -290,11 +292,11 @@ where
         trace: bool,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
-        auth_zone: Option<AuthZone>,
+        auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<Worktop>,
         buckets: HashMap<BucketId, Bucket>,
         proofs: HashMap<ProofId, Proof>,
-        caller_auth_zone: Option<&'p AuthZone>,
+        caller_auth_zone: Option<&'p RefCell<AuthZone>>,
     ) -> Self {
         Self {
             transaction_hash,
@@ -387,13 +389,12 @@ where
 
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
-        &mut self,
+        from: &mut HashMap<BucketId, Bucket>,
         bucket_ids: &HashMap<BucketId, SborPath>,
     ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
         let mut buckets = HashMap::new();
         for (bucket_id, _) in bucket_ids {
-            let bucket = self
-                .buckets
+            let bucket = from
                 .remove(bucket_id)
                 .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
             if bucket.is_locked() {
@@ -430,14 +431,13 @@ where
 
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
-        &mut self,
+        from: &mut HashMap<ProofId, Proof>,
         proof_ids: &HashMap<ProofId, SborPath>,
         method: MoveMethod,
     ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
         let mut proofs = HashMap::new();
         for (proof_id, _) in proof_ids {
-            let mut proof = self
-                .proofs
+            let mut proof = from
                 .remove(proof_id)
                 .ok_or(RuntimeError::ProofNotFound(*proof_id))?;
             if proof.is_restricted() {
@@ -521,8 +521,8 @@ where
         self.process_return_data(snode_ref, &output)?;
 
         // figure out what buckets and resources to return
-        let moving_buckets = self.send_buckets(&output.bucket_ids)?;
-        let moving_proofs = self.send_proofs(&output.proof_ids, MoveMethod::AsReturn)?;
+        let moving_buckets = Self::send_buckets(&mut self.buckets, &output.bucket_ids)?;
+        let moving_proofs = Self::send_proofs(&mut self.proofs, &output.proof_ids, MoveMethod::AsReturn)?;
         let moving_vaults = self.send_vaults(&output.vault_ids)?;
 
         // drop proofs and check resource leak
@@ -530,13 +530,14 @@ where
             proof.drop();
         }
 
-        if let Some(_) = &mut self.auth_zone {
+        if self.auth_zone.is_some() {
             self.invoke_snode(
                 SNodeRef::AuthZoneRef,
                 "clear".to_string(),
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
+
         self.check_resource()?;
 
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
@@ -659,8 +660,9 @@ where
             SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
             SNodeRef::SystemStatic => Ok((Static(StaticSNodeState::System), vec![])),
             SNodeRef::AuthZoneRef => {
-                if let Some(auth_zone) = self.auth_zone.take() {
-                    Ok((Borrowed(BorrowedSNodeState::AuthZone(auth_zone)), vec![]))
+                if let Some(auth_zone) = &self.auth_zone {
+                    let borrowed = auth_zone.borrow_mut();
+                    Ok((Borrowed(BorrowedSNodeState::AuthZone(borrowed)), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -904,7 +906,7 @@ where
         if !method_auths.is_empty() {
             let mut auth_zones = Vec::new();
             if let Some(self_auth_zone) = &self.auth_zone {
-                auth_zones.push(self_auth_zone);
+                auth_zones.push(self_auth_zone.borrow());
             }
 
             match &loaded_snode {
@@ -915,15 +917,19 @@ where
                 | Borrowed(BorrowedSNodeState::Scrypto(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
-                        auth_zones.push(auth_zone);
+                        auth_zones.push(auth_zone.borrow());
                     }
                 }
                 // Extern call auth check
                 _ => {}
             };
 
+            let mut borrowed = Vec::new();
+            for auth_zone in &auth_zones {
+                borrowed.push(auth_zone.deref());
+            }
             for method_auth in method_auths {
-                method_auth.check(&auth_zones).map_err(|error| {
+                method_auth.check(&borrowed).map_err(|error| {
                     RuntimeError::AuthorizationError {
                         function: fn_ident.clone(),
                         authorization: method_auth,
@@ -937,8 +943,8 @@ where
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
         Self::process_call_data(&input)?;
-        moving_buckets.extend(self.send_buckets(&input.bucket_ids)?);
-        moving_proofs.extend(self.send_proofs(&input.proof_ids, MoveMethod::AsArgument)?);
+        moving_buckets.extend(Self::send_buckets(&mut self.buckets, &input.bucket_ids)?);
+        moving_proofs.extend(Self::send_proofs(&mut self.proofs, &input.proof_ids, MoveMethod::AsArgument)?);
         self.sys_log(
             Level::Debug,
             format!("Sending buckets: {:?}", moving_buckets),
@@ -954,7 +960,7 @@ where
             self.wasm_engine,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Scrypto(..))
-                | Static(StaticSNodeState::TransactionProcessor) => Some(AuthZone::new()),
+                | Static(StaticSNodeState::TransactionProcessor) => Some(RefCell::new(AuthZone::new())),
                 _ => None,
             },
             match loaded_snode {
@@ -992,8 +998,7 @@ where
         // Return borrowed snodes
         if let Borrowed(borrowed) = loaded_snode {
             match borrowed {
-                BorrowedSNodeState::AuthZone(auth_zone) => {
-                    self.auth_zone = Some(auth_zone);
+                BorrowedSNodeState::AuthZone(_auth_zone) => {
                 }
                 BorrowedSNodeState::Worktop(worktop) => {
                     self.worktop = Some(worktop);
