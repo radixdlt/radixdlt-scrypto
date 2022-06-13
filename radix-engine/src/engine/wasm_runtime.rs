@@ -76,6 +76,8 @@ where
         state: Vec<u8>,
         access_rules_list: Vec<AccessRules>,
     ) -> Result<ComponentAddress, RuntimeError> {
+        // Abi checks
+        // TODO: Move this to a more appropriate place
         for access_rules in &access_rules_list {
             for (func_name, _) in access_rules.iter() {
                 if !self.blueprint_abi.contains_fn(func_name.as_str()) {
@@ -84,6 +86,7 @@ where
             }
         }
 
+        // Create component
         let component = Component::new(
             self.this.package_address().clone(),
             blueprint_name,
