@@ -1,4 +1,3 @@
-use sbor::Value;
 use crate::rust::boxed::Box;
 use crate::rust::collections::*;
 use crate::rust::string::String;
@@ -6,6 +5,7 @@ use crate::rust::string::ToString;
 use crate::rust::vec;
 use crate::rust::vec::Vec;
 use crate::sbor::{Decode, Encode, TypeId};
+use sbor::Value;
 
 /// Represents a SBOR type.
 #[cfg_attr(
@@ -105,26 +105,38 @@ impl Type {
             Type::String => matches!(value, Value::String { .. }),
             Type::Option { value: type_value } => {
                 if let Value::Option { value } = value {
-                   match &**value {
-                       None => true,
-                       Some(value) => type_value.matches(value)
-                   }
+                    match &**value {
+                        None => true,
+                        Some(value) => type_value.matches(value),
+                    }
                 } else {
                     false
                 }
             }
-            Type::Array { element: type_element, length } => {
-                if let Value::Array { element_type_id: _, elements } = value {
+            Type::Array {
+                element: type_element,
+                length,
+            } => {
+                if let Value::Array {
+                    element_type_id: _,
+                    elements,
+                } = value
+                {
                     let length = usize::from(*length);
                     length == elements.len() && elements.iter().all(|v| type_element.matches(v))
                 } else {
                     false
                 }
             }
-            Type::Tuple { elements: type_elements } => {
+            Type::Tuple {
+                elements: type_elements,
+            } => {
                 if let Value::Tuple { elements } = value {
                     type_elements.len() == elements.len()
-                        && type_elements.iter().enumerate().all(|(i, e)| e.matches(elements.get(i).unwrap()))
+                        && type_elements
+                            .iter()
+                            .enumerate()
+                            .all(|(i, e)| e.matches(elements.get(i).unwrap()))
                 } else {
                     false
                 }
@@ -133,21 +145,35 @@ impl Type {
                 if let Value::Result { value } = value {
                     match &**value {
                         Result::Ok(v) => okay.matches(v),
-                        Result::Err(e) => error.matches(e)
+                        Result::Err(e) => error.matches(e),
                     }
                 } else {
                     false
                 }
             }
-            Type::TreeSet { element: type_element } => {
-                if let Value::TreeSet { element_type_id: _, elements } = value {
+            Type::TreeSet {
+                element: type_element,
+            } => {
+                if let Value::TreeSet {
+                    element_type_id: _,
+                    elements,
+                } = value
+                {
                     elements.iter().all(|v| type_element.matches(v))
                 } else {
                     false
                 }
             }
-            Type::TreeMap { key: type_key, value: type_value } => {
-                if let Value::TreeMap { key_type_id: _, value_type_id: _, elements } = value {
+            Type::TreeMap {
+                key: type_key,
+                value: type_value,
+            } => {
+                if let Value::TreeMap {
+                    key_type_id: _,
+                    value_type_id: _,
+                    elements,
+                } = value
+                {
                     elements.iter().enumerate().all(|(i, e)| {
                         if i % 2 == 0 {
                             type_key.matches(e)
@@ -159,22 +185,42 @@ impl Type {
                     false
                 }
             }
-            Type::Vec { element: type_element } => {
-                if let Value::Vec { element_type_id: _, elements } = value {
+            Type::Vec {
+                element: type_element,
+            } => {
+                if let Value::Vec {
+                    element_type_id: _,
+                    elements,
+                } = value
+                {
                     elements.iter().all(|v| type_element.matches(v))
                 } else {
                     false
                 }
             }
-            Type::HashSet { element: type_element } => {
-                if let Value::HashSet { element_type_id: _, elements } = value {
+            Type::HashSet {
+                element: type_element,
+            } => {
+                if let Value::HashSet {
+                    element_type_id: _,
+                    elements,
+                } = value
+                {
                     elements.iter().all(|v| type_element.matches(v))
                 } else {
                     false
                 }
             }
-            Type::HashMap { key: type_key, value: type_value } => {
-                if let Value::HashMap { key_type_id: _, value_type_id: _, elements } = value {
+            Type::HashMap {
+                key: type_key,
+                value: type_value,
+            } => {
+                if let Value::HashMap {
+                    key_type_id: _,
+                    value_type_id: _,
+                    elements,
+                } = value
+                {
                     elements.iter().enumerate().all(|(i, e)| {
                         if i % 2 == 0 {
                             type_key.matches(e)
@@ -186,33 +232,55 @@ impl Type {
                     false
                 }
             }
-            Type::Struct { name: _, fields: type_fields } => {
+            Type::Struct {
+                name: _,
+                fields: type_fields,
+            } => {
                 if let Value::Struct { fields } = value {
                     match type_fields {
                         Fields::Unit => fields.is_empty(),
-                        Fields::Unnamed { unnamed } =>
+                        Fields::Unnamed { unnamed } => {
                             unnamed.len() == fields.len()
-                                && unnamed.iter().enumerate().all(|(i, e)| e.matches(fields.get(i).unwrap())),
-                        Fields::Named { named } =>
+                                && unnamed
+                                    .iter()
+                                    .enumerate()
+                                    .all(|(i, e)| e.matches(fields.get(i).unwrap()))
+                        }
+                        Fields::Named { named } => {
                             named.len() == fields.len()
-                                && named.iter().enumerate().all(|(i, (_, e))| e.matches(fields.get(i).unwrap())),
+                                && named
+                                    .iter()
+                                    .enumerate()
+                                    .all(|(i, (_, e))| e.matches(fields.get(i).unwrap()))
+                        }
                     }
                 } else {
                     false
                 }
             }
-            Type::Enum { name: _, variants: type_variants } => {
+            Type::Enum {
+                name: _,
+                variants: type_variants,
+            } => {
                 if let Value::Enum { name, fields } = value {
                     for variant in type_variants {
                         if variant.name.eq(name) {
                             return match &variant.fields {
                                 Fields::Unit => fields.is_empty(),
-                                Fields::Unnamed { unnamed } =>
+                                Fields::Unnamed { unnamed } => {
                                     unnamed.len() == fields.len()
-                                        && unnamed.iter().enumerate().all(|(i, e)| e.matches(fields.get(i).unwrap())),
-                                Fields::Named { named } =>
+                                        && unnamed
+                                            .iter()
+                                            .enumerate()
+                                            .all(|(i, e)| e.matches(fields.get(i).unwrap()))
+                                }
+                                Fields::Named { named } => {
                                     named.len() == fields.len()
-                                        && named.iter().enumerate().all(|(i, (_, e))| e.matches(fields.get(i).unwrap())),
+                                        && named
+                                            .iter()
+                                            .enumerate()
+                                            .all(|(i, (_, e))| e.matches(fields.get(i).unwrap()))
+                                }
                             };
                         }
                     }
@@ -221,7 +289,10 @@ impl Type {
                     false
                 }
             }
-            Type::Custom { type_id: type_type_id, generics: _ } => {
+            Type::Custom {
+                type_id: type_type_id,
+                generics: _,
+            } => {
                 if let Value::Custom { type_id, bytes: _ } = value {
                     // TODO: check generics
                     *type_type_id == *type_id

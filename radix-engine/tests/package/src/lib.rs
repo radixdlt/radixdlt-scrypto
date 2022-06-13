@@ -30,17 +30,15 @@ pub extern "C" fn LargeReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut
     };
     let abi = BlueprintAbi {
         structure,
-        fns: vec![
-            Fn {
-                ident: "something".to_string(),
-                mutability: Option::None,
-                input: Type::Struct {
-                    name: "Any".to_string(),
-                    fields: Fields::Named { named: vec![] }
-                },
-                output: Type::Unit,
-            }
-        ],
+        fns: vec![Fn {
+            ident: "something".to_string(),
+            mutability: Option::None,
+            input: Type::Struct {
+                name: "Any".to_string(),
+                fields: Fields::Named { named: vec![] },
+            },
+            output: Type::Unit,
+        }],
     };
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
 }
@@ -53,17 +51,15 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
     };
     let abi = BlueprintAbi {
         structure,
-        fns: vec![
-            Fn {
-                ident: "something".to_string(),
-                mutability: Option::None,
-                input: Type::Struct {
-                    name: "Any".to_string(),
-                    fields: Fields::Named { named: vec![] }
-                },
-                output: Type::Unit,
-            }
-        ],
+        fns: vec![Fn {
+            ident: "something".to_string(),
+            mutability: Option::None,
+            input: Type::Struct {
+                name: "Any".to_string(),
+                fields: Fields::Named { named: vec![] },
+            },
+            output: Type::Unit,
+        }],
     };
 
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
@@ -77,17 +73,15 @@ pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8, _input2: *mut u8) -> *mut 
     };
     let abi = BlueprintAbi {
         structure,
-        fns: vec![
-            Fn {
-                ident: "something".to_string(),
-                mutability: Option::None,
-                input: Type::Struct {
-                    name: "Any".to_string(),
-                    fields: Fields::Named { named: vec![] }
-                },
-                output: Type::Unit,
-            }
-        ],
+        fns: vec![Fn {
+            ident: "something".to_string(),
+            mutability: Option::None,
+            input: Type::Struct {
+                name: "Any".to_string(),
+                fields: Fields::Named { named: vec![] },
+            },
+            output: Type::Unit,
+        }],
     };
 
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)

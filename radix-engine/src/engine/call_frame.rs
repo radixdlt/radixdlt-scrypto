@@ -53,18 +53,35 @@ pub struct CallFrame<
     /// Owned Values
     buckets: HashMap<BucketId, Bucket>,
     proofs: HashMap<ProofId, Proof>,
-    owned_values: ComponentObjects,
+    owned_values: HashMap<StoredValueId, StoredValue>,
 
     /// Referenced values
     worktop: Option<Worktop>,
     auth_zone: Option<AuthZone>,
     component_state: Option<&'p mut ComponentState>,
-    ref_values: HashSet<StoredValueId>,
+    refed_values: HashMap<StoredValueId, ValueRefType>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p AuthZone>,
 
     phantom: PhantomData<I>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ValueType {
+    Owned,
+    Ref(ValueRefType),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ValueRefType {
+    Uncommitted {
+        root: KeyValueStoreId,
+        ancestors: Vec<KeyValueStoreId>,
+    },
+    Committed {
+        component_address: ComponentAddress,
+    },
 }
 
 fn stored_value_update(
@@ -132,7 +149,7 @@ pub enum BorrowedSNodeState {
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, Bucket),
     Proof(ProofId, Proof),
-    Vault(VaultId, Option<ComponentAddress>, Vault),
+    Vault(VaultId, Vault, ValueType),
 }
 
 pub enum StaticSNodeState {
@@ -169,7 +186,7 @@ pub enum SNodeState<'a> {
     Bucket(Bucket),
     ProofRef(ProofId, &'a mut Proof),
     Proof(Proof),
-    VaultRef(VaultId, Option<ComponentAddress>, &'a mut Vault),
+    VaultRef(VaultId, &'a mut Vault),
 }
 
 #[derive(Debug)]
@@ -217,9 +234,7 @@ impl LoadedSNodeState {
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
-                BorrowedSNodeState::Vault(id, addr, s) => {
-                    SNodeState::VaultRef(*id, addr.clone(), s)
-                }
+                BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
             },
         }
     }
@@ -260,15 +275,23 @@ impl BorrowedSNodeState {
             BorrowedSNodeState::Proof(proof_id, proof) => {
                 frame.proofs.insert(proof_id, proof);
             }
-            BorrowedSNodeState::Vault(vault_id, maybe_component_address, vault) => {
-                if let Some(component_address) = maybe_component_address {
+            BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
+                ValueType::Owned => {
+                    frame.owned_values.insert(
+                        StoredValueId::VaultId(vault_id.clone()),
+                        StoredValue::Vault(vault_id, vault),
+                    );
+                }
+                ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
+                    let store = frame.get_owned_kv_store_mut(&root).unwrap();
+                    store.put_child_vault(&ancestors, vault_id, vault);
+                }
+                ValueType::Ref(ValueRefType::Committed { component_address }) => {
                     frame
                         .track
                         .return_borrowed_global_mut_value((component_address, vault_id), vault);
-                } else {
-                    frame.owned_values.return_borrowed_vault_mut(vault);
                 }
-            }
+            },
         }
     }
 }
@@ -337,8 +360,8 @@ where
             wasm_engine,
             buckets,
             proofs,
-            owned_values: ComponentObjects::new(),
-            ref_values: HashSet::new(),
+            owned_values: HashMap::new(),
+            refed_values: HashMap::new(),
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -361,7 +384,9 @@ where
             resource = ResourceFailure::Resource(bucket.resource_address());
             success = false;
         }
-        for (_, value) in self.owned_values.take_all() {
+
+        let values: HashMap<StoredValueId, StoredValue> = self.owned_values.drain().collect();
+        for (_, value) in values {
             self.sys_log(Level::Warn, format!("Dangling value: {:?}", value));
             resource = match value {
                 StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
@@ -444,8 +469,7 @@ where
         for vault_id in vault_ids {
             vault_ids_to_take.insert(StoredValueId::VaultId(*vault_id));
         }
-
-        let vaults_to_take = self.owned_values.take(&vault_ids_to_take)?;
+        let vaults_to_take = self.take_set(&vault_ids_to_take)?;
 
         let mut vaults = HashMap::new();
         for vault_to_take in vaults_to_take {
@@ -529,19 +553,17 @@ where
                         if !fn_abi.output.matches(&output.dom) {
                             Err(RuntimeError::InvalidFnOutput {
                                 fn_ident: fn_ident.to_string(),
-                                output: output.dom
+                                output: output.dom,
                             })
                         } else {
                             Ok(output)
                         }
                     }
-                    Err(e) => Err(e)
+                    Err(e) => Err(e),
                 }
             }
-            SNodeState::ResourceStatic => {
-                ResourceManager::static_main(fn_ident, input, self)
-                    .map_err(RuntimeError::ResourceManagerError)
-            }
+            SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
+                .map_err(RuntimeError::ResourceManagerError),
             SNodeState::ResourceRef(resource_address, resource_manager) => {
                 let return_value = resource_manager
                     .main(resource_address, fn_ident, input, self)
@@ -561,7 +583,7 @@ where
             SNodeState::Proof(proof) => proof
                 .main_consume(fn_ident, input)
                 .map_err(RuntimeError::ProofError),
-            SNodeState::VaultRef(vault_id, _, vault) => vault
+            SNodeState::VaultRef(vault_id, vault) => vault
                 .main(vault_id, fn_ident, input, self)
                 .map_err(RuntimeError::VaultError),
         }?;
@@ -588,6 +610,95 @@ where
         self.check_resource()?;
 
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
+    }
+
+    fn take_values(
+        &mut self,
+        value_ids: &HashSet<StoredValueId>,
+    ) -> Result<Vec<StoredValue>, RuntimeError> {
+        let values = self.take_set(value_ids)?;
+        for value in &values {
+            if let StoredValue::KeyValueStore(_, store) = value {
+                for id in store.all_descendants() {
+                    self.refed_values.remove(&id);
+                }
+            }
+        }
+        Ok(values)
+    }
+
+    fn read_kv_store_entry_internal(
+        &mut self,
+        kv_store_id: KeyValueStoreId,
+        key: &ScryptoValue,
+    ) -> Result<(Option<ScryptoValue>, ValueType), RuntimeError> {
+        verify_stored_key(key)?;
+
+        let (maybe_value, value_type) = if self
+            .owned_values
+            .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+        {
+            let store = self.get_owned_kv_store_mut(&kv_store_id).unwrap();
+            let value = store.store.get(&key.raw).cloned();
+            (value, ValueType::Owned)
+        } else {
+            let maybe_value_ref = self
+                .refed_values
+                .get(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+                .cloned();
+            let value_ref =
+                maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
+            let value = match &value_ref {
+                ValueRefType::Uncommitted { root, ancestors } => {
+                    let root_store = self.get_owned_kv_store_mut(root).unwrap();
+                    let store = root_store.get_child_kv_store(ancestors, &kv_store_id);
+                    store.store.get(&key.raw).cloned()
+                }
+                ValueRefType::Committed { component_address } => {
+                    let substate_value = self.track.read_key_value(
+                        Address::KeyValueStore(*component_address, kv_store_id),
+                        key.raw.to_vec(),
+                    );
+                    match substate_value {
+                        SubstateValue::KeyValueStoreEntry(v) => v,
+                        _ => panic!("Substate value is not a KeyValueStore entry"),
+                    }
+                    .map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
+                }
+            };
+            (value, ValueType::Ref(value_ref))
+        };
+
+        Ok((maybe_value, value_type))
+    }
+
+    pub fn take_set(
+        &mut self,
+        other: &HashSet<StoredValueId>,
+    ) -> Result<Vec<StoredValue>, RuntimeError> {
+        let mut taken_values = Vec::new();
+
+        for id in other {
+            let value = self
+                .owned_values
+                .remove(id)
+                .ok_or(RuntimeError::ValueNotFound(*id))?;
+            taken_values.push(value);
+        }
+
+        Ok(taken_values)
+    }
+
+    pub fn get_owned_kv_store_mut(
+        &mut self,
+        kv_store_id: &KeyValueStoreId,
+    ) -> Option<&mut PreCommittedKeyValueStore> {
+        self.owned_values
+            .get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
+            .map(|v| match v {
+                StoredValue::KeyValueStore(_, store) => store,
+                _ => panic!("Expected KV store"),
+            })
     }
 }
 
@@ -648,7 +759,8 @@ where
                                 blueprint_name.clone(),
                             ),
                         )?;
-                        let fn_abi = abi.get_fn_abi(&fn_ident)
+                        let fn_abi = abi
+                            .get_fn_abi(&fn_ident)
                             .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
                         if !fn_abi.input.matches(&input.dom) {
                             return Err(RuntimeError::InvalidFnInput {
@@ -703,7 +815,8 @@ where
                         let abi = package
                             .blueprint_abi(&blueprint_name)
                             .expect("Blueprint not found for existing component");
-                        let fn_abi = abi.get_fn_abi(&fn_ident)
+                        let fn_abi = abi
+                            .get_fn_abi(&fn_ident)
                             .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
                         if !fn_abi.input.matches(&input.dom) {
                             return Err(RuntimeError::InvalidFnInput {
@@ -805,29 +918,37 @@ where
                 Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
-                let (component, vault) = if let Some(vault) =
-                    self.owned_values.borrow_vault_mut(vault_id)
-                {
-                    (None, vault)
-                } else if let Some(ComponentState {
-                    component_address, ..
-                }) = &self.component_state
-                {
-                    let value_id = StoredValueId::VaultId(*vault_id);
-                    if !self.ref_values.contains(&value_id) {
-                        return Err(RuntimeError::ValueNotFound(value_id));
+                let (value_type, vault) = {
+                    if let Some(value) =
+                        self.owned_values.remove(&StoredValueId::VaultId(*vault_id))
+                    {
+                        match value {
+                            StoredValue::Vault(_, vault) => (ValueType::Owned, vault),
+                            _ => panic!("Expected vault"),
+                        }
+                    } else {
+                        let value_id = StoredValueId::VaultId(*vault_id);
+                        let maybe_value_ref = self.refed_values.get(&value_id).cloned();
+                        let value_ref =
+                            maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
+                        let vault = match &value_ref {
+                            ValueRefType::Uncommitted { root, ancestors } => {
+                                let root_store = self.get_owned_kv_store_mut(root).unwrap();
+                                root_store.take_child_vault(ancestors, vault_id)
+                            }
+                            ValueRefType::Committed { component_address } => self
+                                .track
+                                .borrow_global_mut_value((*component_address, *vault_id))
+                                .map_err(|e| match e {
+                                    TrackError::NotFound => panic!("Expected to find vault"),
+                                    TrackError::Reentrancy => {
+                                        panic!("Vault logic is causing reentrancy")
+                                    }
+                                })?
+                                .into(),
+                        };
+                        (ValueType::Ref(value_ref), vault)
                     }
-                    let vault: Vault = self
-                        .track
-                        .borrow_global_mut_value((*component_address, *vault_id))
-                        .map_err(|e| match e {
-                            TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
-                            TrackError::Reentrancy => panic!("Vault logic is causing reentrancy"),
-                        })?
-                        .into();
-                    (Some(*component_address), vault)
-                } else {
-                    panic!("Should never get here");
                 };
 
                 let resource_address = vault.resource_address();
@@ -841,8 +962,8 @@ where
                 Ok((
                     Borrowed(BorrowedSNodeState::Vault(
                         vault_id.clone(),
-                        component,
                         vault,
+                        value_type,
                     )),
                     vec![method_auth.clone()],
                 ))
@@ -1043,7 +1164,7 @@ where
         let value =
             ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
         verify_stored_value(&value)?;
-        let values = self.owned_values.take(&value.stored_value_ids())?;
+        let values = self.take_values(&value.stored_value_ids())?;
         let address = self.track.create_uuid_value(component);
         self.track
             .insert_objects_into_component(values, address.clone().into());
@@ -1059,7 +1180,12 @@ where
         {
             if addr.eq(component_address) {
                 for value_id in initial_value.stored_value_ids() {
-                    self.ref_values.insert(value_id);
+                    self.refed_values.insert(
+                        value_id,
+                        ValueRefType::Committed {
+                            component_address: *component_address,
+                        },
+                    );
                 }
                 let state = component.state().to_vec();
                 return Ok(state);
@@ -1085,10 +1211,10 @@ where
         {
             if addr.eq(component_address) {
                 let new_value_ids = stored_value_update(initial_value, &state)?;
-                let new_values = self.owned_values.take(&new_value_ids)?;
-                self.track
-                    .insert_objects_into_component(new_values, *component_address);
                 component.set_state(state.raw);
+                let addr = *component_address;
+                let new_values = self.take_values(&new_value_ids)?;
+                self.track.insert_objects_into_component(new_values, addr);
                 return Ok(());
             }
         }
@@ -1102,62 +1228,46 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         verify_stored_key(&key)?;
 
-        if let Some(value) = self.owned_values.get_kv_store_entry(&kv_store_id, &key.raw) {
-            match value {
-                Some(v) => {
-                    let value = Value::Option {
-                        value: Box::new(Some(v.dom)),
-                    };
-                    return Ok(ScryptoValue::from_value(value).unwrap());
-                }
-                None => {
-                    let value = Value::Option {
-                        value: Box::new(None),
-                    };
-                    return Ok(ScryptoValue::from_value(value).unwrap());
+        let (maybe_value, parent_type) =
+            self.read_kv_store_entry_internal(kv_store_id.clone(), &key)?;
+
+        let ref_type = match parent_type {
+            ValueType::Owned => ValueRefType::Uncommitted {
+                root: kv_store_id,
+                ancestors: vec![],
+            },
+            ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
+                let mut next_ancestors = ancestors.clone();
+                next_ancestors.push(kv_store_id);
+                ValueRefType::Uncommitted {
+                    root: root.clone(),
+                    ancestors: next_ancestors,
                 }
             }
-        }
+            ValueType::Ref(ValueRefType::Committed { component_address }) => {
+                ValueRefType::Committed { component_address }
+            }
+        };
+        match maybe_value {
+            Some(v) => {
+                for value_id in v.stored_value_ids() {
+                    self.refed_values.insert(value_id, ref_type.clone());
+                }
 
-        if let Some(ComponentState {
-            component_address, ..
-        }) = &mut self.component_state
-        {
-            if self
-                .ref_values
-                .contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
-            {
-                let substate_value = self.track.read_key_value(
-                    Address::KeyValueStore(*component_address, kv_store_id),
-                    key.raw,
-                );
-                let value = match substate_value {
-                    SubstateValue::KeyValueStoreEntry(v) => v,
-                    _ => panic!("Substate value is not a KeyValueStore entry"),
+                let value = Value::Option {
+                    value: Box::new(Some(v.dom)),
                 };
-                if value.is_some() {
-                    let value_slice = &value.as_ref().unwrap();
-                    let scrypto_value = ScryptoValue::from_slice(value_slice).unwrap();
-                    for value_id in scrypto_value.stored_value_ids() {
-                        self.ref_values.insert(value_id);
-                    }
-
-                    let scrypto_value =
-                        ScryptoValue::from_slice(value_slice).map_err(RuntimeError::DecodeError)?;
-                    let value = Value::Option {
-                        value: Box::new(Some(scrypto_value.dom)),
-                    };
-                    return Ok(ScryptoValue::from_value(value).unwrap());
-                } else {
-                    let value = Value::Option {
-                        value: Box::new(Option::None),
-                    };
-                    return Ok(ScryptoValue::from_value(value).unwrap());
-                }
+                let encoded = encode_any(&value);
+                Ok(ScryptoValue::from_slice(&encoded).unwrap())
+            }
+            None => {
+                let value = Value::Option {
+                    value: Box::new(Option::None),
+                };
+                let encoded = encode_any(&value);
+                Ok(ScryptoValue::from_slice(&encoded).unwrap())
             }
         }
-
-        return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
     }
 
     fn write_kv_store_entry(
@@ -1166,67 +1276,34 @@ where
         key: ScryptoValue,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
-        ///TODO: Remove
-        #[derive(Debug)]
-        enum KeyValueStoreState {
-            Uncommitted,
-            Committed { component_address: ComponentAddress },
-        }
-
         verify_stored_value(&value)?;
 
-        let (old_value, kv_store_state) =
-            match self.owned_values.get_kv_store_entry(&kv_store_id, &key.raw) {
-                None => match &self.component_state {
-                    Some(ComponentState {
-                        component_address, ..
-                    }) => {
-                        if !self
-                            .ref_values
-                            .contains(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
-                        {
-                            return Err(RuntimeError::KeyValueStoreNotFound(kv_store_id));
-                        }
-                        let old_substate_value = self.track.read_key_value(
-                            Address::KeyValueStore(*component_address, kv_store_id),
-                            key.raw.clone(),
-                        );
-                        let old_value = match old_substate_value {
-                            SubstateValue::KeyValueStoreEntry(v) => v,
-                            _ => panic!("Substate value is not a KeyValueStore entry"),
-                        }
-                        .map(|v| ScryptoValue::from_slice(&v).unwrap());
-                        Ok((
-                            old_value,
-                            KeyValueStoreState::Committed {
-                                component_address: *component_address,
-                            },
-                        ))
-                    }
-                    _ => Err(RuntimeError::KeyValueStoreNotFound(kv_store_id)),
-                },
-                Some(value) => Ok((value, KeyValueStoreState::Uncommitted)),
-            }?;
-
+        let (old_value, parent_type) = self.read_kv_store_entry_internal(kv_store_id, &key)?;
         let new_value_ids = match old_value {
             None => value.stored_value_ids(),
             Some(old_scrypto_value) => stored_value_update(&old_scrypto_value, &value)?,
         };
-        let new_values = self.owned_values.take(&new_value_ids)?;
-
-        match kv_store_state {
-            KeyValueStoreState::Uncommitted => {
-                // Check for cycles
+        let new_values = self.take_values(&new_value_ids)?;
+        match parent_type {
+            ValueType::Owned => {
                 let kv_store = self
-                    .owned_values
-                    .get_kv_store_mut(&kv_store_id)
+                    .get_owned_kv_store_mut(&kv_store_id)
                     .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
                 kv_store.store.insert(key.raw, value);
-                kv_store.insert_children(new_values);
+                kv_store.insert_children(new_values)
             }
-            KeyValueStoreState::Committed { component_address } => {
+            ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
+                if let Some(root_store) = self.get_owned_kv_store_mut(&root) {
+                    let kv_store = root_store.get_child_kv_store(&ancestors, &kv_store_id);
+                    kv_store.store.insert(key.raw, value);
+                    kv_store.insert_children(new_values)
+                } else {
+                    return Err(RuntimeError::CyclicKeyValueStore(kv_store_id.clone()));
+                }
+            }
+            ValueType::Ref(ValueRefType::Committed { component_address }) => {
                 self.track.set_key_value(
-                    Address::KeyValueStore(component_address, kv_store_id),
+                    Address::KeyValueStore(component_address.clone(), kv_store_id),
                     key.raw,
                     SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                 );

@@ -12,7 +12,7 @@ use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::RuntimeError;
-use crate::engine::RuntimeError::{BlueprintFunctionDoesNotExist};
+use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
 use crate::engine::SystemApi;
 use crate::model::Component;
 use crate::wasm::*;

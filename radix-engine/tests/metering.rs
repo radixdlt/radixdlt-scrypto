@@ -1,9 +1,9 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use sbor::describe::Fields;
 use crate::test_runner::TestRunner;
 use radix_engine::wasm::InvokeError;
+use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::prelude::{HashMap, Package};
@@ -17,17 +17,15 @@ fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
         blueprint_name,
         BlueprintAbi {
             structure: Type::Unit,
-            fns: vec![
-                Fn {
-                    ident: "f".to_string(),
-                    mutability: Option::None,
-                    input: Type::Struct {
-                        name: "Any".to_string(),
-                        fields: Fields::Named { named: vec![] }
-                    },
-                    output: Type::Unit,
-                }
-            ],
+            fns: vec![Fn {
+                ident: "f".to_string(),
+                mutability: Option::None,
+                input: Type::Struct {
+                    name: "Any".to_string(),
+                    fields: Fields::Named { named: vec![] },
+                },
+                output: Type::Unit,
+            }],
         },
     );
     blueprint_abis
