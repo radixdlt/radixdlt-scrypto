@@ -26,6 +26,17 @@ pub struct BlueprintAbi {
     pub fns: Vec<Fn>,
 }
 
+impl BlueprintAbi {
+    pub fn contains_fn(&self, fn_ident: &str) -> bool {
+        for func in &self.fns {
+            if func.ident.eq(fn_ident) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 /// Represents a method/function.
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Debug, Clone, TypeId, Encode, Decode)]

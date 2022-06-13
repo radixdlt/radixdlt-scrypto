@@ -1,6 +1,7 @@
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::SNodeRef;
 use scrypto::core::ScryptoActorInfo;
@@ -11,6 +12,7 @@ use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::RuntimeError;
+use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
 use crate::engine::SystemApi;
 use crate::model::Component;
 use crate::wasm::*;
@@ -24,6 +26,7 @@ where
     I: WasmInstance,
 {
     this: ScryptoActorInfo,
+    blueprint_abi: BlueprintAbi,
     system_api: &'s mut S,
     cost_unit_counter: &'c mut CostUnitCounter,
     phantom1: PhantomData<W>,
@@ -38,11 +41,13 @@ where
 {
     pub fn new(
         this: ScryptoActorInfo,
+        blueprint_abi: BlueprintAbi,
         system_api: &'s mut S,
         cost_unit_counter: &'c mut CostUnitCounter,
     ) -> Self {
         RadixEngineWasmRuntime {
             this,
+            blueprint_abi,
             system_api,
             cost_unit_counter,
             phantom1: PhantomData,
@@ -71,6 +76,14 @@ where
         state: Vec<u8>,
         access_rules_list: Vec<AccessRules>,
     ) -> Result<ComponentAddress, RuntimeError> {
+        for access_rules in &access_rules_list {
+            for (func_name, _) in access_rules.iter() {
+                if !self.blueprint_abi.contains_fn(func_name.as_str()) {
+                    return Err(BlueprintFunctionDoesNotExist(func_name.to_string()));
+                }
+            }
+        }
+
         let component = Component::new(
             self.this.package_address().clone(),
             blueprint_name,

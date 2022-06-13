@@ -44,6 +44,8 @@ pub enum RuntimeError {
     /// Component does not exist.
     ComponentNotFound(ComponentAddress),
 
+    BlueprintFunctionDoesNotExist(String),
+
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 

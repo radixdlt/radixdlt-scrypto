@@ -1,7 +1,7 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::format;
-use sbor::ToString;
+use sbor::rust::string::ToString;
 use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
 use wasmi::*;

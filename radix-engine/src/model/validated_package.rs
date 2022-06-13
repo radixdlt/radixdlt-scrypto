@@ -56,16 +56,6 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn contains_blueprint(&self, blueprint_name: &str) -> bool {
-        self.blueprint_abis.contains_key(blueprint_name)
-    }
-
-    pub fn load_blueprint_schema(&self, blueprint_name: &str) -> Result<&Type, PackageError> {
-        self.blueprint_abi(blueprint_name)
-            .map(|v| &v.structure)
-            .ok_or(PackageError::BlueprintNotFound)
-    }
-
     pub fn static_main<'s, S, W, I>(
         method_name: &str,
         call_data: ScryptoValue,
@@ -92,6 +82,7 @@ impl ValidatedPackage {
     pub fn invoke<'s, S, W, I>(
         &self,
         actor: ScryptoActorInfo,
+        blueprint_abi: BlueprintAbi,
         export_name: String,
         method_name: &str,
         arg: ScryptoValue,
@@ -105,7 +96,8 @@ impl ValidatedPackage {
         let mut instance = system_api.wasm_engine().instantiate(self.code());
         let mut cost_unit_counter =
             CostUnitCounter::new(CALL_FUNCTION_COST_UNIT_LIMIT, CALL_FUNCTION_COST_UNIT_LIMIT);
-        let runtime = RadixEngineWasmRuntime::new(actor, system_api, &mut cost_unit_counter);
+        let runtime =
+            RadixEngineWasmRuntime::new(actor, blueprint_abi, system_api, &mut cost_unit_counter);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
         instance
             .invoke_export(&export_name, method_name, &arg, &mut runtime_boxed)
