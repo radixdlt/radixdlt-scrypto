@@ -7,6 +7,7 @@ use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::marker::*;
 use sbor::rust::ops::Deref;
+use sbor::rust::ops::DerefMut;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
@@ -239,15 +240,14 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
                 BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
-                BorrowedSNodeState::TrackedVault(id, vault, ..) => SNodeState::TrackedVaultRef(*id, vault),
+                BorrowedSNodeState::TrackedVault(id, vault, ..) => {
+                    SNodeState::TrackedVaultRef(*id, vault)
+                }
             },
         }
     }
 
-    fn cleanup<S: ReadableSubstateStore>(
-        self,
-        track: &mut Track<S>,
-    ) {
+    fn cleanup<S: ReadableSubstateStore>(self, track: &mut Track<S>) {
         if let Borrowed(borrowed) = self {
             match borrowed {
                 BorrowedSNodeState::AuthZone(..) => {}
@@ -271,7 +271,7 @@ impl<'a> LoadedSNodeState<'a> {
                         track
                             .return_borrowed_global_mut_value((component_address, vault_id), vault);
                     }
-                    _ => panic!("Should not get here.")
+                    _ => panic!("Should not get here."),
                 },
             }
         }
@@ -379,7 +379,11 @@ where
             success = false;
         }
 
-        let values: HashMap<StoredValueId, StoredValue> = self.owned_values.drain().map(|(id, c)| (id, c.into_inner())).collect();
+        let values: HashMap<StoredValueId, StoredValue> = self
+            .owned_values
+            .drain()
+            .map(|(id, c)| (id, c.into_inner()))
+            .collect();
         for (_, value) in values {
             self.sys_log(Level::Warn, format!("Dangling value: {:?}", value));
             resource = match value {
@@ -564,15 +568,11 @@ where
             SNodeState::Proof(proof) => proof
                 .main_consume(fn_ident, input)
                 .map_err(RuntimeError::ProofError),
-            SNodeState::VaultRef(_vault_id, value) => {
-                match value {
-                    StoredValue::Vault(id, vault) => {
-                        vault
-                            .main(*id, fn_ident, input, self)
-                            .map_err(RuntimeError::VaultError)
-                    }
-                    _ => panic!("Should be a vault")
-                }
+            SNodeState::VaultRef(_vault_id, value) => match value {
+                StoredValue::Vault(id, vault) => vault
+                    .main(*id, fn_ident, input, self)
+                    .map_err(RuntimeError::VaultError),
+                _ => panic!("Should be a vault"),
             },
             SNodeState::TrackedVaultRef(vault_id, vault) => vault
                 .main(vault_id, fn_ident, input, self)
@@ -635,18 +635,19 @@ where
             let value = store.store.get(&key.raw).cloned();
             (value, ValueType::Owned)
         } else {
-            let maybe_value_ref = self
-                .refed_values
-                .get(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
-                .cloned();
+            let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
+            let maybe_value_ref = self.refed_values.get(&value_id).cloned();
             let value_ref =
                 maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
             let value = match &value_ref {
                 ValueRefType::Uncommitted { root, ancestors } => {
                     let root_store =
                         Self::get_owned_kv_store_mut(&mut self.owned_values, root).unwrap();
-                    let store = root_store.get_child_kv_store(ancestors, &kv_store_id);
-                    store.store.get(&key.raw).cloned()
+                    let mut value = root_store.get_child(ancestors, &value_id);
+                    match value.deref_mut() {
+                        StoredValue::KeyValueStore(_, store) => store.store.get(&key.raw).cloned(),
+                        _ => panic!("Substate value is not a KeyValueStore entry"),
+                    }
                 }
                 ValueRefType::Committed { component_address } => {
                     let substate_value = self.track.read_key_value(
@@ -939,9 +940,7 @@ where
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (resource_address, snode_state) = {
-                    if let Some(value) =
-                        self.owned_values.get(&StoredValueId::VaultId(*vault_id))
-                    {
+                    if let Some(value) = self.owned_values.get(&StoredValueId::VaultId(*vault_id)) {
                         let resource_address = match value.borrow().deref() {
                             StoredValue::Vault(_, vault) => vault.resource_address(),
                             _ => panic!("Expected vault"),
@@ -953,7 +952,7 @@ where
                                 vault_id.clone(),
                                 value.borrow_mut(),
                                 ValueType::Owned,
-                            ))
+                            )),
                         )
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
@@ -961,11 +960,14 @@ where
                         let value_ref =
                             maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
                         match value_ref {
-                            ValueRefType::Uncommitted { root, ref ancestors } => {
+                            ValueRefType::Uncommitted {
+                                root,
+                                ref ancestors,
+                            } => {
                                 let root_store =
                                     Self::get_owned_kv_store_mut(&mut self.owned_values, &root)
                                         .unwrap();
-                                let value = root_store.take_child_vault(ancestors, vault_id);
+                                let value = root_store.get_child(ancestors, &value_id);
                                 let resource_address = match value.deref() {
                                     StoredValue::Vault(_, vault) => vault.resource_address(),
                                     _ => panic!("Expected vault"),
@@ -976,7 +978,7 @@ where
                                         vault_id.clone(),
                                         value,
                                         ValueType::Ref(value_ref),
-                                    ))
+                                    )),
                                 )
                             }
                             ValueRefType::Committed { component_address } => {
@@ -997,9 +999,9 @@ where
                                         vault_id.clone(),
                                         vault,
                                         ValueType::Ref(value_ref),
-                                    ))
+                                    )),
                                 )
-                            },
+                            }
                         }
                     }
                 };
@@ -1011,10 +1013,7 @@ where
                 };
 
                 let method_auth = resource_manager.get_vault_auth(&fn_ident);
-                Ok((
-                    snode_state,
-                    vec![method_auth.clone()],
-                ))
+                Ok((snode_state, vec![method_auth.clone()]))
             }
         }?;
 
@@ -1345,9 +1344,15 @@ where
                 if let Some(root_store) =
                     Self::get_owned_kv_store_mut(&mut self.owned_values, &root)
                 {
-                    let kv_store = root_store.get_child_kv_store(&ancestors, &kv_store_id);
-                    kv_store.store.insert(key.raw, value);
-                    kv_store.insert_children(new_values)
+                    let id = &StoredValueId::KeyValueStoreId(kv_store_id);
+                    let mut wrapped_store = root_store.get_child(&ancestors, id);
+                    match wrapped_store.deref_mut() {
+                        StoredValue::KeyValueStore(_, kv_store) => {
+                            kv_store.store.insert(key.raw, value);
+                            kv_store.insert_children(new_values)
+                        }
+                        _ => panic!("Expected KV store"),
+                    }
                 } else {
                     return Err(RuntimeError::CyclicKeyValueStore(kv_store_id.clone()));
                 }
@@ -1389,7 +1394,10 @@ where
         let kv_store_id = self.track.new_kv_store_id();
         self.owned_values.insert(
             StoredValueId::KeyValueStoreId(kv_store_id.clone()),
-            RefCell::new(StoredValue::KeyValueStore(kv_store_id, PreCommittedKeyValueStore::new())),
+            RefCell::new(StoredValue::KeyValueStore(
+                kv_store_id,
+                PreCommittedKeyValueStore::new(),
+            )),
         );
         kv_store_id
     }

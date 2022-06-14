@@ -1,6 +1,6 @@
 use sbor::rust::cell::{RefCell, RefMut};
-use sbor::rust::ops::{Deref};
 use sbor::rust::collections::*;
+use sbor::rust::ops::Deref;
 use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
@@ -39,44 +39,17 @@ impl PreCommittedKeyValueStore {
         descendents
     }
 
-    pub fn get_child_kv_store(
+    pub fn get_child(
         &mut self,
         ancestors: &[KeyValueStoreId],
-        kv_store_id: &KeyValueStoreId,
-    ) -> &mut PreCommittedKeyValueStore {
-        if ancestors.is_empty() {
-            let celled_value = self
-                .child_values
-                .get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
-                .expect("Vault expected to exist");
-            let value = celled_value.get_mut();
-            let store = match value {
-                StoredValue::KeyValueStore(_, store) => store,
-                _ => panic!("Expected to be a store"),
-            };
-            return store;
-        }
-
-        let (first, rest) = ancestors.split_first().unwrap();
-        let value = self
-            .child_values
-            .get_mut(&StoredValueId::KeyValueStoreId(*first))
-            .unwrap();
-        let store = match value.get_mut() {
-            StoredValue::KeyValueStore(_, store) => store,
-            _ => panic!("Expected to be store"),
-        };
-        store.get_child_kv_store(rest, kv_store_id)
-    }
-
-    pub fn take_child_vault(&mut self, ancestors: &[KeyValueStoreId], vault_id: &VaultId) -> RefMut<StoredValue> {
+        id: &StoredValueId,
+    ) -> RefMut<StoredValue> {
         if ancestors.is_empty() {
             let value = self
                 .child_values
-                .get_mut(&StoredValueId::VaultId(*vault_id))
-                .expect("Vault expected to exist");
-            let borrowed = value.borrow_mut();
-            return borrowed;
+                .get_mut(id)
+                .expect("Value expected to exist");
+            return value.borrow_mut();
         }
 
         let (first, rest) = ancestors.split_first().unwrap();
@@ -85,7 +58,7 @@ impl PreCommittedKeyValueStore {
             .get_mut(&StoredValueId::KeyValueStoreId(*first))
             .unwrap();
         match value.get_mut() {
-            StoredValue::KeyValueStore(_, store) => store.take_child_vault(rest, vault_id),
+            StoredValue::KeyValueStore(_, store) => store.get_child(rest, id),
             _ => panic!("Expected to be store"),
         }
     }
