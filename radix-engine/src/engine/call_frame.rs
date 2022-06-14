@@ -544,6 +544,17 @@ where
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
+                if let Some(component) = &component_state {
+                    for value_id in component.initial_value.stored_value_ids() {
+                        self.refed_values.insert(
+                            value_id,
+                            ValueRefType::Committed {
+                                component_address: component.component_address.clone(),
+                            },
+                        );
+                    }
+                }
+
                 self.component_state = component_state;
                 package.invoke(actor, blueprint_abi, export_name, fn_ident, input, self)
             }
@@ -1224,18 +1235,10 @@ where
         if let Some(ComponentState {
             component_address,
             component,
-            initial_value,
+            ..
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
-                for value_id in initial_value.stored_value_ids() {
-                    self.refed_values.insert(
-                        value_id,
-                        ValueRefType::Committed {
-                            component_address: *component_address,
-                        },
-                    );
-                }
                 let state = component.state().to_vec();
                 return Ok(state);
             }
