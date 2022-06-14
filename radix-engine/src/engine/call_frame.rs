@@ -1114,7 +1114,11 @@ where
             borrowed.return_borrowed_state(self);
         }
 
-        self.sys_log(Level::Debug, format!("Done!"));
+        let remaining_cost_units = self.cost_unit_counter().remaining();
+        self.sys_log(
+            Level::Debug,
+            format!("Done! Reamining cost units: {}", remaining_cost_units),
+        );
         Ok(result)
     }
 

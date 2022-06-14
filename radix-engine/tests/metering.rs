@@ -2,10 +2,14 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use radix_engine::fee::CALL_ENGINE_COST;
 use radix_engine::wasm::InvokeError;
 use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
+use scrypto::buffer::scrypto_encode;
+use scrypto::core::Level;
+use scrypto::engine::api::RadixEngineInput;
 use scrypto::prelude::{HashMap, Package, RADIX_TOKEN};
 use scrypto::to_struct;
 use test_runner::wat2wasm;
@@ -164,14 +168,17 @@ fn test_total_cost_units_consumed() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let (pk1, _, account1) = test_runner.new_account();
-    let (_, _, account2) = test_runner.new_account();
+    let code = wat2wasm(&include_str!("wasm/syscall.wat"));
+    let package = Package {
+        code,
+        blueprints: metering_abi("Test".to_string()),
+    };
+    let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
-        .withdraw_from_account(RADIX_TOKEN, account1)
-        .call_method_with_all_resources(account2, "deposit_batch")
+        .call_function(package_address, "Test", "f", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![pk1]);
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_eq!(237268, receipt.cost_units_consumed);
+    assert_eq!(CALL_ENGINE_COST + 326, receipt.cost_units_consumed);
 }
