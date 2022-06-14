@@ -1,12 +1,12 @@
-use sbor::rust::cell::{RefCell, RefMut};
-use sbor::rust::ops::{Deref};
 use colored::*;
 use sbor::path::SborPath;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
+use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::marker::*;
+use sbor::rust::ops::Deref;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
@@ -244,14 +244,12 @@ impl<'a> LoadedSNodeState<'a> {
     fn cleanup<S: ReadableSubstateStore>(
         self,
         track: &mut Track<S>,
-        owned_values: &mut HashMap<StoredValueId, StoredValue>
+        owned_values: &mut HashMap<StoredValueId, StoredValue>,
     ) {
         if let Borrowed(borrowed) = self {
             match borrowed {
-                BorrowedSNodeState::AuthZone(_auth_zone) => {
-                }
-                BorrowedSNodeState::Worktop(_worktop) => {
-                }
+                BorrowedSNodeState::AuthZone(_auth_zone) => {}
+                BorrowedSNodeState::Worktop(_worktop) => {}
                 BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
                     if let Some(component_address) = actor.component_address() {
                         track.return_borrowed_global_mut_value(
@@ -261,13 +259,10 @@ impl<'a> LoadedSNodeState<'a> {
                     }
                 }
                 BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                    track
-                        .return_borrowed_global_mut_value(resource_address, resource_manager);
+                    track.return_borrowed_global_mut_value(resource_address, resource_manager);
                 }
-                BorrowedSNodeState::Bucket(_bucket_id, _bucket) => {
-                }
-                BorrowedSNodeState::Proof(_proof_id, _proof) => {
-                }
+                BorrowedSNodeState::Bucket(_bucket_id, _bucket) => {}
+                BorrowedSNodeState::Proof(_proof_id, _proof) => {}
                 BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
                     ValueType::Owned => {
                         owned_values.insert(
@@ -331,7 +326,9 @@ where
             verbose,
             track,
             wasm_engine,
-            Some(RefCell::new(AuthZone::new_with_proofs(initial_auth_zone_proofs))),
+            Some(RefCell::new(AuthZone::new_with_proofs(
+                initial_auth_zone_proofs,
+            ))),
             Some(RefCell::new(Worktop::new())),
             HashMap::new(),
             HashMap::new(),
@@ -588,7 +585,8 @@ where
 
         // figure out what buckets and resources to return
         let moving_buckets = Self::send_buckets(&mut self.buckets, &output.bucket_ids)?;
-        let moving_proofs = Self::send_proofs(&mut self.proofs, &output.proof_ids, MoveMethod::AsReturn)?;
+        let moving_proofs =
+            Self::send_proofs(&mut self.proofs, &output.proof_ids, MoveMethod::AsReturn)?;
         let moving_vaults = self.send_vaults(&output.vault_ids)?;
 
         // drop proofs and check resource leak
@@ -647,7 +645,8 @@ where
                 maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
             let value = match &value_ref {
                 ValueRefType::Uncommitted { root, ancestors } => {
-                    let root_store = Self::get_owned_kv_store_mut(&mut self.owned_values, root).unwrap();
+                    let root_store =
+                        Self::get_owned_kv_store_mut(&mut self.owned_values, root).unwrap();
                     let store = root_store.get_child_kv_store(ancestors, &kv_store_id);
                     store.store.get(&key.raw).cloned()
                 }
@@ -722,7 +721,11 @@ where
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
         moving_buckets.extend(Self::send_buckets(&mut self.buckets, &input.bucket_ids)?);
-        moving_proofs.extend(Self::send_proofs(&mut self.proofs, &input.proof_ids, MoveMethod::AsArgument)?);
+        moving_proofs.extend(Self::send_proofs(
+            &mut self.proofs,
+            &input.proof_ids,
+            MoveMethod::AsArgument,
+        )?);
         self.sys_log(
             Level::Debug,
             format!("Sending buckets: {:?}", moving_buckets),
@@ -903,7 +906,10 @@ where
                 ))
             }
             SNodeRef::BucketRef(bucket_id) => {
-                let bucket_cell = self.buckets.get(&bucket_id).ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let bucket_cell = self
+                    .buckets
+                    .get(&bucket_id)
+                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let bucket = bucket_cell.borrow_mut();
                 Ok((
                     Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
@@ -911,7 +917,10 @@ where
                 ))
             }
             SNodeRef::ProofRef(proof_id) => {
-                let proof_cell = self.proofs.get(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                let proof_cell = self
+                    .proofs
+                    .get(&proof_id)
+                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let proof = proof_cell.borrow_mut();
                 Ok((
                     Borrowed(BorrowedSNodeState::Proof(proof_id.clone(), proof)),
@@ -942,7 +951,9 @@ where
                             maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
                         let vault = match &value_ref {
                             ValueRefType::Uncommitted { root, ancestors } => {
-                                let root_store = Self::get_owned_kv_store_mut(&mut self.owned_values, root).unwrap();
+                                let root_store =
+                                    Self::get_owned_kv_store_mut(&mut self.owned_values, root)
+                                        .unwrap();
                                 root_store.take_child_vault(ancestors, vault_id)
                             }
                             ValueRefType::Committed { component_address } => self
@@ -1006,16 +1017,15 @@ where
                 borrowed.push(auth_zone.deref());
             }
             for method_auth in method_auths {
-                method_auth.check(&borrowed).map_err(|error| {
-                    RuntimeError::AuthorizationError {
+                method_auth
+                    .check(&borrowed)
+                    .map_err(|error| RuntimeError::AuthorizationError {
                         function: fn_ident.clone(),
                         authorization: method_auth,
                         error,
-                    }
-                })?;
+                    })?;
             }
         }
-
 
         // start a new frame
         let mut frame = CallFrame::new(
@@ -1026,11 +1036,15 @@ where
             self.wasm_engine,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Scrypto(..))
-                | Static(StaticSNodeState::TransactionProcessor) => Some(RefCell::new(AuthZone::new())),
+                | Static(StaticSNodeState::TransactionProcessor) => {
+                    Some(RefCell::new(AuthZone::new()))
+                }
                 _ => None,
             },
             match loaded_snode {
-                Static(StaticSNodeState::TransactionProcessor) => Some(RefCell::new(Worktop::new())),
+                Static(StaticSNodeState::TransactionProcessor) => {
+                    Some(RefCell::new(Worktop::new()))
+                }
                 _ => None,
             },
             moving_buckets,
@@ -1045,7 +1059,6 @@ where
 
         // Return borrowed snodes
         loaded_snode.cleanup(&mut self.track, &mut self.owned_values);
-
 
         // move buckets and proofs to this process.
         self.sys_log(
@@ -1139,7 +1152,8 @@ where
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, RefCell::new(Bucket::new(container)));
+        self.buckets
+            .insert(bucket_id, RefCell::new(Bucket::new(container)));
         Ok(bucket_id)
     }
 
@@ -1299,7 +1313,9 @@ where
                 kv_store.insert_children(new_values)
             }
             ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                if let Some(root_store) = Self::get_owned_kv_store_mut(&mut self.owned_values, &root) {
+                if let Some(root_store) =
+                    Self::get_owned_kv_store_mut(&mut self.owned_values, &root)
+                {
                     let kv_store = root_store.get_child_kv_store(&ancestors, &kv_store_id);
                     kv_store.store.insert(key.raw, value);
                     kv_store.insert_children(new_values)
