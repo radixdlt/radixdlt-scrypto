@@ -588,28 +588,38 @@ where
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
 
-    pub fn take_cost_unit_counter(&mut self) -> CostUnitCounter {
+    fn take_cost_unit_counter(&mut self) -> CostUnitCounter {
         self.cost_unit_counter
             .take()
             .expect("Frame doesn't own a cost unit counter")
     }
 
-    pub fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
-        self.cost_unit_counter
+    fn cost_unit_counter_helper(counter: &mut Option<CostUnitCounter>) -> &mut CostUnitCounter {
+        counter
             .as_mut()
             .expect("Frame doens't own a cost unit counter")
     }
 
-    pub fn take_fee_table(&mut self) -> FeeTable {
+    pub fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+        // Use helper method to support paritial borrow of self
+        // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
+        Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
+    }
+
+    fn take_fee_table(&mut self) -> FeeTable {
         self.fee_table
             .take()
             .expect("Frame doesn't own a fee table")
     }
 
+    fn fee_table_helper(fee_table: &mut Option<FeeTable>) -> &mut FeeTable {
+        fee_table.as_mut().expect("Frame doens't own a fee table")
+    }
+
     pub fn fee_table(&mut self) -> &mut FeeTable {
-        self.fee_table
-            .as_mut()
-            .expect("Frame doens't own a fee table")
+        // Use helper method to support paritial borrow of self
+        // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
+        Self::fee_table_helper(&mut self.fee_table)
     }
 }
 
