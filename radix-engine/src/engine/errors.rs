@@ -2,7 +2,7 @@ use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::DecodeError;
+use sbor::{DecodeError, Value};
 use scrypto::engine::types::*;
 use transaction::errors::*;
 
@@ -26,7 +26,11 @@ pub enum RuntimeError {
     IdAllocationError(IdAllocationError),
 
     /// Invalid request code.
-    UnknownMethod(String),
+    MethodDoesNotExist(String),
+    InvalidMethodArgument {
+        fn_ident: String,
+        input: Value,
+    },
 
     /// Package does not exist.
     PackageNotFound(PackageAddress),
@@ -43,6 +47,9 @@ pub enum RuntimeError {
 
     /// Component does not exist.
     ComponentNotFound(ComponentAddress),
+
+    BlueprintFunctionDoesNotExist(String),
+    ComponentDecodeError(DecodeError),
 
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),

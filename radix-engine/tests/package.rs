@@ -2,7 +2,6 @@
 pub mod test_runner;
 
 use radix_engine::engine::RuntimeError;
-use radix_engine::model::extract_package;
 use radix_engine::model::PackageError;
 use radix_engine::wasm::InvokeError;
 use radix_engine::wasm::PrepareError::NoMemory;
@@ -108,7 +107,10 @@ fn test_basic_package() {
 
     // Act
     let code = wat2wasm(include_str!("wasm/basic_package.wat"));
-    let package = extract_package(code).unwrap();
+    let package = Package {
+        code,
+        blueprints: HashMap::new(),
+    };
     let manifest = ManifestBuilder::new().publish_package(package).build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
