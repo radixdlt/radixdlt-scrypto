@@ -936,12 +936,22 @@ where
                 Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
-                let (value_type, vault) = {
+                let (resource_address, snode_state) = {
                     if let Some(value) =
                         self.owned_values.remove(&StoredValueId::VaultId(*vault_id))
                     {
                         match value {
-                            StoredValue::Vault(_, vault) => (ValueType::Owned, vault),
+                            StoredValue::Vault(_, vault) => {
+                                let resource_address = vault.resource_address();
+                                (
+                                    resource_address,
+                                    Borrowed(BorrowedSNodeState::Vault(
+                                         vault_id.clone(),
+                                         vault,
+                                         ValueType::Owned,
+                                    ))
+                                )
+                            },
                             _ => panic!("Expected vault"),
                         }
                     } else {
@@ -949,29 +959,47 @@ where
                         let maybe_value_ref = self.refed_values.get(&value_id).cloned();
                         let value_ref =
                             maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
-                        let vault = match &value_ref {
-                            ValueRefType::Uncommitted { root, ancestors } => {
+                        match value_ref {
+                            ValueRefType::Uncommitted { root, ref ancestors } => {
                                 let root_store =
-                                    Self::get_owned_kv_store_mut(&mut self.owned_values, root)
+                                    Self::get_owned_kv_store_mut(&mut self.owned_values, &root)
                                         .unwrap();
-                                root_store.take_child_vault(ancestors, vault_id)
+                                let vault = root_store.take_child_vault(ancestors, vault_id);
+                                let resource_address = vault.resource_address();
+                                (
+                                    resource_address,
+                                    Borrowed(BorrowedSNodeState::Vault(
+                                        vault_id.clone(),
+                                        vault,
+                                        ValueType::Ref(value_ref),
+                                    ))
+                                )
                             }
-                            ValueRefType::Committed { component_address } => self
-                                .track
-                                .borrow_global_mut_value((*component_address, *vault_id))
-                                .map_err(|e| match e {
-                                    TrackError::NotFound => panic!("Expected to find vault"),
-                                    TrackError::Reentrancy => {
-                                        panic!("Vault logic is causing reentrancy")
-                                    }
-                                })?
-                                .into(),
-                        };
-                        (ValueType::Ref(value_ref), vault)
+                            ValueRefType::Committed { component_address } => {
+                                let vault: Vault = self
+                                    .track
+                                    .borrow_global_mut_value((component_address, *vault_id))
+                                    .map_err(|e| match e {
+                                        TrackError::NotFound => panic!("Expected to find vault"),
+                                        TrackError::Reentrancy => {
+                                            panic!("Vault logic is causing reentrancy")
+                                        }
+                                    })?
+                                    .into();
+                                let resource_address = vault.resource_address();
+                                (
+                                    resource_address,
+                                    Borrowed(BorrowedSNodeState::Vault(
+                                        vault_id.clone(),
+                                        vault,
+                                        ValueType::Ref(value_ref),
+                                    ))
+                                )
+                            },
+                        }
                     }
                 };
 
-                let resource_address = vault.resource_address();
                 let substate_value = self.track.read_value(resource_address.clone()).unwrap();
                 let resource_manager = match substate_value {
                     SubstateValue::Resource(resource_manager) => resource_manager,
@@ -980,11 +1008,7 @@ where
 
                 let method_auth = resource_manager.get_vault_auth(&fn_ident);
                 Ok((
-                    Borrowed(BorrowedSNodeState::Vault(
-                        vault_id.clone(),
-                        vault,
-                        value_type,
-                    )),
+                    snode_state,
                     vec![method_auth.clone()],
                 ))
             }
