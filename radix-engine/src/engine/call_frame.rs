@@ -53,7 +53,7 @@ pub struct CallFrame<
     wasm_engine: &'w mut W,
 
     /// Owned Values
-    buckets: HashMap<BucketId, Bucket>,
+    buckets: HashMap<BucketId, RefCell<Bucket>>,
     proofs: HashMap<ProofId, Proof>,
     owned_values: HashMap<StoredValueId, StoredValue>,
 
@@ -149,7 +149,7 @@ pub enum BorrowedSNodeState<'a> {
         Option<ComponentState>,
     ),
     Resource(ResourceAddress, ResourceManager),
-    Bucket(BucketId, Bucket),
+    Bucket(BucketId, RefMut<'a, Bucket>),
     Proof(ProofId, Proof),
     Vault(VaultId, Vault, ValueType),
 }
@@ -204,7 +204,7 @@ pub enum MoveMethod {
     AsArgument,
 }
 
-impl LoadedSNodeState<'_> {
+impl<'a> LoadedSNodeState<'a> {
     fn to_snode_state(&mut self) -> SNodeState {
         match self {
             Static(static_state) => match static_state {
@@ -238,6 +238,61 @@ impl LoadedSNodeState<'_> {
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
                 BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
             },
+        }
+    }
+
+    fn cleanup<S: ReadableSubstateStore>(
+        self,
+        track: &mut Track<S>,
+        proofs: &mut HashMap<ProofId, Proof>,
+        owned_values: &mut HashMap<StoredValueId, StoredValue>
+    ) {
+        if let Borrowed(borrowed) = self {
+            match borrowed {
+                BorrowedSNodeState::AuthZone(_auth_zone) => {
+                }
+                BorrowedSNodeState::Worktop(_worktop) => {
+                }
+                BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
+                    if let Some(component_address) = actor.component_address() {
+                        track.return_borrowed_global_mut_value(
+                            component_address,
+                            component_state.unwrap().component, // TODO: how about the refs?
+                        );
+                    }
+                }
+                BorrowedSNodeState::Resource(resource_address, resource_manager) => {
+                    track
+                        .return_borrowed_global_mut_value(resource_address, resource_manager);
+                }
+                BorrowedSNodeState::Bucket(_bucket_id, _bucket) => {
+                }
+                BorrowedSNodeState::Proof(proof_id, proof) => {
+                    proofs.insert(proof_id, proof);
+                }
+                BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
+                    ValueType::Owned => {
+                        owned_values.insert(
+                            StoredValueId::VaultId(vault_id.clone()),
+                            StoredValue::Vault(vault_id, vault),
+                        );
+                    }
+                    ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
+                        let store = owned_values
+                            .get_mut(&StoredValueId::KeyValueStoreId(root))
+                            .map(|v| match v {
+                                StoredValue::KeyValueStore(_, store) => store,
+                                _ => panic!("Expected KV store"),
+                            })
+                            .unwrap();
+                        store.put_child_vault(&ancestors, vault_id, vault);
+                    }
+                    ValueType::Ref(ValueRefType::Committed { component_address }) => {
+                        track
+                            .return_borrowed_global_mut_value((component_address, vault_id), vault);
+                    }
+                },
+            }
         }
     }
 }
@@ -298,13 +353,18 @@ where
         proofs: HashMap<ProofId, Proof>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
     ) -> Self {
+        let mut celled_buckets = HashMap::new();
+        for (id, b) in buckets {
+            celled_buckets.insert(id, RefCell::new(b));
+        }
+
         Self {
             transaction_hash,
             depth,
             trace,
             track,
             wasm_engine,
-            buckets,
+            buckets: celled_buckets,
             proofs,
             owned_values: HashMap::new(),
             refed_values: HashMap::new(),
@@ -322,12 +382,12 @@ where
         let mut success = true;
         let mut resource = ResourceFailure::Unknown;
 
-        for (bucket_id, bucket) in &self.buckets {
+        for (bucket_id, ref_bucket) in &self.buckets {
             self.sys_log(
                 Level::Warn,
-                format!("Dangling bucket: {}, {:?}", bucket_id, bucket),
+                format!("Dangling bucket: {}, {:?}", bucket_id, ref_bucket),
             );
-            resource = ResourceFailure::Resource(bucket.resource_address());
+            resource = ResourceFailure::Resource(ref_bucket.borrow().resource_address());
             success = false;
         }
 
@@ -390,14 +450,15 @@ where
 
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
-        from: &mut HashMap<BucketId, Bucket>,
+        from: &mut HashMap<BucketId, RefCell<Bucket>>,
         bucket_ids: &HashMap<BucketId, SborPath>,
     ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
         let mut buckets = HashMap::new();
         for (bucket_id, _) in bucket_ids {
             let bucket = from
                 .remove(bucket_id)
-                .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
+                .ok_or(RuntimeError::BucketNotFound(*bucket_id))?
+                .into_inner();
             if bucket.is_locked() {
                 return Err(RuntimeError::CantMoveLockedBucket);
             }
@@ -652,6 +713,18 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         self.sys_log(Level::Debug, format!("{:?} {:?}", snode_ref, &fn_ident));
 
+        Self::process_call_data(&input)?;
+        // Figure out what buckets and proofs to move from this process
+        let mut moving_buckets = HashMap::new();
+        let mut moving_proofs = HashMap::new();
+        moving_buckets.extend(Self::send_buckets(&mut self.buckets, &input.bucket_ids)?);
+        moving_proofs.extend(Self::send_proofs(&mut self.proofs, &input.proof_ids, MoveMethod::AsArgument)?);
+        self.sys_log(
+            Level::Debug,
+            format!("Sending buckets: {:?}", moving_buckets),
+        );
+        self.sys_log(Level::Debug, format!("Sending proofs: {:?}", moving_proofs));
+
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::TransactionProcessor => {
@@ -811,7 +884,8 @@ where
                 let bucket = self
                     .buckets
                     .remove(&bucket_id)
-                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?
+                    .into_inner();
                 let resource_address = bucket.resource_address();
                 let substate_value = self.track.read_value(resource_address.clone()).unwrap();
                 let resource_manager = match substate_value {
@@ -825,10 +899,8 @@ where
                 ))
             }
             SNodeRef::BucketRef(bucket_id) => {
-                let bucket = self
-                    .buckets
-                    .remove(&bucket_id)
-                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let bucket_cell = self.buckets.get(&bucket_id).ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let bucket = bucket_cell.borrow_mut();
                 Ok((
                     Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
                     vec![],
@@ -915,7 +987,7 @@ where
                 // Resource auth check includes caller
                 Borrowed(BorrowedSNodeState::Resource(_, _))
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
-                | Borrowed(BorrowedSNodeState::Bucket(_, _))
+                | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Scrypto(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
@@ -941,17 +1013,6 @@ where
             }
         }
 
-        // Figure out what buckets and proofs to move from this process
-        let mut moving_buckets = HashMap::new();
-        let mut moving_proofs = HashMap::new();
-        Self::process_call_data(&input)?;
-        moving_buckets.extend(Self::send_buckets(&mut self.buckets, &input.bucket_ids)?);
-        moving_proofs.extend(Self::send_proofs(&mut self.proofs, &input.proof_ids, MoveMethod::AsArgument)?);
-        self.sys_log(
-            Level::Debug,
-            format!("Sending buckets: {:?}", moving_buckets),
-        );
-        self.sys_log(Level::Debug, format!("Sending proofs: {:?}", moving_proofs));
 
         // start a new frame
         let mut frame = CallFrame::new(
@@ -979,6 +1040,10 @@ where
         let (result, received_buckets, received_proofs, mut received_vaults) =
             frame.run(Some(snode_ref), snode, &fn_ident, input)?;
 
+        // Return borrowed snodes
+        loaded_snode.cleanup(&mut self.track, &mut self.proofs, &mut self.owned_values);
+
+
         // move buckets and proofs to this process.
         self.sys_log(
             Level::Debug,
@@ -988,59 +1053,15 @@ where
             Level::Debug,
             format!("Received proofs: {:?}", received_proofs),
         );
-        self.buckets.extend(received_buckets);
+        for (bucket_id, bucket) in received_buckets {
+            self.buckets.insert(bucket_id, RefCell::new(bucket));
+        }
         self.proofs.extend(received_proofs);
         for (vault_id, vault) in received_vaults.drain() {
             self.owned_values.insert(
                 StoredValueId::VaultId(vault_id.clone()),
                 StoredValue::Vault(vault_id, vault),
             );
-        }
-
-        // Return borrowed snodes
-        if let Borrowed(borrowed) = loaded_snode {
-            match borrowed {
-                BorrowedSNodeState::AuthZone(_auth_zone) => {
-                }
-                BorrowedSNodeState::Worktop(_worktop) => {
-                }
-                BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
-                    if let Some(component_address) = actor.component_address() {
-                        self.track.return_borrowed_global_mut_value(
-                            component_address,
-                            component_state.unwrap().component, // TODO: how about the refs?
-                        );
-                    }
-                }
-                BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                    self
-                        .track
-                        .return_borrowed_global_mut_value(resource_address, resource_manager);
-                }
-                BorrowedSNodeState::Bucket(bucket_id, bucket) => {
-                    self.buckets.insert(bucket_id, bucket);
-                }
-                BorrowedSNodeState::Proof(proof_id, proof) => {
-                    self.proofs.insert(proof_id, proof);
-                }
-                BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
-                    ValueType::Owned => {
-                        self.owned_values.insert(
-                            StoredValueId::VaultId(vault_id.clone()),
-                            StoredValue::Vault(vault_id, vault),
-                        );
-                    }
-                    ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                        let store = Self::get_owned_kv_store_mut(&mut self.owned_values, &root).unwrap();
-                        store.put_child_vault(&ancestors, vault_id, vault);
-                    }
-                    ValueType::Ref(ValueRefType::Committed { component_address }) => {
-                        self
-                            .track
-                            .return_borrowed_global_mut_value((component_address, vault_id), vault);
-                    }
-                },
-            }
         }
 
         Ok(result)
@@ -1112,7 +1133,7 @@ where
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, Bucket::new(container));
+        self.buckets.insert(bucket_id, RefCell::new(Bucket::new(container)));
         Ok(bucket_id)
     }
 
@@ -1128,6 +1149,7 @@ where
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
         self.buckets
             .remove(&bucket_id)
+            .map(RefCell::into_inner)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))
     }
 
