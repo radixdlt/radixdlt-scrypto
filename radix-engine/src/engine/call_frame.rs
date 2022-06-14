@@ -535,15 +535,6 @@ where
         ),
         RuntimeError,
     > {
-        let remaining_cost_units = self.cost_unit_counter().remaining();
-        self.sys_log(
-            Level::Debug,
-            format!(
-                "Run started. Remaining cost units: {}",
-                remaining_cost_units
-            ),
-        );
-
         let output = match snode {
             SNodeState::Root => {
                 panic!("Root is not runnable")
@@ -644,14 +635,14 @@ where
             .expect("Frame doesn't own a fee table")
     }
 
-    fn fee_table_helper(fee_table: &mut Option<FeeTable>) -> &mut FeeTable {
-        fee_table.as_mut().expect("Frame doens't own a fee table")
+    fn fee_table_helper(fee_table: &Option<FeeTable>) -> &FeeTable {
+        fee_table.as_ref().expect("Frame doens't own a fee table")
     }
 
-    pub fn fee_table(&mut self) -> &mut FeeTable {
+    pub fn fee_table(&self) -> &FeeTable {
         // Use helper method to support paritial borrow of self
         // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
-        Self::fee_table_helper(&mut self.fee_table)
+        Self::fee_table_helper(&self.fee_table)
     }
 
     fn take_values(
@@ -760,9 +751,13 @@ where
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let remaining_cost_units = self.cost_unit_counter().remaining();
         self.sys_log(
             Level::Debug,
-            format!("Invoking: {:?} {:?}", snode_ref, &fn_ident),
+            format!(
+                "Invoking: {:?} {:?}, remainging cost units: {}",
+                snode_ref, &fn_ident, remaining_cost_units
+            ),
         );
 
         // Authorization and state load
@@ -1464,7 +1459,7 @@ where
         self.cost_unit_counter()
     }
 
-    fn fee_table(&mut self) -> &mut FeeTable {
+    fn fee_table(&self) -> &FeeTable {
         self.fee_table()
     }
 }

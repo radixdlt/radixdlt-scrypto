@@ -51,7 +51,7 @@ where
         self.system_api.cost_unit_counter()
     }
 
-    fn fee_table(&mut self) -> &mut FeeTable {
+    fn fee_table(&self) -> &FeeTable {
         self.system_api.fee_table()
     }
 

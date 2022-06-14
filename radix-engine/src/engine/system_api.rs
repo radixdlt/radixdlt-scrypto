@@ -19,7 +19,7 @@ where
 
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
 
-    fn fee_table(&mut self) -> &mut FeeTable;
+    fn fee_table(&self) -> &FeeTable;
 
     fn invoke_snode(
         &mut self,
