@@ -541,6 +541,19 @@ where
         ),
         RuntimeError,
     > {
+        let remaining_cost_units = self.cost_unit_counter().remaining();
+        self.sys_log(
+            Level::Debug,
+            format!(
+                "Run started! Remainging cost units: {}",
+                remaining_cost_units
+            ),
+        );
+
+        Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
+            .consume(Self::fee_table_helper(&mut self.fee_table).engine_run_cost())
+            .map_err(RuntimeError::CostingError)?;
+
         let output = match snode {
             SNodeState::Root => {
                 panic!("Root is not runnable")
@@ -613,6 +626,15 @@ where
             )?;
         }
         self.check_resource()?;
+
+        let remaining_cost_units = self.cost_unit_counter().remaining();
+        self.sys_log(
+            Level::Debug,
+            format!(
+                "Run finished! Remainging cost units: {}",
+                remaining_cost_units
+            ),
+        );
 
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
@@ -761,13 +783,9 @@ where
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let remaining_cost_units = self.cost_unit_counter().remaining();
         self.sys_log(
             Level::Debug,
-            format!(
-                "Invoking: {:?} {:?}, remainging cost units: {}",
-                snode_ref, &fn_ident, remaining_cost_units
-            ),
+            format!("Invoking: {:?} {:?}", snode_ref, &fn_ident),
         );
 
         // Authorization and state load
@@ -1052,7 +1070,6 @@ where
                 })?;
             }
         }
-        self.sys_log(Level::Debug, format!("Auth check success!"));
 
         // Figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
@@ -1125,11 +1142,6 @@ where
             borrowed.return_borrowed_state(self);
         }
 
-        let remaining_cost_units = self.cost_unit_counter().remaining();
-        self.sys_log(
-            Level::Debug,
-            format!("Done! Reamining cost units: {}", remaining_cost_units),
-        );
         Ok(result)
     }
 

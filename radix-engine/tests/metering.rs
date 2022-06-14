@@ -2,7 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::fee::CALL_ENGINE_COST;
+use radix_engine::fee::{ENGINE_RUN_COST, WASM_ENGINE_CALL_COST};
 use radix_engine::wasm::InvokeError;
 use sbor::describe::Fields;
 use sbor::Type;
@@ -177,5 +177,9 @@ fn test_total_cost_units_consumed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_eq!(CALL_ENGINE_COST + 326, receipt.cost_units_consumed);
+    /* TransactionProcessor::main + Scrypto::main + AuthZone::clear * 2 */
+    assert_eq!(
+        ENGINE_RUN_COST * 4 + WASM_ENGINE_CALL_COST + 326,
+        receipt.cost_units_consumed
+    );
 }
