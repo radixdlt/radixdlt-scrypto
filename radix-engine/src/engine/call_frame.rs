@@ -152,6 +152,7 @@ pub enum BorrowedSNodeState<'a> {
     Bucket(BucketId, RefMut<'a, Bucket>),
     Proof(ProofId, RefMut<'a, Proof>),
     Vault(VaultId, Vault, ValueType),
+    TrackedVault(VaultId, Vault, ValueType),
 }
 
 pub enum StaticSNodeState {
@@ -189,6 +190,7 @@ pub enum SNodeState<'a> {
     ProofRef(ProofId, &'a mut Proof),
     Proof(Proof),
     VaultRef(VaultId, &'a mut Vault),
+    TrackedVaultRef(VaultId, &'a mut Vault),
 }
 
 #[derive(Debug)]
@@ -237,6 +239,7 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
                 BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
+                BorrowedSNodeState::TrackedVault(id, vault, ..) => SNodeState::TrackedVaultRef(*id, vault),
             },
         }
     }
@@ -280,10 +283,14 @@ impl<'a> LoadedSNodeState<'a> {
                             .unwrap();
                         store.put_child_vault(&ancestors, vault_id, vault);
                     }
+                    _ => panic!("Should not get here.")
+                },
+                BorrowedSNodeState::TrackedVault(vault_id, vault, value_type) => match value_type {
                     ValueType::Ref(ValueRefType::Committed { component_address }) => {
                         track
                             .return_borrowed_global_mut_value((component_address, vault_id), vault);
                     }
+                    _ => panic!("Should not get here.")
                 },
             }
         }
@@ -577,6 +584,9 @@ where
                 .main_consume(fn_ident, input)
                 .map_err(RuntimeError::ProofError),
             SNodeState::VaultRef(vault_id, vault) => vault
+                .main(vault_id, fn_ident, input, self)
+                .map_err(RuntimeError::VaultError),
+            SNodeState::TrackedVaultRef(vault_id, vault) => vault
                 .main(vault_id, fn_ident, input, self)
                 .map_err(RuntimeError::VaultError),
         }?;
@@ -989,7 +999,7 @@ where
                                 let resource_address = vault.resource_address();
                                 (
                                     resource_address,
-                                    Borrowed(BorrowedSNodeState::Vault(
+                                    Borrowed(BorrowedSNodeState::TrackedVault(
                                         vault_id.clone(),
                                         vault,
                                         ValueType::Ref(value_ref),
@@ -1025,6 +1035,7 @@ where
                 // Resource auth check includes caller
                 Borrowed(BorrowedSNodeState::Resource(_, _))
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
+                | Borrowed(BorrowedSNodeState::TrackedVault(..))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Scrypto(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
