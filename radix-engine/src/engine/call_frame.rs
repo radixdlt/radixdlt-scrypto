@@ -54,7 +54,7 @@ pub struct CallFrame<
 
     /// Owned Values
     buckets: HashMap<BucketId, RefCell<Bucket>>,
-    proofs: HashMap<ProofId, Proof>,
+    proofs: HashMap<ProofId, RefCell<Proof>>,
     owned_values: HashMap<StoredValueId, StoredValue>,
 
     /// Referenced values
@@ -150,7 +150,7 @@ pub enum BorrowedSNodeState<'a> {
     ),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, RefMut<'a, Bucket>),
-    Proof(ProofId, Proof),
+    Proof(ProofId, RefMut<'a, Proof>),
     Vault(VaultId, Vault, ValueType),
 }
 
@@ -244,7 +244,6 @@ impl<'a> LoadedSNodeState<'a> {
     fn cleanup<S: ReadableSubstateStore>(
         self,
         track: &mut Track<S>,
-        proofs: &mut HashMap<ProofId, Proof>,
         owned_values: &mut HashMap<StoredValueId, StoredValue>
     ) {
         if let Borrowed(borrowed) = self {
@@ -267,8 +266,7 @@ impl<'a> LoadedSNodeState<'a> {
                 }
                 BorrowedSNodeState::Bucket(_bucket_id, _bucket) => {
                 }
-                BorrowedSNodeState::Proof(proof_id, proof) => {
-                    proofs.insert(proof_id, proof);
+                BorrowedSNodeState::Proof(_proof_id, _proof) => {
                 }
                 BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
                     ValueType::Owned => {
@@ -358,6 +356,11 @@ where
             celled_buckets.insert(id, RefCell::new(b));
         }
 
+        let mut celled_proofs = HashMap::new();
+        for (id, proof) in proofs {
+            celled_proofs.insert(id, RefCell::new(proof));
+        }
+
         Self {
             transaction_hash,
             depth,
@@ -365,7 +368,7 @@ where
             track,
             wasm_engine,
             buckets: celled_buckets,
-            proofs,
+            proofs: celled_proofs,
             owned_values: HashMap::new(),
             refed_values: HashMap::new(),
             worktop,
@@ -493,7 +496,7 @@ where
 
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
-        from: &mut HashMap<ProofId, Proof>,
+        from: &mut HashMap<ProofId, RefCell<Proof>>,
         proof_ids: &HashMap<ProofId, SborPath>,
         method: MoveMethod,
     ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
@@ -501,7 +504,8 @@ where
         for (proof_id, _) in proof_ids {
             let mut proof = from
                 .remove(proof_id)
-                .ok_or(RuntimeError::ProofNotFound(*proof_id))?;
+                .ok_or(RuntimeError::ProofNotFound(*proof_id))?
+                .into_inner();
             if proof.is_restricted() {
                 return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
             }
@@ -589,7 +593,7 @@ where
 
         // drop proofs and check resource leak
         for (_, proof) in self.proofs.drain() {
-            proof.drop();
+            proof.into_inner().drop();
         }
 
         if self.auth_zone.is_some() {
@@ -907,10 +911,8 @@ where
                 ))
             }
             SNodeRef::ProofRef(proof_id) => {
-                let proof = self
-                    .proofs
-                    .remove(&proof_id)
-                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                let proof_cell = self.proofs.get(&proof_id).ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                let proof = proof_cell.borrow_mut();
                 Ok((
                     Borrowed(BorrowedSNodeState::Proof(proof_id.clone(), proof)),
                     vec![],
@@ -920,7 +922,8 @@ where
                 let proof = self
                     .proofs
                     .remove(&proof_id)
-                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
+                    .into_inner();
                 Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
@@ -1041,7 +1044,7 @@ where
             frame.run(Some(snode_ref), snode, &fn_ident, input)?;
 
         // Return borrowed snodes
-        loaded_snode.cleanup(&mut self.track, &mut self.proofs, &mut self.owned_values);
+        loaded_snode.cleanup(&mut self.track, &mut self.owned_values);
 
 
         // move buckets and proofs to this process.
@@ -1056,7 +1059,9 @@ where
         for (bucket_id, bucket) in received_buckets {
             self.buckets.insert(bucket_id, RefCell::new(bucket));
         }
-        self.proofs.extend(received_proofs);
+        for (proof_id, proof) in received_proofs {
+            self.proofs.insert(proof_id, RefCell::new(proof));
+        }
         for (vault_id, vault) in received_vaults.drain() {
             self.owned_values.insert(
                 StoredValueId::VaultId(vault_id.clone()),
@@ -1118,7 +1123,7 @@ where
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
         let proof_id = self.track.new_proof_id();
-        self.proofs.insert(proof_id, proof);
+        self.proofs.insert(proof_id, RefCell::new(proof));
         Ok(proof_id)
     }
 
@@ -1126,7 +1131,8 @@ where
         let proof = self
             .proofs
             .remove(&proof_id)
-            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
+            .ok_or(RuntimeError::ProofNotFound(proof_id))?
+            .into_inner();
 
         Ok(proof)
     }
@@ -1385,7 +1391,7 @@ where
             .map(|proof_id| {
                 self.proofs
                     .get(&proof_id)
-                    .map(Proof::clone)
+                    .map(|p| p.borrow().clone())
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))
             })
             .collect::<Result<Vec<Proof>, RuntimeError>>()?;
