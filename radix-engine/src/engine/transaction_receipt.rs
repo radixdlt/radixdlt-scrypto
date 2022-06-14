@@ -32,6 +32,19 @@ impl Receipt {
             panic!("Expected success but was:\n{:?}", self);
         }
     }
+
+    pub fn expect_err<F>(&self, f: F)
+    where
+        F: FnOnce(&RuntimeError) -> bool,
+    {
+        if let Err(e) = &self.result {
+            if !f(e) {
+                panic!("Expected error but was different error:\n{:?}", self);
+            }
+        } else {
+            panic!("Expected error but was successful:\n{:?}", self);
+        }
+    }
 }
 
 macro_rules! prefix {

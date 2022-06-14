@@ -101,6 +101,7 @@ fn test_account_balance() {
 
     // Act
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    receipt.result.expect("Should be okay");
 
     // Assert
     assert_eq!(
