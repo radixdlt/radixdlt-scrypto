@@ -134,7 +134,7 @@ impl Encode for isize {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        (*self as i32).encode_value(encoder);
+        (*self as i64).encode_value(encoder);
     }
 }
 
@@ -145,7 +145,7 @@ impl Encode for usize {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        (*self as u32).encode_value(encoder);
+        (*self as u64).encode_value(encoder);
     }
 }
 

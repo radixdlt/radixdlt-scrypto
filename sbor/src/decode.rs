@@ -225,7 +225,7 @@ impl Decode for isize {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        i32::decode_value(decoder).map(|i| i as isize)
+        i64::decode_value(decoder).map(|i| i as isize)
     }
 }
 
@@ -235,7 +235,7 @@ impl Decode for usize {
         decoder.check_type(Self::type_id())
     }
     fn decode_value(decoder: &mut Decoder) -> Result<Self, DecodeError> {
-        u32::decode_value(decoder).map(|i| i as usize)
+        u64::decode_value(decoder).map(|i| i as usize)
     }
 }
 
