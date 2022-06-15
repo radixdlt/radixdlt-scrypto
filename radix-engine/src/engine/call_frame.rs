@@ -62,6 +62,8 @@ pub struct CallFrame<
 
     /// Referenced values
     component_state: Option<&'p mut ComponentState>,
+    initial_value: Option<ScryptoValue>,
+
     refed_values: HashMap<StoredValueId, ValueRefType>,
 
     /// Caller's auth zone
@@ -198,7 +200,6 @@ pub enum SNodeState<'a> {
 pub struct ComponentState {
     pub component_address: ComponentAddress,
     pub component: Component,
-    pub initial_value: ScryptoValue,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -359,6 +360,7 @@ where
             worktop,
             auth_zone,
             caller_auth_zone,
+            initial_value: None,
             component_state: None,
             phantom: PhantomData,
         }
@@ -543,9 +545,10 @@ where
             SNodeState::WorktopRef(worktop) => worktop
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
-                if let Some(component) = &component_state {
-                    for value_id in component.initial_value.stored_value_ids() {
+            SNodeState::Scrypto(actor, blueprint_abi, package, export_name, maybe_component) => {
+                if let Some(component) = &maybe_component {
+                    let initial_value = ScryptoValue::from_slice(component.component.state()).unwrap();
+                    for value_id in initial_value.stored_value_ids() {
                         self.refed_values.insert(
                             value_id,
                             ValueRefType::Committed {
@@ -553,9 +556,10 @@ where
                             },
                         );
                     }
+                    self.initial_value = Some(initial_value);
                 }
 
-                self.component_state = component_state;
+                self.component_state = maybe_component;
                 package.invoke(actor, blueprint_abi, export_name, fn_ident, input, self)
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
@@ -855,9 +859,6 @@ where
                         let (_, method_auths) =
                             component.method_authorization(&abi.structure, &fn_ident);
 
-                        // set up component state
-                        let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
-
                         Ok((
                             Borrowed(BorrowedSNodeState::Scrypto(
                                 ScryptoActorInfo::component(
@@ -871,7 +872,6 @@ where
                                 Some(ComponentState {
                                     component_address,
                                     component,
-                                    initial_value,
                                 }),
                             )),
                             method_auths,
@@ -1257,12 +1257,10 @@ where
         if let Some(ComponentState {
             component_address,
             component,
-            initial_value,
-            ..
         }) = &mut self.component_state
         {
             if addr.eq(component_address) {
-                let new_value_ids = stored_value_update(initial_value, &state)?;
+                let new_value_ids = stored_value_update(self.initial_value.as_ref().unwrap(), &state)?;
                 component.set_state(state.raw);
                 let addr = *component_address;
                 let new_values = self.take_values(&new_value_ids)?;
