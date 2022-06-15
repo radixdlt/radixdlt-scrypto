@@ -143,9 +143,8 @@ pub enum BorrowedSNodeState<'a> {
     Blueprint(
         ScryptoActorInfo,
         ValidatedPackage,
-        String,
     ),
-    Component(ScryptoActorInfo, ValidatedPackage, String, Component),
+    Component(ScryptoActorInfo, ValidatedPackage, Component),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, RefMut<'a, Bucket>),
     Proof(ProofId, RefMut<'a, Proof>),
@@ -177,12 +176,10 @@ pub enum SNodeState<'a> {
     Blueprint(
         ScryptoActorInfo,
         ValidatedPackage,
-        String,
     ),
     Component(
         ScryptoActorInfo,
         ValidatedPackage,
-        String,
         &'a mut Component,
     ),
     ResourceStatic,
@@ -220,21 +217,17 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Blueprint(
                     info,
                     package,
-                    export_name,
                 ) => SNodeState::Blueprint(
                     info.clone(),
                     package.clone(),
-                    export_name.clone(),
                 ),
                 BorrowedSNodeState::Component(
                     info,
                     package,
-                    export_name,
                     component,
                 ) => SNodeState::Component(
                     info.clone(),
                     package.clone(),
-                    export_name.clone(),
                     component,
                 ),
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
@@ -257,7 +250,7 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Proof(..) => {}
                 BorrowedSNodeState::Vault(..) => {}
                 BorrowedSNodeState::Blueprint(..) => {}
-                BorrowedSNodeState::Component(actor, _, _, component) => {
+                BorrowedSNodeState::Component(actor, _, component) => {
                     track.return_borrowed_global_mut_value(
                         actor.component_address().unwrap(),
                         component,
@@ -545,8 +538,8 @@ where
             SNodeState::Blueprint(
                 actor,
                 package,
-                export_name
             ) => {
+                let export_name = format!("{}_main", actor.blueprint_name());
                 package.invoke(
                     &actor,
                     &mut None,
@@ -559,7 +552,6 @@ where
             SNodeState::Component(
                 actor,
                 package,
-                export_name,
                 component,
             ) => {
                 let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
@@ -573,7 +565,7 @@ where
                 }
 
                 let mut maybe_component = Some(component);
-
+                let export_name = format!("{}_main", actor.blueprint_name());
                 let rtn = package.invoke(
                     &actor,
                     &mut maybe_component,
@@ -832,16 +824,13 @@ where
                             input: input.dom,
                         });
                     }
-                    let export_name = format!("{}_main", blueprint_name);
-
                     Ok((
                         Borrowed(BorrowedSNodeState::Blueprint(
                             ScryptoActorInfo::blueprint(
                                 package_address.clone(),
                                 blueprint_name.clone(),
                             ),
-                            package.clone(),
-                            export_name.clone(),
+                            package.clone()
                         )),
                         vec![],
                     ))
@@ -863,8 +852,6 @@ where
                         .into();
                     let package_address = component.package_address();
                     let blueprint_name = component.blueprint_name().to_string();
-                    let export_name = format!("{}_main", blueprint_name);
-
                     let substate_value = self
                         .track
                         .read_value(package_address)
@@ -897,7 +884,6 @@ where
                                 component_address,
                             ),
                             package.clone(),
-                            export_name,
                             component,
                         )),
                         method_auths,
