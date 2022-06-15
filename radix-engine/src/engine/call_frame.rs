@@ -634,12 +634,6 @@ where
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
 
-    fn take_cost_unit_counter(&mut self) -> CostUnitCounter {
-        self.cost_unit_counter
-            .take()
-            .expect("Frame doesn't own a cost unit counter")
-    }
-
     fn cost_unit_counter_helper(counter: &mut Option<CostUnitCounter>) -> &mut CostUnitCounter {
         counter
             .as_mut()
@@ -650,12 +644,6 @@ where
         // Use helper method to support paritial borrow of self
         // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
         Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
-    }
-
-    fn take_fee_table(&mut self) -> FeeTable {
-        self.fee_table
-            .take()
-            .expect("Frame doesn't own a fee table")
     }
 
     fn fee_table_helper(fee_table: &Option<FeeTable>) -> &FeeTable {
@@ -801,10 +789,6 @@ where
         for proof in &moving_proofs {
             self.sys_log(Level::Debug, format!("Sending proof: {:?}", proof));
         }
-
-        // Prepare moving cost unit counter and fee table
-        let cost_unit_counter = self.take_cost_unit_counter();
-        let fee_table = self.take_fee_table();
 
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
@@ -1102,6 +1086,16 @@ where
         }
         self.sys_log(Level::Debug, format!("Auth check success!"));
 
+        // Prepare moving cost unit counter and fee table
+        let cost_unit_counter = self
+            .cost_unit_counter
+            .take()
+            .expect("Frame doesn't own a cost unit counter");
+        let fee_table = self
+            .fee_table
+            .take()
+            .expect("Frame doesn't own a fee table");
+
         // start a new frame
         let mut frame = CallFrame::new(
             self.transaction_hash,
@@ -1134,8 +1128,8 @@ where
         let run_result = frame.run(Some(snode_ref), snode, &fn_ident, input);
 
         // re-gain ownership of the cost unit counter and fee table
-        self.cost_unit_counter = Some(frame.take_cost_unit_counter());
-        self.fee_table = Some(frame.take_fee_table());
+        self.cost_unit_counter = frame.cost_unit_counter;
+        self.fee_table = frame.fee_table;
 
         // unwrap and contine
         let (result, received_buckets, received_proofs, mut received_vaults) = run_result?;
