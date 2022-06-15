@@ -361,8 +361,8 @@ describe_basic_type!(u32, Type::U32);
 describe_basic_type!(u64, Type::U64);
 describe_basic_type!(u128, Type::U128);
 
-describe_basic_type!(isize, Type::I32);
-describe_basic_type!(usize, Type::U32);
+describe_basic_type!(isize, Type::I64);
+describe_basic_type!(usize, Type::U64);
 
 describe_basic_type!(str, Type::String);
 describe_basic_type!(String, Type::String);
