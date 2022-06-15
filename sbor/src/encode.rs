@@ -364,6 +364,7 @@ impl<T: Encode + TypeId + Ord + Hash> Encode for HashSet<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
         encoder.write_len(self.len());
+        // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let values: BTreeSet<&T> = self.iter().collect();
         for v in values {
             v.encode_value(encoder);
@@ -381,6 +382,7 @@ impl<K: Encode + TypeId + Ord + Hash, V: Encode + TypeId> Encode for HashMap<K, 
         encoder.write_type(K::type_id());
         encoder.write_type(V::type_id());
         encoder.write_len(self.len());
+        // Encode elements based on the order defined on the key type to generate deterministic bytes.
         let keys: BTreeSet<&K> = self.keys().collect();
         for key in keys {
             key.encode_value(encoder);
