@@ -61,7 +61,6 @@ pub struct CallFrame<
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Referenced values
-    component_address: Option<ComponentAddress>,
     initial_value: Option<ScryptoValue>,
 
     refed_values: HashMap<StoredValueId, ValueRefType>,
@@ -355,7 +354,6 @@ where
             auth_zone,
             caller_auth_zone,
             initial_value: None,
-            component_address: None,
             phantom: PhantomData,
         }
     }
@@ -551,7 +549,6 @@ where
                         );
                     }
                     self.initial_value = Some(initial_value);
-                    self.component_address = Some(actor.component_address().unwrap());
                 }
 
                 let rtn = package.invoke(&actor, &mut maybe_component, blueprint_abi, export_name, fn_ident, input, self)?;
@@ -561,8 +558,8 @@ where
                     verify_stored_value(&value)?;
 
                     let new_value_ids = stored_value_update(self.initial_value.as_ref().unwrap(), &value)?;
-                    let addr = self.component_address.as_ref().unwrap().clone();
-                    // TODO: take values when component is actually written to rather than at the end of invocation
+                    let addr = actor.component_address().unwrap();
+                    // TODO: should we take values when component is actually written to rather than at the end of invocation?
                     let new_values = self.take_values(&new_value_ids)?;
                     self.track.insert_objects_into_component(new_values, addr);
                 }
