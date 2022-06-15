@@ -142,7 +142,7 @@ pub enum BorrowedSNodeState<'a> {
     Worktop(RefMut<'a, Worktop>),
     Bucket(BucketId, RefMut<'a, Bucket>),
     Proof(ProofId, RefMut<'a, Proof>),
-    Vault(RefMut<'a, StoredValue>, ValueType),
+    Vault(RefMut<'a, StoredValue>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
 }
 
@@ -454,7 +454,7 @@ where
                 BorrowedSNodeState::Proof(_id, mut proof) => proof
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::ProofError),
-                BorrowedSNodeState::Vault(mut value, ..) => match value.deref_mut() {
+                BorrowedSNodeState::Vault(mut value) => match value.deref_mut() {
                     StoredValue::Vault(id, vault) => vault
                         .main(*id, fn_ident, input, self)
                         .map_err(RuntimeError::VaultError),
@@ -869,10 +869,7 @@ where
 
                         (
                             resource_address,
-                            Borrowed(BorrowedSNodeState::Vault(
-                                value.borrow_mut(),
-                                ValueType::Owned,
-                            )),
+                            Borrowed(BorrowedSNodeState::Vault(value.borrow_mut())),
                         )
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
@@ -894,10 +891,7 @@ where
                                 };
                                 (
                                     resource_address,
-                                    Borrowed(BorrowedSNodeState::Vault(
-                                        value,
-                                        ValueType::Ref(value_ref),
-                                    )),
+                                    Borrowed(BorrowedSNodeState::Vault(value)),
                                 )
                             }
                             ValueRefType::Committed { component_address } => {
@@ -942,7 +936,7 @@ where
             match &loaded_snode {
                 // Resource auth check includes caller
                 Tracked(..)
-                | Borrowed(BorrowedSNodeState::Vault(_, _))
+                | Borrowed(BorrowedSNodeState::Vault(..))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
