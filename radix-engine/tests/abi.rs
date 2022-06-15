@@ -2,10 +2,10 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
 use radix_engine::engine::RuntimeError;
 use scrypto::prelude::*;
 use scrypto::to_struct;
-use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -47,12 +47,9 @@ fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
     let package_address = test_runner.extract_and_publish_package("abi");
 
     // Act
-    let manifest = ManifestBuilder::new().call_function(
-        package_address,
-        "AbiComponent2",
-        method_name,
-        arg,
-    ).build();
+    let manifest = ManifestBuilder::new()
+        .call_function(package_address, "AbiComponent2", method_name, arg)
+        .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
@@ -77,7 +74,6 @@ fn test_arg(method_name: &str, arg: Vec<u8>, expected_result: ExpectedResult) {
 fn test_invalid_output_fails() {
     test_arg("invalid_output", scrypto_encode(&()), InvalidOutput)
 }
-
 
 #[test]
 fn test_input_arg_unit_succeeds() {
@@ -137,8 +133,8 @@ fn test_input_arg_uvalue_fails() {
 
 #[test]
 fn test_input_arg_result_succeeds() {
-    let okay: Result<(), ()> =  Ok(());
-    let error: Result<(), ()> =  Err(());
+    let okay: Result<(), ()> = Ok(());
+    let error: Result<(), ()> = Err(());
     test_arg("result", scrypto_encode(&okay), Success);
     test_arg("result", scrypto_encode(&error), Success);
 }

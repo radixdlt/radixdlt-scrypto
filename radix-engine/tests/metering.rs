@@ -1,9 +1,9 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use sbor::describe::Fields;
 use crate::test_runner::TestRunner;
 use radix_engine::wasm::InvokeError;
+use sbor::describe::Fields;
 use sbor::Type;
 use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::prelude::{HashMap, Package};

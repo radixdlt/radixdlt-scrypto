@@ -56,6 +56,8 @@ impl TestRunner {
             .build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_success();
+
         receipt.new_component_addresses[0]
     }
 

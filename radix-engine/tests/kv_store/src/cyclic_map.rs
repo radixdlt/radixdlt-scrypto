@@ -5,44 +5,50 @@ use std::marker::PhantomData;
 
 blueprint! {
     struct CyclicMap {
-        maps: KeyValueStore<u32, KeyValueStore<u32, u32>>,
+        store: KeyValueStore<u32, KeyValueStore<u32, u32>>,
     }
 
     impl CyclicMap {
         pub fn new() -> ComponentAddress {
-            let map0 = KeyValueStore::new();
-            let map1 = KeyValueStore::new();
-            map0.insert(1u32, map1);
+            let kv_store0 = KeyValueStore::new();
+            let kv_store0_id = kv_store0.id.clone();
+            let kv_store1 = KeyValueStore::new();
+            kv_store0.insert(1u32, kv_store1);
+
+            // Retrieve reference
+            let kv_store1 = kv_store0.get(&1u32).unwrap();
+            let kv_store1_id = kv_store1.id.clone();
 
             let input = RadixEngineInput::PutKeyValueStoreEntry(
-                (Runtime::transaction_hash(), 1025),
+                kv_store1_id,
                 scrypto_encode(&0u32),
                 scrypto_encode(&KeyValueStore::<(), ()> {
-                    id: (Runtime::transaction_hash(), 1024),
+                    id: kv_store0_id,
                     key: PhantomData,
                     value: PhantomData,
                 }),
             );
             let _: () = call_engine(input);
 
-            CyclicMap { maps: map0 }.instantiate().globalize()
+            CyclicMap { store: kv_store0 }.instantiate().globalize()
         }
 
         pub fn new_self_cyclic() -> ComponentAddress {
-            let map0 = KeyValueStore::new();
+            let kv_store = KeyValueStore::new();
+            let kv_store_id = kv_store.id.clone();
 
             let input = RadixEngineInput::PutKeyValueStoreEntry(
-                (Runtime::transaction_hash(), 1024),
+                kv_store_id.clone(),
                 scrypto_encode(&0u32),
                 scrypto_encode(&KeyValueStore::<(), ()> {
-                    id: (Runtime::transaction_hash(), 1024),
+                    id: kv_store_id,
                     key: PhantomData,
                     value: PhantomData,
                 }),
             );
             let _: () = call_engine(input);
 
-            CyclicMap { maps: map0 }.instantiate().globalize()
+            CyclicMap { store: kv_store }.instantiate().globalize()
         }
     }
 }
