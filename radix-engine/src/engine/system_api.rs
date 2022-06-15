@@ -61,8 +61,6 @@ where
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
 
-    fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError>;
-
     fn write_component_state(
         &mut self,
         addr: ComponentAddress,

@@ -26,6 +26,7 @@ where
     I: WasmInstance,
 {
     this: ScryptoActorInfo,
+    component_bytes: Option<Vec<u8>>,
     blueprint_abi: BlueprintAbi,
     system_api: &'s mut S,
     cost_unit_counter: &'c mut CostUnitCounter,
@@ -41,12 +42,14 @@ where
 {
     pub fn new(
         this: ScryptoActorInfo,
+        component_bytes: Option<Vec<u8>>,
         blueprint_abi: BlueprintAbi,
         system_api: &'s mut S,
         cost_unit_counter: &'c mut CostUnitCounter,
     ) -> Self {
         RadixEngineWasmRuntime {
             this,
+            component_bytes,
             blueprint_abi,
             system_api,
             cost_unit_counter,
@@ -101,8 +104,14 @@ where
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<Vec<u8>, RuntimeError> {
-        let state = self.system_api.read_component_state(component_address)?;
-        Ok(state)
+        if let Some(bytes) = &self.component_bytes {
+            if component_address.eq(self.this.component_address().as_ref().unwrap()) {
+                let state = bytes.to_vec();
+                return Ok(state);
+            }
+        }
+
+        Err(RuntimeError::ComponentNotFound(component_address))
     }
 
     fn handle_put_component_state(

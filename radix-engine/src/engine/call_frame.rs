@@ -556,8 +556,9 @@ where
                     self.component_address = Some(actor.component_address().unwrap());
                 }
 
+                let component_bytes = maybe_component.as_ref().map(|c| c.state().to_vec());
                 self.component = maybe_component;
-                package.invoke(actor, blueprint_abi, export_name, fn_ident, input, self)
+                package.invoke(actor, component_bytes, blueprint_abi, export_name, fn_ident, input, self)
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
                 .map_err(RuntimeError::ResourceManagerError),
@@ -1223,17 +1224,6 @@ where
         self.track
             .insert_objects_into_component(values, address.clone().into());
         Ok(address.into())
-    }
-
-    fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError> {
-        if let Some(component) = &mut self.component {
-            if addr.eq(self.component_address.as_ref().unwrap()) {
-                let state = component.state().to_vec();
-                return Ok(state);
-            }
-        }
-
-        Err(RuntimeError::ComponentNotFound(addr))
     }
 
     fn write_component_state(

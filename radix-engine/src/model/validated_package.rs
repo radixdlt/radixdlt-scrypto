@@ -82,6 +82,7 @@ impl ValidatedPackage {
     pub fn invoke<'s, S, W, I>(
         &self,
         actor: ScryptoActorInfo,
+        component_bytes: Option<Vec<u8>>,
         blueprint_abi: BlueprintAbi,
         export_name: String,
         method_name: &str,
@@ -97,7 +98,7 @@ impl ValidatedPackage {
         let mut cost_unit_counter =
             CostUnitCounter::new(CALL_FUNCTION_COST_UNIT_LIMIT, CALL_FUNCTION_COST_UNIT_LIMIT);
         let runtime =
-            RadixEngineWasmRuntime::new(actor, blueprint_abi, system_api, &mut cost_unit_counter);
+            RadixEngineWasmRuntime::new(actor, component_bytes, blueprint_abi, system_api, &mut cost_unit_counter);
         let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
         instance
             .invoke_export(&export_name, method_name, &arg, &mut runtime_boxed)
