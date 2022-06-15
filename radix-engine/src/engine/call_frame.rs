@@ -13,7 +13,6 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::abi::BlueprintAbi;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneClearInput;
@@ -143,11 +142,10 @@ pub enum BorrowedSNodeState<'a> {
     Worktop(RefMut<'a, Worktop>),
     Blueprint(
         ScryptoActorInfo,
-        BlueprintAbi,
         ValidatedPackage,
         String,
     ),
-    Component(ScryptoActorInfo, BlueprintAbi, ValidatedPackage, String, Component),
+    Component(ScryptoActorInfo, ValidatedPackage, String, Component),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, RefMut<'a, Bucket>),
     Proof(ProofId, RefMut<'a, Proof>),
@@ -178,13 +176,11 @@ pub enum SNodeState<'a> {
     // TODO: use reference to the package
     Blueprint(
         ScryptoActorInfo,
-        BlueprintAbi,
         ValidatedPackage,
         String,
     ),
     Component(
         ScryptoActorInfo,
-        BlueprintAbi,
         ValidatedPackage,
         String,
         &'a mut Component,
@@ -223,24 +219,20 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
                 BorrowedSNodeState::Blueprint(
                     info,
-                    blueprint_abi,
                     package,
                     export_name,
                 ) => SNodeState::Blueprint(
                     info.clone(),
-                    blueprint_abi.clone(),
                     package.clone(),
                     export_name.clone(),
                 ),
                 BorrowedSNodeState::Component(
                     info,
-                    blueprint_abi,
                     package,
                     export_name,
                     component,
                 ) => SNodeState::Component(
                     info.clone(),
-                    blueprint_abi.clone(),
                     package.clone(),
                     export_name.clone(),
                     component,
@@ -265,7 +257,7 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Proof(..) => {}
                 BorrowedSNodeState::Vault(..) => {}
                 BorrowedSNodeState::Blueprint(..) => {}
-                BorrowedSNodeState::Component(actor, _, _, _, component) => {
+                BorrowedSNodeState::Component(actor, _, _, component) => {
                     track.return_borrowed_global_mut_value(
                         actor.component_address().unwrap(),
                         component,
@@ -552,14 +544,12 @@ where
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Blueprint(
                 actor,
-                blueprint_abi,
                 package,
                 export_name
             ) => {
                 package.invoke(
                     &actor,
                     &mut None,
-                    blueprint_abi,
                     export_name,
                     fn_ident,
                     input,
@@ -568,7 +558,6 @@ where
             }
             SNodeState::Component(
                 actor,
-                blueprint_abi,
                 package,
                 export_name,
                 component,
@@ -588,7 +577,6 @@ where
                 let rtn = package.invoke(
                     &actor,
                     &mut maybe_component,
-                    blueprint_abi,
                     export_name,
                     fn_ident,
                     input,
@@ -852,7 +840,6 @@ where
                                 package_address.clone(),
                                 blueprint_name.clone(),
                             ),
-                            abi.clone(),
                             package.clone(),
                             export_name.clone(),
                         )),
@@ -909,7 +896,6 @@ where
                                 blueprint_name,
                                 component_address,
                             ),
-                            abi.clone(),
                             package.clone(),
                             export_name,
                             component,
