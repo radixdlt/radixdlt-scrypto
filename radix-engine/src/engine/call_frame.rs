@@ -20,7 +20,7 @@ use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static};
+use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static, Tracked};
 use crate::engine::*;
 use crate::ledger::*;
 use crate::model::*;
@@ -138,6 +138,12 @@ pub enum ConsumedSNodeState {
     Proof(Proof),
 }
 
+pub enum TrackedSNodeState {
+    Component(ScryptoActorInfo, BlueprintAbi, ValidatedPackage, String, Component),
+    Resource(ResourceAddress, ResourceManager),
+    TrackedVault((ComponentAddress, VaultId), Vault),
+}
+
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
@@ -150,10 +156,6 @@ pub enum BorrowedSNodeState<'a> {
         ValidatedPackage,
         String,
     ),
-
-    Component(ScryptoActorInfo, BlueprintAbi, ValidatedPackage, String, Component),
-    Resource(ResourceAddress, ResourceManager),
-    TrackedVault((ComponentAddress, VaultId), Vault),
 }
 
 pub enum StaticSNodeState {
@@ -167,6 +169,7 @@ pub enum LoadedSNodeState<'a> {
     Static(StaticSNodeState),
     Consumed(Option<ConsumedSNodeState>),
     Borrowed(BorrowedSNodeState<'a>),
+    Tracked(TrackedSNodeState),
 }
 
 pub enum SNodeState<'a> {
@@ -233,7 +236,12 @@ impl<'a> LoadedSNodeState<'a> {
                     package.clone(),
                     export_name.clone(),
                 ),
-                BorrowedSNodeState::Component(
+                BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
+                BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
+                BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
+            },
+            Tracked(ref mut tracked) => match tracked {
+                TrackedSNodeState::Component(
                     info,
                     blueprint_abi,
                     package,
@@ -246,36 +254,27 @@ impl<'a> LoadedSNodeState<'a> {
                     export_name.clone(),
                     component,
                 ),
-                BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
-                BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
-                BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
-                BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
-                BorrowedSNodeState::TrackedVault(address, vault)=> {
+                TrackedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
+                TrackedSNodeState::TrackedVault(address, vault)=> {
                     SNodeState::TrackedVaultRef(*address, vault)
                 }
-            },
+            }
         }
     }
 
     fn cleanup<S: ReadableSubstateStore>(self, track: &mut Track<S>) {
-        if let Borrowed(borrowed) = self {
-            match borrowed {
-                BorrowedSNodeState::AuthZone(..) => {}
-                BorrowedSNodeState::Worktop(..) => {}
-                BorrowedSNodeState::Bucket(..) => {}
-                BorrowedSNodeState::Proof(..) => {}
-                BorrowedSNodeState::Vault(..) => {}
-                BorrowedSNodeState::Blueprint(..) => {}
-                BorrowedSNodeState::Component(actor, _, _, _, component) => {
+        if let Tracked(tracked) = self {
+            match tracked {
+                TrackedSNodeState::Component(actor, _, _, _, component) => {
                     track.return_borrowed_global_mut_value(
                         actor.component_address().unwrap(),
                         component,
                     );
                 }
-                BorrowedSNodeState::Resource(resource_address, resource_manager) => {
+                TrackedSNodeState::Resource(resource_address, resource_manager) => {
                     track.return_borrowed_global_mut_value(resource_address, resource_manager);
                 }
-                BorrowedSNodeState::TrackedVault(vault_address, vault) => {
+                TrackedSNodeState::TrackedVault(vault_address, vault) => {
                     track.return_borrowed_global_mut_value(vault_address, vault);
                 },
             }
@@ -900,7 +899,7 @@ where
                         component.method_authorization(&abi.structure, &fn_ident);
 
                     Ok((
-                        Borrowed(BorrowedSNodeState::Component(
+                        Tracked(TrackedSNodeState::Component(
                             ScryptoActorInfo::component(
                                 package_address,
                                 blueprint_name,
@@ -930,7 +929,7 @@ where
 
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
                 Ok((
-                    Borrowed(BorrowedSNodeState::Resource(
+                    Tracked(TrackedSNodeState::Resource(
                         resource_address.clone(),
                         resource_manager,
                     )),
@@ -1043,7 +1042,7 @@ where
                                 let resource_address = vault.resource_address();
                                 (
                                     resource_address,
-                                    Borrowed(BorrowedSNodeState::TrackedVault(
+                                    Tracked(TrackedSNodeState::TrackedVault(
                                         vault_address,
                                         vault,
                                     )),
@@ -1073,12 +1072,12 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                Borrowed(BorrowedSNodeState::Resource(_, _))
+                Tracked(TrackedSNodeState::Resource(_, _))
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
-                | Borrowed(BorrowedSNodeState::TrackedVault(..))
+                | Tracked(TrackedSNodeState::TrackedVault(..))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Borrowed(BorrowedSNodeState::Component(..))
+                | Tracked(TrackedSNodeState::Component(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
@@ -1112,7 +1111,7 @@ where
             self.wasm_engine,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Borrowed(BorrowedSNodeState::Component(..))
+                | Tracked(TrackedSNodeState::Component(..))
                 | Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
                 }

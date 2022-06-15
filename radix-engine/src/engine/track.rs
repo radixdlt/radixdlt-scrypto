@@ -1,4 +1,4 @@
-use std::cell::RefCell;
+use sbor::rust::cell::RefCell;
 use indexmap::{IndexMap, IndexSet};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
