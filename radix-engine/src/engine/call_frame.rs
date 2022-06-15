@@ -137,10 +137,6 @@ pub enum ConsumedSNodeState {
     Proof(Proof),
 }
 
-pub enum TrackedSNodeState {
-    Tracked(Address, SubstateValue, Option<(ScryptoActorInfo, ValidatedPackage)>),
-}
-
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
@@ -164,7 +160,7 @@ pub enum LoadedSNodeState<'a> {
     Static(StaticSNodeState),
     Consumed(Option<ConsumedSNodeState>),
     Borrowed(BorrowedSNodeState<'a>),
-    Tracked(TrackedSNodeState),
+    Tracked(Address, SubstateValue, Option<(ScryptoActorInfo, ValidatedPackage)>),
 }
 
 pub enum SNodeState<'a> {
@@ -222,20 +218,15 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
                 BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
             },
-            Tracked(ref mut tracked) => match tracked {
-                TrackedSNodeState::Tracked(addr, s, meta) =>
-                    SNodeState::Tracked(addr.clone(), s, meta.clone()),
+            Tracked(addr, s, meta) => {
+                SNodeState::Tracked(addr.clone(), s, meta.clone())
             }
         }
     }
 
     fn cleanup<S: ReadableSubstateStore>(self, track: &mut Track<S>) {
-        if let Tracked(tracked) = self {
-            match tracked {
-                TrackedSNodeState::Tracked(address, value, ..) => {
-                    track.return_borrowed_global_mut_value(address, value);
-                }
-            }
+        if let Tracked(address, value, ..) = self {
+            track.return_borrowed_global_mut_value(address, value);
         }
     }
 }
@@ -856,11 +847,11 @@ where
                     );
 
                     Ok((
-                        Tracked(TrackedSNodeState::Tracked(
+                        Tracked(
                             component_address.into(),
                             component_value,
                             Some((actor_info, package.clone())),
-                        )),
+                        ),
                         method_auths,
                     ))
                 }
@@ -879,11 +870,11 @@ where
 
                 let method_auth = resman_value.resource_manager().get_auth(&fn_ident, &input).clone();
                 Ok((
-                    Tracked(TrackedSNodeState::Tracked(
+                    Tracked(
                         resource_address.clone().into(),
                         resman_value,
                         None,
-                    )),
+                    ),
                     vec![method_auth],
                 ))
             }
@@ -992,11 +983,11 @@ where
                                 let resource_address = vault_value.vault().resource_address();
                                 (
                                     resource_address,
-                                    Tracked(TrackedSNodeState::Tracked(
+                                    Tracked(
                                         vault_address.into(),
                                         vault_value,
                                         None,
-                                    )),
+                                    ),
                                 )
                             }
                         }
@@ -1023,7 +1014,7 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                Tracked(TrackedSNodeState::Tracked(..))
+                Tracked(..)
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
@@ -1060,7 +1051,7 @@ where
             self.wasm_engine,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Tracked(TrackedSNodeState::Tracked(..))
+                | Tracked(..)
                 | Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
                 }
