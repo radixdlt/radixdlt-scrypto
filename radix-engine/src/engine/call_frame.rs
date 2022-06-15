@@ -142,7 +142,7 @@ pub enum BorrowedSNodeState<'a> {
     Worktop(RefMut<'a, Worktop>),
     Bucket(BucketId, RefMut<'a, Bucket>),
     Proof(ProofId, RefMut<'a, Proof>),
-    Vault(VaultId, RefMut<'a, StoredValue>, ValueType),
+    Vault(RefMut<'a, StoredValue>, ValueType),
     Blueprint(
         ScryptoActorInfo,
         ValidatedPackage,
@@ -163,61 +163,10 @@ pub enum LoadedSNodeState<'a> {
     Tracked(Address, SubstateValue, Option<(ScryptoActorInfo, ValidatedPackage)>),
 }
 
-pub enum SNodeState<'a> {
-    Root,
-    Static(&'a StaticSNodeState),
-    Consumed(ConsumedSNodeState),
-
-    AuthZoneRef(&'a mut AuthZone),
-    WorktopRef(&'a mut Worktop),
-    Blueprint(
-        ScryptoActorInfo,
-        ValidatedPackage,
-    ),
-    BucketRef(BucketId, &'a mut Bucket),
-    ProofRef(ProofId, &'a mut Proof),
-    VaultRef(VaultId, &'a mut StoredValue),
-
-    // TODO: use reference to the package
-    Tracked(Address, &'a mut SubstateValue, Option<(ScryptoActorInfo, ValidatedPackage)>),
-}
-
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveMethod {
     AsReturn,
     AsArgument,
-}
-
-impl<'a> LoadedSNodeState<'a> {
-    fn to_snode_state(&mut self) -> SNodeState {
-        match self {
-            Static(static_state) => SNodeState::Static(static_state),
-            Consumed(ref mut to_consume) => SNodeState::Consumed(to_consume.take().unwrap()),
-            Borrowed(ref mut borrowed) => match borrowed {
-                BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
-                BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
-                BorrowedSNodeState::Blueprint(
-                    info,
-                    package,
-                ) => SNodeState::Blueprint(
-                    info.clone(),
-                    package.clone(),
-                ),
-                BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
-                BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
-                BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
-            },
-            Tracked(addr, s, meta) => {
-                SNodeState::Tracked(addr.clone(), s, meta.clone())
-            }
-        }
-    }
-
-    fn cleanup<S: ReadableSubstateStore>(self, track: &mut Track<S>) {
-        if let Tracked(address, value, ..) = self {
-            track.return_borrowed_global_mut_value(address, value);
-        }
-    }
 }
 
 impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
@@ -450,7 +399,8 @@ where
     pub fn run(
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
-        snode: SNodeState<'p>,
+        //snode: SNodeState<'p>,
+        snode: LoadedSNodeState<'p>,
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<
@@ -463,10 +413,12 @@ where
         RuntimeError,
     > {
         let output = match snode {
+            /*
             SNodeState::Root => {
                 panic!("Root is not runnable")
             }
-            SNodeState::Static(state) => {
+             */
+            LoadedSNodeState::Static(state) => {
                 match state {
                     StaticSNodeState::System => {
                         System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
@@ -488,8 +440,8 @@ where
                     }
                 }
             }
-            SNodeState::Consumed(state) => {
-                match state {
+            LoadedSNodeState::Consumed(state) => {
+                match state.unwrap() {
                     ConsumedSNodeState::Bucket(bucket) => {
                         bucket
                             .consuming_main(fn_ident, input, self)
@@ -502,47 +454,61 @@ where
                     }
                 }
             }
-            SNodeState::AuthZoneRef(auth_zone) => auth_zone
-                .main(fn_ident, input, self)
-                .map_err(RuntimeError::AuthZoneError),
-            SNodeState::WorktopRef(worktop) => worktop
-                .main(fn_ident, input, self)
-                .map_err(RuntimeError::WorktopError),
-            SNodeState::Blueprint(
-                actor,
-                package,
-            ) => {
-                let export_name = format!("{}_main", actor.blueprint_name());
-                package.invoke(
-                    &actor,
-                    &mut None,
-                    export_name,
-                    fn_ident,
-                    input,
-                    self,
-                )
+            LoadedSNodeState::Borrowed(borrowed) => {
+                match borrowed {
+                    BorrowedSNodeState::AuthZone(mut auth_zone) => {
+                        auth_zone
+                            .main(fn_ident, input, self)
+                            .map_err(RuntimeError::AuthZoneError)
+                    },
+                    BorrowedSNodeState::Worktop(mut worktop) => {
+                        worktop
+                            .main(fn_ident, input, self)
+                            .map_err(RuntimeError::WorktopError)
+                    }
+                    BorrowedSNodeState::Blueprint(
+                        info,
+                        package,
+                    ) => {
+                        let export_name = format!("{}_main", info.blueprint_name());
+                        package.invoke(
+                            &info,
+                            &mut None,
+                            export_name,
+                            fn_ident,
+                            input,
+                            self,
+                        )
+                    },
+                    BorrowedSNodeState::Bucket(bucket_id, mut bucket) => {
+                        bucket
+                            .main(bucket_id, fn_ident, input, self)
+                            .map_err(RuntimeError::BucketError)
+                    },
+                    BorrowedSNodeState::Proof(_id, mut proof) => {
+                        proof
+                            .main(fn_ident, input, self)
+                            .map_err(RuntimeError::ProofError)
+                    },
+                    BorrowedSNodeState::Vault(mut value, ..) => {
+                        match value.deref_mut() {
+                            StoredValue::Vault(id, vault) => vault
+                                .main(*id, fn_ident, input, self)
+                                .map_err(RuntimeError::VaultError),
+                            _ => panic!("Should be a vault"),
+                        }
+                    }
+                }
             }
-            SNodeState::BucketRef(bucket_id, bucket) => bucket
-                .main(bucket_id, fn_ident, input, self)
-                .map_err(RuntimeError::BucketError),
-            SNodeState::ProofRef(_, proof) => proof
-                .main(fn_ident, input, self)
-                .map_err(RuntimeError::ProofError),
-            SNodeState::VaultRef(_vault_id, value) => match value {
-                StoredValue::Vault(id, vault) => vault
-                    .main(*id, fn_ident, input, self)
-                    .map_err(RuntimeError::VaultError),
-                _ => panic!("Should be a vault"),
-            },
-            SNodeState::Tracked(address, value, meta) => {
-                match value {
+            LoadedSNodeState::Tracked(address, mut value, meta) => {
+                let rtn = match &mut value {
                     SubstateValue::Resource(resource_manager) => {
                         resource_manager
-                            .main(address.into(), fn_ident, input, self)
+                            .main(address.clone().into(), fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
                     }
                     SubstateValue::Vault(vault) => {
-                        let vault_address: (ComponentAddress, VaultId) = address.into();
+                        let vault_address: (ComponentAddress, VaultId) = address.clone().into();
                         vault
                             .main(vault_address.1, fn_ident, input, self)
                             .map_err(RuntimeError::VaultError)
@@ -583,7 +549,11 @@ where
                         Ok(rtn)
                     }
                     _ => panic!("Tracked {:?} not supported. Should not get here.", value)
-                }
+                }?;
+
+                self.track.return_borrowed_global_mut_value(address, value);
+
+                Ok(rtn)
             }
         }?;
 
@@ -744,7 +714,7 @@ where
         self.sys_log(Level::Debug, format!("Sending proofs: {:?}", moving_proofs));
 
         // Authorization and state load
-        let (mut loaded_snode, method_auths) = match &snode_ref {
+        let (loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::TransactionProcessor => {
                 // FIXME: only TransactionExecutor can invoke this function
                 Ok((Static(StaticSNodeState::TransactionProcessor), vec![]))
@@ -941,7 +911,6 @@ where
                         (
                             resource_address,
                             Borrowed(BorrowedSNodeState::Vault(
-                                vault_id.clone(),
                                 value.borrow_mut(),
                                 ValueType::Owned,
                             )),
@@ -967,7 +936,6 @@ where
                                 (
                                     resource_address,
                                     Borrowed(BorrowedSNodeState::Vault(
-                                        vault_id.clone(),
                                         value,
                                         ValueType::Ref(value_ref),
                                     )),
@@ -1019,7 +987,7 @@ where
             match &loaded_snode {
                 // Resource auth check includes caller
                 Tracked(..)
-                | Borrowed(BorrowedSNodeState::Vault(_, _, _))
+                | Borrowed(BorrowedSNodeState::Vault(_, _))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
@@ -1073,12 +1041,8 @@ where
         );
 
         // invoke the main function
-        let snode = loaded_snode.to_snode_state();
         let (result, received_buckets, received_proofs, mut received_vaults) =
-            frame.run(Some(snode_ref), snode, &fn_ident, input)?;
-
-        // Return borrowed snodes
-        loaded_snode.cleanup(&mut self.track);
+            frame.run(Some(snode_ref), loaded_snode, &fn_ident, input)?;
 
         // move buckets and proofs to this process.
         self.sys_log(
