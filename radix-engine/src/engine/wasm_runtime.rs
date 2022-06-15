@@ -19,14 +19,14 @@ use crate::wasm::*;
 
 use super::CostUnitCounter;
 
-pub struct RadixEngineWasmRuntime<'s, 'c, S, W, I>
+pub struct RadixEngineWasmRuntime<'s, 'p, 't, 'c, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
     this: ScryptoActorInfo,
-    component_bytes: Option<Vec<u8>>,
+    component: &'p mut Option<&'t mut Component>,
     blueprint_abi: BlueprintAbi,
     system_api: &'s mut S,
     cost_unit_counter: &'c mut CostUnitCounter,
@@ -34,7 +34,7 @@ where
     phantom2: PhantomData<I>,
 }
 
-impl<'s, 'c, S, W, I> RadixEngineWasmRuntime<'s, 'c, S, W, I>
+impl<'s, 'p, 't, 'c, S, W, I> RadixEngineWasmRuntime<'s, 'p, 't, 'c, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
@@ -42,14 +42,14 @@ where
 {
     pub fn new(
         this: ScryptoActorInfo,
-        component_bytes: Option<Vec<u8>>,
+        component: &'p mut Option<&'t mut Component>,
         blueprint_abi: BlueprintAbi,
         system_api: &'s mut S,
         cost_unit_counter: &'c mut CostUnitCounter,
     ) -> Self {
         RadixEngineWasmRuntime {
             this,
-            component_bytes,
+            component,
             blueprint_abi,
             system_api,
             cost_unit_counter,
@@ -104,9 +104,9 @@ where
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<Vec<u8>, RuntimeError> {
-        if let Some(bytes) = &self.component_bytes {
+        if let Some(component) = &self.component {
             if component_address.eq(self.this.component_address().as_ref().unwrap()) {
-                let state = bytes.to_vec();
+                let state = component.state().to_vec();
                 return Ok(state);
             }
         }
@@ -119,10 +119,14 @@ where
         component_address: ComponentAddress,
         state: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        let value = ScryptoValue::from_slice(&state).map_err(RuntimeError::DecodeError)?;
-        self.system_api
-            .write_component_state(component_address, value)?;
-        Ok(())
+        if let Some(component) = &mut self.component {
+            if component_address.eq(self.this.component_address().as_ref().unwrap()) {
+                component.set_state(state);
+                return Ok(());
+            }
+        }
+
+        Err(RuntimeError::ComponentNotFound(component_address))
     }
 
     fn handle_get_component_info(
@@ -191,8 +195,8 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'s, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'s, 'c, S, W, I>
+impl<'s, 'p, 't, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'s, 'p, 't, 'c, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =

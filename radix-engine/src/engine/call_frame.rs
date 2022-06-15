@@ -541,7 +541,7 @@ where
             SNodeState::WorktopRef(worktop) => worktop
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, blueprint_abi, package, export_name, maybe_component) => {
+            SNodeState::Scrypto(actor, blueprint_abi, package, export_name, mut maybe_component) => {
                 if let Some(component) = &maybe_component {
                     let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
                     for value_id in initial_value.stored_value_ids() {
@@ -556,9 +556,22 @@ where
                     self.component_address = Some(actor.component_address().unwrap());
                 }
 
-                let component_bytes = maybe_component.as_ref().map(|c| c.state().to_vec());
-                self.component = maybe_component;
-                package.invoke(actor, component_bytes, blueprint_abi, export_name, fn_ident, input, self)
+                //let component_bytes = maybe_component.as_ref().map(|c| c.state().to_vec());
+                //self.component = maybe_component;
+                let rtn = package.invoke(actor, &mut maybe_component, blueprint_abi, export_name, fn_ident, input, self)?;
+
+                if let Some(component) = maybe_component {
+                    let value = ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
+                    verify_stored_value(&value)?;
+
+                    let new_value_ids = stored_value_update(self.initial_value.as_ref().unwrap(), &value)?;
+                    let addr = self.component_address.as_ref().unwrap().clone();
+                    // TODO: take values when component is actually written to rather than at the end of invocation
+                    let new_values = self.take_values(&new_value_ids)?;
+                    self.track.insert_objects_into_component(new_values, addr);
+                }
+
+                Ok(rtn)
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
                 .map_err(RuntimeError::ResourceManagerError),
