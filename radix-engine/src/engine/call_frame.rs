@@ -2,9 +2,11 @@ use colored::*;
 use sbor::path::SborPath;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
+use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::marker::*;
+use sbor::rust::ops::Deref;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
@@ -51,18 +53,18 @@ pub struct CallFrame<
     wasm_engine: &'w mut W,
 
     /// Owned Values
-    buckets: HashMap<BucketId, Bucket>,
-    proofs: HashMap<ProofId, Proof>,
+    buckets: HashMap<BucketId, RefCell<Bucket>>,
+    proofs: HashMap<ProofId, RefCell<Proof>>,
     owned_values: HashMap<StoredValueId, StoredValue>,
 
     /// Referenced values
-    worktop: Option<Worktop>,
-    auth_zone: Option<AuthZone>,
+    worktop: Option<RefCell<Worktop>>,
+    auth_zone: Option<RefCell<AuthZone>>,
     component_state: Option<&'p mut ComponentState>,
     refed_values: HashMap<StoredValueId, ValueRefType>,
 
     /// Caller's auth zone
-    caller_auth_zone: Option<&'p AuthZone>,
+    caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
     phantom: PhantomData<I>,
 }
@@ -136,9 +138,9 @@ pub enum ConsumedSNodeState {
     Proof(Proof),
 }
 
-pub enum BorrowedSNodeState {
-    AuthZone(AuthZone),
-    Worktop(Worktop),
+pub enum BorrowedSNodeState<'a> {
+    AuthZone(RefMut<'a, AuthZone>),
+    Worktop(RefMut<'a, Worktop>),
     Scrypto(
         ScryptoActorInfo,
         BlueprintAbi,
@@ -147,8 +149,8 @@ pub enum BorrowedSNodeState {
         Option<ComponentState>,
     ),
     Resource(ResourceAddress, ResourceManager),
-    Bucket(BucketId, Bucket),
-    Proof(ProofId, Proof),
+    Bucket(BucketId, RefMut<'a, Bucket>),
+    Proof(ProofId, RefMut<'a, Proof>),
     Vault(VaultId, Vault, ValueType),
 }
 
@@ -159,10 +161,10 @@ pub enum StaticSNodeState {
     TransactionProcessor,
 }
 
-pub enum LoadedSNodeState {
+pub enum LoadedSNodeState<'a> {
     Static(StaticSNodeState),
     Consumed(Option<ConsumedSNodeState>),
-    Borrowed(BorrowedSNodeState),
+    Borrowed(BorrowedSNodeState<'a>),
 }
 
 pub enum SNodeState<'a> {
@@ -171,7 +173,7 @@ pub enum SNodeState<'a> {
     TransactionProcessorStatic,
     PackageStatic,
     AuthZoneRef(&'a mut AuthZone),
-    Worktop(&'a mut Worktop),
+    WorktopRef(&'a mut Worktop),
     // TODO: use reference to the package
     Scrypto(
         ScryptoActorInfo,
@@ -202,7 +204,7 @@ pub enum MoveMethod {
     AsArgument,
 }
 
-impl LoadedSNodeState {
+impl<'a> LoadedSNodeState<'a> {
     fn to_snode_state(&mut self) -> SNodeState {
         match self {
             Static(static_state) => match static_state {
@@ -217,7 +219,7 @@ impl LoadedSNodeState {
             },
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
-                BorrowedSNodeState::Worktop(s) => SNodeState::Worktop(s),
+                BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
                 BorrowedSNodeState::Scrypto(
                     info,
                     blueprint_abi,
@@ -238,60 +240,52 @@ impl LoadedSNodeState {
             },
         }
     }
-}
 
-impl BorrowedSNodeState {
-    fn return_borrowed_state<'p, 's, 't, 'w, S, W, I>(
+    fn cleanup<S: ReadableSubstateStore>(
         self,
-        frame: &mut CallFrame<'p, 's, 't, 'w, S, W, I>,
-    ) where
-        S: ReadableSubstateStore,
-        W: WasmEngine<I>,
-        I: WasmInstance,
-    {
-        match self {
-            BorrowedSNodeState::AuthZone(auth_zone) => {
-                frame.auth_zone = Some(auth_zone);
-            }
-            BorrowedSNodeState::Worktop(worktop) => {
-                frame.worktop = Some(worktop);
-            }
-            BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
-                if let Some(component_address) = actor.component_address() {
-                    frame.track.return_borrowed_global_mut_value(
-                        component_address,
-                        component_state.unwrap().component, // TODO: how about the refs?
-                    );
+        track: &mut Track<S>,
+        owned_values: &mut HashMap<StoredValueId, StoredValue>,
+    ) {
+        if let Borrowed(borrowed) = self {
+            match borrowed {
+                BorrowedSNodeState::AuthZone(_auth_zone) => {}
+                BorrowedSNodeState::Worktop(_worktop) => {}
+                BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
+                    if let Some(component_address) = actor.component_address() {
+                        track.return_borrowed_global_mut_value(
+                            component_address,
+                            component_state.unwrap().component, // TODO: how about the refs?
+                        );
+                    }
                 }
-            }
-            BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                frame
-                    .track
-                    .return_borrowed_global_mut_value(resource_address, resource_manager);
-            }
-            BorrowedSNodeState::Bucket(bucket_id, bucket) => {
-                frame.buckets.insert(bucket_id, bucket);
-            }
-            BorrowedSNodeState::Proof(proof_id, proof) => {
-                frame.proofs.insert(proof_id, proof);
-            }
-            BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
-                ValueType::Owned => {
-                    frame.owned_values.insert(
-                        StoredValueId::VaultId(vault_id.clone()),
-                        StoredValue::Vault(vault_id, vault),
-                    );
+                BorrowedSNodeState::Resource(resource_address, resource_manager) => {
+                    track.return_borrowed_global_mut_value(resource_address, resource_manager);
                 }
-                ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                    let store = frame.get_owned_kv_store_mut(&root).unwrap();
-                    store.put_child_vault(&ancestors, vault_id, vault);
-                }
-                ValueType::Ref(ValueRefType::Committed { component_address }) => {
-                    frame
-                        .track
-                        .return_borrowed_global_mut_value((component_address, vault_id), vault);
-                }
-            },
+                BorrowedSNodeState::Bucket(_bucket_id, _bucket) => {}
+                BorrowedSNodeState::Proof(_proof_id, _proof) => {}
+                BorrowedSNodeState::Vault(vault_id, vault, value_type) => match value_type {
+                    ValueType::Owned => {
+                        owned_values.insert(
+                            StoredValueId::VaultId(vault_id.clone()),
+                            StoredValue::Vault(vault_id, vault),
+                        );
+                    }
+                    ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
+                        let store = owned_values
+                            .get_mut(&StoredValueId::KeyValueStoreId(root))
+                            .map(|v| match v {
+                                StoredValue::KeyValueStore(_, store) => store,
+                                _ => panic!("Expected KV store"),
+                            })
+                            .unwrap();
+                        store.put_child_vault(&ancestors, vault_id, vault);
+                    }
+                    ValueType::Ref(ValueRefType::Committed { component_address }) => {
+                        track
+                            .return_borrowed_global_mut_value((component_address, vault_id), vault);
+                    }
+                },
+            }
         }
     }
 }
@@ -332,8 +326,10 @@ where
             verbose,
             track,
             wasm_engine,
-            Some(AuthZone::new_with_proofs(initial_auth_zone_proofs)),
-            Some(Worktop::new()),
+            Some(RefCell::new(AuthZone::new_with_proofs(
+                initial_auth_zone_proofs,
+            ))),
+            Some(RefCell::new(Worktop::new())),
             HashMap::new(),
             HashMap::new(),
             None,
@@ -346,20 +342,30 @@ where
         trace: bool,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
-        auth_zone: Option<AuthZone>,
-        worktop: Option<Worktop>,
+        auth_zone: Option<RefCell<AuthZone>>,
+        worktop: Option<RefCell<Worktop>>,
         buckets: HashMap<BucketId, Bucket>,
         proofs: HashMap<ProofId, Proof>,
-        caller_auth_zone: Option<&'p AuthZone>,
+        caller_auth_zone: Option<&'p RefCell<AuthZone>>,
     ) -> Self {
+        let mut celled_buckets = HashMap::new();
+        for (id, b) in buckets {
+            celled_buckets.insert(id, RefCell::new(b));
+        }
+
+        let mut celled_proofs = HashMap::new();
+        for (id, proof) in proofs {
+            celled_proofs.insert(id, RefCell::new(proof));
+        }
+
         Self {
             transaction_hash,
             depth,
             trace,
             track,
             wasm_engine,
-            buckets,
-            proofs,
+            buckets: celled_buckets,
+            proofs: celled_proofs,
             owned_values: HashMap::new(),
             refed_values: HashMap::new(),
             worktop,
@@ -376,12 +382,12 @@ where
         let mut success = true;
         let mut resource = ResourceFailure::Unknown;
 
-        for (bucket_id, bucket) in &self.buckets {
+        for (bucket_id, ref_bucket) in &self.buckets {
             self.sys_log(
                 Level::Warn,
-                format!("Dangling bucket: {}, {:?}", bucket_id, bucket),
+                format!("Dangling bucket: {}, {:?}", bucket_id, ref_bucket),
             );
-            resource = ResourceFailure::Resource(bucket.resource_address());
+            resource = ResourceFailure::Resource(ref_bucket.borrow().resource_address());
             success = false;
         }
 
@@ -395,7 +401,8 @@ where
             success = false;
         }
 
-        if let Some(worktop) = &self.worktop {
+        if let Some(ref_worktop) = &self.worktop {
+            let worktop = ref_worktop.borrow();
             if !worktop.is_empty() {
                 self.sys_log(Level::Warn, "Resource worktop is not empty".to_string());
                 resource = ResourceFailure::Resources(worktop.resource_addresses());
@@ -411,7 +418,7 @@ where
         }
     }
 
-    fn process_call_data(&mut self, validated: &ScryptoValue) -> Result<(), RuntimeError> {
+    fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
             return Err(RuntimeError::KeyValueStoreNotAllowed);
         }
@@ -443,15 +450,15 @@ where
 
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
-        &mut self,
+        from: &mut HashMap<BucketId, RefCell<Bucket>>,
         bucket_ids: &HashMap<BucketId, SborPath>,
     ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
         let mut buckets = HashMap::new();
         for (bucket_id, _) in bucket_ids {
-            let bucket = self
-                .buckets
+            let bucket = from
                 .remove(bucket_id)
-                .ok_or(RuntimeError::BucketNotFound(*bucket_id))?;
+                .ok_or(RuntimeError::BucketNotFound(*bucket_id))?
+                .into_inner();
             if bucket.is_locked() {
                 return Err(RuntimeError::CantMoveLockedBucket);
             }
@@ -486,16 +493,16 @@ where
 
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
-        &mut self,
+        from: &mut HashMap<ProofId, RefCell<Proof>>,
         proof_ids: &HashMap<ProofId, SborPath>,
         method: MoveMethod,
     ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
         let mut proofs = HashMap::new();
         for (proof_id, _) in proof_ids {
-            let mut proof = self
-                .proofs
+            let mut proof = from
                 .remove(proof_id)
-                .ok_or(RuntimeError::ProofNotFound(*proof_id))?;
+                .ok_or(RuntimeError::ProofNotFound(*proof_id))?
+                .into_inner();
             if proof.is_restricted() {
                 return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
             }
@@ -541,7 +548,7 @@ where
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::AuthZoneError),
-            SNodeState::Worktop(worktop) => worktop
+            SNodeState::WorktopRef(worktop) => worktop
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
@@ -577,22 +584,24 @@ where
         self.process_return_data(snode_ref, &output)?;
 
         // figure out what buckets and resources to return
-        let moving_buckets = self.send_buckets(&output.bucket_ids)?;
-        let moving_proofs = self.send_proofs(&output.proof_ids, MoveMethod::AsReturn)?;
+        let moving_buckets = Self::send_buckets(&mut self.buckets, &output.bucket_ids)?;
+        let moving_proofs =
+            Self::send_proofs(&mut self.proofs, &output.proof_ids, MoveMethod::AsReturn)?;
         let moving_vaults = self.send_vaults(&output.vault_ids)?;
 
         // drop proofs and check resource leak
         for (_, proof) in self.proofs.drain() {
-            proof.drop();
+            proof.into_inner().drop();
         }
 
-        if let Some(_) = &mut self.auth_zone {
+        if self.auth_zone.is_some() {
             self.invoke_snode(
                 SNodeRef::AuthZoneRef,
                 "clear".to_string(),
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
+
         self.check_resource()?;
 
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
@@ -624,7 +633,7 @@ where
             .owned_values
             .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
         {
-            let store = self.get_owned_kv_store_mut(&kv_store_id).unwrap();
+            let store = Self::get_owned_kv_store_mut(&mut self.owned_values, &kv_store_id).unwrap();
             let value = store.store.get(&key.raw).cloned();
             (value, ValueType::Owned)
         } else {
@@ -636,7 +645,8 @@ where
                 maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
             let value = match &value_ref {
                 ValueRefType::Uncommitted { root, ancestors } => {
-                    let root_store = self.get_owned_kv_store_mut(root).unwrap();
+                    let root_store =
+                        Self::get_owned_kv_store_mut(&mut self.owned_values, root).unwrap();
                     let store = root_store.get_child_kv_store(ancestors, &kv_store_id);
                     store.store.get(&key.raw).cloned()
                 }
@@ -675,11 +685,11 @@ where
         Ok(taken_values)
     }
 
-    pub fn get_owned_kv_store_mut(
-        &mut self,
+    pub fn get_owned_kv_store_mut<'a>(
+        owned_values: &'a mut HashMap<StoredValueId, StoredValue>,
         kv_store_id: &KeyValueStoreId,
-    ) -> Option<&mut PreCommittedKeyValueStore> {
-        self.owned_values
+    ) -> Option<&'a mut PreCommittedKeyValueStore> {
+        owned_values
             .get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
             .map(|v| match v {
                 StoredValue::KeyValueStore(_, store) => store,
@@ -706,6 +716,22 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         self.sys_log(Level::Debug, format!("{:?} {:?}", snode_ref, &fn_ident));
 
+        Self::process_call_data(&input)?;
+        // Figure out what buckets and proofs to move from this process
+        let mut moving_buckets = HashMap::new();
+        let mut moving_proofs = HashMap::new();
+        moving_buckets.extend(Self::send_buckets(&mut self.buckets, &input.bucket_ids)?);
+        moving_proofs.extend(Self::send_proofs(
+            &mut self.proofs,
+            &input.proof_ids,
+            MoveMethod::AsArgument,
+        )?);
+        self.sys_log(
+            Level::Debug,
+            format!("Sending buckets: {:?}", moving_buckets),
+        );
+        self.sys_log(Level::Debug, format!("Sending proofs: {:?}", moving_proofs));
+
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::TransactionProcessor => {
@@ -715,14 +741,16 @@ where
             SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
             SNodeRef::SystemStatic => Ok((Static(StaticSNodeState::System), vec![])),
             SNodeRef::AuthZoneRef => {
-                if let Some(auth_zone) = self.auth_zone.take() {
-                    Ok((Borrowed(BorrowedSNodeState::AuthZone(auth_zone)), vec![]))
+                if let Some(auth_zone) = &self.auth_zone {
+                    let borrowed = auth_zone.borrow_mut();
+                    Ok((Borrowed(BorrowedSNodeState::AuthZone(borrowed)), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
             SNodeRef::WorktopRef => {
-                if let Some(worktop) = self.worktop.take() {
+                if let Some(worktop_ref) = &self.worktop {
+                    let worktop = worktop_ref.borrow_mut();
                     Ok((Borrowed(BorrowedSNodeState::Worktop(worktop)), vec![]))
                 } else {
                     Err(RuntimeError::WorktopDoesNotExist)
@@ -863,7 +891,8 @@ where
                 let bucket = self
                     .buckets
                     .remove(&bucket_id)
-                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?
+                    .into_inner();
                 let resource_address = bucket.resource_address();
                 let substate_value = self.track.read_value(resource_address.clone()).unwrap();
                 let resource_manager = match substate_value {
@@ -877,20 +906,22 @@ where
                 ))
             }
             SNodeRef::BucketRef(bucket_id) => {
-                let bucket = self
+                let bucket_cell = self
                     .buckets
-                    .remove(&bucket_id)
+                    .get(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let bucket = bucket_cell.borrow_mut();
                 Ok((
                     Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
                     vec![],
                 ))
             }
             SNodeRef::ProofRef(proof_id) => {
-                let proof = self
+                let proof_cell = self
                     .proofs
-                    .remove(&proof_id)
+                    .get(&proof_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                let proof = proof_cell.borrow_mut();
                 Ok((
                     Borrowed(BorrowedSNodeState::Proof(proof_id.clone(), proof)),
                     vec![],
@@ -900,7 +931,8 @@ where
                 let proof = self
                     .proofs
                     .remove(&proof_id)
-                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
+                    .into_inner();
                 Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
@@ -919,7 +951,9 @@ where
                             maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
                         let vault = match &value_ref {
                             ValueRefType::Uncommitted { root, ancestors } => {
-                                let root_store = self.get_owned_kv_store_mut(root).unwrap();
+                                let root_store =
+                                    Self::get_owned_kv_store_mut(&mut self.owned_values, root)
+                                        .unwrap();
                                 root_store.take_child_vault(ancestors, vault_id)
                             }
                             ValueRefType::Committed { component_address } => self
@@ -960,46 +994,38 @@ where
         if !method_auths.is_empty() {
             let mut auth_zones = Vec::new();
             if let Some(self_auth_zone) = &self.auth_zone {
-                auth_zones.push(self_auth_zone);
+                auth_zones.push(self_auth_zone.borrow());
             }
 
             match &loaded_snode {
                 // Resource auth check includes caller
                 Borrowed(BorrowedSNodeState::Resource(_, _))
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
-                | Borrowed(BorrowedSNodeState::Bucket(_, _))
+                | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Scrypto(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
-                        auth_zones.push(auth_zone);
+                        auth_zones.push(auth_zone.borrow());
                     }
                 }
                 // Extern call auth check
                 _ => {}
             };
 
+            let mut borrowed = Vec::new();
+            for auth_zone in &auth_zones {
+                borrowed.push(auth_zone.deref());
+            }
             for method_auth in method_auths {
-                method_auth.check(&auth_zones).map_err(|error| {
-                    RuntimeError::AuthorizationError {
+                method_auth
+                    .check(&borrowed)
+                    .map_err(|error| RuntimeError::AuthorizationError {
                         function: fn_ident.clone(),
                         authorization: method_auth,
                         error,
-                    }
-                })?;
+                    })?;
             }
         }
-
-        // Figure out what buckets and proofs to move from this process
-        let mut moving_buckets = HashMap::new();
-        let mut moving_proofs = HashMap::new();
-        self.process_call_data(&input)?;
-        moving_buckets.extend(self.send_buckets(&input.bucket_ids)?);
-        moving_proofs.extend(self.send_proofs(&input.proof_ids, MoveMethod::AsArgument)?);
-        self.sys_log(
-            Level::Debug,
-            format!("Sending buckets: {:?}", moving_buckets),
-        );
-        self.sys_log(Level::Debug, format!("Sending proofs: {:?}", moving_proofs));
 
         // start a new frame
         let mut frame = CallFrame::new(
@@ -1010,11 +1036,15 @@ where
             self.wasm_engine,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Scrypto(..))
-                | Static(StaticSNodeState::TransactionProcessor) => Some(AuthZone::new()),
+                | Static(StaticSNodeState::TransactionProcessor) => {
+                    Some(RefCell::new(AuthZone::new()))
+                }
                 _ => None,
             },
             match loaded_snode {
-                Static(StaticSNodeState::TransactionProcessor) => Some(Worktop::new()),
+                Static(StaticSNodeState::TransactionProcessor) => {
+                    Some(RefCell::new(Worktop::new()))
+                }
                 _ => None,
             },
             moving_buckets,
@@ -1027,6 +1057,9 @@ where
         let (result, received_buckets, received_proofs, mut received_vaults) =
             frame.run(Some(snode_ref), snode, &fn_ident, input)?;
 
+        // Return borrowed snodes
+        loaded_snode.cleanup(&mut self.track, &mut self.owned_values);
+
         // move buckets and proofs to this process.
         self.sys_log(
             Level::Debug,
@@ -1036,18 +1069,17 @@ where
             Level::Debug,
             format!("Received proofs: {:?}", received_proofs),
         );
-        self.buckets.extend(received_buckets);
-        self.proofs.extend(received_proofs);
+        for (bucket_id, bucket) in received_buckets {
+            self.buckets.insert(bucket_id, RefCell::new(bucket));
+        }
+        for (proof_id, proof) in received_proofs {
+            self.proofs.insert(proof_id, RefCell::new(proof));
+        }
         for (vault_id, vault) in received_vaults.drain() {
             self.owned_values.insert(
                 StoredValueId::VaultId(vault_id.clone()),
                 StoredValue::Vault(vault_id, vault),
             );
-        }
-
-        // Return borrowed snodes
-        if let Borrowed(borrowed) = loaded_snode {
-            borrowed.return_borrowed_state(self);
         }
 
         Ok(result)
@@ -1104,7 +1136,7 @@ where
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
         let proof_id = self.track.new_proof_id();
-        self.proofs.insert(proof_id, proof);
+        self.proofs.insert(proof_id, RefCell::new(proof));
         Ok(proof_id)
     }
 
@@ -1112,14 +1144,16 @@ where
         let proof = self
             .proofs
             .remove(&proof_id)
-            .ok_or(RuntimeError::ProofNotFound(proof_id))?;
+            .ok_or(RuntimeError::ProofNotFound(proof_id))?
+            .into_inner();
 
         Ok(proof)
     }
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.track.new_bucket_id();
-        self.buckets.insert(bucket_id, Bucket::new(container));
+        self.buckets
+            .insert(bucket_id, RefCell::new(Bucket::new(container)));
         Ok(bucket_id)
     }
 
@@ -1135,6 +1169,7 @@ where
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
         self.buckets
             .remove(&bucket_id)
+            .map(RefCell::into_inner)
             .ok_or(RuntimeError::BucketNotFound(bucket_id))
     }
 
@@ -1272,14 +1307,15 @@ where
         let new_values = self.take_values(&new_value_ids)?;
         match parent_type {
             ValueType::Owned => {
-                let kv_store = self
-                    .get_owned_kv_store_mut(&kv_store_id)
+                let kv_store = Self::get_owned_kv_store_mut(&mut self.owned_values, &kv_store_id)
                     .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
                 kv_store.store.insert(key.raw, value);
                 kv_store.insert_children(new_values)
             }
             ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                if let Some(root_store) = self.get_owned_kv_store_mut(&root) {
+                if let Some(root_store) =
+                    Self::get_owned_kv_store_mut(&mut self.owned_values, &root)
+                {
                     let kv_store = root_store.get_child_kv_store(&ancestors, &kv_store_id);
                     kv_store.store.insert(key.raw, value);
                     kv_store.insert_children(new_values)
@@ -1371,7 +1407,7 @@ where
             .map(|proof_id| {
                 self.proofs
                     .get(&proof_id)
-                    .map(Proof::clone)
+                    .map(|p| p.borrow().clone())
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))
             })
             .collect::<Result<Vec<Proof>, RuntimeError>>()?;
