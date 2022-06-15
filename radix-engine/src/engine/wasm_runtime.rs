@@ -19,7 +19,7 @@ use crate::wasm::*;
 
 use super::CostUnitCounter;
 
-pub struct RadixEngineWasmRuntime<'s, 'p, 't, 'c, S, W, I>
+pub struct RadixEngineWasmRuntime<'s, 'p, 't, 'b, 'c, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
@@ -27,14 +27,14 @@ where
 {
     this: ScryptoActorInfo,
     component: &'p mut Option<&'t mut Component>,
-    blueprint_abi: BlueprintAbi,
+    blueprint_abi: &'b BlueprintAbi,
     system_api: &'s mut S,
     cost_unit_counter: &'c mut CostUnitCounter,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
 }
 
-impl<'s, 'p, 't, 'c, S, W, I> RadixEngineWasmRuntime<'s, 'p, 't, 'c, S, W, I>
+impl<'s, 'p, 't, 'b, 'c, S, W, I> RadixEngineWasmRuntime<'s, 'p, 't, 'b, 'c, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
@@ -43,7 +43,7 @@ where
     pub fn new(
         this: ScryptoActorInfo,
         component: &'p mut Option<&'t mut Component>,
-        blueprint_abi: BlueprintAbi,
+        blueprint_abi: &'b BlueprintAbi,
         system_api: &'s mut S,
         cost_unit_counter: &'c mut CostUnitCounter,
     ) -> Self {
@@ -195,8 +195,8 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'s, 'p, 't, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'s, 'p, 't, 'c, S, W, I>
+impl<'s, 'p, 't, 'b, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'s, 'p, 't, 'b, 'c, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let input: RadixEngineInput =

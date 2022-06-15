@@ -13,7 +13,6 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::abi::BlueprintAbi;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
 use scrypto::resource::AuthZoneClearInput;
@@ -139,7 +138,7 @@ pub enum ConsumedSNodeState {
 }
 
 pub enum TrackedSNodeState {
-    Component(ScryptoActorInfo, BlueprintAbi, ValidatedPackage, String, Component),
+    Component(ScryptoActorInfo, ValidatedPackage, Component),
     Resource(ResourceAddress, ResourceManager),
     TrackedVault((ComponentAddress, VaultId), Vault),
 }
@@ -152,9 +151,7 @@ pub enum BorrowedSNodeState<'a> {
     Vault(VaultId, RefMut<'a, StoredValue>, ValueType),
     Blueprint(
         ScryptoActorInfo,
-        BlueprintAbi,
         ValidatedPackage,
-        String,
     ),
 }
 
@@ -182,15 +179,11 @@ pub enum SNodeState<'a> {
     // TODO: use reference to the package
     Blueprint(
         ScryptoActorInfo,
-        BlueprintAbi,
         ValidatedPackage,
-        String,
     ),
     Component(
         ScryptoActorInfo,
-        BlueprintAbi,
         ValidatedPackage,
-        String,
         &'a mut Component,
     ),
     ResourceStatic,
@@ -227,14 +220,10 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
                 BorrowedSNodeState::Blueprint(
                     info,
-                    blueprint_abi,
                     package,
-                    export_name,
                 ) => SNodeState::Blueprint(
                     info.clone(),
-                    blueprint_abi.clone(),
                     package.clone(),
-                    export_name.clone(),
                 ),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
@@ -243,15 +232,11 @@ impl<'a> LoadedSNodeState<'a> {
             Tracked(ref mut tracked) => match tracked {
                 TrackedSNodeState::Component(
                     info,
-                    blueprint_abi,
                     package,
-                    export_name,
                     component,
                 ) => SNodeState::Component(
                     info.clone(),
-                    blueprint_abi.clone(),
                     package.clone(),
-                    export_name.clone(),
                     component,
                 ),
                 TrackedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
@@ -265,7 +250,7 @@ impl<'a> LoadedSNodeState<'a> {
     fn cleanup<S: ReadableSubstateStore>(self, track: &mut Track<S>) {
         if let Tracked(tracked) = self {
             match tracked {
-                TrackedSNodeState::Component(actor, _, _, _, component) => {
+                TrackedSNodeState::Component(actor, _, component) => {
                     track.return_borrowed_global_mut_value(
                         actor.component_address().unwrap(),
                         component,
@@ -548,14 +533,12 @@ where
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Blueprint(
                 actor,
-                blueprint_abi,
                 package,
-                export_name
             ) => {
+                let export_name = format!("{}_main", actor.blueprint_name());
                 package.invoke(
                     &actor,
                     &mut None,
-                    blueprint_abi,
                     export_name,
                     fn_ident,
                     input,
@@ -564,9 +547,7 @@ where
             }
             SNodeState::Component(
                 actor,
-                blueprint_abi,
                 package,
-                export_name,
                 component,
             ) => {
                 let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
@@ -580,11 +561,10 @@ where
                 }
 
                 let mut maybe_component = Some(component);
-
+                let export_name = format!("{}_main", actor.blueprint_name());
                 let rtn = package.invoke(
                     &actor,
                     &mut maybe_component,
-                    blueprint_abi,
                     export_name,
                     fn_ident,
                     input,
@@ -840,17 +820,13 @@ where
                             input: input.dom,
                         });
                     }
-                    let export_name = format!("{}_main", blueprint_name);
-
                     Ok((
                         Borrowed(BorrowedSNodeState::Blueprint(
                             ScryptoActorInfo::blueprint(
                                 package_address.clone(),
                                 blueprint_name.clone(),
                             ),
-                            abi.clone(),
-                            package.clone(),
-                            export_name.clone(),
+                            package.clone()
                         )),
                         vec![],
                     ))
@@ -872,8 +848,6 @@ where
                         .into();
                     let package_address = component.package_address();
                     let blueprint_name = component.blueprint_name().to_string();
-                    let export_name = format!("{}_main", blueprint_name);
-
                     let substate_value = self
                         .track
                         .read_value(package_address)
@@ -905,9 +879,7 @@ where
                                 blueprint_name,
                                 component_address,
                             ),
-                            abi.clone(),
                             package.clone(),
-                            export_name,
                             component,
                         )),
                         method_auths,
