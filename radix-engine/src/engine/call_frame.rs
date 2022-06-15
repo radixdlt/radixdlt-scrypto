@@ -61,7 +61,7 @@ pub struct CallFrame<
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Referenced values
-    component_state: Option<&'p mut ComponentState>,
+    component: Option<&'p mut Component>,
     component_address: Option<ComponentAddress>,
     initial_value: Option<ScryptoValue>,
 
@@ -150,7 +150,7 @@ pub enum BorrowedSNodeState<'a> {
         BlueprintAbi,
         ValidatedPackage,
         String,
-        Option<ComponentState>,
+        Option<Component>,
     ),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, RefMut<'a, Bucket>),
@@ -185,7 +185,7 @@ pub enum SNodeState<'a> {
         BlueprintAbi,
         ValidatedPackage,
         String,
-        Option<&'a mut ComponentState>,
+        Option<&'a mut Component>,
     ),
     ResourceStatic,
     ResourceRef(ResourceAddress, &'a mut ResourceManager),
@@ -195,11 +195,6 @@ pub enum SNodeState<'a> {
     Proof(Proof),
     VaultRef(VaultId, &'a mut StoredValue),
     TrackedVaultRef(VaultId, &'a mut Vault),
-}
-
-#[derive(Debug)]
-pub struct ComponentState {
-    pub component: Component,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -256,11 +251,11 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Bucket(..) => {}
                 BorrowedSNodeState::Proof(..) => {}
                 BorrowedSNodeState::Vault(..) => {}
-                BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
+                BorrowedSNodeState::Scrypto(actor, _, _, _, component) => {
                     if let Some(component_address) = actor.component_address() {
                         track.return_borrowed_global_mut_value(
                             component_address,
-                            component_state.unwrap().component, // TODO: how about the refs?
+                            component.unwrap(), // TODO: how about the refs?
                         );
                     }
                 }
@@ -362,7 +357,7 @@ where
             caller_auth_zone,
             initial_value: None,
             component_address: None,
-            component_state: None,
+            component: None,
             phantom: PhantomData,
         }
     }
@@ -548,7 +543,7 @@ where
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, blueprint_abi, package, export_name, maybe_component) => {
                 if let Some(component) = &maybe_component {
-                    let initial_value = ScryptoValue::from_slice(component.component.state()).unwrap();
+                    let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
                     for value_id in initial_value.stored_value_ids() {
                         self.refed_values.insert(
                             value_id,
@@ -561,7 +556,7 @@ where
                     self.component_address = Some(actor.component_address().unwrap());
                 }
 
-                self.component_state = maybe_component;
+                self.component = maybe_component;
                 package.invoke(actor, blueprint_abi, export_name, fn_ident, input, self)
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
@@ -871,9 +866,7 @@ where
                                 abi.clone(),
                                 package.clone(),
                                 export_name,
-                                Some(ComponentState {
-                                    component,
-                                }),
+                                Some(component),
                             )),
                             method_auths,
                         ))
@@ -1233,10 +1226,7 @@ where
     }
 
     fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError> {
-        if let Some(ComponentState {
-            component,
-        }) = &mut self.component_state
-        {
+        if let Some(component) = &mut self.component {
             if addr.eq(self.component_address.as_ref().unwrap()) {
                 let state = component.state().to_vec();
                 return Ok(state);
@@ -1253,10 +1243,7 @@ where
     ) -> Result<(), RuntimeError> {
         verify_stored_value(&state)?;
 
-        if let Some(ComponentState {
-            component,
-        }) = &mut self.component_state
-        {
+        if let Some(component) = &mut self.component {
             if addr.eq(self.component_address.as_ref().unwrap()) {
                 let new_value_ids = stored_value_update(self.initial_value.as_ref().unwrap(), &state)?;
                 component.set_state(state.raw);

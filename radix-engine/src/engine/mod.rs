@@ -10,7 +10,7 @@ mod transaction_receipt;
 mod wasm_runtime;
 
 pub use call_frame::{
-    BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LoadedSNodeState,
+    BorrowedSNodeState, CallFrame, ConsumedSNodeState, LoadedSNodeState,
     MoveMethod, SNodeState, StaticSNodeState,
 };
 pub use cost_unit_counter::*;
