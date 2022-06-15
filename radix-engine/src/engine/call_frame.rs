@@ -141,6 +141,10 @@ pub enum ConsumedSNodeState {
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
+    Bucket(BucketId, RefMut<'a, Bucket>),
+    Proof(ProofId, RefMut<'a, Proof>),
+    Vault(VaultId, RefMut<'a, StoredValue>, ValueType),
+
     Scrypto(
         ScryptoActorInfo,
         BlueprintAbi,
@@ -149,10 +153,7 @@ pub enum BorrowedSNodeState<'a> {
         Option<Component>,
     ),
     Resource(ResourceAddress, ResourceManager),
-    Bucket(BucketId, RefMut<'a, Bucket>),
-    Proof(ProofId, RefMut<'a, Proof>),
-    Vault(VaultId, RefMut<'a, StoredValue>, ValueType),
-    TrackedVault(VaultId, Vault, ValueType),
+    TrackedVault((ComponentAddress, VaultId), Vault),
 }
 
 pub enum StaticSNodeState {
@@ -190,7 +191,7 @@ pub enum SNodeState<'a> {
     ProofRef(ProofId, &'a mut Proof),
     Proof(Proof),
     VaultRef(VaultId, &'a mut StoredValue),
-    TrackedVaultRef(VaultId, &'a mut Vault),
+    TrackedVaultRef((ComponentAddress, VaultId), &'a mut Vault),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -232,8 +233,8 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
                 BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
-                BorrowedSNodeState::TrackedVault(id, vault, ..) => {
-                    SNodeState::TrackedVaultRef(*id, vault)
+                BorrowedSNodeState::TrackedVault(address, vault)=> {
+                    SNodeState::TrackedVaultRef(*address, vault)
                 }
             },
         }
@@ -258,12 +259,8 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Resource(resource_address, resource_manager) => {
                     track.return_borrowed_global_mut_value(resource_address, resource_manager);
                 }
-                BorrowedSNodeState::TrackedVault(vault_id, vault, value_type) => match value_type {
-                    ValueType::Ref(ValueRefType::Committed { component_address }) => {
-                        track
-                            .return_borrowed_global_mut_value((component_address, vault_id), vault);
-                    }
-                    _ => panic!("Should not get here."),
+                BorrowedSNodeState::TrackedVault(vault_address, vault) => {
+                    track.return_borrowed_global_mut_value(vault_address, vault);
                 },
             }
         }
@@ -606,7 +603,7 @@ where
                     .map_err(RuntimeError::VaultError),
                 _ => panic!("Should be a vault"),
             },
-            SNodeState::TrackedVaultRef(vault_id, vault) => vault
+            SNodeState::TrackedVaultRef((_component_address, vault_id), vault) => vault
                 .main(vault_id, fn_ident, input, self)
                 .map_err(RuntimeError::VaultError),
         }?;
@@ -1005,9 +1002,10 @@ where
                                 )
                             }
                             ValueRefType::Committed { component_address } => {
+                                let vault_address = (component_address, *vault_id);
                                 let vault: Vault = self
                                     .track
-                                    .borrow_global_mut_value((component_address, *vault_id))
+                                    .borrow_global_mut_value(vault_address.clone())
                                     .map_err(|e| match e {
                                         TrackError::NotFound => panic!("Expected to find vault"),
                                         TrackError::Reentrancy => {
@@ -1019,9 +1017,8 @@ where
                                 (
                                     resource_address,
                                     Borrowed(BorrowedSNodeState::TrackedVault(
-                                        vault_id.clone(),
+                                        vault_address,
                                         vault,
-                                        ValueType::Ref(value_ref),
                                     )),
                                 )
                             }

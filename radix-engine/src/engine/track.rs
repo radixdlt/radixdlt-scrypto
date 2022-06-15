@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use indexmap::{IndexMap, IndexSet};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
@@ -22,7 +23,7 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     logs: Vec<(Level, String)>,
 
     new_addresses: Vec<Address>,
-    borrowed_substates: HashSet<Address>,
+    borrowed_substates: RefCell<HashSet<Address>>,
     read_substates: IndexMap<Address, SubstateValue>,
 
     downed_substates: Vec<PhysicalSubstateId>,
@@ -263,7 +264,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             logs: Vec::new(),
 
             new_addresses: Vec::new(),
-            borrowed_substates: HashSet::new(),
+            borrowed_substates: RefCell::new(HashSet::new()),
             read_substates: IndexMap::new(),
 
             downed_substates: Vec::new(),
@@ -379,14 +380,15 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     ) -> Result<SubstateValue, TrackError> {
         let address = addr.into();
         let maybe_value = self.up_substates.remove(&address.encode());
+        let mut borrowed_substates = self.borrowed_substates.borrow_mut();
         if let Some(value) = maybe_value {
-            self.borrowed_substates.insert(address);
+            borrowed_substates.insert(address);
             Ok(value)
-        } else if self.borrowed_substates.contains(&address) {
+        } else if borrowed_substates.contains(&address) {
             Err(TrackError::Reentrancy)
         } else if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
             self.downed_substates.push(substate.phys_id);
-            self.borrowed_substates.insert(address.clone());
+            borrowed_substates.insert(address.clone());
             match address {
                 Address::Component(_) => {
                     let component = scrypto_decode(&substate.value).unwrap();
@@ -413,7 +415,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         value: V,
     ) {
         let address = addr.into();
-        if !self.borrowed_substates.remove(&address) {
+        let mut borrowed_substates = self.borrowed_substates.borrow_mut();
+        if !borrowed_substates.remove(&address) {
             panic!("Value was never borrowed");
         }
         self.up_substates.insert(address.encode(), value.into());
@@ -564,7 +567,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             substate_operations: store_instructions,
         };
         let borrowed = BorrowedSNodes {
-            borrowed_substates: self.borrowed_substates,
+            borrowed_substates: self.borrowed_substates.into_inner(),
         };
         TrackReceipt {
             new_addresses: self.new_addresses,
