@@ -21,6 +21,7 @@ use transaction::validation::*;
 
 use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static};
 use crate::engine::*;
+use crate::fee::*;
 use crate::ledger::*;
 use crate::model::*;
 use crate::wasm::*;
@@ -65,6 +66,12 @@ pub struct CallFrame<
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
+
+    /// There is a single cost unit counter and a single fee table per transaction execution.
+    /// When a call ocurrs, they're passed from the parent to the child, and returned
+    /// after the invocation.
+    cost_unit_counter: Option<CostUnitCounter>,
+    fee_table: Option<FeeTable>,
 
     phantom: PhantomData<I>,
 }
@@ -302,19 +309,21 @@ where
         signer_public_keys: Vec<EcdsaPublicKey>,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
+        cost_unit_counter: CostUnitCounter,
+        fee_table: FeeTable,
     ) -> Self {
-        let signer_public_keys: BTreeSet<NonFungibleId> = signer_public_keys
+        let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
             .into_iter()
             .map(|public_key| NonFungibleId::from_bytes(public_key.to_vec()))
             .collect();
 
         let mut initial_auth_zone_proofs = Vec::new();
-        if !signer_public_keys.is_empty() {
+        if !signer_non_fungible_ids.is_empty() {
             // Proofs can't be zero amount
             let mut ecdsa_bucket = Bucket::new(ResourceContainer::new_non_fungible(
                 ECDSA_TOKEN,
-                signer_public_keys,
+                signer_non_fungible_ids,
             ));
             let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
             initial_auth_zone_proofs.push(ecdsa_proof);
@@ -333,6 +342,8 @@ where
             HashMap::new(),
             HashMap::new(),
             None,
+            cost_unit_counter,
+            fee_table,
         )
     }
 
@@ -347,6 +358,8 @@ where
         buckets: HashMap<BucketId, Bucket>,
         proofs: HashMap<ProofId, Proof>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
+        cost_unit_counter: CostUnitCounter,
+        fee_table: FeeTable,
     ) -> Self {
         let mut celled_buckets = HashMap::new();
         for (id, b) in buckets {
@@ -372,13 +385,14 @@ where
             auth_zone,
             caller_auth_zone,
             component_state: None,
+            cost_unit_counter: Some(cost_unit_counter),
+            fee_table: Some(fee_table),
             phantom: PhantomData,
         }
     }
 
     /// Checks resource leak.
     fn check_resource(&mut self) -> Result<(), RuntimeError> {
-        self.sys_log(Level::Info, "Resource check started".to_string());
         let mut success = true;
         let mut resource = ResourceFailure::Unknown;
 
@@ -410,7 +424,6 @@ where
             }
         }
 
-        self.sys_log(Level::Info, "Resource check ended".to_string());
         if success {
             Ok(())
         } else {
@@ -621,6 +634,28 @@ where
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
 
+    fn cost_unit_counter_helper(counter: &mut Option<CostUnitCounter>) -> &mut CostUnitCounter {
+        counter
+            .as_mut()
+            .expect("Frame doens't own a cost unit counter")
+    }
+
+    pub fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+        // Use helper method to support paritial borrow of self
+        // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
+        Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
+    }
+
+    fn fee_table_helper(fee_table: &Option<FeeTable>) -> &FeeTable {
+        fee_table.as_ref().expect("Frame doens't own a fee table")
+    }
+
+    pub fn fee_table(&self) -> &FeeTable {
+        // Use helper method to support paritial borrow of self
+        // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
+        Self::fee_table_helper(&self.fee_table)
+    }
+
     fn take_values(
         &mut self,
         value_ids: &HashSet<StoredValueId>,
@@ -728,9 +763,17 @@ where
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.sys_log(Level::Debug, format!("{:?} {:?}", snode_ref, &fn_ident));
+        let remaining_cost_units = self.cost_unit_counter().remaining();
+        self.sys_log(
+            Level::Debug,
+            format!(
+                "Invoking: {:?} {:?}, remainging cost units: {}",
+                snode_ref, &fn_ident, remaining_cost_units
+            ),
+        );
 
         Self::process_call_data(&input)?;
+
         // Figure out what buckets and proofs to move from this process
         let mut moving_buckets = HashMap::new();
         let mut moving_proofs = HashMap::new();
@@ -740,11 +783,12 @@ where
             &input.proof_ids,
             MoveMethod::AsArgument,
         )?);
-        self.sys_log(
-            Level::Debug,
-            format!("Sending buckets: {:?}", moving_buckets),
-        );
-        self.sys_log(Level::Debug, format!("Sending proofs: {:?}", moving_proofs));
+        for bucket in &moving_buckets {
+            self.sys_log(Level::Debug, format!("Sending bucket: {:?}", bucket));
+        }
+        for proof in &moving_proofs {
+            self.sys_log(Level::Debug, format!("Sending proof: {:?}", proof));
+        }
 
         // Authorization and state load
         let (mut loaded_snode, method_auths) = match &snode_ref {
@@ -1040,6 +1084,17 @@ where
                     })?;
             }
         }
+        self.sys_log(Level::Debug, format!("Auth check success!"));
+
+        // Prepare moving cost unit counter and fee table
+        let cost_unit_counter = self
+            .cost_unit_counter
+            .take()
+            .expect("Frame doesn't own a cost unit counter");
+        let fee_table = self
+            .fee_table
+            .take()
+            .expect("Frame doesn't own a fee table");
 
         // start a new frame
         let mut frame = CallFrame::new(
@@ -1064,29 +1119,31 @@ where
             moving_buckets,
             moving_proofs,
             self.auth_zone.as_ref(),
+            cost_unit_counter,
+            fee_table,
         );
 
         // invoke the main function
         let snode = loaded_snode.to_snode_state();
-        let (result, received_buckets, received_proofs, mut received_vaults) =
-            frame.run(Some(snode_ref), snode, &fn_ident, input)?;
+        let run_result = frame.run(Some(snode_ref), snode, &fn_ident, input);
+
+        // re-gain ownership of the cost unit counter and fee table
+        self.cost_unit_counter = frame.cost_unit_counter;
+        self.fee_table = frame.fee_table;
+
+        // unwrap and contine
+        let (result, received_buckets, received_proofs, mut received_vaults) = run_result?;
 
         // Return borrowed snodes
         loaded_snode.cleanup(&mut self.track, &mut self.owned_values);
 
         // move buckets and proofs to this process.
-        self.sys_log(
-            Level::Debug,
-            format!("Received buckets: {:?}", received_buckets),
-        );
-        self.sys_log(
-            Level::Debug,
-            format!("Received proofs: {:?}", received_proofs),
-        );
         for (bucket_id, bucket) in received_buckets {
+            self.sys_log(Level::Debug, format!("Received bucket: {:?}", bucket));
             self.buckets.insert(bucket_id, RefCell::new(bucket));
         }
         for (proof_id, proof) in received_proofs {
+            self.sys_log(Level::Debug, format!("Received proof: {:?}", proof));
             self.proofs.insert(proof_id, RefCell::new(proof));
         }
         for (vault_id, vault) in received_vaults.drain() {
@@ -1438,5 +1495,13 @@ where
             .map_err(RuntimeError::AuthZoneError)?;
 
         Ok(is_authorized)
+    }
+
+    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+        self.cost_unit_counter()
+    }
+
+    fn fee_table(&self) -> &FeeTable {
+        self.fee_table()
     }
 }

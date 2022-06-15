@@ -30,17 +30,7 @@ pub enum PackageError {
 
 impl ValidatedPackage {
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, PrepareError> {
-        WasmModule::init(&package.code)?
-            .reject_floating_point()?
-            .reject_start_function()?
-            .check_imports()?
-            .check_memory()?
-            .enforce_initial_memory_limit()?
-            .enforce_functions_limit()?
-            .enforce_locals_limit()?
-            .inject_instruction_metering()?
-            .inject_stack_metering()?
-            .to_bytes()?;
+        WasmValidator::validate(&package.code)?;
 
         Ok(Self {
             code: package.code,
@@ -93,14 +83,16 @@ impl ValidatedPackage {
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        let mut instance = system_api.wasm_engine().instantiate(self.code());
-        let mut cost_unit_counter =
-            CostUnitCounter::new(CALL_FUNCTION_COST_UNIT_LIMIT, CALL_FUNCTION_COST_UNIT_LIMIT);
-        let runtime =
-            RadixEngineWasmRuntime::new(actor, blueprint_abi, system_api, &mut cost_unit_counter);
-        let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
+        let wasm_metering_params = system_api.fee_table().wasm_metering_params();
+        let instrumented_code = WasmInstrumenter::instrument(&self.code, &wasm_metering_params);
+        let mut instance = system_api.wasm_engine().instantiate(&instrumented_code);
+        let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(
+            actor,
+            blueprint_abi,
+            system_api,
+        ));
         instance
-            .invoke_export(&export_name, method_name, &arg, &mut runtime_boxed)
+            .invoke_export(&export_name, method_name, &arg, &mut runtime)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,

@@ -6,6 +6,10 @@ use scrypto::values::ScryptoValue;
 use transaction::model::*;
 
 use crate::engine::*;
+use crate::fee::CostUnitCounter;
+use crate::fee::FeeTable;
+use crate::fee::MAX_TRANSACTION_COST;
+use crate::fee::SYSTEM_LOAN_AMOUNT;
 use crate::ledger::*;
 use crate::model::*;
 use crate::wasm::*;
@@ -63,6 +67,10 @@ where
         // Start state track
         let mut track = Track::new(self.substate_store, transaction_hash);
 
+        // Metering
+        let cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
+        let fee_table = FeeTable::new();
+
         // Create root call frame.
         let mut root_frame = CallFrame::new_root(
             self.trace,
@@ -70,6 +78,8 @@ where
             signer_public_keys,
             &mut track,
             self.wasm_engine,
+            cost_unit_counter,
+            fee_table,
         );
 
         // Invoke the transaction processor
@@ -81,6 +91,7 @@ where
                 instructions: instructions.clone(),
             }),
         );
+        let cost_units_consumed = root_frame.cost_unit_counter().consumed();
 
         let (outputs, error) = match result {
             Ok(o) => (scrypto_decode::<Vec<Vec<u8>>>(&o.raw).unwrap(), None),
@@ -134,6 +145,7 @@ where
             new_component_addresses,
             new_resource_addresses,
             execution_time,
+            cost_units_consumed,
         }
     }
 }

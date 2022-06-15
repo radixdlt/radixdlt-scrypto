@@ -6,6 +6,7 @@ use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
 use crate::engine::*;
+use crate::fee::*;
 use crate::model::*;
 use crate::wasm::*;
 
@@ -15,6 +16,10 @@ where
     I: WasmInstance,
 {
     fn wasm_engine(&mut self) -> &mut W;
+
+    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
+
+    fn fee_table(&self) -> &FeeTable;
 
     fn invoke_snode(
         &mut self,
