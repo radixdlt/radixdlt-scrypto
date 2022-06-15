@@ -42,6 +42,7 @@ pub enum CallDataValidationError {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransactionValidationError {
+    TransactionTooLarge,
     DeserializationError(DecodeError),
     IntentHashRejected,
     HeaderValidationError(HeaderValidationError),

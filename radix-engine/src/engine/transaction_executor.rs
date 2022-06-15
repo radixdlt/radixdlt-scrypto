@@ -71,8 +71,18 @@ where
         let mut track = Track::new(self.substate_store, transaction_hash);
 
         // Metering
-        let cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
+        let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
         let fee_table = FeeTable::new();
+
+        // Charge transaction size
+        cost_unit_counter
+            .consume(
+                fee_table
+                    .tx_validation_cost_per_byte()
+                    .checked_mul(transaction.transaction_payload_size())
+                    .expect("No overflow should ocurr with transaction size checked"),
+            )
+            .expect("System loan should cover transaction validation cost");
 
         // Create root call frame.
         let mut root_frame = CallFrame::new_root(
