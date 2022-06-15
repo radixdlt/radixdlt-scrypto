@@ -61,8 +61,6 @@ pub struct CallFrame<
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Referenced values
-    initial_value: Option<ScryptoValue>,
-
     refed_values: HashMap<StoredValueId, ValueRefType>,
 
     /// Caller's auth zone
@@ -353,7 +351,6 @@ where
             worktop,
             auth_zone,
             caller_auth_zone,
-            initial_value: None,
             phantom: PhantomData,
         }
     }
@@ -537,8 +534,14 @@ where
             SNodeState::WorktopRef(worktop) => worktop
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, blueprint_abi, package, export_name, mut maybe_component) => {
-                if let Some(component) = &maybe_component {
+            SNodeState::Scrypto(
+                actor,
+                blueprint_abi,
+                package,
+                export_name,
+                mut maybe_component,
+            ) => {
+                let initial_value = if let Some(component) = &maybe_component {
                     let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
                     for value_id in initial_value.stored_value_ids() {
                         self.refed_values.insert(
@@ -548,16 +551,26 @@ where
                             },
                         );
                     }
-                    self.initial_value = Some(initial_value);
-                }
+                    Some(initial_value)
+                } else {
+                    None
+                };
 
-                let rtn = package.invoke(&actor, &mut maybe_component, blueprint_abi, export_name, fn_ident, input, self)?;
+                let rtn = package.invoke(
+                    &actor,
+                    &mut maybe_component,
+                    blueprint_abi,
+                    export_name,
+                    fn_ident,
+                    input,
+                    self,
+                )?;
 
                 if let Some(component) = maybe_component {
-                    let value = ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
+                    let value = ScryptoValue::from_slice(component.state())
+                        .map_err(RuntimeError::DecodeError)?;
                     verify_stored_value(&value)?;
-
-                    let new_value_ids = stored_value_update(self.initial_value.as_ref().unwrap(), &value)?;
+                    let new_value_ids = stored_value_update(&initial_value.unwrap(), &value)?;
                     let addr = actor.component_address().unwrap();
                     // TODO: should we take values when component is actually written to rather than at the end of invocation?
                     let new_values = self.take_values(&new_value_ids)?;
@@ -778,108 +791,106 @@ where
                     Err(RuntimeError::WorktopDoesNotExist)
                 }
             }
-            SNodeRef::Scrypto(actor) => {
-                match actor {
-                    ScryptoActor::Blueprint(package_address, blueprint_name) => {
-                        let substate_value = self
-                            .track
-                            .read_value(package_address.clone())
-                            .ok_or(RuntimeError::PackageNotFound(*package_address))?;
-                        let package = match substate_value {
-                            SubstateValue::Package(package) => package,
-                            _ => panic!("Value is not a package"),
-                        };
-                        let abi = package.blueprint_abi(blueprint_name).ok_or(
-                            RuntimeError::BlueprintNotFound(
+            SNodeRef::Scrypto(actor) => match actor {
+                ScryptoActor::Blueprint(package_address, blueprint_name) => {
+                    let substate_value = self
+                        .track
+                        .read_value(package_address.clone())
+                        .ok_or(RuntimeError::PackageNotFound(*package_address))?;
+                    let package = match substate_value {
+                        SubstateValue::Package(package) => package,
+                        _ => panic!("Value is not a package"),
+                    };
+                    let abi = package.blueprint_abi(blueprint_name).ok_or(
+                        RuntimeError::BlueprintNotFound(
+                            package_address.clone(),
+                            blueprint_name.clone(),
+                        ),
+                    )?;
+                    let fn_abi = abi
+                        .get_fn_abi(&fn_ident)
+                        .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
+                    if !fn_abi.input.matches(&input.dom) {
+                        return Err(RuntimeError::InvalidMethodArgument {
+                            fn_ident,
+                            input: input.dom,
+                        });
+                    }
+                    let export_name = format!("{}_main", blueprint_name);
+
+                    Ok((
+                        Borrowed(BorrowedSNodeState::Scrypto(
+                            ScryptoActorInfo::blueprint(
                                 package_address.clone(),
                                 blueprint_name.clone(),
                             ),
-                        )?;
-                        let fn_abi = abi
-                            .get_fn_abi(&fn_ident)
-                            .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
-                        if !fn_abi.input.matches(&input.dom) {
-                            return Err(RuntimeError::InvalidMethodArgument {
-                                fn_ident,
-                                input: input.dom,
-                            });
-                        }
-                        let export_name = format!("{}_main", blueprint_name);
-
-                        Ok((
-                            Borrowed(BorrowedSNodeState::Scrypto(
-                                ScryptoActorInfo::blueprint(
-                                    package_address.clone(),
-                                    blueprint_name.clone(),
-                                ),
-                                abi.clone(),
-                                package.clone(),
-                                export_name.clone(),
-                                None,
-                            )),
-                            vec![],
-                        ))
-                    }
-                    ScryptoActor::Component(component_address) => {
-                        let component_address = *component_address;
-
-                        let component: Component = self
-                            .track
-                            .borrow_global_mut_value(component_address)
-                            .map_err(|e| match e {
-                                TrackError::NotFound => {
-                                    RuntimeError::ComponentNotFound(component_address)
-                                }
-                                TrackError::Reentrancy => {
-                                    RuntimeError::ComponentReentrancy(component_address)
-                                }
-                            })?
-                            .into();
-                        let package_address = component.package_address();
-                        let blueprint_name = component.blueprint_name().to_string();
-                        let export_name = format!("{}_main", blueprint_name);
-
-                        let substate_value = self
-                            .track
-                            .read_value(package_address)
-                            .ok_or(RuntimeError::PackageNotFound(package_address))?;
-                        let package = match substate_value {
-                            SubstateValue::Package(package) => package,
-                            _ => panic!("Value is not a package"),
-                        };
-
-                        let abi = package
-                            .blueprint_abi(&blueprint_name)
-                            .expect("Blueprint not found for existing component");
-                        let fn_abi = abi
-                            .get_fn_abi(&fn_ident)
-                            .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
-                        if !fn_abi.input.matches(&input.dom) {
-                            return Err(RuntimeError::InvalidMethodArgument {
-                                fn_ident,
-                                input: input.dom,
-                            });
-                        }
-                        let (_, method_auths) =
-                            component.method_authorization(&abi.structure, &fn_ident);
-
-                        Ok((
-                            Borrowed(BorrowedSNodeState::Scrypto(
-                                ScryptoActorInfo::component(
-                                    package_address,
-                                    blueprint_name,
-                                    component_address,
-                                ),
-                                abi.clone(),
-                                package.clone(),
-                                export_name,
-                                Some(component),
-                            )),
-                            method_auths,
-                        ))
-                    }
+                            abi.clone(),
+                            package.clone(),
+                            export_name.clone(),
+                            None,
+                        )),
+                        vec![],
+                    ))
                 }
-            }
+                ScryptoActor::Component(component_address) => {
+                    let component_address = *component_address;
+
+                    let component: Component = self
+                        .track
+                        .borrow_global_mut_value(component_address)
+                        .map_err(|e| match e {
+                            TrackError::NotFound => {
+                                RuntimeError::ComponentNotFound(component_address)
+                            }
+                            TrackError::Reentrancy => {
+                                RuntimeError::ComponentReentrancy(component_address)
+                            }
+                        })?
+                        .into();
+                    let package_address = component.package_address();
+                    let blueprint_name = component.blueprint_name().to_string();
+                    let export_name = format!("{}_main", blueprint_name);
+
+                    let substate_value = self
+                        .track
+                        .read_value(package_address)
+                        .ok_or(RuntimeError::PackageNotFound(package_address))?;
+                    let package = match substate_value {
+                        SubstateValue::Package(package) => package,
+                        _ => panic!("Value is not a package"),
+                    };
+
+                    let abi = package
+                        .blueprint_abi(&blueprint_name)
+                        .expect("Blueprint not found for existing component");
+                    let fn_abi = abi
+                        .get_fn_abi(&fn_ident)
+                        .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
+                    if !fn_abi.input.matches(&input.dom) {
+                        return Err(RuntimeError::InvalidMethodArgument {
+                            fn_ident,
+                            input: input.dom,
+                        });
+                    }
+                    let (_, method_auths) =
+                        component.method_authorization(&abi.structure, &fn_ident);
+
+                    Ok((
+                        Borrowed(BorrowedSNodeState::Scrypto(
+                            ScryptoActorInfo::component(
+                                package_address,
+                                blueprint_name,
+                                component_address,
+                            ),
+                            abi.clone(),
+                            package.clone(),
+                            export_name,
+                            Some(component),
+                        )),
+                        method_auths,
+                    ))
+                }
+            },
             SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::ResourceRef(resource_address) => {
                 let resource_manager: ResourceManager = self
