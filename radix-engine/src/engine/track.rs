@@ -229,6 +229,14 @@ impl SubstateValue {
             panic!("Not a resource manager");
         }
     }
+
+    pub fn component(&self) -> &Component {
+        if let SubstateValue::Component(component) = self {
+            component
+        } else {
+            panic!("Not a component");
+        }
+    }
 }
 
 impl Into<SubstateValue> for ValidatedPackage {

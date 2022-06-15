@@ -138,8 +138,7 @@ pub enum ConsumedSNodeState {
 }
 
 pub enum TrackedSNodeState {
-    Component(ScryptoActorInfo, ValidatedPackage, Component),
-    Tracked(Address, SubstateValue),
+    Tracked(Address, SubstateValue, Option<(ScryptoActorInfo, ValidatedPackage)>),
 }
 
 pub enum BorrowedSNodeState<'a> {
@@ -180,11 +179,6 @@ pub enum SNodeState<'a> {
         ScryptoActorInfo,
         ValidatedPackage,
     ),
-    Component(
-        ScryptoActorInfo,
-        ValidatedPackage,
-        &'a mut Component,
-    ),
     ResourceStatic,
     BucketRef(BucketId, &'a mut Bucket),
     Bucket(Bucket),
@@ -192,7 +186,7 @@ pub enum SNodeState<'a> {
     Proof(Proof),
     VaultRef(VaultId, &'a mut StoredValue),
 
-    Tracked(Address, &'a mut SubstateValue),
+    Tracked(Address, &'a mut SubstateValue, Option<(ScryptoActorInfo, ValidatedPackage)>),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -229,16 +223,8 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
             },
             Tracked(ref mut tracked) => match tracked {
-                TrackedSNodeState::Component(
-                    info,
-                    package,
-                    component,
-                ) => SNodeState::Component(
-                    info.clone(),
-                    package.clone(),
-                    component,
-                ),
-                TrackedSNodeState::Tracked(addr, s) => SNodeState::Tracked(addr.clone(), s),
+                TrackedSNodeState::Tracked(addr, s, meta) =>
+                    SNodeState::Tracked(addr.clone(), s, meta.clone()),
             }
         }
     }
@@ -246,13 +232,7 @@ impl<'a> LoadedSNodeState<'a> {
     fn cleanup<S: ReadableSubstateStore>(self, track: &mut Track<S>) {
         if let Tracked(tracked) = self {
             match tracked {
-                TrackedSNodeState::Component(actor, _, component) => {
-                    track.return_borrowed_global_mut_value(
-                        actor.component_address().unwrap(),
-                        component,
-                    );
-                }
-                TrackedSNodeState::Tracked(address, value) => {
+                TrackedSNodeState::Tracked(address, value, ..) => {
                     track.return_borrowed_global_mut_value(address, value);
                 }
             }
@@ -538,44 +518,6 @@ where
                     self,
                 )
             }
-            SNodeState::Component(
-                actor,
-                package,
-                component,
-            ) => {
-                let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
-                for value_id in initial_value.stored_value_ids() {
-                    self.refed_values.insert(
-                        value_id,
-                        ValueRefType::Committed {
-                            component_address: actor.component_address().unwrap(),
-                        },
-                    );
-                }
-
-                let mut maybe_component = Some(component);
-                let export_name = format!("{}_main", actor.blueprint_name());
-                let rtn = package.invoke(
-                    &actor,
-                    &mut maybe_component,
-                    export_name,
-                    fn_ident,
-                    input,
-                    self,
-                )?;
-
-                let component = maybe_component.unwrap();
-                let value = ScryptoValue::from_slice(component.state())
-                    .map_err(RuntimeError::DecodeError)?;
-                verify_stored_value(&value)?;
-                let new_value_ids = stored_value_update(&initial_value, &value)?;
-                let addr = actor.component_address().unwrap();
-                // TODO: should we take values when component is actually written to rather than at the end of invocation?
-                let new_values = self.take_values(&new_value_ids)?;
-                self.track.insert_objects_into_component(new_values, addr);
-
-                Ok(rtn)
-            }
             SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
                 .map_err(RuntimeError::ResourceManagerError),
 
@@ -597,7 +539,7 @@ where
                     .map_err(RuntimeError::VaultError),
                 _ => panic!("Should be a vault"),
             },
-            SNodeState::Tracked(address, value) => {
+            SNodeState::Tracked(address, value, meta) => {
                 match value {
                     SubstateValue::Resource(resource_manager) => {
                         resource_manager
@@ -609,6 +551,41 @@ where
                         vault
                             .main(vault_address.1, fn_ident, input, self)
                             .map_err(RuntimeError::VaultError)
+                    }
+                    SubstateValue::Component(component) => {
+                        let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
+                        for value_id in initial_value.stored_value_ids() {
+                            self.refed_values.insert(
+                                value_id,
+                                ValueRefType::Committed {
+                                    component_address: address.clone().into(),
+                                },
+                            );
+                        }
+
+                        let (actor, package) = meta.unwrap();
+
+                        let mut maybe_component = Some(component);
+                        let export_name = format!("{}_main", actor.blueprint_name());
+                        let rtn = package.invoke(
+                            &actor,
+                            &mut maybe_component,
+                            export_name,
+                            fn_ident,
+                            input,
+                            self,
+                        )?;
+
+                        let component = maybe_component.unwrap();
+                        let value = ScryptoValue::from_slice(component.state())
+                            .map_err(RuntimeError::DecodeError)?;
+                        verify_stored_value(&value)?;
+                        let new_value_ids = stored_value_update(&initial_value, &value)?;
+                        // TODO: should we take values when component is actually written to rather than at the end of invocation?
+                        let new_values = self.take_values(&new_value_ids)?;
+                        self.track.insert_objects_into_component(new_values, address.clone().into());
+
+                        Ok(rtn)
                     }
                     _ => panic!("Tracked {:?} not supported. Should not get here.", value)
                 }
@@ -834,7 +811,7 @@ where
                 ScryptoActor::Component(component_address) => {
                     let component_address = *component_address;
 
-                    let component: Component = self
+                    let component_value = self
                         .track
                         .borrow_global_mut_value(component_address)
                         .map_err(|e| match e {
@@ -844,8 +821,8 @@ where
                             TrackError::Reentrancy => {
                                 RuntimeError::ComponentReentrancy(component_address)
                             }
-                        })?
-                        .into();
+                        })?;
+                    let component = component_value.component();
                     let package_address = component.package_address();
                     let blueprint_name = component.blueprint_name().to_string();
                     let substate_value = self
@@ -872,15 +849,17 @@ where
                     let (_, method_auths) =
                         component.method_authorization(&abi.structure, &fn_ident);
 
+                    let actor_info = ScryptoActorInfo::component(
+                        package_address,
+                        blueprint_name,
+                        component_address,
+                    );
+
                     Ok((
-                        Tracked(TrackedSNodeState::Component(
-                            ScryptoActorInfo::component(
-                                package_address,
-                                blueprint_name,
-                                component_address,
-                            ),
-                            package.clone(),
-                            component,
+                        Tracked(TrackedSNodeState::Tracked(
+                            component_address.into(),
+                            component_value,
+                            Some((actor_info, package.clone())),
                         )),
                         method_auths,
                     ))
@@ -903,6 +882,7 @@ where
                     Tracked(TrackedSNodeState::Tracked(
                         resource_address.clone().into(),
                         resman_value,
+                        None,
                     )),
                     vec![method_auth],
                 ))
@@ -1015,6 +995,7 @@ where
                                     Tracked(TrackedSNodeState::Tracked(
                                         vault_address.into(),
                                         vault_value,
+                                        None,
                                     )),
                                 )
                             }
@@ -1042,11 +1023,10 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                Tracked(TrackedSNodeState::Tracked(_, _))
+                Tracked(TrackedSNodeState::Tracked(..))
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Tracked(TrackedSNodeState::Component(..))
                 | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
@@ -1080,7 +1060,7 @@ where
             self.wasm_engine,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Tracked(TrackedSNodeState::Component(..))
+                | Tracked(TrackedSNodeState::Tracked(..))
                 | Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
                 }
