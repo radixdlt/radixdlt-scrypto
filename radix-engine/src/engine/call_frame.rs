@@ -166,19 +166,19 @@ pub enum LoadedSNodeState<'a> {
 pub enum SNodeState<'a> {
     Root,
     Static(&'a StaticSNodeState),
+    Consumed(ConsumedSNodeState),
+
     AuthZoneRef(&'a mut AuthZone),
     WorktopRef(&'a mut Worktop),
-    // TODO: use reference to the package
     Blueprint(
         ScryptoActorInfo,
         ValidatedPackage,
     ),
     BucketRef(BucketId, &'a mut Bucket),
-    Bucket(Bucket),
     ProofRef(ProofId, &'a mut Proof),
-    Proof(Proof),
     VaultRef(VaultId, &'a mut StoredValue),
 
+    // TODO: use reference to the package
     Tracked(Address, &'a mut SubstateValue, Option<(ScryptoActorInfo, ValidatedPackage)>),
 }
 
@@ -192,10 +192,7 @@ impl<'a> LoadedSNodeState<'a> {
     fn to_snode_state(&mut self) -> SNodeState {
         match self {
             Static(static_state) => SNodeState::Static(static_state),
-            Consumed(ref mut to_consume) => match to_consume.take().unwrap() {
-                ConsumedSNodeState::Proof(proof) => SNodeState::Proof(proof),
-                ConsumedSNodeState::Bucket(bucket) => SNodeState::Bucket(bucket),
-            },
+            Consumed(ref mut to_consume) => SNodeState::Consumed(to_consume.take().unwrap()),
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
@@ -491,6 +488,20 @@ where
                     }
                 }
             }
+            SNodeState::Consumed(state) => {
+                match state {
+                    ConsumedSNodeState::Bucket(bucket) => {
+                        bucket
+                            .consuming_main(fn_ident, input, self)
+                            .map_err(RuntimeError::BucketError)
+                    }
+                    ConsumedSNodeState::Proof(proof) => {
+                        proof
+                            .main_consume(fn_ident, input)
+                            .map_err(RuntimeError::ProofError)
+                    }
+                }
+            }
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::AuthZoneError),
@@ -514,14 +525,8 @@ where
             SNodeState::BucketRef(bucket_id, bucket) => bucket
                 .main(bucket_id, fn_ident, input, self)
                 .map_err(RuntimeError::BucketError),
-            SNodeState::Bucket(bucket) => bucket
-                .consuming_main(fn_ident, input, self)
-                .map_err(RuntimeError::BucketError),
             SNodeState::ProofRef(_, proof) => proof
                 .main(fn_ident, input, self)
-                .map_err(RuntimeError::ProofError),
-            SNodeState::Proof(proof) => proof
-                .main_consume(fn_ident, input)
                 .map_err(RuntimeError::ProofError),
             SNodeState::VaultRef(_vault_id, value) => match value {
                 StoredValue::Vault(id, vault) => vault
