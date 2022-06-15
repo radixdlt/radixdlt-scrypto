@@ -187,6 +187,22 @@ impl SubstateValue {
             SubstateValue::KeyValueStoreEntry(value) => scrypto_encode(value),
         }
     }
+
+    pub fn resource_manager_mut(&mut self) -> &mut ResourceManager {
+        if let SubstateValue::Resource(resource_manager) = self {
+            resource_manager
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
+
+    pub fn resource_manager(&self) -> &ResourceManager {
+        if let SubstateValue::Resource(resource_manager) = self {
+            resource_manager
+        } else {
+            panic!("Not a resource manager");
+        }
+    }
 }
 
 impl Into<SubstateValue> for ValidatedPackage {

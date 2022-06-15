@@ -139,7 +139,7 @@ pub enum ConsumedSNodeState {
 
 pub enum TrackedSNodeState {
     Component(ScryptoActorInfo, ValidatedPackage, Component),
-    Resource(ResourceAddress, ResourceManager),
+    Resource(Address, SubstateValue),
     TrackedVault((ComponentAddress, VaultId), Vault),
 }
 
@@ -187,7 +187,7 @@ pub enum SNodeState<'a> {
         &'a mut Component,
     ),
     ResourceStatic,
-    ResourceRef(ResourceAddress, &'a mut ResourceManager),
+    ResourceRef(Address, &'a mut SubstateValue),
     BucketRef(BucketId, &'a mut Bucket),
     Bucket(Bucket),
     ProofRef(ProofId, &'a mut Proof),
@@ -239,7 +239,7 @@ impl<'a> LoadedSNodeState<'a> {
                     package.clone(),
                     component,
                 ),
-                TrackedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
+                TrackedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(addr.clone(), s),
                 TrackedSNodeState::TrackedVault(address, vault)=> {
                     SNodeState::TrackedVaultRef(*address, vault)
                 }
@@ -585,9 +585,10 @@ where
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
                 .map_err(RuntimeError::ResourceManagerError),
-            SNodeState::ResourceRef(resource_address, resource_manager) => {
-                let return_value = resource_manager
-                    .main(resource_address, fn_ident, input, self)
+            SNodeState::ResourceRef(resource_address, resman_value) => {
+                let return_value = resman_value
+                    .resource_manager_mut()
+                    .main(resource_address.into(), fn_ident, input, self)
                     .map_err(RuntimeError::ResourceManagerError)?;
 
                 Ok(return_value)
@@ -888,7 +889,7 @@ where
             },
             SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::ResourceRef(resource_address) => {
-                let resource_manager: ResourceManager = self
+                let resman_value = self
                     .track
                     .borrow_global_mut_value(resource_address.clone())
                     .map_err(|e| match e {
@@ -896,14 +897,13 @@ where
                             RuntimeError::ResourceManagerNotFound(resource_address.clone())
                         }
                         TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
-                    })?
-                    .into();
+                    })?;
 
-                let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
+                let method_auth = resman_value.resource_manager().get_auth(&fn_ident, &input).clone();
                 Ok((
                     Tracked(TrackedSNodeState::Resource(
-                        resource_address.clone(),
-                        resource_manager,
+                        resource_address.clone().into(),
+                        resman_value,
                     )),
                     vec![method_auth],
                 ))
