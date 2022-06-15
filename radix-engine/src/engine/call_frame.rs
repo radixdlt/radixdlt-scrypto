@@ -61,7 +61,6 @@ pub struct CallFrame<
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Referenced values
-    component: Option<&'p mut Component>,
     component_address: Option<ComponentAddress>,
     initial_value: Option<ScryptoValue>,
 
@@ -357,7 +356,6 @@ where
             caller_auth_zone,
             initial_value: None,
             component_address: None,
-            component: None,
             phantom: PhantomData,
         }
     }
@@ -556,9 +554,7 @@ where
                     self.component_address = Some(actor.component_address().unwrap());
                 }
 
-                //let component_bytes = maybe_component.as_ref().map(|c| c.state().to_vec());
-                //self.component = maybe_component;
-                let rtn = package.invoke(actor, &mut maybe_component, blueprint_abi, export_name, fn_ident, input, self)?;
+                let rtn = package.invoke(&actor, &mut maybe_component, blueprint_abi, export_name, fn_ident, input, self)?;
 
                 if let Some(component) = maybe_component {
                     let value = ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
@@ -1237,26 +1233,6 @@ where
         self.track
             .insert_objects_into_component(values, address.clone().into());
         Ok(address.into())
-    }
-
-    fn write_component_state(
-        &mut self,
-        addr: ComponentAddress,
-        state: ScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        verify_stored_value(&state)?;
-
-        if let Some(component) = &mut self.component {
-            if addr.eq(self.component_address.as_ref().unwrap()) {
-                let new_value_ids = stored_value_update(self.initial_value.as_ref().unwrap(), &state)?;
-                component.set_state(state.raw);
-                let addr = self.component_address.as_ref().unwrap().clone();
-                let new_values = self.take_values(&new_value_ids)?;
-                self.track.insert_objects_into_component(new_values, addr);
-                return Ok(());
-            }
-        }
-        Err(RuntimeError::ComponentNotFound(addr))
     }
 
     fn read_kv_store_entry(
