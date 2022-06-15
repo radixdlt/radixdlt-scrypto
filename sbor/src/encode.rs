@@ -323,7 +323,7 @@ impl<T: Encode + TypeId> Encode for [T] {
     }
 }
 
-impl<T: Encode + TypeId + Ord> Encode for BTreeSet<T> {
+impl<T: Encode + TypeId> Encode for BTreeSet<T> {
     #[inline]
     fn encode_type(&self, encoder: &mut Encoder) {
         encoder.write_type(Self::type_id());
@@ -332,8 +332,7 @@ impl<T: Encode + TypeId + Ord> Encode for BTreeSet<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
         encoder.write_len(self.len());
-        let values: BTreeSet<&T> = self.iter().collect();
-        for v in values {
+        for v in self {
             v.encode_value(encoder);
         }
     }
@@ -365,7 +364,8 @@ impl<T: Encode + TypeId + Ord + Hash> Encode for HashSet<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
         encoder.write_len(self.len());
-        for v in self {
+        let values: BTreeSet<&T> = self.iter().collect();
+        for v in values {
             v.encode_value(encoder);
         }
     }
