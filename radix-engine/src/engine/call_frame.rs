@@ -143,10 +143,7 @@ pub enum BorrowedSNodeState<'a> {
     Bucket(BucketId, RefMut<'a, Bucket>),
     Proof(ProofId, RefMut<'a, Proof>),
     Vault(RefMut<'a, StoredValue>, ValueType),
-    Blueprint(
-        ScryptoActorInfo,
-        ValidatedPackage,
-    ),
+    Blueprint(ScryptoActorInfo, ValidatedPackage),
 }
 
 pub enum StaticSNodeState {
@@ -160,7 +157,11 @@ pub enum LoadedSNodeState<'a> {
     Static(StaticSNodeState),
     Consumed(Option<ConsumedSNodeState>),
     Borrowed(BorrowedSNodeState<'a>),
-    Tracked(Address, SubstateValue, Option<(ScryptoActorInfo, ValidatedPackage)>),
+    Tracked(
+        Address,
+        SubstateValue,
+        Option<(ScryptoActorInfo, ValidatedPackage)>,
+    ),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -399,7 +400,6 @@ where
     pub fn run(
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
-        //snode: SNodeState<'p>,
         snode: LoadedSNodeState<'p>,
         fn_ident: &str,
         input: ScryptoValue,
@@ -413,100 +413,59 @@ where
         RuntimeError,
     > {
         let output = match snode {
-            /*
-            SNodeState::Root => {
-                panic!("Root is not runnable")
-            }
-             */
-            LoadedSNodeState::Static(state) => {
-                match state {
-                    StaticSNodeState::System => {
-                        System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
-                    }
-                    StaticSNodeState::TransactionProcessor => {
-                        TransactionProcessor::static_main(fn_ident, input, self).map_err(|e| match e {
-                            TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                            TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                            TransactionProcessorError::RuntimeError(e) => e,
-                        })
-                    }
-                    StaticSNodeState::Package => {
-                        ValidatedPackage::static_main(fn_ident, input, self)
-                            .map_err(RuntimeError::PackageError)
-                    }
-                    StaticSNodeState::Resource => {
-                        ResourceManager::static_main(fn_ident, input, self)
-                            .map_err(RuntimeError::ResourceManagerError)
-                    }
+            LoadedSNodeState::Static(state) => match state {
+                StaticSNodeState::System => {
+                    System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
                 }
-            }
-            LoadedSNodeState::Consumed(state) => {
-                match state.unwrap() {
-                    ConsumedSNodeState::Bucket(bucket) => {
-                        bucket
-                            .consuming_main(fn_ident, input, self)
-                            .map_err(RuntimeError::BucketError)
-                    }
-                    ConsumedSNodeState::Proof(proof) => {
-                        proof
-                            .main_consume(fn_ident, input)
-                            .map_err(RuntimeError::ProofError)
-                    }
+                StaticSNodeState::TransactionProcessor => {
+                    TransactionProcessor::static_main(fn_ident, input, self).map_err(|e| match e {
+                        TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                        TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                        TransactionProcessorError::RuntimeError(e) => e,
+                    })
                 }
-            }
-            LoadedSNodeState::Borrowed(borrowed) => {
-                match borrowed {
-                    BorrowedSNodeState::AuthZone(mut auth_zone) => {
-                        auth_zone
-                            .main(fn_ident, input, self)
-                            .map_err(RuntimeError::AuthZoneError)
-                    },
-                    BorrowedSNodeState::Worktop(mut worktop) => {
-                        worktop
-                            .main(fn_ident, input, self)
-                            .map_err(RuntimeError::WorktopError)
-                    }
-                    BorrowedSNodeState::Blueprint(
-                        info,
-                        package,
-                    ) => {
-                        let export_name = format!("{}_main", info.blueprint_name());
-                        package.invoke(
-                            &info,
-                            &mut None,
-                            export_name,
-                            fn_ident,
-                            input,
-                            self,
-                        )
-                    },
-                    BorrowedSNodeState::Bucket(bucket_id, mut bucket) => {
-                        bucket
-                            .main(bucket_id, fn_ident, input, self)
-                            .map_err(RuntimeError::BucketError)
-                    },
-                    BorrowedSNodeState::Proof(_id, mut proof) => {
-                        proof
-                            .main(fn_ident, input, self)
-                            .map_err(RuntimeError::ProofError)
-                    },
-                    BorrowedSNodeState::Vault(mut value, ..) => {
-                        match value.deref_mut() {
-                            StoredValue::Vault(id, vault) => vault
-                                .main(*id, fn_ident, input, self)
-                                .map_err(RuntimeError::VaultError),
-                            _ => panic!("Should be a vault"),
-                        }
-                    }
+                StaticSNodeState::Package => ValidatedPackage::static_main(fn_ident, input, self)
+                    .map_err(RuntimeError::PackageError),
+                StaticSNodeState::Resource => ResourceManager::static_main(fn_ident, input, self)
+                    .map_err(RuntimeError::ResourceManagerError),
+            },
+            LoadedSNodeState::Consumed(state) => match state.unwrap() {
+                ConsumedSNodeState::Bucket(bucket) => bucket
+                    .consuming_main(fn_ident, input, self)
+                    .map_err(RuntimeError::BucketError),
+                ConsumedSNodeState::Proof(proof) => proof
+                    .main_consume(fn_ident, input)
+                    .map_err(RuntimeError::ProofError),
+            },
+            LoadedSNodeState::Borrowed(borrowed) => match borrowed {
+                BorrowedSNodeState::AuthZone(mut auth_zone) => auth_zone
+                    .main(fn_ident, input, self)
+                    .map_err(RuntimeError::AuthZoneError),
+                BorrowedSNodeState::Worktop(mut worktop) => worktop
+                    .main(fn_ident, input, self)
+                    .map_err(RuntimeError::WorktopError),
+                BorrowedSNodeState::Blueprint(info, package) => {
+                    let export_name = format!("{}_main", info.blueprint_name());
+                    package.invoke(&info, &mut None, export_name, fn_ident, input, self)
                 }
-            }
+                BorrowedSNodeState::Bucket(bucket_id, mut bucket) => bucket
+                    .main(bucket_id, fn_ident, input, self)
+                    .map_err(RuntimeError::BucketError),
+                BorrowedSNodeState::Proof(_id, mut proof) => proof
+                    .main(fn_ident, input, self)
+                    .map_err(RuntimeError::ProofError),
+                BorrowedSNodeState::Vault(mut value, ..) => match value.deref_mut() {
+                    StoredValue::Vault(id, vault) => vault
+                        .main(*id, fn_ident, input, self)
+                        .map_err(RuntimeError::VaultError),
+                    _ => panic!("Should be a vault"),
+                },
+            },
             LoadedSNodeState::Tracked(address, mut value, meta) => {
                 let rtn = match &mut value {
-                    SubstateValue::Resource(resource_manager) => {
-                        resource_manager
-                            .main(address.clone().into(), fn_ident, input, self)
-                            .map_err(RuntimeError::ResourceManagerError)
-                    }
+                    SubstateValue::Resource(resource_manager) => resource_manager
+                        .main(address.clone().into(), fn_ident, input, self)
+                        .map_err(RuntimeError::ResourceManagerError),
                     SubstateValue::Vault(vault) => {
                         let vault_address: (ComponentAddress, VaultId) = address.clone().into();
                         vault
@@ -544,11 +503,12 @@ where
                         let new_value_ids = stored_value_update(&initial_value, &value)?;
                         // TODO: should we take values when component is actually written to rather than at the end of invocation?
                         let new_values = self.take_values(&new_value_ids)?;
-                        self.track.insert_objects_into_component(new_values, address.clone().into());
+                        self.track
+                            .insert_objects_into_component(new_values, address.clone().into());
 
                         Ok(rtn)
                     }
-                    _ => panic!("Tracked {:?} not supported. Should not get here.", value)
+                    _ => panic!("Tracked {:?} not supported. Should not get here.", value),
                 }?;
 
                 self.track.return_borrowed_global_mut_value(address, value);
@@ -768,7 +728,7 @@ where
                                 package_address.clone(),
                                 blueprint_name.clone(),
                             ),
-                            package.clone()
+                            package.clone(),
                         )),
                         vec![],
                     ))
@@ -842,13 +802,12 @@ where
                         TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
                     })?;
 
-                let method_auth = resman_value.resource_manager().get_auth(&fn_ident, &input).clone();
+                let method_auth = resman_value
+                    .resource_manager()
+                    .get_auth(&fn_ident, &input)
+                    .clone();
                 Ok((
-                    Tracked(
-                        resource_address.clone().into(),
-                        resman_value,
-                        None,
-                    ),
+                    Tracked(resource_address.clone().into(), resman_value, None),
                     vec![method_auth],
                 ))
             }
@@ -955,11 +914,7 @@ where
                                 let resource_address = vault_value.vault().resource_address();
                                 (
                                     resource_address,
-                                    Tracked(
-                                        vault_address.into(),
-                                        vault_value,
-                                        None,
-                                    ),
+                                    Tracked(vault_address.into(), vault_value, None),
                                 )
                             }
                         }

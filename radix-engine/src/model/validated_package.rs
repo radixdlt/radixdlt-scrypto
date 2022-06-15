@@ -98,7 +98,9 @@ impl ValidatedPackage {
         let mut cost_unit_counter =
             CostUnitCounter::new(CALL_FUNCTION_COST_UNIT_LIMIT, CALL_FUNCTION_COST_UNIT_LIMIT);
 
-        let blueprint_abi = self.blueprint_abi(actor.blueprint_name()).expect("Blueprint should exist");
+        let blueprint_abi = self
+            .blueprint_abi(actor.blueprint_name())
+            .expect("Blueprint should exist");
         let runtime = RadixEngineWasmRuntime::new(
             actor.clone(),
             component,
