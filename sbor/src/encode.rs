@@ -1,6 +1,7 @@
 use crate::rust::boxed::Box;
 use crate::rust::cell::RefCell;
 use crate::rust::collections::*;
+use crate::rust::hash::Hash;
 use crate::rust::ptr::copy;
 use crate::rust::string::String;
 use crate::rust::vec::Vec;
@@ -134,7 +135,7 @@ impl Encode for isize {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        (*self as i32).encode_value(encoder);
+        (*self as i64).encode_value(encoder);
     }
 }
 
@@ -145,7 +146,7 @@ impl Encode for usize {
     }
     #[inline]
     fn encode_value(&self, encoder: &mut Encoder) {
-        (*self as u32).encode_value(encoder);
+        (*self as u64).encode_value(encoder);
     }
 }
 
@@ -354,7 +355,7 @@ impl<K: Encode + TypeId, V: Encode + TypeId> Encode for BTreeMap<K, V> {
     }
 }
 
-impl<T: Encode + TypeId> Encode for HashSet<T> {
+impl<T: Encode + TypeId + Ord + Hash> Encode for HashSet<T> {
     #[inline]
     fn encode_type(&self, encoder: &mut Encoder) {
         encoder.write_type(Self::type_id());
@@ -363,13 +364,15 @@ impl<T: Encode + TypeId> Encode for HashSet<T> {
     fn encode_value(&self, encoder: &mut Encoder) {
         encoder.write_type(T::type_id());
         encoder.write_len(self.len());
-        for v in self {
+        // Encode elements based on the order defined on the key type to generate deterministic bytes.
+        let values: BTreeSet<&T> = self.iter().collect();
+        for v in values {
             v.encode_value(encoder);
         }
     }
 }
 
-impl<K: Encode + TypeId, V: Encode + TypeId> Encode for HashMap<K, V> {
+impl<K: Encode + TypeId + Ord + Hash, V: Encode + TypeId> Encode for HashMap<K, V> {
     #[inline]
     fn encode_type(&self, encoder: &mut Encoder) {
         encoder.write_type(Self::type_id());
@@ -379,9 +382,11 @@ impl<K: Encode + TypeId, V: Encode + TypeId> Encode for HashMap<K, V> {
         encoder.write_type(K::type_id());
         encoder.write_type(V::type_id());
         encoder.write_len(self.len());
-        for (k, v) in self {
-            k.encode_value(encoder);
-            v.encode_value(encoder);
+        // Encode elements based on the order defined on the key type to generate deterministic bytes.
+        let keys: BTreeSet<&K> = self.keys().collect();
+        for key in keys {
+            key.encode_value(encoder);
+            self.get(key).unwrap().encode_value(encoder);
         }
     }
 }

@@ -16,7 +16,9 @@ use crate::misc::*;
 use crate::resource::*;
 use crate::sfunctions;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, TypeId, Encode, Decode, Describe, PartialOrd, Ord,
+)]
 pub enum ResourceMethodAuthKey {
     Mint,
     Burn,
