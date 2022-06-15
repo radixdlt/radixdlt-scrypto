@@ -163,16 +163,25 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn check_exports(self, blueprints: &HashMap<String, BlueprintAbi>) -> Result<Self, PrepareError> {
+    pub fn check_exports(
+        self,
+        blueprints: &HashMap<String, BlueprintAbi>,
+    ) -> Result<Self, PrepareError> {
         // only allow `env::radix_engine` import
-        let exports = self.module.export_section().ok_or(PrepareError::NoExports)?;
+        let exports = self
+            .module
+            .export_section()
+            .ok_or(PrepareError::NoExports)?;
         for (_, blueprint_abi) in blueprints {
             for func in &blueprint_abi.fns {
                 let func_name = &func.export_name;
                 // TODO: Check if signature matches
-                if !exports.entries().iter()
-                    .any(|x| x.field().eq(func_name) && matches!(x.internal(), Internal::Function(_))) {
-                    return Err(PrepareError::MissingExport { export_name: func_name.to_string() })
+                if !exports.entries().iter().any(|x| {
+                    x.field().eq(func_name) && matches!(x.internal(), Internal::Function(_))
+                }) {
+                    return Err(PrepareError::MissingExport {
+                        export_name: func_name.to_string(),
+                    });
                 }
             }
         }

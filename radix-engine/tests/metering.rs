@@ -17,18 +17,16 @@ fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
         blueprint_name,
         BlueprintAbi {
             structure: Type::Unit,
-            fns: vec![
-                Fn {
-                    ident: "f".to_string(),
-                    mutability: Option::None,
-                    input: Type::Struct {
-                        name: "Any".to_string(),
-                        fields: Fields::Named { named: vec![] }
-                    },
-                    output: Type::Unit,
-                    export_name: "Test_f_main".to_string(),
-                }
-            ],
+            fns: vec![Fn {
+                ident: "f".to_string(),
+                mutability: Option::None,
+                input: Type::Struct {
+                    name: "Any".to_string(),
+                    fields: Fields::Named { named: vec![] },
+                },
+                output: Type::Unit,
+                export_name: "Test_f_main".to_string(),
+            }],
         },
     );
     blueprint_abis

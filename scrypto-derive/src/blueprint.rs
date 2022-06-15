@@ -243,7 +243,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                     trace!("Generated stmt: {}", quote! { #stmt });
                     stmts.push(stmt);
                 }
-                stmts.push(Stmt::Expr(parse_quote!{ rtn }));
+                stmts.push(Stmt::Expr(parse_quote! { rtn }));
 
                 let function_ident = format_ident!("{}_{}_main", bp_ident, ident);
                 let extern_function = quote! {

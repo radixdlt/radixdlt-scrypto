@@ -218,17 +218,14 @@ impl<'a> LoadedSNodeState<'a> {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
-                BorrowedSNodeState::Scrypto(
-                    info,
-                    blueprint_abi,
-                    package,
-                    component_state,
-                ) => SNodeState::Scrypto(
-                    info.clone(),
-                    blueprint_abi.clone(),
-                    package.clone(),
-                    component_state.as_mut(),
-                ),
+                BorrowedSNodeState::Scrypto(info, blueprint_abi, package, component_state) => {
+                    SNodeState::Scrypto(
+                        info.clone(),
+                        blueprint_abi.clone(),
+                        package.clone(),
+                        component_state.as_mut(),
+                    )
+                }
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
@@ -539,10 +536,8 @@ where
                     TransactionProcessorError::RuntimeError(e) => e,
                 })
             }
-            SNodeState::PackageStatic => {
-                ValidatedPackage::static_main(fn_ident, input, self)
-                    .map_err(RuntimeError::PackageError)
-            }
+            SNodeState::PackageStatic => ValidatedPackage::static_main(fn_ident, input, self)
+                .map_err(RuntimeError::PackageError),
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::AuthZoneError),

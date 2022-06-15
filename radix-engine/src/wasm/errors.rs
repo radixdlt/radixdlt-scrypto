@@ -23,9 +23,7 @@ pub enum PrepareError {
     /// Invalid imports
     InvalidImports,
     /// Missing export
-    MissingExport {
-        export_name: String,
-    },
+    MissingExport { export_name: String },
     /// The wasm module has no memory definition.
     NoMemory,
     /// The wasm module has too many memory definitions.

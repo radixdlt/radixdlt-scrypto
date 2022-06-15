@@ -30,18 +30,16 @@ pub extern "C" fn LargeReturnSize_abi(_input: *mut u8) -> *mut u8 {
     };
     let abi = BlueprintAbi {
         structure,
-        fns: vec![
-            Fn {
-                ident: "f".to_string(),
-                mutability: Option::None,
-                input: Type::Struct {
-                    name: "Any".to_string(),
-                    fields: Fields::Named { named: vec![] }
-                },
-                output: Type::Unit,
-                export_name: "LargeReturnSize_f_main".to_string(),
-            }
-        ],
+        fns: vec![Fn {
+            ident: "f".to_string(),
+            mutability: Option::None,
+            input: Type::Struct {
+                name: "Any".to_string(),
+                fields: Fields::Named { named: vec![] },
+            },
+            output: Type::Unit,
+            export_name: "LargeReturnSize_f_main".to_string(),
+        }],
     };
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
 }
@@ -54,18 +52,16 @@ pub extern "C" fn MaxReturnSize_abi(_input: *mut u8) -> *mut u8 {
     };
     let abi = BlueprintAbi {
         structure,
-        fns: vec![
-            Fn {
-                ident: "f".to_string(),
-                mutability: Option::None,
-                input: Type::Struct {
-                    name: "Any".to_string(),
-                    fields: Fields::Named { named: vec![] }
-                },
-                output: Type::Unit,
-                export_name: "MaxReturnSize_f_main".to_string(),
-            }
-        ],
+        fns: vec![Fn {
+            ident: "f".to_string(),
+            mutability: Option::None,
+            input: Type::Struct {
+                name: "Any".to_string(),
+                fields: Fields::Named { named: vec![] },
+            },
+            output: Type::Unit,
+            export_name: "MaxReturnSize_f_main".to_string(),
+        }],
     };
 
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)
@@ -79,18 +75,16 @@ pub extern "C" fn ZeroReturnSize_abi(_input: *mut u8) -> *mut u8 {
     };
     let abi = BlueprintAbi {
         structure,
-        fns: vec![
-            Fn {
-                ident: "f".to_string(),
-                mutability: Option::None,
-                input: Type::Struct {
-                    name: "Any".to_string(),
-                    fields: Fields::Named { named: vec![] }
-                },
-                output: Type::Unit,
-                export_name: "ZeroReturnSize_f_main".to_string(),
-            }
-        ],
+        fns: vec![Fn {
+            ident: "f".to_string(),
+            mutability: Option::None,
+            input: Type::Struct {
+                name: "Any".to_string(),
+                fields: Fields::Named { named: vec![] },
+            },
+            output: Type::Unit,
+            export_name: "ZeroReturnSize_f_main".to_string(),
+        }],
     };
 
     ::scrypto::buffer::scrypto_encode_to_buffer(&abi)

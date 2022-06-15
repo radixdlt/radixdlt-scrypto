@@ -173,11 +173,10 @@ impl WasmInstance for WasmiInstance {
         };
 
         let pointer = externals.send_value(arg)?;
-        let result = self.module_ref.clone().invoke_export(
-            func_name,
-            &[pointer],
-            &mut externals,
-        );
+        let result = self
+            .module_ref
+            .clone()
+            .invoke_export(func_name, &[pointer], &mut externals);
 
         let rtn = result
             .map_err(|e| {
