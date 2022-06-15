@@ -165,9 +165,7 @@ pub enum LoadedSNodeState<'a> {
 
 pub enum SNodeState<'a> {
     Root,
-    SystemStatic,
-    TransactionProcessorStatic,
-    PackageStatic,
+    Static(&'a StaticSNodeState),
     AuthZoneRef(&'a mut AuthZone),
     WorktopRef(&'a mut Worktop),
     // TODO: use reference to the package
@@ -175,7 +173,6 @@ pub enum SNodeState<'a> {
         ScryptoActorInfo,
         ValidatedPackage,
     ),
-    ResourceStatic,
     BucketRef(BucketId, &'a mut Bucket),
     Bucket(Bucket),
     ProofRef(ProofId, &'a mut Proof),
@@ -194,12 +191,7 @@ pub enum MoveMethod {
 impl<'a> LoadedSNodeState<'a> {
     fn to_snode_state(&mut self) -> SNodeState {
         match self {
-            Static(static_state) => match static_state {
-                StaticSNodeState::Package => SNodeState::PackageStatic,
-                StaticSNodeState::Resource => SNodeState::ResourceStatic,
-                StaticSNodeState::System => SNodeState::SystemStatic,
-                StaticSNodeState::TransactionProcessor => SNodeState::TransactionProcessorStatic,
-            },
+            Static(static_state) => SNodeState::Static(static_state),
             Consumed(ref mut to_consume) => match to_consume.take().unwrap() {
                 ConsumedSNodeState::Proof(proof) => SNodeState::Proof(proof),
                 ConsumedSNodeState::Bucket(bucket) => SNodeState::Bucket(bucket),
@@ -477,18 +469,28 @@ where
             SNodeState::Root => {
                 panic!("Root is not runnable")
             }
-            SNodeState::SystemStatic => {
-                System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
+            SNodeState::Static(state) => {
+                match state {
+                    StaticSNodeState::System => {
+                        System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
+                    }
+                    StaticSNodeState::TransactionProcessor => {
+                        TransactionProcessor::static_main(fn_ident, input, self).map_err(|e| match e {
+                            TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                            TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                            TransactionProcessorError::RuntimeError(e) => e,
+                        })
+                    }
+                    StaticSNodeState::Package => {
+                        ValidatedPackage::static_main(fn_ident, input, self)
+                            .map_err(RuntimeError::PackageError)
+                    }
+                    StaticSNodeState::Resource => {
+                        ResourceManager::static_main(fn_ident, input, self)
+                            .map_err(RuntimeError::ResourceManagerError)
+                    }
+                }
             }
-            SNodeState::TransactionProcessorStatic => {
-                TransactionProcessor::static_main(fn_ident, input, self).map_err(|e| match e {
-                    TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                    TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                    TransactionProcessorError::RuntimeError(e) => e,
-                })
-            }
-            SNodeState::PackageStatic => ValidatedPackage::static_main(fn_ident, input, self)
-                .map_err(RuntimeError::PackageError),
             SNodeState::AuthZoneRef(auth_zone) => auth_zone
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::AuthZoneError),
@@ -509,9 +511,6 @@ where
                     self,
                 )
             }
-            SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
-                .map_err(RuntimeError::ResourceManagerError),
-
             SNodeState::BucketRef(bucket_id, bucket) => bucket
                 .main(bucket_id, fn_ident, input, self)
                 .map_err(RuntimeError::BucketError),
