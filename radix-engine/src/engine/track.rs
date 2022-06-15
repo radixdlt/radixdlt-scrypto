@@ -176,6 +176,16 @@ impl Into<ResourceAddress> for Address {
     }
 }
 
+impl Into<(ComponentAddress, VaultId)> for Address {
+    fn into(self) -> (ComponentAddress, VaultId) {
+        if let Address::Vault(component_address, id) = self {
+            return (component_address, id);
+        } else {
+            panic!("Address is not a resource address");
+        }
+    }
+}
+
 impl SubstateValue {
     fn encode(&self) -> Vec<u8> {
         match self {
@@ -185,6 +195,22 @@ impl SubstateValue {
             SubstateValue::Vault(vault) => scrypto_encode(vault),
             SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
             SubstateValue::KeyValueStoreEntry(value) => scrypto_encode(value),
+        }
+    }
+
+    pub fn vault_mut(&mut self) -> &mut Vault {
+        if let SubstateValue::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
+    pub fn vault(&self) -> &Vault {
+        if let SubstateValue::Vault(vault) = self {
+            vault
+        } else {
+            panic!("Not a vault");
         }
     }
 

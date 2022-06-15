@@ -140,7 +140,7 @@ pub enum ConsumedSNodeState {
 pub enum TrackedSNodeState {
     Component(ScryptoActorInfo, ValidatedPackage, Component),
     Resource(Address, SubstateValue),
-    TrackedVault((ComponentAddress, VaultId), Vault),
+    TrackedVault(Address, SubstateValue),
 }
 
 pub enum BorrowedSNodeState<'a> {
@@ -187,13 +187,14 @@ pub enum SNodeState<'a> {
         &'a mut Component,
     ),
     ResourceStatic,
-    ResourceRef(Address, &'a mut SubstateValue),
     BucketRef(BucketId, &'a mut Bucket),
     Bucket(Bucket),
     ProofRef(ProofId, &'a mut Proof),
     Proof(Proof),
     VaultRef(VaultId, &'a mut StoredValue),
-    TrackedVaultRef((ComponentAddress, VaultId), &'a mut Vault),
+
+    ResourceRef(Address, &'a mut SubstateValue),
+    TrackedVaultRef(Address, &'a mut SubstateValue),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -241,7 +242,7 @@ impl<'a> LoadedSNodeState<'a> {
                 ),
                 TrackedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(addr.clone(), s),
                 TrackedSNodeState::TrackedVault(address, vault)=> {
-                    SNodeState::TrackedVaultRef(*address, vault)
+                    SNodeState::TrackedVaultRef(address.clone(), vault)
                 }
             }
         }
@@ -611,9 +612,12 @@ where
                     .map_err(RuntimeError::VaultError),
                 _ => panic!("Should be a vault"),
             },
-            SNodeState::TrackedVaultRef((_component_address, vault_id), vault) => vault
-                .main(vault_id, fn_ident, input, self)
-                .map_err(RuntimeError::VaultError),
+            SNodeState::TrackedVaultRef(address, vault_value) => {
+                let vault_address: (ComponentAddress, VaultId) = address.into();
+                vault_value.vault_mut()
+                    .main(vault_address.1, fn_ident, input, self)
+                    .map_err(RuntimeError::VaultError)
+            },
         }?;
 
         self.process_return_data(snode_ref, &output)?;
@@ -1001,7 +1005,7 @@ where
                             }
                             ValueRefType::Committed { component_address } => {
                                 let vault_address = (component_address, *vault_id);
-                                let vault: Vault = self
+                                let vault_value = self
                                     .track
                                     .borrow_global_mut_value(vault_address.clone())
                                     .map_err(|e| match e {
@@ -1009,14 +1013,13 @@ where
                                         TrackError::Reentrancy => {
                                             panic!("Vault logic is causing reentrancy")
                                         }
-                                    })?
-                                    .into();
-                                let resource_address = vault.resource_address();
+                                    })?;
+                                let resource_address = vault_value.vault().resource_address();
                                 (
                                     resource_address,
                                     Tracked(TrackedSNodeState::TrackedVault(
-                                        vault_address,
-                                        vault,
+                                        vault_address.into(),
+                                        vault_value,
                                     )),
                                 )
                             }
