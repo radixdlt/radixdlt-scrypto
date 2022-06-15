@@ -62,6 +62,7 @@ pub struct CallFrame<
 
     /// Referenced values
     component_state: Option<&'p mut ComponentState>,
+    component_address: Option<ComponentAddress>,
     initial_value: Option<ScryptoValue>,
 
     refed_values: HashMap<StoredValueId, ValueRefType>,
@@ -198,7 +199,6 @@ pub enum SNodeState<'a> {
 
 #[derive(Debug)]
 pub struct ComponentState {
-    pub component_address: ComponentAddress,
     pub component: Component,
 }
 
@@ -361,6 +361,7 @@ where
             auth_zone,
             caller_auth_zone,
             initial_value: None,
+            component_address: None,
             component_state: None,
             phantom: PhantomData,
         }
@@ -552,11 +553,12 @@ where
                         self.refed_values.insert(
                             value_id,
                             ValueRefType::Committed {
-                                component_address: component.component_address.clone(),
+                                component_address: actor.component_address().unwrap(),
                             },
                         );
                     }
                     self.initial_value = Some(initial_value);
+                    self.component_address = Some(actor.component_address().unwrap());
                 }
 
                 self.component_state = maybe_component;
@@ -870,7 +872,6 @@ where
                                 package.clone(),
                                 export_name,
                                 Some(ComponentState {
-                                    component_address,
                                     component,
                                 }),
                             )),
@@ -1233,12 +1234,10 @@ where
 
     fn read_component_state(&mut self, addr: ComponentAddress) -> Result<Vec<u8>, RuntimeError> {
         if let Some(ComponentState {
-            component_address,
             component,
-            ..
         }) = &mut self.component_state
         {
-            if addr.eq(component_address) {
+            if addr.eq(self.component_address.as_ref().unwrap()) {
                 let state = component.state().to_vec();
                 return Ok(state);
             }
@@ -1255,14 +1254,13 @@ where
         verify_stored_value(&state)?;
 
         if let Some(ComponentState {
-            component_address,
             component,
         }) = &mut self.component_state
         {
-            if addr.eq(component_address) {
+            if addr.eq(self.component_address.as_ref().unwrap()) {
                 let new_value_ids = stored_value_update(self.initial_value.as_ref().unwrap(), &state)?;
                 component.set_state(state.raw);
-                let addr = *component_address;
+                let addr = self.component_address.as_ref().unwrap().clone();
                 let new_values = self.take_values(&new_value_ids)?;
                 self.track.insert_objects_into_component(new_values, addr);
                 return Ok(());
