@@ -553,7 +553,21 @@ where
                 .map_err(RuntimeError::WorktopError),
             SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
                 self.component_state = component_state;
-                package.invoke(actor, blueprint_abi, export_name, fn_ident, input, self)
+                let rtn = package.invoke(actor, &blueprint_abi, export_name, fn_ident, input, self);
+                match rtn {
+                    Ok(output) => {
+                        let fn_abi = blueprint_abi.get_fn_abi(fn_ident).unwrap();
+                        if !fn_abi.output.matches(&output.dom) {
+                            Err(RuntimeError::InvalidFnOutput {
+                                fn_ident: fn_ident.to_string(),
+                                output: output.dom,
+                            })
+                        } else {
+                            Ok(output)
+                        }
+                    }
+                    Err(e) => Err(e),
+                }
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
                 .map_err(RuntimeError::ResourceManagerError),
@@ -777,7 +791,7 @@ where
                             .get_fn_abi(&fn_ident)
                             .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
                         if !fn_abi.input.matches(&input.dom) {
-                            return Err(RuntimeError::InvalidMethodArgument {
+                            return Err(RuntimeError::InvalidFnInput {
                                 fn_ident,
                                 input: input.dom,
                             });
@@ -833,7 +847,7 @@ where
                             .get_fn_abi(&fn_ident)
                             .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
                         if !fn_abi.input.matches(&input.dom) {
-                            return Err(RuntimeError::InvalidMethodArgument {
+                            return Err(RuntimeError::InvalidFnInput {
                                 fn_ident,
                                 input: input.dom,
                             });

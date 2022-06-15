@@ -26,7 +26,7 @@ where
     I: WasmInstance,
 {
     this: ScryptoActorInfo,
-    blueprint_abi: BlueprintAbi,
+    blueprint_abi: &'s BlueprintAbi,
     system_api: &'s mut S,
     cost_unit_counter: &'c mut CostUnitCounter,
     phantom1: PhantomData<W>,
@@ -41,7 +41,7 @@ where
 {
     pub fn new(
         this: ScryptoActorInfo,
-        blueprint_abi: BlueprintAbi,
+        blueprint_abi: &'s BlueprintAbi,
         system_api: &'s mut S,
         cost_unit_counter: &'c mut CostUnitCounter,
     ) -> Self {

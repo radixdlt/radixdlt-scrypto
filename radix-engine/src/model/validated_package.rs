@@ -82,7 +82,7 @@ impl ValidatedPackage {
     pub fn invoke<'s, S, W, I>(
         &self,
         actor: ScryptoActorInfo,
-        blueprint_abi: BlueprintAbi,
+        blueprint_abi: &BlueprintAbi,
         export_name: String,
         method_name: &str,
         arg: ScryptoValue,
