@@ -139,8 +139,7 @@ pub enum ConsumedSNodeState {
 
 pub enum TrackedSNodeState {
     Component(ScryptoActorInfo, ValidatedPackage, Component),
-    Resource(Address, SubstateValue),
-    TrackedVault(Address, SubstateValue),
+    Tracked(Address, SubstateValue),
 }
 
 pub enum BorrowedSNodeState<'a> {
@@ -193,8 +192,7 @@ pub enum SNodeState<'a> {
     Proof(Proof),
     VaultRef(VaultId, &'a mut StoredValue),
 
-    ResourceRef(Address, &'a mut SubstateValue),
-    TrackedVaultRef(Address, &'a mut SubstateValue),
+    Tracked(Address, &'a mut SubstateValue),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -240,10 +238,7 @@ impl<'a> LoadedSNodeState<'a> {
                     package.clone(),
                     component,
                 ),
-                TrackedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(addr.clone(), s),
-                TrackedSNodeState::TrackedVault(address, vault)=> {
-                    SNodeState::TrackedVaultRef(address.clone(), vault)
-                }
+                TrackedSNodeState::Tracked(addr, s) => SNodeState::Tracked(addr.clone(), s),
             }
         }
     }
@@ -257,12 +252,9 @@ impl<'a> LoadedSNodeState<'a> {
                         component,
                     );
                 }
-                TrackedSNodeState::Resource(resource_address, resource_manager) => {
-                    track.return_borrowed_global_mut_value(resource_address, resource_manager);
+                TrackedSNodeState::Tracked(address, value) => {
+                    track.return_borrowed_global_mut_value(address, value);
                 }
-                TrackedSNodeState::TrackedVault(vault_address, vault) => {
-                    track.return_borrowed_global_mut_value(vault_address, vault);
-                },
             }
         }
     }
@@ -586,14 +578,7 @@ where
             }
             SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
                 .map_err(RuntimeError::ResourceManagerError),
-            SNodeState::ResourceRef(resource_address, resman_value) => {
-                let return_value = resman_value
-                    .resource_manager_mut()
-                    .main(resource_address.into(), fn_ident, input, self)
-                    .map_err(RuntimeError::ResourceManagerError)?;
 
-                Ok(return_value)
-            }
             SNodeState::BucketRef(bucket_id, bucket) => bucket
                 .main(bucket_id, fn_ident, input, self)
                 .map_err(RuntimeError::BucketError),
@@ -612,12 +597,22 @@ where
                     .map_err(RuntimeError::VaultError),
                 _ => panic!("Should be a vault"),
             },
-            SNodeState::TrackedVaultRef(address, vault_value) => {
-                let vault_address: (ComponentAddress, VaultId) = address.into();
-                vault_value.vault_mut()
-                    .main(vault_address.1, fn_ident, input, self)
-                    .map_err(RuntimeError::VaultError)
-            },
+            SNodeState::Tracked(address, value) => {
+                match value {
+                    SubstateValue::Resource(resource_manager) => {
+                        resource_manager
+                            .main(address.into(), fn_ident, input, self)
+                            .map_err(RuntimeError::ResourceManagerError)
+                    }
+                    SubstateValue::Vault(vault) => {
+                        let vault_address: (ComponentAddress, VaultId) = address.into();
+                        vault
+                            .main(vault_address.1, fn_ident, input, self)
+                            .map_err(RuntimeError::VaultError)
+                    }
+                    _ => panic!("Tracked {:?} not supported. Should not get here.", value)
+                }
+            }
         }?;
 
         self.process_return_data(snode_ref, &output)?;
@@ -905,7 +900,7 @@ where
 
                 let method_auth = resman_value.resource_manager().get_auth(&fn_ident, &input).clone();
                 Ok((
-                    Tracked(TrackedSNodeState::Resource(
+                    Tracked(TrackedSNodeState::Tracked(
                         resource_address.clone().into(),
                         resman_value,
                     )),
@@ -1017,7 +1012,7 @@ where
                                 let resource_address = vault_value.vault().resource_address();
                                 (
                                     resource_address,
-                                    Tracked(TrackedSNodeState::TrackedVault(
+                                    Tracked(TrackedSNodeState::Tracked(
                                         vault_address.into(),
                                         vault_value,
                                     )),
@@ -1047,9 +1042,8 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                Tracked(TrackedSNodeState::Resource(_, _))
+                Tracked(TrackedSNodeState::Tracked(_, _))
                 | Borrowed(BorrowedSNodeState::Vault(_, _, _))
-                | Tracked(TrackedSNodeState::TrackedVault(..))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
                 | Tracked(TrackedSNodeState::Component(..))
