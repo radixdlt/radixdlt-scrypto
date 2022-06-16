@@ -11,6 +11,7 @@ pub struct WasmInstrumenter {
 impl WasmInstrumenter {
     pub fn new() -> Self {
         Self {
+            // TODO: introduce a proper cache that supports replacement policy
             cache: HashMap::new(),
         }
     }
