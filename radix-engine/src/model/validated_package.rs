@@ -31,17 +31,7 @@ pub enum PackageError {
 
 impl ValidatedPackage {
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, PrepareError> {
-        WasmModule::init(&package.code)?
-            .reject_floating_point()?
-            .reject_start_function()?
-            .check_imports()?
-            .check_memory()?
-            .enforce_initial_memory_limit()?
-            .enforce_functions_limit()?
-            .enforce_locals_limit()?
-            .inject_instruction_metering()?
-            .inject_stack_metering()?
-            .to_bytes()?;
+        WasmValidator::validate(&package.code)?;
 
         Ok(Self {
             code: package.code,
@@ -85,7 +75,7 @@ impl ValidatedPackage {
         actor: &ScryptoActorInfo,
         component: &mut Option<&mut Component>,
         export_name: String,
-        method_name: &str,
+        fn_ident: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, RuntimeError>
@@ -94,25 +84,34 @@ impl ValidatedPackage {
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        let mut instance = system_api.wasm_engine().instantiate(self.code());
-        let mut cost_unit_counter =
-            CostUnitCounter::new(CALL_FUNCTION_COST_UNIT_LIMIT, CALL_FUNCTION_COST_UNIT_LIMIT);
-
+        let wasm_metering_params = system_api.fee_table().wasm_metering_params();
+        let instrumented_code = system_api
+            .wasm_instrumenter()
+            .instrument(&self.code, &wasm_metering_params);
+        let mut instance = system_api.wasm_engine().instantiate(&instrumented_code);
         let blueprint_abi = self.blueprint_abi(actor.blueprint_name()).expect("Blueprint should exist");
-        let runtime = RadixEngineWasmRuntime::new(
+        let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(
             actor.clone(),
             component,
             blueprint_abi,
             system_api,
-            &mut cost_unit_counter,
-        );
-        let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
-        instance
-            .invoke_export(&export_name, method_name, &arg, &mut runtime_boxed)
+        ));
+        let output = instance
+            .invoke_export(&export_name, fn_ident, &arg, &mut runtime)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,
                 e @ _ => RuntimeError::InvokeError(e.into()),
+            })?;
+
+        let fn_abi = blueprint_abi.get_fn_abi(fn_ident).unwrap();
+        if !fn_abi.output.matches(&output.dom) {
+            Err(RuntimeError::InvalidFnOutput {
+                fn_ident: fn_ident.to_string(),
+                output: output.dom,
             })
+        } else {
+            Ok(output)
+        }
     }
 }

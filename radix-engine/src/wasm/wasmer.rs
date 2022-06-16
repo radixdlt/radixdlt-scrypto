@@ -13,8 +13,6 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
-use super::WasmModule;
-
 pub struct WasmerModule {
     module: Module,
 }
@@ -128,11 +126,11 @@ impl WasmerModule {
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
-        fn consume_cost_unit(env: &WasmerInstanceEnv, cost_unit: i32) -> Result<(), RuntimeError> {
+        fn consume_cost_units(env: &WasmerInstanceEnv, cost_unit: i32) -> Result<(), RuntimeError> {
             let ptr = env.runtime_ptr.lock().unwrap();
             let runtime: &mut Box<dyn WasmRuntime> = unsafe { &mut *(*ptr as *mut _) };
             runtime
-                .consume_cost_unit(cost_unit as u32)
+                .consume_cost_units(cost_unit as u32)
                 .map_err(|e| RuntimeError::user(Box::new(e)))
         }
 
@@ -146,7 +144,7 @@ impl WasmerModule {
         let import_object = imports! {
             MODULE_ENV_NAME => {
                 RADIX_ENGINE_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), radix_engine),
-                CONSUME_COST_UNIT_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_unit),
+                CONSUME_COST_UNITS_FUNCTION_NAME => Function::new_native_with_env(self.module.store(), env.clone(), consume_cost_units),
             }
         };
 
@@ -220,16 +218,8 @@ impl WasmEngine<WasmerInstance> for WasmerEngine {
     fn instantiate(&mut self, code: &[u8]) -> WasmerInstance {
         let code_hash = hash(code);
         if !self.modules.contains_key(&code_hash) {
-            let instrumented_code = WasmModule::init(code)
-                .and_then(WasmModule::inject_instruction_metering)
-                .and_then(WasmModule::inject_stack_metering)
-                .and_then(WasmModule::to_bytes)
-                .expect("Failed to produce instrumented code")
-                .0;
-
             let module = WasmerModule {
-                module: Module::new(&self.store, instrumented_code)
-                    .expect("Failed to parse wasm code"),
+                module: Module::new(&self.store, code).expect("Failed to parse wasm code"),
             };
             self.modules.insert(code_hash, module);
         }

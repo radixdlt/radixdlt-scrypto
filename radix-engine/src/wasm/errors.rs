@@ -3,7 +3,10 @@ use sbor::rust::string::String;
 use sbor::DecodeError;
 use wasmi::HostError;
 
-use crate::engine::{CostUnitCounterError, RuntimeError};
+// TODO: this is the only place which introduces circular dependency.
+// From WASM's perspective, they are host errors. We need a better solution to handle this.
+use crate::engine::RuntimeError;
+use crate::fee::CostUnitCounterError;
 
 /// Represents an error when validating a WASM file.
 #[derive(Debug, PartialEq, Clone)]
@@ -61,7 +64,7 @@ pub enum InvokeError {
 
     InvalidReturnData,
 
-    MeteringError(CostUnitCounterError),
+    CostingError(CostUnitCounterError),
 }
 
 impl fmt::Display for InvokeError {

@@ -14,12 +14,11 @@ use scrypto::values::ScryptoValue;
 use crate::engine::RuntimeError;
 use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
 use crate::engine::SystemApi;
+use crate::fee::*;
 use crate::model::Component;
 use crate::wasm::*;
 
-use super::CostUnitCounter;
-
-pub struct RadixEngineWasmRuntime<'s, 'p, 't, 'b, 'c, S, W, I>
+pub struct RadixEngineWasmRuntime<'s, 'p, 't, 'b, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
@@ -29,12 +28,11 @@ where
     component: &'p mut Option<&'t mut Component>,
     blueprint_abi: &'b BlueprintAbi,
     system_api: &'s mut S,
-    cost_unit_counter: &'c mut CostUnitCounter,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
 }
 
-impl<'s, 'p, 't, 'b, 'c, S, W, I> RadixEngineWasmRuntime<'s, 'p, 't, 'b, 'c, S, W, I>
+impl<'s, 'p, 't, 'b, S, W, I> RadixEngineWasmRuntime<'s, 'p, 't, 'b, S, W, I>
 where
     S: SystemApi<W, I>,
     W: WasmEngine<I>,
@@ -45,17 +43,23 @@ where
         component: &'p mut Option<&'t mut Component>,
         blueprint_abi: &'b BlueprintAbi,
         system_api: &'s mut S,
-        cost_unit_counter: &'c mut CostUnitCounter,
     ) -> Self {
         RadixEngineWasmRuntime {
             this,
             component,
             blueprint_abi,
             system_api,
-            cost_unit_counter,
             phantom1: PhantomData,
             phantom2: PhantomData,
         }
+    }
+
+    fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
+        self.system_api.cost_unit_counter()
+    }
+
+    fn fee_table(&self) -> &FeeTable {
+        self.system_api.fee_table()
     }
 
     // FIXME: limit access to the API
@@ -195,10 +199,13 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'s, 'p, 't, 'b, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'s, 'p, 't, 'b, 'c, S, W, I>
+impl<'s, 'p, 't, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'s, 'p, 't, 'b, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
+        let cost = self.fee_table().engine_call_cost();
+        self.consume_cost_units(cost)?;
+
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
         match input {
@@ -236,9 +243,34 @@ impl<'s, 'p, 't, 'b, 'c, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> 
         .map_err(InvokeError::RuntimeError)
     }
 
-    fn consume_cost_unit(&mut self, n: u32) -> Result<(), InvokeError> {
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
+        self.cost_unit_counter()
+            .consume(n)
+            .map_err(InvokeError::CostingError)
+    }
+}
+
+/// A `Nop` runtime accepts any external function calls by doing nothing and returning void.
+pub struct NopWasmRuntime {
+    cost_unit_counter: CostUnitCounter,
+}
+
+impl NopWasmRuntime {
+    pub fn new(cost_unit_limit: u32) -> Self {
+        Self {
+            cost_unit_counter: CostUnitCounter::new(cost_unit_limit, cost_unit_limit),
+        }
+    }
+}
+
+impl WasmRuntime for NopWasmRuntime {
+    fn main(&mut self, _input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
+        Ok(ScryptoValue::unit())
+    }
+
+    fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter
             .consume(n)
-            .map_err(InvokeError::MeteringError)
+            .map_err(InvokeError::CostingError)
     }
 }

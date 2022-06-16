@@ -218,12 +218,15 @@ impl TransactionValidator {
         // TODO: whether to use intent hash or transaction hash
         let transaction_hash = transaction.hash();
 
-        let signer_public_keys = transaction
+        let mut signer_public_keys: Vec<EcdsaPublicKey> = transaction
             .signed_intent
             .intent_signatures
             .iter()
             .map(|e| e.0)
             .collect();
+        if transaction.signed_intent.intent.header.notary_as_signatory {
+            signer_public_keys.push(transaction.signed_intent.intent.header.notary_public_key);
+        }
 
         Ok(ValidatedTransaction {
             transaction,
@@ -403,6 +406,7 @@ mod tests {
                 end_epoch_exclusive: end_epoch,
                 nonce,
                 notary_public_key: sk_notary.public_key(),
+                notary_as_signatory: false,
             })
             .manifest(ManifestBuilder::new().clear_auth_zone().build());
 

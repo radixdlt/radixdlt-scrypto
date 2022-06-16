@@ -1,6 +1,4 @@
 (module
-  ;; Store the ABI at global address 1024
-  (data (i32.const 1024) "#\03\00\00\00\11\06\00\00\00Struct\02\00\00\00\0c\04\00\00\00Test\11\04\00\00\00Unit\00\00\00\000\10\00\00\00\000\10\00\00\00\00")
 
   ;; Simple main function that always returns `()`
   (func $Test_main (param $0 i32) (param $1 i32) (result i32)

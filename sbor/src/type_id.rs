@@ -99,14 +99,14 @@ type_id_int!(u128, TYPE_U128);
 impl TypeId for isize {
     #[inline]
     fn type_id() -> u8 {
-        i32::type_id()
+        i64::type_id()
     }
 }
 
 impl TypeId for usize {
     #[inline]
     fn type_id() -> u8 {
-        u32::type_id()
+        u64::type_id()
     }
 }
 
