@@ -1,15 +1,11 @@
 // Disable std and enable language features.
-#![cfg_attr(
-    target_arch = "wasm32",
-    no_std,
-    feature(default_alloc_error_handler, core_intrinsics)
-)]
+#![cfg_attr(target_arch = "wasm32", no_std, feature(default_alloc_error_handler))]
 
 // Abort when panicking.
 #[cfg(target_arch = "wasm32")]
 #[panic_handler]
 pub fn panic(_: &core::panic::PanicInfo) -> ! {
-    core::intrinsics::abort();
+    core::arch::wasm32::unreachable()
 }
 
 // Use WeeAlloc as our global heap allocator.
