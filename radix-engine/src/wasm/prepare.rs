@@ -10,6 +10,7 @@ use wasmi_validation::{validate_module, PlainValidator};
 
 use crate::wasm::constants::*;
 use crate::wasm::errors::*;
+use crate::wasm::WasmiEnvModule;
 
 pub struct WasmModule {
     module: Module,
@@ -225,6 +226,35 @@ impl WasmModule {
         Ok(self)
     }
 
+    fn ensure_instantiatable(code: &[u8]) -> Result<(), PrepareError> {
+        // There are a few things that are done during wasm instantiation time
+        //
+        // 1. Resolve all the external functions, tables, memories and globals (which should always succeed if `check_imports` step is applied)
+        // 2. Allocate globals (TODO: study the behavior and design costing strategy)
+        // 3. Allocate tables (TODO: study the behavior and design costing strategy)
+        // 4. Allocate memories (which should always succeed if `check_memory` step is applied)
+        // 5. Update table with elements (TODO: study the behavior and design costing strategy)
+        // 6. Update memory with data sections (which may fail if the initial memory is less than required)
+        //
+        // Before we fully understand the specs and reference implementation, we attempt to instantiate the module and reject it if failure.
+
+        wasmi::ModuleInstance::new(
+            &wasmi::Module::from_buffer(&code).expect("The input code should be a valid module"),
+            &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
+        )
+        .map_err(|_| PrepareError::NotInstantiatable)?;
+
+        Ok(())
+    }
+
+    fn ensure_compilable(_code: &[u8]) -> Result<(), PrepareError> {
+        // TODO: can we make the assumption that all "validated" modules are compilable, if the machine resource is "sufficient"?
+
+        // Another option is to attempt to compile, although it would make RE protocol coupled with the specific implementation
+
+        Ok(())
+    }
+
     pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         let function_exports = self
             .module
@@ -237,8 +267,15 @@ impl WasmModule {
                     .collect()
             })
             .unwrap_or(Vec::new());
+
+        // serialize
         let code =
             parity_wasm::serialize(self.module).map_err(|_| PrepareError::SerializationError)?;
+
+        // make sure the module is instantiable and compilable
+        Self::ensure_instantiatable(&code)?;
+        Self::ensure_compilable(&code)?;
+
         Ok((code, function_exports))
     }
 }

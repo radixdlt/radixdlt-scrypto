@@ -41,6 +41,10 @@ pub enum PrepareError {
     RejectedByInstructionMetering,
     /// Failed to inject stack metering
     RejectedByStackMetering,
+    /// Not instantiatable
+    NotInstantiatable,
+    /// Not compilable
+    NotCompilable,
 }
 
 /// Represents an error when invoking an export of a Scrypto module.

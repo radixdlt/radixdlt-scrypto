@@ -2,7 +2,11 @@ use radix_engine::engine::{Receipt, TransactionExecutor};
 use radix_engine::ledger::*;
 use radix_engine::model::{export_abi, export_abi_by_component, extract_package, Component};
 use radix_engine::wasm::{DefaultWasmEngine, WasmInstrumenter};
+use sbor::describe::Fields;
+use sbor::Type;
+use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::prelude::*;
+use scrypto::prelude::{HashMap, Package};
 use scrypto::{abi, to_struct};
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
@@ -329,4 +333,27 @@ pub fn wat2wasm(wat: &str) -> Vec<u8> {
             .replace("${buffer}", include_str!("wasm/snippets/buffer.wat")),
     )
     .expect("Failed to compiled WAT into WASM")
+}
+
+pub fn abi_single_fn_any_input_void_output(
+    blueprint_name: &str,
+    function_name: &str,
+) -> HashMap<String, BlueprintAbi> {
+    let mut blueprint_abis = HashMap::new();
+    blueprint_abis.insert(
+        blueprint_name.to_string(),
+        BlueprintAbi {
+            structure: Type::Unit,
+            fns: vec![Fn {
+                ident: function_name.to_string(),
+                mutability: Option::None,
+                input: Type::Struct {
+                    name: "Any".to_string(),
+                    fields: Fields::Named { named: vec![] },
+                },
+                output: Type::Unit,
+            }],
+        },
+    );
+    blueprint_abis
 }
