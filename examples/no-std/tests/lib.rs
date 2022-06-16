@@ -4,7 +4,7 @@
 use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
-use radix_engine::wasm::DefaultWasmEngine;
+use radix_engine::wasm::*;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -16,7 +16,13 @@ fn test_say_hello() {
     // Set up environment.
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, false);
+    let mut wasm_instrumenter = WasmInstrumenter::new();
+    let mut executor = TransactionExecutor::new(
+        &mut substate_store,
+        &mut wasm_engine,
+        &mut wasm_instrumenter,
+        false,
+    );
 
     // Create a key pair
     let private_key = EcdsaPrivateKey::from_u64(1).unwrap();

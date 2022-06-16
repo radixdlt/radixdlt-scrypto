@@ -29,7 +29,7 @@ impl FeeTable {
         self.engine_call_cost
     }
 
-    pub fn wasm_metering_params(&self) -> &WasmMeteringParams {
-        &self.wasm_metering_params
+    pub fn wasm_metering_params(&self) -> WasmMeteringParams {
+        self.wasm_metering_params.clone()
     }
 }

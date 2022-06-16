@@ -23,6 +23,7 @@ where
 {
     substate_store: &'s mut S,
     wasm_engine: &'w mut W,
+    wasm_instrumenter: &'w mut WasmInstrumenter,
     trace: bool,
     phantom: PhantomData<I>,
 }
@@ -36,11 +37,13 @@ where
     pub fn new(
         substate_store: &'s mut S,
         wasm_engine: &'w mut W,
+        wasm_instrumenter: &'w mut WasmInstrumenter,
         trace: bool,
     ) -> TransactionExecutor<'s, 'w, S, W, I> {
         Self {
             substate_store,
             wasm_engine,
+            wasm_instrumenter,
             trace,
             phantom: PhantomData,
         }
@@ -78,6 +81,7 @@ where
             signer_public_keys,
             &mut track,
             self.wasm_engine,
+            self.wasm_instrumenter,
             cost_unit_counter,
             fee_table,
         );
