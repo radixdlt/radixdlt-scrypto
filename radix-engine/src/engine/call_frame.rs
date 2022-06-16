@@ -149,10 +149,7 @@ pub enum ConsumedSNodeState {
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Blueprint(
-        ScryptoActorInfo,
-        ValidatedPackage,
-    ),
+    Blueprint(ScryptoActorInfo, ValidatedPackage),
     Component(ScryptoActorInfo, ValidatedPackage, Component),
     Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, RefMut<'a, Bucket>),
@@ -182,15 +179,8 @@ pub enum SNodeState<'a> {
     AuthZoneRef(&'a mut AuthZone),
     WorktopRef(&'a mut Worktop),
     // TODO: use reference to the package
-    Blueprint(
-        ScryptoActorInfo,
-        ValidatedPackage,
-    ),
-    Component(
-        ScryptoActorInfo,
-        ValidatedPackage,
-        &'a mut Component,
-    ),
+    Blueprint(ScryptoActorInfo, ValidatedPackage),
+    Component(ScryptoActorInfo, ValidatedPackage, &'a mut Component),
     ResourceStatic,
     ResourceRef(ResourceAddress, &'a mut ResourceManager),
     BucketRef(BucketId, &'a mut Bucket),
@@ -223,22 +213,12 @@ impl<'a> LoadedSNodeState<'a> {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
-                BorrowedSNodeState::Blueprint(
-                    info,
-                    package,
-                ) => SNodeState::Blueprint(
-                    info.clone(),
-                    package.clone(),
-                ),
-                BorrowedSNodeState::Component(
-                    info,
-                    package,
-                    component,
-                ) => SNodeState::Component(
-                    info.clone(),
-                    package.clone(),
-                    component,
-                ),
+                BorrowedSNodeState::Blueprint(info, package) => {
+                    SNodeState::Blueprint(info.clone(), package.clone())
+                }
+                BorrowedSNodeState::Component(info, package, component) => {
+                    SNodeState::Component(info.clone(), package.clone(), component)
+                }
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
@@ -554,25 +534,11 @@ where
             SNodeState::WorktopRef(worktop) => worktop
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Blueprint(
-                actor,
-                package,
-            ) => {
+            SNodeState::Blueprint(actor, package) => {
                 let export_name = format!("{}_main", actor.blueprint_name());
-                package.invoke(
-                    &actor,
-                    &mut None,
-                    export_name,
-                    fn_ident,
-                    input,
-                    self,
-                )
+                package.invoke(&actor, &mut None, export_name, fn_ident, input, self)
             }
-            SNodeState::Component(
-                actor,
-                package,
-                component,
-            ) => {
+            SNodeState::Component(actor, package, component) => {
                 let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
                 for value_id in initial_value.stored_value_ids() {
                     self.refed_values.insert(
@@ -884,7 +850,7 @@ where
                                 package_address.clone(),
                                 blueprint_name.clone(),
                             ),
-                            package.clone()
+                            package.clone(),
                         )),
                         vec![],
                     ))

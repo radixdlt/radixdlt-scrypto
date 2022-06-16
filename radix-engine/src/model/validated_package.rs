@@ -89,7 +89,9 @@ impl ValidatedPackage {
             .wasm_instrumenter()
             .instrument(&self.code, &wasm_metering_params);
         let mut instance = system_api.wasm_engine().instantiate(&instrumented_code);
-        let blueprint_abi = self.blueprint_abi(actor.blueprint_name()).expect("Blueprint should exist");
+        let blueprint_abi = self
+            .blueprint_abi(actor.blueprint_name())
+            .expect("Blueprint should exist");
         let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(
             actor.clone(),
             component,
