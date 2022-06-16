@@ -32,6 +32,8 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     up_virtual_substate_space: IndexSet<Vec<u8>>,
 }
 
+
+#[derive(Debug)]
 pub enum TrackError {
     Reentrancy,
     NotFound,
@@ -395,11 +397,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a value, if exists.
-    pub fn read_value<A: Into<Address>>(&mut self, addr: A) -> Option<&SubstateValue> {
+    pub fn borrow_global_value<A: Into<Address>>(&mut self, addr: A) -> Result<&SubstateValue, TrackError> {
         let address: Address = addr.into();
 
         if let Some(v) = self.up_substates.get(&address.encode()) {
-            return Some(v);
+            return Ok(v);
         }
 
         // TODO: Check for reentrancy
@@ -411,25 +413,24 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     let package: ValidatedPackage = scrypto_decode(&substate.value).unwrap();
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Package(package));
-                    self.read_substates.get(&address)
                 }
                 Address::Component(_) => {
                     let component: Component = scrypto_decode(&substate.value).unwrap();
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Component(component));
-                    self.read_substates.get(&address)
                 }
                 Address::Resource(_) => {
                     let resource_manager: ResourceManager =
                         scrypto_decode(&substate.value).unwrap();
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Resource(resource_manager));
-                    self.read_substates.get(&address)
                 }
                 _ => panic!("Reading value of invalid address"),
             }
+            let value = self.read_substates.get(&address).unwrap();
+            Ok(value)
         } else {
-            None
+            Err(TrackError::NotFound)
         }
     }
 
@@ -443,10 +444,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let mut borrowed_substates = self.borrowed_substates.borrow_mut();
         if let Some(value) = maybe_value {
             borrowed_substates.insert(address);
-            Ok(value)
-        } else if borrowed_substates.contains(&address) {
-            Err(TrackError::Reentrancy)
-        } else if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
+            return Ok(value);
+        }
+
+        if borrowed_substates.contains(&address) {
+            return Err(TrackError::Reentrancy);
+        }
+
+        if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
             self.downed_substates.push(substate.phys_id);
             borrowed_substates.insert(address.clone());
             match address {

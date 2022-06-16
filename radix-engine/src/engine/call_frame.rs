@@ -755,8 +755,13 @@ where
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
                     let substate_value = self
                         .track
-                        .read_value(package_address.clone())
-                        .ok_or(RuntimeError::PackageNotFound(*package_address))?;
+                        .borrow_global_value(package_address.clone())
+                        .map_err(|e| {
+                            match e {
+                                TrackError::NotFound => RuntimeError::PackageNotFound(*package_address),
+                                TrackError::Reentrancy => panic!("Package reentrancy error should never occur.")
+                            }
+                        })?;
                     let package = match substate_value {
                         SubstateValue::Package(package) => package,
                         _ => panic!("Value is not a package"),
@@ -807,8 +812,13 @@ where
 
                     let package_value = self
                         .track
-                        .read_value(package_address)
-                        .ok_or(RuntimeError::PackageNotFound(package_address))?;
+                        .borrow_global_value(package_address.clone())
+                        .map_err(|e| {
+                            match e {
+                                TrackError::NotFound => RuntimeError::PackageNotFound(package_address),
+                                TrackError::Reentrancy => panic!("Package reentrancy error should never occur.")
+                            }
+                        })?;
                     let package = package_value.package();
                     let abi = package
                         .blueprint_abi(&blueprint_name)
@@ -869,7 +879,8 @@ where
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?
                     .into_inner();
                 let resource_address = bucket.resource_address();
-                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let substate_value = self.track.borrow_global_value(resource_address.clone())
+                    .expect("There should be no problem retrieving resource manager");
                 let resource_manager = match substate_value {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
@@ -966,7 +977,7 @@ where
                     }
                 };
 
-                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let substate_value = self.track.borrow_global_value(resource_address.clone()).unwrap();
                 let resource_manager = match substate_value {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
@@ -1112,9 +1123,14 @@ where
         resource_address: ResourceAddress,
     ) -> Result<&ResourceManager, RuntimeError> {
         self.track
-            .read_value(resource_address.clone())
+            .borrow_global_value(resource_address.clone())
             .map(SubstateValue::resource_manager)
-            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))
+            .map_err(|e| {
+                match e {
+                    TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address),
+                    TrackError::Reentrancy => panic!("Resman reentrancy should not occur."),
+                }
+            })
     }
 
     fn borrow_global_mut_resource_manager(
@@ -1306,8 +1322,13 @@ where
     ) -> Result<(PackageAddress, String), RuntimeError> {
         let substate_value = self
             .track
-            .read_value(component_address)
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
+            .borrow_global_value(component_address)
+            .map_err(|e| {
+                match e {
+                    TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
+                    TrackError::Reentrancy => panic!("Component info reentrancy"),
+                }
+            })?;
 
         if let SubstateValue::Component(component) = substate_value {
             Ok((
