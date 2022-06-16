@@ -1122,7 +1122,6 @@ where
                     })?;
             }
         }
-        self.sys_log(Level::Debug, format!("Auth check success!"));
 
         // Prepare moving cost unit counter and fee table
         let cost_unit_counter = self
