@@ -20,6 +20,9 @@ impl WasmModule {
     /// The maximum initial memory size: `64 Pages * 64 KiB per Page = 4 MiB`
     pub const MAX_INITIAL_MEMORY_SIZE_PAGES: u32 = 64;
 
+    /// The maximum initial size of a table.
+    pub const MAX_INITIAL_TABLE_SIZE: u32 = 1024;
+
     pub fn init(code: &[u8]) -> Result<Self, PrepareError> {
         // deserialize
         let module = parity_wasm::deserialize_buffer(code)
@@ -31,7 +34,7 @@ impl WasmModule {
         Ok(Self { module })
     }
 
-    pub fn reject_floating_point(self) -> Result<Self, PrepareError> {
+    pub fn ensure_no_floating_point(self) -> Result<Self, PrepareError> {
         if let Some(code) = self.module.code_section() {
             for op in code.bodies().iter().flat_map(|body| body.code().elements()) {
                 match op {
@@ -136,7 +139,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn reject_start_function(self) -> Result<Self, PrepareError> {
+    pub fn ensure_no_start_function(self) -> Result<Self, PrepareError> {
         if self.module.start_section().is_some() {
             Err(PrepareError::StartFunctionNotAllowed)
         } else {
@@ -144,20 +147,16 @@ impl WasmModule {
         }
     }
 
-    pub fn check_imports(self) -> Result<Self, PrepareError> {
+    pub fn ensure_import_limit(self) -> Result<Self, PrepareError> {
         // only allow `env::radix_engine` import
 
         if let Some(sec) = self.module.import_section() {
-            if sec.entries().len() > 1 {
-                return Err(PrepareError::InvalidImports);
-            }
-
-            if let Some(entry) = sec.entries().get(0) {
+            for entry in sec.entries() {
                 if entry.module() != MODULE_ENV_NAME
                     || entry.field() != RADIX_ENGINE_FUNCTION_NAME
                     || !matches!(entry.external(), External::Function(_))
                 {
-                    return Err(PrepareError::InvalidImports);
+                    return Err(PrepareError::InvalidImport(InvalidImport::ImportNotAllowed));
                 }
             }
         }
@@ -165,45 +164,79 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn check_memory(self) -> Result<Self, PrepareError> {
+    pub fn ensure_memory_limit(self) -> Result<Self, PrepareError> {
         // Must have exactly 1 memory definition
         // TODO: consider if we can benefit from shared external memory instead of internal ones.
-        let memory_section = self.module.memory_section().ok_or(PrepareError::NoMemory)?;
+        let memory_section = self
+            .module
+            .memory_section()
+            .ok_or(PrepareError::InvalidMemory(InvalidMemory::NoMemorySection))?;
 
         let memory = match memory_section.entries().len() {
-            0 => Err(PrepareError::NoMemory),
+            0 => Err(PrepareError::InvalidMemory(
+                InvalidMemory::EmptyMemorySection,
+            )),
             1 => Ok(memory_section.entries()[0]),
-            _ => Err(PrepareError::TooManyMemories),
+            _ => Err(PrepareError::InvalidMemory(InvalidMemory::TooManyMemories)),
         }?;
         if memory.limits().initial() > Self::MAX_INITIAL_MEMORY_SIZE_PAGES {
-            return Err(PrepareError::InitialMemorySizeLimitExceeded);
+            return Err(PrepareError::InvalidMemory(
+                InvalidMemory::InitialMemorySizeLimitExceeded,
+            ));
         }
 
-        if !self
-            .module
+        self.module
             .export_section()
-            .ok_or(PrepareError::NoMemoryExport)?
-            .entries()
-            .iter()
-            .any(|e| e.field() == EXPORT_MEMORY && e.internal() == &Internal::Memory(0))
-        {
-            return Err(PrepareError::NoMemoryExport);
+            .and_then(|section| {
+                section
+                    .entries()
+                    .iter()
+                    .filter(|e| e.field() == EXPORT_MEMORY && e.internal() == &Internal::Memory(0))
+                    .next()
+            })
+            .ok_or(PrepareError::InvalidMemory(
+                InvalidMemory::MemoryNotExported,
+            ))?;
+
+        Ok(self)
+    }
+
+    pub fn ensure_table_limit(self) -> Result<Self, PrepareError> {
+        if let Some(section) = self.module.table_section() {
+            if section.entries().len() > 1 {
+                return Err(PrepareError::InvalidTable(
+                    InvalidTable::MoreThanOneTableEntries,
+                ));
+            }
+
+            if let Some(table) = section.entries().get(0) {
+                if table.limits().initial() > Self::MAX_INITIAL_TABLE_SIZE {
+                    return Err(PrepareError::InvalidTable(
+                        InvalidTable::InitialTableSizeLimitExceeded,
+                    ));
+                }
+            }
         }
 
         Ok(self)
     }
 
-    pub fn enforce_initial_memory_limit(self) -> Result<Self, PrepareError> {
+    pub fn ensure_br_table_limit(self) -> Result<Self, PrepareError> {
         // TODO
         Ok(self)
     }
 
-    pub fn enforce_functions_limit(self) -> Result<Self, PrepareError> {
+    pub fn ensure_function_limit(self) -> Result<Self, PrepareError> {
         // TODO
         Ok(self)
     }
 
-    pub fn enforce_locals_limit(self) -> Result<Self, PrepareError> {
+    pub fn ensure_global_limit(self) -> Result<Self, PrepareError> {
+        // TODO
+        Ok(self)
+    }
+
+    pub fn ensure_local_limit(self) -> Result<Self, PrepareError> {
         // TODO
         Ok(self)
     }
@@ -232,10 +265,10 @@ impl WasmModule {
     fn ensure_instantiatable(code: &[u8]) -> Result<(), PrepareError> {
         // There are a few things that are done during wasm instantiation time
         //
-        // 1. Resolve all the external functions, tables, memories and globals (which should always succeed if `check_imports` step is applied)
+        // 1. Resolve all the external functions, tables, memories and globals (which should always succeed if `ensure_import_limit` step is applied)
         // 2. Allocate globals (TODO: study the behavior and design costing strategy)
         // 3. Allocate tables (TODO: study the behavior and design costing strategy)
-        // 4. Allocate memories (which should always succeed if `check_memory` step is applied)
+        // 4. Allocate memories (which should always succeed if `ensure_memory_limit` step is applied)
         // 5. Update table with elements (TODO: study the behavior and design costing strategy)
         // 6. Update memory with data sections (which may fail if the initial memory is less than required)
         //

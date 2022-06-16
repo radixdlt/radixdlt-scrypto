@@ -23,16 +23,12 @@ pub enum PrepareError {
     StartFunctionNotAllowed,
     /// The wasm module uses float points.
     FloatingPointNotAllowed,
-    /// Invalid imports
-    InvalidImports,
-    /// The wasm module has no memory definition.
-    NoMemory,
-    /// The wasm module has too many memory definitions.
-    TooManyMemories,
-    /// The initial memory size is too large.
-    InitialMemorySizeLimitExceeded,
-    /// The wasm module does not have the `memory` export.
-    NoMemoryExport,
+    /// Invalid import section
+    InvalidImport(InvalidImport),
+    /// Invalid memory section
+    InvalidMemory(InvalidMemory),
+    /// Invalid table section
+    InvalidTable(InvalidTable),
     /// The wasm module does not have the `scrypto_alloc` export.
     NoScryptoAllocExport,
     /// The wasm module does not have the `scrypto_free` export.
@@ -45,6 +41,33 @@ pub enum PrepareError {
     NotInstantiatable,
     /// Not compilable
     NotCompilable,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum InvalidImport {
+    /// The import is not allowed
+    ImportNotAllowed,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum InvalidMemory {
+    /// The wasm module has no memory section.
+    NoMemorySection,
+    /// The memory section is empty.
+    EmptyMemorySection,
+    /// The memory section contains too many memory definitions.
+    TooManyMemories,
+    /// The initial memory size is too large.
+    InitialMemorySizeLimitExceeded,
+    /// The wasm module does not have the `memory` export.
+    MemoryNotExported,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum InvalidTable {
+    MoreThanOneTableEntries,
+
+    InitialTableSizeLimitExceeded,
 }
 
 /// Represents an error when invoking an export of a Scrypto module.
