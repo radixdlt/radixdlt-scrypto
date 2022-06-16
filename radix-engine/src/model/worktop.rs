@@ -11,7 +11,7 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::model::WorktopError::InvalidMethod;
-use crate::model::{Bucket, ResourceContainer, ResourceContainerError, ResourceManager};
+use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
 use crate::wasm::*;
 
 #[derive(Debug, TypeId, Encode, Decode)]
@@ -230,14 +230,10 @@ impl Worktop {
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
-                    let resource_manager: ResourceManager = system_api
-                        .borrow_global_mut_resource_manager(input.resource_address)
+                    let resource_manager = system_api
+                        .borrow_global_resource_manager(input.resource_address)
                         .map_err(|_| WorktopError::ResourceDoesNotExist(input.resource_address))?;
                     let resource_type = resource_manager.resource_type();
-                    system_api.return_borrowed_global_resource_manager(
-                        input.resource_address,
-                        resource_manager,
-                    );
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
@@ -257,14 +253,10 @@ impl Worktop {
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
-                    let resource_manager: ResourceManager = system_api
-                        .borrow_global_mut_resource_manager(input.resource_address)
+                    let resource_manager = system_api
+                        .borrow_global_resource_manager(input.resource_address)
                         .map_err(|_| WorktopError::ResourceDoesNotExist(input.resource_address))?;
                     let resource_type = resource_manager.resource_type();
-                    system_api.return_borrowed_global_resource_manager(
-                        input.resource_address,
-                        resource_manager,
-                    );
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
@@ -284,14 +276,10 @@ impl Worktop {
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
-                    let resource_manager: ResourceManager = system_api
-                        .borrow_global_mut_resource_manager(input.resource_address)
+                    let resource_manager = system_api
+                        .borrow_global_resource_manager(input.resource_address)
                         .map_err(|_| WorktopError::ResourceDoesNotExist(input.resource_address))?;
                     let resource_type = resource_manager.resource_type();
-                    system_api.return_borrowed_global_resource_manager(
-                        input.resource_address,
-                        resource_manager,
-                    );
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 

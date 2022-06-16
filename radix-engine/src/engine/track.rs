@@ -237,6 +237,14 @@ impl SubstateValue {
             panic!("Not a component");
         }
     }
+
+    pub fn package(&self) -> &ValidatedPackage {
+        if let SubstateValue::Package(package) = self {
+            package
+        } else {
+            panic!("Not a package");
+        }
+    }
 }
 
 impl Into<SubstateValue> for ValidatedPackage {
@@ -393,6 +401,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if let Some(v) = self.up_substates.get(&address.encode()) {
             return Some(v);
         }
+
+        // TODO: Check for reentrancy
 
         let maybe_substate = self.substate_store.get_substate(&address.encode());
         if let Some(substate) = maybe_substate {

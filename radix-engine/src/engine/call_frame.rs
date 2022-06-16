@@ -804,15 +804,12 @@ where
                     let component = component_value.component();
                     let package_address = component.package_address();
                     let blueprint_name = component.blueprint_name().to_string();
-                    let substate_value = self
+
+                    let package_value = self
                         .track
                         .read_value(package_address)
                         .ok_or(RuntimeError::PackageNotFound(package_address))?;
-                    let package = match substate_value {
-                        SubstateValue::Package(package) => package,
-                        _ => panic!("Value is not a package"),
-                    };
-
+                    let package = package_value.package();
                     let abi = package
                         .blueprint_abi(&blueprint_name)
                         .expect("Blueprint not found for existing component");
@@ -1108,6 +1105,16 @@ where
         let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
         let key = non_fungible_address.non_fungible_id().to_vec();
         self.track.set_key_value(parent_address, key, non_fungible)
+    }
+
+    fn borrow_global_resource_manager(
+        &mut self,
+        resource_address: ResourceAddress,
+    ) -> Result<&ResourceManager, RuntimeError> {
+        self.track
+            .read_value(resource_address.clone())
+            .map(SubstateValue::resource_manager)
+            .ok_or(RuntimeError::ResourceManagerNotFound(resource_address.clone()))
     }
 
     fn borrow_global_mut_resource_manager(
