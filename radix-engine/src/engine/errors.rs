@@ -27,9 +27,13 @@ pub enum RuntimeError {
 
     /// Invalid request code.
     MethodDoesNotExist(String),
-    InvalidMethodArgument {
+    InvalidFnInput {
         fn_ident: String,
         input: Value,
+    },
+    InvalidFnOutput {
+        fn_ident: String,
+        output: Value,
     },
 
     /// Package does not exist.

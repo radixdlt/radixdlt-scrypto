@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use radix_engine::fee::CALL_ENGINE_COST;
 use radix_engine::wasm::InvokeError;
 use sbor::describe::Fields;
 use sbor::Type;
@@ -70,7 +71,7 @@ fn test_loop_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::MeteringError { .. })
+    assert_invoke_error!(receipt.result, InvokeError::CostingError { .. })
 }
 
 #[test]
@@ -122,7 +123,7 @@ fn test_grow_memory() {
     let mut test_runner = TestRunner::new(true);
 
     // Act
-    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "99999"));
+    let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
     let package = Package {
         code,
         blueprints: metering_abi("Test".to_string()),
@@ -155,5 +156,26 @@ fn test_grow_memory_out_of_cost_unit() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_invoke_error!(receipt.result, InvokeError::MeteringError { .. })
+    assert_invoke_error!(receipt.result, InvokeError::CostingError { .. })
+}
+
+#[test]
+fn test_total_cost_units_consumed() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+
+    // Act
+    let code = wat2wasm(&include_str!("wasm/syscall.wat"));
+    let package = Package {
+        code,
+        blueprints: metering_abi("Test".to_string()),
+    };
+    let package_address = test_runner.publish_package(package);
+    let manifest = ManifestBuilder::new()
+        .call_function(package_address, "Test", "f", to_struct!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    assert_eq!(CALL_ENGINE_COST + 326, receipt.cost_units_consumed);
 }
