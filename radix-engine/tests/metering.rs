@@ -177,7 +177,16 @@ fn test_total_cost_units_consumed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    /* TransactionProcessor::main + Scrypto::main + AuthZone::clear * 2 */
+    /*
+    Cost analysis:
+    1. Transaction validation cost = TX_VALIDATION_COST_PER_BYTE * 1
+    2. Engine run cost = ENGINE_RUN_COST * 4
+       * TransactionProcessor::main
+          * Scrypto::main
+          * AuthZone::clear * 2
+       * AuthZone::clear
+    3. Wasm run cost = WASM_ENGINE_CALL_COST + 326
+    */
     assert_eq!(
         TX_VALIDATION_COST_PER_BYTE * 1 + ENGINE_RUN_COST * 4 + WASM_ENGINE_CALL_COST + 326,
         receipt.cost_units_consumed
