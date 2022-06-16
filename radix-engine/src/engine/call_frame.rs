@@ -271,7 +271,7 @@ impl<'a> LoadedSNodeState<'a> {
                         track
                             .return_borrowed_global_mut_value((component_address, vault_id), vault);
                     }
-                    _ => panic!("Should not get here."),
+                    _ => panic!("Tracked vaults are owned by Track and only references are passed to call frames. Will remove this in a PR soon."),
                 },
             }
         }
