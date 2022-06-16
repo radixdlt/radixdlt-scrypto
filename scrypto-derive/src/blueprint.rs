@@ -245,10 +245,10 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                 }
                 stmts.push(Stmt::Expr(parse_quote! { rtn }));
 
-                let function_ident = format_ident!("{}_{}_main", bp_ident, ident);
+                let fn_ident = format_ident!("{}_{}", bp_ident, ident);
                 let extern_function = quote! {
                     #[no_mangle]
-                    pub extern "C" fn #function_ident(method_arg: *mut u8) -> *mut u8 {
+                    pub extern "C" fn #fn_ident(method_arg: *mut u8) -> *mut u8 {
                         // Set up panic hook
                         ::scrypto::misc::set_up_panic_hook();
 
@@ -319,7 +319,7 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
                             }
                         }
                     };
-                    let export_name = format!("{}_{}_main", bp_ident, m.sig.ident);
+                    let export_name = format!("{}_{}", bp_ident, m.sig.ident);
 
                     if mutability.is_none() {
                         fns.push(parse_quote! {
@@ -550,7 +550,7 @@ mod tests {
                 pub struct Test_y_Input { arg0 : u32 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_x_main(method_arg: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_x(method_arg: *mut u8) -> *mut u8 {
                     // Set up panic hook
                     ::scrypto::misc::set_up_panic_hook();
 
@@ -566,7 +566,7 @@ mod tests {
                 }
 
                 #[no_mangle]
-                pub extern "C" fn Test_y_main(method_arg: *mut u8) -> *mut u8 {
+                pub extern "C" fn Test_y(method_arg: *mut u8) -> *mut u8 {
                     // Set up panic hook
                     ::scrypto::misc::set_up_panic_hook();
 
@@ -592,14 +592,14 @@ mod tests {
                             mutability: Option::Some(::scrypto::abi::SelfMutability::Immutable),
                             input: Test_x_Input::describe(),
                             output: <u32>::describe(),
-                            export_name: "Test_x_main".to_string(),
+                            export_name: "Test_x".to_string(),
                         },
                         ::scrypto::abi::Fn {
                             ident: "y".to_owned(),
                             mutability: Option::None,
                             input: Test_y_Input::describe(),
                             output: <u32>::describe(),
-                            export_name: "Test_y_main".to_string(),
+                            export_name: "Test_y".to_string(),
                         }
                     ];
                     let structure: Type = blueprint::Test::describe();

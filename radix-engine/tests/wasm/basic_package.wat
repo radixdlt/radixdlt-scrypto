@@ -1,7 +1,7 @@
 (module
 
   ;; Simple main function that always returns `()`
-  (func $Test_f_main (param $0 i32) (result i32)
+  (func $Test_f (param $0 i32) (result i32)
     (local $buffer i32)
     (local.set 
       $buffer
@@ -22,7 +22,7 @@
   (export "memory" (memory $0))
   (export "scrypto_alloc" (func $scrypto_alloc))
   (export "scrypto_free" (func $scrypto_free))
-  (export "Test_f_main" (func $Test_f_main))
+  (export "Test_f" (func $Test_f))
 
   ${memcpy}
   ${buffer}

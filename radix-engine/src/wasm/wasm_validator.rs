@@ -1,11 +1,15 @@
 use crate::wasm::{PrepareError, WasmMeteringParams, WasmModule};
 use sbor::rust::collections::HashMap;
+use sbor::rust::string::String;
 use scrypto::abi::BlueprintAbi;
 
 pub struct WasmValidator {}
 
 impl WasmValidator {
-    pub fn validate(code: &[u8], blueprints: &HashMap<String, BlueprintAbi>) -> Result<(), PrepareError> {
+    pub fn validate(
+        code: &[u8],
+        blueprints: &HashMap<String, BlueprintAbi>,
+    ) -> Result<(), PrepareError> {
         // Not all "valid" wasm modules are instrumentable, with the instrumentation library
         // we are using. To deal with this, we attempt to instrument the input module with
         // some mocked parameters and reject it if fails to do so.
