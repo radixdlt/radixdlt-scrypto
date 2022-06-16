@@ -29,8 +29,8 @@ pub enum PrepareError {
     NoMemory,
     /// The wasm module has too many memory definitions.
     TooManyMemories,
-    /// Invalid memory definition.
-    NonStandardMemory,
+    /// The initial memory size is too large.
+    InitialMemorySizeLimitExceeded,
     /// The wasm module does not have the `memory` export.
     NoMemoryExport,
     /// The wasm module does not have the `scrypto_alloc` export.

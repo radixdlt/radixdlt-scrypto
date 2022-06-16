@@ -17,6 +17,9 @@ pub struct WasmModule {
 }
 
 impl WasmModule {
+    /// The maximum initial memory size: `64 Pages * 64 KiB per Page = 4 MiB`
+    pub const MAX_INITIAL_MEMORY_SIZE_PAGES: u32 = 64;
+
     pub fn init(code: &[u8]) -> Result<Self, PrepareError> {
         // deserialize
         let module = parity_wasm::deserialize_buffer(code)
@@ -172,8 +175,8 @@ impl WasmModule {
             1 => Ok(memory_section.entries()[0]),
             _ => Err(PrepareError::TooManyMemories),
         }?;
-        if memory.limits().initial() != 0 && memory.limits().maximum().is_some() {
-            return Err(PrepareError::NonStandardMemory);
+        if memory.limits().initial() > Self::MAX_INITIAL_MEMORY_SIZE_PAGES {
+            return Err(PrepareError::InitialMemorySizeLimitExceeded);
         }
 
         if !self

@@ -11,3 +11,11 @@ fn test_large_data() {
 
     assert_eq!(Err(PrepareError::NotInstantiatable), result);
 }
+
+#[test]
+fn test_large_memory() {
+    let code = wat2wasm(&include_str!("wasm/large_memory.wat"));
+    let result = WasmValidator::validate(&code);
+
+    assert_eq!(Err(PrepareError::InitialMemorySizeLimitExceeded), result);
+}
