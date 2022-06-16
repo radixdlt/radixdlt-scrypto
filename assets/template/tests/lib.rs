@@ -1,9 +1,9 @@
-use scrypto::to_struct;
 use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
-use radix_engine::wasm::DefaultWasmEngine;
+use radix_engine::wasm::*;
 use scrypto::prelude::*;
+use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
@@ -15,7 +15,13 @@ fn test_hello() {
     // Set up environment.
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
-    let mut executor = TransactionExecutor::new(&mut substate_store, &mut wasm_engine, false);
+    let mut wasm_instrumenter = WasmInstrumenter::new();
+    let mut executor = TransactionExecutor::new(
+        &mut substate_store,
+        &mut wasm_engine,
+        &mut wasm_instrumenter,
+        false,
+    );
 
     // Create a key pair
     let private_key = EcdsaPrivateKey::from_u64(1).unwrap();
@@ -45,12 +51,7 @@ fn test_hello() {
 
     // Test the `instantiate_hello` function.
     let manifest = ManifestBuilder::new()
-        .call_function(
-            package_address,
-            "Hello",
-            "instantiate_hello",
-            to_struct!()
-        )
+        .call_function(package_address, "Hello", "instantiate_hello", to_struct!())
         .build();
     let receipt = executor.execute(&TestTransaction::new(manifest, 3, vec![public_key]));
     println!("{:?}\n", receipt);
@@ -59,11 +60,7 @@ fn test_hello() {
 
     // Test the `free_token` method.
     let manifest = ManifestBuilder::new()
-        .call_method(
-            component,
-            "free_token",
-            to_struct!()
-        )
+        .call_method(component, "free_token", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = executor.execute(&TestTransaction::new(manifest, 4, vec![public_key]));

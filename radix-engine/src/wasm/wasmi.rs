@@ -9,8 +9,6 @@ use crate::wasm::constants::*;
 use crate::wasm::errors::*;
 use crate::wasm::traits::*;
 
-use super::WasmModule;
-
 pub struct WasmiModule {
     module: Module,
 }
@@ -47,7 +45,7 @@ impl ModuleImportResolver for WasmiEnvModule {
                     RADIX_ENGINE_FUNCTION_INDEX,
                 ))
             }
-            CONSUME_COST_UNIT_FUNCTION_NAME => {
+            CONSUME_COST_UNITS_FUNCTION_NAME => {
                 if signature.params() != [ValueType::I32] || signature.return_type() != None {
                     return Err(Error::Instantiation(
                         "Function signature does not match".into(),
@@ -55,7 +53,7 @@ impl ModuleImportResolver for WasmiEnvModule {
                 }
                 Ok(FuncInstance::alloc_host(
                     signature.clone(),
-                    CONSUME_COST_UNIT_FUNCTION_INDEX,
+                    CONSUME_COST_UNITS_FUNCTION_INDEX,
                 ))
             }
             _ => Err(Error::Instantiation(format!(
@@ -148,10 +146,10 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
                     .map(Option::Some)
                     .map_err(|e| e.into())
             }
-            CONSUME_COST_UNIT_FUNCTION_INDEX => {
+            CONSUME_COST_UNITS_FUNCTION_INDEX => {
                 let n: u32 = args.nth_checked(0)?;
                 self.runtime
-                    .consume_cost_unit(n)
+                    .consume_cost_units(n)
                     .map(|_| Option::None)
                     .map_err(|e| e.into())
             }
@@ -207,15 +205,8 @@ impl WasmEngine<WasmiInstance> for WasmiEngine {
     fn instantiate(&mut self, code: &[u8]) -> WasmiInstance {
         let code_hash = hash(code);
         if !self.modules.contains_key(&code_hash) {
-            let instrumented_code = WasmModule::init(code)
-                .and_then(WasmModule::inject_instruction_metering)
-                .and_then(WasmModule::inject_stack_metering)
-                .and_then(WasmModule::to_bytes)
-                .expect("Failed to produce instrumented code")
-                .0;
-
             let module = WasmiModule {
-                module: Module::from_buffer(instrumented_code).expect("Failed to parse wasm code"),
+                module: Module::from_buffer(code).expect("Failed to parse wasm code"),
             };
 
             self.modules.insert(code_hash, module);

@@ -8,6 +8,11 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::prelude::Package;
 use scrypto::values::ScryptoValue;
 
+use crate::engine::NopWasmRuntime;
+use crate::fee::{
+    MAX_EXTRACT_ABI_COST, WASM_GROW_MEMORY_COST, WASM_INSTRUCTION_COST, WASM_MAX_STACK_SIZE,
+    WASM_METERING_V1,
+};
 use crate::wasm::*;
 
 #[derive(Debug)]
@@ -26,14 +31,22 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiE
         .into_iter()
         .filter(|s| s.ends_with("_abi"));
 
-    let runtime = NopWasmRuntime::new(EXPORT_ABI_COST_UNIT_LIMIT);
-    let mut runtime_boxed: Box<dyn WasmRuntime> = Box::new(runtime);
-    let mut wasm_engine = WasmiEngine::new();
-    let mut instance = wasm_engine.instantiate(code);
+    let mut wasm_engine = DefaultWasmEngine::new();
+    let mut wasm_instrumenter = WasmInstrumenter::new();
+
+    let metering_params = WasmMeteringParams::new(
+        WASM_METERING_V1,
+        WASM_INSTRUCTION_COST,
+        WASM_GROW_MEMORY_COST,
+        WASM_MAX_STACK_SIZE,
+    );
+    let instrumented_code = wasm_instrumenter.instrument(code, &metering_params);
+    let mut runtime: Box<dyn WasmRuntime> = Box::new(NopWasmRuntime::new(MAX_EXTRACT_ABI_COST));
+    let mut instance = wasm_engine.instantiate(&instrumented_code);
     let mut blueprints = HashMap::new();
     for method_name in function_exports {
         let rtn = instance
-            .invoke_export(&method_name, &ScryptoValue::unit(), &mut runtime_boxed)
+            .invoke_export(&method_name, &ScryptoValue::unit(), &mut runtime)
             .map_err(ExtractAbiError::FailedToExportBlueprintAbi)?;
 
         let abi: BlueprintAbi =

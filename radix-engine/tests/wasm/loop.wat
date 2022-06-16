@@ -1,4 +1,5 @@
 (module
+
   ;; Simple main function that always returns `()`
   (func $Test_f_main (param $0 i32) (result i32)
     ;; Loop starts!
