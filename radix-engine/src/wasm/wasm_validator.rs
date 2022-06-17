@@ -10,15 +10,15 @@ impl WasmValidator {
         let mocked_wasm_metering_params = WasmMeteringParams::new(1, 1, 100, 500);
 
         WasmModule::init(code)?
-            .ensure_no_floating_point()?
-            .ensure_no_start_function()?
-            .ensure_import_limit()?
-            .ensure_memory_limit()?
-            .ensure_table_limit()?
-            .ensure_br_table_limit()?
-            .ensure_function_limit()?
-            .ensure_global_limit()?
-            .ensure_local_limit()?
+            .enforce_no_floating_point()?
+            .enforce_no_start_function()?
+            .enforce_import_limit()?
+            .enforce_memory_limit()?
+            .enforce_table_limit()?
+            .enforce_br_table_limit()?
+            .enforce_function_limit()?
+            .enforce_global_limit()?
+            .enforce_local_limit()?
             .inject_instruction_metering(
                 mocked_wasm_metering_params.instruction_cost(),
                 mocked_wasm_metering_params.grow_memory_cost(),

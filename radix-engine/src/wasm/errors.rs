@@ -29,6 +29,8 @@ pub enum PrepareError {
     InvalidMemory(InvalidMemory),
     /// Invalid table section
     InvalidTable(InvalidTable),
+    /// Too many targets in the `br_table` instruction
+    TooManyTargetsInBrTable,
     /// The wasm module does not have the `scrypto_alloc` export.
     NoScryptoAllocExport,
     /// The wasm module does not have the `scrypto_free` export.

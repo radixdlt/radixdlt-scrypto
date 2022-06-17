@@ -1,6 +1,7 @@
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use wasm_instrument::parity_wasm::elements::Instruction;
 use wasm_instrument::parity_wasm::{
     self,
     elements::{External, Instruction::*, Internal, Module, Type, ValueType},
@@ -20,8 +21,11 @@ impl WasmModule {
     /// The maximum initial memory size: `64 Pages * 64 KiB per Page = 4 MiB`
     pub const MAX_INITIAL_MEMORY_SIZE_PAGES: u32 = 64;
 
-    /// The maximum initial size of a table.
+    /// The maximum initial table size
     pub const MAX_INITIAL_TABLE_SIZE: u32 = 1024;
+
+    /// The max number of labels of a table jump, excluding the default
+    pub const MAX_NUMBER_OF_BR_TABLE_TARGETS: u32 = 256;
 
     pub fn init(code: &[u8]) -> Result<Self, PrepareError> {
         // deserialize
@@ -34,7 +38,7 @@ impl WasmModule {
         Ok(Self { module })
     }
 
-    pub fn ensure_no_floating_point(self) -> Result<Self, PrepareError> {
+    pub fn enforce_no_floating_point(self) -> Result<Self, PrepareError> {
         if let Some(code) = self.module.code_section() {
             for func_body in code.bodies() {
                 for local in func_body.locals() {
@@ -150,7 +154,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn ensure_no_start_function(self) -> Result<Self, PrepareError> {
+    pub fn enforce_no_start_function(self) -> Result<Self, PrepareError> {
         if self.module.start_section().is_some() {
             Err(PrepareError::StartFunctionNotAllowed)
         } else {
@@ -158,9 +162,8 @@ impl WasmModule {
         }
     }
 
-    pub fn ensure_import_limit(self) -> Result<Self, PrepareError> {
-        // only allow `env::radix_engine` import
-
+    pub fn enforce_import_limit(self) -> Result<Self, PrepareError> {
+        // Only allow `env::radix_engine` import
         if let Some(sec) = self.module.import_section() {
             for entry in sec.entries() {
                 if entry.module() != MODULE_ENV_NAME
@@ -175,9 +178,9 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn ensure_memory_limit(self) -> Result<Self, PrepareError> {
-        // Must have exactly 1 memory definition
-        // TODO: consider if we can benefit from shared external memory instead of internal ones.
+    pub fn enforce_memory_limit(self) -> Result<Self, PrepareError> {
+        // Must have exactly 1 internal memory definition
+        // TODO: consider if we can benefit from shared external memory.
         let memory_section = self
             .module
             .memory_section()
@@ -212,7 +215,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn ensure_table_limit(self) -> Result<Self, PrepareError> {
+    pub fn enforce_table_limit(self) -> Result<Self, PrepareError> {
         if let Some(section) = self.module.table_section() {
             if section.entries().len() > 1 {
                 // Sanity check MVP rule
@@ -233,22 +236,36 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn ensure_br_table_limit(self) -> Result<Self, PrepareError> {
+    // A large BR_TABLE instruction would significantly slow down JIT compilation process
+    // for some targets, thus enforcing a limit
+    pub fn enforce_br_table_limit(self) -> Result<Self, PrepareError> {
+        if let Some(section) = self.module.code_section() {
+            for inst in section
+                .bodies()
+                .iter()
+                .flat_map(|body| body.code().elements())
+            {
+                if let Instruction::BrTable(table_data) = inst {
+                    if table_data.table.len() > Self::MAX_NUMBER_OF_BR_TABLE_TARGETS as usize {
+                        return Err(PrepareError::TooManyTargetsInBrTable);
+                    }
+                }
+            }
+        }
+        Ok(self)
+    }
+
+    pub fn enforce_function_limit(self) -> Result<Self, PrepareError> {
         // TODO
         Ok(self)
     }
 
-    pub fn ensure_function_limit(self) -> Result<Self, PrepareError> {
+    pub fn enforce_global_limit(self) -> Result<Self, PrepareError> {
         // TODO
         Ok(self)
     }
 
-    pub fn ensure_global_limit(self) -> Result<Self, PrepareError> {
-        // TODO
-        Ok(self)
-    }
-
-    pub fn ensure_local_limit(self) -> Result<Self, PrepareError> {
+    pub fn enforce_local_limit(self) -> Result<Self, PrepareError> {
         // TODO
         Ok(self)
     }
@@ -274,13 +291,13 @@ impl WasmModule {
         Ok(self)
     }
 
-    fn ensure_instantiatable(code: &[u8]) -> Result<(), PrepareError> {
+    fn enforce_instantiatable(code: &[u8]) -> Result<(), PrepareError> {
         // There are a few things that are done during wasm instantiation time
         //
-        // 1. Resolve all the external functions, tables, memories and globals (which should always succeed if `ensure_import_limit` step is applied)
+        // 1. Resolve all the external functions, tables, memories and globals (which should always succeed if `enforce_import_limit` step is applied)
         // 2. Allocate globals (TODO: study the behavior and design costing strategy)
         // 3. Allocate tables (TODO: study the behavior and design costing strategy)
-        // 4. Allocate memories (which should always succeed if `ensure_memory_limit` step is applied)
+        // 4. Allocate memories (which should always succeed if `enforce_memory_limit` step is applied)
         // 5. Update table with elements (TODO: study the behavior and design costing strategy)
         // 6. Update memory with data sections (which may fail if the initial memory is less than required)
         //
@@ -295,8 +312,8 @@ impl WasmModule {
         Ok(())
     }
 
-    fn ensure_compilable(_code: &[u8]) -> Result<(), PrepareError> {
-        // TODO: can we make the assumption that all "validated" modules are compilable, if the machine resource is "sufficient"?
+    fn enforce_compilable(_code: &[u8]) -> Result<(), PrepareError> {
+        // TODO: can we make the assumption that all "validated" modules are compilable, if machine resource is "sufficient"?
 
         // Another option is to attempt to compile, although it would make RE protocol coupled with the specific implementation
 
@@ -321,8 +338,8 @@ impl WasmModule {
             parity_wasm::serialize(self.module).map_err(|_| PrepareError::SerializationError)?;
 
         // make sure the module is instantiable and compilable
-        Self::ensure_instantiatable(&code)?;
-        Self::ensure_compilable(&code)?;
+        Self::enforce_instantiatable(&code)?;
+        Self::enforce_compilable(&code)?;
 
         Ok((code, function_exports))
     }
