@@ -3,7 +3,6 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
 use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
-use sbor::rust::format;
 use sbor::rust::marker::*;
 use sbor::rust::ops::Deref;
 use sbor::rust::ops::DerefMut;
@@ -98,7 +97,8 @@ pub enum ValueRefType {
 #[macro_export]
 macro_rules! trace {
     ( $depth: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
-        println!("{}[{:5}] {}", "  ".repeat($depth), $level, format!($msg, $( $arg ),*));
+        #[cfg(not(feature = "alloc"))]
+        println!("{}[{:5}] {}", "  ".repeat($depth), $level, sbor::rust::format!($msg, $( $arg ),*));
     };
 }
 
