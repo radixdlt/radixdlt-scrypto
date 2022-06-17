@@ -676,10 +676,8 @@ where
     ) -> Result<Vec<StoredValue>, RuntimeError> {
         let values = self.take_set(value_ids)?;
         for value in &values {
-            if let StoredValue::KeyValueStore{store, ..} = value {
-                for id in store.all_descendants() {
-                    self.refed_values.remove(&id);
-                }
+            for id in value.all_descendants() {
+                self.refed_values.remove(&id);
             }
         }
         Ok(values)
@@ -706,13 +704,9 @@ where
                 maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
             let value = match &value_ref {
                 ValueRefType::Uncommitted { root, ancestors } => {
-                    let root_store =
-                        Self::get_owned_kv_store_mut(&mut self.owned_values, root).unwrap();
-                    let mut value = root_store.get_child(ancestors, &value_id);
-                    match value.deref_mut() {
-                        StoredValue::KeyValueStore{store, ..} => store.get(&key.raw),
-                        _ => panic!("Substate value is not a KeyValueStore entry"),
-                    }
+                    let root_value = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(*root)).unwrap();
+                    let mut value = root_value.get_mut().get_child(ancestors, &value_id);
+                    value.kv_store().get(&key.raw)
                 }
                 ValueRefType::Committed { component_address } => {
                     let substate_value = self.track.read_key_value(
@@ -1030,9 +1024,7 @@ where
                                 root,
                                 ref ancestors,
                             } => {
-                                let root_store =
-                                    Self::get_owned_kv_store_mut(&mut self.owned_values, &root)
-                                        .unwrap();
+                                let root_store = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(root)).unwrap().get_mut();
                                 let value = root_store.get_child(ancestors, &value_id);
                                 let resource_address = match value.deref() {
                                     StoredValue::Vault(_, vault) => vault.resource_address(),
@@ -1365,27 +1357,21 @@ where
         let new_values = self.take_values(&new_value_ids)?;
         match parent_type {
             ValueType::Owned => {
-                let kv_store = Self::get_owned_kv_store_mut(&mut self.owned_values, &kv_store_id)
-                    .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?;
-                kv_store.store.insert(key.raw, value);
-                kv_store.insert_children(new_values)
+                let kv_store = self.owned_values
+                    .get_mut(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+                    .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?
+                    .get_mut();
+                kv_store.insert_children(new_values);
+                kv_store.kv_store().put(key.raw, value);
             }
             ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                if let Some(root_store) =
-                    Self::get_owned_kv_store_mut(&mut self.owned_values, &root)
-                {
-                    let id = &StoredValueId::KeyValueStoreId(kv_store_id);
-                    let mut wrapped_store = root_store.get_child(&ancestors, id);
-                    match wrapped_store.deref_mut() {
-                        StoredValue::KeyValueStore{store, ..} => {
-                            store.store.insert(key.raw, value);
-                            store.insert_children(new_values)
-                        }
-                        _ => panic!("Expected KV store"),
-                    }
-                } else {
-                    return Err(RuntimeError::CyclicKeyValueStore(kv_store_id.clone()));
-                }
+                let root_store = self.owned_values
+                    .get_mut(&StoredValueId::KeyValueStoreId(root))
+                    .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id.clone()))?
+                    .get_mut();
+                let mut kv_store = root_store.get_child(&ancestors, &StoredValueId::KeyValueStoreId(kv_store_id));
+                kv_store.insert_children(new_values);
+                kv_store.kv_store().put(key.raw, value);
             }
             ValueType::Ref(ValueRefType::Committed { component_address }) => {
                 self.track.set_key_value(
@@ -1430,6 +1416,7 @@ where
             RefCell::new(StoredValue::KeyValueStore {
                 id: kv_store_id,
                 store: PreCommittedKeyValueStore::new(),
+                child_values: HashMap::new(),
             }),
         );
         kv_store_id
