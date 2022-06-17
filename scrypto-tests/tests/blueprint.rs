@@ -40,7 +40,7 @@ fn assert_json_eq<T: Serialize>(actual: T, expected: Value) {
 
 #[test]
 fn test_simple_abi() {
-    let ptr = Simple_abi(core::ptr::null_mut::<u8>(), core::ptr::null_mut::<u8>());
+    let ptr = Simple_abi(core::ptr::null_mut::<u8>());
     let abi: BlueprintAbi = scrypto_consume(ptr, |slice| scrypto_decode(slice).unwrap());
 
     assert_json_eq(
@@ -75,7 +75,8 @@ fn test_simple_abi() {
                         "type": "Custom",
                         "type_id": 129,
                         "generics": []
-                    }
+                    },
+                    "export_name": "Simple_new"
                 },
 
                 {
@@ -91,7 +92,8 @@ fn test_simple_abi() {
                     },
                     "output": {
                         "type": "U32"
-                    }
+                    },
+                    "export_name": "Simple_get_state"
                 },
                 {
                     "ident": "set_state",
@@ -113,7 +115,8 @@ fn test_simple_abi() {
                     },
                     "output": {
                         "type": "Unit"
-                    }
+                    },
+                    "export_name": "Simple_set_state"
                 },
                 {
                     "ident": "custom_types",
@@ -172,7 +175,8 @@ fn test_simple_abi() {
                                 "generics": []
                             }
                         ]
-                    }
+                    },
+                    "export_name": "Simple_custom_types"
                 }
             ]
         }),

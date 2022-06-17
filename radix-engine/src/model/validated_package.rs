@@ -31,7 +31,7 @@ pub enum PackageError {
 
 impl ValidatedPackage {
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, PrepareError> {
-        WasmValidator::validate(&package.code)?;
+        WasmValidator::validate(&package.code, &package.blueprints)?;
 
         Ok(Self {
             code: package.code,
@@ -74,9 +74,8 @@ impl ValidatedPackage {
         &self,
         actor: &ScryptoActorInfo,
         component: &mut Option<&mut Component>,
-        export_name: String,
         fn_ident: &str,
-        arg: ScryptoValue,
+        input: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, RuntimeError>
     where
@@ -92,6 +91,7 @@ impl ValidatedPackage {
         let blueprint_abi = self
             .blueprint_abi(actor.blueprint_name())
             .expect("Blueprint should exist");
+        let export_name = &blueprint_abi.get_fn_abi(fn_ident).unwrap().export_name;
         let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(
             actor.clone(),
             component,
@@ -99,7 +99,7 @@ impl ValidatedPackage {
             system_api,
         ));
         let output = instance
-            .invoke_export(&export_name, fn_ident, &arg, &mut runtime)
+            .invoke_export(export_name, &input, &mut runtime)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,

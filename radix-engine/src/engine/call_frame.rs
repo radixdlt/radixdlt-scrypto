@@ -1,10 +1,8 @@
-use colored::*;
 use sbor::path::SborPath;
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
 use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
-use sbor::rust::format;
 use sbor::rust::marker::*;
 use sbor::rust::ops::Deref;
 use sbor::rust::ops::DerefMut;
@@ -92,6 +90,14 @@ pub enum ValueRefType {
     Committed {
         component_address: ComponentAddress,
     },
+}
+
+#[macro_export]
+macro_rules! trace {
+    ( $depth: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
+        #[cfg(not(feature = "alloc"))]
+        println!("{}[{:5}] {}", "  ".repeat($depth), $level, sbor::rust::format!($msg, $( $arg ),*));
+    };
 }
 
 fn stored_value_update(
@@ -282,9 +288,12 @@ where
         let mut resource = ResourceFailure::Unknown;
 
         for (bucket_id, ref_bucket) in &self.buckets {
-            self.sys_log(
+            trace!(
+                self.depth,
                 Level::Warn,
-                format!("Dangling bucket: {}, {:?}", bucket_id, ref_bucket),
+                "Dangling bucket: {}, {:?}",
+                bucket_id,
+                ref_bucket
             );
             resource = ResourceFailure::Resource(ref_bucket.borrow().resource_address());
             success = false;
@@ -296,7 +305,7 @@ where
             .map(|(id, c)| (id, c.into_inner()))
             .collect();
         for (_, value) in values {
-            self.sys_log(Level::Warn, format!("Dangling value: {:?}", value));
+            trace!(self.depth, Level::Warn, "Dangling value: {:?}", value);
             resource = match value {
                 StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
                 StoredValue::KeyValueStore(..) => ResourceFailure::UnclaimedKeyValueStore,
@@ -307,7 +316,7 @@ where
         if let Some(ref_worktop) = &self.worktop {
             let worktop = ref_worktop.borrow();
             if !worktop.is_empty() {
-                self.sys_log(Level::Warn, "Resource worktop is not empty".to_string());
+                trace!(self.depth, Level::Warn, "Resource worktop is not empty");
                 resource = ResourceFailure::Resources(worktop.resource_addresses());
                 success = false;
             }
@@ -431,6 +440,18 @@ where
         ),
         RuntimeError,
     > {
+        let remaining_cost_units = self.cost_unit_counter().remaining();
+        trace!(
+            self.depth,
+            Level::Debug,
+            "Run started! Remainging cost units: {}",
+            remaining_cost_units
+        );
+
+        Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
+            .consume(Self::fee_table_helper(&mut self.fee_table).engine_run_cost())
+            .map_err(RuntimeError::CostingError)?;
+
         let output = match snode {
             LoadedSNodeState::Static(state) => match state {
                 StaticSNodeState::System => {
@@ -464,8 +485,7 @@ where
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::WorktopError),
                 BorrowedSNodeState::Blueprint(info, package) => {
-                    let export_name = format!("{}_main", info.blueprint_name());
-                    package.invoke(&info, &mut None, export_name, fn_ident, input, self)
+                    package.invoke(&info, &mut None, fn_ident, input, self)
                 }
                 BorrowedSNodeState::Bucket(bucket_id, mut bucket) => bucket
                     .main(bucket_id, fn_ident, input, self)
@@ -505,11 +525,9 @@ where
                         let (actor, package) = meta.unwrap();
 
                         let mut maybe_component = Some(component);
-                        let export_name = format!("{}_main", actor.blueprint_name());
                         let rtn = package.invoke(
                             &actor,
                             &mut maybe_component,
-                            export_name,
                             fn_ident,
                             input,
                             self,
@@ -558,6 +576,14 @@ where
         }
 
         self.check_resource()?;
+
+        let remaining_cost_units = self.cost_unit_counter().remaining();
+        trace!(
+            self.depth,
+            Level::Debug,
+            "Run finished! Remainging cost units: {}",
+            remaining_cost_units
+        );
 
         Ok((output, moving_buckets, moving_proofs, moving_vaults))
     }
@@ -700,13 +726,12 @@ where
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let remaining_cost_units = self.cost_unit_counter().remaining();
-        self.sys_log(
+        trace!(
+            self.depth,
             Level::Debug,
-            format!(
-                "Invoking: {:?} {:?}, remainging cost units: {}",
-                snode_ref, &fn_ident, remaining_cost_units
-            ),
+            "Invoking: {:?} {:?}",
+            snode_ref,
+            &fn_ident
         );
 
         Self::process_call_data(&input)?;
@@ -721,10 +746,10 @@ where
             MoveMethod::AsArgument,
         )?);
         for bucket in &moving_buckets {
-            self.sys_log(Level::Debug, format!("Sending bucket: {:?}", bucket));
+            trace!(self.depth, Level::Debug, "Sending bucket: {:?}", bucket);
         }
         for proof in &moving_proofs {
-            self.sys_log(Level::Debug, format!("Sending proof: {:?}", proof));
+            trace!(self.depth, Level::Debug, "Sending proof: {:?}", proof);
         }
 
         // Authorization and state load
@@ -1076,11 +1101,11 @@ where
 
         // move buckets and proofs to this process.
         for (bucket_id, bucket) in received_buckets {
-            self.sys_log(Level::Debug, format!("Received bucket: {:?}", bucket));
+            trace!(self.depth, Level::Debug, "Received bucket: {:?}", bucket);
             self.buckets.insert(bucket_id, RefCell::new(bucket));
         }
         for (proof_id, proof) in received_proofs {
-            self.sys_log(Level::Debug, format!("Received proof: {:?}", proof));
+            trace!(self.depth, Level::Debug, "Received proof: {:?}", proof);
             self.proofs.insert(proof_id, RefCell::new(proof));
         }
         for (vault_id, vault) in received_vaults.drain() {
@@ -1366,22 +1391,6 @@ where
 
     fn user_log(&mut self, level: Level, message: String) {
         self.track.add_log(level, message);
-    }
-
-    #[allow(unused_variables)]
-    fn sys_log(&self, level: Level, message: String) {
-        let (l, m) = match level {
-            Level::Error => ("ERROR".red(), message.red()),
-            Level::Warn => ("WARN".yellow(), message.yellow()),
-            Level::Info => ("INFO".green(), message.green()),
-            Level::Debug => ("DEBUG".cyan(), message.cyan()),
-            Level::Trace => ("TRACE".normal(), message.normal()),
-        };
-
-        #[cfg(not(feature = "alloc"))]
-        if self.trace {
-            println!("{}[{:5}] {}", "  ".repeat(self.depth), l, m);
-        }
     }
 
     fn check_access_rule(

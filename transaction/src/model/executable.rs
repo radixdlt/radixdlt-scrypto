@@ -83,6 +83,9 @@ pub trait ExecutableTransaction {
     /// Returns the transaction hash, which must be globally unique.
     fn transaction_hash(&self) -> Hash;
 
+    /// Returns the transaction payload size.
+    fn transaction_payload_size(&self) -> u32;
+
     /// Returns the instructions to execute.
     fn instructions(&self) -> &[ExecutableInstruction];
 

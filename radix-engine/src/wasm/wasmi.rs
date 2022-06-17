@@ -1,7 +1,6 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::collections::HashMap;
 use sbor::rust::format;
-use sbor::rust::string::ToString;
 use scrypto::crypto::{hash, Hash};
 use scrypto::values::ScryptoValue;
 use wasmi::*;
@@ -162,8 +161,7 @@ impl<'a, 'b, 'r> Externals for WasmiExternals<'a, 'b, 'r> {
 impl WasmInstance for WasmiInstance {
     fn invoke_export<'r>(
         &mut self,
-        name: &str,
-        method_name: &str,
+        func_name: &str,
         arg: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError> {
@@ -172,14 +170,11 @@ impl WasmInstance for WasmiInstance {
             runtime,
         };
 
-        let method_name_value = ScryptoValue::from_typed(&method_name.to_string());
-        let method_name_ptr = externals.send_value(&method_name_value)?;
         let pointer = externals.send_value(arg)?;
-        let result = self.module_ref.clone().invoke_export(
-            name,
-            &[method_name_ptr, pointer],
-            &mut externals,
-        );
+        let result = self
+            .module_ref
+            .clone()
+            .invoke_export(func_name, &[pointer], &mut externals);
 
         let rtn = result
             .map_err(|e| {
