@@ -39,6 +39,17 @@ impl WasmModule {
     }
 
     pub fn enforce_no_floating_point(self) -> Result<Self, PrepareError> {
+        if let Some(globals) = self.module.global_section() {
+            for global in globals.entries() {
+                match global.global_type().content_type() {
+                    ValueType::F32 | ValueType::F64 => {
+                        return Err(PrepareError::FloatingPointNotAllowed)
+                    }
+                    _ => {}
+                }
+            }
+        }
+
         if let Some(code) = self.module.code_section() {
             for func_body in code.bodies() {
                 for local in func_body.locals() {
@@ -236,8 +247,6 @@ impl WasmModule {
         Ok(self)
     }
 
-    // A large BR_TABLE instruction would significantly slow down JIT compilation process
-    // for some targets, thus enforcing a limit
     pub fn enforce_br_table_limit(self) -> Result<Self, PrepareError> {
         if let Some(section) = self.module.code_section() {
             for inst in section
