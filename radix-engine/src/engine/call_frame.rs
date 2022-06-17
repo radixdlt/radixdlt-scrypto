@@ -383,7 +383,7 @@ where
             trace!(self.depth, Level::Warn, "Dangling value: {:?}", value);
             resource = match value {
                 StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
-                StoredValue::KeyValueStore(..) => ResourceFailure::UnclaimedKeyValueStore,
+                StoredValue::KeyValueStore {..} => ResourceFailure::UnclaimedKeyValueStore,
             };
             success = false;
         }
@@ -676,7 +676,7 @@ where
     ) -> Result<Vec<StoredValue>, RuntimeError> {
         let values = self.take_set(value_ids)?;
         for value in &values {
-            if let StoredValue::KeyValueStore(_, store) = value {
+            if let StoredValue::KeyValueStore{store, ..} = value {
                 for id in store.all_descendants() {
                     self.refed_values.remove(&id);
                 }
@@ -697,7 +697,7 @@ where
             .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
         {
             let store = Self::get_owned_kv_store_mut(&mut self.owned_values, &kv_store_id).unwrap();
-            let value = store.store.get(&key.raw).cloned();
+            let value = store.get(&key.raw);
             (value, ValueType::Owned)
         } else {
             let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
@@ -710,7 +710,7 @@ where
                         Self::get_owned_kv_store_mut(&mut self.owned_values, root).unwrap();
                     let mut value = root_store.get_child(ancestors, &value_id);
                     match value.deref_mut() {
-                        StoredValue::KeyValueStore(_, store) => store.store.get(&key.raw).cloned(),
+                        StoredValue::KeyValueStore{store, ..} => store.get(&key.raw),
                         _ => panic!("Substate value is not a KeyValueStore entry"),
                     }
                 }
@@ -759,7 +759,7 @@ where
             .map(|v| {
                 let stored_value = v.get_mut();
                 match stored_value {
-                    StoredValue::KeyValueStore(_, store) => store,
+                    StoredValue::KeyValueStore { store, .. } => store,
                     _ => panic!("Expected KV store"),
                 }
             })
@@ -1377,9 +1377,9 @@ where
                     let id = &StoredValueId::KeyValueStoreId(kv_store_id);
                     let mut wrapped_store = root_store.get_child(&ancestors, id);
                     match wrapped_store.deref_mut() {
-                        StoredValue::KeyValueStore(_, kv_store) => {
-                            kv_store.store.insert(key.raw, value);
-                            kv_store.insert_children(new_values)
+                        StoredValue::KeyValueStore{store, ..} => {
+                            store.store.insert(key.raw, value);
+                            store.insert_children(new_values)
                         }
                         _ => panic!("Expected KV store"),
                     }
@@ -1427,10 +1427,10 @@ where
         let kv_store_id = self.track.new_kv_store_id();
         self.owned_values.insert(
             StoredValueId::KeyValueStoreId(kv_store_id.clone()),
-            RefCell::new(StoredValue::KeyValueStore(
-                kv_store_id,
-                PreCommittedKeyValueStore::new(),
-            )),
+            RefCell::new(StoredValue::KeyValueStore {
+                id: kv_store_id,
+                store: PreCommittedKeyValueStore::new(),
+            }),
         );
         kv_store_id
     }

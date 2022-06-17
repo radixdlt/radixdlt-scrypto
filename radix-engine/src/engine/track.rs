@@ -654,13 +654,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 StoredValue::Vault(vault_id, vault) => {
                     self.create_uuid_value_2((component_address, vault_id), vault);
                 }
-                StoredValue::KeyValueStore(kv_store_id, kv_store) => {
-                    self.create_key_space(component_address, kv_store_id);
-                    let parent_address = Address::KeyValueStore(component_address, kv_store_id);
-                    for (k, v) in kv_store.store {
+                StoredValue::KeyValueStore { id, store } => {
+                    self.create_key_space(component_address, id);
+                    let parent_address = Address::KeyValueStore(component_address, id);
+                    for (k, v) in store.store {
                         self.set_key_value(parent_address.clone(), k, Some(v));
                     }
-                    let child_values = kv_store
+                    let child_values = store
                         .child_values
                         .into_values()
                         .map(|v| v.into_inner())

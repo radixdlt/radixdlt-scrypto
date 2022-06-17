@@ -9,7 +9,10 @@ use crate::model::*;
 
 #[derive(Debug)]
 pub enum StoredValue {
-    KeyValueStore(KeyValueStoreId, PreCommittedKeyValueStore),
+    KeyValueStore {
+        id: KeyValueStoreId,
+        store: PreCommittedKeyValueStore,
+    },
     Vault(VaultId, Vault),
 }
 
@@ -32,7 +35,7 @@ impl PreCommittedKeyValueStore {
         for (id, value) in &self.child_values {
             descendents.push(*id);
             let value = value.borrow();
-            if let StoredValue::KeyValueStore(_, store) = value.deref() {
+            if let StoredValue::KeyValueStore {store, ..} = value.deref() {
                 descendents.extend(store.all_descendants());
             }
         }
@@ -58,7 +61,7 @@ impl PreCommittedKeyValueStore {
             .get_mut(&StoredValueId::KeyValueStoreId(*first))
             .unwrap();
         match value.get_mut() {
-            StoredValue::KeyValueStore(_, store) => store.get_child(rest, id),
+            StoredValue::KeyValueStore{ store, .. } => store.get_child(rest, id),
             _ => panic!("Expected to be store"),
         }
     }
@@ -66,10 +69,14 @@ impl PreCommittedKeyValueStore {
     pub fn insert_children(&mut self, values: Vec<StoredValue>) {
         for value in values {
             let id = match &value {
-                StoredValue::KeyValueStore(id, _) => StoredValueId::KeyValueStoreId(*id),
+                StoredValue::KeyValueStore {id, ..} => StoredValueId::KeyValueStoreId(*id),
                 StoredValue::Vault(id, _) => StoredValueId::VaultId(*id),
             };
             self.child_values.insert(id, RefCell::new(value));
         }
+    }
+
+    pub fn get(&self, key: &[u8]) -> Option<ScryptoValue> {
+        self.store.get(key).cloned()
     }
 }
