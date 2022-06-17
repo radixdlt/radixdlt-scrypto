@@ -104,8 +104,6 @@ where
 
     fn user_log(&mut self, level: Level, message: String);
 
-    fn sys_log(&self, level: Level, message: String);
-
     fn check_access_rule(
         &mut self,
         access_rule: AccessRule,

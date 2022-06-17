@@ -30,7 +30,7 @@ pub enum PackageError {
 
 impl ValidatedPackage {
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, PrepareError> {
-        WasmValidator::validate(&package.code)?;
+        WasmValidator::validate(&package.code, &package.blueprints)?;
 
         Ok(Self {
             code: package.code,
@@ -73,9 +73,8 @@ impl ValidatedPackage {
         &self,
         actor: ScryptoActorInfo,
         blueprint_abi: &BlueprintAbi,
-        export_name: String,
-        method_name: &str,
-        arg: ScryptoValue,
+        fn_ident: &str,
+        input: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, RuntimeError>
     where
@@ -83,6 +82,7 @@ impl ValidatedPackage {
         W: WasmEngine<I>,
         I: WasmInstance,
     {
+        let export_name = &blueprint_abi.get_fn_abi(fn_ident).unwrap().export_name;
         let wasm_metering_params = system_api.fee_table().wasm_metering_params();
         let instrumented_code = system_api
             .wasm_instrumenter()
@@ -94,7 +94,7 @@ impl ValidatedPackage {
             system_api,
         ));
         instance
-            .invoke_export(&export_name, method_name, &arg, &mut runtime)
+            .invoke_export(export_name, &input, &mut runtime)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,

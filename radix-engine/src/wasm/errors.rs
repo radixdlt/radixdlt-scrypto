@@ -25,6 +25,8 @@ pub enum PrepareError {
     FloatingPointNotAllowed,
     /// Invalid imports
     InvalidImports,
+    /// Missing export
+    MissingExport { export_name: String },
     /// The wasm module has no memory definition.
     NoMemory,
     /// The wasm module has too many memory definitions.
@@ -33,6 +35,8 @@ pub enum PrepareError {
     InitialMemorySizeLimitExceeded,
     /// The wasm module does not have the `memory` export.
     NoMemoryExport,
+    /// The wasm module does not have an export section.
+    NoExports,
     /// The wasm module does not have the `scrypto_alloc` export.
     NoScryptoAllocExport,
     /// The wasm module does not have the `scrypto_free` export.

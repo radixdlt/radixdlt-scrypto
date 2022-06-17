@@ -1,12 +1,11 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use crate::test_runner::{abi_single_fn_any_input_void_output, TestRunner};
 use radix_engine::fee::{ENGINE_RUN_COST, TX_VALIDATION_COST_PER_BYTE, WASM_ENGINE_CALL_COST};
 use radix_engine::wasm::InvokeError;
 use scrypto::prelude::Package;
 use scrypto::to_struct;
-use test_runner::wat2wasm;
+use test_runner::{abi_single_fn_any_input_void_output, wat2wasm, TestRunner};
 use transaction::builder::ManifestBuilder;
 
 #[test]
@@ -162,10 +161,10 @@ fn test_total_cost_units_consumed() {
           * Scrypto::main
           * AuthZone::clear * 2
        * AuthZone::clear
-    3. Wasm run cost = WASM_ENGINE_CALL_COST + 326
+    3. Wasm run cost = WASM_ENGINE_CALL_COST + 307
     */
     assert_eq!(
-        TX_VALIDATION_COST_PER_BYTE * 1 + ENGINE_RUN_COST * 4 + WASM_ENGINE_CALL_COST + 326,
+        TX_VALIDATION_COST_PER_BYTE * 1 + ENGINE_RUN_COST * 4 + WASM_ENGINE_CALL_COST + 307,
         receipt.cost_units_consumed
     );
 }

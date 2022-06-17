@@ -78,6 +78,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new().publish_package(package).build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_success();
         receipt.new_package_addresses[0]
     }
 
@@ -352,6 +353,7 @@ pub fn abi_single_fn_any_input_void_output(
                     fields: Fields::Named { named: vec![] },
                 },
                 output: Type::Unit,
+                export_name: format!("{}_{}", blueprint_name, function_name)
             }],
         },
     );
