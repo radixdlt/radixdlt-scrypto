@@ -75,6 +75,31 @@ impl StoredValue {
         }
     }
 
+    pub fn get_child_mut(
+        &mut self,
+        ancestors: &[KeyValueStoreId],
+        id: &StoredValueId,
+    ) -> &mut StoredValue {
+        match self {
+            StoredValue::KeyValueStore { child_values, .. } => {
+                if ancestors.is_empty() {
+                    let value = child_values
+                        .get_mut(id)
+                        .expect("Value expected to exist");
+                    return value.get_mut();
+                }
+
+                let (first, rest) = ancestors.split_first().unwrap();
+                let value =
+                    child_values
+                        .get_mut(&StoredValueId::KeyValueStoreId(*first))
+                        .unwrap();
+                value.get_mut().get_child_mut(rest, id)
+            }
+            _ => panic!("Expected to be store")
+        }
+    }
+
     pub fn insert_children(&mut self, values: Vec<StoredValue>) {
         match self {
             StoredValue::KeyValueStore { child_values, .. } => {

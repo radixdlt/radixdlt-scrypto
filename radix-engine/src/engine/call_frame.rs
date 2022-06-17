@@ -1347,7 +1347,36 @@ where
         key: ScryptoValue,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError> {
+        verify_stored_key(&key)?;
         verify_stored_value(&value)?;
+
+        enum KVStore<'a> {
+            Ref(&'a mut StoredValue),
+            Tracked(ComponentAddress),
+        }
+
+        let store = if self
+            .owned_values
+            .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+        {
+            let ref_store = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(kv_store_id)).unwrap().get_mut();
+            KVStore::Ref(ref_store)
+        } else {
+            let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
+            let maybe_value_ref = self.refed_values.get(&value_id).cloned();
+            let value_ref =
+                maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
+            match &value_ref {
+                ValueRefType::Uncommitted { root, ancestors } => {
+                    let root_value = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(*root)).unwrap();
+                    let ref_store = root_value.get_mut().get_child_mut(ancestors, &value_id);
+                    KVStore::Ref(ref_store)
+                }
+                ValueRefType::Committed { component_address } => {
+                    KVStore::Tracked(component_address.clone())
+                }
+            }
+        };
 
         let (old_value, parent_type) = self.read_kv_store_entry_internal(kv_store_id, &key)?;
         let new_value_ids = match old_value {
@@ -1361,8 +1390,8 @@ where
                     .get_mut(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
                     .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id))?
                     .get_mut();
-                kv_store.insert_children(new_values);
                 kv_store.kv_store().put(key.raw, value);
+                kv_store.insert_children(new_values);
             }
             ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
                 let root_store = self.owned_values
@@ -1370,8 +1399,8 @@ where
                     .ok_or(RuntimeError::CyclicKeyValueStore(kv_store_id.clone()))?
                     .get_mut();
                 let mut kv_store = root_store.get_child(&ancestors, &StoredValueId::KeyValueStoreId(kv_store_id));
-                kv_store.insert_children(new_values);
                 kv_store.kv_store().put(key.raw, value);
+                kv_store.insert_children(new_values);
             }
             ValueType::Ref(ValueRefType::Committed { component_address }) => {
                 self.track.set_key_value(
