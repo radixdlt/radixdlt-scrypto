@@ -186,10 +186,10 @@ fn test_total_cost_units_consumed() {
           * Scrypto::main
           * AuthZone::clear * 2
        * AuthZone::clear
-    3. Wasm run cost = WASM_ENGINE_CALL_COST + 326
+    3. Wasm run cost = WASM_ENGINE_CALL_COST + 307
     */
     assert_eq!(
-        TX_VALIDATION_COST_PER_BYTE * 1 + ENGINE_RUN_COST * 4 + WASM_ENGINE_CALL_COST + 326,
+        TX_VALIDATION_COST_PER_BYTE * 1 + ENGINE_RUN_COST * 4 + WASM_ENGINE_CALL_COST + 307,
         receipt.cost_units_consumed
     );
 }
