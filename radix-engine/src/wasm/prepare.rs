@@ -344,10 +344,19 @@ impl WasmModule {
             .expect("Due to the `init` step module should be valid");
         wasmi::ModuleInstance::with_externvals(
             &module,
-            vec![wasmi::ExternVal::Func(wasmi::FuncInstance::alloc_host(
-                wasmi::Signature::new(&[wasmi::ValueType::I32][..], Some(wasmi::ValueType::I32)),
-                RADIX_ENGINE_FUNCTION_INDEX,
-            ))]
+            vec![
+                wasmi::ExternVal::Func(wasmi::FuncInstance::alloc_host(
+                    wasmi::Signature::new(
+                        &[wasmi::ValueType::I32][..],
+                        Some(wasmi::ValueType::I32),
+                    ),
+                    RADIX_ENGINE_FUNCTION_INDEX,
+                )),
+                wasmi::ExternVal::Func(wasmi::FuncInstance::alloc_host(
+                    wasmi::Signature::new(&[wasmi::ValueType::I32][..], None),
+                    CONSUME_COST_UNITS_FUNCTION_INDEX,
+                )),
+            ]
             .iter(),
         )
         .map_err(|_| PrepareError::NotInstantiatable)?;
