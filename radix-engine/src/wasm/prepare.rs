@@ -1,20 +1,17 @@
+use parity_wasm::elements::{
+    External,
+    Instruction::{self, *},
+    Internal, Module, Type, ValueType,
+};
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use scrypto::abi::BlueprintAbi;
 use scrypto::prelude::HashMap;
-use wasm_instrument::parity_wasm::{
-    self,
-    elements::{
-        External,
-        Instruction::{self, *},
-        Internal, Module, Type, ValueType,
-    },
-};
 use wasm_instrument::{gas_metering, inject_stack_limiter};
 use wasmi_validation::{validate_module, PlainValidator};
 
-use crate::wasm::{constants::*, errors::*, PrepareError, WasmiEnvModule};
+use crate::wasm::{constants::*, errors::*, PrepareError};
 
 pub struct WasmModule {
     module: Module,
@@ -176,6 +173,8 @@ impl WasmModule {
                     || !matches!(entry.external(), External::Function(_))
                 {
                     return Err(PrepareError::InvalidImport(InvalidImport::ImportNotAllowed));
+
+                    // FIXME: check signature
                 }
             }
         }
@@ -227,9 +226,7 @@ impl WasmModule {
         if let Some(section) = self.module.table_section() {
             if section.entries().len() > 1 {
                 // Sanity check MVP rule
-                return Err(PrepareError::InvalidTable(
-                    InvalidTable::MoreThanOneTableEntries,
-                ));
+                return Err(PrepareError::InvalidTable(InvalidTable::MoreThanOneTable));
             }
 
             if let Some(table) = section.entries().get(0) {
@@ -325,33 +322,47 @@ impl WasmModule {
         Ok(self)
     }
 
-    fn ensure_instantiatable(code: &[u8]) -> Result<(), PrepareError> {
-        // There are a few things that are done during wasm instantiation time
-        //
-        // 1. Resolve all the external functions, tables, memories and globals (which should always succeed if `enforce_import_limit` step is applied)
-        // 2. Allocate globals (TODO: study the behavior and design costing strategy)
-        // 3. Allocate tables (TODO: study the behavior and design costing strategy)
-        // 4. Allocate memories (which should always succeed if `enforce_memory_limit` step is applied)
-        // 5. Update table with elements (TODO: study the behavior and design costing strategy)
-        // 6. Update memory with data sections (which may fail if the initial memory is less than required)
-        //
-        // Before we fully understand the specs and reference implementation, we attempt to instantiate the module and reject it if failure.
+    pub fn ensure_instantiatable(self) -> Result<Self, PrepareError> {
+        // During instantiation time, the following steps are applied
 
-        wasmi::ModuleInstance::new(
-            &wasmi::Module::from_buffer(&code).expect("The input code should be a valid module"),
-            &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
+        // 1. Resolve imports with external values
+        // This should always succeed as we only allow `env::radix_engine` function import
+
+        // 2. Allocate externals, functions, tables, memory and globals
+        // This should always succeed as we enforce an upper bound for each type
+
+        // 3. Update table with elements
+        // It may fail if the offset is out of bound
+
+        // 4. Update memory with data segments
+        // It may fail if the offset is out of bound
+
+        // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
+        // we're using the `wasmi` logic as a short cut.
+
+        let module = wasmi::Module::from_parity_wasm_module(self.module.clone())
+            .expect("Due to the `init` step module should be valid");
+        wasmi::ModuleInstance::with_externvals(
+            &module,
+            vec![wasmi::ExternVal::Func(wasmi::FuncInstance::alloc_host(
+                wasmi::Signature::new(&[wasmi::ValueType::I32][..], Some(wasmi::ValueType::I32)),
+                RADIX_ENGINE_FUNCTION_INDEX,
+            ))]
+            .iter(),
         )
         .map_err(|_| PrepareError::NotInstantiatable)?;
 
-        Ok(())
+        Ok(self)
     }
 
-    fn ensure_compilable(_code: &[u8]) -> Result<(), PrepareError> {
-        // TODO: can we make the assumption that all "validated" modules are compilable, if machine resource is "sufficient"?
-
+    pub fn ensure_compilable(self) -> Result<Self, PrepareError> {
+        // TODO: Understand WASM JIT compilability
+        //
+        // Can we make the assumption that all "prepared" modules are compilable, if machine resource is "sufficient"?
+        //
         // Another option is to attempt to compile, although it would make RE protocol coupled with the specific implementation
 
-        Ok(())
+        Ok(self)
     }
 
     pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
@@ -367,13 +378,8 @@ impl WasmModule {
             })
             .unwrap_or(Vec::new());
 
-        // serialize
         let code =
             parity_wasm::serialize(self.module).map_err(|_| PrepareError::SerializationError)?;
-
-        // make sure the module is instantiable and compilable
-        Self::ensure_instantiatable(&code)?;
-        Self::ensure_compilable(&code)?;
 
         Ok((code, function_exports))
     }

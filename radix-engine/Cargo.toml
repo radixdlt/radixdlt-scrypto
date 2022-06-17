@@ -13,19 +13,18 @@ bencher = { version = "0.1.5" }
 hex = { version = "0.4.3", default-features = false }
 indexmap = { version = "1.8.1" }
 
-# Wasm validatin 
-# 
-# Notes:
-# - All the libaries are based on `parity-wasm 0.42.0`;
-# - `wasm-instrument` plans to switch to `wasmparser` (from BytecodeAlliance);
-# - `wasm-instrument` only supports fixed instruction cost, which is the main limitation
-wasmi-validation =  { version = "0.4.1" }
-wasm-instrument = { git = "https://github.com/paritytech/wasm-instrument", rev = "4713aa760f072f30311c4439d3b27b8544ae44fc" }
+# WASM de-/serialization
+parity-wasm = { version = "0.42.2" }
 
-# Wasm execution
-#
-# Wasmi is a WASM interpreter that supports WebAssembly MVP;
-# Wasmer supports multiple JIT backends: `singlepass` (linear time), `LLVM` and `cranelift`
+# WASM validation
+wasmi-validation =  { version = "0.4.1" }
+
+# WASM instrumentation
+wasm-instrument = { version = "0.1.0" }
+
+# WASM execution
+# - Wasmi is a WASM interpreter that supports WebAssembly MVP;
+# - Wasmer supports multiple JIT backends: `singlepass` (linear time), `LLVM` and `cranelift`
 wasmi = { version = "0.11.0" }
 wasmer = { version = "2.2.1", optional = true }
 wasmer-compiler-singlepass = { version = "2.2.1", optional = true }

@@ -71,7 +71,7 @@ pub enum InvalidMemory {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum InvalidTable {
-    MoreThanOneTableEntries,
+    MoreThanOneTable,
 
     InitialTableSizeLimitExceeded,
 }

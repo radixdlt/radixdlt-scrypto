@@ -47,6 +47,8 @@ impl WasmValidator {
                 mocked_wasm_metering_params.grow_memory_cost(),
             )?
             .inject_stack_metering(mocked_wasm_metering_params.max_stack_size())?
+            .ensure_instantiatable()?
+            .ensure_compilable()?
             .to_bytes()?;
 
         Ok(())
