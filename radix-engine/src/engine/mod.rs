@@ -9,8 +9,8 @@ mod transaction_receipt;
 mod wasm_runtime;
 
 pub use call_frame::{
-    BorrowedSNodeState, CallFrame, ComponentState, ConsumedSNodeState, LoadedSNodeState,
-    MoveMethod, SNodeState, StaticSNodeState,
+    BorrowedSNodeState, CallFrame, ConsumedSNodeState, LoadedSNodeState, MoveMethod, SNodeState,
+    StaticSNodeState,
 };
 pub use errors::*;
 pub use precommitted_kv_store::*;

@@ -10,6 +10,7 @@ use scrypto::prelude::PackagePublishInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
+use crate::model::Component;
 use crate::model::PackageError::MethodNotFound;
 use crate::wasm::*;
 
@@ -71,8 +72,8 @@ impl ValidatedPackage {
 
     pub fn invoke<'s, S, W, I>(
         &self,
-        actor: ScryptoActorInfo,
-        blueprint_abi: &BlueprintAbi,
+        actor: &ScryptoActorInfo,
+        component: &mut Option<&mut Component>,
         fn_ident: &str,
         input: ScryptoValue,
         system_api: &mut S,
@@ -82,23 +83,37 @@ impl ValidatedPackage {
         W: WasmEngine<I>,
         I: WasmInstance,
     {
-        let export_name = &blueprint_abi.get_fn_abi(fn_ident).unwrap().export_name;
         let wasm_metering_params = system_api.fee_table().wasm_metering_params();
         let instrumented_code = system_api
             .wasm_instrumenter()
             .instrument(&self.code, &wasm_metering_params);
         let mut instance = system_api.wasm_engine().instantiate(&instrumented_code);
+        let blueprint_abi = self
+            .blueprint_abi(actor.blueprint_name())
+            .expect("Blueprint should exist");
+        let export_name = &blueprint_abi.get_fn_abi(fn_ident).unwrap().export_name;
         let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(
-            actor,
+            actor.clone(),
+            component,
             blueprint_abi,
             system_api,
         ));
-        instance
+        let output = instance
             .invoke_export(export_name, &input, &mut runtime)
             .map_err(|e| match e {
                 // Flatten error code for more readable transaction receipt
                 InvokeError::RuntimeError(e) => e,
                 e @ _ => RuntimeError::InvokeError(e.into()),
+            })?;
+
+        let fn_abi = blueprint_abi.get_fn_abi(fn_ident).unwrap();
+        if !fn_abi.output.matches(&output.dom) {
+            Err(RuntimeError::InvalidFnOutput {
+                fn_ident: fn_ident.to_string(),
+                output: output.dom,
             })
+        } else {
+            Ok(output)
+        }
     }
 }
