@@ -18,15 +18,6 @@ pub struct WasmModule {
 }
 
 impl WasmModule {
-    /// The maximum initial memory size: `64 Pages * 64 KiB per Page = 4 MiB`
-    pub const MAX_INITIAL_MEMORY_SIZE_PAGES: u32 = 64;
-
-    /// The maximum initial table size
-    pub const MAX_INITIAL_TABLE_SIZE: u32 = 1024;
-
-    /// The max number of labels of a table jump, excluding the default
-    pub const MAX_NUMBER_OF_BR_TABLE_TARGETS: u32 = 256;
-
     pub fn init(code: &[u8]) -> Result<Self, PrepareError> {
         // deserialize
         let module = parity_wasm::deserialize_buffer(code)
@@ -189,7 +180,10 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_memory_limit(self) -> Result<Self, PrepareError> {
+    pub fn enforce_memory_limit(
+        self,
+        max_initial_memory_size_pages: u32,
+    ) -> Result<Self, PrepareError> {
         // Must have exactly 1 internal memory definition
         // TODO: consider if we can benefit from shared external memory.
         let memory_section = self
@@ -204,7 +198,7 @@ impl WasmModule {
             1 => Ok(memory_section.entries()[0]),
             _ => Err(PrepareError::InvalidMemory(InvalidMemory::TooManyMemories)),
         }?;
-        if memory.limits().initial() > Self::MAX_INITIAL_MEMORY_SIZE_PAGES {
+        if memory.limits().initial() > max_initial_memory_size_pages {
             return Err(PrepareError::InvalidMemory(
                 InvalidMemory::InitialMemorySizeLimitExceeded,
             ));
@@ -226,7 +220,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_table_limit(self) -> Result<Self, PrepareError> {
+    pub fn enforce_table_limit(self, max_initial_table_size: u32) -> Result<Self, PrepareError> {
         if let Some(section) = self.module.table_section() {
             if section.entries().len() > 1 {
                 // Sanity check MVP rule
@@ -236,7 +230,7 @@ impl WasmModule {
             }
 
             if let Some(table) = section.entries().get(0) {
-                if table.limits().initial() > Self::MAX_INITIAL_TABLE_SIZE {
+                if table.limits().initial() > max_initial_table_size {
                     return Err(PrepareError::InvalidTable(
                         InvalidTable::InitialTableSizeLimitExceeded,
                     ));
@@ -247,7 +241,10 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_br_table_limit(self) -> Result<Self, PrepareError> {
+    pub fn enforce_br_table_limit(
+        self,
+        max_number_of_br_table_targets: u32,
+    ) -> Result<Self, PrepareError> {
         if let Some(section) = self.module.code_section() {
             for inst in section
                 .bodies()
@@ -255,7 +252,7 @@ impl WasmModule {
                 .flat_map(|body| body.code().elements())
             {
                 if let Instruction::BrTable(table_data) = inst {
-                    if table_data.table.len() > Self::MAX_NUMBER_OF_BR_TABLE_TARGETS as usize {
+                    if table_data.table.len() > max_number_of_br_table_targets as usize {
                         return Err(PrepareError::TooManyTargetsInBrTable);
                     }
                 }

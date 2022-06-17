@@ -30,7 +30,7 @@ pub enum PackageError {
 
 impl ValidatedPackage {
     pub fn new(package: scrypto::prelude::Package) -> Result<Self, PrepareError> {
-        WasmValidator::validate(&package.code)?;
+        WasmValidator::default().validate(&package.code)?;
 
         Ok(Self {
             code: package.code,
