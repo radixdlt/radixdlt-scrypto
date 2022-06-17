@@ -505,7 +505,16 @@ where
             SNodeState::Tracked(address, value, meta) => {
                 let initial_value = match &value {
                     SubstateValue::Component(component) => {
-                        Some(ScryptoValue::from_slice(component.state()).unwrap())
+                        let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
+                        for value_id in initial_value.stored_value_ids() {
+                            self.refed_values.insert(
+                                value_id,
+                                ValueRefType::Committed {
+                                    component_address: address.clone().into(),
+                                },
+                            );
+                        }
+                        Some(initial_value)
                     }
                     _ => None
                 };
@@ -524,18 +533,7 @@ where
                             .map_err(RuntimeError::VaultError)
                     }
                     SubstateValue::Component(component) => {
-                        let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
-                        for value_id in initial_value.stored_value_ids() {
-                            self.refed_values.insert(
-                                value_id,
-                                ValueRefType::Committed {
-                                    component_address: address.clone().into(),
-                                },
-                            );
-                        }
-
                         let (actor, package) = meta.unwrap();
-
                         let mut maybe_component = Some(component);
                         package.invoke(
                             &actor,
