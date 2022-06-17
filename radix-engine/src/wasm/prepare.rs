@@ -1,10 +1,11 @@
 use parity_wasm::elements::{
-    External,
+    External, FunctionType,
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto::abi::BlueprintAbi;
 use scrypto::prelude::HashMap;
@@ -168,14 +169,21 @@ impl WasmModule {
         // Only allow `env::radix_engine` import
         if let Some(sec) = self.module.import_section() {
             for entry in sec.entries() {
-                if entry.module() != MODULE_ENV_NAME
-                    || entry.field() != RADIX_ENGINE_FUNCTION_NAME
-                    || !matches!(entry.external(), External::Function(_))
+                if entry.module() == MODULE_ENV_NAME && entry.field() == RADIX_ENGINE_FUNCTION_NAME
                 {
-                    return Err(PrepareError::InvalidImport(InvalidImport::ImportNotAllowed));
-
-                    // FIXME: check signature
+                    if let External::Function(func_addr) = entry.external() {
+                        if Self::signature_matches(
+                            &self.module,
+                            *func_addr as usize,
+                            vec![ValueType::I32],
+                            vec![ValueType::I32],
+                        ) {
+                            continue;
+                        }
+                    }
                 }
+
+                return Err(PrepareError::InvalidImport(InvalidImport::ImportNotAllowed));
             }
         }
 
@@ -287,9 +295,19 @@ impl WasmModule {
         for (_, blueprint_abi) in blueprints {
             for func in &blueprint_abi.fns {
                 let func_name = &func.export_name;
-                // TODO: Check if signature matches
                 if !exports.entries().iter().any(|x| {
-                    x.field().eq(func_name) && matches!(x.internal(), Internal::Function(_))
+                    x.field().eq(func_name) && {
+                        if let Internal::Function(func_addr) = x.internal() {
+                            Self::signature_matches(
+                                &self.module,
+                                *func_addr as usize,
+                                vec![ValueType::I32],
+                                vec![ValueType::I32],
+                            )
+                        } else {
+                            false
+                        }
+                    }
                 }) {
                     return Err(PrepareError::MissingExport {
                         export_name: func_name.to_string(),
@@ -391,5 +409,28 @@ impl WasmModule {
             parity_wasm::serialize(self.module).map_err(|_| PrepareError::SerializationError)?;
 
         Ok((code, function_exports))
+    }
+
+    fn signature_matches(
+        module: &Module,
+        func_addr: usize,
+        params: Vec<ValueType>,
+        results: Vec<ValueType>,
+    ) -> bool {
+        let func = module
+            .function_section()
+            .map(|s| s.entries())
+            .unwrap_or(&[])
+            .get(func_addr)
+            .expect("Due to validation function should exist");
+
+        let ty = module
+            .type_section()
+            .map(|s| s.types())
+            .unwrap_or(&[])
+            .get(func.type_ref() as usize)
+            .expect("Due to validation type should exist");
+
+        ty == &Type::Function(FunctionType::new(params, results))
     }
 }

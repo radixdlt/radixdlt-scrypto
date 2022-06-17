@@ -1,7 +1,7 @@
 (module
 
   ;; Simple function that always returns `()`
-  (func $Test_f (param $0 i32) (param $1 i32) (result i32)
+  (func $Test_f (param $0 i32) (result i32)
     (local $buffer i32)
     (local.set 
       $buffer
