@@ -2,12 +2,13 @@
 pub mod test_runner;
 
 use radix_engine::wasm::{InvalidMemory, PrepareError, WasmValidator};
-use test_runner::wat2wasm;
+use test_runner::{abi_single_fn_any_input_void_output, wat2wasm};
 
 #[test]
 fn test_large_data() {
     let code = wat2wasm(&include_str!("wasm/large_data.wat"));
-    let result = WasmValidator::default().validate(&code);
+    let abi = abi_single_fn_any_input_void_output("Test", "f");
+    let result = WasmValidator::default().validate(&code, &abi);
 
     assert_eq!(Err(PrepareError::NotInstantiatable), result);
 }
@@ -15,7 +16,8 @@ fn test_large_data() {
 #[test]
 fn test_large_memory() {
     let code = wat2wasm(&include_str!("wasm/large_memory.wat"));
-    let result = WasmValidator::default().validate(&code);
+    let abi = abi_single_fn_any_input_void_output("Test", "f");
+    let result = WasmValidator::default().validate(&code, &abi);
 
     assert_eq!(
         Err(PrepareError::InvalidMemory(

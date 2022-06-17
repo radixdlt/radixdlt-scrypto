@@ -31,6 +31,10 @@ pub enum PrepareError {
     InvalidTable(InvalidTable),
     /// Too many targets in the `br_table` instruction
     TooManyTargetsInBrTable,
+    /// No export section
+    NoExportSection,
+    /// Missing export
+    MissingExport { export_name: String },
     /// The wasm module does not have the `scrypto_alloc` export.
     NoScryptoAllocExport,
     /// The wasm module does not have the `scrypto_free` export.

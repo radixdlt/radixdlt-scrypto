@@ -1,17 +1,20 @@
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use wasm_instrument::parity_wasm::elements::Instruction;
+use scrypto::abi::BlueprintAbi;
+use scrypto::prelude::HashMap;
 use wasm_instrument::parity_wasm::{
     self,
-    elements::{External, Instruction::*, Internal, Module, Type, ValueType},
+    elements::{
+        External,
+        Instruction::{self, *},
+        Internal, Module, Type, ValueType,
+    },
 };
 use wasm_instrument::{gas_metering, inject_stack_limiter};
 use wasmi_validation::{validate_module, PlainValidator};
 
-use crate::wasm::constants::*;
-use crate::wasm::errors::*;
-use crate::wasm::WasmiEnvModule;
+use crate::wasm::{constants::*, errors::*, PrepareError, WasmiEnvModule};
 
 pub struct WasmModule {
     module: Module,
@@ -276,6 +279,31 @@ impl WasmModule {
         Ok(self)
     }
 
+    pub fn enforce_export_constraints(
+        self,
+        blueprints: &HashMap<String, BlueprintAbi>,
+    ) -> Result<Self, PrepareError> {
+        let exports = self
+            .module
+            .export_section()
+            .ok_or(PrepareError::NoExportSection)?;
+        for (_, blueprint_abi) in blueprints {
+            for func in &blueprint_abi.fns {
+                let func_name = &func.export_name;
+                // TODO: Check if signature matches
+                if !exports.entries().iter().any(|x| {
+                    x.field().eq(func_name) && matches!(x.internal(), Internal::Function(_))
+                }) {
+                    return Err(PrepareError::MissingExport {
+                        export_name: func_name.to_string(),
+                    });
+                }
+            }
+        }
+
+        Ok(self)
+    }
+
     pub fn inject_instruction_metering(
         mut self,
         instruction_cost: u32,
@@ -297,7 +325,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    fn enforce_instantiatable(code: &[u8]) -> Result<(), PrepareError> {
+    fn ensure_instantiatable(code: &[u8]) -> Result<(), PrepareError> {
         // There are a few things that are done during wasm instantiation time
         //
         // 1. Resolve all the external functions, tables, memories and globals (which should always succeed if `enforce_import_limit` step is applied)
@@ -318,7 +346,7 @@ impl WasmModule {
         Ok(())
     }
 
-    fn enforce_compilable(_code: &[u8]) -> Result<(), PrepareError> {
+    fn ensure_compilable(_code: &[u8]) -> Result<(), PrepareError> {
         // TODO: can we make the assumption that all "validated" modules are compilable, if machine resource is "sufficient"?
 
         // Another option is to attempt to compile, although it would make RE protocol coupled with the specific implementation
@@ -344,8 +372,8 @@ impl WasmModule {
             parity_wasm::serialize(self.module).map_err(|_| PrepareError::SerializationError)?;
 
         // make sure the module is instantiable and compilable
-        Self::enforce_instantiatable(&code)?;
-        Self::enforce_compilable(&code)?;
+        Self::ensure_instantiatable(&code)?;
+        Self::ensure_compilable(&code)?;
 
         Ok((code, function_exports))
     }
