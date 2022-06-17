@@ -135,7 +135,7 @@ impl WasmModule {
             }
         }
 
-        // Function input and output types
+        // Function argument and result types
         if let (Some(functions), Some(types)) =
             (self.module.function_section(), self.module.type_section())
         {
@@ -199,7 +199,7 @@ impl WasmModule {
         self,
         max_initial_memory_size_pages: u32,
     ) -> Result<Self, PrepareError> {
-        // Must have exactly 1 internal memory definition
+        // Must have exactly 1 internal, exported memory definition
         // TODO: consider if we can benefit from shared external memory.
         let memory_section = self
             .module
@@ -284,7 +284,7 @@ impl WasmModule {
             }
         }
 
-        // TODO: do we need to enforce limit on the number of locals and parameter?
+        // TODO: do we need to enforce limit on the number of locals and parameters?
 
         Ok(self)
     }
@@ -355,7 +355,7 @@ impl WasmModule {
     }
 
     pub fn ensure_instantiatable(self) -> Result<Self, PrepareError> {
-        // During instantiation time, the following steps are applied
+        // During instantiation time, the following procedures are applied:
 
         // 1. Resolve imports with external values
         // This should always succeed as we only allow `env::radix_engine` function import
@@ -370,7 +370,7 @@ impl WasmModule {
         // It may fail if the offset is out of bound
 
         // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
-        // we're using the `wasmi` logic as a short cut.
+        // we're using the `wasmi` logic as a shortcut.
 
         wasmi::ModuleInstance::new(
             &wasmi::Module::from_parity_wasm_module(self.module.clone())

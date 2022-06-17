@@ -75,8 +75,9 @@ pub enum InvalidMemory {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum InvalidTable {
+    /// More than one table defined, against WebAssembly MVP spec
     MoreThanOneTable,
-
+    /// Initial table size too large
     InitialTableSizeLimitExceeded,
 }
 

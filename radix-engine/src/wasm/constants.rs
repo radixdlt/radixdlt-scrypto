@@ -21,5 +21,5 @@ pub const DEFAULT_MAX_NUMBER_OF_BR_TABLE_TARGETS: u32 = 256;
 /// The max number of global variables
 pub const DEFAULT_MAX_NUMBER_OF_GLOBALS: u32 = 512;
 
-/// The max number of
+/// The max number of functions
 pub const DEFAULT_MAX_NUMBER_OF_FUNCTIONS: u32 = 64 * 1024;
