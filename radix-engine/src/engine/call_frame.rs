@@ -503,8 +503,15 @@ where
                 },
             },
             SNodeState::Tracked(address, value, meta) => {
-                to_return.insert(address.clone(), value);
-                let mut_value = to_return.get_mut(&address).unwrap();
+                let initial_value = match &value {
+                    SubstateValue::Component(component) => {
+                        Some(ScryptoValue::from_slice(component.state()).unwrap())
+                    }
+                    _ => None
+                };
+
+                to_return.insert(address.clone(), (value, initial_value));
+                let (mut_value, _) = to_return.get_mut(&address).unwrap();
 
                 let rtn = match mut_value {
                     SubstateValue::Resource(resource_manager) => resource_manager
@@ -530,25 +537,13 @@ where
                         let (actor, package) = meta.unwrap();
 
                         let mut maybe_component = Some(component);
-                        let rtn = package.invoke(
+                        package.invoke(
                             &actor,
                             &mut maybe_component,
                             fn_ident,
                             input,
                             self,
-                        )?;
-
-                        let component = maybe_component.unwrap();
-                        let value = ScryptoValue::from_slice(component.state())
-                            .map_err(RuntimeError::DecodeError)?;
-                        verify_stored_value(&value)?;
-                        let new_value_ids = stored_value_update(&initial_value, &value)?;
-                        // TODO: should we take values when component is actually written to rather than at the end of invocation?
-                        let new_values = self.take_values(&new_value_ids)?;
-                        self.track
-                            .insert_objects_into_component(new_values, address.clone().into());
-
-                        Ok(rtn)
+                        )
                     }
                     _ => panic!("Tracked {:?} not supported. Should not get here.", mut_value),
                 }?;
@@ -557,7 +552,22 @@ where
             }
         }?;
 
-        for (address, value) in to_return.drain() {
+        for (address, (value, initial_value)) in to_return.drain() {
+            match &value {
+                SubstateValue::Component(component) => {
+                    let value = ScryptoValue::from_slice(component.state())
+                        .map_err(RuntimeError::DecodeError)?;
+                    verify_stored_value(&value)?;
+                    let new_value_ids = stored_value_update(&initial_value.unwrap(), &value)?;
+                    // TODO: should we take values when component is actually written to rather than at the end of invocation?
+                    // TODO: check if component actually mutated?
+                    let new_values = self.take_values(&new_value_ids)?;
+                    self.track
+                        .insert_objects_into_component(new_values, address.clone().into());
+                }
+                _ => {}
+            }
+
             self.track.return_borrowed_global_mut_value(address, value);
         }
 
