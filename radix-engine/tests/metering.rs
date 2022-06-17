@@ -26,6 +26,7 @@ fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
                     fields: Fields::Named { named: vec![] },
                 },
                 output: Type::Unit,
+                export_name: "Test_f".to_string(),
             }],
         },
     );
@@ -177,5 +178,6 @@ fn test_total_cost_units_consumed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_eq!(CALL_ENGINE_COST + 326, receipt.cost_units_consumed);
+    receipt.expect_success();
+    assert_eq!(CALL_ENGINE_COST + 307, receipt.cost_units_consumed);
 }

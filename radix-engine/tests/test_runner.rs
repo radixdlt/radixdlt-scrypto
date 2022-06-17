@@ -74,6 +74,7 @@ impl TestRunner {
         let manifest = ManifestBuilder::new().publish_package(package).build();
 
         let receipt = self.execute_manifest(manifest, vec![]);
+        receipt.expect_success();
         receipt.new_package_addresses[0]
     }
 

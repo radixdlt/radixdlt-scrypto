@@ -155,7 +155,6 @@ pub enum BorrowedSNodeState<'a> {
         ScryptoActorInfo,
         BlueprintAbi,
         ValidatedPackage,
-        String,
         Option<ComponentState>,
     ),
     Resource(ResourceAddress, ResourceManager),
@@ -190,7 +189,6 @@ pub enum SNodeState<'a> {
         ScryptoActorInfo,
         BlueprintAbi,
         ValidatedPackage,
-        String,
         Option<&'a mut ComponentState>,
     ),
     ResourceStatic,
@@ -232,19 +230,14 @@ impl<'a> LoadedSNodeState<'a> {
             Borrowed(ref mut borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
                 BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
-                BorrowedSNodeState::Scrypto(
-                    info,
-                    blueprint_abi,
-                    package,
-                    export_name,
-                    component_state,
-                ) => SNodeState::Scrypto(
-                    info.clone(),
-                    blueprint_abi.clone(),
-                    package.clone(),
-                    export_name.clone(),
-                    component_state.as_mut(),
-                ),
+                BorrowedSNodeState::Scrypto(info, blueprint_abi, package, component_state) => {
+                    SNodeState::Scrypto(
+                        info.clone(),
+                        blueprint_abi.clone(),
+                        package.clone(),
+                        component_state.as_mut(),
+                    )
+                }
                 BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
                 BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
                 BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
@@ -264,7 +257,7 @@ impl<'a> LoadedSNodeState<'a> {
                 BorrowedSNodeState::Bucket(..) => {}
                 BorrowedSNodeState::Proof(..) => {}
                 BorrowedSNodeState::Vault(..) => {}
-                BorrowedSNodeState::Scrypto(actor, _, _, _, component_state) => {
+                BorrowedSNodeState::Scrypto(actor, _, _, component_state) => {
                     if let Some(component_address) = actor.component_address() {
                         track.return_borrowed_global_mut_value(
                             component_address,
@@ -562,9 +555,10 @@ where
             SNodeState::WorktopRef(worktop) => worktop
                 .main(fn_ident, input, self)
                 .map_err(RuntimeError::WorktopError),
-            SNodeState::Scrypto(actor, blueprint_abi, package, export_name, component_state) => {
+            SNodeState::Scrypto(actor, blueprint_abi, package, component_state) => {
                 self.component_state = component_state;
-                let rtn = package.invoke(actor, &blueprint_abi, export_name, fn_ident, input, self);
+
+                let rtn = package.invoke(actor, &blueprint_abi, fn_ident, input, self);
                 match rtn {
                     Ok(output) => {
                         let fn_abi = blueprint_abi.get_fn_abi(fn_ident).unwrap();
@@ -853,7 +847,6 @@ where
                                 input: input.dom,
                             });
                         }
-                        let export_name = format!("{}_main", blueprint_name);
 
                         Ok((
                             Borrowed(BorrowedSNodeState::Scrypto(
@@ -863,7 +856,6 @@ where
                                 ),
                                 abi.clone(),
                                 package.clone(),
-                                export_name.clone(),
                                 None,
                             )),
                             vec![],
@@ -886,7 +878,6 @@ where
                             .into();
                         let package_address = component.package_address();
                         let blueprint_name = component.blueprint_name().to_string();
-                        let export_name = format!("{}_main", blueprint_name);
 
                         let substate_value = self
                             .track
@@ -924,7 +915,6 @@ where
                                 ),
                                 abi.clone(),
                                 package.clone(),
-                                export_name,
                                 Some(ComponentState {
                                     component_address,
                                     component,

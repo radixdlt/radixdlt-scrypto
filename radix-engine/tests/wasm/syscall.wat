@@ -5,7 +5,7 @@
   (data (i32.const 1024) "\11\07\00\00\00EmitLog\02\00\00\00\11\05\00\00\00Debug\00\00\00\00\0c\05\00\00\00Hello")
 
   ;; Simple main function that always returns `()`
-  (func $Test_main (param $0 i32) (param $1 i32) (result i32)
+  (func $Test_f (param $0 i32) (result i32)
     (local.set 
       $0
       (call $scrypto_alloc
@@ -48,7 +48,7 @@
   (export "memory" (memory $0))
   (export "scrypto_alloc" (func $scrypto_alloc))
   (export "scrypto_free" (func $scrypto_free))
-  (export "Test_main" (func $Test_main))
+  (export "Test_f" (func $Test_f))
 
   ${memcpy}
   ${buffer}

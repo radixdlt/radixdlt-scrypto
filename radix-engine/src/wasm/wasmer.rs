@@ -162,8 +162,7 @@ impl WasmerModule {
 impl WasmInstance for WasmerInstance {
     fn invoke_export<'r>(
         &mut self,
-        name: &str,
-        method_name: &str,
+        func_name: &str,
         arg: &ScryptoValue,
         runtime: &mut Box<dyn WasmRuntime + 'r>,
     ) -> Result<ScryptoValue, InvokeError> {
@@ -173,15 +172,13 @@ impl WasmInstance for WasmerInstance {
             *guard = runtime as *mut _ as usize;
         }
 
-        let method_name_value = ScryptoValue::from_typed(&method_name.to_string());
-        let method_name_ptr = send_value(&self.instance, &method_name_value)?;
         let pointer = send_value(&self.instance, arg)?;
         let result = self
             .instance
             .exports
-            .get_function(name)
+            .get_function(func_name)
             .map_err(|_| InvokeError::FunctionNotFound)?
-            .call(&[Val::I32(method_name_ptr as i32), Val::I32(pointer as i32)]);
+            .call(&[Val::I32(pointer as i32)]);
 
         match result {
             Ok(return_data) => {
