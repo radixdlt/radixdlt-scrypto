@@ -1,5 +1,6 @@
 pub struct CostUnitCounter {
     limit: u32,
+    loan: u32,
     consumed: u32,
     remaining: u32,
 }
@@ -12,11 +13,12 @@ pub enum CostUnitCounterError {
 }
 
 impl CostUnitCounter {
-    pub fn new(limit: u32, initial: u32) -> Self {
+    pub fn new(limit: u32, loan: u32) -> Self {
         Self {
             limit,
+            loan,
             consumed: 0,
-            remaining: initial,
+            remaining: loan,
         }
     }
 
@@ -43,6 +45,18 @@ impl CostUnitCounter {
         Ok(())
     }
 
+    pub fn repay(&mut self, n: u32) -> Result<(), CostUnitCounterError> {
+        self.remaining = self
+            .remaining
+            .checked_sub(n)
+            .ok_or(CostUnitCounterError::OutOfCostUnit)?;
+        self.loan = self
+            .loan
+            .checked_sub(n)
+            .ok_or(CostUnitCounterError::CounterOverflow)?;
+        Ok(())
+    }
+
     pub fn limit(&self) -> u32 {
         self.limit
     }
@@ -53,6 +67,10 @@ impl CostUnitCounter {
 
     pub fn remaining(&self) -> u32 {
         self.remaining
+    }
+
+    pub fn loan(&self) -> u32 {
+        self.loan
     }
 }
 
@@ -83,5 +101,13 @@ mod tests {
             Err(CostUnitCounterError::CounterOverflow),
             counter.refill(2)
         );
+    }
+
+    #[test]
+    fn test_repay() {
+        let mut counter = CostUnitCounter::new(100, 500);
+        counter.repay(100).unwrap();
+        assert_eq!(400, counter.remaining());
+        assert_eq!(400, counter.loan());
     }
 }

@@ -1,8 +1,7 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use crate::test_runner::TestRunner;
-use radix_engine::fee::CALL_ENGINE_COST;
+use radix_engine::fee::{ENGINE_RUN_COST, TX_VALIDATION_COST_PER_BYTE, WASM_ENGINE_CALL_COST};
 use radix_engine::wasm::InvokeError;
 use sbor::describe::Fields;
 use sbor::Type;
@@ -10,6 +9,7 @@ use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::prelude::{HashMap, Package};
 use scrypto::to_struct;
 use test_runner::wat2wasm;
+use test_runner::TestRunner;
 use transaction::builder::ManifestBuilder;
 
 fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
@@ -26,6 +26,7 @@ fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
                     fields: Fields::Named { named: vec![] },
                 },
                 output: Type::Unit,
+                export_name: "Test_f".to_string(),
             }],
         },
     );
@@ -177,5 +178,18 @@ fn test_total_cost_units_consumed() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    assert_eq!(CALL_ENGINE_COST + 326, receipt.cost_units_consumed);
+    /*
+    Cost analysis:
+    1. Transaction validation cost = TX_VALIDATION_COST_PER_BYTE * 1
+    2. Engine run cost = ENGINE_RUN_COST * 4
+       * TransactionProcessor::main
+          * Scrypto::main
+          * AuthZone::clear * 2
+       * AuthZone::clear
+    3. Wasm run cost = WASM_ENGINE_CALL_COST + 307
+    */
+    assert_eq!(
+        TX_VALIDATION_COST_PER_BYTE * 1 + ENGINE_RUN_COST * 4 + WASM_ENGINE_CALL_COST + 307,
+        receipt.cost_units_consumed
+    );
 }

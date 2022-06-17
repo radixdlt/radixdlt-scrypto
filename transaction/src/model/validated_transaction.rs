@@ -18,6 +18,10 @@ impl ExecutableTransaction for ValidatedTransaction {
         self.transaction_hash
     }
 
+    fn transaction_payload_size(&self) -> u32 {
+        self.transaction.to_bytes().len() as u32
+    }
+
     fn instructions(&self) -> &[ExecutableInstruction] {
         &self.instructions
     }
