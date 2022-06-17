@@ -48,7 +48,7 @@ pub enum PrepareError {
     /// Failed to inject stack metering
     RejectedByStackMetering,
     /// Not instantiatable
-    NotInstantiatable(String),
+    NotInstantiatable,
     /// Not compilable
     NotCompilable,
 }

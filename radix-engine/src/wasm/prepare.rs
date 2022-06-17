@@ -3,7 +3,6 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
-use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
@@ -378,7 +377,7 @@ impl WasmModule {
                 .expect("Due to the `init` step module should be valid"),
             &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
         )
-        .map_err(|e| PrepareError::NotInstantiatable(format!("{:?}", e)))?;
+        .map_err(|_| PrepareError::NotInstantiatable)?;
 
         Ok(self)
     }
@@ -386,9 +385,11 @@ impl WasmModule {
     pub fn ensure_compilable(self) -> Result<Self, PrepareError> {
         // TODO: Understand WASM JIT compilability
         //
-        // Can we make the assumption that all "prepared" modules are compilable, if machine resource is "sufficient"?
+        // Can we make the assumption that all "prepared" modules are compilable,
+        // if machine resource is "sufficient"?
         //
-        // Another option is to attempt to compile, although it would make RE protocol coupled with the specific implementation
+        // Another option is to attempt to compile, although it may make RE protocol
+        // coupled with a specific implementation.
 
         Ok(self)
     }
@@ -418,11 +419,19 @@ impl WasmModule {
         params: Vec<ValueType>,
         results: Vec<ValueType>,
     ) -> bool {
+        let func_import_count = module
+            .import_section()
+            .map(|s| s.entries())
+            .unwrap_or(&[])
+            .iter()
+            .filter(|e| matches!(e.external(), External::Function(_)))
+            .count();
+
         let func = module
             .function_section()
             .map(|s| s.entries())
             .unwrap_or(&[])
-            .get(func_index)
+            .get(func_index - func_import_count)
             .expect("Due to validation function should exist");
         Self::function_type_matches(module, func.type_ref() as usize, params, results)
     }

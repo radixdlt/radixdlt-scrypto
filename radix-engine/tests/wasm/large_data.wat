@@ -6,20 +6,20 @@
 
   ;; Simple function that always returns `()`
   (func $Test_f (param $0 i32) (result i32)
-    ;; Return unit
+    (local $buffer i32)
     (local.set 
-      $0
+      $buffer
       (call $scrypto_alloc
         (i32.const 1)
       )
     )
     (i32.add
-      (local.get $0)
+      (local.get $buffer)
       (i32.const 4)
     )
     (i32.const 0)
     (i32.store8)
-    (local.get $0)
+    (local.get $buffer)
   )
 
   (memory $0 1)

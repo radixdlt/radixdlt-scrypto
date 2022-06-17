@@ -22,7 +22,7 @@
   (export "memory" (memory $0))
   (export "scrypto_alloc" (func $scrypto_alloc))
   (export "scrypto_free" (func $scrypto_free))
-  (export "Test_main" (func $Test_f))
+  (export "Test_f" (func $Test_f))
 
   ${memcpy}
   ${buffer}
