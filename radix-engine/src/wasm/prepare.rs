@@ -171,10 +171,10 @@ impl WasmModule {
             for entry in sec.entries() {
                 if entry.module() == MODULE_ENV_NAME && entry.field() == RADIX_ENGINE_FUNCTION_NAME
                 {
-                    if let External::Function(func_addr) = entry.external() {
-                        if Self::signature_matches(
+                    if let External::Function(type_index) = entry.external() {
+                        if Self::function_type_matches(
                             &self.module,
-                            *func_addr as usize,
+                            *type_index as usize,
                             vec![ValueType::I32],
                             vec![ValueType::I32],
                         ) {
@@ -297,10 +297,10 @@ impl WasmModule {
                 let func_name = &func.export_name;
                 if !exports.entries().iter().any(|x| {
                     x.field().eq(func_name) && {
-                        if let Internal::Function(func_addr) = x.internal() {
-                            Self::signature_matches(
+                        if let Internal::Function(func_index) = x.internal() {
+                            Self::function_matches(
                                 &self.module,
-                                *func_addr as usize,
+                                *func_index as usize,
                                 vec![ValueType::I32],
                                 vec![ValueType::I32],
                             )
@@ -411,9 +411,9 @@ impl WasmModule {
         Ok((code, function_exports))
     }
 
-    fn signature_matches(
+    fn function_matches(
         module: &Module,
-        func_addr: usize,
+        func_index: usize,
         params: Vec<ValueType>,
         results: Vec<ValueType>,
     ) -> bool {
@@ -421,14 +421,22 @@ impl WasmModule {
             .function_section()
             .map(|s| s.entries())
             .unwrap_or(&[])
-            .get(func_addr)
+            .get(func_index)
             .expect("Due to validation function should exist");
+        Self::function_type_matches(module, func.type_ref() as usize, params, results)
+    }
 
+    fn function_type_matches(
+        module: &Module,
+        type_index: usize,
+        params: Vec<ValueType>,
+        results: Vec<ValueType>,
+    ) -> bool {
         let ty = module
             .type_section()
             .map(|s| s.types())
             .unwrap_or(&[])
-            .get(func.type_ref() as usize)
+            .get(type_index)
             .expect("Due to validation type should exist");
 
         ty == &Type::Function(FunctionType::new(params, results))
