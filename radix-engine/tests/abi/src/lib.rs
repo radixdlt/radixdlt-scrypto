@@ -25,12 +25,12 @@ blueprint! {
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_main(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn AbiComponent2_main(_input: *mut u8) -> *mut u8 {
     ::scrypto::buffer::scrypto_encode_to_buffer(&())
 }
 
 #[no_mangle]
-pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u8 {
+pub extern "C" fn AbiComponent2_abi(_input: *mut u8) -> *mut u8 {
     let structure = Type::Struct {
         name: "AbiComponent2".to_string(),
         fields: Fields::Unit,
@@ -43,78 +43,91 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
                 mutability: Option::None,
                 input: Type::Unit,
                 output: Type::U8,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "unit".to_string(),
                 mutability: Option::None,
                 input: Type::Unit,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "bool".to_string(),
                 mutability: Option::None,
                 input: Type::Bool,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "i8".to_string(),
                 mutability: Option::None,
                 input: Type::I8,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "i16".to_string(),
                 mutability: Option::None,
                 input: Type::I16,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "i32".to_string(),
                 mutability: Option::None,
                 input: Type::I32,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "i64".to_string(),
                 mutability: Option::None,
                 input: Type::I64,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "i128".to_string(),
                 mutability: Option::None,
                 input: Type::I128,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "u8".to_string(),
                 mutability: Option::None,
                 input: Type::U8,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "u16".to_string(),
                 mutability: Option::None,
                 input: Type::U16,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "u32".to_string(),
                 mutability: Option::None,
                 input: Type::U32,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "u64".to_string(),
                 mutability: Option::None,
                 input: Type::U64,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "u128".to_string(),
                 mutability: Option::None,
                 input: Type::U128,
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "result".to_string(),
@@ -124,6 +137,7 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
                     error: Box::new(Type::Unit),
                 },
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "tree_map".to_string(),
@@ -133,6 +147,7 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
                     value: Box::new(Type::Unit),
                 },
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
             Fn {
                 ident: "hash_set".to_string(),
@@ -141,6 +156,7 @@ pub extern "C" fn AbiComponent2_abi(_input: *mut u8, _input2: *mut u8) -> *mut u
                     element: Box::new(Type::Unit),
                 },
                 output: Type::Unit,
+                export_name: "AbiComponent2_main".to_string(),
             },
         ],
     };

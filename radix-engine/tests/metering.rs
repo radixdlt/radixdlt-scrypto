@@ -1,7 +1,6 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use crate::test_runner::TestRunner;
 use radix_engine::fee::{ENGINE_RUN_COST, TX_VALIDATION_COST_PER_BYTE, WASM_ENGINE_CALL_COST};
 use radix_engine::wasm::InvokeError;
 use sbor::describe::Fields;
@@ -10,6 +9,7 @@ use scrypto::abi::{BlueprintAbi, Fn};
 use scrypto::prelude::{HashMap, Package};
 use scrypto::to_struct;
 use test_runner::wat2wasm;
+use test_runner::TestRunner;
 use transaction::builder::ManifestBuilder;
 
 fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
@@ -26,6 +26,7 @@ fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
                     fields: Fields::Named { named: vec![] },
                 },
                 output: Type::Unit,
+                export_name: "Test_f".to_string(),
             }],
         },
     );
