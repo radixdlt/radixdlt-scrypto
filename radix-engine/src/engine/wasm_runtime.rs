@@ -190,7 +190,7 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
     for RadixEngineWasmRuntime<'s, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
-        let cost = self.fee_table().engine_call_cost();
+        let cost = self.fee_table().wasm_engine_call_cost();
         self.consume_cost_units(cost)?;
 
         let input: RadixEngineInput =

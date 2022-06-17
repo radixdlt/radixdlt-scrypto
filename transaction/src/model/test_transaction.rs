@@ -137,6 +137,10 @@ impl ExecutableTransaction for TestTransaction {
         hash(self.nonce.to_string())
     }
 
+    fn transaction_payload_size(&self) -> u32 {
+        1
+    }
+
     fn instructions(&self) -> &[ExecutableInstruction] {
         &self.instructions
     }

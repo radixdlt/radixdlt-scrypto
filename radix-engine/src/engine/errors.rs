@@ -6,6 +6,7 @@ use sbor::{DecodeError, Value};
 use scrypto::engine::types::*;
 use transaction::errors::*;
 
+use crate::fee::CostUnitCounterError;
 use crate::model::*;
 use crate::wasm::InvokeError;
 
@@ -121,6 +122,8 @@ pub enum RuntimeError {
     CantMoveRestrictedProof(ProofId),
 
     InvalidInvocation,
+
+    CostingError(CostUnitCounterError),
 }
 
 #[derive(Debug, PartialEq, Clone)]

@@ -12,11 +12,17 @@ use crate::validation::*;
 pub struct TransactionValidator;
 
 impl TransactionValidator {
+    pub const MAX_PAYLOAD_SIZE: usize = 4 * 1024 * 1024;
+
     pub fn validate_from_slice<I: IntentHashManager, E: EpochManager>(
         transaction: &[u8],
         intent_hash_store: &I,
         epoch_manager: &E,
     ) -> Result<ValidatedTransaction, TransactionValidationError> {
+        if transaction.len() > Self::MAX_PAYLOAD_SIZE {
+            return Err(TransactionValidationError::TransactionTooLarge);
+        }
+
         let transaction: NotarizedTransaction = scrypto_decode(transaction)
             .map_err(TransactionValidationError::DeserializationError)?;
 
