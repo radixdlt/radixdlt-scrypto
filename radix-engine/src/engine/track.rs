@@ -32,7 +32,6 @@ pub struct Track<'s, S: ReadableSubstateStore> {
     up_virtual_substate_space: IndexSet<Vec<u8>>,
 }
 
-
 #[derive(Debug)]
 pub enum TrackError {
     Reentrancy,
@@ -397,7 +396,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Returns an immutable reference to a value, if exists.
-    pub fn borrow_global_value<A: Into<Address>>(&mut self, addr: A) -> Result<&SubstateValue, TrackError> {
+    pub fn borrow_global_value<A: Into<Address>>(
+        &mut self,
+        addr: A,
+    ) -> Result<&SubstateValue, TrackError> {
         let address: Address = addr.into();
 
         if let Some(v) = self.up_substates.get(&address.encode()) {
