@@ -3,6 +3,7 @@ use parity_wasm::elements::{
     Instruction::{self, *},
     Internal, Module, Type, ValueType,
 };
+use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
@@ -13,6 +14,8 @@ use wasm_instrument::{gas_metering, inject_stack_limiter};
 use wasmi_validation::{validate_module, PlainValidator};
 
 use crate::wasm::{constants::*, errors::*, PrepareError};
+
+use super::WasmiEnvModule;
 
 pub struct WasmModule {
     module: Module,
@@ -31,6 +34,7 @@ impl WasmModule {
     }
 
     pub fn enforce_no_floating_point(self) -> Result<Self, PrepareError> {
+        // Global value types
         if let Some(globals) = self.module.global_section() {
             for global in globals.entries() {
                 match global.global_type().content_type() {
@@ -42,6 +46,7 @@ impl WasmModule {
             }
         }
 
+        // Function local value types and floating-point related instructions
         if let Some(code) = self.module.code_section() {
             for func_body in code.bodies() {
                 for local in func_body.locals() {
@@ -131,6 +136,7 @@ impl WasmModule {
             }
         }
 
+        // Function input and output types
         if let (Some(functions), Some(types)) =
             (self.module.function_section(), self.module.type_section())
         {
@@ -269,18 +275,27 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn enforce_function_limit(self) -> Result<Self, PrepareError> {
-        // TODO
+    pub fn enforce_function_limit(
+        self,
+        max_number_of_functions: u32,
+    ) -> Result<Self, PrepareError> {
+        if let Some(section) = self.module.function_section() {
+            if section.entries().len() > max_number_of_functions as usize {
+                return Err(PrepareError::TooManyGlobals);
+            }
+        }
+
+        // TODO: do we need to enforce limit on the number of locals and parameter?
+
         Ok(self)
     }
 
-    pub fn enforce_global_limit(self) -> Result<Self, PrepareError> {
-        // TODO
-        Ok(self)
-    }
-
-    pub fn enforce_local_limit(self) -> Result<Self, PrepareError> {
-        // TODO
+    pub fn enforce_global_limit(self, max_number_of_globals: u32) -> Result<Self, PrepareError> {
+        if let Some(section) = self.module.global_section() {
+            if section.entries().len() > max_number_of_globals as usize {
+                return Err(PrepareError::TooManyGlobals);
+            }
+        }
         Ok(self)
     }
 
@@ -358,26 +373,12 @@ impl WasmModule {
         // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
         // we're using the `wasmi` logic as a short cut.
 
-        let module = wasmi::Module::from_parity_wasm_module(self.module.clone())
-            .expect("Due to the `init` step module should be valid");
-        wasmi::ModuleInstance::with_externvals(
-            &module,
-            vec![
-                wasmi::ExternVal::Func(wasmi::FuncInstance::alloc_host(
-                    wasmi::Signature::new(
-                        &[wasmi::ValueType::I32][..],
-                        Some(wasmi::ValueType::I32),
-                    ),
-                    RADIX_ENGINE_FUNCTION_INDEX,
-                )),
-                wasmi::ExternVal::Func(wasmi::FuncInstance::alloc_host(
-                    wasmi::Signature::new(&[wasmi::ValueType::I32][..], None),
-                    CONSUME_COST_UNITS_FUNCTION_INDEX,
-                )),
-            ]
-            .iter(),
+        wasmi::ModuleInstance::new(
+            &wasmi::Module::from_parity_wasm_module(self.module.clone())
+                .expect("Due to the `init` step module should be valid"),
+            &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
         )
-        .map_err(|_| PrepareError::NotInstantiatable)?;
+        .map_err(|e| PrepareError::NotInstantiatable(format!("{:?}", e)))?;
 
         Ok(self)
     }

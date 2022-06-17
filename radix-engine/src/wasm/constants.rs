@@ -17,3 +17,9 @@ pub const DEFAULT_MAX_INITIAL_TABLE_SIZE: u32 = 1024;
 
 /// The max number of labels of a table jump, excluding the default
 pub const DEFAULT_MAX_NUMBER_OF_BR_TABLE_TARGETS: u32 = 256;
+
+/// The max number of global variables
+pub const DEFAULT_MAX_NUMBER_OF_GLOBALS: u32 = 512;
+
+/// The max number of
+pub const DEFAULT_MAX_NUMBER_OF_FUNCTIONS: u32 = 64 * 1024;

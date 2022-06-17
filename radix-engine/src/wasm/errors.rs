@@ -31,6 +31,10 @@ pub enum PrepareError {
     InvalidTable(InvalidTable),
     /// Too many targets in the `br_table` instruction
     TooManyTargetsInBrTable,
+    /// Too many functions
+    TooManyFunctions,
+    /// Too many globals
+    TooManyGlobals,
     /// No export section
     NoExportSection,
     /// Missing export
@@ -44,7 +48,7 @@ pub enum PrepareError {
     /// Failed to inject stack metering
     RejectedByStackMetering,
     /// Not instantiatable
-    NotInstantiatable,
+    NotInstantiatable(String),
     /// Not compilable
     NotCompilable,
 }
