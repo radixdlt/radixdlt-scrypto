@@ -9,7 +9,7 @@ mod transaction_receipt;
 mod wasm_runtime;
 
 pub use call_frame::{
-    BorrowedSNodeState, CallFrame, ConsumedSNodeState, LoadedSNodeState, MoveMethod,
+    BorrowedSNodeState, CallFrame, ConsumedSNodeState, SNodeState, MoveMethod,
     StaticSNodeState,
 };
 pub use errors::*;

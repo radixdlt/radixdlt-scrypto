@@ -17,7 +17,7 @@ use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static, Tracked};
+use crate::engine::SNodeState::{Borrowed, Consumed, Static, Tracked};
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -168,9 +168,9 @@ pub enum StaticSNodeState {
     TransactionProcessor,
 }
 
-pub enum LoadedSNodeState<'a> {
+pub enum SNodeState<'a> {
     Static(StaticSNodeState),
-    Consumed(Option<ConsumedSNodeState>),
+    Consumed(ConsumedSNodeState),
     Borrowed(BorrowedSNodeState<'a>),
     Tracked(
         Address,
@@ -428,7 +428,7 @@ where
     pub fn run(
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
-        snode: LoadedSNodeState<'p>,
+        snode: SNodeState<'p>,
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<
@@ -452,8 +452,10 @@ where
             .consume(Self::fee_table_helper(&mut self.fee_table).engine_run_cost())
             .map_err(RuntimeError::CostingError)?;
 
+        let mut to_return = HashMap::new();
+
         let output = match snode {
-            LoadedSNodeState::Static(state) => match state {
+            SNodeState::Static(state) => match state {
                 StaticSNodeState::System => {
                     System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
                 }
@@ -469,7 +471,7 @@ where
                 StaticSNodeState::Resource => ResourceManager::static_main(fn_ident, input, self)
                     .map_err(RuntimeError::ResourceManagerError),
             },
-            LoadedSNodeState::Consumed(state) => match state.unwrap() {
+            SNodeState::Consumed(state) => match state {
                 ConsumedSNodeState::Bucket(bucket) => bucket
                     .consuming_main(fn_ident, input, self)
                     .map_err(RuntimeError::BucketError),
@@ -477,7 +479,7 @@ where
                     .main_consume(fn_ident, input)
                     .map_err(RuntimeError::ProofError),
             },
-            LoadedSNodeState::Borrowed(borrowed) => match borrowed {
+            SNodeState::Borrowed(borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(mut auth_zone) => auth_zone
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::AuthZoneError),
@@ -500,8 +502,11 @@ where
                     _ => panic!("Should be a vault"),
                 },
             },
-            LoadedSNodeState::Tracked(address, mut value, meta) => {
-                let rtn = match &mut value {
+            SNodeState::Tracked(address, value, meta) => {
+                to_return.insert(address.clone(), value);
+                let mut_value = to_return.get_mut(&address).unwrap();
+
+                let rtn = match mut_value {
                     SubstateValue::Resource(resource_manager) => resource_manager
                         .main(address.clone().into(), fn_ident, input, self)
                         .map_err(RuntimeError::ResourceManagerError),
@@ -545,14 +550,16 @@ where
 
                         Ok(rtn)
                     }
-                    _ => panic!("Tracked {:?} not supported. Should not get here.", value),
+                    _ => panic!("Tracked {:?} not supported. Should not get here.", mut_value),
                 }?;
-
-                self.track.return_borrowed_global_mut_value(address, value);
 
                 Ok(rtn)
             }
         }?;
+
+        for (address, value) in to_return.drain() {
+            self.track.return_borrowed_global_mut_value(address, value);
+        }
 
         self.process_return_data(snode_ref, &output)?;
 
@@ -912,7 +919,7 @@ where
                 };
                 let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
                 Ok((
-                    Consumed(Some(ConsumedSNodeState::Bucket(bucket))),
+                    Consumed(ConsumedSNodeState::Bucket(bucket)),
                     vec![method_auth.clone()],
                 ))
             }
@@ -944,7 +951,7 @@ where
                     .remove(&proof_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
                     .into_inner();
-                Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
+                Ok((Consumed(ConsumedSNodeState::Proof(proof)), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (resource_address, snode_state) = {
@@ -1026,7 +1033,7 @@ where
                 | Borrowed(BorrowedSNodeState::Vault(..))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
+                | Consumed(ConsumedSNodeState::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
