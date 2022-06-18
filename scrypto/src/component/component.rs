@@ -77,7 +77,7 @@ impl Component {
     /// Updates the state of this component.
     pub fn put_state<T: ComponentState>(&self, state: T) {
         let input = RadixEngineInput::PutComponentState(self.0, scrypto_encode(&state));
-        let _: () = call_engine(input);
+        call_engine(input)
     }
 
     /// Returns the package ID of this component.

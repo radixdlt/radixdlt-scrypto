@@ -114,11 +114,10 @@ where
         &mut self,
         component_address: ComponentAddress,
         state: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         let value = ScryptoValue::from_slice(&state).map_err(RuntimeError::DecodeError)?;
         let address = SubstateAddress::Component(component_address);
-        self.system_api.data(address, DataInstruction::Write(value))?;
-        Ok(())
+        self.system_api.data(address, DataInstruction::Write(value))
     }
 
     fn handle_get_component_info(
@@ -154,9 +153,7 @@ where
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let address = SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key);
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        let rtn = self.system_api
-            .data(address, DataInstruction::Write(scrypto_value))?;
-        Ok(rtn)
+        self.system_api.data(address, DataInstruction::Write(scrypto_value))
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActorInfo, RuntimeError> {
@@ -208,8 +205,7 @@ impl<'s, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
             RadixEngineInput::GetComponentState(component_address) => self
                 .handle_get_component_state(component_address),
             RadixEngineInput::PutComponentState(component_address, state) => self
-                .handle_put_component_state(component_address, state)
-                .map(encode),
+                .handle_put_component_state(component_address, state),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
             RadixEngineInput::GetKeyValueStoreEntry(kv_store_id, key) => {
                 self.handle_get_kv_store_entry(kv_store_id, key)
