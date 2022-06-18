@@ -194,13 +194,13 @@ impl<'s, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
             RadixEngineInput::CreateComponent(blueprint_name, state, access_rules_list) => self
                 .handle_create_component(blueprint_name, state, access_rules_list)
                 .map(encode),
+            RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
             RadixEngineInput::GetComponentInfo(component_address) => self
                 .handle_get_component_info(component_address)
                 .map(encode),
-            RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
+            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::ReadData(address) => self.handle_read_data(address),
             RadixEngineInput::WriteData(address, value) => self.handle_write_data(address, value),
-            RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
                 self.handle_user_log(level, message).map(encode)

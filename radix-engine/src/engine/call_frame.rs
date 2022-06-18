@@ -1269,54 +1269,6 @@ where
         Ok(address.into())
     }
 
-    fn read_component_state(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let value_bytes = self
-            .refed_components
-            .get(&component_address)
-            .map(|c| c.state().to_vec())
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
-
-        let current_value = ScryptoValue::from_slice(&value_bytes).unwrap();
-        let cur_children = current_value.stored_value_ids();
-        for value_id in cur_children {
-            self.refed_values.insert(
-                value_id,
-                ValueRefType::Committed {
-                    component_address: component_address.clone(),
-                },
-            );
-        }
-
-        Ok(current_value)
-    }
-
-    fn write_component_state(
-        &mut self,
-        component_address: ComponentAddress,
-        value: ScryptoValue,
-    ) -> Result<(), RuntimeError> {
-        verify_stored_value(&value)?;
-        let value_ids = value.stored_value_ids();
-        let (taken_values, missing) = self.take_available_values(value_ids);
-
-        let component = self
-            .refed_components
-            .get_mut(&component_address)
-            .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
-        let current_value = ScryptoValue::from_slice(component.state()).unwrap();
-        let cur_children = current_value.stored_value_ids();
-        verify_stored_value_update(&cur_children, &missing)?;
-        component.set_state(value.raw);
-
-        let new_values = taken_values.into_values().collect();
-        self.track
-            .insert_objects_into_component(new_values, component_address);
-        Ok(())
-    }
-
     fn data(
         &mut self,
         address: SubstateAddress,
