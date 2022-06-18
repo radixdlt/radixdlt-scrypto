@@ -10,7 +10,6 @@ use scrypto::prelude::PackagePublishInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
-use crate::model::Component;
 use crate::model::PackageError::MethodNotFound;
 use crate::wasm::*;
 
@@ -73,7 +72,6 @@ impl ValidatedPackage {
     pub fn invoke<'s, S, W, I>(
         &self,
         actor: &ScryptoActorInfo,
-        component: &mut Option<&mut Component>,
         fn_ident: &str,
         input: ScryptoValue,
         system_api: &mut S,
@@ -94,7 +92,6 @@ impl ValidatedPackage {
         let export_name = &blueprint_abi.get_fn_abi(fn_ident).unwrap().export_name;
         let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(
             actor.clone(),
-            component,
             blueprint_abi,
             system_api,
         ));

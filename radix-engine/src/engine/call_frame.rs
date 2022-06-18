@@ -115,27 +115,6 @@ fn verify_stored_value_update(
     Ok(())
 }
 
-fn stored_value_update(
-    old: &ScryptoValue,
-    new: &ScryptoValue,
-) -> Result<HashSet<StoredValueId>, RuntimeError> {
-    let old_ids = old.stored_value_ids();
-    let new_ids = new.stored_value_ids();
-    for old_id in &old_ids {
-        if !new_ids.contains(old_id) {
-            return Err(RuntimeError::StoredValueRemoved(old_id.clone()));
-        }
-    }
-
-    let mut new_value_ids = HashSet::new();
-    for new_id in new_ids {
-        if !old_ids.contains(&new_id) {
-            new_value_ids.insert(new_id);
-        }
-    }
-    Ok(new_value_ids)
-}
-
 fn verify_stored_value(value: &ScryptoValue) -> Result<(), RuntimeError> {
     if !value.bucket_ids.is_empty() {
         return Err(RuntimeError::BucketNotAllowed);
@@ -262,7 +241,7 @@ impl<'a> SNodeExecution<'a> {
                 .main(fn_ident, input, system)
                 .map_err(RuntimeError::WorktopError),
             SNodeExecution::Blueprint(info, package) => {
-                package.invoke(&info, &mut None, fn_ident, input, system)
+                package.invoke(&info, fn_ident, input, system)
             }
             SNodeExecution::Bucket(bucket_id, mut bucket) => bucket
                 .main(bucket_id, fn_ident, input, system)
@@ -277,9 +256,7 @@ impl<'a> SNodeExecution<'a> {
                 .main(address.clone().into(), fn_ident, input, system)
                 .map_err(RuntimeError::ResourceManagerError),
             SNodeExecution::Component(ref actor, ref package) => {
-                //let mut maybe_component = Some(component);
-                let mut maybe_component = None;
-                package.invoke(&actor, &mut maybe_component, fn_ident, input, system)
+                package.invoke(&actor, fn_ident, input, system)
             }
         }
     }
