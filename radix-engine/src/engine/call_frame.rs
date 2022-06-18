@@ -191,14 +191,14 @@ enum KVStore<'a> {
     Tracked(ComponentAddress),
 }
 
-pub enum KVStoreMethod {
+pub enum DataInstruction {
     Read,
     Write(ScryptoValue),
 }
 
-pub struct KVStoreCall {
+pub struct SubstateAddress {
+    pub address: KeyValueStoreId,
     pub key: ScryptoValue,
-    pub method: KVStoreMethod,
 }
 
 impl<'a> SNodeExecution<'a> {
@@ -1308,19 +1308,22 @@ where
 
     fn kv_store_call(
         &mut self,
-        kv_store_id: KeyValueStoreId,
-        input: KVStoreCall,
+        address: SubstateAddress,
+        instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError> {
-        verify_stored_key(&input.key)?;
+        let kv_store_id = address.address.clone();
+        let key = address.key;
+
+        verify_stored_key(&key)?;
 
         // If write, collect new child values
-        let (taken_values, missing) = match &input.method {
-            KVStoreMethod::Write(value) => {
+        let (taken_values, missing) = match &instruction {
+            DataInstruction::Write(value) => {
                 verify_stored_value(value)?;
                 let value_ids = value.stored_value_ids();
                 self.take_available_values(value_ids)
             }
-            KVStoreMethod::Read => {
+            DataInstruction::Read => {
                 (HashMap::new(), HashSet::new())
             }
         };
@@ -1358,12 +1361,12 @@ where
         // Read current value
         let current_value = match &store {
             KVStore::Ref(store) => {
-                store.kv_store().get(&input.key.raw)
+                store.kv_store().get(&key.raw)
             },
             KVStore::Tracked(component_address) => {
                 let substate_value = self.track.read_key_value(
                     Address::KeyValueStore(*component_address, kv_store_id),
-                    input.key.raw.to_vec(),
+                    key.raw.to_vec(),
                 );
                 substate_value.kv_entry().as_ref().map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
             }
@@ -1371,8 +1374,8 @@ where
         let cur_children = current_value.as_ref().map_or(HashSet::new(), |v| v.stored_value_ids());
 
         // Fulfill method
-        match input.method {
-            KVStoreMethod::Read => {
+        match instruction {
+            DataInstruction::Read => {
                 for value_id in cur_children {
                     self.refed_values.insert(value_id, ref_type.clone());
                 }
@@ -1390,7 +1393,7 @@ where
                 let encoded = encode_any(&value);
                 Ok(ScryptoValue::from_slice(&encoded).unwrap())
             }
-            KVStoreMethod::Write(value) => {
+            DataInstruction::Write(value) => {
                 verify_stored_value_update(&cur_children, &missing)?;
 
                 // TODO: verify against some schema
@@ -1399,13 +1402,13 @@ where
                 let new_values = taken_values.into_values().collect();
                 match store {
                     KVStore::Ref(stored_value) => {
-                        stored_value.kv_store_mut().put(input.key.raw, value);
+                        stored_value.kv_store_mut().put(key.raw, value);
                         stored_value.insert_children(new_values);
                     },
                     KVStore::Tracked(component_address) => {
                         self.track.set_key_value(
                             Address::KeyValueStore(component_address.clone(), kv_store_id),
-                            input.key.raw,
+                            key.raw,
                             SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                         );
                         self.track

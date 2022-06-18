@@ -6,7 +6,7 @@ use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
 use crate::engine::*;
-use crate::engine::call_frame::KVStoreCall;
+use crate::engine::call_frame::{DataInstruction, SubstateAddress};
 use crate::fee::*;
 use crate::model::*;
 use crate::wasm::*;
@@ -94,8 +94,8 @@ where
 
     fn kv_store_call(
         &mut self,
-        kv_store_id: KeyValueStoreId,
-        input: KVStoreCall,
+        address: SubstateAddress,
+        instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError>;
 
     fn get_epoch(&mut self) -> u64;

@@ -10,7 +10,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
-use crate::engine::call_frame::{KVStoreCall, KVStoreMethod};
+use crate::engine::call_frame::{DataInstruction, SubstateAddress};
 
 use crate::engine::RuntimeError;
 use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
@@ -138,12 +138,13 @@ where
         key: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
+        let address = SubstateAddress {
+            address: kv_store_id,
+            key: scrypto_key,
+        };
         let value = self
             .system_api
-            .kv_store_call(kv_store_id, KVStoreCall {
-                key: scrypto_key,
-                method: KVStoreMethod::Read
-            })?;
+            .kv_store_call(address, DataInstruction::Read)?;
         Ok(value)
     }
 
@@ -154,12 +155,13 @@ where
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
+        let address = SubstateAddress {
+            address: kv_store_id,
+            key: scrypto_key,
+        };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
         let rtn = self.system_api
-            .kv_store_call(kv_store_id, KVStoreCall {
-                key: scrypto_key,
-                method: KVStoreMethod::Write(scrypto_value)
-            })?;
+            .kv_store_call(address, DataInstruction::Write(scrypto_value))?;
         Ok(rtn)
     }
 
