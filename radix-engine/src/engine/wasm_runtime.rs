@@ -10,6 +10,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
+use crate::engine::call_frame::{KVStoreCall, KVStoreMethod};
 
 use crate::engine::RuntimeError;
 use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
@@ -155,7 +156,10 @@ where
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let value = self
             .system_api
-            .read_kv_store_entry(kv_store_id, scrypto_key)?;
+            .kv_store_call(kv_store_id, KVStoreCall {
+                key: scrypto_key,
+                method: KVStoreMethod::Read
+            })?;
         Ok(value)
     }
 
@@ -164,12 +168,15 @@ where
         kv_store_id: KeyValueStoreId,
         key: Vec<u8>,
         value: Vec<u8>,
-    ) -> Result<(), RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        self.system_api
-            .write_kv_store_entry(kv_store_id, scrypto_key, scrypto_value)?;
-        Ok(())
+        let rtn = self.system_api
+            .kv_store_call(kv_store_id, KVStoreCall {
+                key: scrypto_key,
+                method: KVStoreMethod::Write(scrypto_value)
+            })?;
+        Ok(rtn)
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActorInfo, RuntimeError> {
@@ -229,8 +236,7 @@ impl<'s, 'p, 't, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> Wasm
                 self.handle_get_kv_store_entry(kv_store_id, key)
             }
             RadixEngineInput::PutKeyValueStoreEntry(kv_store_id, key, value) => self
-                .handle_put_kv_store_entry(kv_store_id, key, value)
-                .map(encode),
+                .handle_put_kv_store_entry(kv_store_id, key, value),
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {

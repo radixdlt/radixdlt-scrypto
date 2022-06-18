@@ -211,6 +211,16 @@ enum KVStore<'a> {
     Tracked(ComponentAddress),
 }
 
+pub enum KVStoreMethod {
+    Read,
+    Write(ScryptoValue),
+}
+
+pub struct KVStoreCall {
+    pub key: ScryptoValue,
+    pub method: KVStoreMethod,
+}
+
 impl<'a> SNodeExecution<'a> {
     fn execute<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         self,
@@ -1301,6 +1311,112 @@ where
             .insert_objects_into_component(values, address.clone().into());
         Ok(address.into())
     }
+
+    fn kv_store_call(
+        &mut self,
+        kv_store_id: KeyValueStoreId,
+        input: KVStoreCall,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        verify_stored_key(&input.key)?;
+        let (taken_values, missing) = match &input.method {
+            KVStoreMethod::Write(value) => {
+                verify_stored_value(value)?;
+                let value_ids = value.stored_value_ids();
+                self.take_available_values(value_ids)
+            }
+            KVStoreMethod::Read => {
+                (HashMap::new(), HashSet::new())
+            }
+        };
+
+        let (store, ref_type) = if self
+            .owned_values
+            .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+        {
+            let ref_store = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(kv_store_id)).unwrap().get_mut();
+            (KVStore::Ref(ref_store), ValueRefType::Uncommitted { root: kv_store_id.clone(), ancestors: vec![] })
+        } else {
+            let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
+            let maybe_value_ref = self.refed_values.get(&value_id).cloned();
+            let value_ref =
+                maybe_value_ref.ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
+            match &value_ref {
+                ValueRefType::Uncommitted { root, ancestors } => {
+                    let mut next_ancestors = ancestors.clone();
+                    next_ancestors.push(kv_store_id);
+                    let value_ref_type = ValueRefType::Uncommitted {
+                        root: root.clone(),
+                        ancestors: next_ancestors,
+                    };
+                    let root_value = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(*root)).unwrap();
+                    let ref_store = root_value.get_mut().get_child_mut(ancestors, &value_id);
+                    (KVStore::Ref(ref_store), value_ref_type)
+                }
+                ValueRefType::Committed { component_address } => {
+                    (KVStore::Tracked(component_address.clone()), ValueRefType::Committed { component_address: *component_address })
+                }
+            }
+        };
+
+        let current_value = match &store {
+            KVStore::Ref(store) => {
+                store.kv_store().get(&input.key.raw)
+            },
+            KVStore::Tracked(component_address) => {
+                let substate_value = self.track.read_key_value(
+                    Address::KeyValueStore(*component_address, kv_store_id),
+                    input.key.raw.to_vec(),
+                );
+                substate_value.kv_entry().as_ref().map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
+            }
+        };
+        let cur_children = current_value.as_ref().map_or(HashSet::new(), |v| v.stored_value_ids());
+
+        match input.method {
+            KVStoreMethod::Read => {
+                for value_id in cur_children {
+                    self.refed_values.insert(value_id, ref_type.clone());
+                }
+
+                let value = current_value.map_or(
+                    Value::Option {
+                        value: Box::new(Option::None),
+                    },
+                    |v| {
+                        Value::Option {
+                            value: Box::new(Some(v.dom)),
+                        }
+                    }
+                );
+                let encoded = encode_any(&value);
+                Ok(ScryptoValue::from_slice(&encoded).unwrap())
+            }
+            KVStoreMethod::Write(value) => {
+                verify_stored_value_update(&cur_children, &missing)?;
+
+                // Write values
+                let new_values = taken_values.into_values().collect();
+                match store {
+                    KVStore::Ref(stored_value) => {
+                        stored_value.kv_store_mut().put(input.key.raw, value);
+                        stored_value.insert_children(new_values);
+                    },
+                    KVStore::Tracked(component_address) => {
+                        self.track.set_key_value(
+                            Address::KeyValueStore(component_address.clone(), kv_store_id),
+                            input.key.raw,
+                            SubstateValue::KeyValueStoreEntry(Some(value.raw)),
+                        );
+                        self.track
+                            .insert_objects_into_component(new_values, component_address);
+                    }
+                }
+
+                Ok(ScryptoValue::from_typed(&()))
+            }
+        }
+    }
+
 
     fn read_kv_store_entry(
         &mut self,
