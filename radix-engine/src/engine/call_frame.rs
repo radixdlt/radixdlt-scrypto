@@ -1,5 +1,4 @@
 use sbor::path::SborPath;
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::boxed::Box;
 use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
@@ -190,6 +189,8 @@ enum SubstateEntry<'a> {
     KeyValueStoreRef(&'a mut StoredValue, ScryptoValue),
     KeyValueStoreTracked(ComponentAddress, KeyValueStoreId, ScryptoValue),
     Component(ComponentAddress, &'a mut Component),
+    ComponentInfo(ComponentAddress, &'a Component),
+    ComponentInfoTracked(ComponentAddress),
 }
 
 pub enum DataInstruction {
@@ -200,6 +201,7 @@ pub enum DataInstruction {
 pub enum SubstateAddress {
     KeyValueEntry(KeyValueStoreId, ScryptoValue),
     Component(ComponentAddress),
+    ComponentInfo(ComponentAddress),
 }
 
 impl<'a> SNodeExecution<'a> {
@@ -1277,6 +1279,7 @@ where
         match &address {
             SubstateAddress::KeyValueEntry(_, key) => verify_stored_key(&key)?,
             SubstateAddress::Component(..) => {}
+            SubstateAddress::ComponentInfo(..) => {}
         }
 
         // If write, collect new child values
@@ -1297,6 +1300,29 @@ where
                     .get_mut(&component_address)
                     .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
                 let store = SubstateEntry::Component(component_address.clone(), component);
+                (
+                    store,
+                    ValueRefType::Committed {
+                        component_address: component_address.clone(),
+                    },
+                )
+            }
+            SubstateAddress::ComponentInfo(component_address) => {
+                let component = self
+                    .refed_components
+                    .get(&component_address);
+                let store = if let Some(component) = component {
+                    SubstateEntry::ComponentInfo(component_address.clone(), component)
+                } else {
+                    self.track.borrow_global_value(component_address.clone())
+                        .map_err(|e| {
+                            match e {
+                                TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
+                                TrackError::Reentrancy => panic!("Should not run into reentrancy")
+                            }
+                        })?;
+                    SubstateEntry::ComponentInfoTracked(component_address.clone())
+                };
                 (
                     store,
                     ValueRefType::Committed {
@@ -1368,6 +1394,16 @@ where
             SubstateEntry::Component(_, component) => {
                 ScryptoValue::from_slice(component.state()).expect("Expected to decode")
             }
+            SubstateEntry::ComponentInfo(_, component) => {
+                let info = (component.package_address().clone(), component.blueprint_name().to_string());
+                ScryptoValue::from_typed(&info)
+            }
+            SubstateEntry::ComponentInfoTracked(component_address) => {
+                let component = self.track.borrow_global_value(component_address.clone()).unwrap()
+                    .component();
+                let info = (component.package_address().clone(), component.blueprint_name().to_string());
+                ScryptoValue::from_typed(&info)
+            }
             SubstateEntry::KeyValueStoreRef(store, key) => {
                 let value = store.kv_store().get(&key.raw).map_or(
                     Value::Option {
@@ -1413,6 +1449,9 @@ where
                 // Write values
                 let new_values = taken_values.into_values().collect();
                 match store {
+                    SubstateEntry::ComponentInfo(..) | SubstateEntry::ComponentInfoTracked(..) => {
+                        return Err(RuntimeError::InvalidDataWrite);
+                    }
                     SubstateEntry::Component(component_address, component) => {
                         component.set_state(value.raw);
                         self.track
@@ -1435,28 +1474,6 @@ where
 
                 Ok(ScryptoValue::from_typed(&()))
             }
-        }
-    }
-
-    fn get_component_info(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<(PackageAddress, String), RuntimeError> {
-        let substate_value =
-            self.track
-                .borrow_global_value(component_address)
-                .map_err(|e| match e {
-                    TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
-                    TrackError::Reentrancy => panic!("Component info reentrancy"),
-                })?;
-
-        if let SubstateValue::Component(component) = substate_value {
-            Ok((
-                component.package_address(),
-                component.blueprint_name().to_owned(),
-            ))
-        } else {
-            panic!("Value is not a component");
         }
     }
 

@@ -105,10 +105,9 @@ where
     fn handle_get_component_info(
         &mut self,
         component_address: ComponentAddress,
-    ) -> Result<(PackageAddress, String), RuntimeError> {
-        let (package_address, blueprint_name) =
-            self.system_api.get_component_info(component_address)?;
-        Ok((package_address, blueprint_name))
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let address = SubstateAddress::ComponentInfo(component_address);
+        self.system_api.data(address, DataInstruction::Read)
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
@@ -196,8 +195,7 @@ impl<'s, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
                 .map(encode),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
             RadixEngineInput::GetComponentInfo(component_address) => self
-                .handle_get_component_info(component_address)
-                .map(encode),
+                .handle_get_component_info(component_address),
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::ReadData(address) => self.handle_read_data(address),
             RadixEngineInput::WriteData(address, value) => self.handle_write_data(address, value),

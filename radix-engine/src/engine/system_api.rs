@@ -74,11 +74,6 @@ where
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
 
-    fn get_component_info(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<(PackageAddress, String), RuntimeError>;
-
     fn create_kv_store(&mut self) -> KeyValueStoreId;
 
     fn data(
