@@ -1,8 +1,9 @@
 use sbor::rust::string::ToString;
+use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::core::ScryptoActor;
-use crate::engine::types::{BucketId, ProofId, VaultId};
+use crate::engine::types::{BucketId, KeyValueStoreId, ProofId, VaultId};
 use crate::resource::ResourceAddress;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -20,4 +21,9 @@ pub enum SNodeRef {
     Proof(ProofId),
     VaultRef(VaultId),
     TransactionProcessor,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum DataAddress {
+    KeyValueEntry(KeyValueStoreId, Vec<u8>),
 }

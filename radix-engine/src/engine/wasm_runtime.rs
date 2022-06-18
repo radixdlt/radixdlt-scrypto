@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::SNodeRef;
+use scrypto::core::{DataAddress, SNodeRef};
 use scrypto::core::ScryptoActorInfo;
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
@@ -136,22 +136,29 @@ where
 
     fn handle_get_kv_store_entry(
         &mut self,
-        kv_store_id: KeyValueStoreId,
-        key: Vec<u8>,
+        address: DataAddress
     ) -> Result<ScryptoValue, RuntimeError> {
-        let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
-        let address = SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key);
+        let address = match address {
+            DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
+                let scrypto_key = ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
+            }
+        };
+
         self.system_api.data(address, DataInstruction::Read)
     }
 
     fn handle_put_kv_store_entry(
         &mut self,
-        kv_store_id: KeyValueStoreId,
-        key: Vec<u8>,
+        address: DataAddress,
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
-        let address = SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key);
+        let address = match address {
+            DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
+                let scrypto_key = ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
+            }
+        };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
         self.system_api.data(address, DataInstruction::Write(scrypto_value))
     }
@@ -191,7 +198,7 @@ impl<'s, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
         self.consume_cost_units(cost)?;
 
         let input: RadixEngineInput =
-            scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidCallData)?;
+            scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
         match input {
             RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => self
                 .handle_invoke_snode(snode_ref, fn_ident, input_bytes)
@@ -207,11 +214,12 @@ impl<'s, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
             RadixEngineInput::PutComponentState(component_address, state) => self
                 .handle_put_component_state(component_address, state),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
-            RadixEngineInput::GetKeyValueStoreEntry(kv_store_id, key) => {
-                self.handle_get_kv_store_entry(kv_store_id, key)
+            RadixEngineInput::GetKeyValueStoreEntry(address) => {
+                self.handle_get_kv_store_entry(address)
             }
-            RadixEngineInput::PutKeyValueStoreEntry(kv_store_id, key, value) => self
-                .handle_put_kv_store_entry(kv_store_id, key, value),
+            RadixEngineInput::PutKeyValueStoreEntry(address, value) => {
+                self.handle_put_kv_store_entry(address, value)
+            },
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {

@@ -6,6 +6,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::core::DataAddress;
 
 use crate::abi::*;
 use crate::buffer::*;
@@ -36,18 +37,19 @@ impl<K: Encode + Decode, V: Encode + Decode> KeyValueStore<K, V> {
 
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<V> {
-        let input = RadixEngineInput::GetKeyValueStoreEntry(self.id, scrypto_encode(key));
+        let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
+        let input = RadixEngineInput::GetKeyValueStoreEntry(address);
         call_engine(input)
     }
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
+        let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(&key));
         let input = RadixEngineInput::PutKeyValueStoreEntry(
-            self.id,
-            scrypto_encode(&key),
+            address,
             scrypto_encode(&value),
         );
-        let _: () = call_engine(input);
+        call_engine(input)
     }
 }
 

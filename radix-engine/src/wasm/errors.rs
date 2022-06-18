@@ -62,7 +62,7 @@ pub enum InvokeError {
 
     FunctionNotFound,
 
-    InvalidCallData,
+    InvalidRadixEngineInput,
 
     MissingReturnData,
 
