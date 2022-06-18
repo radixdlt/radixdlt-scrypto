@@ -106,7 +106,8 @@ where
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<ScryptoValue, RuntimeError> {
-        self.system_api.read_component_state(component_address)
+        let address = SubstateAddress::Component(component_address);
+        self.system_api.data(address, DataInstruction::Read)
     }
 
     fn handle_put_component_state(
@@ -115,7 +116,9 @@ where
         state: Vec<u8>,
     ) -> Result<(), RuntimeError> {
         let value = ScryptoValue::from_slice(&state).map_err(RuntimeError::DecodeError)?;
-        self.system_api.write_component_state(component_address, value)
+        let address = SubstateAddress::Component(component_address);
+        self.system_api.data(address, DataInstruction::Write(value))?;
+        Ok(())
     }
 
     fn handle_get_component_info(
@@ -139,10 +142,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let address = SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key);
-        let value = self
-            .system_api
-            .data(address, DataInstruction::Read)?;
-        Ok(value)
+        self.system_api.data(address, DataInstruction::Read)
     }
 
     fn handle_put_kv_store_entry(

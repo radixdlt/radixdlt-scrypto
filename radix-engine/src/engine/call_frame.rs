@@ -1374,29 +1374,10 @@ where
         // Read current value
         let current_value = match &store {
             SubstateEntry::Component(_, component) => {
-                Some(ScryptoValue::from_slice(component.state()).expect("Expected to decode"))
+                ScryptoValue::from_slice(component.state()).expect("Expected to decode")
             }
             SubstateEntry::KeyValueStoreRef(store, key) => {
-                store.kv_store().get(&key.raw)
-            },
-            SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
-                let substate_value = self.track.read_key_value(
-                    Address::KeyValueStore(*component_address, *kv_store_id),
-                    key.raw.to_vec(),
-                );
-                substate_value.kv_entry().as_ref().map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
-            }
-        };
-        let cur_children = current_value.as_ref().map_or(HashSet::new(), |v| v.stored_value_ids());
-
-        // Fulfill method
-        match instruction {
-            DataInstruction::Read => {
-                for value_id in cur_children {
-                    self.refed_values.insert(value_id, ref_type.clone());
-                }
-
-                let value = current_value.map_or(
+                let value = store.kv_store().get(&key.raw).map_or(
                     Value::Option {
                         value: Box::new(Option::None),
                     },
@@ -1406,8 +1387,35 @@ where
                         }
                     }
                 );
-                let encoded = encode_any(&value);
-                Ok(ScryptoValue::from_slice(&encoded).unwrap())
+                ScryptoValue::from_value(value).unwrap()
+            },
+            SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
+                let substate_value = self.track.read_key_value(
+                    Address::KeyValueStore(*component_address, *kv_store_id),
+                    key.raw.to_vec(),
+                );
+                let value = substate_value.kv_entry().as_ref().map_or(
+                    Value::Option {
+                        value: Box::new(Option::None),
+                    },
+                    |bytes| {
+                        Value::Option {
+                            value: Box::new(Some(decode_any(bytes).unwrap())),
+                        }
+                    }
+                );
+                ScryptoValue::from_value(value).unwrap()
+            }
+        };
+        let cur_children = current_value.stored_value_ids();
+
+        // Fulfill method
+        match instruction {
+            DataInstruction::Read => {
+                for value_id in cur_children {
+                    self.refed_values.insert(value_id, ref_type.clone());
+                }
+                Ok(current_value)
             }
             DataInstruction::Write(value) => {
                 verify_stored_value_update(&cur_children, &missing)?;
