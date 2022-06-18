@@ -70,13 +70,15 @@ impl Component {
 
     /// Returns the state of this component.
     pub fn get_state<T: ComponentState>(&self) -> T {
-        let input = RadixEngineInput::GetComponentState(self.0);
+        let address = DataAddress::Component(self.0);
+        let input = RadixEngineInput::ReadData(address);
         call_engine(input)
     }
 
     /// Updates the state of this component.
     pub fn put_state<T: ComponentState>(&self, state: T) {
-        let input = RadixEngineInput::PutComponentState(self.0, scrypto_encode(&state));
+        let address = DataAddress::Component(self.0);
+        let input = RadixEngineInput::WriteData(address, scrypto_encode(&state));
         call_engine(input)
     }
 

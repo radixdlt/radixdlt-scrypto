@@ -102,24 +102,6 @@ where
         Ok(component_address)
     }
 
-    fn handle_get_component_state(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let address = SubstateAddress::Component(component_address);
-        self.system_api.data(address, DataInstruction::Read)
-    }
-
-    fn handle_put_component_state(
-        &mut self,
-        component_address: ComponentAddress,
-        state: Vec<u8>,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let value = ScryptoValue::from_slice(&state).map_err(RuntimeError::DecodeError)?;
-        let address = SubstateAddress::Component(component_address);
-        self.system_api.data(address, DataInstruction::Write(value))
-    }
-
     fn handle_get_component_info(
         &mut self,
         component_address: ComponentAddress,
@@ -134,7 +116,7 @@ where
         Ok(kv_store_id)
     }
 
-    fn handle_get_kv_store_entry(
+    fn handle_read_data(
         &mut self,
         address: DataAddress
     ) -> Result<ScryptoValue, RuntimeError> {
@@ -143,12 +125,15 @@ where
                 let scrypto_key = ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
             }
+            DataAddress::Component(component_address) => {
+                SubstateAddress::Component(component_address)
+            }
         };
 
         self.system_api.data(address, DataInstruction::Read)
     }
 
-    fn handle_put_kv_store_entry(
+    fn handle_write_data(
         &mut self,
         address: DataAddress,
         value: Vec<u8>,
@@ -157,6 +142,9 @@ where
             DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
                 let scrypto_key = ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
+            }
+            DataAddress::Component(component_address) => {
+                SubstateAddress::Component(component_address)
             }
         };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
@@ -209,17 +197,9 @@ impl<'s, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
             RadixEngineInput::GetComponentInfo(component_address) => self
                 .handle_get_component_info(component_address)
                 .map(encode),
-            RadixEngineInput::GetComponentState(component_address) => self
-                .handle_get_component_state(component_address),
-            RadixEngineInput::PutComponentState(component_address, state) => self
-                .handle_put_component_state(component_address, state),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
-            RadixEngineInput::GetKeyValueStoreEntry(address) => {
-                self.handle_get_kv_store_entry(address)
-            }
-            RadixEngineInput::PutKeyValueStoreEntry(address, value) => {
-                self.handle_put_kv_store_entry(address, value)
-            },
+            RadixEngineInput::ReadData(address) => self.handle_read_data(address),
+            RadixEngineInput::WriteData(address, value) => self.handle_write_data(address, value),
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {

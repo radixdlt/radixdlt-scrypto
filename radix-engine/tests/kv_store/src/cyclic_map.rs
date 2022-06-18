@@ -20,7 +20,7 @@ blueprint! {
             let kv_store1_id = kv_store1.id.clone();
 
             let address = DataAddress::KeyValueEntry(kv_store1_id, scrypto_encode(&0u32));
-            let input = RadixEngineInput::PutKeyValueStoreEntry(
+            let input = RadixEngineInput::WriteData(
                 address,
                 scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store0_id,
@@ -38,7 +38,7 @@ blueprint! {
             let kv_store_id = kv_store.id.clone();
 
             let address = DataAddress::KeyValueEntry(kv_store_id.clone(), scrypto_encode(&0u32));
-            let input = RadixEngineInput::PutKeyValueStoreEntry(
+            let input = RadixEngineInput::WriteData(
                 address,
                 scrypto_encode(&KeyValueStore::<(), ()> {
                     id: kv_store_id,

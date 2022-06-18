@@ -4,6 +4,7 @@ use sbor::*;
 
 use crate::core::ScryptoActor;
 use crate::engine::types::{BucketId, KeyValueStoreId, ProofId, VaultId};
+use crate::prelude::ComponentAddress;
 use crate::resource::ResourceAddress;
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -26,4 +27,5 @@ pub enum SNodeRef {
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum DataAddress {
     KeyValueEntry(KeyValueStoreId, Vec<u8>),
+    Component(ComponentAddress),
 }

@@ -38,14 +38,14 @@ impl<K: Encode + Decode, V: Encode + Decode> KeyValueStore<K, V> {
     /// Returns the value that is associated with the given key.
     pub fn get(&self, key: &K) -> Option<V> {
         let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(key));
-        let input = RadixEngineInput::GetKeyValueStoreEntry(address);
+        let input = RadixEngineInput::ReadData(address);
         call_engine(input)
     }
 
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
         let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(&key));
-        let input = RadixEngineInput::PutKeyValueStoreEntry(
+        let input = RadixEngineInput::WriteData(
             address,
             scrypto_encode(&value),
         );
