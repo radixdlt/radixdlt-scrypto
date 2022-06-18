@@ -138,13 +138,10 @@ where
         key: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
-        let address = SubstateAddress {
-            address: kv_store_id,
-            key: scrypto_key,
-        };
+        let address = SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key);
         let value = self
             .system_api
-            .kv_store_call(address, DataInstruction::Read)?;
+            .data(address, DataInstruction::Read)?;
         Ok(value)
     }
 
@@ -155,13 +152,10 @@ where
         value: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
-        let address = SubstateAddress {
-            address: kv_store_id,
-            key: scrypto_key,
-        };
+        let address = SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key);
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
         let rtn = self.system_api
-            .kv_store_call(address, DataInstruction::Write(scrypto_value))?;
+            .data(address, DataInstruction::Write(scrypto_value))?;
         Ok(rtn)
     }
 

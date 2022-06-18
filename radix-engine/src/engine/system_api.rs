@@ -92,7 +92,7 @@ where
 
     fn create_kv_store(&mut self) -> KeyValueStoreId;
 
-    fn kv_store_call(
+    fn data(
         &mut self,
         address: SubstateAddress,
         instruction: DataInstruction,
