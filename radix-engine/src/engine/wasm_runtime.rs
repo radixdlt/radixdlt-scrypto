@@ -1,16 +1,16 @@
+use crate::engine::call_frame::{DataInstruction, SubstateAddress};
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{DataAddress, SNodeRef};
 use scrypto::core::ScryptoActorInfo;
+use scrypto::core::{DataAddress, SNodeRef};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
-use crate::engine::call_frame::{DataInstruction, SubstateAddress};
 
 use crate::engine::RuntimeError;
 use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
@@ -116,13 +116,11 @@ where
         Ok(kv_store_id)
     }
 
-    fn handle_read_data(
-        &mut self,
-        address: DataAddress
-    ) -> Result<ScryptoValue, RuntimeError> {
+    fn handle_read_data(&mut self, address: DataAddress) -> Result<ScryptoValue, RuntimeError> {
         let address = match address {
             DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
-                let scrypto_key = ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                let scrypto_key =
+                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
             }
             DataAddress::Component(component_address) => {
@@ -140,7 +138,8 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         let address = match address {
             DataAddress::KeyValueEntry(kv_store_id, key_bytes) => {
-                let scrypto_key = ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
+                let scrypto_key =
+                    ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
             }
             DataAddress::Component(component_address) => {
@@ -148,7 +147,8 @@ where
             }
         };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        self.system_api.data(address, DataInstruction::Write(scrypto_value))
+        self.system_api
+            .data(address, DataInstruction::Write(scrypto_value))
     }
 
     fn handle_get_actor(&mut self) -> Result<ScryptoActorInfo, RuntimeError> {

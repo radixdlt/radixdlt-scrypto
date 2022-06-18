@@ -45,10 +45,7 @@ impl<K: Encode + Decode, V: Encode + Decode> KeyValueStore<K, V> {
     /// Inserts a new key-value pair into this map.
     pub fn insert(&self, key: K, value: V) {
         let address = DataAddress::KeyValueEntry(self.id, scrypto_encode(&key));
-        let input = RadixEngineInput::WriteData(
-            address,
-            scrypto_encode(&value),
-        );
+        let input = RadixEngineInput::WriteData(address, scrypto_encode(&value));
         call_engine(input)
     }
 }

@@ -5,8 +5,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::*;
 use crate::engine::call_frame::{DataInstruction, SubstateAddress};
+use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
 use crate::wasm::*;
@@ -76,13 +76,13 @@ where
 
     fn read_component_state(
         &mut self,
-        component_address: ComponentAddress
+        component_address: ComponentAddress,
     ) -> Result<ScryptoValue, RuntimeError>;
 
     fn write_component_state(
         &mut self,
         component_address: ComponentAddress,
-        value: ScryptoValue
+        value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
 
     fn get_component_info(
