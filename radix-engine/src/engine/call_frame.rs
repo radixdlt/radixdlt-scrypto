@@ -1422,13 +1422,7 @@ where
             let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
             let maybe_value_ref = self.refed_values.get(&value_id).cloned();
             let value_ref =
-                maybe_value_ref.ok_or_else(|| {
-                    if taken_values.contains_key(&value_id) {
-                        RuntimeError::CyclicKeyValueStore(kv_store_id.clone())
-                    } else {
-                        RuntimeError::KeyValueStoreNotFound(kv_store_id.clone())
-                    }
-                })?;
+                maybe_value_ref.ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
             match &value_ref {
                 ValueRefType::Uncommitted { root, ancestors } => {
                     let root_value = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(*root)).unwrap();

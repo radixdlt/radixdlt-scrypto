@@ -64,9 +64,6 @@ pub enum RuntimeError {
     /// Key Value Store does not exist.
     KeyValueStoreNotFound(KeyValueStoreId),
 
-    /// Cyclic Key Value Store added
-    CyclicKeyValueStore(KeyValueStoreId),
-
     StoredValueRemoved(StoredValueId),
     StoredValueChangedChildren,
 
