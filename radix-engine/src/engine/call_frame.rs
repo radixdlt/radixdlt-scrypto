@@ -76,12 +76,6 @@ pub struct CallFrame<
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValueType {
-    Owned,
-    Ref(ValueRefType),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueRefType {
     Uncommitted {
         root: KeyValueStoreId,
@@ -210,6 +204,11 @@ pub enum SNodeExecution<'a> {
     Blueprint(ScryptoActorInfo, ValidatedPackage),
     Resource(Address, &'a mut ResourceManager),
     Component(&'a mut Component, ScryptoActorInfo, ValidatedPackage),
+}
+
+enum KVStore<'a> {
+    Ref(&'a mut StoredValue),
+    Tracked(ComponentAddress),
 }
 
 impl<'a> SNodeExecution<'a> {
@@ -714,49 +713,6 @@ where
             }
         }
         Ok(values)
-    }
-
-    fn read_kv_store_entry_internal(
-        &mut self,
-        kv_store_id: KeyValueStoreId,
-        key: &ScryptoValue,
-    ) -> Result<(Option<ScryptoValue>, ValueType), RuntimeError> {
-        verify_stored_key(key)?;
-
-        let (maybe_value, value_type) = if self
-            .owned_values
-            .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
-        {
-            let store = Self::get_owned_kv_store_mut(&mut self.owned_values, &kv_store_id).unwrap();
-            let value = store.get(&key.raw);
-            (value, ValueType::Owned)
-        } else {
-            let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
-            let maybe_value_ref = self.refed_values.get(&value_id).cloned();
-            let value_ref =
-                maybe_value_ref.ok_or(RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
-            let value = match &value_ref {
-                ValueRefType::Uncommitted { root, ancestors } => {
-                    let root_value = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(*root)).unwrap();
-                    let mut value = root_value.get_mut().get_child(ancestors, &value_id);
-                    value.kv_store_mut().get(&key.raw)
-                }
-                ValueRefType::Committed { component_address } => {
-                    let substate_value = self.track.read_key_value(
-                        Address::KeyValueStore(*component_address, kv_store_id),
-                        key.raw.to_vec(),
-                    );
-                    match substate_value {
-                        SubstateValue::KeyValueStoreEntry(v) => v,
-                        _ => panic!("Substate value is not a KeyValueStore entry"),
-                    }
-                    .map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
-                }
-            };
-            (value, ValueType::Ref(value_ref))
-        };
-
-        Ok((maybe_value, value_type))
     }
 
     pub fn take_available(
@@ -1353,46 +1309,64 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         verify_stored_key(&key)?;
 
-        let (maybe_value, parent_type) =
-            self.read_kv_store_entry_internal(kv_store_id.clone(), &key)?;
-
-        let ref_type = match parent_type {
-            ValueType::Owned => ValueRefType::Uncommitted {
-                root: kv_store_id,
-                ancestors: vec![],
-            },
-            ValueType::Ref(ValueRefType::Uncommitted { root, ancestors }) => {
-                let mut next_ancestors = ancestors.clone();
-                next_ancestors.push(kv_store_id);
-                ValueRefType::Uncommitted {
-                    root: root.clone(),
-                    ancestors: next_ancestors,
+        let (store, ref_type) = if self
+            .owned_values
+            .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+        {
+            let ref_store = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(kv_store_id)).unwrap().get_mut();
+            (KVStore::Ref(ref_store), ValueRefType::Uncommitted { root: kv_store_id.clone(), ancestors: vec![] })
+        } else {
+            let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
+            let maybe_value_ref = self.refed_values.get(&value_id).cloned();
+            let value_ref =
+                maybe_value_ref.ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
+            match &value_ref {
+                ValueRefType::Uncommitted { root, ancestors } => {
+                    let mut next_ancestors = ancestors.clone();
+                    next_ancestors.push(kv_store_id);
+                    let value_ref_type = ValueRefType::Uncommitted {
+                        root: root.clone(),
+                        ancestors: next_ancestors,
+                    };
+                    let root_value = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(*root)).unwrap();
+                    let ref_store = root_value.get_mut().get_child_mut(ancestors, &value_id);
+                    (KVStore::Ref(ref_store), value_ref_type)
+                }
+                ValueRefType::Committed { component_address } => {
+                    (KVStore::Tracked(component_address.clone()), ValueRefType::Committed { component_address: *component_address })
                 }
             }
-            ValueType::Ref(ValueRefType::Committed { component_address }) => {
-                ValueRefType::Committed { component_address }
+        };
+
+        let maybe_value = match &store {
+            KVStore::Ref(store) => {
+                store.kv_store().get(&key.raw)
+            },
+            KVStore::Tracked(component_address) => {
+                let substate_value = self.track.read_key_value(
+                    Address::KeyValueStore(*component_address, kv_store_id),
+                    key.raw.to_vec(),
+                );
+                substate_value.kv_entry().as_ref().map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
             }
         };
-        match maybe_value {
-            Some(v) => {
+
+        let value = maybe_value.map_or(
+            Value::Option {
+                value: Box::new(Option::None),
+            },
+            |v| {
                 for value_id in v.stored_value_ids() {
                     self.refed_values.insert(value_id, ref_type.clone());
                 }
-
-                let value = Value::Option {
+                Value::Option {
                     value: Box::new(Some(v.dom)),
-                };
-                let encoded = encode_any(&value);
-                Ok(ScryptoValue::from_slice(&encoded).unwrap())
+                }
             }
-            None => {
-                let value = Value::Option {
-                    value: Box::new(Option::None),
-                };
-                let encoded = encode_any(&value);
-                Ok(ScryptoValue::from_slice(&encoded).unwrap())
-            }
-        }
+        );
+
+        let encoded = encode_any(&value);
+        Ok(ScryptoValue::from_slice(&encoded).unwrap())
     }
 
     fn write_kv_store_entry(
@@ -1407,10 +1381,6 @@ where
         let value_ids = value.stored_value_ids();
         let (taken_values, missing) = self.take_available_values(value_ids);
 
-        enum KVStore<'a> {
-            Ref(&'a mut StoredValue),
-            Tracked(ComponentAddress),
-        }
 
         let store = if self
             .owned_values
