@@ -81,19 +81,6 @@ where
 
     fn create_kv_store(&mut self) -> KeyValueStoreId;
 
-    fn read_kv_store_entry(
-        &mut self,
-        kv_store_id: KeyValueStoreId,
-        key: ScryptoValue,
-    ) -> Result<ScryptoValue, RuntimeError>;
-
-    fn write_kv_store_entry(
-        &mut self,
-        kv_store_id: KeyValueStoreId,
-        key: ScryptoValue,
-        value: ScryptoValue,
-    ) -> Result<(), RuntimeError>;
-
     fn kv_store_call(
         &mut self,
         kv_store_id: KeyValueStoreId,
