@@ -246,6 +246,14 @@ impl SubstateValue {
             panic!("Not a package");
         }
     }
+
+    pub fn kv_entry(&self) -> &Option<Vec<u8>> {
+        if let SubstateValue::KeyValueStoreEntry(kv_entry) = self {
+            kv_entry
+        } else {
+            panic!("Not a KVEntry");
+        }
+    }
 }
 
 impl Into<SubstateValue> for ValidatedPackage {

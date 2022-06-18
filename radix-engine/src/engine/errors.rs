@@ -68,6 +68,7 @@ pub enum RuntimeError {
     CyclicKeyValueStore(KeyValueStoreId),
 
     StoredValueRemoved(StoredValueId),
+    StoredValueChangedChildren,
 
     /// Bucket does not exist.
     BucketNotFound(BucketId),

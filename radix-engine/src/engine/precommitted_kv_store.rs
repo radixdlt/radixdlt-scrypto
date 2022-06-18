@@ -17,7 +17,16 @@ pub enum StoredValue {
 }
 
 impl StoredValue {
-    pub fn kv_store(&mut self) -> &mut PreCommittedKeyValueStore {
+    pub fn kv_store(&self) -> &PreCommittedKeyValueStore {
+        match self {
+            StoredValue::KeyValueStore { store, .. } => {
+                store
+            }
+            _ => panic!("Expected to be a store")
+        }
+    }
+
+    pub fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
         match self {
             StoredValue::KeyValueStore { store, .. } => {
                 store
