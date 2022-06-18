@@ -108,15 +108,8 @@ where
     fn handle_get_component_state(
         &mut self,
         component_address: ComponentAddress,
-    ) -> Result<Vec<u8>, RuntimeError> {
-        if let Some(component) = &self.component {
-            if component_address.eq(self.this.component_address().as_ref().unwrap()) {
-                let state = component.state().to_vec();
-                return Ok(state);
-            }
-        }
-
-        Err(RuntimeError::ComponentNotFound(component_address))
+    ) -> Result<ScryptoValue, RuntimeError> {
+        self.system_api.read_component_state(component_address)
     }
 
     fn handle_put_component_state(
@@ -124,14 +117,8 @@ where
         component_address: ComponentAddress,
         state: Vec<u8>,
     ) -> Result<(), RuntimeError> {
-        if let Some(component) = &mut self.component {
-            if component_address.eq(self.this.component_address().as_ref().unwrap()) {
-                component.set_state(state);
-                return Ok(());
-            }
-        }
-
-        Err(RuntimeError::ComponentNotFound(component_address))
+        let value = ScryptoValue::from_slice(&state).map_err(RuntimeError::DecodeError)?;
+        self.system_api.write_component_state(component_address, value)
     }
 
     fn handle_get_component_info(
@@ -226,8 +213,7 @@ impl<'s, 'p, 't, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> Wasm
                 .handle_get_component_info(component_address)
                 .map(encode),
             RadixEngineInput::GetComponentState(component_address) => self
-                .handle_get_component_state(component_address)
-                .map(encode),
+                .handle_get_component_state(component_address),
             RadixEngineInput::PutComponentState(component_address, state) => self
                 .handle_put_component_state(component_address, state)
                 .map(encode),

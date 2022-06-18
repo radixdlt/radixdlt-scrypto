@@ -74,6 +74,17 @@ where
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
 
+    fn read_component_state(
+        &mut self,
+        component_address: ComponentAddress
+    ) -> Result<ScryptoValue, RuntimeError>;
+
+    fn write_component_state(
+        &mut self,
+        component_address: ComponentAddress,
+        value: ScryptoValue
+    ) -> Result<(), RuntimeError>;
+
     fn get_component_info(
         &mut self,
         component_address: ComponentAddress,

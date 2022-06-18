@@ -71,9 +71,7 @@ impl Component {
     /// Returns the state of this component.
     pub fn get_state<T: ComponentState>(&self) -> T {
         let input = RadixEngineInput::GetComponentState(self.0);
-        let output: Vec<u8> = call_engine(input);
-
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     /// Updates the state of this component.
