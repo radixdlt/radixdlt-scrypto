@@ -21,6 +21,11 @@ pub type BucketId = u32;
 pub type ProofId = u32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum TransientValueId {
+    Bucket(BucketId),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoredValueId {
     KeyValueStoreId(KeyValueStoreId),
     VaultId(VaultId),
@@ -31,6 +36,30 @@ impl Into<(Hash, u32)> for StoredValueId {
         match self {
             StoredValueId::KeyValueStoreId(id) => id,
             StoredValueId::VaultId(id) => id,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum ValueId {
+    Stored(StoredValueId)
+}
+
+impl ValueId {
+    pub fn kv_store_id(id: KeyValueStoreId) -> Self {
+        ValueId::Stored(StoredValueId::KeyValueStoreId(id))
+    }
+
+    pub fn vault_id(id: VaultId) -> Self {
+        ValueId::Stored(StoredValueId::VaultId(id))
+    }
+}
+
+impl Into<(Hash, u32)> for ValueId {
+    fn into(self) -> KeyValueStoreId {
+        match self {
+            ValueId::Stored(StoredValueId::KeyValueStoreId(id)) => id,
+            ValueId::Stored(StoredValueId::VaultId(id)) => id,
         }
     }
 }

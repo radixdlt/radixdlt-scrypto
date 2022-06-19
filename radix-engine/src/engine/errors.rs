@@ -60,7 +60,7 @@ pub enum RuntimeError {
     ResourceManagerNotFound(ResourceAddress),
 
     InvalidDataWrite,
-    ValueNotFound(StoredValueId),
+    ValueNotFound(ValueId),
 
     /// Key Value Store does not exist.
     KeyValueStoreNotFound(KeyValueStoreId),

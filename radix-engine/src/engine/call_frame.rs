@@ -55,7 +55,7 @@ pub struct CallFrame<
     /// Owned Values
     buckets: HashMap<BucketId, RefCell<Bucket>>,
     proofs: HashMap<ProofId, RefCell<Proof>>,
-    owned_values: HashMap<StoredValueId, RefCell<StoredValue>>,
+    owned_values: HashMap<ValueId, RefCell<StoredValue>>,
     worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
 
@@ -100,18 +100,38 @@ fn verify_stored_value_update(
 ) -> Result<(), RuntimeError> {
     // TODO: optimize intersection search
     for old_id in old.iter() {
-        if !missing.contains(old_id) {
+        if !missing.contains(&old_id) {
             return Err(RuntimeError::StoredValueRemoved(old_id.clone()));
         }
     }
 
     for missing_id in missing.iter() {
         if !old.contains(missing_id) {
-            return Err(RuntimeError::ValueNotFound(missing_id.clone()));
+            return Err(RuntimeError::ValueNotFound(ValueId::Stored(*missing_id)));
         }
     }
 
     Ok(())
+}
+
+fn to_stored_ids(ids: HashSet<ValueId>) -> Result<HashSet<StoredValueId>, RuntimeError> {
+    let mut stored_ids = HashSet::new();
+    for id in ids {
+        match id {
+            ValueId::Stored(stored_id) => stored_ids.insert(stored_id)
+        };
+    }
+    Ok(stored_ids)
+}
+
+fn to_stored_values(values: HashMap<ValueId, StoredValue>) -> Result<HashMap<StoredValueId, StoredValue>, RuntimeError> {
+    let mut stored_values = HashMap::new();
+    for (id, value) in values {
+        match id {
+            ValueId::Stored(stored_id) => stored_values.insert(stored_id, value)
+        };
+    }
+    Ok(stored_values)
 }
 
 fn verify_stored_value(value: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -386,7 +406,7 @@ where
             success = false;
         }
 
-        let values: HashMap<StoredValueId, StoredValue> = self
+        let values: HashMap<ValueId, StoredValue> = self
             .owned_values
             .drain()
             .map(|(id, c)| (id, c.into_inner()))
@@ -472,7 +492,7 @@ where
     ) -> Result<HashMap<VaultId, Vault>, RuntimeError> {
         let mut vault_ids_to_take = HashSet::new();
         for vault_id in vault_ids {
-            vault_ids_to_take.insert(StoredValueId::VaultId(*vault_id));
+            vault_ids_to_take.insert(ValueId::vault_id(*vault_id));
         }
         let (taken_values, mut missing) = self.take_available_values(vault_ids_to_take);
         let first_missing_value = missing.drain().nth(0);
@@ -662,8 +682,8 @@ where
 
     fn take_available_values(
         &mut self,
-        value_ids: HashSet<StoredValueId>,
-    ) -> (HashMap<StoredValueId, StoredValue>, HashSet<StoredValueId>) {
+        value_ids: HashSet<ValueId>,
+    ) -> (HashMap<ValueId, StoredValue>, HashSet<ValueId>) {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
             let mut missing_values = HashSet::new();
@@ -935,7 +955,7 @@ where
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (resource_address, snode_state) = {
-                    if let Some(value) = self.owned_values.get(&StoredValueId::VaultId(*vault_id)) {
+                    if let Some(value) = self.owned_values.get(&ValueId::vault_id(*vault_id)) {
                         let resource_address = match value.borrow().deref() {
                             StoredValue::Vault(vault) => vault.resource_address(),
                             _ => panic!("Expected vault"),
@@ -949,7 +969,7 @@ where
                         let value_id = StoredValueId::VaultId(*vault_id);
                         let maybe_value_ref = self.refed_values.get(&value_id).cloned();
                         let value_ref =
-                            maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
+                            maybe_value_ref.ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?;
                         match value_ref {
                             ValueRefType::Uncommitted {
                                 root,
@@ -957,7 +977,7 @@ where
                             } => {
                                 let root_store = self
                                     .owned_values
-                                    .get_mut(&StoredValueId::KeyValueStoreId(root))
+                                    .get_mut(&ValueId::kv_store_id(root))
                                     .unwrap()
                                     .get_mut();
                                 let value = root_store.get_child(ancestors, &value_id);
@@ -1099,7 +1119,7 @@ where
         }
         for (vault_id, vault) in received_vaults.drain() {
             self.owned_values.insert(
-                StoredValueId::VaultId(vault_id.clone()),
+                ValueId::vault_id(vault_id.clone()),
                 RefCell::new(StoredValue::Vault(vault)),
             );
         }
@@ -1202,7 +1222,7 @@ where
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
         let vault_id = self.track.new_vault_id();
         self.owned_values.insert(
-            StoredValueId::VaultId(vault_id.clone()),
+            ValueId::vault_id(vault_id.clone()),
             RefCell::new(StoredValue::Vault(Vault::new(container))),
         );
         Ok(vault_id)
@@ -1226,16 +1246,16 @@ where
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
         }
-
+        let to_store_values = to_stored_values(taken_values)?;
         let address = self.track.create_uuid_value(component);
-        self.track.insert_objects_into_component(taken_values, address.clone().into());
+        self.track.insert_objects_into_component(to_store_values, address.clone().into());
         Ok(address.into())
     }
 
     fn create_kv_store(&mut self) -> KeyValueStoreId {
         let kv_store_id = self.track.new_kv_store_id();
         self.owned_values.insert(
-            StoredValueId::KeyValueStoreId(kv_store_id.clone()),
+            ValueId::kv_store_id(kv_store_id.clone()),
             RefCell::new(StoredValue::KeyValueStore {
                 store: PreCommittedKeyValueStore::new(),
                 child_values: HashMap::new(),
@@ -1301,11 +1321,11 @@ where
 
                 if self
                     .owned_values
-                    .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+                    .contains_key(&ValueId::kv_store_id(kv_store_id.clone()))
                 {
                     let ref_store = self
                         .owned_values
-                        .get_mut(&StoredValueId::KeyValueStoreId(kv_store_id))
+                        .get_mut(&ValueId::kv_store_id(kv_store_id))
                         .unwrap()
                         .get_mut();
                     (
@@ -1330,7 +1350,7 @@ where
                             };
                             let root_value = self
                                 .owned_values
-                                .get_mut(&StoredValueId::KeyValueStoreId(*root))
+                                .get_mut(&ValueId::kv_store_id(*root))
                                 .unwrap();
                             let ref_store =
                                 root_value.get_mut().get_child_mut(ancestors, &value_id);
@@ -1408,18 +1428,21 @@ where
                 ScryptoValue::from_value(value).unwrap()
             }
         };
-        let cur_children = current_value.stored_value_ids();
+        let cur_children = to_stored_ids(current_value.stored_value_ids())?;
 
         // Fulfill method
         match instruction {
             DataInstruction::Read => {
-                for value_id in cur_children {
-                    self.refed_values.insert(value_id, ref_type.clone());
+                for stored_value_id in cur_children {
+                    self.refed_values.insert(stored_value_id, ref_type.clone());
                 }
                 Ok(current_value)
             }
             DataInstruction::Write(value) => {
+                let missing = to_stored_ids(missing)?;
                 verify_stored_value_update(&cur_children, &missing)?;
+
+                let to_store_values = to_stored_values(taken_values)?;
 
                 // TODO: verify against some schema
 
@@ -1431,11 +1454,11 @@ where
                     SubstateEntry::Component(component_address, component) => {
                         component.set_state(value.raw);
                         self.track
-                            .insert_objects_into_component(taken_values, component_address);
+                            .insert_objects_into_component(to_store_values, component_address);
                     }
                     SubstateEntry::KeyValueStoreRef(stored_value, key) => {
                         stored_value.kv_store_mut().put(key.raw, value);
-                        stored_value.insert_children(taken_values);
+                        stored_value.insert_children(to_store_values);
                     }
                     SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
                         self.track.set_key_value(
@@ -1444,7 +1467,7 @@ where
                             SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                         );
                         self.track
-                            .insert_objects_into_component(taken_values, component_address);
+                            .insert_objects_into_component(to_store_values, component_address);
                     }
                 }
 

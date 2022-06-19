@@ -72,13 +72,13 @@ impl ScryptoValue {
         })
     }
 
-    pub fn stored_value_ids(&self) -> HashSet<StoredValueId> {
+    pub fn stored_value_ids(&self) -> HashSet<ValueId> {
         let mut value_ids = HashSet::new();
         for vault_id in &self.vault_ids {
-            value_ids.insert(StoredValueId::VaultId(vault_id.clone()));
+            value_ids.insert(ValueId::vault_id(*vault_id));
         }
         for kv_store_id in &self.kv_store_ids {
-            value_ids.insert(StoredValueId::KeyValueStoreId(kv_store_id.clone()));
+            value_ids.insert(ValueId::kv_store_id(*kv_store_id));
         }
         value_ids
     }
