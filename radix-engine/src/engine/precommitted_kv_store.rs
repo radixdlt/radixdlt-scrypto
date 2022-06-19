@@ -97,16 +97,10 @@ impl StoredValue {
         }
     }
 
-    pub fn insert_children(&mut self, values: Vec<StoredValue>) {
+    pub fn insert_children(&mut self, values: HashMap<StoredValueId, StoredValue>) {
         match self {
             StoredValue::KeyValueStore { child_values, .. } => {
-                for value in values {
-                    let id = match &value {
-                        StoredValue::KeyValueStore { id, .. } => {
-                            StoredValueId::KeyValueStoreId(*id)
-                        }
-                        StoredValue::Vault(id, _) => StoredValueId::VaultId(*id),
-                    };
+                for (id, value) in values {
                     child_values.insert(id, RefCell::new(value));
                 }
             }

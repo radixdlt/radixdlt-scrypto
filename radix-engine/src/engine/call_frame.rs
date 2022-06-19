@@ -474,13 +474,17 @@ where
         for vault_id in vault_ids {
             vault_ids_to_take.insert(StoredValueId::VaultId(*vault_id));
         }
-        let vaults_to_take = self.take_set(&vault_ids_to_take)?;
+        let (taken_values, mut missing) = self.take_available_values(vault_ids_to_take);
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::ValueNotFound(missing_value));
+        }
 
         let mut vaults = HashMap::new();
-        for vault_to_take in vaults_to_take {
+        for (id, vault_to_take) in taken_values {
             match vault_to_take {
-                StoredValue::Vault(vault_id, vault) => {
-                    vaults.insert(vault_id, vault);
+                StoredValue::Vault(_, vault) => {
+                    vaults.insert(id.into(), vault);
                 }
                 _ => panic!("Expected vault but was {:?}", vault_to_take),
             }
@@ -660,78 +664,30 @@ where
         &mut self,
         value_ids: HashSet<StoredValueId>,
     ) -> (HashMap<StoredValueId, StoredValue>, HashSet<StoredValueId>) {
-        let (taken, missing) = self.take_available(value_ids);
+        let (taken, missing) = {
+            let mut taken_values = HashMap::new();
+            let mut missing_values = HashSet::new();
+
+            for id in value_ids {
+                let maybe = self.owned_values.remove(&id);
+                if let Some(value) = maybe {
+                    taken_values.insert(id, value.into_inner());
+                } else {
+                    missing_values.insert(id);
+                }
+            }
+
+            (taken_values, missing_values)
+        };
+
+        // Moved values must have their references removed
         for (_, value) in &taken {
             for id in value.all_descendants() {
                 self.refed_values.remove(&id);
             }
         }
+
         (taken, missing)
-    }
-
-    fn take_values(
-        &mut self,
-        value_ids: &HashSet<StoredValueId>,
-    ) -> Result<Vec<StoredValue>, RuntimeError> {
-        let values = self.take_set(value_ids)?;
-        for value in &values {
-            for id in value.all_descendants() {
-                self.refed_values.remove(&id);
-            }
-        }
-        Ok(values)
-    }
-
-    pub fn take_available(
-        &mut self,
-        other: HashSet<StoredValueId>,
-    ) -> (HashMap<StoredValueId, StoredValue>, HashSet<StoredValueId>) {
-        let mut taken_values = HashMap::new();
-        let mut missing_values = HashSet::new();
-
-        for id in other {
-            let maybe = self.owned_values.remove(&id);
-            if let Some(value) = maybe {
-                taken_values.insert(id, value.into_inner());
-            } else {
-                missing_values.insert(id);
-            }
-        }
-
-        (taken_values, missing_values)
-    }
-
-    pub fn take_set(
-        &mut self,
-        other: &HashSet<StoredValueId>,
-    ) -> Result<Vec<StoredValue>, RuntimeError> {
-        let mut taken_values = Vec::new();
-
-        for id in other {
-            let value = self
-                .owned_values
-                .remove(id)
-                .ok_or(RuntimeError::ValueNotFound(*id))?
-                .into_inner();
-            taken_values.push(value);
-        }
-
-        Ok(taken_values)
-    }
-
-    pub fn get_owned_kv_store_mut<'a>(
-        owned_values: &'a mut HashMap<StoredValueId, RefCell<StoredValue>>,
-        kv_store_id: &KeyValueStoreId,
-    ) -> Option<&'a mut PreCommittedKeyValueStore> {
-        owned_values
-            .get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
-            .map(|v| {
-                let stored_value = v.get_mut();
-                match stored_value {
-                    StoredValue::KeyValueStore { store, .. } => store,
-                    _ => panic!("Expected KV store"),
-                }
-            })
     }
 }
 
@@ -1264,10 +1220,15 @@ where
         let value =
             ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
         verify_stored_value(&value)?;
-        let values = self.take_values(&value.stored_value_ids())?;
+        let value_ids = value.stored_value_ids();
+        let (taken_values, mut missing) = self.take_available_values(value_ids);
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::ValueNotFound(missing_value));
+        }
+
         let address = self.track.create_uuid_value(component);
-        self.track
-            .insert_objects_into_component(values, address.clone().into());
+        self.track.insert_objects_into_component(taken_values, address.clone().into());
         Ok(address.into())
     }
 
@@ -1464,7 +1425,6 @@ where
                 // TODO: verify against some schema
 
                 // Write values
-                let new_values = taken_values.into_values().collect();
                 match store {
                     SubstateEntry::ComponentInfo(..) | SubstateEntry::ComponentInfoTracked(..) => {
                         return Err(RuntimeError::InvalidDataWrite);
@@ -1472,11 +1432,11 @@ where
                     SubstateEntry::Component(component_address, component) => {
                         component.set_state(value.raw);
                         self.track
-                            .insert_objects_into_component(new_values, component_address);
+                            .insert_objects_into_component(taken_values, component_address);
                     }
                     SubstateEntry::KeyValueStoreRef(stored_value, key) => {
                         stored_value.kv_store_mut().put(key.raw, value);
-                        stored_value.insert_children(new_values);
+                        stored_value.insert_children(taken_values);
                     }
                     SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
                         self.track.set_key_value(
@@ -1485,7 +1445,7 @@ where
                             SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                         );
                         self.track
-                            .insert_objects_into_component(new_values, component_address);
+                            .insert_objects_into_component(taken_values, component_address);
                     }
                 }
 

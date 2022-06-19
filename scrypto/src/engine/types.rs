@@ -16,14 +16,23 @@ pub use crate::resource::ResourceAddress;
 pub use crate::resource::ResourceType;
 
 pub type KeyValueStoreId = (Hash, u32);
+pub type VaultId = (Hash, u32);
 pub type BucketId = u32;
 pub type ProofId = u32;
-pub type VaultId = (Hash, u32);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum StoredValueId {
     KeyValueStoreId(KeyValueStoreId),
     VaultId(VaultId),
+}
+
+impl Into<(Hash, u32)> for StoredValueId {
+    fn into(self) -> KeyValueStoreId {
+        match self {
+            StoredValueId::KeyValueStoreId(id) => id,
+            StoredValueId::VaultId(id) => id,
+        }
+    }
 }
 
 pub use crate::constants::*;
