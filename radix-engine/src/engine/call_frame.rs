@@ -1213,12 +1213,6 @@ where
             .return_borrowed_global_mut_value(resource_address, resource_manager)
     }
 
-    fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
-        let proof_id = self.track.new_proof_id();
-        self.proofs.insert(proof_id, RefCell::new(proof));
-        Ok(proof_id)
-    }
-
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
         let proof = self
             .proofs
@@ -1227,6 +1221,19 @@ where
             .into_inner();
 
         Ok(proof)
+    }
+
+    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
+        self.buckets
+            .remove(&bucket_id)
+            .map(RefCell::into_inner)
+            .ok_or(RuntimeError::BucketNotFound(bucket_id))
+    }
+
+    fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
+        let proof_id = self.track.new_proof_id();
+        self.proofs.insert(proof_id, RefCell::new(proof));
+        Ok(proof_id)
     }
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
@@ -1243,13 +1250,6 @@ where
             RefCell::new(StoredValue::Vault(vault_id, Vault::new(container))),
         );
         Ok(vault_id)
-    }
-
-    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
-        self.buckets
-            .remove(&bucket_id)
-            .map(RefCell::into_inner)
-            .ok_or(RuntimeError::BucketNotFound(bucket_id))
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
@@ -1271,18 +1271,25 @@ where
         Ok(address.into())
     }
 
+    fn create_kv_store(&mut self) -> KeyValueStoreId {
+        let kv_store_id = self.track.new_kv_store_id();
+        self.owned_values.insert(
+            StoredValueId::KeyValueStoreId(kv_store_id.clone()),
+            RefCell::new(StoredValue::KeyValueStore {
+                id: kv_store_id,
+                store: PreCommittedKeyValueStore::new(),
+                child_values: HashMap::new(),
+            }),
+        );
+        kv_store_id
+    }
+
     fn data(
         &mut self,
         address: SubstateAddress,
         instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError> {
-        match &address {
-            SubstateAddress::KeyValueEntry(_, key) => verify_stored_key(&key)?,
-            SubstateAddress::Component(..) => {}
-            SubstateAddress::ComponentInfo(..) => {}
-        }
-
-        // If write, collect new child values
+        // If write, take values from current frame
         let (taken_values, missing) = match &instruction {
             DataInstruction::Write(value) => {
                 verify_stored_value(value)?;
@@ -1292,7 +1299,7 @@ where
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };
 
-        // Get Key Value Store
+        // Get reference to data address
         let (store, ref_type) = match address {
             SubstateAddress::Component(component_address) => {
                 let component = self
@@ -1308,18 +1315,17 @@ where
                 )
             }
             SubstateAddress::ComponentInfo(component_address) => {
-                let component = self
-                    .refed_components
-                    .get(&component_address);
+                let component = self.refed_components.get(&component_address);
                 let store = if let Some(component) = component {
                     SubstateEntry::ComponentInfo(component_address.clone(), component)
                 } else {
-                    self.track.borrow_global_value(component_address.clone())
-                        .map_err(|e| {
-                            match e {
-                                TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
-                                TrackError::Reentrancy => panic!("Should not run into reentrancy")
+                    self.track
+                        .borrow_global_value(component_address.clone())
+                        .map_err(|e| match e {
+                            TrackError::NotFound => {
+                                RuntimeError::ComponentNotFound(component_address)
                             }
+                            TrackError::Reentrancy => panic!("Should not run into reentrancy"),
                         })?;
                     SubstateEntry::ComponentInfoTracked(component_address.clone())
                 };
@@ -1331,6 +1337,8 @@ where
                 )
             }
             SubstateAddress::KeyValueEntry(kv_store_id, key) => {
+                verify_stored_key(&key)?;
+
                 if self
                     .owned_values
                     .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
@@ -1395,13 +1403,22 @@ where
                 ScryptoValue::from_slice(component.state()).expect("Expected to decode")
             }
             SubstateEntry::ComponentInfo(_, component) => {
-                let info = (component.package_address().clone(), component.blueprint_name().to_string());
+                let info = (
+                    component.package_address().clone(),
+                    component.blueprint_name().to_string(),
+                );
                 ScryptoValue::from_typed(&info)
             }
             SubstateEntry::ComponentInfoTracked(component_address) => {
-                let component = self.track.borrow_global_value(component_address.clone()).unwrap()
+                let component = self
+                    .track
+                    .borrow_global_value(component_address.clone())
+                    .unwrap()
                     .component();
-                let info = (component.package_address().clone(), component.blueprint_name().to_string());
+                let info = (
+                    component.package_address().clone(),
+                    component.blueprint_name().to_string(),
+                );
                 ScryptoValue::from_typed(&info)
             }
             SubstateEntry::KeyValueStoreRef(store, key) => {
@@ -1475,19 +1492,6 @@ where
                 Ok(ScryptoValue::from_typed(&()))
             }
         }
-    }
-
-    fn create_kv_store(&mut self) -> KeyValueStoreId {
-        let kv_store_id = self.track.new_kv_store_id();
-        self.owned_values.insert(
-            StoredValueId::KeyValueStoreId(kv_store_id.clone()),
-            RefCell::new(StoredValue::KeyValueStore {
-                id: kv_store_id,
-                store: PreCommittedKeyValueStore::new(),
-                child_values: HashMap::new(),
-            }),
-        );
-        kv_store_id
     }
 
     fn get_epoch(&mut self) -> u64 {
