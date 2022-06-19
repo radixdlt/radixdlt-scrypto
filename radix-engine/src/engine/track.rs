@@ -659,12 +659,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     ) {
         for (id, value) in values {
             match value {
-                StoredValue::Vault(_, vault) => {
+                StoredValue::Vault(vault) => {
                     let addr: (ComponentAddress, VaultId) = (component_address, id.into());
                     self.create_uuid_value_2(addr, vault);
                 }
                 StoredValue::KeyValueStore {
-                    id: _,
                     store,
                     child_values,
                 } => {

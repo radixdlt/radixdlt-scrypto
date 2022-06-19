@@ -9,11 +9,10 @@ use crate::model::*;
 #[derive(Debug)]
 pub enum StoredValue {
     KeyValueStore {
-        id: KeyValueStoreId,
         store: PreCommittedKeyValueStore,
         child_values: HashMap<StoredValueId, RefCell<StoredValue>>,
     },
-    Vault(VaultId, Vault),
+    Vault(Vault),
 }
 
 impl StoredValue {
@@ -33,7 +32,7 @@ impl StoredValue {
 
     pub fn vault(&self) -> &Vault {
         match self {
-            StoredValue::Vault(_, vault) => vault,
+            StoredValue::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
         }
     }

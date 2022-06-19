@@ -150,7 +150,7 @@ pub enum BorrowedSNodeState<'a> {
     Worktop(RefMut<'a, Worktop>),
     Bucket(BucketId, RefMut<'a, Bucket>),
     Proof(ProofId, RefMut<'a, Proof>),
-    Vault(RefMut<'a, StoredValue>),
+    Vault(VaultId, RefMut<'a, StoredValue>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
 }
 
@@ -394,7 +394,7 @@ where
         for (_, value) in values {
             trace!(self.depth, Level::Warn, "Dangling value: {:?}", value);
             resource = match value {
-                StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
+                StoredValue::Vault(vault) => ResourceFailure::Resource(vault.resource_address()),
                 StoredValue::KeyValueStore { .. } => ResourceFailure::UnclaimedKeyValueStore,
             };
             success = false;
@@ -483,7 +483,7 @@ where
         let mut vaults = HashMap::new();
         for (id, vault_to_take) in taken_values {
             match vault_to_take {
-                StoredValue::Vault(_, vault) => {
+                StoredValue::Vault(vault) => {
                     vaults.insert(id.into(), vault);
                 }
                 _ => panic!("Expected vault but was {:?}", vault_to_take),
@@ -564,10 +564,10 @@ where
                 BorrowedSNodeState::Proof(proof_id, proof) => {
                     SNodeExecution::Proof(proof_id, proof)
                 }
-                BorrowedSNodeState::Vault(value) => {
+                BorrowedSNodeState::Vault(vault_id, value) => {
                     ref_container = Some(value);
                     match ref_container.as_mut().unwrap().deref_mut() {
-                        StoredValue::Vault(id, vault) => SNodeExecution::Vault(*id, vault),
+                        StoredValue::Vault(vault) => SNodeExecution::Vault(vault_id, vault),
                         _ => panic!("Should be a vault"),
                     }
                 }
@@ -937,13 +937,13 @@ where
                 let (resource_address, snode_state) = {
                     if let Some(value) = self.owned_values.get(&StoredValueId::VaultId(*vault_id)) {
                         let resource_address = match value.borrow().deref() {
-                            StoredValue::Vault(_, vault) => vault.resource_address(),
+                            StoredValue::Vault(vault) => vault.resource_address(),
                             _ => panic!("Expected vault"),
                         };
 
                         (
                             resource_address,
-                            Borrowed(BorrowedSNodeState::Vault(value.borrow_mut())),
+                            Borrowed(BorrowedSNodeState::Vault(*vault_id, value.borrow_mut())),
                         )
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
@@ -962,10 +962,10 @@ where
                                     .get_mut();
                                 let value = root_store.get_child(ancestors, &value_id);
                                 let resource_address = match value.deref() {
-                                    StoredValue::Vault(_, vault) => vault.resource_address(),
+                                    StoredValue::Vault(vault) => vault.resource_address(),
                                     _ => panic!("Expected vault"),
                                 };
-                                (resource_address, Borrowed(BorrowedSNodeState::Vault(value)))
+                                (resource_address, Borrowed(BorrowedSNodeState::Vault(*vault_id, value)))
                             }
                             ValueRefType::Committed { component_address } => {
                                 let vault_address = (component_address, *vault_id);
@@ -1100,7 +1100,7 @@ where
         for (vault_id, vault) in received_vaults.drain() {
             self.owned_values.insert(
                 StoredValueId::VaultId(vault_id.clone()),
-                RefCell::new(StoredValue::Vault(vault_id, vault)),
+                RefCell::new(StoredValue::Vault(vault)),
             );
         }
 
@@ -1203,7 +1203,7 @@ where
         let vault_id = self.track.new_vault_id();
         self.owned_values.insert(
             StoredValueId::VaultId(vault_id.clone()),
-            RefCell::new(StoredValue::Vault(vault_id, Vault::new(container))),
+            RefCell::new(StoredValue::Vault(Vault::new(container))),
         );
         Ok(vault_id)
     }
@@ -1237,7 +1237,6 @@ where
         self.owned_values.insert(
             StoredValueId::KeyValueStoreId(kv_store_id.clone()),
             RefCell::new(StoredValue::KeyValueStore {
-                id: kv_store_id,
                 store: PreCommittedKeyValueStore::new(),
                 child_values: HashMap::new(),
             }),
