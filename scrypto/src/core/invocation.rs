@@ -28,4 +28,5 @@ pub enum SNodeRef {
 pub enum DataAddress {
     KeyValueEntry(KeyValueStoreId, Vec<u8>),
     Component(ComponentAddress),
+    ComponentInfo(ComponentAddress),
 }

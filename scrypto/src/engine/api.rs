@@ -34,9 +34,7 @@ pub enum RadixEngineInput {
     InvokeSNode(SNodeRef, String, Vec<u8>),
     CreateComponent(String, Vec<u8>, Vec<AccessRules>),
     CreateKeyValueStore(),
-    // TODO: Move GetActor() and GetComponentInfo() into ReadData()
     GetActor(),
-    GetComponentInfo(ComponentAddress),
     ReadData(DataAddress),
     WriteData(DataAddress, Vec<u8>),
     EmitLog(Level, String),
