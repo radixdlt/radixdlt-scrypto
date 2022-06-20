@@ -1,18 +1,22 @@
+use parity_wasm::elements::{
+    External, FunctionType,
+    Instruction::{self, *},
+    Internal, Module, Type, ValueType,
+};
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
+use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto::abi::BlueprintAbi;
 use scrypto::prelude::HashMap;
-use wasm_instrument::parity_wasm::{
-    self,
-    elements::{External, Instruction::*, Internal, Module, Type, ValueType},
-};
 use wasm_instrument::{gas_metering, inject_stack_limiter};
 use wasmi_validation::{validate_module, PlainValidator};
 
-use crate::wasm::constants::*;
-use crate::wasm::errors::*;
+use crate::wasm::{constants::*, errors::*, PrepareError};
 
+use super::WasmiEnvModule;
+
+#[derive(Debug, PartialEq)]
 pub struct WasmModule {
     module: Module,
 }
@@ -29,85 +33,110 @@ impl WasmModule {
         Ok(Self { module })
     }
 
-    pub fn reject_floating_point(self) -> Result<Self, PrepareError> {
-        if let Some(code) = self.module.code_section() {
-            for op in code.bodies().iter().flat_map(|body| body.code().elements()) {
-                match op {
-                    F32Load(_, _)
-                    | F64Load(_, _)
-                    | F32Store(_, _)
-                    | F64Store(_, _)
-                    | F32Const(_)
-                    | F64Const(_)
-                    | F32Eq
-                    | F32Ne
-                    | F32Lt
-                    | F32Gt
-                    | F32Le
-                    | F32Ge
-                    | F64Eq
-                    | F64Ne
-                    | F64Lt
-                    | F64Gt
-                    | F64Le
-                    | F64Ge
-                    | F32Abs
-                    | F32Neg
-                    | F32Ceil
-                    | F32Floor
-                    | F32Trunc
-                    | F32Nearest
-                    | F32Sqrt
-                    | F32Add
-                    | F32Sub
-                    | F32Mul
-                    | F32Div
-                    | F32Min
-                    | F32Max
-                    | F32Copysign
-                    | F64Abs
-                    | F64Neg
-                    | F64Ceil
-                    | F64Floor
-                    | F64Trunc
-                    | F64Nearest
-                    | F64Sqrt
-                    | F64Add
-                    | F64Sub
-                    | F64Mul
-                    | F64Div
-                    | F64Min
-                    | F64Max
-                    | F64Copysign
-                    | F32ConvertSI32
-                    | F32ConvertUI32
-                    | F32ConvertSI64
-                    | F32ConvertUI64
-                    | F32DemoteF64
-                    | F64ConvertSI32
-                    | F64ConvertUI32
-                    | F64ConvertSI64
-                    | F64ConvertUI64
-                    | F64PromoteF32
-                    | F32ReinterpretI32
-                    | F64ReinterpretI64
-                    | I32TruncSF32
-                    | I32TruncUF32
-                    | I32TruncSF64
-                    | I32TruncUF64
-                    | I64TruncSF32
-                    | I64TruncUF32
-                    | I64TruncSF64
-                    | I64TruncUF64
-                    | I32ReinterpretF32
-                    | I64ReinterpretF64 => {
-                        return Err(PrepareError::FloatingPointNotAllowed);
+    pub fn enforce_no_floating_point(self) -> Result<Self, PrepareError> {
+        // Global value types
+        if let Some(globals) = self.module.global_section() {
+            for global in globals.entries() {
+                match global.global_type().content_type() {
+                    ValueType::F32 | ValueType::F64 => {
+                        return Err(PrepareError::FloatingPointNotAllowed)
                     }
                     _ => {}
                 }
             }
         }
 
+        // Function local value types and floating-point related instructions
+        if let Some(code) = self.module.code_section() {
+            for func_body in code.bodies() {
+                for local in func_body.locals() {
+                    match local.value_type() {
+                        ValueType::F32 | ValueType::F64 => {
+                            return Err(PrepareError::FloatingPointNotAllowed)
+                        }
+                        _ => {}
+                    }
+                }
+
+                for op in func_body.code().elements() {
+                    match op {
+                        F32Load(_, _)
+                        | F64Load(_, _)
+                        | F32Store(_, _)
+                        | F64Store(_, _)
+                        | F32Const(_)
+                        | F64Const(_)
+                        | F32Eq
+                        | F32Ne
+                        | F32Lt
+                        | F32Gt
+                        | F32Le
+                        | F32Ge
+                        | F64Eq
+                        | F64Ne
+                        | F64Lt
+                        | F64Gt
+                        | F64Le
+                        | F64Ge
+                        | F32Abs
+                        | F32Neg
+                        | F32Ceil
+                        | F32Floor
+                        | F32Trunc
+                        | F32Nearest
+                        | F32Sqrt
+                        | F32Add
+                        | F32Sub
+                        | F32Mul
+                        | F32Div
+                        | F32Min
+                        | F32Max
+                        | F32Copysign
+                        | F64Abs
+                        | F64Neg
+                        | F64Ceil
+                        | F64Floor
+                        | F64Trunc
+                        | F64Nearest
+                        | F64Sqrt
+                        | F64Add
+                        | F64Sub
+                        | F64Mul
+                        | F64Div
+                        | F64Min
+                        | F64Max
+                        | F64Copysign
+                        | F32ConvertSI32
+                        | F32ConvertUI32
+                        | F32ConvertSI64
+                        | F32ConvertUI64
+                        | F32DemoteF64
+                        | F64ConvertSI32
+                        | F64ConvertUI32
+                        | F64ConvertSI64
+                        | F64ConvertUI64
+                        | F64PromoteF32
+                        | F32ReinterpretI32
+                        | F64ReinterpretI64
+                        | I32TruncSF32
+                        | I32TruncUF32
+                        | I32TruncSF64
+                        | I32TruncUF64
+                        | I64TruncSF32
+                        | I64TruncUF32
+                        | I64TruncSF64
+                        | I64TruncUF64
+                        | I32ReinterpretF32
+                        | I64ReinterpretF64 => {
+                            return Err(PrepareError::FloatingPointNotAllowed);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        // Function argument and result types
         if let (Some(functions), Some(types)) =
             (self.module.function_section(), self.module.type_section())
         {
@@ -134,7 +163,7 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn reject_start_function(self) -> Result<Self, PrepareError> {
+    pub fn enforce_no_start_function(self) -> Result<Self, PrepareError> {
         if self.module.start_section().is_some() {
             Err(PrepareError::StartFunctionNotAllowed)
         } else {
@@ -142,20 +171,83 @@ impl WasmModule {
         }
     }
 
-    pub fn check_imports(self) -> Result<Self, PrepareError> {
-        // only allow `env::radix_engine` import
-
+    pub fn enforce_import_limit(self) -> Result<Self, PrepareError> {
+        // Only allow `env::radix_engine` import
         if let Some(sec) = self.module.import_section() {
-            if sec.entries().len() > 1 {
-                return Err(PrepareError::InvalidImports);
+            for entry in sec.entries() {
+                if entry.module() == MODULE_ENV_NAME && entry.field() == RADIX_ENGINE_FUNCTION_NAME
+                {
+                    if let External::Function(type_index) = entry.external() {
+                        if Self::function_type_matches(
+                            &self.module,
+                            *type_index as usize,
+                            vec![ValueType::I32],
+                            vec![ValueType::I32],
+                        ) {
+                            continue;
+                        }
+                    }
+                }
+
+                return Err(PrepareError::InvalidImport(InvalidImport::ImportNotAllowed));
+            }
+        }
+
+        Ok(self)
+    }
+
+    pub fn enforce_memory_limit(
+        self,
+        max_initial_memory_size_pages: u32,
+    ) -> Result<Self, PrepareError> {
+        // Must have exactly 1 internal, exported memory definition
+        // TODO: consider if we can benefit from shared external memory.
+        let memory_section = self
+            .module
+            .memory_section()
+            .ok_or(PrepareError::InvalidMemory(InvalidMemory::NoMemorySection))?;
+
+        let memory = match memory_section.entries().len() {
+            0 => Err(PrepareError::InvalidMemory(
+                InvalidMemory::EmptyMemorySection,
+            )),
+            1 => Ok(memory_section.entries()[0]),
+            _ => Err(PrepareError::InvalidMemory(InvalidMemory::TooManyMemories)),
+        }?;
+        if memory.limits().initial() > max_initial_memory_size_pages {
+            return Err(PrepareError::InvalidMemory(
+                InvalidMemory::InitialMemorySizeLimitExceeded,
+            ));
+        }
+
+        self.module
+            .export_section()
+            .and_then(|section| {
+                section
+                    .entries()
+                    .iter()
+                    .filter(|e| e.field() == EXPORT_MEMORY && e.internal() == &Internal::Memory(0))
+                    .next()
+            })
+            .ok_or(PrepareError::InvalidMemory(
+                InvalidMemory::MemoryNotExported,
+            ))?;
+
+        Ok(self)
+    }
+
+    pub fn enforce_table_limit(self, max_initial_table_size: u32) -> Result<Self, PrepareError> {
+        if let Some(section) = self.module.table_section() {
+            if section.entries().len() > 1 {
+                // Sanity check MVP rule
+                return Err(PrepareError::InvalidTable(InvalidTable::MoreThanOneTable));
             }
 
-            if let Some(entry) = sec.entries().get(0) {
-                if entry.module() != MODULE_ENV_NAME
-                    || entry.field() != RADIX_ENGINE_FUNCTION_NAME
-                    || !matches!(entry.external(), External::Function(_))
-                {
-                    return Err(PrepareError::InvalidImports);
+            if let Some(table) = section.entries().get(0) {
+                if table.limits().initial() > max_initial_table_size {
+                    return Err(PrepareError::InvalidTable(
+                        InvalidTable::InitialTableSizeLimitExceeded,
+                    ));
                 }
             }
         }
@@ -163,21 +255,74 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn check_exports(
+    pub fn enforce_br_table_limit(
+        self,
+        max_number_of_br_table_targets: u32,
+    ) -> Result<Self, PrepareError> {
+        if let Some(section) = self.module.code_section() {
+            for inst in section
+                .bodies()
+                .iter()
+                .flat_map(|body| body.code().elements())
+            {
+                if let Instruction::BrTable(table_data) = inst {
+                    if table_data.table.len() > max_number_of_br_table_targets as usize {
+                        return Err(PrepareError::TooManyTargetsInBrTable);
+                    }
+                }
+            }
+        }
+        Ok(self)
+    }
+
+    pub fn enforce_function_limit(
+        self,
+        max_number_of_functions: u32,
+    ) -> Result<Self, PrepareError> {
+        if let Some(section) = self.module.function_section() {
+            if section.entries().len() > max_number_of_functions as usize {
+                return Err(PrepareError::TooManyGlobals);
+            }
+        }
+
+        // TODO: do we need to enforce limit on the number of locals and parameters?
+
+        Ok(self)
+    }
+
+    pub fn enforce_global_limit(self, max_number_of_globals: u32) -> Result<Self, PrepareError> {
+        if let Some(section) = self.module.global_section() {
+            if section.entries().len() > max_number_of_globals as usize {
+                return Err(PrepareError::TooManyGlobals);
+            }
+        }
+        Ok(self)
+    }
+
+    pub fn enforce_export_constraints(
         self,
         blueprints: &HashMap<String, BlueprintAbi>,
     ) -> Result<Self, PrepareError> {
-        // only allow `env::radix_engine` import
         let exports = self
             .module
             .export_section()
-            .ok_or(PrepareError::NoExports)?;
+            .ok_or(PrepareError::NoExportSection)?;
         for (_, blueprint_abi) in blueprints {
             for func in &blueprint_abi.fns {
                 let func_name = &func.export_name;
-                // TODO: Check if signature matches
                 if !exports.entries().iter().any(|x| {
-                    x.field().eq(func_name) && matches!(x.internal(), Internal::Function(_))
+                    x.field().eq(func_name) && {
+                        if let Internal::Function(func_index) = x.internal() {
+                            Self::function_matches(
+                                &self.module,
+                                *func_index as usize,
+                                vec![ValueType::I32],
+                                vec![ValueType::I32],
+                            )
+                        } else {
+                            false
+                        }
+                    }
                 }) {
                     return Err(PrepareError::MissingExport {
                         export_name: func_name.to_string(),
@@ -186,49 +331,6 @@ impl WasmModule {
             }
         }
 
-        Ok(self)
-    }
-
-    pub fn check_memory(self) -> Result<Self, PrepareError> {
-        // Must have exactly 1 memory definition
-        // TODO: consider if we can benefit from shared external memory instead of internal ones.
-        let memory_section = self.module.memory_section().ok_or(PrepareError::NoMemory)?;
-
-        let memory = match memory_section.entries().len() {
-            0 => Err(PrepareError::NoMemory),
-            1 => Ok(memory_section.entries()[0]),
-            _ => Err(PrepareError::TooManyMemories),
-        }?;
-        if memory.limits().initial() != 0 && memory.limits().maximum().is_some() {
-            return Err(PrepareError::NonStandardMemory);
-        }
-
-        if !self
-            .module
-            .export_section()
-            .ok_or(PrepareError::NoMemoryExport)?
-            .entries()
-            .iter()
-            .any(|e| e.field() == EXPORT_MEMORY && e.internal() == &Internal::Memory(0))
-        {
-            return Err(PrepareError::NoMemoryExport);
-        }
-
-        Ok(self)
-    }
-
-    pub fn enforce_initial_memory_limit(self) -> Result<Self, PrepareError> {
-        // TODO
-        Ok(self)
-    }
-
-    pub fn enforce_functions_limit(self) -> Result<Self, PrepareError> {
-        // TODO
-        Ok(self)
-    }
-
-    pub fn enforce_locals_limit(self) -> Result<Self, PrepareError> {
-        // TODO
         Ok(self)
     }
 
@@ -253,6 +355,46 @@ impl WasmModule {
         Ok(self)
     }
 
+    pub fn ensure_instantiatable(self) -> Result<Self, PrepareError> {
+        // During instantiation time, the following procedures are applied:
+
+        // 1. Resolve imports with external values
+        // This should always succeed as we only allow `env::radix_engine` function import
+
+        // 2. Allocate externals, functions, tables, memory and globals
+        // This should always succeed as we enforce an upper bound for each type
+
+        // 3. Update table with elements
+        // It may fail if the offset is out of bound
+
+        // 4. Update memory with data segments
+        // It may fail if the offset is out of bound
+
+        // Because the offset can be an `InitExpr` that requires evaluation against an WASM instance,
+        // we're using the `wasmi` logic as a shortcut.
+
+        wasmi::ModuleInstance::new(
+            &wasmi::Module::from_parity_wasm_module(self.module.clone())
+                .expect("Due to the `init` step module should be valid"),
+            &wasmi::ImportsBuilder::new().with_resolver(MODULE_ENV_NAME, &WasmiEnvModule {}),
+        )
+        .map_err(|_| PrepareError::NotInstantiatable)?;
+
+        Ok(self)
+    }
+
+    pub fn ensure_compilable(self) -> Result<Self, PrepareError> {
+        // TODO: Understand WASM JIT compilability
+        //
+        // Can we make the assumption that all "prepared" modules are compilable,
+        // if machine resource is "sufficient"?
+        //
+        // Another option is to attempt to compile, although it may make RE protocol
+        // coupled with a specific implementation.
+
+        Ok(self)
+    }
+
     pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<String>), PrepareError> {
         let function_exports = self
             .module
@@ -265,8 +407,263 @@ impl WasmModule {
                     .collect()
             })
             .unwrap_or(Vec::new());
+
         let code =
             parity_wasm::serialize(self.module).map_err(|_| PrepareError::SerializationError)?;
+
         Ok((code, function_exports))
+    }
+
+    fn function_matches(
+        module: &Module,
+        func_index: usize,
+        params: Vec<ValueType>,
+        results: Vec<ValueType>,
+    ) -> bool {
+        let func_import_count = module
+            .import_section()
+            .map(|s| s.entries())
+            .unwrap_or(&[])
+            .iter()
+            .filter(|e| matches!(e.external(), External::Function(_)))
+            .count();
+
+        let func = module
+            .function_section()
+            .map(|s| s.entries())
+            .unwrap_or(&[])
+            .get(func_index - func_import_count)
+            .expect("Due to validation function should exist");
+        Self::function_type_matches(module, func.type_ref() as usize, params, results)
+    }
+
+    fn function_type_matches(
+        module: &Module,
+        type_index: usize,
+        params: Vec<ValueType>,
+        results: Vec<ValueType>,
+    ) -> bool {
+        let ty = module
+            .type_section()
+            .map(|s| s.types())
+            .unwrap_or(&[])
+            .get(type_index)
+            .expect("Due to validation type should exist");
+
+        ty == &Type::Function(FunctionType::new(params, results))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    use scrypto::abi;
+    use wabt::wat2wasm;
+
+    macro_rules! assert_invalid_wasm {
+        ($wat: expr, $err: expr, $func: expr) => {
+            let code = wat2wasm($wat).unwrap();
+            assert_eq!(Err($err), WasmModule::init(&code).map($func).unwrap());
+        };
+    }
+
+    #[test]
+    fn test_floating_point() {
+        // return
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (result f64)
+                    f64.const 123
+                )
+            )
+            "#,
+            PrepareError::FloatingPointNotAllowed,
+            WasmModule::enforce_no_floating_point
+        );
+        // input
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (param f64)   
+                )
+            )
+            "#,
+            PrepareError::FloatingPointNotAllowed,
+            WasmModule::enforce_no_floating_point
+        );
+        // instruction
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func
+                    f64.const 1
+                    f64.const 2
+                    f64.add
+                    drop
+                )
+            )
+            "#,
+            PrepareError::FloatingPointNotAllowed,
+            WasmModule::enforce_no_floating_point
+        );
+        // global
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (global $fp f32 (f32.const 10))
+            )
+            "#,
+            PrepareError::FloatingPointNotAllowed,
+            WasmModule::enforce_no_floating_point
+        );
+    }
+
+    #[test]
+    fn test_start_function() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func $main)
+                (start $main)
+            )
+            "#,
+            PrepareError::StartFunctionNotAllowed,
+            WasmModule::enforce_no_start_function
+        );
+    }
+
+    #[test]
+    fn test_memory() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::NoMemorySection),
+            |x| WasmModule::enforce_memory_limit(x, 5)
+        );
+        // NOTE: Disabled as MVP only allow 1 memory definition
+        // assert_invalid_wasm!(
+        //     r#"
+        //     (module
+        //         (memory 2)
+        //         (memory 2)
+        //     )
+        //     "#,
+        //     PrepareError::InvalidMemory(InvalidMemory::TooManyMemories),
+        //     |x| WasmModule::enforce_memory_limit(x, 5)
+        // );
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (memory 6)
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::InitialMemorySizeLimitExceeded),
+            |x| WasmModule::enforce_memory_limit(x, 5)
+        );
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (memory 2)
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::MemoryNotExported),
+            |x| WasmModule::enforce_memory_limit(x, 5)
+        );
+    }
+
+    #[test]
+    fn test_table() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (table 6 funcref)
+            )
+            "#,
+            PrepareError::InvalidTable(InvalidTable::InitialTableSizeLimitExceeded),
+            |x| WasmModule::enforce_table_limit(x, 5)
+        );
+    }
+
+    #[test]
+    fn test_br_table() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (param i32) (result i32)
+                    (block
+                        (block
+                            (br_table 1 0 1 0 1 0 1 (local.get 0))
+                            (return (i32.const 21))
+                        )
+                        (return (i32.const 20))
+                    )
+                    (i32.const 22)
+                )
+            )
+            "#,
+            PrepareError::TooManyTargetsInBrTable,
+            |x| WasmModule::enforce_br_table_limit(x, 5)
+        );
+    }
+
+    #[test]
+    fn test_blueprint_constraints() {
+        let mut blueprint_abis = HashMap::new();
+        blueprint_abis.insert(
+            "Test".to_string(),
+            BlueprintAbi {
+                structure: sbor::Type::Unit,
+                fns: vec![abi::Fn {
+                    ident: "f".to_string(),
+                    mutability: Option::None,
+                    input: sbor::Type::Struct {
+                        name: "Any".to_string(),
+                        fields: sbor::describe::Fields::Named { named: vec![] },
+                    },
+                    output: sbor::Type::Unit,
+                    export_name: "Test_f".to_string(),
+                }],
+            },
+        );
+        assert_invalid_wasm!(
+            r#"
+            (module
+            )
+            "#,
+            PrepareError::NoExportSection,
+            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+        );
+        // symbol not found
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (export "foo") (result i32)
+                    (i32.const 0)
+                )
+            )
+            "#,
+            PrepareError::MissingExport {
+                export_name: "Test_f".to_string()
+            },
+            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+        );
+        // signature does not match
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (export "Test_f") (result i32)
+                    (i32.const 0)
+                )
+            )
+            "#,
+            PrepareError::MissingExport {
+                export_name: "Test_f".to_string()
+            },
+            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+        );
     }
 }

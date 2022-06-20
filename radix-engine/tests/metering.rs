@@ -3,35 +3,10 @@ pub mod test_runner;
 
 use radix_engine::fee::{ENGINE_RUN_COST, TX_VALIDATION_COST_PER_BYTE, WASM_ENGINE_CALL_COST};
 use radix_engine::wasm::InvokeError;
-use sbor::describe::Fields;
-use sbor::Type;
-use scrypto::abi::{BlueprintAbi, Fn};
-use scrypto::prelude::{HashMap, Package};
+use scrypto::prelude::Package;
 use scrypto::to_struct;
-use test_runner::wat2wasm;
-use test_runner::TestRunner;
+use test_runner::{abi_single_fn_any_input_void_output, wat2wasm, TestRunner};
 use transaction::builder::ManifestBuilder;
-
-fn metering_abi(blueprint_name: String) -> HashMap<String, BlueprintAbi> {
-    let mut blueprint_abis = HashMap::new();
-    blueprint_abis.insert(
-        blueprint_name,
-        BlueprintAbi {
-            structure: Type::Unit,
-            fns: vec![Fn {
-                ident: "f".to_string(),
-                mutability: Option::None,
-                input: Type::Struct {
-                    name: "Any".to_string(),
-                    fields: Fields::Named { named: vec![] },
-                },
-                output: Type::Unit,
-                export_name: "Test_f".to_string(),
-            }],
-        },
-    );
-    blueprint_abis
-}
 
 #[test]
 fn test_loop() {
@@ -42,7 +17,7 @@ fn test_loop() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000"));
     let package = Package {
         code,
-        blueprints: metering_abi("Test".to_string()),
+        blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
@@ -63,7 +38,7 @@ fn test_loop_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/loop.wat").replace("${n}", "2000000"));
     let package = Package {
         code,
-        blueprints: metering_abi("Test".to_string()),
+        blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
@@ -85,7 +60,7 @@ fn test_recursion() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "128"));
     let package = Package {
         code,
-        blueprints: metering_abi("Test".to_string()),
+        blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
@@ -106,7 +81,7 @@ fn test_recursion_stack_overflow() {
     let code = wat2wasm(&include_str!("wasm/recursion.wat").replace("${n}", "129"));
     let package = Package {
         code,
-        blueprints: metering_abi("Test".to_string()),
+        blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
@@ -127,7 +102,7 @@ fn test_grow_memory() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100"));
     let package = Package {
         code,
-        blueprints: metering_abi("Test".to_string()),
+        blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
@@ -148,7 +123,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let code = wat2wasm(&include_str!("wasm/memory.wat").replace("${n}", "100000"));
     let package = Package {
         code,
-        blueprints: metering_abi("Test".to_string()),
+        blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
@@ -169,7 +144,7 @@ fn test_total_cost_units_consumed() {
     let code = wat2wasm(&include_str!("wasm/syscall.wat"));
     let package = Package {
         code,
-        blueprints: metering_abi("Test".to_string()),
+        blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
     let manifest = ManifestBuilder::new()
