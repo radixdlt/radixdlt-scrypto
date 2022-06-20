@@ -673,7 +673,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     for (k, v) in store.store {
                         self.set_key_value(parent_address.clone(), k, Some(v));
                     }
-                    let child_values = child_values.into_iter().map(|(id, v)| (id, v.into_inner())).collect();
+                    let child_values = child_values
+                        .into_iter()
+                        .map(|(id, v)| (id, v.into_inner()))
+                        .collect();
                     self.insert_objects_into_component(child_values, component_address);
                 }
             }

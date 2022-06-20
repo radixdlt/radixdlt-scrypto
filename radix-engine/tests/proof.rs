@@ -1,9 +1,9 @@
 #[rustfmt::skip]
 pub mod test_runner;
 
-use scrypto::engine::types::{TransientValueId, ValueId};
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::engine::types::{TransientValueId, ValueId};
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -254,7 +254,11 @@ fn cant_move_restricted_proof() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| e.eq(&RuntimeError::CantMoveRestrictedProof(ValueId::Transient(TransientValueId::Proof(1025)))));
+    receipt.expect_err(|e| {
+        e.eq(&RuntimeError::CantMoveRestrictedProof(ValueId::Transient(
+            TransientValueId::Proof(1025),
+        )))
+    });
 }
 
 #[test]

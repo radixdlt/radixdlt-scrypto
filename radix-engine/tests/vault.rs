@@ -27,7 +27,12 @@ fn non_existent_vault_in_component_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))));
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
+        )
+    });
 }
 
 #[test]
@@ -48,7 +53,12 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))));
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
+        )
+    });
 }
 
 #[test]
@@ -69,7 +79,12 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))));
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
+        )
+    });
 }
 
 #[test]
@@ -94,7 +109,12 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))));
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
+        )
+    });
 }
 
 #[test]
@@ -112,7 +132,8 @@ fn dangling_vault_should_fail() {
     // Assert
     let resource_address = receipt.new_resource_addresses[0].clone();
     receipt.expect_err(|e| {
-        let expected = RuntimeError::ResourceCheckFailure(ResourceFailure::Resource(resource_address));
+        let expected =
+            RuntimeError::ResourceCheckFailure(ResourceFailure::Resource(resource_address));
         e.eq(&expected)
     });
 }
@@ -156,7 +177,12 @@ fn invalid_double_ownership_of_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))));
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
+        )
+    });
 }
 
 #[test]

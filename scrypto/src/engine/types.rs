@@ -62,7 +62,7 @@ impl Into<(Hash, u32)> for ValueId {
         match self {
             ValueId::Stored(StoredValueId::KeyValueStoreId(id)) => id,
             ValueId::Stored(StoredValueId::VaultId(id)) => id,
-            _ => panic!("Not a stored id")
+            _ => panic!("Not a stored id"),
         }
     }
 }
@@ -72,7 +72,7 @@ impl Into<u32> for ValueId {
         match self {
             ValueId::Transient(TransientValueId::Bucket(id)) => id,
             ValueId::Transient(TransientValueId::Proof(id)) => id,
-            _ => panic!("Not a transient id")
+            _ => panic!("Not a transient id"),
         }
     }
 }

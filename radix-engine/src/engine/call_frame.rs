@@ -163,7 +163,9 @@ fn to_stored_ids(ids: HashSet<ValueId>) -> Result<HashSet<StoredValueId>, Runtim
     Ok(stored_ids)
 }
 
-fn to_stored_values(values: HashMap<ValueId, REValue>) -> Result<HashMap<StoredValueId, StoredValue>, RuntimeError> {
+fn to_stored_values(
+    values: HashMap<ValueId, REValue>,
+) -> Result<HashMap<StoredValueId, StoredValue>, RuntimeError> {
     let mut stored_values = HashMap::new();
     for (id, value) in values {
         match id {
@@ -208,11 +210,9 @@ pub enum REValueRef<'a> {
 impl<'a> REValueRef<'a> {
     fn to_stored_mut(&mut self) -> &mut StoredValue {
         match self {
-            REValueRef::Owned(value) => {
-                match value.deref_mut() {
-                    REValue::Stored(stored_value) => stored_value,
-                    _ => panic!("Expecting to be stored value"),
-                }
+            REValueRef::Owned(value) => match value.deref_mut() {
+                REValue::Stored(stored_value) => stored_value,
+                _ => panic!("Expecting to be stored value"),
             },
             REValueRef::Ref(stored_value) => stored_value,
         }
@@ -220,28 +220,22 @@ impl<'a> REValueRef<'a> {
 
     fn to_mut_vault(&mut self) -> &mut Vault {
         match self {
-            REValueRef::Owned(value) => {
-                match value.deref_mut() {
-                    REValue::Stored(StoredValue::Vault(vault)) => vault,
-                    _ => panic!("Expecting to be a vault"),
-                }
+            REValueRef::Owned(value) => match value.deref_mut() {
+                REValue::Stored(StoredValue::Vault(vault)) => vault,
+                _ => panic!("Expecting to be a vault"),
             },
-            REValueRef::Ref(stored_value) => {
-                match stored_value.deref_mut() {
-                    StoredValue::Vault(vault) => vault,
-                    _ => panic!("Expecting to be a vault"),
-                }
+            REValueRef::Ref(stored_value) => match stored_value.deref_mut() {
+                StoredValue::Vault(vault) => vault,
+                _ => panic!("Expecting to be a vault"),
             },
         }
     }
 
     fn kv_store(&self) -> &PreCommittedKeyValueStore {
         match self {
-            REValueRef::Owned(value) => {
-                match value.deref() {
-                    REValue::Stored(stored_value) => stored_value.kv_store(),
-                    _ => panic!("Expecting to be a vault"),
-                }
+            REValueRef::Owned(value) => match value.deref() {
+                REValue::Stored(stored_value) => stored_value.kv_store(),
+                _ => panic!("Expecting to be a vault"),
             },
             REValueRef::Ref(stored_value) => stored_value.kv_store(),
         }
@@ -249,11 +243,9 @@ impl<'a> REValueRef<'a> {
 
     fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
         match self {
-            REValueRef::Owned(value) => {
-                match value.deref_mut() {
-                    REValue::Stored(stored_value) => stored_value.kv_store_mut(),
-                    _ => panic!("Expecting to be a vault"),
-                }
+            REValueRef::Owned(value) => match value.deref_mut() {
+                REValue::Stored(stored_value) => stored_value.kv_store_mut(),
+                _ => panic!("Expecting to be a vault"),
             },
             REValueRef::Ref(stored_value) => stored_value.kv_store_mut(),
         }
@@ -343,16 +335,12 @@ impl<'a> SNodeExecution<'a> {
                     .map_err(RuntimeError::ResourceManagerError),
             },
             SNodeExecution::Consumed(state) => match state {
-                TransientValue::Bucket(bucket) => {
-                    bucket
-                        .consuming_main(fn_ident, input, system)
-                        .map_err(RuntimeError::BucketError)
-                },
-                TransientValue::Proof(proof) => {
-                    proof
-                        .main_consume(fn_ident, input)
-                        .map_err(RuntimeError::ProofError)
-                },
+                TransientValue::Bucket(bucket) => bucket
+                    .consuming_main(fn_ident, input, system)
+                    .map_err(RuntimeError::BucketError),
+                TransientValue::Proof(proof) => proof
+                    .main_consume(fn_ident, input)
+                    .map_err(RuntimeError::ProofError),
             },
             SNodeExecution::AuthZone(mut auth_zone) => auth_zone
                 .main(fn_ident, input, system)
@@ -363,20 +351,14 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::Blueprint(info, package) => {
                 package.invoke(&info, fn_ident, input, system)
             }
-            SNodeExecution::ValueRef(value_id, mut value) => {
-                match value.deref_mut() {
-                    REValue::Transient(TransientValue::Bucket(bucket)) => {
-                        bucket
-                            .main(value_id.into(), fn_ident, input, system)
-                            .map_err(RuntimeError::BucketError)
-                    }
-                    REValue::Transient(TransientValue::Proof(proof)) => {
-                        proof
-                            .main(fn_ident, input, system)
-                            .map_err(RuntimeError::ProofError)
-                    }
-                    _ => panic!("Unexpected value to execute")
-                }
+            SNodeExecution::ValueRef(value_id, mut value) => match value.deref_mut() {
+                REValue::Transient(TransientValue::Bucket(bucket)) => bucket
+                    .main(value_id.into(), fn_ident, input, system)
+                    .map_err(RuntimeError::BucketError),
+                REValue::Transient(TransientValue::Proof(proof)) => proof
+                    .main(fn_ident, input, system)
+                    .map_err(RuntimeError::ProofError),
+                _ => panic!("Unexpected value to execute"),
             },
             SNodeExecution::Vault(vault_id, vault) => vault
                 .main(vault_id, fn_ident, input, system)
@@ -493,13 +475,19 @@ where
         for (_, value) in values {
             trace!(self, Level::Warn, "Dangling value: {:?}", value);
             let some_resource_failure = match value {
-                REValue::Stored(StoredValue::Vault(vault)) => Some(ResourceFailure::Resource(vault.resource_address())),
-                REValue::Stored(StoredValue::KeyValueStore { .. }) => Some(ResourceFailure::UnclaimedKeyValueStore),
-                REValue::Transient(TransientValue::Bucket(bucket)) => Some(ResourceFailure::Resource(bucket.resource_address())),
+                REValue::Stored(StoredValue::Vault(vault)) => {
+                    Some(ResourceFailure::Resource(vault.resource_address()))
+                }
+                REValue::Stored(StoredValue::KeyValueStore { .. }) => {
+                    Some(ResourceFailure::UnclaimedKeyValueStore)
+                }
+                REValue::Transient(TransientValue::Bucket(bucket)) => {
+                    Some(ResourceFailure::Resource(bucket.resource_address()))
+                }
                 REValue::Transient(TransientValue::Proof(proof)) => {
                     proof.drop();
                     None
-                },
+                }
             };
             if let Some(resource_failure) = some_resource_failure {
                 resource = resource_failure;
@@ -559,10 +547,7 @@ where
         snode: SNodeState<'p>,
         fn_ident: &str,
         input: ScryptoValue,
-    ) -> Result<
-        (ScryptoValue, HashMap<ValueId, REValue>),
-        RuntimeError,
-    > {
+    ) -> Result<(ScryptoValue, HashMap<ValueId, REValue>), RuntimeError> {
         let remaining_cost_units = self.cost_unit_counter().remaining();
         trace!(
             self,
@@ -641,7 +626,6 @@ where
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
         }
-
 
         // drop proofs and check resource leak
         if self.auth_zone.is_some() {
@@ -781,7 +765,7 @@ where
             trace!(self, Level::Debug, "Sending value: {:?}", value);
             match value {
                 REValue::Transient(TransientValue::Proof(proof)) => proof.change_to_restricted(),
-                _ => {},
+                _ => {}
             }
         }
 
@@ -951,10 +935,7 @@ where
                     _ => panic!("Value is not a resource manager"),
                 };
                 let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
-                Ok((
-                    Consumed(value.into()),
-                    vec![method_auth.clone()],
-                ))
+                Ok((Consumed(value.into()), vec![method_auth.clone()]))
             }
             SNodeRef::Proof(proof_id) => {
                 let value = self
@@ -998,13 +979,16 @@ where
 
                         (
                             resource_address,
-                            Borrowed(BorrowedSNodeState::Vault(*vault_id, REValueRef::Owned(value.borrow_mut()))),
+                            Borrowed(BorrowedSNodeState::Vault(
+                                *vault_id,
+                                REValueRef::Owned(value.borrow_mut()),
+                            )),
                         )
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
                         let maybe_value_ref = self.refed_values.get(&value_id).cloned();
-                        let value_ref =
-                            maybe_value_ref.ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?;
+                        let value_ref = maybe_value_ref
+                            .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?;
                         match value_ref {
                             ValueRefType::Uncommitted {
                                 root,
@@ -1024,7 +1008,13 @@ where
                                     StoredValue::Vault(vault) => vault.resource_address(),
                                     _ => panic!("Expected vault"),
                                 };
-                                (resource_address, Borrowed(BorrowedSNodeState::Vault(*vault_id, REValueRef::Ref(value))))
+                                (
+                                    resource_address,
+                                    Borrowed(BorrowedSNodeState::Vault(
+                                        *vault_id,
+                                        REValueRef::Ref(value),
+                                    )),
+                                )
                             }
                             ValueRefType::Committed { component_address } => {
                                 let vault_address = (component_address, *vault_id);
@@ -1072,7 +1062,10 @@ where
                 // Resource auth check includes caller
                 Tracked(..)
                 | Borrowed(BorrowedSNodeState::Vault(..))
-                | Borrowed(BorrowedSNodeState::ValueRef(ValueId::Transient(TransientValueId::Bucket(..)), ..))
+                | Borrowed(BorrowedSNodeState::ValueRef(
+                    ValueId::Transient(TransientValueId::Bucket(..)),
+                    ..,
+                ))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
                 | Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
@@ -1220,24 +1213,26 @@ where
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
         let value = self
             .owned_values
-            .remove(&ValueId::Transient(TransientValueId::Proof(proof_id.clone())))
+            .remove(&ValueId::Transient(TransientValueId::Proof(
+                proof_id.clone(),
+            )))
             .ok_or(RuntimeError::ProofNotFound(proof_id))?
             .into_inner();
 
         match value {
             REValue::Transient(TransientValue::Proof(proof)) => Ok(proof),
-            _ => panic!("Expected proof")
+            _ => panic!("Expected proof"),
         }
     }
 
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
         self.owned_values
-            .remove(&ValueId::Transient(TransientValueId::Bucket(bucket_id.clone())))
-            .map(|value| {
-                match value.into_inner() {
-                    REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
-                    _ => panic!("Expected bucket"),
-                }
+            .remove(&ValueId::Transient(TransientValueId::Bucket(
+                bucket_id.clone(),
+            )))
+            .map(|value| match value.into_inner() {
+                REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                _ => panic!("Expected bucket"),
             })
             .ok_or(RuntimeError::BucketNotFound(bucket_id))
     }
@@ -1246,18 +1241,19 @@ where
         let proof_id = self.track.new_proof_id();
         self.owned_values.insert(
             ValueId::Transient(TransientValueId::Proof(proof_id)),
-            RefCell::new(REValue::Transient(TransientValue::Proof(proof)))
+            RefCell::new(REValue::Transient(TransientValue::Proof(proof))),
         );
         Ok(proof_id)
     }
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.track.new_bucket_id();
-        self.owned_values
-            .insert(
-                ValueId::Transient(TransientValueId::Bucket(bucket_id)),
-                RefCell::new(REValue::Transient(TransientValue::Bucket(Bucket::new(container))))
-            );
+        self.owned_values.insert(
+            ValueId::Transient(TransientValueId::Bucket(bucket_id)),
+            RefCell::new(REValue::Transient(TransientValue::Bucket(Bucket::new(
+                container,
+            )))),
+        );
         Ok(bucket_id)
     }
 
@@ -1290,7 +1286,8 @@ where
         }
         let to_store_values = to_stored_values(taken_values)?;
         let address = self.track.create_uuid_value(component);
-        self.track.insert_objects_into_component(to_store_values, address.clone().into());
+        self.track
+            .insert_objects_into_component(to_store_values, address.clone().into());
         Ok(address.into())
     }
 
@@ -1370,7 +1367,7 @@ where
                         .get_mut(&ValueId::kv_store_id(kv_store_id))
                         .unwrap()
                         .borrow_mut();
-                        //.get_mut();
+                    //.get_mut();
                     (
                         SubstateEntry::KeyValueStoreRef(REValueRef::Owned(ref_store), key),
                         ValueRefType::Uncommitted {
@@ -1395,8 +1392,10 @@ where
                                 .owned_values
                                 .get_mut(&ValueId::kv_store_id(*root))
                                 .unwrap();
-                            let ref_store =
-                                root_value.get_mut().to_stored().get_child(ancestors, &value_id);
+                            let ref_store = root_value
+                                .get_mut()
+                                .to_stored()
+                                .get_child(ancestors, &value_id);
                             (
                                 SubstateEntry::KeyValueStoreRef(REValueRef::Ref(ref_store), key),
                                 value_ref_type,
@@ -1501,7 +1500,9 @@ where
                     }
                     SubstateEntry::KeyValueStoreRef(mut stored_value, key) => {
                         stored_value.kv_store_mut().put(key.raw, value);
-                        stored_value.to_stored_mut().insert_children(to_store_values);
+                        stored_value
+                            .to_stored_mut()
+                            .insert_children(to_store_values);
                     }
                     SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
                         self.track.set_key_value(
@@ -1545,11 +1546,9 @@ where
             .map(|proof_id| {
                 self.owned_values
                     .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
-                    .map(|p| {
-                        match p.borrow().deref() {
-                            REValue::Transient(TransientValue::Proof(proof)) => proof.clone(),
-                            _ => panic!("Expected proof"),
-                        }
+                    .map(|p| match p.borrow().deref() {
+                        REValue::Transient(TransientValue::Proof(proof)) => proof.clone(),
+                        _ => panic!("Expected proof"),
                     })
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))
             })
