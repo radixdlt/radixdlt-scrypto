@@ -16,6 +16,7 @@ use crate::wasm::{constants::*, errors::*, PrepareError};
 
 use super::WasmiEnvModule;
 
+#[derive(Debug, PartialEq)]
 pub struct WasmModule {
     module: Module,
 }
@@ -450,5 +451,71 @@ impl WasmModule {
             .expect("Due to validation type should exist");
 
         ty == &Type::Function(FunctionType::new(params, results))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+    use wabt::wat2wasm;
+
+    macro_rules! assert_invalid_wasm {
+        ($wat: expr, $err: expr, $func: expr) => {
+            let code = wat2wasm($wat).unwrap();
+            assert_eq!(Err($err), WasmModule::init(&code).map($func).unwrap());
+        };
+    }
+
+    #[test]
+    fn test_floating_point() {
+        // return
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (result f64)
+                    f64.const 123
+                )
+            )
+            "#,
+            PrepareError::FloatingPointNotAllowed,
+            WasmModule::enforce_no_floating_point
+        );
+        // input
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (param f64)   
+                )
+            )
+            "#,
+            PrepareError::FloatingPointNotAllowed,
+            WasmModule::enforce_no_floating_point
+        );
+        // instruction
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func
+                    f64.const 1
+                    f64.const 2
+                    f64.add
+                    drop
+                )
+            )
+            "#,
+            PrepareError::FloatingPointNotAllowed,
+            WasmModule::enforce_no_floating_point
+        );
+        // global
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (global $fp f32 (f32.const 10))
+            )
+            "#,
+            PrepareError::FloatingPointNotAllowed,
+            WasmModule::enforce_no_floating_point
+        );
     }
 }

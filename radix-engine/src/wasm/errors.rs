@@ -9,7 +9,7 @@ use crate::engine::RuntimeError;
 use crate::fee::CostUnitCounterError;
 
 /// Represents an error when validating a WASM file.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum PrepareError {
     /// Failed to deserialize.
     /// See https://webassembly.github.io/spec/core/syntax/index.html
@@ -53,13 +53,13 @@ pub enum PrepareError {
     NotCompilable,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum InvalidImport {
     /// The import is not allowed
     ImportNotAllowed,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum InvalidMemory {
     /// The wasm module has no memory section.
     NoMemorySection,
@@ -73,7 +73,7 @@ pub enum InvalidMemory {
     MemoryNotExported,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum InvalidTable {
     /// More than one table defined, against WebAssembly MVP spec
     MoreThanOneTable,
