@@ -518,4 +518,59 @@ mod tests {
             WasmModule::enforce_no_floating_point
         );
     }
+
+    #[test]
+    fn test_start_function() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func $main)
+                (start $main)
+            )
+            "#,
+            PrepareError::StartFunctionNotAllowed,
+            WasmModule::enforce_no_start_function
+        );
+    }
+
+    #[test]
+    fn test_memory() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::NoMemorySection),
+            |x| WasmModule::enforce_memory_limit(x, 5)
+        );
+        // NOTE: Disabled as MVP only allow 1 memory definition
+        // assert_invalid_wasm!(
+        //     r#"
+        //     (module
+        //         (memory 2)
+        //         (memory 2)
+        //     )
+        //     "#,
+        //     PrepareError::InvalidMemory(InvalidMemory::TooManyMemories),
+        //     |x| WasmModule::enforce_memory_limit(x, 5)
+        // );
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (memory 6)
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::InitialMemorySizeLimitExceeded),
+            |x| WasmModule::enforce_memory_limit(x, 5)
+        );
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (memory 2)
+            )
+            "#,
+            PrepareError::InvalidMemory(InvalidMemory::MemoryNotExported),
+            |x| WasmModule::enforce_memory_limit(x, 5)
+        );
+    }
 }
