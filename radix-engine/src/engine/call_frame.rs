@@ -94,9 +94,11 @@ pub enum ValueRefType {
 
 #[macro_export]
 macro_rules! trace {
-    ( $depth: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
+    ( $self: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
         #[cfg(not(feature = "alloc"))]
-        println!("{}[{:5}] {}", "  ".repeat($depth), $level, sbor::rust::format!($msg, $( $arg ),*));
+        if $self.trace {
+            println!("{}[{:5}] {}", "  ".repeat($self.depth), $level, sbor::rust::format!($msg, $( $arg ),*));
+        }
     };
 }
 
@@ -364,7 +366,7 @@ where
 
         for (bucket_id, ref_bucket) in &self.buckets {
             trace!(
-                self.depth,
+                self,
                 Level::Warn,
                 "Dangling bucket: {}, {:?}",
                 bucket_id,
@@ -380,7 +382,7 @@ where
             .map(|(id, c)| (id, c.into_inner()))
             .collect();
         for (_, value) in values {
-            trace!(self.depth, Level::Warn, "Dangling value: {:?}", value);
+            trace!(self, Level::Warn, "Dangling value: {:?}", value);
             resource = match value {
                 StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
                 StoredValue::KeyValueStore(..) => ResourceFailure::UnclaimedKeyValueStore,
@@ -391,7 +393,7 @@ where
         if let Some(ref_worktop) = &self.worktop {
             let worktop = ref_worktop.borrow();
             if !worktop.is_empty() {
-                trace!(self.depth, Level::Warn, "Resource worktop is not empty");
+                trace!(self, Level::Warn, "Resource worktop is not empty");
                 resource = ResourceFailure::Resources(worktop.resource_addresses());
                 success = false;
             }
@@ -517,7 +519,7 @@ where
     > {
         let remaining_cost_units = self.cost_unit_counter().remaining();
         trace!(
-            self.depth,
+            self,
             Level::Debug,
             "Run started! Remainging cost units: {}",
             remaining_cost_units
@@ -639,7 +641,7 @@ where
 
         let remaining_cost_units = self.cost_unit_counter().remaining();
         trace!(
-            self.depth,
+            self,
             Level::Debug,
             "Run finished! Remainging cost units: {}",
             remaining_cost_units
@@ -787,7 +789,7 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
         trace!(
-            self.depth,
+            self,
             Level::Debug,
             "Invoking: {:?} {:?}",
             snode_ref,
@@ -806,10 +808,10 @@ where
             MoveMethod::AsArgument,
         )?);
         for bucket in &moving_buckets {
-            trace!(self.depth, Level::Debug, "Sending bucket: {:?}", bucket);
+            trace!(self, Level::Debug, "Sending bucket: {:?}", bucket);
         }
         for proof in &moving_proofs {
-            trace!(self.depth, Level::Debug, "Sending proof: {:?}", proof);
+            trace!(self, Level::Debug, "Sending proof: {:?}", proof);
         }
 
         // Authorization and state load
@@ -1163,11 +1165,11 @@ where
 
         // move buckets and proofs to this process.
         for (bucket_id, bucket) in received_buckets {
-            trace!(self.depth, Level::Debug, "Received bucket: {:?}", bucket);
+            trace!(self, Level::Debug, "Received bucket: {:?}", bucket);
             self.buckets.insert(bucket_id, RefCell::new(bucket));
         }
         for (proof_id, proof) in received_proofs {
-            trace!(self.depth, Level::Debug, "Received proof: {:?}", proof);
+            trace!(self, Level::Debug, "Received proof: {:?}", proof);
             self.proofs.insert(proof_id, RefCell::new(proof));
         }
         for (vault_id, vault) in received_vaults.drain() {

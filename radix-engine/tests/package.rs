@@ -3,11 +3,9 @@ pub mod test_runner;
 
 use radix_engine::engine::RuntimeError;
 use radix_engine::model::PackageError;
-use radix_engine::wasm::InvokeError;
-use radix_engine::wasm::PrepareError;
-use radix_engine::wasm::PrepareError::NoMemory;
+use radix_engine::wasm::*;
 use sbor::Type;
-use scrypto::abi::{BlueprintAbi, Fn};
+use scrypto::abi::*;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use test_runner::{wat2wasm, TestRunner};
@@ -39,7 +37,9 @@ fn missing_memory_should_cause_error() {
     let error = receipt.result.expect_err("Should be error.");
     assert_eq!(
         error,
-        RuntimeError::PackageError(PackageError::InvalidWasm(NoMemory))
+        RuntimeError::PackageError(PackageError::InvalidWasm(PrepareError::InvalidMemory(
+            InvalidMemory::NoMemorySection
+        )))
     );
 }
 
