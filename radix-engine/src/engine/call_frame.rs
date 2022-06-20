@@ -1,4 +1,3 @@
-use sbor::path::SborPath;
 use sbor::rust::boxed::Box;
 use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
@@ -554,60 +553,6 @@ where
         Ok(())
     }
 
-    /// Sends buckets to another component/blueprint, either as argument or return
-    fn send_buckets(
-        &mut self,
-        bucket_ids: &HashMap<BucketId, SborPath>,
-    ) -> Result<HashMap<ValueId, REValue>, RuntimeError> {
-        let mut bucket_ids_to_take = HashSet::new();
-        for (bucket_id, _) in bucket_ids {
-            bucket_ids_to_take.insert(ValueId::Transient(TransientValueId::Bucket(*bucket_id)));
-        }
-        let (taken_values, mut missing) = self.take_available_values(bucket_ids_to_take)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::ValueNotFound(missing_value));
-        }
-
-        Ok(taken_values)
-    }
-
-    /// Sends proofs to another component/blueprint, either as argument or return
-    fn send_vaults(
-        &mut self,
-        vault_ids: &HashSet<VaultId>,
-    ) -> Result<HashMap<ValueId, REValue>, RuntimeError> {
-        let mut vault_ids_to_take = HashSet::new();
-        for vault_id in vault_ids {
-            vault_ids_to_take.insert(ValueId::vault_id(*vault_id));
-        }
-        let (taken_values, mut missing) = self.take_available_values(vault_ids_to_take)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::ValueNotFound(missing_value));
-        }
-
-        Ok(taken_values)
-    }
-
-    /// Sends proofs to another component/blueprint, either as argument or return
-    fn send_proofs(
-        &mut self,
-        proof_ids: &HashMap<ProofId, SborPath>,
-    ) -> Result<HashMap<ValueId, REValue>, RuntimeError> {
-        let mut proof_ids_to_take = HashSet::new();
-        for (proof_id, _) in proof_ids {
-            proof_ids_to_take.insert(ValueId::Transient(TransientValueId::Proof(*proof_id)));
-        }
-        let (taken_values, mut missing) = self.take_available_values(proof_ids_to_take)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::ValueNotFound(missing_value));
-        }
-
-        Ok(taken_values)
-    }
-
     pub fn run(
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
@@ -686,14 +631,16 @@ where
             self.track.return_borrowed_global_mut_value(address, value);
         }
 
+        // Prevent vaults/kvstores from being returned
         self.process_return_data(snode_ref, &output)?;
 
-        // figure out what buckets and resources to return
-        let mut moving_values = self.send_buckets(&output.bucket_ids)?;
-        let moving_vaults = self.send_vaults(&output.vault_ids)?;
-        moving_values.extend(moving_vaults);
-        let moving_proofs = self.send_proofs(&output.proof_ids)?;
-        moving_values.extend(moving_proofs);
+        // Take values to return
+        let values_to_take = output.value_ids();
+        let (taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::ValueNotFound(missing_value));
+        }
 
 
         // drop proofs and check resource leak
@@ -714,7 +661,7 @@ where
             remaining_cost_units
         );
 
-        Ok((output, moving_values))
+        Ok((output, taken_values))
     }
 
     fn cost_unit_counter_helper(counter: &mut Option<CostUnitCounter>) -> &mut CostUnitCounter {
@@ -818,13 +765,19 @@ where
             &fn_ident
         );
 
+        // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
 
         // Figure out what buckets and proofs to move from this process
-        let mut moving_values = HashMap::new();
-        moving_values.extend(self.send_buckets(&input.bucket_ids)?);
-        moving_values.extend(self.send_proofs(&input.proof_ids)?);
-        for (_, value) in &mut moving_values {
+        let values_to_take = input.value_ids();
+        let (mut taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::ValueNotFound(missing_value));
+        }
+
+        // Internal state update to taken values
+        for (_, value) in &mut taken_values {
             trace!(self, Level::Debug, "Sending value: {:?}", value);
             match value {
                 REValue::Transient(TransientValue::Proof(proof)) => proof.change_to_restricted(),
@@ -1177,7 +1130,7 @@ where
                 }
                 _ => None,
             },
-            moving_values,
+            taken_values,
             self.auth_zone.as_ref(),
             cost_unit_counter,
             fee_table,
