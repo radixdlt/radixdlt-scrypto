@@ -53,7 +53,7 @@ pub struct CallFrame<
     wasm_instrumenter: &'w mut WasmInstrumenter,
 
     /// Owned Values
-    proofs: HashMap<ProofId, RefCell<Proof>>,
+    proofs: HashMap<ProofId, RefCell<REValue>>,
     owned_values: HashMap<ValueId, RefCell<REValue>>,
     worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
@@ -77,6 +77,7 @@ pub struct CallFrame<
 #[derive(Debug)]
 pub enum TransientValue {
     Bucket(Bucket),
+    Proof(Proof),
 }
 
 #[derive(Debug)]
@@ -194,7 +195,7 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
 
 pub enum ConsumedSNodeState {
     Bucket(Bucket),
-    Proof(Proof),
+    Proof(REValue),
 }
 
 pub enum REValueRef<'a> {
@@ -261,7 +262,7 @@ pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
     Bucket(BucketId, RefMut<'a, REValue>),
-    Proof(ProofId, RefMut<'a, Proof>),
+    Proof(ProofId, RefMut<'a, REValue>),
     Vault(VaultId, REValueRef<'a>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
 }
@@ -290,7 +291,7 @@ pub enum SNodeExecution<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
     Bucket(BucketId, RefMut<'a, REValue>),
-    Proof(ProofId, RefMut<'a, Proof>),
+    Proof(ProofId, RefMut<'a, REValue>),
     Vault(VaultId, &'a mut Vault),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
     Resource(Address, &'a mut ResourceManager),
@@ -345,9 +346,15 @@ impl<'a> SNodeExecution<'a> {
                 ConsumedSNodeState::Bucket(bucket) => bucket
                     .consuming_main(fn_ident, input, system)
                     .map_err(RuntimeError::BucketError),
-                ConsumedSNodeState::Proof(proof) => proof
-                    .main_consume(fn_ident, input)
-                    .map_err(RuntimeError::ProofError),
+                ConsumedSNodeState::Proof(value) => {
+                    match value {
+                        REValue::Transient(TransientValue::Proof(proof)) => {
+                            proof.main_consume(fn_ident, input)
+                                .map_err(RuntimeError::ProofError)
+                        }
+                        _ => panic!("Should be a proof")
+                    }
+                },
             },
             SNodeExecution::AuthZone(mut auth_zone) => auth_zone
                 .main(fn_ident, input, system)
@@ -368,9 +375,16 @@ impl<'a> SNodeExecution<'a> {
                     _ => panic!("Should be a bucket")
                 }
             },
-            SNodeExecution::Proof(_id, mut proof) => proof
-                .main(fn_ident, input, system)
-                .map_err(RuntimeError::ProofError),
+            SNodeExecution::Proof(_id, mut value) => {
+                match value.deref_mut() {
+                    REValue::Transient(TransientValue::Proof(proof)) => {
+                        proof
+                            .main(fn_ident, input, system)
+                            .map_err(RuntimeError::ProofError)
+                    }
+                    _ => panic!("Should be a proof")
+                }
+            },
             SNodeExecution::Vault(vault_id, vault) => vault
                 .main(vault_id, fn_ident, input, system)
                 .map_err(RuntimeError::VaultError),
@@ -464,7 +478,7 @@ where
 
         let mut celled_proofs = HashMap::new();
         for (id, proof) in proofs {
-            celled_proofs.insert(id, RefCell::new(proof));
+            celled_proofs.insert(id, RefCell::new(REValue::Transient(TransientValue::Proof(proof))));
         }
 
         Self {
@@ -503,6 +517,7 @@ where
                 REValue::Stored(StoredValue::Vault(vault)) => ResourceFailure::Resource(vault.resource_address()),
                 REValue::Stored(StoredValue::KeyValueStore { .. }) => ResourceFailure::UnclaimedKeyValueStore,
                 REValue::Transient(TransientValue::Bucket(bucket)) => ResourceFailure::Resource(bucket.resource_address()),
+                REValue::Transient(TransientValue::Proof(proof)) => ResourceFailure::Resource(proof.resource_address()),
             };
             success = false;
         }
@@ -600,23 +615,28 @@ where
 
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
-        from: &mut HashMap<ProofId, RefCell<Proof>>,
+        from: &mut HashMap<ProofId, RefCell<REValue>>,
         proof_ids: &HashMap<ProofId, SborPath>,
         method: MoveMethod,
     ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
         let mut proofs = HashMap::new();
         for (proof_id, _) in proof_ids {
-            let mut proof = from
+            let value = from
                 .remove(proof_id)
                 .ok_or(RuntimeError::ProofNotFound(*proof_id))?
                 .into_inner();
-            if proof.is_restricted() {
-                return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
+            match value {
+                REValue::Transient(TransientValue::Proof(mut proof)) => {
+                    if proof.is_restricted() {
+                        return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
+                    }
+                    if matches!(method, MoveMethod::AsArgument) {
+                        proof.change_to_restricted();
+                    }
+                    proofs.insert(*proof_id, proof);
+                }
+                _ => panic!("Expected to be a proof")
             }
-            if matches!(method, MoveMethod::AsArgument) {
-                proof.change_to_restricted();
-            }
-            proofs.insert(*proof_id, proof);
         }
         Ok(proofs)
     }
@@ -717,7 +737,11 @@ where
 
         // drop proofs and check resource leak
         for (_, proof) in self.proofs.drain() {
-            proof.into_inner().drop();
+            let value = proof.into_inner();
+            match value {
+                REValue::Transient(TransientValue::Proof(proof)) => proof.drop(),
+                _ => panic!("Expected proof")
+            }
         }
 
         if self.auth_zone.is_some() {
@@ -1211,7 +1235,7 @@ where
         }
         for (proof_id, proof) in received_proofs {
             trace!(self, Level::Debug, "Received proof: {:?}", proof);
-            self.proofs.insert(proof_id, RefCell::new(proof));
+            self.proofs.insert(proof_id, RefCell::new(REValue::Transient(TransientValue::Proof(proof))));
         }
 
         Ok(result)
@@ -1280,13 +1304,16 @@ where
     }
 
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
-        let proof = self
+        let value = self
             .proofs
             .remove(&proof_id)
             .ok_or(RuntimeError::ProofNotFound(proof_id))?
             .into_inner();
 
-        Ok(proof)
+        match value {
+            REValue::Transient(TransientValue::Proof(proof)) => Ok(proof),
+            _ => panic!("Expected proof")
+        }
     }
 
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
@@ -1303,7 +1330,7 @@ where
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
         let proof_id = self.track.new_proof_id();
-        self.proofs.insert(proof_id, RefCell::new(proof));
+        self.proofs.insert(proof_id, RefCell::new(REValue::Transient(TransientValue::Proof(proof))));
         Ok(proof_id)
     }
 
@@ -1601,7 +1628,12 @@ where
             .map(|proof_id| {
                 self.proofs
                     .get(&proof_id)
-                    .map(|p| p.borrow().clone())
+                    .map(|p| {
+                        match p.borrow().deref() {
+                            REValue::Transient(TransientValue::Proof(proof)) => proof.clone(),
+                            _ => panic!("Expected proof"),
+                        }
+                    })
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))
             })
             .collect::<Result<Vec<Proof>, RuntimeError>>()?;
