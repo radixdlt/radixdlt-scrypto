@@ -53,7 +53,7 @@ pub struct CallFrame<
     wasm_instrumenter: &'w mut WasmInstrumenter,
 
     /// Owned Values
-    buckets: HashMap<BucketId, RefCell<Bucket>>,
+    buckets: HashMap<BucketId, RefCell<REValue>>,
     proofs: HashMap<ProofId, RefCell<Proof>>,
     owned_values: HashMap<ValueId, RefCell<REValue>>,
     worktop: Option<RefCell<Worktop>>,
@@ -76,14 +76,21 @@ pub struct CallFrame<
 }
 
 #[derive(Debug)]
+pub enum TransientValue {
+    Bucket(Bucket),
+}
+
+#[derive(Debug)]
 pub enum REValue {
     Stored(StoredValue),
+    Transient(TransientValue),
 }
 
 impl REValue {
     fn to_stored(&mut self) -> &mut StoredValue {
         match self {
-            REValue::Stored(stored_value) => stored_value
+            REValue::Stored(stored_value) => stored_value,
+            _ => panic!("Expected a stored value"),
         }
     }
 }
@@ -92,6 +99,7 @@ impl Into<StoredValue> for REValue {
     fn into(self) -> StoredValue {
         match self {
             REValue::Stored(stored_value) => stored_value,
+            _ => panic!("Expected a stored value"),
         }
     }
 }
@@ -249,7 +257,7 @@ impl<'a> REValueRef<'a> {
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Bucket(BucketId, RefMut<'a, Bucket>),
+    Bucket(BucketId, RefMut<'a, REValue>),
     Proof(ProofId, RefMut<'a, Proof>),
     Vault(VaultId, REValueRef<'a>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
@@ -278,7 +286,7 @@ pub enum SNodeExecution<'a> {
     Consumed(ConsumedSNodeState),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Bucket(BucketId, RefMut<'a, Bucket>),
+    Bucket(BucketId, RefMut<'a, REValue>),
     Proof(ProofId, RefMut<'a, Proof>),
     Vault(VaultId, &'a mut Vault),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
@@ -347,9 +355,16 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::Blueprint(info, package) => {
                 package.invoke(&info, fn_ident, input, system)
             }
-            SNodeExecution::Bucket(bucket_id, mut bucket) => bucket
-                .main(bucket_id, fn_ident, input, system)
-                .map_err(RuntimeError::BucketError),
+            SNodeExecution::Bucket(bucket_id, mut value) => {
+                match value.deref_mut() {
+                    REValue::Transient(TransientValue::Bucket(bucket)) => {
+                        bucket
+                            .main(bucket_id, fn_ident, input, system)
+                            .map_err(RuntimeError::BucketError)
+                    }
+                    _ => panic!("Should be a bucket")
+                }
+            },
             SNodeExecution::Proof(_id, mut proof) => proof
                 .main(fn_ident, input, system)
                 .map_err(RuntimeError::ProofError),
@@ -441,7 +456,7 @@ where
     ) -> Self {
         let mut celled_buckets = HashMap::new();
         for (id, b) in buckets {
-            celled_buckets.insert(id, RefCell::new(b));
+            celled_buckets.insert(id, RefCell::new(REValue::Transient(TransientValue::Bucket(b))));
         }
 
         let mut celled_proofs = HashMap::new();
@@ -483,7 +498,10 @@ where
                 bucket_id,
                 ref_bucket
             );
-            resource = ResourceFailure::Resource(ref_bucket.borrow().resource_address());
+            resource = match ref_bucket.borrow().deref() {
+                REValue::Transient(TransientValue::Bucket(bucket)) => ResourceFailure::Resource(bucket.resource_address()),
+                _ => panic!("Should be a bucket"),
+            };
             success = false;
         }
 
@@ -497,6 +515,7 @@ where
             resource = match value {
                 REValue::Stored(StoredValue::Vault(vault)) => ResourceFailure::Resource(vault.resource_address()),
                 REValue::Stored(StoredValue::KeyValueStore { .. }) => ResourceFailure::UnclaimedKeyValueStore,
+                REValue::Transient(TransientValue::Bucket(bucket)) => ResourceFailure::Resource(bucket.resource_address()),
             };
             success = false;
         }
@@ -549,15 +568,21 @@ where
 
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
-        from: &mut HashMap<BucketId, RefCell<Bucket>>,
+        from: &mut HashMap<BucketId, RefCell<REValue>>,
         bucket_ids: &HashMap<BucketId, SborPath>,
     ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
         let mut buckets = HashMap::new();
         for (bucket_id, _) in bucket_ids {
-            let bucket = from
+            let value = from
                 .remove(bucket_id)
                 .ok_or(RuntimeError::BucketNotFound(*bucket_id))?
                 .into_inner();
+
+            let bucket = match value {
+                REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                _ => panic!("Should not be here"),
+            };
+
             if bucket.is_locked() {
                 return Err(RuntimeError::CantMoveLockedBucket);
             }
@@ -787,6 +812,7 @@ where
                         self.refed_values.remove(&id);
                     }
                 }
+                _ => {}
             }
         }
 
@@ -986,11 +1012,15 @@ where
                 ))
             }
             SNodeRef::Bucket(bucket_id) => {
-                let bucket = self
+                let value = self
                     .buckets
                     .remove(&bucket_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?
                     .into_inner();
+                let bucket = match value {
+                    REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                    _ => panic!("Should not be here"),
+                };
                 let resource_address = bucket.resource_address();
                 let substate_value = self
                     .track
@@ -1198,7 +1228,7 @@ where
         // move buckets and proofs to this process.
         for (bucket_id, bucket) in received_buckets {
             trace!(self.depth, Level::Debug, "Received bucket: {:?}", bucket);
-            self.buckets.insert(bucket_id, RefCell::new(bucket));
+            self.buckets.insert(bucket_id, RefCell::new(REValue::Transient(TransientValue::Bucket(bucket))));
         }
         for (proof_id, proof) in received_proofs {
             trace!(self.depth, Level::Debug, "Received proof: {:?}", proof);
@@ -1289,7 +1319,12 @@ where
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
         self.buckets
             .remove(&bucket_id)
-            .map(RefCell::into_inner)
+            .map(|value| {
+                match value.into_inner() {
+                    REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                    _ => panic!("Expected bucket"),
+                }
+            })
             .ok_or(RuntimeError::BucketNotFound(bucket_id))
     }
 
@@ -1302,7 +1337,7 @@ where
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.track.new_bucket_id();
         self.buckets
-            .insert(bucket_id, RefCell::new(Bucket::new(container)));
+            .insert(bucket_id, RefCell::new(REValue::Transient(TransientValue::Bucket(Bucket::new(container)))));
         Ok(bucket_id)
     }
 
