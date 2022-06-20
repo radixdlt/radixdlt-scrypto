@@ -573,4 +573,17 @@ mod tests {
             |x| WasmModule::enforce_memory_limit(x, 5)
         );
     }
+
+    #[test]
+    fn test_table() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (table 6 funcref)
+            )
+            "#,
+            PrepareError::InvalidTable(InvalidTable::InitialTableSizeLimitExceeded),
+            |x| WasmModule::enforce_table_limit(x, 5)
+        );
+    }
 }
