@@ -42,7 +42,8 @@ impl Into<(Hash, u32)> for StoredValueId {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ValueId {
-    Stored(StoredValueId)
+    Transient(TransientValueId),
+    Stored(StoredValueId),
 }
 
 impl ValueId {
@@ -60,6 +61,7 @@ impl Into<(Hash, u32)> for ValueId {
         match self {
             ValueId::Stored(StoredValueId::KeyValueStoreId(id)) => id,
             ValueId::Stored(StoredValueId::VaultId(id)) => id,
+            _ => panic!("Not a stored id")
         }
     }
 }

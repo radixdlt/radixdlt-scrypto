@@ -53,7 +53,7 @@ pub struct CallFrame<
     wasm_instrumenter: &'w mut WasmInstrumenter,
 
     /// Owned Values
-    buckets: HashMap<BucketId, RefCell<REValue>>,
+    buckets: HashMap<ValueId, RefCell<REValue>>,
     proofs: HashMap<ProofId, RefCell<Proof>>,
     owned_values: HashMap<ValueId, RefCell<REValue>>,
     worktop: Option<RefCell<Worktop>>,
@@ -149,7 +149,8 @@ fn to_stored_ids(ids: HashSet<ValueId>) -> Result<HashSet<StoredValueId>, Runtim
     let mut stored_ids = HashSet::new();
     for id in ids {
         match id {
-            ValueId::Stored(stored_id) => stored_ids.insert(stored_id)
+            ValueId::Stored(stored_id) => stored_ids.insert(stored_id),
+            _ => return Err(RuntimeError::MovingInvalidType),
         };
     }
     Ok(stored_ids)
@@ -159,7 +160,8 @@ fn to_stored_values(values: HashMap<ValueId, REValue>) -> Result<HashMap<StoredV
     let mut stored_values = HashMap::new();
     for (id, value) in values {
         match id {
-            ValueId::Stored(stored_id) => stored_values.insert(stored_id, value.into())
+            ValueId::Stored(stored_id) => stored_values.insert(stored_id, value.into()),
+            _ => return Err(RuntimeError::MovingInvalidType),
         };
     }
     Ok(stored_values)
@@ -458,7 +460,10 @@ where
     ) -> Self {
         let mut celled_buckets = HashMap::new();
         for (id, b) in buckets {
-            celled_buckets.insert(id, RefCell::new(REValue::Transient(TransientValue::Bucket(b))));
+            celled_buckets.insert(
+                ValueId::Transient(TransientValueId::Bucket(id)),
+                RefCell::new(REValue::Transient(TransientValue::Bucket(b)))
+            );
         }
 
         let mut celled_proofs = HashMap::new();
@@ -496,7 +501,7 @@ where
             trace!(
                 self,
                 Level::Warn,
-                "Dangling bucket: {}, {:?}",
+                "Dangling bucket: {:?}, {:?}",
                 bucket_id,
                 ref_bucket
             );
@@ -570,13 +575,13 @@ where
 
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
-        from: &mut HashMap<BucketId, RefCell<REValue>>,
+        from: &mut HashMap<ValueId, RefCell<REValue>>,
         bucket_ids: &HashMap<BucketId, SborPath>,
     ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
         let mut buckets = HashMap::new();
         for (bucket_id, _) in bucket_ids {
             let value = from
-                .remove(bucket_id)
+                .remove(&ValueId::Transient(TransientValueId::Bucket(*bucket_id)))
                 .ok_or(RuntimeError::BucketNotFound(*bucket_id))?
                 .into_inner();
 
@@ -1016,7 +1021,7 @@ where
             SNodeRef::Bucket(bucket_id) => {
                 let value = self
                     .buckets
-                    .remove(&bucket_id)
+                    .remove(&ValueId::Transient(TransientValueId::Bucket(*bucket_id)))
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?
                     .into_inner();
                 let bucket = match value {
@@ -1041,7 +1046,7 @@ where
             SNodeRef::BucketRef(bucket_id) => {
                 let bucket_cell = self
                     .buckets
-                    .get(&bucket_id)
+                    .get(&ValueId::Transient(TransientValueId::Bucket(*bucket_id)))
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let bucket = bucket_cell.borrow_mut();
                 Ok((
@@ -1230,7 +1235,10 @@ where
         // move buckets and proofs to this process.
         for (bucket_id, bucket) in received_buckets {
             trace!(self, Level::Debug, "Received bucket: {:?}", bucket);
-            self.buckets.insert(bucket_id, RefCell::new(REValue::Transient(TransientValue::Bucket(bucket))));
+            self.buckets.insert(
+                ValueId::Transient(TransientValueId::Bucket(bucket_id)),
+                RefCell::new(REValue::Transient(TransientValue::Bucket(bucket)))
+            );
         }
         for (proof_id, proof) in received_proofs {
             trace!(self, Level::Debug, "Received proof: {:?}", proof);
@@ -1320,7 +1328,7 @@ where
 
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
         self.buckets
-            .remove(&bucket_id)
+            .remove(&ValueId::Transient(TransientValueId::Bucket(bucket_id.clone())))
             .map(|value| {
                 match value.into_inner() {
                     REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
@@ -1339,7 +1347,10 @@ where
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.track.new_bucket_id();
         self.buckets
-            .insert(bucket_id, RefCell::new(REValue::Transient(TransientValue::Bucket(Bucket::new(container)))));
+            .insert(
+                ValueId::Transient(TransientValueId::Bucket(bucket_id)),
+                RefCell::new(REValue::Transient(TransientValue::Bucket(Bucket::new(container))))
+            );
         Ok(bucket_id)
     }
 

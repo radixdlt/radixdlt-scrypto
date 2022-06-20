@@ -65,6 +65,7 @@ pub enum RuntimeError {
     /// Key Value Store does not exist.
     KeyValueStoreNotFound(KeyValueStoreId),
 
+    MovingInvalidType,
     StoredValueRemoved(StoredValueId),
     StoredValueChangedChildren,
 
