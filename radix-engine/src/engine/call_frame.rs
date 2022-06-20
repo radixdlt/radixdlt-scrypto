@@ -15,7 +15,7 @@ use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::SNodeState::{Borrowed, Consumed, Static, Tracked};
+use crate::engine::SNodeState::{Borrowed, Consumed, Static, TrackedNative, TrackedScrypto};
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -271,11 +271,15 @@ pub enum SNodeState<'a> {
     Static(StaticSNodeState),
     Consumed(TransientValue),
     Borrowed(BorrowedSNodeState<'a>),
-    Tracked(
+    TrackedNative(
+        Address,
+        SubstateValue,
+    ),
+    TrackedScrypto(
         Address,
         SubstateValue,
         Option<(ScryptoActorInfo, ValidatedPackage)>,
-    ),
+    )
 }
 
 pub enum SNodeExecution<'a> {
@@ -584,7 +588,7 @@ where
                     SNodeExecution::Vault(vault_id, vault)
                 }
             },
-            SNodeState::Tracked(address, value, mut meta) => match value {
+            SNodeState::TrackedNative(address, value) => match value {
                 SubstateValue::Resource(_) => {
                     to_return.insert(address.clone(), value);
                     let resource_manager =
@@ -597,6 +601,9 @@ where
                     let vault_address: (ComponentAddress, VaultId) = address.clone().into();
                     SNodeExecution::Vault(vault_address.1, vault)
                 }
+                _ => panic!("Unexpected tracked value"),
+            }
+            SNodeState::TrackedScrypto(address, value, mut meta) => match value {
                 SubstateValue::Component(component) => {
                     self.refed_components.insert(address.into(), component);
                     let (info, package) = meta.take().unwrap();
@@ -837,7 +844,7 @@ where
                     .get_auth(&fn_ident, &input)
                     .clone();
                 Ok((
-                    Tracked(resource_address.clone().into(), resman_value, None),
+                    TrackedNative(resource_address.clone().into(), resman_value),
                     vec![method_auth],
                 ))
             }
@@ -956,7 +963,7 @@ where
                     );
 
                     Ok((
-                        Tracked(
+                        TrackedScrypto(
                             component_address.into(),
                             component_value,
                             Some((actor_info, package.clone())),
@@ -1026,7 +1033,7 @@ where
                                 let resource_address = vault_value.vault().resource_address();
                                 (
                                     resource_address,
-                                    Tracked(vault_address.into(), vault_value, None),
+                                    TrackedNative(vault_address.into(), vault_value),
                                 )
                             }
                         }
@@ -1056,7 +1063,8 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                Tracked(..)
+                TrackedNative(..)
+                | TrackedScrypto(..)
                 | Borrowed(BorrowedSNodeState::Vault(..))
                 | Borrowed(BorrowedSNodeState::ValueRef(
                     ValueId::Transient(TransientValueId::Bucket(..)),
@@ -1107,7 +1115,7 @@ where
             self.wasm_instrumenter,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Tracked(..)
+                | TrackedScrypto(..)
                 | Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
                 }
