@@ -12,7 +12,9 @@
         "transaction/Cargo.toml",
     ],
     "cSpell.words": [
+        "instantiatable",
         "Instrumenter",
+        "Scrypto",
         "Substate",
         "Wasmer",
         "Wasmi"

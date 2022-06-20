@@ -1,6 +1,6 @@
 (module
 
-  ;; Simple main function that always returns `()`
+  ;; Simple function that always returns `()`
   (func $Test_f (param $0 i32) (result i32)
     ;; Loop starts!
     (local $i i32)
