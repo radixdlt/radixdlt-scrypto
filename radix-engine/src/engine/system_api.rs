@@ -41,6 +41,11 @@ where
         non_fungible: Option<NonFungible>,
     );
 
+    fn borrow_global_resource_manager(
+        &mut self,
+        resource_address: ResourceAddress,
+    ) -> Result<&ResourceManager, RuntimeError>;
+
     fn borrow_global_mut_resource_manager(
         &mut self,
         resource_address: ResourceAddress,

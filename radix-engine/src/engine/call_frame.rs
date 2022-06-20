@@ -17,7 +17,7 @@ use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::LoadedSNodeState::{Borrowed, Consumed, Static};
+use crate::engine::SNodeState::{Borrowed, Consumed, Static, Tracked};
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -157,13 +157,10 @@ pub enum ConsumedSNodeState {
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Blueprint(ScryptoActorInfo, ValidatedPackage),
-    Component(ScryptoActorInfo, ValidatedPackage, Component),
-    Resource(ResourceAddress, ResourceManager),
     Bucket(BucketId, RefMut<'a, Bucket>),
     Proof(ProofId, RefMut<'a, Proof>),
-    Vault(VaultId, RefMut<'a, StoredValue>, ValueType),
-    TrackedVault(VaultId, Vault, ValueType),
+    Vault(RefMut<'a, StoredValue>),
+    Blueprint(ScryptoActorInfo, ValidatedPackage),
 }
 
 pub enum StaticSNodeState {
@@ -173,99 +170,21 @@ pub enum StaticSNodeState {
     TransactionProcessor,
 }
 
-pub enum LoadedSNodeState<'a> {
-    Static(StaticSNodeState),
-    Consumed(Option<ConsumedSNodeState>),
-    Borrowed(BorrowedSNodeState<'a>),
-}
-
 pub enum SNodeState<'a> {
-    Root,
-    SystemStatic,
-    TransactionProcessorStatic,
-    PackageStatic,
-    AuthZoneRef(&'a mut AuthZone),
-    WorktopRef(&'a mut Worktop),
-    // TODO: use reference to the package
-    Blueprint(ScryptoActorInfo, ValidatedPackage),
-    Component(ScryptoActorInfo, ValidatedPackage, &'a mut Component),
-    ResourceStatic,
-    ResourceRef(ResourceAddress, &'a mut ResourceManager),
-    BucketRef(BucketId, &'a mut Bucket),
-    Bucket(Bucket),
-    ProofRef(ProofId, &'a mut Proof),
-    Proof(Proof),
-    VaultRef(VaultId, &'a mut StoredValue),
-    TrackedVaultRef(VaultId, &'a mut Vault),
+    Static(StaticSNodeState),
+    Consumed(ConsumedSNodeState),
+    Borrowed(BorrowedSNodeState<'a>),
+    Tracked(
+        Address,
+        SubstateValue,
+        Option<(ScryptoActorInfo, ValidatedPackage)>,
+    ),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveMethod {
     AsReturn,
     AsArgument,
-}
-
-impl<'a> LoadedSNodeState<'a> {
-    fn to_snode_state(&mut self) -> SNodeState {
-        match self {
-            Static(static_state) => match static_state {
-                StaticSNodeState::Package => SNodeState::PackageStatic,
-                StaticSNodeState::Resource => SNodeState::ResourceStatic,
-                StaticSNodeState::System => SNodeState::SystemStatic,
-                StaticSNodeState::TransactionProcessor => SNodeState::TransactionProcessorStatic,
-            },
-            Consumed(ref mut to_consume) => match to_consume.take().unwrap() {
-                ConsumedSNodeState::Proof(proof) => SNodeState::Proof(proof),
-                ConsumedSNodeState::Bucket(bucket) => SNodeState::Bucket(bucket),
-            },
-            Borrowed(ref mut borrowed) => match borrowed {
-                BorrowedSNodeState::AuthZone(s) => SNodeState::AuthZoneRef(s),
-                BorrowedSNodeState::Worktop(s) => SNodeState::WorktopRef(s),
-                BorrowedSNodeState::Blueprint(info, package) => {
-                    SNodeState::Blueprint(info.clone(), package.clone())
-                }
-                BorrowedSNodeState::Component(info, package, component) => {
-                    SNodeState::Component(info.clone(), package.clone(), component)
-                }
-                BorrowedSNodeState::Resource(addr, s) => SNodeState::ResourceRef(*addr, s),
-                BorrowedSNodeState::Bucket(id, s) => SNodeState::BucketRef(*id, s),
-                BorrowedSNodeState::Proof(id, s) => SNodeState::ProofRef(*id, s),
-                BorrowedSNodeState::Vault(id, vault, ..) => SNodeState::VaultRef(*id, vault),
-                BorrowedSNodeState::TrackedVault(id, vault, ..) => {
-                    SNodeState::TrackedVaultRef(*id, vault)
-                }
-            },
-        }
-    }
-
-    fn cleanup<S: ReadableSubstateStore>(self, track: &mut Track<S>) {
-        if let Borrowed(borrowed) = self {
-            match borrowed {
-                BorrowedSNodeState::AuthZone(..) => {}
-                BorrowedSNodeState::Worktop(..) => {}
-                BorrowedSNodeState::Bucket(..) => {}
-                BorrowedSNodeState::Proof(..) => {}
-                BorrowedSNodeState::Vault(..) => {}
-                BorrowedSNodeState::Blueprint(..) => {}
-                BorrowedSNodeState::Component(actor, _, component) => {
-                    track.return_borrowed_global_mut_value(
-                        actor.component_address().unwrap(),
-                        component,
-                    );
-                }
-                BorrowedSNodeState::Resource(resource_address, resource_manager) => {
-                    track.return_borrowed_global_mut_value(resource_address, resource_manager);
-                }
-                BorrowedSNodeState::TrackedVault(vault_id, vault, value_type) => match value_type {
-                    ValueType::Ref(ValueRefType::Committed { component_address }) => {
-                        track
-                            .return_borrowed_global_mut_value((component_address, vault_id), vault);
-                    }
-                    _ => panic!("Tracked vaults are owned by Track and only references are passed to call frames. Will remove this in a PR soon."),
-                },
-            }
-        }
-    }
 }
 
 impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
@@ -535,88 +454,112 @@ where
             .consume(Self::fee_table_helper(&mut self.fee_table).engine_run_cost())
             .map_err(RuntimeError::CostingError)?;
 
+        let mut to_return = HashMap::new();
+
         let output = match snode {
-            SNodeState::Root => {
-                panic!("Root is not runnable")
-            }
-            SNodeState::SystemStatic => {
-                System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
-            }
-            SNodeState::TransactionProcessorStatic => {
-                TransactionProcessor::static_main(fn_ident, input, self).map_err(|e| match e {
-                    TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                    TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                    TransactionProcessorError::RuntimeError(e) => e,
-                })
-            }
-            SNodeState::PackageStatic => ValidatedPackage::static_main(fn_ident, input, self)
-                .map_err(RuntimeError::PackageError),
-            SNodeState::AuthZoneRef(auth_zone) => auth_zone
-                .main(fn_ident, input, self)
-                .map_err(RuntimeError::AuthZoneError),
-            SNodeState::WorktopRef(worktop) => worktop
-                .main(fn_ident, input, self)
-                .map_err(RuntimeError::WorktopError),
-            SNodeState::Blueprint(actor, package) => {
-                package.invoke(&actor, &mut None, fn_ident, input, self)
-            }
-            SNodeState::Component(actor, package, component) => {
-                let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
-                for value_id in initial_value.stored_value_ids() {
-                    self.refed_values.insert(
-                        value_id,
-                        ValueRefType::Committed {
-                            component_address: actor.component_address().unwrap(),
-                        },
-                    );
+            SNodeState::Static(state) => match state {
+                StaticSNodeState::System => {
+                    System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
                 }
+                StaticSNodeState::TransactionProcessor => {
+                    TransactionProcessor::static_main(fn_ident, input, self).map_err(|e| match e {
+                        TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                        TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                        TransactionProcessorError::RuntimeError(e) => e,
+                    })
+                }
+                StaticSNodeState::Package => ValidatedPackage::static_main(fn_ident, input, self)
+                    .map_err(RuntimeError::PackageError),
+                StaticSNodeState::Resource => ResourceManager::static_main(fn_ident, input, self)
+                    .map_err(RuntimeError::ResourceManagerError),
+            },
+            SNodeState::Consumed(state) => match state {
+                ConsumedSNodeState::Bucket(bucket) => bucket
+                    .consuming_main(fn_ident, input, self)
+                    .map_err(RuntimeError::BucketError),
+                ConsumedSNodeState::Proof(proof) => proof
+                    .main_consume(fn_ident, input)
+                    .map_err(RuntimeError::ProofError),
+            },
+            SNodeState::Borrowed(borrowed) => match borrowed {
+                BorrowedSNodeState::AuthZone(mut auth_zone) => auth_zone
+                    .main(fn_ident, input, self)
+                    .map_err(RuntimeError::AuthZoneError),
+                BorrowedSNodeState::Worktop(mut worktop) => worktop
+                    .main(fn_ident, input, self)
+                    .map_err(RuntimeError::WorktopError),
+                BorrowedSNodeState::Blueprint(info, package) => {
+                    package.invoke(&info, &mut None, fn_ident, input, self)
+                }
+                BorrowedSNodeState::Bucket(bucket_id, mut bucket) => bucket
+                    .main(bucket_id, fn_ident, input, self)
+                    .map_err(RuntimeError::BucketError),
+                BorrowedSNodeState::Proof(_id, mut proof) => proof
+                    .main(fn_ident, input, self)
+                    .map_err(RuntimeError::ProofError),
+                BorrowedSNodeState::Vault(mut value) => match value.deref_mut() {
+                    StoredValue::Vault(id, vault) => vault
+                        .main(*id, fn_ident, input, self)
+                        .map_err(RuntimeError::VaultError),
+                    _ => panic!("Should be a vault"),
+                },
+            },
+            SNodeState::Tracked(address, value, meta) => {
+                to_return.insert(address.clone(), value);
+                let mut_value = to_return.get_mut(&address).unwrap();
 
-                let mut maybe_component = Some(component);
-                let rtn = package.invoke(&actor, &mut maybe_component, fn_ident, input, self)?;
+                let rtn = match mut_value {
+                    SubstateValue::Resource(resource_manager) => resource_manager
+                        .main(address.clone().into(), fn_ident, input, self)
+                        .map_err(RuntimeError::ResourceManagerError),
+                    SubstateValue::Vault(vault) => {
+                        let vault_address: (ComponentAddress, VaultId) = address.clone().into();
+                        vault
+                            .main(vault_address.1, fn_ident, input, self)
+                            .map_err(RuntimeError::VaultError)
+                    }
+                    SubstateValue::Component(component) => {
+                        let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
+                        for value_id in initial_value.stored_value_ids() {
+                            self.refed_values.insert(
+                                value_id,
+                                ValueRefType::Committed {
+                                    component_address: address.clone().into(),
+                                },
+                            );
+                        }
 
-                let component = maybe_component.unwrap();
-                let value = ScryptoValue::from_slice(component.state())
-                    .map_err(RuntimeError::DecodeError)?;
-                verify_stored_value(&value)?;
-                let new_value_ids = stored_value_update(&initial_value, &value)?;
-                let addr = actor.component_address().unwrap();
-                // TODO: should we take values when component is actually written to rather than at the end of invocation?
-                let new_values = self.take_values(&new_value_ids)?;
-                self.track.insert_objects_into_component(new_values, addr);
+                        let (actor, package) = meta.unwrap();
+
+                        let mut maybe_component = Some(component);
+                        let rtn =
+                            package.invoke(&actor, &mut maybe_component, fn_ident, input, self)?;
+
+                        let component = maybe_component.unwrap();
+                        let value = ScryptoValue::from_slice(component.state())
+                            .map_err(RuntimeError::DecodeError)?;
+                        verify_stored_value(&value)?;
+                        let new_value_ids = stored_value_update(&initial_value, &value)?;
+                        // TODO: should we take values when component is actually written to rather than at the end of invocation?
+                        let new_values = self.take_values(&new_value_ids)?;
+                        self.track
+                            .insert_objects_into_component(new_values, address.clone().into());
+
+                        Ok(rtn)
+                    }
+                    _ => panic!(
+                        "Tracked {:?} not supported. Should not get here.",
+                        mut_value
+                    ),
+                }?;
 
                 Ok(rtn)
             }
-            SNodeState::ResourceStatic => ResourceManager::static_main(fn_ident, input, self)
-                .map_err(RuntimeError::ResourceManagerError),
-            SNodeState::ResourceRef(resource_address, resource_manager) => {
-                let return_value = resource_manager
-                    .main(resource_address, fn_ident, input, self)
-                    .map_err(RuntimeError::ResourceManagerError)?;
-
-                Ok(return_value)
-            }
-            SNodeState::BucketRef(bucket_id, bucket) => bucket
-                .main(bucket_id, fn_ident, input, self)
-                .map_err(RuntimeError::BucketError),
-            SNodeState::Bucket(bucket) => bucket
-                .consuming_main(fn_ident, input, self)
-                .map_err(RuntimeError::BucketError),
-            SNodeState::ProofRef(_, proof) => proof
-                .main(fn_ident, input, self)
-                .map_err(RuntimeError::ProofError),
-            SNodeState::Proof(proof) => proof
-                .main_consume(fn_ident, input)
-                .map_err(RuntimeError::ProofError),
-            SNodeState::VaultRef(_vault_id, value) => match value {
-                StoredValue::Vault(id, vault) => vault
-                    .main(*id, fn_ident, input, self)
-                    .map_err(RuntimeError::VaultError),
-                _ => panic!("Should be a vault"),
-            },
-            SNodeState::TrackedVaultRef(vault_id, vault) => vault
-                .main(vault_id, fn_ident, input, self)
-                .map_err(RuntimeError::VaultError),
         }?;
+
+        for (address, value) in to_return.drain() {
+            self.track.return_borrowed_global_mut_value(address, value);
+        }
 
         self.process_return_data(snode_ref, &output)?;
 
@@ -817,7 +760,7 @@ where
         }
 
         // Authorization and state load
-        let (mut loaded_snode, method_auths) = match &snode_ref {
+        let (loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::TransactionProcessor => {
                 // FIXME: only TransactionExecutor can invoke this function
                 Ok((Static(StaticSNodeState::TransactionProcessor), vec![]))
@@ -844,8 +787,13 @@ where
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
                     let substate_value = self
                         .track
-                        .read_value(package_address.clone())
-                        .ok_or(RuntimeError::PackageNotFound(*package_address))?;
+                        .borrow_global_value(package_address.clone())
+                        .map_err(|e| match e {
+                            TrackError::NotFound => RuntimeError::PackageNotFound(*package_address),
+                            TrackError::Reentrancy => {
+                                panic!("Package reentrancy error should never occur.")
+                            }
+                        })?;
                     let package = match substate_value {
                         SubstateValue::Package(package) => package,
                         _ => panic!("Value is not a package"),
@@ -879,7 +827,7 @@ where
                 ScryptoActor::Component(component_address) => {
                     let component_address = *component_address;
 
-                    let component: Component = self
+                    let component_value = self
                         .track
                         .borrow_global_mut_value(component_address)
                         .map_err(|e| match e {
@@ -889,19 +837,21 @@ where
                             TrackError::Reentrancy => {
                                 RuntimeError::ComponentReentrancy(component_address)
                             }
-                        })?
-                        .into();
+                        })?;
+                    let component = component_value.component();
                     let package_address = component.package_address();
                     let blueprint_name = component.blueprint_name().to_string();
-                    let substate_value = self
-                        .track
-                        .read_value(package_address)
-                        .ok_or(RuntimeError::PackageNotFound(package_address))?;
-                    let package = match substate_value {
-                        SubstateValue::Package(package) => package,
-                        _ => panic!("Value is not a package"),
-                    };
 
+                    let package_value = self
+                        .track
+                        .borrow_global_value(package_address.clone())
+                        .map_err(|e| match e {
+                            TrackError::NotFound => RuntimeError::PackageNotFound(package_address),
+                            TrackError::Reentrancy => {
+                                panic!("Package reentrancy error should never occur.")
+                            }
+                        })?;
+                    let package = package_value.package();
                     let abi = package
                         .blueprint_abi(&blueprint_name)
                         .expect("Blueprint not found for existing component");
@@ -917,23 +867,25 @@ where
                     let (_, method_auths) =
                         component.method_authorization(&abi.structure, &fn_ident);
 
+                    let actor_info = ScryptoActorInfo::component(
+                        package_address,
+                        blueprint_name,
+                        component_address,
+                    );
+
                     Ok((
-                        Borrowed(BorrowedSNodeState::Component(
-                            ScryptoActorInfo::component(
-                                package_address,
-                                blueprint_name,
-                                component_address,
-                            ),
-                            package.clone(),
-                            component,
-                        )),
+                        Tracked(
+                            component_address.into(),
+                            component_value,
+                            Some((actor_info, package.clone())),
+                        ),
                         method_auths,
                     ))
                 }
             },
             SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::ResourceRef(resource_address) => {
-                let resource_manager: ResourceManager = self
+                let resman_value = self
                     .track
                     .borrow_global_mut_value(resource_address.clone())
                     .map_err(|e| match e {
@@ -941,15 +893,14 @@ where
                             RuntimeError::ResourceManagerNotFound(resource_address.clone())
                         }
                         TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
-                    })?
-                    .into();
+                    })?;
 
-                let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
+                let method_auth = resman_value
+                    .resource_manager()
+                    .get_auth(&fn_ident, &input)
+                    .clone();
                 Ok((
-                    Borrowed(BorrowedSNodeState::Resource(
-                        resource_address.clone(),
-                        resource_manager,
-                    )),
+                    Tracked(resource_address.clone().into(), resman_value, None),
                     vec![method_auth],
                 ))
             }
@@ -960,14 +911,17 @@ where
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?
                     .into_inner();
                 let resource_address = bucket.resource_address();
-                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let substate_value = self
+                    .track
+                    .borrow_global_value(resource_address.clone())
+                    .expect("There should be no problem retrieving resource manager");
                 let resource_manager = match substate_value {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
                 };
                 let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
                 Ok((
-                    Consumed(Some(ConsumedSNodeState::Bucket(bucket))),
+                    Consumed(ConsumedSNodeState::Bucket(bucket)),
                     vec![method_auth.clone()],
                 ))
             }
@@ -999,7 +953,7 @@ where
                     .remove(&proof_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
                     .into_inner();
-                Ok((Consumed(Some(ConsumedSNodeState::Proof(proof))), vec![]))
+                Ok((Consumed(ConsumedSNodeState::Proof(proof)), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (resource_address, snode_state) = {
@@ -1011,11 +965,7 @@ where
 
                         (
                             resource_address,
-                            Borrowed(BorrowedSNodeState::Vault(
-                                vault_id.clone(),
-                                value.borrow_mut(),
-                                ValueType::Owned,
-                            )),
+                            Borrowed(BorrowedSNodeState::Vault(value.borrow_mut())),
                         )
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
@@ -1035,41 +985,33 @@ where
                                     StoredValue::Vault(_, vault) => vault.resource_address(),
                                     _ => panic!("Expected vault"),
                                 };
-                                (
-                                    resource_address,
-                                    Borrowed(BorrowedSNodeState::Vault(
-                                        vault_id.clone(),
-                                        value,
-                                        ValueType::Ref(value_ref),
-                                    )),
-                                )
+                                (resource_address, Borrowed(BorrowedSNodeState::Vault(value)))
                             }
                             ValueRefType::Committed { component_address } => {
-                                let vault: Vault = self
+                                let vault_address = (component_address, *vault_id);
+                                let vault_value = self
                                     .track
-                                    .borrow_global_mut_value((component_address, *vault_id))
+                                    .borrow_global_mut_value(vault_address.clone())
                                     .map_err(|e| match e {
                                         TrackError::NotFound => panic!("Expected to find vault"),
                                         TrackError::Reentrancy => {
                                             panic!("Vault logic is causing reentrancy")
                                         }
-                                    })?
-                                    .into();
-                                let resource_address = vault.resource_address();
+                                    })?;
+                                let resource_address = vault_value.vault().resource_address();
                                 (
                                     resource_address,
-                                    Borrowed(BorrowedSNodeState::TrackedVault(
-                                        vault_id.clone(),
-                                        vault,
-                                        ValueType::Ref(value_ref),
-                                    )),
+                                    Tracked(vault_address.into(), vault_value, None),
                                 )
                             }
                         }
                     }
                 };
 
-                let substate_value = self.track.read_value(resource_address.clone()).unwrap();
+                let substate_value = self
+                    .track
+                    .borrow_global_value(resource_address.clone())
+                    .unwrap();
                 let resource_manager = match substate_value {
                     SubstateValue::Resource(resource_manager) => resource_manager,
                     _ => panic!("Value is not a resource manager"),
@@ -1089,13 +1031,11 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                Borrowed(BorrowedSNodeState::Resource(_, _))
-                | Borrowed(BorrowedSNodeState::Vault(_, _, _))
-                | Borrowed(BorrowedSNodeState::TrackedVault(..))
+                Tracked(..)
+                | Borrowed(BorrowedSNodeState::Vault(..))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Borrowed(BorrowedSNodeState::Component(..))
-                | Consumed(Some(ConsumedSNodeState::Bucket(_))) => {
+                | Consumed(ConsumedSNodeState::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
@@ -1139,7 +1079,7 @@ where
             self.wasm_instrumenter,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Borrowed(BorrowedSNodeState::Component(..))
+                | Tracked(..)
                 | Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
                 }
@@ -1159,8 +1099,7 @@ where
         );
 
         // invoke the main function
-        let snode = loaded_snode.to_snode_state();
-        let run_result = frame.run(Some(snode_ref), snode, &fn_ident, input);
+        let run_result = frame.run(Some(snode_ref), loaded_snode, &fn_ident, input);
 
         // re-gain ownership of the cost unit counter and fee table
         self.cost_unit_counter = frame.cost_unit_counter;
@@ -1168,9 +1107,6 @@ where
 
         // unwrap and contine
         let (result, received_buckets, received_proofs, mut received_vaults) = run_result?;
-
-        // Return borrowed snodes
-        loaded_snode.cleanup(&mut self.track);
 
         // move buckets and proofs to this process.
         for (bucket_id, bucket) in received_buckets {
@@ -1214,6 +1150,19 @@ where
         let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
         let key = non_fungible_address.non_fungible_id().to_vec();
         self.track.set_key_value(parent_address, key, non_fungible)
+    }
+
+    fn borrow_global_resource_manager(
+        &mut self,
+        resource_address: ResourceAddress,
+    ) -> Result<&ResourceManager, RuntimeError> {
+        self.track
+            .borrow_global_value(resource_address.clone())
+            .map(SubstateValue::resource_manager)
+            .map_err(|e| match e {
+                TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address),
+                TrackError::Reentrancy => panic!("Resman reentrancy should not occur."),
+            })
     }
 
     fn borrow_global_mut_resource_manager(
@@ -1403,10 +1352,13 @@ where
         &mut self,
         component_address: ComponentAddress,
     ) -> Result<(PackageAddress, String), RuntimeError> {
-        let substate_value = self
-            .track
-            .read_value(component_address)
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?;
+        let substate_value =
+            self.track
+                .borrow_global_value(component_address)
+                .map_err(|e| match e {
+                    TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
+                    TrackError::Reentrancy => panic!("Component info reentrancy"),
+                })?;
 
         if let SubstateValue::Component(component) = substate_value {
             Ok((
