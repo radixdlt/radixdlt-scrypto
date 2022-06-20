@@ -584,7 +584,7 @@ where
     fn send_vaults(
         &mut self,
         vault_ids: &HashSet<VaultId>,
-    ) -> Result<HashMap<VaultId, Vault>, RuntimeError> {
+    ) -> Result<HashMap<ValueId, REValue>, RuntimeError> {
         let mut vault_ids_to_take = HashSet::new();
         for vault_id in vault_ids {
             vault_ids_to_take.insert(ValueId::vault_id(*vault_id));
@@ -595,17 +595,7 @@ where
             return Err(RuntimeError::ValueNotFound(missing_value));
         }
 
-        let mut vaults = HashMap::new();
-        for (id, vault_to_take) in taken_values {
-            match vault_to_take {
-                REValue::Stored(StoredValue::Vault(vault)) => {
-                    vaults.insert(id.into(), vault);
-                }
-                _ => panic!("Expected vault but was {:?}", vault_to_take),
-            }
-        }
-
-        Ok(vaults)
+        Ok(taken_values)
     }
 
     /// Sends proofs to another component/blueprint, either as argument or return
@@ -642,7 +632,6 @@ where
             ScryptoValue,
             HashMap<ValueId, REValue>,
             HashMap<ProofId, Proof>,
-            HashMap<VaultId, Vault>,
         ),
         RuntimeError,
     > {
@@ -720,10 +709,11 @@ where
         self.process_return_data(snode_ref, &output)?;
 
         // figure out what buckets and resources to return
-        let moving_buckets = Self::send_buckets(&mut self.owned_values, &output.bucket_ids)?;
+        let mut moving_values = Self::send_buckets(&mut self.owned_values, &output.bucket_ids)?;
+        let moving_vaults = self.send_vaults(&output.vault_ids)?;
+        moving_values.extend(moving_vaults);
         let moving_proofs =
             Self::send_proofs(&mut self.proofs, &output.proof_ids, MoveMethod::AsReturn)?;
-        let moving_vaults = self.send_vaults(&output.vault_ids)?;
 
         // drop proofs and check resource leak
         for (_, proof) in self.proofs.drain() {
@@ -748,7 +738,7 @@ where
             remaining_cost_units
         );
 
-        Ok((output, moving_buckets, moving_proofs, moving_vaults))
+        Ok((output, moving_values, moving_proofs))
     }
 
     fn cost_unit_counter_helper(counter: &mut Option<CostUnitCounter>) -> &mut CostUnitCounter {
@@ -1212,22 +1202,16 @@ where
         self.fee_table = frame.fee_table;
 
         // unwrap and contine
-        let (result, received_buckets, received_proofs, mut received_vaults) = run_result?;
+        let (result, received_values, received_proofs) = run_result?;
 
         // move buckets and proofs to this process.
-        for (id, value) in received_buckets {
-            trace!(self, Level::Debug, "Received bucket: {:?}", value);
+        for (id, value) in received_values {
+            trace!(self, Level::Debug, "Received value: {:?}", value);
             self.owned_values.insert(id, RefCell::new(value));
         }
         for (proof_id, proof) in received_proofs {
             trace!(self, Level::Debug, "Received proof: {:?}", proof);
             self.proofs.insert(proof_id, RefCell::new(proof));
-        }
-        for (vault_id, vault) in received_vaults.drain() {
-            self.owned_values.insert(
-                ValueId::vault_id(vault_id.clone()),
-                RefCell::new(REValue::Stored(StoredValue::Vault(vault))),
-            );
         }
 
         Ok(result)
