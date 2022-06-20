@@ -53,7 +53,7 @@ pub struct CallFrame<
     wasm_instrumenter: &'w mut WasmInstrumenter,
 
     /// Owned Values
-    proofs: HashMap<ProofId, RefCell<REValue>>,
+    proofs: HashMap<ValueId, RefCell<REValue>>,
     owned_values: HashMap<ValueId, RefCell<REValue>>,
     worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
@@ -478,7 +478,10 @@ where
 
         let mut celled_proofs = HashMap::new();
         for (id, proof) in proofs {
-            celled_proofs.insert(id, RefCell::new(REValue::Transient(TransientValue::Proof(proof))));
+            celled_proofs.insert(
+                ValueId::Transient(TransientValueId::Proof(id)),
+                RefCell::new(REValue::Transient(TransientValue::Proof(proof)))
+            );
         }
 
         Self {
@@ -615,14 +618,14 @@ where
 
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
-        from: &mut HashMap<ProofId, RefCell<REValue>>,
+        from: &mut HashMap<ValueId, RefCell<REValue>>,
         proof_ids: &HashMap<ProofId, SborPath>,
         method: MoveMethod,
     ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
         let mut proofs = HashMap::new();
         for (proof_id, _) in proof_ids {
             let value = from
-                .remove(proof_id)
+                .remove(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
                 .ok_or(RuntimeError::ProofNotFound(*proof_id))?
                 .into_inner();
             match value {
@@ -1053,7 +1056,7 @@ where
             SNodeRef::ProofRef(proof_id) => {
                 let proof_cell = self
                     .proofs
-                    .get(&proof_id)
+                    .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let proof = proof_cell.borrow_mut();
                 Ok((
@@ -1064,7 +1067,7 @@ where
             SNodeRef::Proof(proof_id) => {
                 let proof = self
                     .proofs
-                    .remove(&proof_id)
+                    .remove(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
                     .into_inner();
                 Ok((Consumed(ConsumedSNodeState::Proof(proof)), vec![]))
@@ -1235,7 +1238,10 @@ where
         }
         for (proof_id, proof) in received_proofs {
             trace!(self, Level::Debug, "Received proof: {:?}", proof);
-            self.proofs.insert(proof_id, RefCell::new(REValue::Transient(TransientValue::Proof(proof))));
+            self.proofs.insert(
+                ValueId::Transient(TransientValueId::Proof(proof_id)),
+                RefCell::new(REValue::Transient(TransientValue::Proof(proof)))
+            );
         }
 
         Ok(result)
@@ -1306,7 +1312,7 @@ where
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
         let value = self
             .proofs
-            .remove(&proof_id)
+            .remove(&ValueId::Transient(TransientValueId::Proof(proof_id.clone())))
             .ok_or(RuntimeError::ProofNotFound(proof_id))?
             .into_inner();
 
@@ -1330,7 +1336,10 @@ where
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
         let proof_id = self.track.new_proof_id();
-        self.proofs.insert(proof_id, RefCell::new(REValue::Transient(TransientValue::Proof(proof))));
+        self.proofs.insert(
+            ValueId::Transient(TransientValueId::Proof(proof_id)),
+            RefCell::new(REValue::Transient(TransientValue::Proof(proof)))
+        );
         Ok(proof_id)
     }
 
@@ -1627,7 +1636,7 @@ where
             .iter()
             .map(|proof_id| {
                 self.proofs
-                    .get(&proof_id)
+                    .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
                     .map(|p| {
                         match p.borrow().deref() {
                             REValue::Transient(TransientValue::Proof(proof)) => proof.clone(),

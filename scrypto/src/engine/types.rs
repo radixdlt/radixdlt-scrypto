@@ -23,6 +23,7 @@ pub type ProofId = u32;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TransientValueId {
     Bucket(BucketId),
+    Proof(ProofId),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
