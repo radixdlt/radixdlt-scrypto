@@ -586,4 +586,26 @@ mod tests {
             |x| WasmModule::enforce_table_limit(x, 5)
         );
     }
+
+    #[test]
+    fn test_br_table() {
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (param i32) (result i32)
+                    (block
+                        (block
+                            (br_table 1 0 1 0 1 0 1 (local.get 0))
+                            (return (i32.const 21))
+                        )
+                        (return (i32.const 20))
+                    )
+                    (i32.const 22)
+                )
+            )
+            "#,
+            PrepareError::TooManyTargetsInBrTable,
+            |x| WasmModule::enforce_br_table_limit(x, 5)
+        );
+    }
 }
