@@ -9,6 +9,7 @@ use crate::abi::*;
 use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine, types::ProofId};
+use crate::engine::types::{TransientValueId, ValueId};
 use crate::math::*;
 use crate::misc::*;
 use crate::resource::*;
@@ -59,7 +60,7 @@ impl Proof {
     }
 
     sfunctions! {
-        SNodeRef::Proof(self.0) => {
+        SNodeRef::Consumed(ValueId::Transient(TransientValueId::Proof(self.0))) => {
             pub fn drop(self) -> () {
                 ConsumingProofDropInput {}
             }

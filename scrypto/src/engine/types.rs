@@ -14,19 +14,20 @@ pub use crate::resource::NonFungibleAddress;
 pub use crate::resource::NonFungibleId;
 pub use crate::resource::ResourceAddress;
 pub use crate::resource::ResourceType;
+pub use crate::sbor::*;
 
 pub type KeyValueStoreId = (Hash, u32);
 pub type VaultId = (Hash, u32);
 pub type BucketId = u32;
 pub type ProofId = u32;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum TransientValueId {
     Bucket(BucketId),
     Proof(ProofId),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum StoredValueId {
     KeyValueStoreId(KeyValueStoreId),
     VaultId(VaultId),
@@ -41,7 +42,7 @@ impl Into<(Hash, u32)> for StoredValueId {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum ValueId {
     Transient(TransientValueId),
     Stored(StoredValueId),

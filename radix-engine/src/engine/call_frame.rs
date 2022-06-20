@@ -777,6 +777,34 @@ where
             }
             SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
             SNodeRef::SystemStatic => Ok((Static(StaticSNodeState::System), vec![])),
+            SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
+            SNodeRef::Consumed(value_id) => {
+                let value = self
+                    .owned_values
+                    .remove(value_id)
+                    .ok_or(RuntimeError::ValueNotFound(*value_id))?
+                    .into_inner();
+
+                let method_auths = match &value {
+                    REValue::Transient(TransientValue::Bucket(bucket)) => {
+                        let resource_address = bucket.resource_address();
+                        let substate_value = self
+                            .track
+                            .borrow_global_value(resource_address.clone())
+                            .expect("There should be no problem retrieving resource manager");
+                        let resource_manager = match substate_value {
+                            SubstateValue::Resource(resource_manager) => resource_manager,
+                            _ => panic!("Value is not a resource manager"),
+                        };
+                        let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
+                        vec![method_auth.clone()]
+                    },
+                    REValue::Transient(TransientValue::Proof(_)) => vec![],
+                    _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
+                };
+
+                Ok((Consumed(value.into()), method_auths))
+            }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
                     let borrowed = auth_zone.borrow_mut();
@@ -792,6 +820,50 @@ where
                 } else {
                     Err(RuntimeError::WorktopDoesNotExist)
                 }
+            }
+            SNodeRef::ResourceRef(resource_address) => {
+                let resman_value = self
+                    .track
+                    .borrow_global_mut_value(resource_address.clone())
+                    .map_err(|e| match e {
+                        TrackError::NotFound => {
+                            RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                        }
+                        TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
+                    })?;
+
+                let method_auth = resman_value
+                    .resource_manager()
+                    .get_auth(&fn_ident, &input)
+                    .clone();
+                Ok((
+                    Tracked(resource_address.clone().into(), resman_value, None),
+                    vec![method_auth],
+                ))
+            }
+            SNodeRef::BucketRef(bucket_id) => {
+                let value_id = ValueId::Transient(TransientValueId::Bucket(*bucket_id));
+                let bucket_cell = self
+                    .owned_values
+                    .get(&value_id)
+                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let bucket = bucket_cell.borrow_mut();
+                Ok((
+                    Borrowed(BorrowedSNodeState::ValueRef(value_id, bucket)),
+                    vec![],
+                ))
+            }
+            SNodeRef::ProofRef(proof_id) => {
+                let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
+                let proof_cell = self
+                    .owned_values
+                    .get(&value_id)
+                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                let proof = proof_cell.borrow_mut();
+                Ok((
+                    Borrowed(BorrowedSNodeState::ValueRef(value_id, proof)),
+                    vec![],
+                ))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -893,82 +965,6 @@ where
                     ))
                 }
             },
-            SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
-            SNodeRef::ResourceRef(resource_address) => {
-                let resman_value = self
-                    .track
-                    .borrow_global_mut_value(resource_address.clone())
-                    .map_err(|e| match e {
-                        TrackError::NotFound => {
-                            RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                        }
-                        TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
-                    })?;
-
-                let method_auth = resman_value
-                    .resource_manager()
-                    .get_auth(&fn_ident, &input)
-                    .clone();
-                Ok((
-                    Tracked(resource_address.clone().into(), resman_value, None),
-                    vec![method_auth],
-                ))
-            }
-            SNodeRef::Bucket(bucket_id) => {
-                let value = self
-                    .owned_values
-                    .remove(&ValueId::Transient(TransientValueId::Bucket(*bucket_id)))
-                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?
-                    .into_inner();
-
-                let bucket = match &value {
-                    REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
-                    _ => panic!("Should not be here"),
-                };
-                let resource_address = bucket.resource_address();
-                let substate_value = self
-                    .track
-                    .borrow_global_value(resource_address.clone())
-                    .expect("There should be no problem retrieving resource manager");
-                let resource_manager = match substate_value {
-                    SubstateValue::Resource(resource_manager) => resource_manager,
-                    _ => panic!("Value is not a resource manager"),
-                };
-                let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
-                Ok((Consumed(value.into()), vec![method_auth.clone()]))
-            }
-            SNodeRef::Proof(proof_id) => {
-                let value = self
-                    .owned_values
-                    .remove(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
-                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
-                    .into_inner();
-                Ok((Consumed(value.into()), vec![]))
-            }
-            SNodeRef::BucketRef(bucket_id) => {
-                let value_id = ValueId::Transient(TransientValueId::Bucket(*bucket_id));
-                let bucket_cell = self
-                    .owned_values
-                    .get(&value_id)
-                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
-                let bucket = bucket_cell.borrow_mut();
-                Ok((
-                    Borrowed(BorrowedSNodeState::ValueRef(value_id, bucket)),
-                    vec![],
-                ))
-            }
-            SNodeRef::ProofRef(proof_id) => {
-                let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
-                let proof_cell = self
-                    .owned_values
-                    .get(&value_id)
-                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                let proof = proof_cell.borrow_mut();
-                Ok((
-                    Borrowed(BorrowedSNodeState::ValueRef(value_id, proof)),
-                    vec![],
-                ))
-            }
             SNodeRef::VaultRef(vault_id) => {
                 let (resource_address, snode_state) = {
                     if let Some(value) = self.owned_values.get(&ValueId::vault_id(*vault_id)) {
