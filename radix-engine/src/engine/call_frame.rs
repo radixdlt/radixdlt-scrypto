@@ -103,6 +103,15 @@ impl Into<StoredValue> for REValue {
     }
 }
 
+impl Into<TransientValue> for REValue {
+    fn into(self) -> TransientValue {
+        match self {
+            REValue::Transient(transient_value) => transient_value,
+            _ => panic!("Expected a stored value"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueRefType {
     Uncommitted {
@@ -192,11 +201,6 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-pub enum ConsumedSNodeState {
-    Bucket(Bucket),
-    Proof(REValue),
-}
-
 pub enum REValueRef<'a> {
     Owned(RefMut<'a, REValue>),
     Ref(RefMut<'a, StoredValue>),
@@ -275,7 +279,7 @@ pub enum StaticSNodeState {
 
 pub enum SNodeState<'a> {
     Static(StaticSNodeState),
-    Consumed(ConsumedSNodeState),
+    Consumed(TransientValue),
     Borrowed(BorrowedSNodeState<'a>),
     Tracked(
         Address,
@@ -286,7 +290,7 @@ pub enum SNodeState<'a> {
 
 pub enum SNodeExecution<'a> {
     Static(StaticSNodeState),
-    Consumed(ConsumedSNodeState),
+    Consumed(TransientValue),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
     Bucket(BucketId, RefMut<'a, REValue>),
@@ -342,17 +346,15 @@ impl<'a> SNodeExecution<'a> {
                     .map_err(RuntimeError::ResourceManagerError),
             },
             SNodeExecution::Consumed(state) => match state {
-                ConsumedSNodeState::Bucket(bucket) => bucket
-                    .consuming_main(fn_ident, input, system)
-                    .map_err(RuntimeError::BucketError),
-                ConsumedSNodeState::Proof(value) => {
-                    match value {
-                        REValue::Transient(TransientValue::Proof(proof)) => {
-                            proof.main_consume(fn_ident, input)
-                                .map_err(RuntimeError::ProofError)
-                        }
-                        _ => panic!("Should be a proof")
-                    }
+                TransientValue::Bucket(bucket) => {
+                    bucket
+                        .consuming_main(fn_ident, input, system)
+                        .map_err(RuntimeError::BucketError)
+                },
+                TransientValue::Proof(proof) => {
+                    proof
+                        .main_consume(fn_ident, input)
+                        .map_err(RuntimeError::ProofError)
                 },
             },
             SNodeExecution::AuthZone(mut auth_zone) => auth_zone
@@ -1003,7 +1005,8 @@ where
                     .remove(&ValueId::Transient(TransientValueId::Bucket(*bucket_id)))
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?
                     .into_inner();
-                let bucket = match value {
+
+                let bucket = match &value {
                     REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
                     _ => panic!("Should not be here"),
                 };
@@ -1018,9 +1021,17 @@ where
                 };
                 let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
                 Ok((
-                    Consumed(ConsumedSNodeState::Bucket(bucket)),
+                    Consumed(value.into()),
                     vec![method_auth.clone()],
                 ))
+            }
+            SNodeRef::Proof(proof_id) => {
+                let value = self
+                    .owned_values
+                    .remove(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
+                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
+                    .into_inner();
+                Ok((Consumed(value.into()), vec![]))
             }
             SNodeRef::BucketRef(bucket_id) => {
                 let bucket_cell = self
@@ -1043,14 +1054,6 @@ where
                     Borrowed(BorrowedSNodeState::Proof(proof_id.clone(), proof)),
                     vec![],
                 ))
-            }
-            SNodeRef::Proof(proof_id) => {
-                let proof = self
-                    .owned_values
-                    .remove(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
-                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
-                    .into_inner();
-                Ok((Consumed(ConsumedSNodeState::Proof(proof)), vec![]))
             }
             SNodeRef::VaultRef(vault_id) => {
                 let (resource_address, snode_state) = {
@@ -1138,7 +1141,7 @@ where
                 | Borrowed(BorrowedSNodeState::Vault(..))
                 | Borrowed(BorrowedSNodeState::Bucket(..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Consumed(ConsumedSNodeState::Bucket(..)) => {
+                | Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
