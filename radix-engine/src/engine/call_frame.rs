@@ -264,8 +264,7 @@ impl<'a> REValueRef<'a> {
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Bucket(ValueId, RefMut<'a, REValue>),
-    Proof(ValueId, RefMut<'a, REValue>),
+    ValueRef(ValueId, RefMut<'a, REValue>),
     Vault(VaultId, REValueRef<'a>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
 }
@@ -293,8 +292,7 @@ pub enum SNodeExecution<'a> {
     Consumed(TransientValue),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Bucket(ValueId, RefMut<'a, REValue>),
-    Proof(ValueId, RefMut<'a, REValue>),
+    ValueRef(ValueId, RefMut<'a, REValue>),
     Vault(VaultId, &'a mut Vault),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
     Resource(Address, &'a mut ResourceManager),
@@ -366,24 +364,19 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::Blueprint(info, package) => {
                 package.invoke(&info, fn_ident, input, system)
             }
-            SNodeExecution::Bucket(value_id, mut value) => {
+            SNodeExecution::ValueRef(value_id, mut value) => {
                 match value.deref_mut() {
                     REValue::Transient(TransientValue::Bucket(bucket)) => {
                         bucket
                             .main(value_id.into(), fn_ident, input, system)
                             .map_err(RuntimeError::BucketError)
                     }
-                    _ => panic!("Should be a bucket")
-                }
-            },
-            SNodeExecution::Proof(_id, mut value) => {
-                match value.deref_mut() {
                     REValue::Transient(TransientValue::Proof(proof)) => {
                         proof
                             .main(fn_ident, input, system)
                             .map_err(RuntimeError::ProofError)
                     }
-                    _ => panic!("Should be a proof")
+                    _ => panic!("Unexpected value to execute")
                 }
             },
             SNodeExecution::Vault(vault_id, vault) => vault
@@ -678,11 +671,8 @@ where
                 BorrowedSNodeState::Blueprint(info, package) => {
                     SNodeExecution::Blueprint(info, package)
                 }
-                BorrowedSNodeState::Bucket(value_id, bucket) => {
-                    SNodeExecution::Bucket(value_id, bucket)
-                }
-                BorrowedSNodeState::Proof(value_id, proof) => {
-                    SNodeExecution::Proof(value_id, proof)
+                BorrowedSNodeState::ValueRef(value_id, value) => {
+                    SNodeExecution::ValueRef(value_id, value)
                 }
                 BorrowedSNodeState::Vault(vault_id, value) => {
                     ref_container = Some(value);
@@ -1041,7 +1031,7 @@ where
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let bucket = bucket_cell.borrow_mut();
                 Ok((
-                    Borrowed(BorrowedSNodeState::Bucket(value_id, bucket)),
+                    Borrowed(BorrowedSNodeState::ValueRef(value_id, bucket)),
                     vec![],
                 ))
             }
@@ -1053,7 +1043,7 @@ where
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let proof = proof_cell.borrow_mut();
                 Ok((
-                    Borrowed(BorrowedSNodeState::Proof(value_id, proof)),
+                    Borrowed(BorrowedSNodeState::ValueRef(value_id, proof)),
                     vec![],
                 ))
             }
@@ -1141,7 +1131,7 @@ where
                 // Resource auth check includes caller
                 Tracked(..)
                 | Borrowed(BorrowedSNodeState::Vault(..))
-                | Borrowed(BorrowedSNodeState::Bucket(..))
+                | Borrowed(BorrowedSNodeState::ValueRef(ValueId::Transient(TransientValueId::Bucket(..)), ..))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
                 | Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
