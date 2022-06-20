@@ -67,4 +67,14 @@ impl Into<(Hash, u32)> for ValueId {
     }
 }
 
+impl Into<u32> for ValueId {
+    fn into(self) -> u32 {
+        match self {
+            ValueId::Transient(TransientValueId::Bucket(id)) => id,
+            ValueId::Transient(TransientValueId::Proof(id)) => id,
+            _ => panic!("Not a transient id")
+        }
+    }
+}
+
 pub use crate::constants::*;

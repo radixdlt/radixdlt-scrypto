@@ -264,8 +264,8 @@ impl<'a> REValueRef<'a> {
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Bucket(BucketId, RefMut<'a, REValue>),
-    Proof(ProofId, RefMut<'a, REValue>),
+    Bucket(ValueId, RefMut<'a, REValue>),
+    Proof(ValueId, RefMut<'a, REValue>),
     Vault(VaultId, REValueRef<'a>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
 }
@@ -293,8 +293,8 @@ pub enum SNodeExecution<'a> {
     Consumed(TransientValue),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Bucket(BucketId, RefMut<'a, REValue>),
-    Proof(ProofId, RefMut<'a, REValue>),
+    Bucket(ValueId, RefMut<'a, REValue>),
+    Proof(ValueId, RefMut<'a, REValue>),
     Vault(VaultId, &'a mut Vault),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
     Resource(Address, &'a mut ResourceManager),
@@ -366,11 +366,11 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::Blueprint(info, package) => {
                 package.invoke(&info, fn_ident, input, system)
             }
-            SNodeExecution::Bucket(bucket_id, mut value) => {
+            SNodeExecution::Bucket(value_id, mut value) => {
                 match value.deref_mut() {
                     REValue::Transient(TransientValue::Bucket(bucket)) => {
                         bucket
-                            .main(bucket_id, fn_ident, input, system)
+                            .main(value_id.into(), fn_ident, input, system)
                             .map_err(RuntimeError::BucketError)
                     }
                     _ => panic!("Should be a bucket")
@@ -678,11 +678,11 @@ where
                 BorrowedSNodeState::Blueprint(info, package) => {
                     SNodeExecution::Blueprint(info, package)
                 }
-                BorrowedSNodeState::Bucket(bucket_id, bucket) => {
-                    SNodeExecution::Bucket(bucket_id, bucket)
+                BorrowedSNodeState::Bucket(value_id, bucket) => {
+                    SNodeExecution::Bucket(value_id, bucket)
                 }
-                BorrowedSNodeState::Proof(proof_id, proof) => {
-                    SNodeExecution::Proof(proof_id, proof)
+                BorrowedSNodeState::Proof(value_id, proof) => {
+                    SNodeExecution::Proof(value_id, proof)
                 }
                 BorrowedSNodeState::Vault(vault_id, value) => {
                     ref_container = Some(value);
@@ -1034,24 +1034,26 @@ where
                 Ok((Consumed(value.into()), vec![]))
             }
             SNodeRef::BucketRef(bucket_id) => {
+                let value_id = ValueId::Transient(TransientValueId::Bucket(*bucket_id));
                 let bucket_cell = self
                     .owned_values
-                    .get(&ValueId::Transient(TransientValueId::Bucket(*bucket_id)))
+                    .get(&value_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let bucket = bucket_cell.borrow_mut();
                 Ok((
-                    Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
+                    Borrowed(BorrowedSNodeState::Bucket(value_id, bucket)),
                     vec![],
                 ))
             }
             SNodeRef::ProofRef(proof_id) => {
+                let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
                 let proof_cell = self
                     .owned_values
-                    .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
+                    .get(&value_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let proof = proof_cell.borrow_mut();
                 Ok((
-                    Borrowed(BorrowedSNodeState::Proof(proof_id.clone(), proof)),
+                    Borrowed(BorrowedSNodeState::Proof(value_id, proof)),
                     vec![],
                 ))
             }
