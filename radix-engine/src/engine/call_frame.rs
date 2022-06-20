@@ -53,7 +53,6 @@ pub struct CallFrame<
     wasm_instrumenter: &'w mut WasmInstrumenter,
 
     /// Owned Values
-    proofs: HashMap<ValueId, RefCell<REValue>>,
     owned_values: HashMap<ValueId, RefCell<REValue>>,
     worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
@@ -449,7 +448,6 @@ where
             ))),
             Some(RefCell::new(Worktop::new())),
             HashMap::new(),
-            HashMap::new(),
             None,
             cost_unit_counter,
             fee_table,
@@ -466,7 +464,6 @@ where
         auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
-        proofs: HashMap<ProofId, Proof>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
@@ -476,14 +473,6 @@ where
             celled_owned_values.insert(id, RefCell::new(value));
         }
 
-        let mut celled_proofs = HashMap::new();
-        for (id, proof) in proofs {
-            celled_proofs.insert(
-                ValueId::Transient(TransientValueId::Proof(id)),
-                RefCell::new(REValue::Transient(TransientValue::Proof(proof)))
-            );
-        }
-
         Self {
             transaction_hash,
             depth,
@@ -491,7 +480,6 @@ where
             track,
             wasm_engine,
             wasm_instrumenter,
-            proofs: celled_proofs,
             owned_values: celled_owned_values,
             refed_values: HashMap::new(),
             refed_components: HashMap::new(),
@@ -516,13 +504,19 @@ where
             .collect();
         for (_, value) in values {
             trace!(self, Level::Warn, "Dangling value: {:?}", value);
-            resource = match value {
-                REValue::Stored(StoredValue::Vault(vault)) => ResourceFailure::Resource(vault.resource_address()),
-                REValue::Stored(StoredValue::KeyValueStore { .. }) => ResourceFailure::UnclaimedKeyValueStore,
-                REValue::Transient(TransientValue::Bucket(bucket)) => ResourceFailure::Resource(bucket.resource_address()),
-                REValue::Transient(TransientValue::Proof(proof)) => ResourceFailure::Resource(proof.resource_address()),
+            let some_resource_failure = match value {
+                REValue::Stored(StoredValue::Vault(vault)) => Some(ResourceFailure::Resource(vault.resource_address())),
+                REValue::Stored(StoredValue::KeyValueStore { .. }) => Some(ResourceFailure::UnclaimedKeyValueStore),
+                REValue::Transient(TransientValue::Bucket(bucket)) => Some(ResourceFailure::Resource(bucket.resource_address())),
+                REValue::Transient(TransientValue::Proof(proof)) => {
+                    proof.drop();
+                    None
+                },
             };
-            success = false;
+            if let Some(resource_failure) = some_resource_failure {
+                resource = resource_failure;
+                success = false;
+            }
         }
 
         if let Some(ref_worktop) = &self.worktop {
@@ -621,24 +615,25 @@ where
         from: &mut HashMap<ValueId, RefCell<REValue>>,
         proof_ids: &HashMap<ProofId, SborPath>,
         method: MoveMethod,
-    ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
+    ) -> Result<HashMap<ValueId, REValue>, RuntimeError> {
         let mut proofs = HashMap::new();
         for (proof_id, _) in proof_ids {
-            let value = from
-                .remove(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
+            let id = ValueId::Transient(TransientValueId::Proof(*proof_id));
+            let mut value = from
+                .remove(&id)
                 .ok_or(RuntimeError::ProofNotFound(*proof_id))?
                 .into_inner();
-            match value {
-                REValue::Transient(TransientValue::Proof(mut proof)) => {
+            match &mut value {
+                REValue::Transient(TransientValue::Proof(proof)) => {
                     if proof.is_restricted() {
                         return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
                     }
                     if matches!(method, MoveMethod::AsArgument) {
                         proof.change_to_restricted();
                     }
-                    proofs.insert(*proof_id, proof);
+                    proofs.insert(id, value);
                 }
-                _ => panic!("Expected to be a proof")
+                _ => {}
             }
         }
         Ok(proofs)
@@ -654,7 +649,7 @@ where
         (
             ScryptoValue,
             HashMap<ValueId, REValue>,
-            HashMap<ProofId, Proof>,
+            HashMap<ValueId, REValue>,
         ),
         RuntimeError,
     > {
@@ -736,17 +731,9 @@ where
         let moving_vaults = self.send_vaults(&output.vault_ids)?;
         moving_values.extend(moving_vaults);
         let moving_proofs =
-            Self::send_proofs(&mut self.proofs, &output.proof_ids, MoveMethod::AsReturn)?;
+            Self::send_proofs(&mut self.owned_values, &output.proof_ids, MoveMethod::AsReturn)?;
 
         // drop proofs and check resource leak
-        for (_, proof) in self.proofs.drain() {
-            let value = proof.into_inner();
-            match value {
-                REValue::Transient(TransientValue::Proof(proof)) => proof.drop(),
-                _ => panic!("Expected proof")
-            }
-        }
-
         if self.auth_zone.is_some() {
             self.invoke_snode(
                 SNodeRef::AuthZoneRef,
@@ -754,7 +741,6 @@ where
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
-
         self.check_resource()?;
 
         let remaining_cost_units = self.cost_unit_counter().remaining();
@@ -857,19 +843,15 @@ where
         Self::process_call_data(&input)?;
 
         // Figure out what buckets and proofs to move from this process
-        let mut moving_buckets = HashMap::new();
-        let mut moving_proofs = HashMap::new();
-        moving_buckets.extend(Self::send_buckets(&mut self.owned_values, &input.bucket_ids)?);
-        moving_proofs.extend(Self::send_proofs(
-            &mut self.proofs,
+        let mut moving_values = HashMap::new();
+        moving_values.extend(Self::send_buckets(&mut self.owned_values, &input.bucket_ids)?);
+        moving_values.extend(Self::send_proofs(
+            &mut self.owned_values,
             &input.proof_ids,
             MoveMethod::AsArgument,
         )?);
-        for bucket in &moving_buckets {
-            trace!(self, Level::Debug, "Sending bucket: {:?}", bucket);
-        }
-        for proof in &moving_proofs {
-            trace!(self, Level::Debug, "Sending proof: {:?}", proof);
+        for value in &moving_values {
+            trace!(self, Level::Debug, "Sending value: {:?}", value);
         }
 
         // Authorization and state load
@@ -1055,7 +1037,7 @@ where
             }
             SNodeRef::ProofRef(proof_id) => {
                 let proof_cell = self
-                    .proofs
+                    .owned_values
                     .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let proof = proof_cell.borrow_mut();
@@ -1066,7 +1048,7 @@ where
             }
             SNodeRef::Proof(proof_id) => {
                 let proof = self
-                    .proofs
+                    .owned_values
                     .remove(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
                     .into_inner();
@@ -1214,8 +1196,7 @@ where
                 }
                 _ => None,
             },
-            moving_buckets,
-            moving_proofs,
+            moving_values,
             self.auth_zone.as_ref(),
             cost_unit_counter,
             fee_table,
@@ -1236,12 +1217,9 @@ where
             trace!(self, Level::Debug, "Received value: {:?}", value);
             self.owned_values.insert(id, RefCell::new(value));
         }
-        for (proof_id, proof) in received_proofs {
-            trace!(self, Level::Debug, "Received proof: {:?}", proof);
-            self.proofs.insert(
-                ValueId::Transient(TransientValueId::Proof(proof_id)),
-                RefCell::new(REValue::Transient(TransientValue::Proof(proof)))
-            );
+        for (id, value) in received_proofs {
+            trace!(self, Level::Debug, "Received proof: {:?}", value);
+            self.owned_values.insert(id, RefCell::new(value));
         }
 
         Ok(result)
@@ -1311,7 +1289,7 @@ where
 
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
         let value = self
-            .proofs
+            .owned_values
             .remove(&ValueId::Transient(TransientValueId::Proof(proof_id.clone())))
             .ok_or(RuntimeError::ProofNotFound(proof_id))?
             .into_inner();
@@ -1336,7 +1314,7 @@ where
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
         let proof_id = self.track.new_proof_id();
-        self.proofs.insert(
+        self.owned_values.insert(
             ValueId::Transient(TransientValueId::Proof(proof_id)),
             RefCell::new(REValue::Transient(TransientValue::Proof(proof)))
         );
@@ -1635,7 +1613,7 @@ where
         let proofs = proof_ids
             .iter()
             .map(|proof_id| {
-                self.proofs
+                self.owned_values
                     .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
                     .map(|p| {
                         match p.borrow().deref() {
