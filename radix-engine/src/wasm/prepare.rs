@@ -458,6 +458,7 @@ impl WasmModule {
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
+    use scrypto::abi;
     use wabt::wat2wasm;
 
     macro_rules! assert_invalid_wasm {
@@ -606,6 +607,63 @@ mod tests {
             "#,
             PrepareError::TooManyTargetsInBrTable,
             |x| WasmModule::enforce_br_table_limit(x, 5)
+        );
+    }
+
+    #[test]
+    fn test_blueprint_constraints() {
+        let mut blueprint_abis = HashMap::new();
+        blueprint_abis.insert(
+            "Test".to_string(),
+            BlueprintAbi {
+                structure: sbor::Type::Unit,
+                fns: vec![abi::Fn {
+                    ident: "f".to_string(),
+                    mutability: Option::None,
+                    input: sbor::Type::Struct {
+                        name: "Any".to_string(),
+                        fields: sbor::describe::Fields::Named { named: vec![] },
+                    },
+                    output: sbor::Type::Unit,
+                    export_name: "Test_f".to_string(),
+                }],
+            },
+        );
+        assert_invalid_wasm!(
+            r#"
+            (module
+            )
+            "#,
+            PrepareError::NoExportSection,
+            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+        );
+        // symbol not found
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (export "foo") (result i32)
+                    (i32.const 0)
+                )
+            )
+            "#,
+            PrepareError::MissingExport {
+                export_name: "Test_f".to_string()
+            },
+            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
+        );
+        // signature does not match
+        assert_invalid_wasm!(
+            r#"
+            (module
+                (func (export "Test_f") (result i32)
+                    (i32.const 0)
+                )
+            )
+            "#,
+            PrepareError::MissingExport {
+                export_name: "Test_f".to_string()
+            },
+            |x| WasmModule::enforce_export_constraints(x, &blueprint_abis)
         );
     }
 }
