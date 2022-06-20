@@ -1,9 +1,9 @@
 #[derive(Debug, Clone)]
 pub struct WasmMeteringParams {
-    /// Wasm fee table is staticially applied to the wasm code.
+    /// Wasm fee table is statically applied to the wasm code.
     /// This identifier helps decide whether or not re-instrumentation is required.
     identifier: u8,
-    instrution_cost: u32,
+    instruction_cost: u32,
     grow_memory_cost: u32,
     max_stack_size: u32,
 }
@@ -11,13 +11,13 @@ pub struct WasmMeteringParams {
 impl WasmMeteringParams {
     pub fn new(
         identifier: u8,
-        instrution_cost: u32,
+        instruction_cost: u32,
         grow_memory_cost: u32,
         max_stack_size: u32,
     ) -> Self {
         Self {
             identifier,
-            instrution_cost,
+            instruction_cost,
             grow_memory_cost,
             max_stack_size,
         }
@@ -28,7 +28,7 @@ impl WasmMeteringParams {
     }
 
     pub fn instruction_cost(&self) -> u32 {
-        self.instrution_cost
+        self.instruction_cost
     }
 
     pub fn grow_memory_cost(&self) -> u32 {
