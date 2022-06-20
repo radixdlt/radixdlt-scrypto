@@ -562,29 +562,20 @@ where
 
     /// Sends buckets to another component/blueprint, either as argument or return
     fn send_buckets(
-        from: &mut HashMap<ValueId, RefCell<REValue>>,
+        &mut self,
         bucket_ids: &HashMap<BucketId, SborPath>,
     ) -> Result<HashMap<ValueId, REValue>, RuntimeError> {
-        let mut buckets = HashMap::new();
+        let mut bucket_ids_to_take = HashSet::new();
         for (bucket_id, _) in bucket_ids {
-            let value_id = ValueId::Transient(TransientValueId::Bucket(*bucket_id));
-            let value = from
-                .remove(&value_id)
-                .ok_or(RuntimeError::BucketNotFound(*bucket_id))?
-                .into_inner();
-
-            match &value {
-                REValue::Transient(TransientValue::Bucket(bucket)) => {
-                    if bucket.is_locked() {
-                        return Err(RuntimeError::CantMoveLockedBucket);
-                    }
-                },
-                _ => {}
-            }
-
-            buckets.insert(value_id, value);
+            bucket_ids_to_take.insert(ValueId::Transient(TransientValueId::Bucket(*bucket_id)));
         }
-        Ok(buckets)
+        let (taken_values, mut missing) = self.take_available_values(bucket_ids_to_take)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::ValueNotFound(missing_value));
+        }
+
+        Ok(taken_values)
     }
 
     /// Sends proofs to another component/blueprint, either as argument or return
@@ -596,7 +587,7 @@ where
         for vault_id in vault_ids {
             vault_ids_to_take.insert(ValueId::vault_id(*vault_id));
         }
-        let (taken_values, mut missing) = self.take_available_values(vault_ids_to_take);
+        let (taken_values, mut missing) = self.take_available_values(vault_ids_to_take)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -715,7 +706,7 @@ where
         self.process_return_data(snode_ref, &output)?;
 
         // figure out what buckets and resources to return
-        let mut moving_values = Self::send_buckets(&mut self.owned_values, &output.bucket_ids)?;
+        let mut moving_values = self.send_buckets(&output.bucket_ids)?;
         let moving_vaults = self.send_vaults(&output.vault_ids)?;
         moving_values.extend(moving_vaults);
         let moving_proofs =
@@ -769,15 +760,25 @@ where
     fn take_available_values(
         &mut self,
         value_ids: HashSet<ValueId>,
-    ) -> (HashMap<ValueId, REValue>, HashSet<ValueId>) {
+    ) -> Result<(HashMap<ValueId, REValue>, HashSet<ValueId>), RuntimeError> {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
             let mut missing_values = HashSet::new();
 
             for id in value_ids {
                 let maybe = self.owned_values.remove(&id);
-                if let Some(value) = maybe {
-                    taken_values.insert(id, value.into_inner());
+                if let Some(celled_value) = maybe {
+                    let value = celled_value.into_inner();
+                    match &value {
+                        REValue::Transient(TransientValue::Bucket(bucket)) => {
+                            if bucket.is_locked() {
+                                return Err(RuntimeError::CantMoveLockedBucket);
+                            }
+                        }
+                        _ => {}
+                    }
+
+                    taken_values.insert(id, value);
                 } else {
                     missing_values.insert(id);
                 }
@@ -798,7 +799,7 @@ where
             }
         }
 
-        (taken, missing)
+        Ok((taken, missing))
     }
 }
 
@@ -834,7 +835,7 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let mut moving_values = HashMap::new();
-        moving_values.extend(Self::send_buckets(&mut self.owned_values, &input.bucket_ids)?);
+        moving_values.extend(self.send_buckets(&input.bucket_ids)?);
         moving_values.extend(Self::send_proofs(
             &mut self.owned_values,
             &input.proof_ids,
@@ -1342,7 +1343,7 @@ where
             ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
         verify_stored_value(&value)?;
         let value_ids = value.stored_value_ids();
-        let (taken_values, mut missing) = self.take_available_values(value_ids);
+        let (taken_values, mut missing) = self.take_available_values(value_ids)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1375,7 +1376,7 @@ where
             DataInstruction::Write(value) => {
                 verify_stored_value(value)?;
                 let value_ids = value.stored_value_ids();
-                self.take_available_values(value_ids)
+                self.take_available_values(value_ids)?
             }
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };
