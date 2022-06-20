@@ -646,11 +646,7 @@ where
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<
-        (
-            ScryptoValue,
-            HashMap<ValueId, REValue>,
-            HashMap<ValueId, REValue>,
-        ),
+        (ScryptoValue, HashMap<ValueId, REValue>),
         RuntimeError,
     > {
         let remaining_cost_units = self.cost_unit_counter().remaining();
@@ -732,6 +728,8 @@ where
         moving_values.extend(moving_vaults);
         let moving_proofs =
             Self::send_proofs(&mut self.owned_values, &output.proof_ids, MoveMethod::AsReturn)?;
+        moving_values.extend(moving_proofs);
+
 
         // drop proofs and check resource leak
         if self.auth_zone.is_some() {
@@ -751,7 +749,7 @@ where
             remaining_cost_units
         );
 
-        Ok((output, moving_values, moving_proofs))
+        Ok((output, moving_values))
     }
 
     fn cost_unit_counter_helper(counter: &mut Option<CostUnitCounter>) -> &mut CostUnitCounter {
@@ -1209,16 +1207,12 @@ where
         self.cost_unit_counter = frame.cost_unit_counter;
         self.fee_table = frame.fee_table;
 
-        // unwrap and contine
-        let (result, received_values, received_proofs) = run_result?;
+        // unwrap and continue
+        let (result, received_values) = run_result?;
 
         // move buckets and proofs to this process.
         for (id, value) in received_values {
             trace!(self, Level::Debug, "Received value: {:?}", value);
-            self.owned_values.insert(id, RefCell::new(value));
-        }
-        for (id, value) in received_proofs {
-            trace!(self, Level::Debug, "Received proof: {:?}", value);
             self.owned_values.insert(id, RefCell::new(value));
         }
 
