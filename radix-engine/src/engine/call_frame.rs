@@ -392,12 +392,6 @@ impl<'a> SNodeExecution<'a> {
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MoveMethod {
-    AsReturn,
-    AsArgument,
-}
-
 impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
@@ -598,31 +592,20 @@ where
 
     /// Sends proofs to another component/blueprint, either as argument or return
     fn send_proofs(
-        from: &mut HashMap<ValueId, RefCell<REValue>>,
+        &mut self,
         proof_ids: &HashMap<ProofId, SborPath>,
-        method: MoveMethod,
     ) -> Result<HashMap<ValueId, REValue>, RuntimeError> {
-        let mut proofs = HashMap::new();
+        let mut proof_ids_to_take = HashSet::new();
         for (proof_id, _) in proof_ids {
-            let id = ValueId::Transient(TransientValueId::Proof(*proof_id));
-            let mut value = from
-                .remove(&id)
-                .ok_or(RuntimeError::ProofNotFound(*proof_id))?
-                .into_inner();
-            match &mut value {
-                REValue::Transient(TransientValue::Proof(proof)) => {
-                    if proof.is_restricted() {
-                        return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
-                    }
-                    if matches!(method, MoveMethod::AsArgument) {
-                        proof.change_to_restricted();
-                    }
-                    proofs.insert(id, value);
-                }
-                _ => {}
-            }
+            proof_ids_to_take.insert(ValueId::Transient(TransientValueId::Proof(*proof_id)));
         }
-        Ok(proofs)
+        let (taken_values, mut missing) = self.take_available_values(proof_ids_to_take)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::ValueNotFound(missing_value));
+        }
+
+        Ok(taken_values)
     }
 
     pub fn run(
@@ -709,8 +692,7 @@ where
         let mut moving_values = self.send_buckets(&output.bucket_ids)?;
         let moving_vaults = self.send_vaults(&output.vault_ids)?;
         moving_values.extend(moving_vaults);
-        let moving_proofs =
-            Self::send_proofs(&mut self.owned_values, &output.proof_ids, MoveMethod::AsReturn)?;
+        let moving_proofs = self.send_proofs(&output.proof_ids)?;
         moving_values.extend(moving_proofs);
 
 
@@ -775,6 +757,11 @@ where
                                 return Err(RuntimeError::CantMoveLockedBucket);
                             }
                         }
+                        REValue::Transient(TransientValue::Proof(proof)) => {
+                            if proof.is_restricted() {
+                                return Err(RuntimeError::CantMoveRestrictedProof(id));
+                            }
+                        }
                         _ => {}
                     }
 
@@ -836,13 +823,13 @@ where
         // Figure out what buckets and proofs to move from this process
         let mut moving_values = HashMap::new();
         moving_values.extend(self.send_buckets(&input.bucket_ids)?);
-        moving_values.extend(Self::send_proofs(
-            &mut self.owned_values,
-            &input.proof_ids,
-            MoveMethod::AsArgument,
-        )?);
-        for value in &moving_values {
+        moving_values.extend(self.send_proofs(&input.proof_ids)?);
+        for (_, value) in &mut moving_values {
             trace!(self, Level::Debug, "Sending value: {:?}", value);
+            match value {
+                REValue::Transient(TransientValue::Proof(proof)) => proof.change_to_restricted(),
+                _ => {},
+            }
         }
 
         // Authorization and state load
