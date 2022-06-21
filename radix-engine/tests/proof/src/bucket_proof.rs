@@ -24,5 +24,10 @@ blueprint! {
 
             bucket
         }
+
+        pub fn return_bucket_while_locked(bucket: Bucket) -> Bucket {
+            let proof = bucket.create_proof();
+            bucket
+        }
     }
 }
