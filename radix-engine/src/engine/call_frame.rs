@@ -321,8 +321,7 @@ pub enum SNodeExecution<'a> {
 }
 
 enum SubstateEntry<'a> {
-    KeyValueStoreRef(REValueRef<'a>, ScryptoValue),
-    KeyValueStoreTracked(ComponentAddress, KeyValueStoreId, ScryptoValue),
+    KeyValueStore(REValueRef<'a>, ScryptoValue),
     ComponentTracked(ComponentAddress),
     ComponentInfoTracked(ComponentAddress),
 }
@@ -1401,7 +1400,7 @@ where
                         .borrow_mut();
                     //.get_mut();
                     (
-                        SubstateEntry::KeyValueStoreRef(REValueRef::Owned(ref_store), key),
+                        SubstateEntry::KeyValueStore(REValueRef::Owned(ref_store), key),
                         ValueRefType::Uncommitted {
                             root: kv_store_id.clone(),
                             ancestors: vec![],
@@ -1429,18 +1428,13 @@ where
                                 .to_stored()
                                 .get_child(ancestors, &value_id);
                             (
-                                SubstateEntry::KeyValueStoreRef(REValueRef::Ref(ref_store), key),
+                                SubstateEntry::KeyValueStore(REValueRef::Ref(ref_store), key),
                                 value_ref_type,
                             )
                         }
                         ValueRefType::Committed { component_address } => {
-                            let store = SubstateEntry::KeyValueStoreTracked(
-                                component_address.clone(),
-                                kv_store_id,
-                                key,
-                            );
                             (
-                                store,
+                                SubstateEntry::KeyValueStore(REValueRef::Track((*component_address).into()), key),
                                 ValueRefType::Committed {
                                     component_address: *component_address,
                                 },
@@ -1473,22 +1467,7 @@ where
                 );
                 ScryptoValue::from_typed(&info)
             }
-            SubstateEntry::KeyValueStoreRef(store, key) => store.kv_store_get(&key.raw, &mut self.track),
-            SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
-                let substate_value = self.track.read_key_value(
-                    Address::KeyValueStore(*component_address, *kv_store_id),
-                    key.raw.to_vec(),
-                );
-                let value = substate_value.kv_entry().as_ref().map_or(
-                    Value::Option {
-                        value: Box::new(Option::None),
-                    },
-                    |bytes| Value::Option {
-                        value: Box::new(Some(decode_any(bytes).unwrap())),
-                    },
-                );
-                ScryptoValue::from_value(value).unwrap()
-            }
+            SubstateEntry::KeyValueStore(store, key) => store.kv_store_get(&key.raw, &mut self.track),
         };
         let cur_children = to_stored_ids(current_value.stored_value_ids())?;
 
@@ -1518,17 +1497,8 @@ where
                         self.track
                             .insert_objects_into_component(to_store_values, component_address);
                     }
-                    SubstateEntry::KeyValueStoreRef(mut stored_value, key) => {
+                    SubstateEntry::KeyValueStore(mut stored_value, key) => {
                         stored_value.kv_store_put(key.raw, value, to_store_values, self.track);
-                    }
-                    SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
-                        self.track.set_key_value(
-                            Address::KeyValueStore(component_address.clone(), kv_store_id),
-                            key.raw,
-                            SubstateValue::KeyValueStoreEntry(Some(value.raw)),
-                        );
-                        self.track
-                            .insert_objects_into_component(to_store_values, component_address);
                     }
                 }
 
