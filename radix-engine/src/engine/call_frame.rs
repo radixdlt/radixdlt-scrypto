@@ -266,8 +266,15 @@ impl<'a> REValueRef<'a> {
         ScryptoValue::from_value(value).unwrap()
     }
 
-    fn to_mut_vault(&mut self) -> &mut Vault {
-        match self {
+    fn vault_execute<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+        &mut self,
+        vault_id: VaultId,
+        fn_ident: &str,
+        input: ScryptoValue,
+        system: &mut S
+    ) -> Result<ScryptoValue, RuntimeError> {
+        let mut to_return = HashMap::new();
+        let vault = match self {
             REValueRef::Owned(value) => match value.deref_mut() {
                 REValue::Stored(StoredValue::Vault(vault)) => vault,
                 _ => panic!("Expecting to be a vault"),
@@ -276,8 +283,21 @@ impl<'a> REValueRef<'a> {
                 StoredValue::Vault(vault) => vault,
                 _ => panic!("Expecting to be a vault"),
             },
-            _ => panic!("Expected to be a ref"),
+            REValueRef::Track(address) => {
+                let vault = system.borrow_global_mut_value(address.clone());
+                to_return.insert(address.clone(), vault);
+                to_return.get_mut(&address).unwrap().vault_mut()
+            }
+        };
+        let rtn = vault
+            .main(vault_id, fn_ident, input, system)
+            .map_err(RuntimeError::VaultError)?;
+
+        for (address, value) in to_return.drain() {
+            system.return_global_mut_value(address, value);
         }
+
+        Ok(rtn)
     }
 }
 
@@ -314,7 +334,7 @@ pub enum SNodeExecution<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId, RefMut<'a, REValue>),
-    Vault(VaultId, &'a mut Vault),
+    Vault(VaultId, REValueRef<'a>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
     Resource(Address, &'a mut ResourceManager),
     Component(ScryptoActorInfo, ValidatedPackage),
@@ -388,9 +408,7 @@ impl<'a> SNodeExecution<'a> {
                     .map_err(RuntimeError::ProofError),
                 _ => panic!("Unexpected value to execute"),
             },
-            SNodeExecution::Vault(vault_id, vault) => vault
-                .main(vault_id, fn_ident, input, system)
-                .map_err(RuntimeError::VaultError),
+            SNodeExecution::Vault(vault_id, mut value_ref) => value_ref.vault_execute(vault_id, fn_ident, input, system),
             SNodeExecution::Resource(address, resource_manager) => resource_manager
                 .main(address.clone().into(), fn_ident, input, system)
                 .map_err(RuntimeError::ResourceManagerError),
@@ -591,10 +609,6 @@ where
 
         let mut to_return = HashMap::new();
 
-        // TODO: Find a better way to get rid of borrowed value does not live long enough issue
-        #[allow(unused_assignments)]
-        let mut ref_container = Option::None;
-
         let execution = match snode {
             SNodeState::Static(state) => SNodeExecution::Static(state),
             SNodeState::Consumed(consumed) => SNodeExecution::Consumed(consumed),
@@ -607,10 +621,8 @@ where
                 BorrowedSNodeState::ValueRef(value_id, value) => {
                     SNodeExecution::ValueRef(value_id, value)
                 }
-                BorrowedSNodeState::Vault(vault_id, value) => {
-                    ref_container = Some(value);
-                    let vault = ref_container.as_mut().unwrap().to_mut_vault();
-                    SNodeExecution::Vault(vault_id, vault)
+                BorrowedSNodeState::Vault(vault_id, value_ref) => {
+                    SNodeExecution::Vault(vault_id, value_ref)
                 }
             },
             SNodeState::TrackedNative(address, value) => match value {
@@ -623,11 +635,8 @@ where
                 _ => panic!("Unexpected tracked value"),
             }
             SNodeState::TrackedNative2(address) => {
-                let vault = self.track.borrow_global_mut_value(address.clone()).unwrap();
-                to_return.insert(address.clone(), vault);
-                let vault = to_return.get_mut(&address).unwrap().vault_mut();
-                let vault_address: (ComponentAddress, VaultId) = address.into();
-                SNodeExecution::Vault(vault_address.1, vault)
+                let vault_address: (ComponentAddress, VaultId) = address.clone().into();
+                SNodeExecution::Vault(vault_address.1, REValueRef::Track(address))
             }
             SNodeState::TrackedScrypto(info, package) => {
                 SNodeExecution::Component(info, package)
@@ -1236,6 +1245,17 @@ where
     ) {
         self.track
             .return_borrowed_global_mut_value(resource_address, resource_manager)
+    }
+
+    fn borrow_global_mut_value(&mut self, address: Address) -> SubstateValue {
+        self.track
+            .borrow_global_mut_value(address)
+            .map(|v| v.into())
+            .unwrap()
+    }
+
+    fn return_global_mut_value(&mut self, address: Address, value: SubstateValue) {
+        self.track.return_borrowed_global_mut_value(address, value)
     }
 
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
