@@ -662,16 +662,17 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 StoredValue::Vault(vault_id, vault) => {
                     self.create_uuid_value_2((component_address, vault_id), vault);
                 }
-                StoredValue::KeyValueStore { id, store, child_values } => {
+                StoredValue::KeyValueStore {
+                    id,
+                    store,
+                    child_values,
+                } => {
                     self.create_key_space(component_address, id);
                     let parent_address = Address::KeyValueStore(component_address, id);
                     for (k, v) in store.store {
                         self.set_key_value(parent_address.clone(), k, Some(v));
                     }
-                    let child_values = child_values
-                        .into_values()
-                        .map(|v| v.into_inner())
-                        .collect();
+                    let child_values = child_values.into_values().map(|v| v.into_inner()).collect();
                     self.insert_objects_into_component(child_values, component_address);
                 }
             }

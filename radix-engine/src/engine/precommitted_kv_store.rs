@@ -19,28 +19,22 @@ pub enum StoredValue {
 impl StoredValue {
     pub fn kv_store(&self) -> &PreCommittedKeyValueStore {
         match self {
-            StoredValue::KeyValueStore { store, .. } => {
-                store
-            }
-            _ => panic!("Expected to be a store")
+            StoredValue::KeyValueStore { store, .. } => store,
+            _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
         match self {
-            StoredValue::KeyValueStore { store, .. } => {
-                store
-            }
-            _ => panic!("Expected to be a store")
+            StoredValue::KeyValueStore { store, .. } => store,
+            _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn vault(&self) -> &Vault {
         match self {
-            StoredValue::Vault ( _, vault ) => {
-                vault
-            }
-            _ => panic!("Expected to be a vault")
+            StoredValue::Vault(_, vault) => vault,
+            _ => panic!("Expected to be a vault"),
         }
     }
 
@@ -55,7 +49,7 @@ impl StoredValue {
                 }
                 descendents
             }
-            _ => Vec::new()
+            _ => Vec::new(),
         }
     }
 
@@ -67,20 +61,17 @@ impl StoredValue {
         match self {
             StoredValue::KeyValueStore { child_values, .. } => {
                 if ancestors.is_empty() {
-                    let value = child_values
-                        .get_mut(id)
-                        .expect("Value expected to exist");
+                    let value = child_values.get_mut(id).expect("Value expected to exist");
                     return value.borrow_mut();
                 }
 
                 let (first, rest) = ancestors.split_first().unwrap();
-                let value =
-                    child_values
+                let value = child_values
                     .get_mut(&StoredValueId::KeyValueStoreId(*first))
                     .unwrap();
                 value.get_mut().get_child(rest, id)
             }
-            _ => panic!("Expected to be store")
+            _ => panic!("Expected to be store"),
         }
     }
 
@@ -92,20 +83,17 @@ impl StoredValue {
         match self {
             StoredValue::KeyValueStore { child_values, .. } => {
                 if ancestors.is_empty() {
-                    let value = child_values
-                        .get_mut(id)
-                        .expect("Value expected to exist");
+                    let value = child_values.get_mut(id).expect("Value expected to exist");
                     return value.get_mut();
                 }
 
                 let (first, rest) = ancestors.split_first().unwrap();
-                let value =
-                    child_values
-                        .get_mut(&StoredValueId::KeyValueStoreId(*first))
-                        .unwrap();
+                let value = child_values
+                    .get_mut(&StoredValueId::KeyValueStoreId(*first))
+                    .unwrap();
                 value.get_mut().get_child_mut(rest, id)
             }
-            _ => panic!("Expected to be store")
+            _ => panic!("Expected to be store"),
         }
     }
 
@@ -114,13 +102,15 @@ impl StoredValue {
             StoredValue::KeyValueStore { child_values, .. } => {
                 for value in values {
                     let id = match &value {
-                        StoredValue::KeyValueStore {id, ..} => StoredValueId::KeyValueStoreId(*id),
+                        StoredValue::KeyValueStore { id, .. } => {
+                            StoredValueId::KeyValueStoreId(*id)
+                        }
                         StoredValue::Vault(id, _) => StoredValueId::VaultId(*id),
                     };
                     child_values.insert(id, RefCell::new(value));
                 }
             }
-            _ => panic!("Expected to be store")
+            _ => panic!("Expected to be store"),
         }
     }
 }

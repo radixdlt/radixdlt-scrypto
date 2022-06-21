@@ -414,7 +414,7 @@ where
             trace!(self, Level::Warn, "Dangling value: {:?}", value);
             resource = match value {
                 StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
-                StoredValue::KeyValueStore {..} => ResourceFailure::UnclaimedKeyValueStore,
+                StoredValue::KeyValueStore { .. } => ResourceFailure::UnclaimedKeyValueStore,
             };
             success = false;
         }
@@ -735,9 +735,7 @@ where
         let mut missing_values = HashSet::new();
 
         for id in other {
-            let maybe = self
-                .owned_values
-                .remove(&id);
+            let maybe = self.owned_values.remove(&id);
             if let Some(value) = maybe {
                 taken_values.insert(id, value.into_inner());
             } else {
@@ -1046,7 +1044,11 @@ where
                                 root,
                                 ref ancestors,
                             } => {
-                                let root_store = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(root)).unwrap().get_mut();
+                                let root_store = self
+                                    .owned_values
+                                    .get_mut(&StoredValueId::KeyValueStoreId(root))
+                                    .unwrap()
+                                    .get_mut();
                                 let value = root_store.get_child(ancestors, &value_id);
                                 let resource_address = match value.deref() {
                                     StoredValue::Vault(_, vault) => vault.resource_address(),
@@ -1328,9 +1330,7 @@ where
                 let value_ids = value.stored_value_ids();
                 self.take_available_values(value_ids)
             }
-            KVStoreMethod::Read => {
-                (HashMap::new(), HashSet::new())
-            }
+            KVStoreMethod::Read => (HashMap::new(), HashSet::new()),
         };
 
         // Get Key Value Store
@@ -1338,13 +1338,23 @@ where
             .owned_values
             .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
         {
-            let ref_store = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(kv_store_id)).unwrap().get_mut();
-            (KVStore::Ref(ref_store), ValueRefType::Uncommitted { root: kv_store_id.clone(), ancestors: vec![] })
+            let ref_store = self
+                .owned_values
+                .get_mut(&StoredValueId::KeyValueStoreId(kv_store_id))
+                .unwrap()
+                .get_mut();
+            (
+                KVStore::Ref(ref_store),
+                ValueRefType::Uncommitted {
+                    root: kv_store_id.clone(),
+                    ancestors: vec![],
+                },
+            )
         } else {
             let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
             let maybe_value_ref = self.refed_values.get(&value_id).cloned();
-            let value_ref =
-                maybe_value_ref.ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
+            let value_ref = maybe_value_ref
+                .ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
             match &value_ref {
                 ValueRefType::Uncommitted { root, ancestors } => {
                     let mut next_ancestors = ancestors.clone();
@@ -1353,30 +1363,39 @@ where
                         root: root.clone(),
                         ancestors: next_ancestors,
                     };
-                    let root_value = self.owned_values.get_mut(&StoredValueId::KeyValueStoreId(*root)).unwrap();
+                    let root_value = self
+                        .owned_values
+                        .get_mut(&StoredValueId::KeyValueStoreId(*root))
+                        .unwrap();
                     let ref_store = root_value.get_mut().get_child_mut(ancestors, &value_id);
                     (KVStore::Ref(ref_store), value_ref_type)
                 }
-                ValueRefType::Committed { component_address } => {
-                    (KVStore::Tracked(component_address.clone()), ValueRefType::Committed { component_address: *component_address })
-                }
+                ValueRefType::Committed { component_address } => (
+                    KVStore::Tracked(component_address.clone()),
+                    ValueRefType::Committed {
+                        component_address: *component_address,
+                    },
+                ),
             }
         };
 
         // Read current value
         let current_value = match &store {
-            KVStore::Ref(store) => {
-                store.kv_store().get(&input.key.raw)
-            },
+            KVStore::Ref(store) => store.kv_store().get(&input.key.raw),
             KVStore::Tracked(component_address) => {
                 let substate_value = self.track.read_key_value(
                     Address::KeyValueStore(*component_address, kv_store_id),
                     input.key.raw.to_vec(),
                 );
-                substate_value.kv_entry().as_ref().map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
+                substate_value
+                    .kv_entry()
+                    .as_ref()
+                    .map(|v| ScryptoValue::from_slice(&v).expect("Expected to decode."))
             }
         };
-        let cur_children = current_value.as_ref().map_or(HashSet::new(), |v| v.stored_value_ids());
+        let cur_children = current_value
+            .as_ref()
+            .map_or(HashSet::new(), |v| v.stored_value_ids());
 
         // Fulfill method
         match input.method {
@@ -1389,11 +1408,9 @@ where
                     Value::Option {
                         value: Box::new(Option::None),
                     },
-                    |v| {
-                        Value::Option {
-                            value: Box::new(Some(v.dom)),
-                        }
-                    }
+                    |v| Value::Option {
+                        value: Box::new(Some(v.dom)),
+                    },
                 );
                 let encoded = encode_any(&value);
                 Ok(ScryptoValue::from_slice(&encoded).unwrap())
@@ -1409,7 +1426,7 @@ where
                     KVStore::Ref(stored_value) => {
                         stored_value.kv_store_mut().put(input.key.raw, value);
                         stored_value.insert_children(new_values);
-                    },
+                    }
                     KVStore::Tracked(component_address) => {
                         self.track.set_key_value(
                             Address::KeyValueStore(component_address.clone(), kv_store_id),

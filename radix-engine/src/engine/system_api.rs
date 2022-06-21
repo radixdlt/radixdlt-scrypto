@@ -5,8 +5,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::*;
 use crate::engine::call_frame::KVStoreCall;
+use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
 use crate::wasm::*;

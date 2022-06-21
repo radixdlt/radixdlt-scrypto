@@ -1,3 +1,4 @@
+use crate::engine::call_frame::{KVStoreCall, KVStoreMethod};
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -10,7 +11,6 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
-use crate::engine::call_frame::{KVStoreCall, KVStoreMethod};
 
 use crate::engine::RuntimeError;
 use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
@@ -154,12 +154,13 @@ where
         key: Vec<u8>,
     ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
-        let value = self
-            .system_api
-            .kv_store_call(kv_store_id, KVStoreCall {
+        let value = self.system_api.kv_store_call(
+            kv_store_id,
+            KVStoreCall {
                 key: scrypto_key,
-                method: KVStoreMethod::Read
-            })?;
+                method: KVStoreMethod::Read,
+            },
+        )?;
         Ok(value)
     }
 
@@ -171,11 +172,13 @@ where
     ) -> Result<ScryptoValue, RuntimeError> {
         let scrypto_key = ScryptoValue::from_slice(&key).map_err(RuntimeError::DecodeError)?;
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
-        let rtn = self.system_api
-            .kv_store_call(kv_store_id, KVStoreCall {
+        let rtn = self.system_api.kv_store_call(
+            kv_store_id,
+            KVStoreCall {
                 key: scrypto_key,
-                method: KVStoreMethod::Write(scrypto_value)
-            })?;
+                method: KVStoreMethod::Write(scrypto_value),
+            },
+        )?;
         Ok(rtn)
     }
 
@@ -235,8 +238,9 @@ impl<'s, 'p, 't, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> Wasm
             RadixEngineInput::GetKeyValueStoreEntry(kv_store_id, key) => {
                 self.handle_get_kv_store_entry(kv_store_id, key)
             }
-            RadixEngineInput::PutKeyValueStoreEntry(kv_store_id, key, value) => self
-                .handle_put_kv_store_entry(kv_store_id, key, value),
+            RadixEngineInput::PutKeyValueStoreEntry(kv_store_id, key, value) => {
+                self.handle_put_kv_store_entry(kv_store_id, key, value)
+            }
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
