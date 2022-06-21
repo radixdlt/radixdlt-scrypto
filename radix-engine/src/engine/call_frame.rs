@@ -909,10 +909,12 @@ where
                     locked_values.insert(address.clone());
                     readable_values.insert(address);
 
-                    let component_value = self.track.read_value(component_address).unwrap();
-                    let component = component_value.component();
+                    let component_val = self.track.read_value(component_address);
+                    let component = component_val.component();
                     let package_address = component.package_address();
                     let blueprint_name = component.blueprint_name().to_string();
+                    drop(component);
+                    drop(component_val);
 
                     let package_value = self
                         .track
@@ -937,9 +939,12 @@ where
                         });
                     }
 
-                    let component = self.track.read_value(component_address).unwrap().component();
+                    let component_val = self.track.read_value(component_address);
+                    let component = component_val.component();
                     let (_, method_auths) =
                         component.method_authorization(&abi.structure, &fn_ident);
+                    drop(component);
+                    drop(component_val);
 
                     let actor_info = ScryptoActorInfo::component(
                         package_address,
@@ -1010,8 +1015,9 @@ where
                                     })?;
                                 locked_values.insert(address.clone());
                                 readable_values.insert(address.clone());
-                                let component_value = self.track.read_value(address.clone()).unwrap();
-                                let resource_address = component_value.vault().resource_address();
+                                let vault_val = self.track.read_value(address.clone());
+                                let vault = vault_val.vault();
+                                let resource_address = vault.resource_address();
                                 (
                                     resource_address,
                                     SNodeExecution::ValueRef2(
@@ -1329,15 +1335,6 @@ where
                 if !self.readable_values.contains(&address) {
                     return Err(RuntimeError::InvalidDataAccess);
                 }
-
-                self.track
-                    .read_value(component_address.clone())
-                    .map_err(|e| match e {
-                        TrackError::NotFound => {
-                            RuntimeError::ComponentNotFound(component_address)
-                        }
-                        TrackError::Reentrancy => panic!("Should not run into reentrancy"),
-                    })?;
                 (
                     SubstateEntry::ComponentTracked(component_address.clone()),
                     ValueRefType::Committed {
@@ -1423,19 +1420,13 @@ where
         // Read current value
         let current_value = match &store {
             SubstateEntry::ComponentTracked(component_address) => {
-                let component = self
-                    .track
-                    .read_value(component_address.clone())
-                    .unwrap()
-                    .component();
+                let component_val = self.track.read_value(component_address.clone());
+                let component = component_val.component();
                 ScryptoValue::from_slice(component.state()).expect("Expected to decode")
             }
             SubstateEntry::ComponentInfoTracked(component_address) => {
-                let component = self
-                    .track
-                    .read_value(component_address.clone())
-                    .unwrap()
-                    .component();
+                let component_val = self.track.read_value(component_address.clone());
+                let component = component_val.component();
                 let info = (
                     component.package_address().clone(),
                     component.blueprint_name().to_string(),
