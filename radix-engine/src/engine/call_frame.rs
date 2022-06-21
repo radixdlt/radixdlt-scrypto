@@ -15,7 +15,7 @@ use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::SNodeState::{Borrowed, Consumed, Static, TrackedNative, TrackedScrypto};
+use crate::engine::SNodeState::{Borrowed, Consumed, Static, TrackedScrypto};
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -266,32 +266,51 @@ impl<'a> REValueRef<'a> {
         ScryptoValue::from_value(value).unwrap()
     }
 
-    fn vault_execute<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    fn execute<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
-        vault_id: VaultId,
+        value_id: ValueId,
         fn_ident: &str,
         input: ScryptoValue,
         system: &mut S
     ) -> Result<ScryptoValue, RuntimeError> {
         let mut to_return = HashMap::new();
-        let vault = match self {
-            REValueRef::Owned(value) => match value.deref_mut() {
-                REValue::Stored(StoredValue::Vault(vault)) => vault,
-                _ => panic!("Expecting to be a vault"),
-            },
-            REValueRef::Ref(stored_value) => match stored_value.deref_mut() {
-                StoredValue::Vault(vault) => vault,
-                _ => panic!("Expecting to be a vault"),
-            },
-            REValueRef::Track(address) => {
-                let vault = system.borrow_global_mut_value(address.clone());
-                to_return.insert(address.clone(), vault);
-                to_return.get_mut(&address).unwrap().vault_mut()
+
+        let rtn = match &value_id {
+            ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
+                let vault = match self {
+                    REValueRef::Owned(value) => match value.deref_mut() {
+                        REValue::Stored(StoredValue::Vault(vault)) => vault,
+                        _ => panic!("Expecting to be a vault"),
+                    },
+                    REValueRef::Ref(stored_value) => match stored_value.deref_mut() {
+                        StoredValue::Vault(vault) => vault,
+                        _ => panic!("Expecting to be a vault"),
+                    },
+                    REValueRef::Track(address) => {
+                        let vault = system.borrow_global_mut_value(address.clone());
+                        to_return.insert(address.clone(), vault);
+                        to_return.get_mut(&address).unwrap().vault_mut()
+                    }
+                };
+                vault
+                    .main(*vault_id, fn_ident, input, system)
+                    .map_err(RuntimeError::VaultError)
             }
-        };
-        let rtn = vault
-            .main(vault_id, fn_ident, input, system)
-            .map_err(RuntimeError::VaultError)?;
+            ValueId::Resource(resource_address) => {
+                let resman = match self {
+                    REValueRef::Track(address) => {
+                        let value = system.borrow_global_mut_value(address.clone());
+                        to_return.insert(address.clone(), value);
+                        to_return.get_mut(&address).unwrap().resource_manager_mut()
+                    }
+                    _ => panic!("Expecting to be tracked"),
+                };
+
+                resman.main(*resource_address, fn_ident, input, system)
+                    .map_err(RuntimeError::ResourceManagerError)
+            }
+            _ => panic!("Unexpected value")
+        }?;
 
         for (address, value) in to_return.drain() {
             system.return_global_mut_value(address, value);
@@ -305,7 +324,7 @@ pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId, RefMut<'a, REValue>),
-    Vault(VaultId, REValueRef<'a>),
+    ValueRef2(ValueId, REValueRef<'a>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
 }
 
@@ -320,7 +339,6 @@ pub enum SNodeState<'a> {
     Static(StaticSNodeState),
     Consumed(TransientValue),
     Borrowed(BorrowedSNodeState<'a>),
-    TrackedNative(Address, SubstateValue),
     TrackedScrypto(ScryptoActorInfo, ValidatedPackage)
 }
 
@@ -330,9 +348,8 @@ pub enum SNodeExecution<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId, RefMut<'a, REValue>),
-    Vault(VaultId, REValueRef<'a>),
+    ValueRef2(ValueId, REValueRef<'a>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
-    Resource(Address, &'a mut ResourceManager),
     Component(ScryptoActorInfo, ValidatedPackage),
 }
 
@@ -404,10 +421,7 @@ impl<'a> SNodeExecution<'a> {
                     .map_err(RuntimeError::ProofError),
                 _ => panic!("Unexpected value to execute"),
             },
-            SNodeExecution::Vault(vault_id, mut value_ref) => value_ref.vault_execute(vault_id, fn_ident, input, system),
-            SNodeExecution::Resource(address, resource_manager) => resource_manager
-                .main(address.clone().into(), fn_ident, input, system)
-                .map_err(RuntimeError::ResourceManagerError),
+            SNodeExecution::ValueRef2(value_id, mut value_ref) => value_ref.execute(value_id, fn_ident, input, system),
             SNodeExecution::Component(ref actor, ref package) => {
                 package.invoke(&actor, fn_ident, input, system)
             }
@@ -603,8 +617,6 @@ where
             .consume(Self::fee_table_helper(&mut self.fee_table).engine_run_cost())
             .map_err(RuntimeError::CostingError)?;
 
-        let mut to_return = HashMap::new();
-
         let execution = match snode {
             SNodeState::Static(state) => SNodeExecution::Static(state),
             SNodeState::Consumed(consumed) => SNodeExecution::Consumed(consumed),
@@ -617,30 +629,16 @@ where
                 BorrowedSNodeState::ValueRef(value_id, value) => {
                     SNodeExecution::ValueRef(value_id, value)
                 }
-                BorrowedSNodeState::Vault(vault_id, value_ref) => {
-                    SNodeExecution::Vault(vault_id, value_ref)
+                BorrowedSNodeState::ValueRef2(value_id, value_ref) => {
+                    SNodeExecution::ValueRef2(value_id, value_ref)
                 }
             },
-            SNodeState::TrackedNative(address, value) => match value {
-                SubstateValue::Resource(_) => {
-                    to_return.insert(address.clone(), value);
-                    let resource_manager =
-                        to_return.get_mut(&address).unwrap().resource_manager_mut();
-                    SNodeExecution::Resource(address.clone(), resource_manager)
-                }
-                _ => panic!("Unexpected tracked value"),
-            }
             SNodeState::TrackedScrypto(info, package) => {
                 SNodeExecution::Component(info, package)
             },
         };
 
         let output = execution.execute(fn_ident, input, self)?;
-
-        // Update track
-        for (address, value) in to_return.drain() {
-            self.track.return_borrowed_global_mut_value(address, value);
-        }
 
         // Prevent vaults/kvstores from being returned
         self.process_return_data(snode_ref, &output)?;
@@ -865,7 +863,10 @@ where
                     .get_auth(&fn_ident, &input)
                     .clone();
                 Ok((
-                    TrackedNative(resource_address.clone().into(), resman_value),
+                   Borrowed(BorrowedSNodeState::ValueRef2(
+                       ValueId::Resource(resource_address.clone()),
+                       REValueRef::Track(resource_address.clone().into()),
+                   )),
                     vec![method_auth],
                 ))
             }
@@ -1003,8 +1004,8 @@ where
 
                         (
                             resource_address,
-                            Borrowed(BorrowedSNodeState::Vault(
-                                *vault_id,
+                            Borrowed(BorrowedSNodeState::ValueRef2(
+                                ValueId::vault_id(*vault_id),
                                 REValueRef::Owned(value.borrow_mut()),
                             )),
                         )
@@ -1034,8 +1035,8 @@ where
                                 };
                                 (
                                     resource_address,
-                                    Borrowed(BorrowedSNodeState::Vault(
-                                        *vault_id,
+                                    Borrowed(BorrowedSNodeState::ValueRef2(
+                                        ValueId::vault_id(*vault_id),
                                         REValueRef::Ref(value),
                                     )),
                                 )
@@ -1054,8 +1055,8 @@ where
                                 let resource_address = component_value.vault().resource_address();
                                 (
                                     resource_address,
-                                    Borrowed(BorrowedSNodeState::Vault(
-                                        *vault_id,
+                                    Borrowed(BorrowedSNodeState::ValueRef2(
+                                        ValueId::vault_id(*vault_id),
                                         REValueRef::Track(address),
                                     )),
                                 )
@@ -1087,9 +1088,8 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                TrackedNative(..)
-                | TrackedScrypto(..)
-                | Borrowed(BorrowedSNodeState::Vault(..))
+                TrackedScrypto(..)
+                | Borrowed(BorrowedSNodeState::ValueRef2(..))
                 | Borrowed(BorrowedSNodeState::ValueRef(
                     ValueId::Transient(TransientValueId::Bucket(..)),
                     ..,
