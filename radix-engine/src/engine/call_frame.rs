@@ -58,7 +58,6 @@ pub struct CallFrame<
 
     /// Referenced values
     refed_values: HashMap<StoredValueId, ValueRefType>,
-    refed_components: HashMap<ComponentAddress, Component>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
@@ -275,11 +274,7 @@ pub enum SNodeState<'a> {
         Address,
         SubstateValue,
     ),
-    TrackedScrypto(
-        Address,
-        SubstateValue,
-        Option<(ScryptoActorInfo, ValidatedPackage)>,
-    )
+    TrackedScrypto(Option<(ScryptoActorInfo, ValidatedPackage)>)
 }
 
 pub enum SNodeExecution<'a> {
@@ -297,8 +292,7 @@ pub enum SNodeExecution<'a> {
 enum SubstateEntry<'a> {
     KeyValueStoreRef(REValueRef<'a>, ScryptoValue),
     KeyValueStoreTracked(ComponentAddress, KeyValueStoreId, ScryptoValue),
-    Component(ComponentAddress, &'a mut Component),
-    ComponentInfo(ComponentAddress, &'a Component),
+    ComponentTracked(ComponentAddress),
     ComponentInfoTracked(ComponentAddress),
 }
 
@@ -456,7 +450,6 @@ where
             wasm_instrumenter,
             owned_values: celled_owned_values,
             refed_values: HashMap::new(),
-            refed_components: HashMap::new(),
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -603,13 +596,9 @@ where
                 }
                 _ => panic!("Unexpected tracked value"),
             }
-            SNodeState::TrackedScrypto(address, value, mut meta) => match value {
-                SubstateValue::Component(component) => {
-                    self.refed_components.insert(address.into(), component);
-                    let (info, package) = meta.take().unwrap();
-                    SNodeExecution::Component(info, package)
-                }
-                _ => panic!("Unexpected tracked value"),
+            SNodeState::TrackedScrypto(mut meta) => {
+                let (info, package) = meta.take().unwrap();
+                SNodeExecution::Component(info, package)
             },
         };
 
@@ -617,9 +606,6 @@ where
 
         // Update track
         for (address, value) in to_return.drain() {
-            self.track.return_borrowed_global_mut_value(address, value);
-        }
-        for (address, value) in self.refed_components.drain() {
             self.track.return_borrowed_global_mut_value(address, value);
         }
 
@@ -916,9 +902,7 @@ where
                 ScryptoActor::Component(component_address) => {
                     let component_address = *component_address;
 
-                    let component_value = self
-                        .track
-                        .borrow_global_mut_value(component_address)
+                    self.track.take_lock(component_address)
                         .map_err(|e| match e {
                             TrackError::NotFound => {
                                 RuntimeError::ComponentNotFound(component_address)
@@ -927,6 +911,8 @@ where
                                 RuntimeError::ComponentReentrancy(component_address)
                             }
                         })?;
+
+                    let component_value = self.track.read_value(component_address).unwrap();
                     let component = component_value.component();
                     let package_address = component.package_address();
                     let blueprint_name = component.blueprint_name().to_string();
@@ -940,7 +926,7 @@ where
                                 panic!("Package reentrancy error should never occur.")
                             }
                         })?;
-                    let package = package_value.package();
+                    let package = package_value.package().clone();
                     let abi = package
                         .blueprint_abi(&blueprint_name)
                         .expect("Blueprint not found for existing component");
@@ -953,6 +939,8 @@ where
                             input: input.dom,
                         });
                     }
+
+                    let component = self.track.read_value(component_address).unwrap().component();
                     let (_, method_auths) =
                         component.method_authorization(&abi.structure, &fn_ident);
 
@@ -963,11 +951,7 @@ where
                     );
 
                     Ok((
-                        TrackedScrypto(
-                            component_address.into(),
-                            component_value,
-                            Some((actor_info, package.clone())),
-                        ),
+                        TrackedScrypto(Some((actor_info, package))),
                         method_auths,
                     ))
                 }
@@ -1325,38 +1309,35 @@ where
         // Get reference to data address
         let (store, ref_type) = match address {
             SubstateAddress::Component(component_address) => {
-                let component = self
-                    .refed_components
-                    .get_mut(&component_address)
-                    .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
-                let store = SubstateEntry::Component(component_address.clone(), component);
+                self.track
+                    .borrow_global_value(component_address.clone())
+                    .map_err(|e| match e {
+                        TrackError::NotFound => {
+                            RuntimeError::ComponentNotFound(component_address)
+                        }
+                        TrackError::Reentrancy => panic!("Should not run into reentrancy"),
+                    })?;
                 (
-                    store,
+                    SubstateEntry::ComponentTracked(component_address.clone()),
                     ValueRefType::Committed {
                         component_address: component_address.clone(),
-                    },
+                    }
                 )
             }
             SubstateAddress::ComponentInfo(component_address) => {
-                let component = self.refed_components.get(&component_address);
-                let store = if let Some(component) = component {
-                    SubstateEntry::ComponentInfo(component_address.clone(), component)
-                } else {
-                    self.track
-                        .borrow_global_value(component_address.clone())
-                        .map_err(|e| match e {
-                            TrackError::NotFound => {
-                                RuntimeError::ComponentNotFound(component_address)
-                            }
-                            TrackError::Reentrancy => panic!("Should not run into reentrancy"),
-                        })?;
-                    SubstateEntry::ComponentInfoTracked(component_address.clone())
-                };
+                self.track
+                    .borrow_global_value(component_address.clone())
+                    .map_err(|e| match e {
+                        TrackError::NotFound => {
+                            RuntimeError::ComponentNotFound(component_address)
+                        }
+                        TrackError::Reentrancy => panic!("Should not run into reentrancy"),
+                    })?;
                 (
-                    store,
+                    SubstateEntry::ComponentInfoTracked(component_address.clone()),
                     ValueRefType::Committed {
                         component_address: component_address.clone(),
-                    },
+                    }
                 )
             }
             SubstateAddress::KeyValueEntry(kv_store_id, key) => {
@@ -1425,20 +1406,18 @@ where
 
         // Read current value
         let current_value = match &store {
-            SubstateEntry::Component(_, component) => {
+            SubstateEntry::ComponentTracked(component_address) => {
+                let component = self
+                    .track
+                    .read_value(component_address.clone())
+                    .unwrap()
+                    .component();
                 ScryptoValue::from_slice(component.state()).expect("Expected to decode")
-            }
-            SubstateEntry::ComponentInfo(_, component) => {
-                let info = (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                );
-                ScryptoValue::from_typed(&info)
             }
             SubstateEntry::ComponentInfoTracked(component_address) => {
                 let component = self
                     .track
-                    .borrow_global_value(component_address.clone())
+                    .read_value(component_address.clone())
                     .unwrap()
                     .component();
                 let info = (
@@ -1494,11 +1473,11 @@ where
 
                 // Write values
                 match store {
-                    SubstateEntry::ComponentInfo(..) | SubstateEntry::ComponentInfoTracked(..) => {
+                    SubstateEntry::ComponentInfoTracked(..) => {
                         return Err(RuntimeError::InvalidDataWrite);
                     }
-                    SubstateEntry::Component(component_address, component) => {
-                        component.set_state(value.raw);
+                    SubstateEntry::ComponentTracked(component_address) => {
+                        self.track.write_component_value(component_address, value.raw).unwrap();
                         self.track
                             .insert_objects_into_component(to_store_values, component_address);
                     }

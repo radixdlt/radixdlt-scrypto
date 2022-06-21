@@ -24,6 +24,7 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     new_addresses: Vec<Address>,
     borrowed_substates: RefCell<HashSet<Address>>,
+    borrowed_substates_2: RefCell<HashMap<Address, SubstateValue>>,
     read_substates: IndexMap<Address, SubstateValue>,
 
     downed_substates: Vec<PhysicalSubstateId>,
@@ -239,6 +240,14 @@ impl SubstateValue {
         }
     }
 
+    pub fn component_mut(&mut self) -> &mut Component {
+        if let SubstateValue::Component(component) = self {
+            component
+        } else {
+            panic!("Not a component");
+        }
+    }
+
     pub fn package(&self) -> &ValidatedPackage {
         if let SubstateValue::Package(package) = self {
             package
@@ -332,6 +341,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
             new_addresses: Vec::new(),
             borrowed_substates: RefCell::new(HashSet::new()),
+            borrowed_substates_2: RefCell::new(HashMap::new()),
             read_substates: IndexMap::new(),
 
             downed_substates: Vec::new(),
@@ -443,6 +453,130 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             Err(TrackError::NotFound)
         }
     }
+
+    pub fn take_lock<A: Into<Address>>(&mut self, addr: A) -> Result<(), TrackError> {
+        let address = addr.into();
+        let maybe_value = self.up_substates.remove(&address.encode());
+        let mut borrowed_substates = self.borrowed_substates_2.borrow_mut();
+        if let Some(value) = maybe_value {
+            borrowed_substates.insert(address, value);
+            return Ok(());
+        }
+
+        if borrowed_substates.contains_key(&address) {
+            return Err(TrackError::Reentrancy);
+        }
+
+        if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
+            self.downed_substates.push(substate.phys_id);
+            let value = match address {
+                Address::Component(_) => {
+                    let component = scrypto_decode(&substate.value).unwrap();
+                    SubstateValue::Component(component)
+                }
+                Address::Resource(_) => {
+                    let resource_manager = scrypto_decode(&substate.value).unwrap();
+                    SubstateValue::Resource(resource_manager)
+                }
+                Address::Vault(..) => {
+                    let vault = scrypto_decode(&substate.value).unwrap();
+                    SubstateValue::Vault(vault)
+                }
+                _ => panic!("Attempting to borrow unsupported value"),
+            };
+
+            borrowed_substates.insert(address.clone(), value);
+            Ok(())
+        } else {
+            Err(TrackError::NotFound)
+        }
+    }
+
+    pub fn read_value<A: Into<Address>>(
+        &mut self,
+        addr: A,
+    ) -> Result<&SubstateValue, TrackError> {
+        let address: Address = addr.into();
+
+        if let Some(v) = self.up_substates.get(&address.encode()) {
+            return Ok(v);
+        }
+
+        let borrowed_substates = self.borrowed_substates_2.get_mut();
+        if let Some(v) = borrowed_substates.get(&address) {
+            return Ok(v);
+        }
+
+        let maybe_substate = self.substate_store.get_substate(&address.encode());
+        if let Some(substate) = maybe_substate {
+            match address {
+                Address::Package(_) => {
+                    let package: ValidatedPackage = scrypto_decode(&substate.value).unwrap();
+                    self.read_substates
+                        .insert(address.clone(), SubstateValue::Package(package));
+                }
+                Address::Component(_) => {
+                    let component: Component = scrypto_decode(&substate.value).unwrap();
+                    self.read_substates
+                        .insert(address.clone(), SubstateValue::Component(component));
+                }
+                Address::Resource(_) => {
+                    let resource_manager: ResourceManager =
+                        scrypto_decode(&substate.value).unwrap();
+                    self.read_substates
+                        .insert(address.clone(), SubstateValue::Resource(resource_manager));
+                }
+                _ => panic!("Reading value of invalid address"),
+            }
+            let value = self.read_substates.get(&address).unwrap();
+            Ok(value)
+        } else {
+            Err(TrackError::NotFound)
+        }
+    }
+
+    pub fn write_value<A: Into<Address>, V: Into<SubstateValue>>(
+        &mut self,
+        addr: A,
+        value: V,
+    ) -> Result<(), TrackError> {
+        let address: Address = addr.into();
+
+        let borrowed_substates = self.borrowed_substates_2.get_mut();
+        if !borrowed_substates.contains_key(&address) {
+            return Err(TrackError::NotFound);
+        }
+        borrowed_substates.insert(address, value.into());
+        Ok(())
+    }
+
+    // TODO: Replace with more generic write_value once Component is split into more substates
+    pub fn write_component_value(
+        &mut self,
+        addr: ComponentAddress,
+        value: Vec<u8>,
+    ) -> Result<(), TrackError> {
+        let address: Address = addr.into();
+
+        let borrowed_substates = self.borrowed_substates_2.get_mut();
+        if !borrowed_substates.contains_key(&address) {
+            return Err(TrackError::NotFound);
+        }
+        borrowed_substates.get_mut(&address).unwrap().component_mut().set_state(value);
+        Ok(())
+    }
+
+    pub fn release_lock<A: Into<Address>>(&mut self, addr: A) {
+        let address = addr.into();
+        let mut borrowed_substates = self.borrowed_substates_2.borrow_mut();
+        let maybe_value = borrowed_substates.remove(&address);
+        if let Some(value) = maybe_value {
+            self.up_substates.insert(address.encode(), value);
+        } else {
+            panic!("Value was never borrowed");
+        }
+    }
+
 
     // TODO: Add checks to see verify that immutable values aren't being borrowed
     pub fn borrow_global_mut_value<A: Into<Address>>(
