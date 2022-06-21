@@ -262,6 +262,33 @@ fn cant_move_restricted_proof() {
 }
 
 #[test]
+fn cant_move_locked_bucket() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_account();
+    let resource_address =
+        test_runner.create_fungible_resource(100.into(), DIVISIBILITY_MAXIMUM, account);
+    let package_address = test_runner.extract_and_publish_package("proof");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function_with_abi(
+            package_address,
+            "BucketProof",
+            "return_bucket_while_locked",
+            vec![format!("1,{}", resource_address), "1".to_owned()],
+            Some(account),
+            &test_runner.export_abi(package_address, "BucketProof"),
+        )
+        .unwrap()
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::CantMoveLockedBucket));
+}
+
+#[test]
 fn can_compose_bucket_and_vault_proof() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
