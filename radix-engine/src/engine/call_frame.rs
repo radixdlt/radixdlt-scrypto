@@ -15,7 +15,7 @@ use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::SNodeState::{Borrowed, Consumed, Static, TrackedNative, TrackedScrypto};
+use crate::engine::SNodeState::{Borrowed, Consumed, Static, TrackedNative, TrackedNative2, TrackedScrypto};
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -60,7 +60,7 @@ pub struct CallFrame<
     refed_values: HashMap<StoredValueId, ValueRefType>,
 
     /// Readable values
-    readable_values: HashSet<ComponentAddress>,
+    readable_values: HashSet<Address>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
@@ -277,6 +277,7 @@ pub enum SNodeState<'a> {
         Address,
         SubstateValue,
     ),
+    TrackedNative2(Address),
     TrackedScrypto(ScryptoActorInfo, ValidatedPackage)
 }
 
@@ -436,7 +437,7 @@ where
         auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
-        readable_values: HashSet<ComponentAddress>,
+        readable_values: HashSet<Address>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
@@ -593,13 +594,14 @@ where
                         to_return.get_mut(&address).unwrap().resource_manager_mut();
                     SNodeExecution::Resource(address.clone(), resource_manager)
                 }
-                SubstateValue::Vault(_) => {
-                    to_return.insert(address.clone(), value);
-                    let vault = to_return.get_mut(&address).unwrap().vault_mut();
-                    let vault_address: (ComponentAddress, VaultId) = address.clone().into();
-                    SNodeExecution::Vault(vault_address.1, vault)
-                }
                 _ => panic!("Unexpected tracked value"),
+            }
+            SNodeState::TrackedNative2(address) => {
+                let vault = self.track.borrow_global_mut_value(address.clone()).unwrap();
+                to_return.insert(address.clone(), vault);
+                let vault = to_return.get_mut(&address).unwrap().vault_mut();
+                let vault_address: (ComponentAddress, VaultId) = address.into();
+                SNodeExecution::Vault(vault_address.1, vault)
             }
             SNodeState::TrackedScrypto(info, package) => {
                 SNodeExecution::Component(info, package)
@@ -765,7 +767,7 @@ where
             }
         }
 
-        let mut locked_components = HashSet::new();
+        let mut locked_values = HashSet::new();
         let mut readable_values = HashSet::new();
 
         // Authorization and state load
@@ -907,8 +909,8 @@ where
                 }
                 ScryptoActor::Component(component_address) => {
                     let component_address = *component_address;
-
-                    self.track.take_lock(component_address)
+                    let address: Address = component_address.into();
+                    self.track.take_lock(address.clone())
                         .map_err(|e| match e {
                             TrackError::NotFound => {
                                 RuntimeError::ComponentNotFound(component_address)
@@ -917,8 +919,8 @@ where
                                 RuntimeError::ComponentReentrancy(component_address)
                             }
                         })?;
-                    locked_components.insert(component_address);
-                    readable_values.insert(component_address);
+                    locked_values.insert(address.clone());
+                    readable_values.insert(address);
 
                     let component_value = self.track.read_value(component_address).unwrap();
                     let component = component_value.component();
@@ -1013,20 +1015,17 @@ where
                             }
                             ValueRefType::Committed { component_address } => {
                                 let vault_address = (component_address, *vault_id);
-                                let vault_value = self
-                                    .track
-                                    .borrow_global_mut_value(vault_address.clone())
+                                let address: Address = vault_address.into();
+                                self.track.take_lock(address.clone())
                                     .map_err(|e| match e {
                                         TrackError::NotFound => panic!("Expected to find vault"),
-                                        TrackError::Reentrancy => {
-                                            panic!("Vault logic is causing reentrancy")
-                                        }
+                                        TrackError::Reentrancy => panic!("Vault call has caused reentrancy"),
                                     })?;
-                                let resource_address = vault_value.vault().resource_address();
-                                (
-                                    resource_address,
-                                    TrackedNative(vault_address.into(), vault_value),
-                                )
+                                locked_values.insert(address.clone());
+                                readable_values.insert(address.clone());
+                                let component_value = self.track.read_value(address).unwrap();
+                                let resource_address = component_value.vault().resource_address();
+                                (resource_address, TrackedNative2(vault_address.into()))
                             }
                         }
                     }
@@ -1138,7 +1137,7 @@ where
         let (result, received_values) = run_result?;
 
         // Release locked addresses
-        for l in locked_components {
+        for l in locked_values {
             self.track.release_lock(l);
         }
 
@@ -1325,7 +1324,8 @@ where
         let (store, ref_type) = match address {
             SubstateAddress::Component(component_address) => {
                 // TODO: use this check for all address types
-                if !self.readable_values.contains(&component_address) {
+                let address = component_address.into();
+                if !self.readable_values.contains(&address) {
                     return Err(RuntimeError::InvalidDataAccess);
                 }
 
