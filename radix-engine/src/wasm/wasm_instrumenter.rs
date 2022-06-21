@@ -27,10 +27,7 @@ impl WasmInstrumenter {
             .or_insert_with(|| {
                 WasmModule::init(code)
                     .and_then(|m| {
-                        m.inject_instruction_metering(
-                            wasm_metering_params.instruction_cost(),
-                            wasm_metering_params.grow_memory_cost(),
-                        )
+                        m.inject_instruction_metering(wasm_metering_params.instruction_cost_rules())
                     })
                     .and_then(|m| m.inject_stack_metering(wasm_metering_params.max_stack_size()))
                     .and_then(|m| m.to_bytes())
