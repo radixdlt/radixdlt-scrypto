@@ -59,6 +59,7 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
+    InvalidDataAccess,
     InvalidDataWrite,
     ValueNotFound(ValueId),
 

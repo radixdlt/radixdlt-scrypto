@@ -59,6 +59,9 @@ pub struct CallFrame<
     /// Referenced values
     refed_values: HashMap<StoredValueId, ValueRefType>,
 
+    /// Readable values
+    readable_values: HashSet<ComponentAddress>,
+
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
@@ -274,7 +277,7 @@ pub enum SNodeState<'a> {
         Address,
         SubstateValue,
     ),
-    TrackedScrypto(Option<(ScryptoActorInfo, ValidatedPackage)>)
+    TrackedScrypto(ScryptoActorInfo, ValidatedPackage)
 }
 
 pub enum SNodeExecution<'a> {
@@ -416,6 +419,7 @@ where
             ))),
             Some(RefCell::new(Worktop::new())),
             HashMap::new(),
+            HashSet::new(),
             None,
             cost_unit_counter,
             fee_table,
@@ -432,6 +436,7 @@ where
         auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
+        readable_values: HashSet<ComponentAddress>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
@@ -450,6 +455,7 @@ where
             wasm_instrumenter,
             owned_values: celled_owned_values,
             refed_values: HashMap::new(),
+            readable_values,
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -545,12 +551,11 @@ where
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<ValueId, REValue>), RuntimeError> {
-        let remaining_cost_units = self.cost_unit_counter().remaining();
         trace!(
             self,
             Level::Debug,
             "Run started! Remainging cost units: {}",
-            remaining_cost_units
+            self.cost_unit_counter().remaining()
         );
 
         Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
@@ -596,8 +601,7 @@ where
                 }
                 _ => panic!("Unexpected tracked value"),
             }
-            SNodeState::TrackedScrypto(mut meta) => {
-                let (info, package) = meta.take().unwrap();
+            SNodeState::TrackedScrypto(info, package) => {
                 SNodeExecution::Component(info, package)
             },
         };
@@ -630,12 +634,11 @@ where
         }
         self.check_resource()?;
 
-        let remaining_cost_units = self.cost_unit_counter().remaining();
         trace!(
             self,
             Level::Debug,
             "Run finished! Remainging cost units: {}",
-            remaining_cost_units
+            self.cost_unit_counter().remaining()
         );
 
         Ok((output, taken_values))
@@ -762,7 +765,8 @@ where
             }
         }
 
-        let mut locked = HashSet::new();
+        let mut locked_components = HashSet::new();
+        let mut readable_values = HashSet::new();
 
         // Authorization and state load
         let (loaded_snode, method_auths) = match &snode_ref {
@@ -913,7 +917,8 @@ where
                                 RuntimeError::ComponentReentrancy(component_address)
                             }
                         })?;
-                    locked.insert(component_address);
+                    locked_components.insert(component_address);
+                    readable_values.insert(component_address);
 
                     let component_value = self.track.read_value(component_address).unwrap();
                     let component = component_value.component();
@@ -954,7 +959,7 @@ where
                     );
 
                     Ok((
-                        TrackedScrypto(Some((actor_info, package))),
+                        TrackedScrypto(actor_info, package),
                         method_auths,
                     ))
                 }
@@ -1115,6 +1120,7 @@ where
                 _ => None,
             },
             taken_values,
+            readable_values,
             self.auth_zone.as_ref(),
             cost_unit_counter,
             fee_table,
@@ -1132,7 +1138,7 @@ where
         let (result, received_values) = run_result?;
 
         // Release locked addresses
-        for l in locked {
+        for l in locked_components {
             self.track.release_lock(l);
         }
 
@@ -1318,6 +1324,11 @@ where
         // Get reference to data address
         let (store, ref_type) = match address {
             SubstateAddress::Component(component_address) => {
+                // TODO: use this check for all address types
+                if !self.readable_values.contains(&component_address) {
+                    return Err(RuntimeError::InvalidDataAccess);
+                }
+
                 self.track
                     .read_value(component_address.clone())
                     .map_err(|e| match e {

@@ -25,9 +25,29 @@ fn should_not_be_able_to_read_component_state_after_creation() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_success();
+    receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess))
 }
 
+#[test]
+fn should_not_be_able_to_write_component_state_after_creation() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("data_access");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "DataAccess",
+            "create_component_and_write_state",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess))
+}
 
 #[test]
 fn should_be_able_to_read_component_info() {
