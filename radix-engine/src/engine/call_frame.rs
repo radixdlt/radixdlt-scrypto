@@ -326,17 +326,6 @@ pub enum StaticSNodeState {
     TransactionProcessor,
 }
 
-pub enum SNodeState<'a> {
-    Static(StaticSNodeState),
-    Consumed(TransientValue),
-    AuthZone(RefMut<'a, AuthZone>),
-    Worktop(RefMut<'a, Worktop>),
-    ValueRef(ValueId, RefMut<'a, REValue>),
-    ValueRef2(ValueId, REValueRef<'a>),
-    Blueprint(ScryptoActorInfo, ValidatedPackage),
-    Component(ScryptoActorInfo, ValidatedPackage),
-}
-
 pub enum SNodeExecution<'a> {
     Static(StaticSNodeState),
     Consumed(TransientValue),
@@ -597,7 +586,7 @@ where
     pub fn run(
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
-        snode: SNodeState<'p>,
+        execution: SNodeExecution<'p>,
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<ValueId, REValue>), RuntimeError> {
@@ -611,25 +600,6 @@ where
         Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
             .consume(Self::fee_table_helper(&mut self.fee_table).engine_run_cost())
             .map_err(RuntimeError::CostingError)?;
-
-        let execution = match snode {
-            SNodeState::Static(state) => SNodeExecution::Static(state),
-            SNodeState::Consumed(consumed) => SNodeExecution::Consumed(consumed),
-            SNodeState::AuthZone(auth_zone) => SNodeExecution::AuthZone(auth_zone),
-            SNodeState::Worktop(worktop) => SNodeExecution::Worktop(worktop),
-            SNodeState::Blueprint(info, package) => {
-                SNodeExecution::Blueprint(info, package)
-            }
-            SNodeState::ValueRef(value_id, value) => {
-                SNodeExecution::ValueRef(value_id, value)
-            }
-            SNodeState::ValueRef2(value_id, value_ref) => {
-                SNodeExecution::ValueRef2(value_id, value_ref)
-            }
-            SNodeState::Component(info, package) => {
-                SNodeExecution::Component(info, package)
-            },
-        };
 
         let output = execution.execute(fn_ident, input, self)?;
 
@@ -792,11 +762,11 @@ where
         let (loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::TransactionProcessor => {
                 // FIXME: only TransactionExecutor can invoke this function
-                Ok((SNodeState::Static(StaticSNodeState::TransactionProcessor), vec![]))
+                Ok((SNodeExecution::Static(StaticSNodeState::TransactionProcessor), vec![]))
             }
-            SNodeRef::PackageStatic => Ok((SNodeState::Static(StaticSNodeState::Package), vec![])),
-            SNodeRef::SystemStatic => Ok((SNodeState::Static(StaticSNodeState::System), vec![])),
-            SNodeRef::ResourceStatic => Ok((SNodeState::Static(StaticSNodeState::Resource), vec![])),
+            SNodeRef::PackageStatic => Ok((SNodeExecution::Static(StaticSNodeState::Package), vec![])),
+            SNodeRef::SystemStatic => Ok((SNodeExecution::Static(StaticSNodeState::System), vec![])),
+            SNodeRef::ResourceStatic => Ok((SNodeExecution::Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::Consumed(value_id) => {
                 let value = self
                     .owned_values
@@ -822,12 +792,12 @@ where
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                Ok((SNodeState::Consumed(value.into()), method_auths))
+                Ok((SNodeExecution::Consumed(value.into()), method_auths))
             }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
                     let borrowed = auth_zone.borrow_mut();
-                    Ok((SNodeState::AuthZone(borrowed), vec![]))
+                    Ok((SNodeExecution::AuthZone(borrowed), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -835,7 +805,7 @@ where
             SNodeRef::WorktopRef => {
                 if let Some(worktop_ref) = &self.worktop {
                     let worktop = worktop_ref.borrow_mut();
-                    Ok((SNodeState::Worktop(worktop), vec![]))
+                    Ok((SNodeExecution::Worktop(worktop), vec![]))
                 } else {
                     Err(RuntimeError::WorktopDoesNotExist)
                 }
@@ -856,7 +826,7 @@ where
                     .get_auth(&fn_ident, &input)
                     .clone();
                 Ok((
-                   SNodeState::ValueRef2(
+                   SNodeExecution::ValueRef2(
                        ValueId::Resource(resource_address.clone()),
                        REValueRef::Track(resource_address.clone().into()),
                    ),
@@ -871,7 +841,7 @@ where
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let bucket = bucket_cell.borrow_mut();
                 Ok((
-                    SNodeState::ValueRef(value_id, bucket),
+                    SNodeExecution::ValueRef(value_id, bucket),
                     vec![],
                 ))
             }
@@ -883,7 +853,7 @@ where
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let proof = proof_cell.borrow_mut();
                 Ok((
-                    SNodeState::ValueRef(value_id, proof),
+                    SNodeExecution::ValueRef(value_id, proof),
                     vec![],
                 ))
             }
@@ -918,7 +888,7 @@ where
                         });
                     }
                     Ok((
-                        SNodeState::Blueprint(
+                        SNodeExecution::Blueprint(
                             ScryptoActorInfo::blueprint(
                                 package_address.clone(),
                                 blueprint_name.clone(),
@@ -982,7 +952,7 @@ where
                     );
 
                     Ok((
-                        SNodeState::Component(actor_info, package),
+                        SNodeExecution::Component(actor_info, package),
                         method_auths,
                     ))
                 }
@@ -997,7 +967,7 @@ where
 
                         (
                             resource_address,
-                            SNodeState::ValueRef2(
+                            SNodeExecution::ValueRef2(
                                 ValueId::vault_id(*vault_id),
                                 REValueRef::Owned(value.borrow_mut()),
                             ),
@@ -1028,7 +998,7 @@ where
                                 };
                                 (
                                     resource_address,
-                                    SNodeState::ValueRef2(
+                                    SNodeExecution::ValueRef2(
                                         ValueId::vault_id(*vault_id),
                                         REValueRef::Ref(value),
                                     ),
@@ -1048,7 +1018,7 @@ where
                                 let resource_address = component_value.vault().resource_address();
                                 (
                                     resource_address,
-                                    SNodeState::ValueRef2(
+                                    SNodeExecution::ValueRef2(
                                         ValueId::vault_id(*vault_id),
                                         REValueRef::Track(address),
                                     ),
@@ -1081,14 +1051,14 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                SNodeState::Component(..)
-                | SNodeState::ValueRef2(..)
-                | SNodeState::ValueRef(
+                SNodeExecution::Component(..)
+                | SNodeExecution::ValueRef2(..)
+                | SNodeExecution::ValueRef(
                     ValueId::Transient(TransientValueId::Bucket(..)),
                     ..,
                 )
-                | SNodeState::Blueprint(..)
-                | SNodeState::Consumed(TransientValue::Bucket(..)) => {
+                | SNodeExecution::Blueprint(..)
+                | SNodeExecution::Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
@@ -1131,15 +1101,15 @@ where
             self.wasm_engine,
             self.wasm_instrumenter,
             match loaded_snode {
-                SNodeState::Blueprint(..)
-                | SNodeState::Component(..)
-                | SNodeState::Static(StaticSNodeState::TransactionProcessor) => {
+                SNodeExecution::Blueprint(..)
+                | SNodeExecution::Component(..)
+                | SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
                 }
                 _ => None,
             },
             match loaded_snode {
-                SNodeState::Static(StaticSNodeState::TransactionProcessor) => {
+                SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(Worktop::new()))
                 }
                 _ => None,
