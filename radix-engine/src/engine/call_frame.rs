@@ -809,7 +809,7 @@ where
             SNodeRef::ResourceRef(resource_address) => {
                 let resman_value = self
                     .track
-                    .borrow_global_mut_value(resource_address.clone())
+                    .borrow_global_value(resource_address.clone())
                     .map_err(|e| match e {
                         TrackError::NotFound => {
                             RuntimeError::ResourceManagerNotFound(resource_address.clone())

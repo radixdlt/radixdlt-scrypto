@@ -24,7 +24,7 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     new_addresses: Vec<Address>,
     borrowed_substates: RefCell<HashSet<Address>>,
-    borrowed_substates_2: RefCell<HashMap<Address, SubstateValue>>,
+    borrowed_substates_2: HashMap<Address, SubstateValue>,
     read_substates: IndexMap<Address, SubstateValue>,
 
     downed_substates: Vec<PhysicalSubstateId>,
@@ -341,7 +341,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
             new_addresses: Vec::new(),
             borrowed_substates: RefCell::new(HashSet::new()),
-            borrowed_substates_2: RefCell::new(HashMap::new()),
+            borrowed_substates_2: HashMap::new(),
             read_substates: IndexMap::new(),
 
             downed_substates: Vec::new(),
@@ -457,13 +457,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn take_lock<A: Into<Address>>(&mut self, addr: A) -> Result<(), TrackError> {
         let address = addr.into();
         let maybe_value = self.up_substates.remove(&address.encode());
-        let mut borrowed_substates = self.borrowed_substates_2.borrow_mut();
         if let Some(value) = maybe_value {
-            borrowed_substates.insert(address, value);
+            self.borrowed_substates_2.insert(address, value);
             return Ok(());
         }
 
-        if borrowed_substates.contains_key(&address) {
+        if self.borrowed_substates_2.contains_key(&address) {
             return Err(TrackError::Reentrancy);
         }
 
@@ -485,7 +484,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 _ => panic!("Attempting to borrow unsupported value"),
             };
 
-            borrowed_substates.insert(address.clone(), value);
+            self.borrowed_substates_2.insert(address.clone(), value);
             Ok(())
         } else {
             Err(TrackError::NotFound)
@@ -502,8 +501,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             return Ok(v);
         }
 
-        let borrowed_substates = self.borrowed_substates_2.get_mut();
-        if let Some(v) = borrowed_substates.get(&address) {
+        if let Some(v) = self.borrowed_substates_2.get(&address) {
             return Ok(v);
         }
 
@@ -542,11 +540,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     ) -> Result<(), TrackError> {
         let address: Address = addr.into();
 
-        let borrowed_substates = self.borrowed_substates_2.get_mut();
-        if !borrowed_substates.contains_key(&address) {
+        if !self.borrowed_substates_2.contains_key(&address) {
             return Err(TrackError::NotFound);
         }
-        borrowed_substates.insert(address, value.into());
+        self.borrowed_substates_2.insert(address, value.into());
         Ok(())
     }
 
@@ -558,18 +555,16 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     ) -> Result<(), TrackError> {
         let address: Address = addr.into();
 
-        let borrowed_substates = self.borrowed_substates_2.get_mut();
-        if !borrowed_substates.contains_key(&address) {
+        if !self.borrowed_substates_2.contains_key(&address) {
             return Err(TrackError::NotFound);
         }
-        borrowed_substates.get_mut(&address).unwrap().component_mut().set_state(value);
+        self.borrowed_substates_2.get_mut(&address).unwrap().component_mut().set_state(value);
         Ok(())
     }
 
     pub fn release_lock<A: Into<Address>>(&mut self, addr: A) {
         let address = addr.into();
-        let mut borrowed_substates = self.borrowed_substates_2.borrow_mut();
-        let maybe_value = borrowed_substates.remove(&address);
+        let maybe_value = self.borrowed_substates_2.remove(&address);
         if let Some(value) = maybe_value {
             self.up_substates.insert(address.encode(), value);
         } else {
