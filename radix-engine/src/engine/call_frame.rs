@@ -207,16 +207,23 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
 pub enum REValueRef<'a> {
     Owned(RefMut<'a, REValue>),
     Ref(RefMut<'a, StoredValue>),
+    Track(Address),
 }
 
 impl<'a> REValueRef<'a> {
-    fn kv_store_put(&mut self, key: Vec<u8>, value: ScryptoValue, to_store: HashMap<StoredValueId, StoredValue>) {
+    fn kv_store_put<S: ReadableSubstateStore>(&mut self, key: Vec<u8>, value: ScryptoValue, to_store: HashMap<StoredValueId, StoredValue>, track: &mut Track<S>) {
         let store = match self {
             REValueRef::Owned(value) => match value.deref_mut() {
                 REValue::Stored(stored_value) => stored_value,
                 _ => panic!("Expecting to be stored value"),
             },
             REValueRef::Ref(stored_value) => stored_value,
+            REValueRef::Track(address) => {
+                let (component_address, _) = address.clone().into();
+                track.set_key_value(address.clone(), key, SubstateValue::KeyValueStoreEntry(Some(value.raw)));
+                track.insert_objects_into_component(to_store, component_address);
+                return;
+            }
         };
         store.insert_children(to_store);
         match store {
@@ -227,13 +234,25 @@ impl<'a> REValueRef<'a> {
         }
     }
 
-    fn kv_store_get(&self, key: &[u8]) -> ScryptoValue {
+    fn kv_store_get<S: ReadableSubstateStore>(&self, key: &[u8], track: &mut Track<S>) -> ScryptoValue {
         let store = match self {
             REValueRef::Owned(value) => match value.deref() {
                 REValue::Stored(stored_value) => stored_value.kv_store(),
                 _ => panic!("Expecting to be a vault"),
             },
             REValueRef::Ref(stored_value) => stored_value.kv_store(),
+            REValueRef::Track(address) => {
+                let substate_value = track.read_key_value(address.clone(), key.to_vec());
+                let value = substate_value.kv_entry().as_ref().map_or(
+                    Value::Option {
+                        value: Box::new(Option::None),
+                    },
+                    |bytes| Value::Option {
+                        value: Box::new(Some(decode_any(bytes).unwrap())),
+                    },
+                );
+                return ScryptoValue::from_value(value).unwrap();
+            }
         };
 
         let value = store.get(key).map_or(
@@ -257,6 +276,7 @@ impl<'a> REValueRef<'a> {
                 StoredValue::Vault(vault) => vault,
                 _ => panic!("Expecting to be a vault"),
             },
+            _ => panic!("Expected to be a ref"),
         }
     }
 }
@@ -1453,7 +1473,7 @@ where
                 );
                 ScryptoValue::from_typed(&info)
             }
-            SubstateEntry::KeyValueStoreRef(store, key) => store.kv_store_get(&key.raw),
+            SubstateEntry::KeyValueStoreRef(store, key) => store.kv_store_get(&key.raw, &mut self.track),
             SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
                 let substate_value = self.track.read_key_value(
                     Address::KeyValueStore(*component_address, *kv_store_id),
@@ -1499,7 +1519,7 @@ where
                             .insert_objects_into_component(to_store_values, component_address);
                     }
                     SubstateEntry::KeyValueStoreRef(mut stored_value, key) => {
-                        stored_value.kv_store_put(key.raw, value, to_store_values);
+                        stored_value.kv_store_put(key.raw, value, to_store_values, self.track);
                     }
                     SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
                         self.track.set_key_value(
