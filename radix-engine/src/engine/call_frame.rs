@@ -181,6 +181,81 @@ pub enum SNodeState<'a> {
     ),
 }
 
+pub enum SNodeExecution<'a> {
+    Static(StaticSNodeState),
+    Consumed(ConsumedSNodeState),
+    AuthZone(RefMut<'a, AuthZone>),
+    Worktop(RefMut<'a, Worktop>),
+    Bucket(BucketId, RefMut<'a, Bucket>),
+    Proof(ProofId, RefMut<'a, Proof>),
+    Vault(VaultId, &'a mut Vault),
+    Blueprint(ScryptoActorInfo, ValidatedPackage),
+    Resource(Address, &'a mut ResourceManager),
+    Component(&'a mut Component, ScryptoActorInfo, ValidatedPackage),
+}
+
+impl<'a> SNodeExecution<'a> {
+    fn execute<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+        self,
+        fn_ident: &str,
+        input: ScryptoValue,
+        system: &mut S,
+    ) -> Result<ScryptoValue, RuntimeError> {
+        match self {
+            SNodeExecution::Static(state) => match state {
+                StaticSNodeState::System => {
+                    System::static_main(fn_ident, input, system).map_err(RuntimeError::SystemError)
+                }
+                StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
+                    fn_ident, input, system,
+                )
+                .map_err(|e| match e {
+                    TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                    TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                    TransactionProcessorError::RuntimeError(e) => e,
+                }),
+                StaticSNodeState::Package => ValidatedPackage::static_main(fn_ident, input, system)
+                    .map_err(RuntimeError::PackageError),
+                StaticSNodeState::Resource => ResourceManager::static_main(fn_ident, input, system)
+                    .map_err(RuntimeError::ResourceManagerError),
+            },
+            SNodeExecution::Consumed(state) => match state {
+                ConsumedSNodeState::Bucket(bucket) => bucket
+                    .consuming_main(fn_ident, input, system)
+                    .map_err(RuntimeError::BucketError),
+                ConsumedSNodeState::Proof(proof) => proof
+                    .main_consume(fn_ident, input)
+                    .map_err(RuntimeError::ProofError),
+            },
+            SNodeExecution::AuthZone(mut auth_zone) => auth_zone
+                .main(fn_ident, input, system)
+                .map_err(RuntimeError::AuthZoneError),
+            SNodeExecution::Worktop(mut worktop) => worktop
+                .main(fn_ident, input, system)
+                .map_err(RuntimeError::WorktopError),
+            SNodeExecution::Blueprint(info, package) => {
+                package.invoke(&info, &mut None, fn_ident, input, system)
+            }
+            SNodeExecution::Bucket(bucket_id, mut bucket) => bucket
+                .main(bucket_id, fn_ident, input, system)
+                .map_err(RuntimeError::BucketError),
+            SNodeExecution::Proof(_id, mut proof) => proof
+                .main(fn_ident, input, system)
+                .map_err(RuntimeError::ProofError),
+            SNodeExecution::Vault(vault_id, vault) => vault
+                .main(vault_id, fn_ident, input, system)
+                .map_err(RuntimeError::VaultError),
+            SNodeExecution::Resource(address, resource_manager) => resource_manager
+                .main(address.clone().into(), fn_ident, input, system)
+                .map_err(RuntimeError::ResourceManagerError),
+            SNodeExecution::Component(component, ref actor, ref package) => {
+                let mut maybe_component = Some(component);
+                package.invoke(&actor, &mut maybe_component, fn_ident, input, system)
+            }
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum MoveMethod {
     AsReturn,
@@ -456,68 +531,35 @@ where
 
         let mut to_return = HashMap::new();
 
-        let output = match snode {
-            SNodeState::Static(state) => match state {
-                StaticSNodeState::System => {
-                    System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
-                }
-                StaticSNodeState::TransactionProcessor => {
-                    TransactionProcessor::static_main(fn_ident, input, self).map_err(|e| match e {
-                        TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                        TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                        TransactionProcessorError::RuntimeError(e) => e,
-                    })
-                }
-                StaticSNodeState::Package => ValidatedPackage::static_main(fn_ident, input, self)
-                    .map_err(RuntimeError::PackageError),
-                StaticSNodeState::Resource => ResourceManager::static_main(fn_ident, input, self)
-                    .map_err(RuntimeError::ResourceManagerError),
-            },
-            SNodeState::Consumed(state) => match state {
-                ConsumedSNodeState::Bucket(bucket) => bucket
-                    .consuming_main(fn_ident, input, self)
-                    .map_err(RuntimeError::BucketError),
-                ConsumedSNodeState::Proof(proof) => proof
-                    .main_consume(fn_ident, input)
-                    .map_err(RuntimeError::ProofError),
-            },
-            SNodeState::Borrowed(borrowed) => match borrowed {
-                BorrowedSNodeState::AuthZone(mut auth_zone) => auth_zone
-                    .main(fn_ident, input, self)
-                    .map_err(RuntimeError::AuthZoneError),
-                BorrowedSNodeState::Worktop(mut worktop) => worktop
-                    .main(fn_ident, input, self)
-                    .map_err(RuntimeError::WorktopError),
-                BorrowedSNodeState::Blueprint(info, package) => {
-                    package.invoke(&info, &mut None, fn_ident, input, self)
-                }
-                BorrowedSNodeState::Bucket(bucket_id, mut bucket) => bucket
-                    .main(bucket_id, fn_ident, input, self)
-                    .map_err(RuntimeError::BucketError),
-                BorrowedSNodeState::Proof(_id, mut proof) => proof
-                    .main(fn_ident, input, self)
-                    .map_err(RuntimeError::ProofError),
-                BorrowedSNodeState::Vault(mut value) => match value.deref_mut() {
-                    StoredValue::Vault(id, vault) => vault
-                        .main(*id, fn_ident, input, self)
-                        .map_err(RuntimeError::VaultError),
-                    _ => panic!("Should be a vault"),
-                },
-            },
-            SNodeState::Tracked(address, value, meta) => {
-                to_return.insert(address.clone(), value);
-                let mut_value = to_return.get_mut(&address).unwrap();
+        // TODO: Find a better way to get rid of borrowed value does not live long enough issue
+        #[allow(unused_assignments)]
+        let mut ref_container = Option::None;
 
-                let rtn = match mut_value {
-                    SubstateValue::Resource(resource_manager) => resource_manager
-                        .main(address.clone().into(), fn_ident, input, self)
-                        .map_err(RuntimeError::ResourceManagerError),
-                    SubstateValue::Vault(vault) => {
-                        let vault_address: (ComponentAddress, VaultId) = address.clone().into();
-                        vault
-                            .main(vault_address.1, fn_ident, input, self)
-                            .map_err(RuntimeError::VaultError)
+        let execution = match snode {
+            SNodeState::Static(state) => SNodeExecution::Static(state),
+            SNodeState::Consumed(consumed) => SNodeExecution::Consumed(consumed),
+            SNodeState::Borrowed(borrowed) => match borrowed {
+                BorrowedSNodeState::AuthZone(auth_zone) => SNodeExecution::AuthZone(auth_zone),
+                BorrowedSNodeState::Worktop(worktop) => SNodeExecution::Worktop(worktop),
+                BorrowedSNodeState::Blueprint(info, package) => {
+                    SNodeExecution::Blueprint(info, package)
+                }
+                BorrowedSNodeState::Bucket(bucket_id, bucket) => {
+                    SNodeExecution::Bucket(bucket_id, bucket)
+                }
+                BorrowedSNodeState::Proof(proof_id, proof) => {
+                    SNodeExecution::Proof(proof_id, proof)
+                }
+                BorrowedSNodeState::Vault(value) => {
+                    ref_container = Some(value);
+                    match ref_container.as_mut().unwrap().deref_mut() {
+                        StoredValue::Vault(id, vault) => SNodeExecution::Vault(*id, vault),
+                        _ => panic!("Should be a vault"),
                     }
+                }
+            },
+            SNodeState::Tracked(address, value, mut meta) => {
+                let initial_value = match &value {
                     SubstateValue::Component(component) => {
                         let initial_value = ScryptoValue::from_slice(component.state()).unwrap();
                         for value_id in initial_value.stored_value_ids() {
@@ -528,36 +570,49 @@ where
                                 },
                             );
                         }
-
-                        let (actor, package) = meta.unwrap();
-
-                        let mut maybe_component = Some(component);
-                        let rtn =
-                            package.invoke(&actor, &mut maybe_component, fn_ident, input, self)?;
-
-                        let component = maybe_component.unwrap();
-                        let value = ScryptoValue::from_slice(component.state())
-                            .map_err(RuntimeError::DecodeError)?;
-                        verify_stored_value(&value)?;
-                        let new_value_ids = stored_value_update(&initial_value, &value)?;
-                        // TODO: should we take values when component is actually written to rather than at the end of invocation?
-                        let new_values = self.take_values(&new_value_ids)?;
-                        self.track
-                            .insert_objects_into_component(new_values, address.clone().into());
-
-                        Ok(rtn)
+                        Some(initial_value)
                     }
-                    _ => panic!(
-                        "Tracked {:?} not supported. Should not get here.",
-                        mut_value
-                    ),
-                }?;
+                    _ => None,
+                };
 
-                Ok(rtn)
+                to_return.insert(address.clone(), (value, initial_value));
+                let (mut_value, _) = to_return.get_mut(&address).unwrap();
+                match mut_value {
+                    SubstateValue::Resource(resouce_manager) => {
+                        SNodeExecution::Resource(address.clone(), resouce_manager)
+                    }
+                    SubstateValue::Vault(vault) => {
+                        let vault_address: (ComponentAddress, VaultId) = address.clone().into();
+                        SNodeExecution::Vault(vault_address.1, vault)
+                    }
+                    SubstateValue::Component(component) => {
+                        let (info, package) = meta.take().unwrap();
+                        SNodeExecution::Component(component, info, package)
+                    }
+                    _ => panic!("Unexpected tracked value"),
+                }
             }
-        }?;
+        };
 
-        for (address, value) in to_return.drain() {
+        let output = execution.execute(fn_ident, input, self)?;
+
+        // Update track
+        for (address, (value, initial_value)) in to_return.drain() {
+            match &value {
+                SubstateValue::Component(component) => {
+                    let value = ScryptoValue::from_slice(component.state())
+                        .map_err(RuntimeError::DecodeError)?;
+                    verify_stored_value(&value)?;
+                    let new_value_ids = stored_value_update(&initial_value.unwrap(), &value)?;
+                    // TODO: should we take values when component is actually written to rather than at the end of invocation?
+                    // TODO: check if component actually mutated?
+                    let new_values = self.take_values(&new_value_ids)?;
+                    self.track
+                        .insert_objects_into_component(new_values, address.clone().into());
+                }
+                _ => {}
+            }
+
             self.track.return_borrowed_global_mut_value(address, value);
         }
 
