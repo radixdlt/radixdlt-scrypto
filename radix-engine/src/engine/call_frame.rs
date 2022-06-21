@@ -762,6 +762,8 @@ where
             }
         }
 
+        let mut locked = HashSet::new();
+
         // Authorization and state load
         let (loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::TransactionProcessor => {
@@ -911,6 +913,7 @@ where
                                 RuntimeError::ComponentReentrancy(component_address)
                             }
                         })?;
+                    locked.insert(component_address);
 
                     let component_value = self.track.read_value(component_address).unwrap();
                     let component = component_value.component();
@@ -1124,8 +1127,14 @@ where
         self.cost_unit_counter = frame.cost_unit_counter;
         self.fee_table = frame.fee_table;
 
+
         // unwrap and continue
         let (result, received_values) = run_result?;
+
+        // Release locked addresses
+        for l in locked {
+            self.track.release_lock(l);
+        }
 
         // move buckets and proofs to this process.
         for (id, value) in received_values {
@@ -1310,7 +1319,7 @@ where
         let (store, ref_type) = match address {
             SubstateAddress::Component(component_address) => {
                 self.track
-                    .borrow_global_value(component_address.clone())
+                    .read_value(component_address.clone())
                     .map_err(|e| match e {
                         TrackError::NotFound => {
                             RuntimeError::ComponentNotFound(component_address)
