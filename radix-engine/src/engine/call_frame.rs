@@ -15,7 +15,7 @@ use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::SNodeState::{Borrowed, Consumed, Static, TrackedNative, TrackedNative2, TrackedScrypto};
+use crate::engine::SNodeState::{Borrowed, Consumed, Static, TrackedNative, TrackedScrypto};
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -320,11 +320,7 @@ pub enum SNodeState<'a> {
     Static(StaticSNodeState),
     Consumed(TransientValue),
     Borrowed(BorrowedSNodeState<'a>),
-    TrackedNative(
-        Address,
-        SubstateValue,
-    ),
-    TrackedNative2(Address),
+    TrackedNative(Address, SubstateValue),
     TrackedScrypto(ScryptoActorInfo, ValidatedPackage)
 }
 
@@ -633,10 +629,6 @@ where
                     SNodeExecution::Resource(address.clone(), resource_manager)
                 }
                 _ => panic!("Unexpected tracked value"),
-            }
-            SNodeState::TrackedNative2(address) => {
-                let vault_address: (ComponentAddress, VaultId) = address.clone().into();
-                SNodeExecution::Vault(vault_address.1, REValueRef::Track(address))
             }
             SNodeState::TrackedScrypto(info, package) => {
                 SNodeExecution::Component(info, package)
@@ -1058,9 +1050,15 @@ where
                                     })?;
                                 locked_values.insert(address.clone());
                                 readable_values.insert(address.clone());
-                                let component_value = self.track.read_value(address).unwrap();
+                                let component_value = self.track.read_value(address.clone()).unwrap();
                                 let resource_address = component_value.vault().resource_address();
-                                (resource_address, TrackedNative2(vault_address.into()))
+                                (
+                                    resource_address,
+                                    Borrowed(BorrowedSNodeState::Vault(
+                                        *vault_id,
+                                        REValueRef::Track(address),
+                                    )),
+                                )
                             }
                         }
                     }
