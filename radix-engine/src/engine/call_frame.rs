@@ -224,13 +224,19 @@ impl<'a> REValueRef<'a> {
             },
             REValueRef::Ref(stored_value) => stored_value,
             REValueRef::Track(address) => {
-                let (component_address, _) = address.clone().into();
+                let component_address =
+                    if let Address::KeyValueStore(component_address, _) = &address {
+                        component_address
+                    } else {
+                        panic!("Expected KV Store address");
+                    };
+
                 track.set_key_value(
                     address.clone(),
                     key,
                     SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                 );
-                track.insert_objects_into_component(to_store, component_address);
+                track.insert_objects_into_component(to_store, *component_address);
                 return;
             }
         };
@@ -1413,15 +1419,15 @@ where
                                 value_ref_type,
                             )
                         }
-                        ValueRefType::Committed { component_address } => (
-                            SubstateEntry::KeyValueStore(
-                                REValueRef::Track((*component_address).into()),
-                                key,
-                            ),
-                            ValueRefType::Committed {
-                                component_address: *component_address,
-                            },
-                        ),
+                        ValueRefType::Committed { component_address } => {
+                            let address = Address::KeyValueStore(*component_address, kv_store_id);
+                            (
+                                SubstateEntry::KeyValueStore(REValueRef::Track(address), key),
+                                ValueRefType::Committed {
+                                    component_address: *component_address,
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -1435,7 +1441,10 @@ where
                 ScryptoValue::from_slice(component.state()).expect("Expected to decode")
             }
             SubstateEntry::ComponentInfoTracked(component_address) => {
-                let component_val = self.track.read_value(component_address.clone());
+                let component_val = self
+                    .track
+                    .borrow_global_value(component_address.clone())
+                    .unwrap();
                 let component = component_val.component();
                 let info = (
                     component.package_address().clone(),

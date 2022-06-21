@@ -184,7 +184,7 @@ impl Into<(ComponentAddress, VaultId)> for Address {
         if let Address::Vault(component_address, id) = self {
             return (component_address, id);
         } else {
-            panic!("Address is not a resource address");
+            panic!("Address is not a vault address");
         }
     }
 }
@@ -627,7 +627,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     SubstateValue::KeyValueStoreEntry(kv_store_entry)
                 })
                 .unwrap_or(SubstateValue::KeyValueStoreEntry(None)),
-            _ => panic!("Invalid keyed value address"),
+            _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
 
