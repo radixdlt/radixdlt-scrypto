@@ -1,3 +1,5 @@
+use core::num::NonZeroU32;
+
 use parity_wasm::elements::Instruction::{self, *};
 use wasm_instrument::gas_metering::MemoryGrowCost;
 use wasm_instrument::gas_metering::Rules;
@@ -89,7 +91,7 @@ impl Rules for InstructionCostRules {
             I64Store32(_, _) => self.tier_1_cost,
 
             CurrentMemory(_) => self.tier_1_cost,
-            GrowMemory(_) => self.grow_memory_cost,
+            GrowMemory(_) => self.tier_3_cost,
 
             I32Const(_) => self.tier_1_cost,
             I64Const(_) => self.tier_1_cost,
@@ -230,8 +232,9 @@ impl Rules for InstructionCostRules {
     }
 
     fn memory_grow_cost(&self) -> MemoryGrowCost {
-        // Memory growth is charged by the instruction
-        MemoryGrowCost::Free
+        MemoryGrowCost::Linear(
+            NonZeroU32::new(self.grow_memory_cost).expect("Grow memory cost can't be zero"),
+        )
     }
 }
 
