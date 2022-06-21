@@ -210,7 +210,13 @@ pub enum REValueRef<'a> {
 }
 
 impl<'a> REValueRef<'a> {
-    fn kv_store_put<S: ReadableSubstateStore>(&mut self, key: Vec<u8>, value: ScryptoValue, to_store: HashMap<StoredValueId, StoredValue>, track: &mut Track<S>) {
+    fn kv_store_put<S: ReadableSubstateStore>(
+        &mut self,
+        key: Vec<u8>,
+        value: ScryptoValue,
+        to_store: HashMap<StoredValueId, StoredValue>,
+        track: &mut Track<S>,
+    ) {
         let store = match self {
             REValueRef::Owned(value) => match value.deref_mut() {
                 REValue::Stored(stored_value) => stored_value,
@@ -219,7 +225,11 @@ impl<'a> REValueRef<'a> {
             REValueRef::Ref(stored_value) => stored_value,
             REValueRef::Track(address) => {
                 let (component_address, _) = address.clone().into();
-                track.set_key_value(address.clone(), key, SubstateValue::KeyValueStoreEntry(Some(value.raw)));
+                track.set_key_value(
+                    address.clone(),
+                    key,
+                    SubstateValue::KeyValueStoreEntry(Some(value.raw)),
+                );
                 track.insert_objects_into_component(to_store, component_address);
                 return;
             }
@@ -229,11 +239,15 @@ impl<'a> REValueRef<'a> {
             StoredValue::KeyValueStore { store, .. } => {
                 store.put(key, value);
             }
-            _ => panic!("Expecting to be kv store")
+            _ => panic!("Expecting to be kv store"),
         }
     }
 
-    fn kv_store_get<S: ReadableSubstateStore>(&self, key: &[u8], track: &mut Track<S>) -> ScryptoValue {
+    fn kv_store_get<S: ReadableSubstateStore>(
+        &self,
+        key: &[u8],
+        track: &mut Track<S>,
+    ) -> ScryptoValue {
         let store = match self {
             REValueRef::Owned(value) => match value.deref() {
                 REValue::Stored(stored_value) => stored_value.kv_store(),
@@ -270,7 +284,7 @@ impl<'a> REValueRef<'a> {
         value_id: ValueId,
         fn_ident: &str,
         input: ScryptoValue,
-        system: &mut S
+        system: &mut S,
     ) -> Result<ScryptoValue, RuntimeError> {
         let mut to_return = HashMap::new();
 
@@ -305,10 +319,11 @@ impl<'a> REValueRef<'a> {
                     _ => panic!("Expecting to be tracked"),
                 };
 
-                resman.main(*resource_address, fn_ident, input, system)
+                resman
+                    .main(*resource_address, fn_ident, input, system)
                     .map_err(RuntimeError::ResourceManagerError)
             }
-            _ => panic!("Unexpected value")
+            _ => panic!("Unexpected value"),
         }?;
 
         for (address, value) in to_return.drain() {
@@ -401,7 +416,9 @@ impl<'a> SNodeExecution<'a> {
                     .map_err(RuntimeError::ProofError),
                 _ => panic!("Unexpected value to execute"),
             },
-            SNodeExecution::ValueRef2(value_id, mut value_ref) => value_ref.execute(value_id, fn_ident, input, system),
+            SNodeExecution::ValueRef2(value_id, mut value_ref) => {
+                value_ref.execute(value_id, fn_ident, input, system)
+            }
             SNodeExecution::Scrypto(ref actor, ref package) => {
                 package.invoke(&actor, fn_ident, input, system)
             }
@@ -758,11 +775,20 @@ where
         let (loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::TransactionProcessor => {
                 // FIXME: only TransactionExecutor can invoke this function
-                Ok((SNodeExecution::Static(StaticSNodeState::TransactionProcessor), vec![]))
+                Ok((
+                    SNodeExecution::Static(StaticSNodeState::TransactionProcessor),
+                    vec![],
+                ))
             }
-            SNodeRef::PackageStatic => Ok((SNodeExecution::Static(StaticSNodeState::Package), vec![])),
-            SNodeRef::SystemStatic => Ok((SNodeExecution::Static(StaticSNodeState::System), vec![])),
-            SNodeRef::ResourceStatic => Ok((SNodeExecution::Static(StaticSNodeState::Resource), vec![])),
+            SNodeRef::PackageStatic => {
+                Ok((SNodeExecution::Static(StaticSNodeState::Package), vec![]))
+            }
+            SNodeRef::SystemStatic => {
+                Ok((SNodeExecution::Static(StaticSNodeState::System), vec![]))
+            }
+            SNodeRef::ResourceStatic => {
+                Ok((SNodeExecution::Static(StaticSNodeState::Resource), vec![]))
+            }
             SNodeRef::Consumed(value_id) => {
                 let value = self
                     .owned_values
@@ -783,7 +809,7 @@ where
                         };
                         let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
                         vec![method_auth.clone()]
-                    },
+                    }
                     REValue::Transient(TransientValue::Proof(_)) => vec![],
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
@@ -822,10 +848,10 @@ where
                     .get_auth(&fn_ident, &input)
                     .clone();
                 Ok((
-                   SNodeExecution::ValueRef2(
-                       ValueId::Resource(resource_address.clone()),
-                       REValueRef::Track(resource_address.clone().into()),
-                   ),
+                    SNodeExecution::ValueRef2(
+                        ValueId::Resource(resource_address.clone()),
+                        REValueRef::Track(resource_address.clone().into()),
+                    ),
                     vec![method_auth],
                 ))
             }
@@ -836,10 +862,7 @@ where
                     .get(&value_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let bucket = bucket_cell.borrow_mut();
-                Ok((
-                    SNodeExecution::ValueRef(value_id, bucket),
-                    vec![],
-                ))
+                Ok((SNodeExecution::ValueRef(value_id, bucket), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
@@ -848,10 +871,7 @@ where
                     .get(&value_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let proof = proof_cell.borrow_mut();
-                Ok((
-                    SNodeExecution::ValueRef(value_id, proof),
-                    vec![],
-                ))
+                Ok((SNodeExecution::ValueRef(value_id, proof), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -897,15 +917,12 @@ where
                 ScryptoActor::Component(component_address) => {
                     let component_address = *component_address;
                     let address: Address = component_address.into();
-                    self.track.take_lock(address.clone())
-                        .map_err(|e| match e {
-                            TrackError::NotFound => {
-                                RuntimeError::ComponentNotFound(component_address)
-                            }
-                            TrackError::Reentrancy => {
-                                RuntimeError::ComponentReentrancy(component_address)
-                            }
-                        })?;
+                    self.track.take_lock(address.clone()).map_err(|e| match e {
+                        TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
+                        TrackError::Reentrancy => {
+                            RuntimeError::ComponentReentrancy(component_address)
+                        }
+                    })?;
                     locked_values.insert(address.clone());
                     readable_values.insert(address);
 
@@ -952,10 +969,7 @@ where
                         component_address,
                     );
 
-                    Ok((
-                        SNodeExecution::Scrypto(actor_info, package),
-                        method_auths,
-                    ))
+                    Ok((SNodeExecution::Scrypto(actor_info, package), method_auths))
                 }
             },
             SNodeRef::VaultRef(vault_id) => {
@@ -1008,11 +1022,12 @@ where
                             ValueRefType::Committed { component_address } => {
                                 let vault_address = (component_address, *vault_id);
                                 let address: Address = vault_address.into();
-                                self.track.take_lock(address.clone())
-                                    .map_err(|e| match e {
-                                        TrackError::NotFound => panic!("Expected to find vault"),
-                                        TrackError::Reentrancy => panic!("Vault call has caused reentrancy"),
-                                    })?;
+                                self.track.take_lock(address.clone()).map_err(|e| match e {
+                                    TrackError::NotFound => panic!("Expected to find vault"),
+                                    TrackError::Reentrancy => {
+                                        panic!("Vault call has caused reentrancy")
+                                    }
+                                })?;
                                 locked_values.insert(address.clone());
                                 readable_values.insert(address.clone());
                                 let vault_val = self.track.read_value(address.clone());
@@ -1055,10 +1070,7 @@ where
                 // Resource auth check includes caller
                 SNodeExecution::Scrypto(..)
                 | SNodeExecution::ValueRef2(..)
-                | SNodeExecution::ValueRef(
-                    ValueId::Transient(TransientValueId::Bucket(..)),
-                    ..,
-                )
+                | SNodeExecution::ValueRef(ValueId::Transient(TransientValueId::Bucket(..)), ..)
                 | SNodeExecution::Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
@@ -1127,7 +1139,6 @@ where
         // re-gain ownership of the cost unit counter and fee table
         self.cost_unit_counter = frame.cost_unit_counter;
         self.fee_table = frame.fee_table;
-
 
         // unwrap and continue
         let (result, received_values) = run_result?;
@@ -1339,23 +1350,21 @@ where
                     SubstateEntry::ComponentTracked(component_address.clone()),
                     ValueRefType::Committed {
                         component_address: component_address.clone(),
-                    }
+                    },
                 )
             }
             SubstateAddress::ComponentInfo(component_address) => {
                 self.track
                     .borrow_global_value(component_address.clone())
                     .map_err(|e| match e {
-                        TrackError::NotFound => {
-                            RuntimeError::ComponentNotFound(component_address)
-                        }
+                        TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
                         TrackError::Reentrancy => panic!("Should not run into reentrancy"),
                     })?;
                 (
                     SubstateEntry::ComponentInfoTracked(component_address.clone()),
                     ValueRefType::Committed {
                         component_address: component_address.clone(),
-                    }
+                    },
                 )
             }
             SubstateAddress::KeyValueEntry(kv_store_id, key) => {
@@ -1404,14 +1413,15 @@ where
                                 value_ref_type,
                             )
                         }
-                        ValueRefType::Committed { component_address } => {
-                            (
-                                SubstateEntry::KeyValueStore(REValueRef::Track((*component_address).into()), key),
-                                ValueRefType::Committed {
-                                    component_address: *component_address,
-                                },
-                            )
-                        }
+                        ValueRefType::Committed { component_address } => (
+                            SubstateEntry::KeyValueStore(
+                                REValueRef::Track((*component_address).into()),
+                                key,
+                            ),
+                            ValueRefType::Committed {
+                                component_address: *component_address,
+                            },
+                        ),
                     }
                 }
             }
@@ -1433,7 +1443,9 @@ where
                 );
                 ScryptoValue::from_typed(&info)
             }
-            SubstateEntry::KeyValueStore(store, key) => store.kv_store_get(&key.raw, &mut self.track),
+            SubstateEntry::KeyValueStore(store, key) => {
+                store.kv_store_get(&key.raw, &mut self.track)
+            }
         };
         let cur_children = to_stored_ids(current_value.stored_value_ids())?;
 
@@ -1459,7 +1471,9 @@ where
                         return Err(RuntimeError::InvalidDataWrite);
                     }
                     SubstateEntry::ComponentTracked(component_address) => {
-                        self.track.write_component_value(component_address, value.raw).unwrap();
+                        self.track
+                            .write_component_value(component_address, value.raw)
+                            .unwrap();
                         self.track
                             .insert_objects_into_component(to_store_values, component_address);
                     }

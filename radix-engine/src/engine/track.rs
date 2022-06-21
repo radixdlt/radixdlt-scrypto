@@ -1,4 +1,3 @@
-use std::cell::Ref;
 use indexmap::{IndexMap, IndexSet};
 use sbor::rust::cell::RefCell;
 use sbor::rust::collections::*;
@@ -10,6 +9,7 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
+use std::cell::Ref;
 use transaction::validation::*;
 
 use crate::engine::{StoredValue, SubstateOperation, SubstateOperationsReceipt};
@@ -459,7 +459,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let address = addr.into();
         let maybe_value = self.up_substates.remove(&address.encode());
         if let Some(value) = maybe_value {
-            self.borrowed_substates_2.insert(address, RefCell::new(value));
+            self.borrowed_substates_2
+                .insert(address, RefCell::new(value));
             return Ok(());
         }
 
@@ -485,17 +486,15 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 _ => panic!("Attempting to borrow unsupported value"),
             };
 
-            self.borrowed_substates_2.insert(address.clone(), RefCell::new(value));
+            self.borrowed_substates_2
+                .insert(address.clone(), RefCell::new(value));
             Ok(())
         } else {
             Err(TrackError::NotFound)
         }
     }
 
-    pub fn read_value<A: Into<Address>>(
-        &self,
-        addr: A,
-    ) -> Ref<SubstateValue> {
+    pub fn read_value<A: Into<Address>>(&self, addr: A) -> Ref<SubstateValue> {
         let address: Address = addr.into();
         self.borrowed_substates_2.get(&address).unwrap().borrow()
     }
@@ -510,7 +509,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if !self.borrowed_substates_2.contains_key(&address) {
             return Err(TrackError::NotFound);
         }
-        self.borrowed_substates_2.insert(address, RefCell::new(value.into()));
+        self.borrowed_substates_2
+            .insert(address, RefCell::new(value.into()));
         Ok(())
     }
 
@@ -525,17 +525,24 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if !self.borrowed_substates_2.contains_key(&address) {
             return Err(TrackError::NotFound);
         }
-        let mut component_val = self.borrowed_substates_2.get_mut(&address).unwrap().borrow_mut();
+        let mut component_val = self
+            .borrowed_substates_2
+            .get_mut(&address)
+            .unwrap()
+            .borrow_mut();
         component_val.component_mut().set_state(value);
         Ok(())
     }
 
     pub fn release_lock<A: Into<Address>>(&mut self, addr: A) {
         let address = addr.into();
-        let cell = self.borrowed_substates_2.remove(&address).expect("Value was never borrowed");
-        self.up_substates.insert(address.encode(), cell.into_inner());
+        let cell = self
+            .borrowed_substates_2
+            .remove(&address)
+            .expect("Value was never borrowed");
+        self.up_substates
+            .insert(address.encode(), cell.into_inner());
     }
-
 
     // TODO: Add checks to see verify that immutable values aren't being borrowed
     pub fn borrow_global_mut_value<A: Into<Address>>(
