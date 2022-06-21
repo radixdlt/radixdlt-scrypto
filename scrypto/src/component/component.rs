@@ -68,20 +68,6 @@ impl Component {
         scrypto_decode(&output).unwrap()
     }
 
-    /// Returns the state of this component.
-    pub fn get_state<T: ComponentState>(&self) -> T {
-        let address = DataAddress::Component(self.0);
-        let input = RadixEngineInput::ReadData(address);
-        call_engine(input)
-    }
-
-    /// Updates the state of this component.
-    pub fn put_state<T: ComponentState>(&self, state: T) {
-        let address = DataAddress::Component(self.0);
-        let input = RadixEngineInput::WriteData(address, scrypto_encode(&state));
-        call_engine(input)
-    }
-
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
         let address = DataAddress::ComponentInfo(self.0);
