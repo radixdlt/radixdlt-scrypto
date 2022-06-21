@@ -8,6 +8,28 @@ use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
 #[test]
+fn should_not_be_able_to_read_component_state_after_creation() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("data_access");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "DataAccess",
+            "create_component_and_read_state",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_success();
+}
+
+
+#[test]
 fn should_be_able_to_read_component_info() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
