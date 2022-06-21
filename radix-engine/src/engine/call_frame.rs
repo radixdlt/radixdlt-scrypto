@@ -210,14 +210,41 @@ pub enum REValueRef<'a> {
 }
 
 impl<'a> REValueRef<'a> {
-    fn to_stored_mut(&mut self) -> &mut StoredValue {
-        match self {
+    fn kv_store_put(&mut self, key: Vec<u8>, value: ScryptoValue, to_store: HashMap<StoredValueId, StoredValue>) {
+        let store = match self {
             REValueRef::Owned(value) => match value.deref_mut() {
                 REValue::Stored(stored_value) => stored_value,
                 _ => panic!("Expecting to be stored value"),
             },
             REValueRef::Ref(stored_value) => stored_value,
+        };
+        store.insert_children(to_store);
+        match store {
+            StoredValue::KeyValueStore { store, .. } => {
+                store.put(key, value);
+            }
+            _ => panic!("Expecting to be kv store")
         }
+    }
+
+    fn kv_store_get(&self, key: &[u8]) -> ScryptoValue {
+        let store = match self {
+            REValueRef::Owned(value) => match value.deref() {
+                REValue::Stored(stored_value) => stored_value.kv_store(),
+                _ => panic!("Expecting to be a vault"),
+            },
+            REValueRef::Ref(stored_value) => stored_value.kv_store(),
+        };
+
+        let value = store.get(key).map_or(
+            Value::Option {
+                value: Box::new(Option::None),
+            },
+            |v| Value::Option {
+                value: Box::new(Some(v.dom)),
+            },
+        );
+        ScryptoValue::from_value(value).unwrap()
     }
 
     fn to_mut_vault(&mut self) -> &mut Vault {
@@ -230,26 +257,6 @@ impl<'a> REValueRef<'a> {
                 StoredValue::Vault(vault) => vault,
                 _ => panic!("Expecting to be a vault"),
             },
-        }
-    }
-
-    fn kv_store(&self) -> &PreCommittedKeyValueStore {
-        match self {
-            REValueRef::Owned(value) => match value.deref() {
-                REValue::Stored(stored_value) => stored_value.kv_store(),
-                _ => panic!("Expecting to be a vault"),
-            },
-            REValueRef::Ref(stored_value) => stored_value.kv_store(),
-        }
-    }
-
-    fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
-        match self {
-            REValueRef::Owned(value) => match value.deref_mut() {
-                REValue::Stored(stored_value) => stored_value.kv_store_mut(),
-                _ => panic!("Expecting to be a vault"),
-            },
-            REValueRef::Ref(stored_value) => stored_value.kv_store_mut(),
         }
     }
 }
@@ -1446,17 +1453,7 @@ where
                 );
                 ScryptoValue::from_typed(&info)
             }
-            SubstateEntry::KeyValueStoreRef(store, key) => {
-                let value = store.kv_store().get(&key.raw).map_or(
-                    Value::Option {
-                        value: Box::new(Option::None),
-                    },
-                    |v| Value::Option {
-                        value: Box::new(Some(v.dom)),
-                    },
-                );
-                ScryptoValue::from_value(value).unwrap()
-            }
+            SubstateEntry::KeyValueStoreRef(store, key) => store.kv_store_get(&key.raw),
             SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
                 let substate_value = self.track.read_key_value(
                     Address::KeyValueStore(*component_address, *kv_store_id),
@@ -1502,10 +1499,7 @@ where
                             .insert_objects_into_component(to_store_values, component_address);
                     }
                     SubstateEntry::KeyValueStoreRef(mut stored_value, key) => {
-                        stored_value.kv_store_mut().put(key.raw, value);
-                        stored_value
-                            .to_stored_mut()
-                            .insert_children(to_store_values);
+                        stored_value.kv_store_put(key.raw, value, to_store_values);
                     }
                     SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
                         self.track.set_key_value(
