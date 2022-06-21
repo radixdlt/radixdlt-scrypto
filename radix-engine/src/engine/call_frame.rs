@@ -333,8 +333,7 @@ pub enum SNodeExecution<'a> {
     Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId, RefMut<'a, REValue>),
     ValueRef2(ValueId, REValueRef<'a>),
-    Blueprint(ScryptoActorInfo, ValidatedPackage),
-    Component(ScryptoActorInfo, ValidatedPackage),
+    Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
 
 enum SubstateEntry<'a> {
@@ -393,9 +392,6 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::Worktop(mut worktop) => worktop
                 .main(fn_ident, input, system)
                 .map_err(RuntimeError::WorktopError),
-            SNodeExecution::Blueprint(info, package) => {
-                package.invoke(&info, fn_ident, input, system)
-            }
             SNodeExecution::ValueRef(value_id, mut value) => match value.deref_mut() {
                 REValue::Transient(TransientValue::Bucket(bucket)) => bucket
                     .main(value_id.into(), fn_ident, input, system)
@@ -406,7 +402,7 @@ impl<'a> SNodeExecution<'a> {
                 _ => panic!("Unexpected value to execute"),
             },
             SNodeExecution::ValueRef2(value_id, mut value_ref) => value_ref.execute(value_id, fn_ident, input, system),
-            SNodeExecution::Component(ref actor, ref package) => {
+            SNodeExecution::Scrypto(ref actor, ref package) => {
                 package.invoke(&actor, fn_ident, input, system)
             }
         }
@@ -888,7 +884,7 @@ where
                         });
                     }
                     Ok((
-                        SNodeExecution::Blueprint(
+                        SNodeExecution::Scrypto(
                             ScryptoActorInfo::blueprint(
                                 package_address.clone(),
                                 blueprint_name.clone(),
@@ -952,7 +948,7 @@ where
                     );
 
                     Ok((
-                        SNodeExecution::Component(actor_info, package),
+                        SNodeExecution::Scrypto(actor_info, package),
                         method_auths,
                     ))
                 }
@@ -1051,13 +1047,12 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                SNodeExecution::Component(..)
+                SNodeExecution::Scrypto(..)
                 | SNodeExecution::ValueRef2(..)
                 | SNodeExecution::ValueRef(
                     ValueId::Transient(TransientValueId::Bucket(..)),
                     ..,
                 )
-                | SNodeExecution::Blueprint(..)
                 | SNodeExecution::Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
@@ -1101,8 +1096,7 @@ where
             self.wasm_engine,
             self.wasm_instrumenter,
             match loaded_snode {
-                SNodeExecution::Blueprint(..)
-                | SNodeExecution::Component(..)
+                SNodeExecution::Scrypto(..)
                 | SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
                 }
