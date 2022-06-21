@@ -15,7 +15,6 @@ use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::SNodeState::{Borrowed, Consumed, Static, TrackedScrypto};
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -320,14 +319,6 @@ impl<'a> REValueRef<'a> {
     }
 }
 
-pub enum BorrowedSNodeState<'a> {
-    AuthZone(RefMut<'a, AuthZone>),
-    Worktop(RefMut<'a, Worktop>),
-    ValueRef(ValueId, RefMut<'a, REValue>),
-    ValueRef2(ValueId, REValueRef<'a>),
-    Blueprint(ScryptoActorInfo, ValidatedPackage),
-}
-
 pub enum StaticSNodeState {
     Package,
     Resource,
@@ -338,8 +329,12 @@ pub enum StaticSNodeState {
 pub enum SNodeState<'a> {
     Static(StaticSNodeState),
     Consumed(TransientValue),
-    Borrowed(BorrowedSNodeState<'a>),
-    TrackedScrypto(ScryptoActorInfo, ValidatedPackage)
+    AuthZone(RefMut<'a, AuthZone>),
+    Worktop(RefMut<'a, Worktop>),
+    ValueRef(ValueId, RefMut<'a, REValue>),
+    ValueRef2(ValueId, REValueRef<'a>),
+    Blueprint(ScryptoActorInfo, ValidatedPackage),
+    Component(ScryptoActorInfo, ValidatedPackage),
 }
 
 pub enum SNodeExecution<'a> {
@@ -620,20 +615,18 @@ where
         let execution = match snode {
             SNodeState::Static(state) => SNodeExecution::Static(state),
             SNodeState::Consumed(consumed) => SNodeExecution::Consumed(consumed),
-            SNodeState::Borrowed(borrowed) => match borrowed {
-                BorrowedSNodeState::AuthZone(auth_zone) => SNodeExecution::AuthZone(auth_zone),
-                BorrowedSNodeState::Worktop(worktop) => SNodeExecution::Worktop(worktop),
-                BorrowedSNodeState::Blueprint(info, package) => {
-                    SNodeExecution::Blueprint(info, package)
-                }
-                BorrowedSNodeState::ValueRef(value_id, value) => {
-                    SNodeExecution::ValueRef(value_id, value)
-                }
-                BorrowedSNodeState::ValueRef2(value_id, value_ref) => {
-                    SNodeExecution::ValueRef2(value_id, value_ref)
-                }
-            },
-            SNodeState::TrackedScrypto(info, package) => {
+            SNodeState::AuthZone(auth_zone) => SNodeExecution::AuthZone(auth_zone),
+            SNodeState::Worktop(worktop) => SNodeExecution::Worktop(worktop),
+            SNodeState::Blueprint(info, package) => {
+                SNodeExecution::Blueprint(info, package)
+            }
+            SNodeState::ValueRef(value_id, value) => {
+                SNodeExecution::ValueRef(value_id, value)
+            }
+            SNodeState::ValueRef2(value_id, value_ref) => {
+                SNodeExecution::ValueRef2(value_id, value_ref)
+            }
+            SNodeState::Component(info, package) => {
                 SNodeExecution::Component(info, package)
             },
         };
@@ -799,11 +792,11 @@ where
         let (loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::TransactionProcessor => {
                 // FIXME: only TransactionExecutor can invoke this function
-                Ok((Static(StaticSNodeState::TransactionProcessor), vec![]))
+                Ok((SNodeState::Static(StaticSNodeState::TransactionProcessor), vec![]))
             }
-            SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
-            SNodeRef::SystemStatic => Ok((Static(StaticSNodeState::System), vec![])),
-            SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
+            SNodeRef::PackageStatic => Ok((SNodeState::Static(StaticSNodeState::Package), vec![])),
+            SNodeRef::SystemStatic => Ok((SNodeState::Static(StaticSNodeState::System), vec![])),
+            SNodeRef::ResourceStatic => Ok((SNodeState::Static(StaticSNodeState::Resource), vec![])),
             SNodeRef::Consumed(value_id) => {
                 let value = self
                     .owned_values
@@ -829,12 +822,12 @@ where
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                Ok((Consumed(value.into()), method_auths))
+                Ok((SNodeState::Consumed(value.into()), method_auths))
             }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
                     let borrowed = auth_zone.borrow_mut();
-                    Ok((Borrowed(BorrowedSNodeState::AuthZone(borrowed)), vec![]))
+                    Ok((SNodeState::AuthZone(borrowed), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
@@ -842,7 +835,7 @@ where
             SNodeRef::WorktopRef => {
                 if let Some(worktop_ref) = &self.worktop {
                     let worktop = worktop_ref.borrow_mut();
-                    Ok((Borrowed(BorrowedSNodeState::Worktop(worktop)), vec![]))
+                    Ok((SNodeState::Worktop(worktop), vec![]))
                 } else {
                     Err(RuntimeError::WorktopDoesNotExist)
                 }
@@ -863,10 +856,10 @@ where
                     .get_auth(&fn_ident, &input)
                     .clone();
                 Ok((
-                   Borrowed(BorrowedSNodeState::ValueRef2(
+                   SNodeState::ValueRef2(
                        ValueId::Resource(resource_address.clone()),
                        REValueRef::Track(resource_address.clone().into()),
-                   )),
+                   ),
                     vec![method_auth],
                 ))
             }
@@ -878,7 +871,7 @@ where
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let bucket = bucket_cell.borrow_mut();
                 Ok((
-                    Borrowed(BorrowedSNodeState::ValueRef(value_id, bucket)),
+                    SNodeState::ValueRef(value_id, bucket),
                     vec![],
                 ))
             }
@@ -890,7 +883,7 @@ where
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let proof = proof_cell.borrow_mut();
                 Ok((
-                    Borrowed(BorrowedSNodeState::ValueRef(value_id, proof)),
+                    SNodeState::ValueRef(value_id, proof),
                     vec![],
                 ))
             }
@@ -925,13 +918,13 @@ where
                         });
                     }
                     Ok((
-                        Borrowed(BorrowedSNodeState::Blueprint(
+                        SNodeState::Blueprint(
                             ScryptoActorInfo::blueprint(
                                 package_address.clone(),
                                 blueprint_name.clone(),
                             ),
                             package.clone(),
-                        )),
+                        ),
                         vec![],
                     ))
                 }
@@ -989,7 +982,7 @@ where
                     );
 
                     Ok((
-                        TrackedScrypto(actor_info, package),
+                        SNodeState::Component(actor_info, package),
                         method_auths,
                     ))
                 }
@@ -1004,10 +997,10 @@ where
 
                         (
                             resource_address,
-                            Borrowed(BorrowedSNodeState::ValueRef2(
+                            SNodeState::ValueRef2(
                                 ValueId::vault_id(*vault_id),
                                 REValueRef::Owned(value.borrow_mut()),
-                            )),
+                            ),
                         )
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
@@ -1035,10 +1028,10 @@ where
                                 };
                                 (
                                     resource_address,
-                                    Borrowed(BorrowedSNodeState::ValueRef2(
+                                    SNodeState::ValueRef2(
                                         ValueId::vault_id(*vault_id),
                                         REValueRef::Ref(value),
-                                    )),
+                                    ),
                                 )
                             }
                             ValueRefType::Committed { component_address } => {
@@ -1055,10 +1048,10 @@ where
                                 let resource_address = component_value.vault().resource_address();
                                 (
                                     resource_address,
-                                    Borrowed(BorrowedSNodeState::ValueRef2(
+                                    SNodeState::ValueRef2(
                                         ValueId::vault_id(*vault_id),
                                         REValueRef::Track(address),
-                                    )),
+                                    ),
                                 )
                             }
                         }
@@ -1088,14 +1081,14 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                TrackedScrypto(..)
-                | Borrowed(BorrowedSNodeState::ValueRef2(..))
-                | Borrowed(BorrowedSNodeState::ValueRef(
+                SNodeState::Component(..)
+                | SNodeState::ValueRef2(..)
+                | SNodeState::ValueRef(
                     ValueId::Transient(TransientValueId::Bucket(..)),
                     ..,
-                ))
-                | Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Consumed(TransientValue::Bucket(..)) => {
+                )
+                | SNodeState::Blueprint(..)
+                | SNodeState::Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
@@ -1138,15 +1131,15 @@ where
             self.wasm_engine,
             self.wasm_instrumenter,
             match loaded_snode {
-                Borrowed(BorrowedSNodeState::Blueprint(..))
-                | TrackedScrypto(..)
-                | Static(StaticSNodeState::TransactionProcessor) => {
+                SNodeState::Blueprint(..)
+                | SNodeState::Component(..)
+                | SNodeState::Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
                 }
                 _ => None,
             },
             match loaded_snode {
-                Static(StaticSNodeState::TransactionProcessor) => {
+                SNodeState::Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(Worktop::new()))
                 }
                 _ => None,
