@@ -58,6 +58,7 @@ pub struct CallFrame<
     /// Referenced values
     refed_values: HashMap<StoredValueId, ValueRefType>,
 
+    // TODO: Merge with refed_values
     /// Readable values
     readable_values: HashSet<Address>,
 
