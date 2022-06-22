@@ -1,5 +1,5 @@
 use indexmap::{IndexMap, IndexSet};
-use sbor::rust::cell::RefCell;
+use sbor::rust::cell::{Ref, RefCell};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
@@ -9,7 +9,6 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
-use std::cell::Ref;
 use transaction::validation::*;
 
 use crate::engine::{StoredValue, SubstateOperation, SubstateOperationsReceipt};
