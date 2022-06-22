@@ -60,6 +60,7 @@ pub struct CallFrame<
 
     /// Referenced values
     refed_values: HashMap<StoredValueId, ValueRefType>,
+    // TODO: Remove
     refed_components: HashMap<ComponentAddress, Component>,
 
     /// Caller's auth zone
