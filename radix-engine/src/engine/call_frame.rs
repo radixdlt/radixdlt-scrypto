@@ -971,7 +971,7 @@ where
 
                     let actor_info = ScryptoActorInfo::component(
                         package_address,
-                        blueprint_name,
+                        blueprint_name.to_string(),
                         component_address,
                     );
 
