@@ -5,6 +5,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
+use crate::engine::call_frame::KVStoreCall;
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
@@ -80,18 +81,11 @@ where
 
     fn create_kv_store(&mut self) -> KeyValueStoreId;
 
-    fn read_kv_store_entry(
+    fn kv_store_call(
         &mut self,
         kv_store_id: KeyValueStoreId,
-        key: ScryptoValue,
+        input: KVStoreCall,
     ) -> Result<ScryptoValue, RuntimeError>;
-
-    fn write_kv_store_entry(
-        &mut self,
-        kv_store_id: KeyValueStoreId,
-        key: ScryptoValue,
-        value: ScryptoValue,
-    ) -> Result<(), RuntimeError>;
 
     fn get_epoch(&mut self) -> u64;
 
