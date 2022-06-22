@@ -99,6 +99,19 @@ impl REValue {
             _ => panic!("Expected a stored value"),
         }
     }
+
+    fn try_drop(self) -> Result<(), DropFailure> {
+        match self {
+            REValue::Stored(StoredValue::Vault(..)) => Err(DropFailure::Vault),
+            REValue::Stored(StoredValue::KeyValueStore { .. }) => Err(DropFailure::KeyValueStore),
+            REValue::Transient(TransientValue::Bucket(..)) => Err(DropFailure::Bucket),
+            REValue::Component { .. } => Err(DropFailure::Component),
+            REValue::Transient(TransientValue::Proof(proof)) => {
+                proof.drop();
+                Ok(())
+            }
+        }
+    }
 }
 
 impl Into<StoredValue> for REValue {
@@ -571,54 +584,24 @@ where
         }
     }
 
-    /// Checks resource leak.
-    fn check_resource(&mut self) -> Result<(), RuntimeError> {
-        let mut success = true;
-        let mut resource = ResourceFailure::Unknown;
-
-        let values: HashMap<ValueId, REValue> = self
-            .owned_values
-            .drain()
-            .map(|(id, c)| (id, c.into_inner()))
-            .collect();
-        for (_, value) in values {
+    fn drop_owned_values(&mut self) -> Result<(), RuntimeError> {
+        for (_, value) in self.owned_values.drain() {
             trace!(self, Level::Warn, "Dangling value: {:?}", value);
-            let some_resource_failure = match value {
-                REValue::Stored(StoredValue::Vault(vault)) => {
-                    Some(ResourceFailure::Resource(vault.resource_address()))
-                }
-                REValue::Stored(StoredValue::KeyValueStore { .. }) => {
-                    Some(ResourceFailure::UnclaimedKeyValueStore)
-                }
-                REValue::Transient(TransientValue::Bucket(bucket)) => {
-                    Some(ResourceFailure::Resource(bucket.resource_address()))
-                }
-                REValue::Component { .. } => Some(ResourceFailure::Component),
-                REValue::Transient(TransientValue::Proof(proof)) => {
-                    proof.drop();
-                    None
-                }
-            };
-            if let Some(resource_failure) = some_resource_failure {
-                resource = resource_failure;
-                success = false;
-            }
+            value
+                .into_inner()
+                .try_drop()
+                .map_err(|e| RuntimeError::DropFailure(e))?;
         }
 
         if let Some(ref_worktop) = &self.worktop {
             let worktop = ref_worktop.borrow();
             if !worktop.is_empty() {
                 trace!(self, Level::Warn, "Resource worktop is not empty");
-                resource = ResourceFailure::Resources(worktop.resource_addresses());
-                success = false;
+                return Err(RuntimeError::DropFailure(DropFailure::Worktop));
             }
         }
 
-        if success {
-            Ok(())
-        } else {
-            Err(RuntimeError::ResourceCheckFailure(resource))
-        }
+        Ok(())
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -690,7 +673,7 @@ where
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
-        self.check_resource()?;
+        self.drop_owned_values()?;
 
         trace!(
             self,

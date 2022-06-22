@@ -1,7 +1,6 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 use sbor::{DecodeError, Value};
 use scrypto::engine::types::*;
 use transaction::errors::*;
@@ -104,7 +103,7 @@ pub enum RuntimeError {
     KeyValueStoreNotAllowed,
 
     /// Resource check failure.
-    ResourceCheckFailure(ResourceFailure),
+    DropFailure(DropFailure),
 
     /// AuthZone error
     AuthZoneError(AuthZoneError),
@@ -128,12 +127,12 @@ pub enum RuntimeError {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ResourceFailure {
+pub enum DropFailure {
     Component,
-    Resource(ResourceAddress),
-    Resources(Vec<ResourceAddress>),
-    UnclaimedKeyValueStore,
-    Unknown,
+    Bucket,
+    Vault,
+    Worktop,
+    KeyValueStore,
 }
 
 impl fmt::Display for RuntimeError {

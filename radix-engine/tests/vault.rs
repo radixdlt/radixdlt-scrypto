@@ -2,7 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use radix_engine::engine::ResourceFailure;
+use radix_engine::engine::DropFailure;
 use radix_engine::engine::RuntimeError;
 use scrypto::engine::types::{StoredValueId, ValueId};
 use scrypto::prelude::*;
@@ -130,14 +130,7 @@ fn dangling_vault_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let resource_address = receipt.new_resource_addresses[0].clone();
-    receipt.expect_err(|e| {
-        if let RuntimeError::ResourceCheckFailure(ResourceFailure::Resource(addr)) = e {
-            addr.eq(&resource_address)
-        } else {
-            false
-        }
-    });
+    receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Vault)));
 }
 
 #[test]

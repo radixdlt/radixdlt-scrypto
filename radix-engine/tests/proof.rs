@@ -3,7 +3,6 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
-use scrypto::engine::types::{TransientValueId, ValueId};
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
