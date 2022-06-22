@@ -93,6 +93,13 @@ pub enum REValue {
 }
 
 impl REValue {
+    fn to_component(&self) -> &Component {
+        match self {
+            REValue::Component { component, .. } => component,
+            _ => panic!("Expected a component"),
+        }
+    }
+
     fn to_stored(&mut self) -> &mut StoredValue {
         match self {
             REValue::Stored(stored_value) => stored_value,
@@ -317,18 +324,26 @@ impl<'a> REValueRef<'a> {
     }
 
     fn component_get_info<S: ReadableSubstateStore>(&self, track: &mut Track<S>) -> ScryptoValue {
-        match self {
+        let info = match self {
+            REValueRef::Owned(ref_value) => {
+                let component = ref_value.to_component();
+                (
+                    component.package_address().clone(),
+                    component.blueprint_name().to_string(),
+                )
+            }
             REValueRef::Track(address) => {
                 let component_val = track.borrow_global_value(address.clone()).unwrap();
                 let component = component_val.component();
-                let info = (
+                (
                     component.package_address().clone(),
                     component.blueprint_name().to_string(),
-                );
-                return ScryptoValue::from_typed(&info);
+                )
             }
             _ => panic!("Unexpected component ref"),
-        }
+        };
+
+        return ScryptoValue::from_typed(&info);
     }
 
     fn component_put<S: ReadableSubstateStore>(
@@ -1442,25 +1457,43 @@ where
                         if !self.readable_values.contains(&address) {
                             return Err(RuntimeError::InvalidDataAccess);
                         }
+                        (
+                            SubstateEntry::Component(REValueRef::Track(address), offset),
+                            ValueRefType::Committed {
+                                component_address: component_address.clone(),
+                            },
+                        )
                     }
                     ComponentOffset::Info => {
-                        self.track
-                            .borrow_global_value(component_address.clone())
-                            .map_err(|e| match e {
-                                TrackError::NotFound => {
-                                    RuntimeError::ComponentNotFound(component_address)
-                                }
-                                TrackError::Reentrancy => panic!("Should not run into reentrancy"),
-                            })?;
+                        let value_id = ValueId::Component(component_address);
+                        let maybe_cell = self.owned_values.get_mut(&value_id);
+                        if let Some(cell) = maybe_cell {
+                            let ref_value = cell.borrow_mut();
+                            (
+                                SubstateEntry::Component(REValueRef::Owned(ref_value), offset),
+                                ValueRefType::Uncommitted {
+                                    root: ValueId::Component(component_address),
+                                    ancestors: vec![],
+                                },
+                            )
+                        } else {
+                            self.track
+                                .borrow_global_value(component_address.clone())
+                                .map_err(|e| match e {
+                                    TrackError::NotFound => {
+                                        RuntimeError::ComponentNotFound(component_address)
+                                    }
+                                    TrackError::Reentrancy => panic!("Should not run into reentrancy"),
+                                })?;
+                            (
+                                SubstateEntry::Component(REValueRef::Track(address), offset),
+                                ValueRefType::Committed {
+                                    component_address: component_address.clone(),
+                                },
+                            )
+                        }
                     }
                 }
-
-                (
-                    SubstateEntry::Component(REValueRef::Track(address), offset),
-                    ValueRefType::Committed {
-                        component_address: component_address.clone(),
-                    },
-                )
             }
             SubstateAddress::KeyValueEntry(kv_store_id, key) => {
                 verify_stored_key(&key)?;
@@ -1474,7 +1507,6 @@ where
                         .get_mut(&ValueId::kv_store_id(kv_store_id))
                         .unwrap()
                         .borrow_mut();
-                    //.get_mut();
                     (
                         SubstateEntry::KeyValueStore(REValueRef::Owned(ref_store), key),
                         ValueRefType::Uncommitted {
