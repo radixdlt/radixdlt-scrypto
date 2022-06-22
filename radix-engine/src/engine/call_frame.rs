@@ -1371,7 +1371,7 @@ where
             ValueId::kv_store_id(kv_store_id.clone()),
             RefCell::new(REValue::Stored(StoredValue::KeyValueStore {
                 store: PreCommittedKeyValueStore::new(),
-                child_values: HashMap::new(),
+                child_values: InMemoryChildren::new(),
             })),
         );
         kv_store_id
