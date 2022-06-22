@@ -47,6 +47,7 @@ pub enum ValueId {
     Transient(TransientValueId),
     Stored(StoredValueId),
     Resource(ResourceAddress),
+    Component(ComponentAddress),
 }
 
 impl ValueId {

@@ -23,7 +23,6 @@ pub enum SNodeRef {
     TransactionProcessor,
 }
 
-
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum ComponentOffset {
     Info,

@@ -67,4 +67,8 @@ impl Component {
     pub fn set_state(&mut self, new_state: Vec<u8>) {
         self.state = new_state;
     }
+
+    pub fn set_access_rules(&mut self, access_rules: Vec<AccessRules>) {
+        self.auths = access_rules;
+    }
 }

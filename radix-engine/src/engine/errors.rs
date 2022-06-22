@@ -129,6 +129,7 @@ pub enum RuntimeError {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum ResourceFailure {
+    Component,
     Resource(ResourceAddress),
     Resources(Vec<ResourceAddress>),
     UnclaimedKeyValueStore,

@@ -14,16 +14,14 @@ use crate::misc::*;
 use crate::resource::AccessRules;
 
 pub struct LocalComponent {
-    blueprint_name: String,
-    state: Vec<u8>,
+    component_address: ComponentAddress,
     access_rules_list: Vec<AccessRules>,
 }
 
 impl LocalComponent {
-    pub fn new(blueprint_name: String, state: Vec<u8>) -> Self {
+    pub fn new(component_address: ComponentAddress) -> Self {
         Self {
-            blueprint_name,
-            state,
+            component_address,
             access_rules_list: Vec::new(),
         }
     }
@@ -34,13 +32,10 @@ impl LocalComponent {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::CreateComponent(
-            self.blueprint_name,
-            self.state,
-            self.access_rules_list,
-        );
-        let output: ComponentAddress = call_engine(input);
-        output
+        let addr = self.component_address.clone();
+        let input = RadixEngineInput::Globalize(self.component_address, self.access_rules_list);
+        let _: () = call_engine(input);
+        addr
     }
 }
 

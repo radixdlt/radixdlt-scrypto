@@ -400,7 +400,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         addr: A,
         value: V,
     ) {
-        self.up_substates.insert(addr.into().encode(), value.into());
+        let address = addr.into();
+        self.new_addresses.push(address.clone());
+        self.up_substates.insert(address.encode(), value.into());
     }
 
     pub fn create_key_space(
@@ -674,7 +676,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new component address.
-    fn new_component_address(&mut self) -> ComponentAddress {
+    pub fn new_component_address(&mut self) -> ComponentAddress {
         let component_address = self
             .id_allocator
             .new_component_address(self.transaction_hash())

@@ -32,7 +32,8 @@ macro_rules! sfunctions {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
     InvokeSNode(SNodeRef, String, Vec<u8>),
-    CreateComponent(String, Vec<u8>, Vec<AccessRules>),
+    Globalize(ComponentAddress, Vec<AccessRules>),
+    CreateLocalComponent(String, Vec<u8>),
     CreateKeyValueStore(),
     GetActor(),
     ReadData(DataAddress),

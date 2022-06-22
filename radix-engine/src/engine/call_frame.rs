@@ -11,11 +11,12 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::ComponentOffset;
+use scrypto::prelude::{AccessRules, ComponentOffset};
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
+use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -84,6 +85,10 @@ pub enum TransientValue {
 pub enum REValue {
     Stored(StoredValue),
     Transient(TransientValue),
+    Component {
+        component: Component,
+        child_values: InMemoryChildren,
+    },
 }
 
 impl REValue {
@@ -286,24 +291,18 @@ impl<'a> REValueRef<'a> {
         ScryptoValue::from_value(value).unwrap()
     }
 
-    fn component_get_state<S: ReadableSubstateStore>(
-        &self,
-        track: &mut Track<S>,
-    ) -> ScryptoValue {
+    fn component_get_state<S: ReadableSubstateStore>(&self, track: &mut Track<S>) -> ScryptoValue {
         match self {
             REValueRef::Track(address) => {
                 let component_val = track.read_value(address.clone());
                 let component = component_val.component();
                 return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
             }
-            _ => panic!("Unexpected component ref")
+            _ => panic!("Unexpected component ref"),
         }
     }
 
-    fn component_get_info<S: ReadableSubstateStore>(
-        &self,
-        track: &mut Track<S>,
-    ) -> ScryptoValue {
+    fn component_get_info<S: ReadableSubstateStore>(&self, track: &mut Track<S>) -> ScryptoValue {
         match self {
             REValueRef::Track(address) => {
                 let component_val = track.borrow_global_value(address.clone()).unwrap();
@@ -314,7 +313,7 @@ impl<'a> REValueRef<'a> {
                 );
                 return ScryptoValue::from_typed(&info);
             }
-            _ => panic!("Unexpected component ref")
+            _ => panic!("Unexpected component ref"),
         }
     }
 
@@ -331,7 +330,7 @@ impl<'a> REValueRef<'a> {
                     .unwrap();
                 track.insert_objects_into_component(to_store, address.clone().into());
             }
-            _ => panic!("Unexpected component ref")
+            _ => panic!("Unexpected component ref"),
         }
     }
 
@@ -593,6 +592,7 @@ where
                 REValue::Transient(TransientValue::Bucket(bucket)) => {
                     Some(ResourceFailure::Resource(bucket.resource_address()))
                 }
+                REValue::Component { .. } => Some(ResourceFailure::Component),
                 REValue::Transient(TransientValue::Proof(proof)) => {
                     proof.drop();
                     None
@@ -1348,7 +1348,56 @@ where
         self.track.create_uuid_value(package).into()
     }
 
-    fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
+    fn globalize(
+        &mut self,
+        component_address: ComponentAddress,
+        access_rules_list: Vec<AccessRules>,
+    ) -> Result<(), RuntimeError> {
+        let value = self
+            .owned_values
+            .remove(&ValueId::Component(component_address))
+            .ok_or(RuntimeError::ComponentNotFound(component_address))?
+            .into_inner();
+
+        let (mut component, child_values) = match value {
+            REValue::Component {
+                component,
+                child_values,
+            } => (component, child_values),
+            _ => panic!("Expected to be a component"),
+        };
+
+        // Abi checks
+        let package = self
+            .track
+            .borrow_global_value(component.package_address())
+            .unwrap()
+            .package();
+        let blueprint_abi = package.blueprint_abi(component.blueprint_name()).unwrap();
+        for access_rules in &access_rules_list {
+            for (func_name, _) in access_rules.iter() {
+                if !blueprint_abi.contains_fn(func_name.as_str()) {
+                    return Err(BlueprintFunctionDoesNotExist(func_name.to_string()));
+                }
+            }
+        }
+
+        component.set_access_rules(access_rules_list);
+        self.track.create_uuid_value_2(component_address, component);
+
+        let mut to_store_values = HashMap::new();
+        for (id, cell) in child_values.into_iter() {
+            to_store_values.insert(id, cell.into_inner());
+        }
+        self.track
+            .insert_objects_into_component(to_store_values, component_address);
+        Ok(())
+    }
+
+    fn create_local_component(
+        &mut self,
+        component: Component,
+    ) -> Result<ComponentAddress, RuntimeError> {
         let value =
             ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
         verify_stored_value(&value)?;
@@ -1359,10 +1408,16 @@ where
             return Err(RuntimeError::ValueNotFound(missing_value));
         }
         let to_store_values = to_stored_values(taken_values)?;
-        let address = self.track.create_uuid_value(component);
-        self.track
-            .insert_objects_into_component(to_store_values, address.clone().into());
-        Ok(address.into())
+
+        let component_address = self.track.new_component_address();
+        self.owned_values.insert(
+            ValueId::Component(component_address),
+            RefCell::new(REValue::Component {
+                component,
+                child_values: InMemoryChildren::with_values(to_store_values),
+            }),
+        );
+        Ok(component_address)
     }
 
     fn create_kv_store(&mut self) -> KeyValueStoreId {
@@ -1408,7 +1463,9 @@ where
                         self.track
                             .borrow_global_value(component_address.clone())
                             .map_err(|e| match e {
-                                TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
+                                TrackError::NotFound => {
+                                    RuntimeError::ComponentNotFound(component_address)
+                                }
                                 TrackError::Reentrancy => panic!("Should not run into reentrancy"),
                             })?;
                     }
@@ -1483,13 +1540,10 @@ where
 
         // Read current value
         let current_value = match &store {
-            SubstateEntry::Component(component_ref, offset) => {
-                match offset {
-                    ComponentOffset::State => component_ref.component_get_state(&mut self.track),
-                    ComponentOffset::Info => component_ref.component_get_info(&mut self.track),
-                }
-
-            }
+            SubstateEntry::Component(component_ref, offset) => match offset {
+                ComponentOffset::State => component_ref.component_get_state(&mut self.track),
+                ComponentOffset::Info => component_ref.component_get_info(&mut self.track),
+            },
             SubstateEntry::KeyValueStore(store, key) => {
                 store.kv_store_get(&key.raw, &mut self.track)
             }
@@ -1514,14 +1568,14 @@ where
 
                 // Write values
                 match store {
-                    SubstateEntry::Component(mut component_ref, offset) => {
-                        match offset {
-                            ComponentOffset::State => component_ref.component_put(value, to_store_values, self.track),
-                            ComponentOffset::Info => {
-                                return Err(RuntimeError::InvalidDataWrite);
-                            }
+                    SubstateEntry::Component(mut component_ref, offset) => match offset {
+                        ComponentOffset::State => {
+                            component_ref.component_put(value, to_store_values, self.track)
                         }
-                    }
+                        ComponentOffset::Info => {
+                            return Err(RuntimeError::InvalidDataWrite);
+                        }
+                    },
                     SubstateEntry::KeyValueStore(mut stored_value, key) => {
                         stored_value.kv_store_put(key.raw, value, to_store_values, self.track);
                     }

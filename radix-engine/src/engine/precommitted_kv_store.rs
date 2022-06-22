@@ -1,6 +1,6 @@
 use sbor::rust::cell::{RefCell, RefMut};
-use sbor::rust::collections::*;
 use sbor::rust::collections::hash_map::IntoIter;
+use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
@@ -15,8 +15,16 @@ pub struct InMemoryChildren {
 impl InMemoryChildren {
     pub fn new() -> Self {
         InMemoryChildren {
-            child_values: HashMap::new()
+            child_values: HashMap::new(),
         }
+    }
+
+    pub fn with_values(values: HashMap<StoredValueId, StoredValue>) -> Self {
+        let mut child_values = HashMap::new();
+        for (id, value) in values.into_iter() {
+            child_values.insert(id, RefCell::new(value));
+        }
+        InMemoryChildren { child_values }
     }
 
     pub fn into_iter(self) -> IntoIter<StoredValueId, RefCell<StoredValue>> {
@@ -39,12 +47,16 @@ impl InMemoryChildren {
         id: &StoredValueId,
     ) -> RefMut<StoredValue> {
         if ancestors.is_empty() {
-            let value = self.child_values.get_mut(id).expect("Value expected to exist");
+            let value = self
+                .child_values
+                .get_mut(id)
+                .expect("Value expected to exist");
             return value.borrow_mut();
         }
 
         let (first, rest) = ancestors.split_first().unwrap();
-        let value = self.child_values
+        let value = self
+            .child_values
             .get_mut(&StoredValueId::KeyValueStoreId(*first))
             .unwrap();
         value.get_mut().get_child(rest, id)
@@ -56,12 +68,16 @@ impl InMemoryChildren {
         id: &StoredValueId,
     ) -> &mut StoredValue {
         if ancestors.is_empty() {
-            let value = self.child_values.get_mut(id).expect("Value expected to exist");
+            let value = self
+                .child_values
+                .get_mut(id)
+                .expect("Value expected to exist");
             return value.get_mut();
         }
 
         let (first, rest) = ancestors.split_first().unwrap();
-        let value = self.child_values
+        let value = self
+            .child_values
             .get_mut(&StoredValueId::KeyValueStoreId(*first))
             .unwrap();
         value.get_mut().get_child_mut(rest, id)
@@ -118,7 +134,9 @@ impl StoredValue {
         id: &StoredValueId,
     ) -> RefMut<StoredValue> {
         match self {
-            StoredValue::KeyValueStore { child_values, .. } => child_values.get_child(ancestors, id),
+            StoredValue::KeyValueStore { child_values, .. } => {
+                child_values.get_child(ancestors, id)
+            }
             _ => panic!("Expected to be store"),
         }
     }
@@ -129,7 +147,9 @@ impl StoredValue {
         id: &StoredValueId,
     ) -> &mut StoredValue {
         match self {
-            StoredValue::KeyValueStore { child_values, .. } => child_values.get_child_mut(ancestors, id),
+            StoredValue::KeyValueStore { child_values, .. } => {
+                child_values.get_child_mut(ancestors, id)
+            }
             _ => panic!("Expected to be store"),
         }
     }
