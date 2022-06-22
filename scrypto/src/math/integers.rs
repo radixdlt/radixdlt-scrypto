@@ -2451,7 +2451,7 @@ macro_rules! impl_bigint_to_large_unsigned {
                         return Err(ParseIntError::Overflow);
                     }
                     let mut buf = if b.is_negative() {
-                        return Err(ParseIntError::Negative);
+                        return Err(ParseIntError::NegativeToUnsigned);
                     } else {
                         [0u8; T_BYTES]
                     };
@@ -2492,7 +2492,7 @@ macro_rules! impl_bigint_to_small_unsigned {
             paste! {
                 fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseIntError> {
                     if b.is_negative() {
-                        return Err(ParseIntError::Negative);
+                        return Err(ParseIntError::NegativeToUnsigned);
                     }
                     match b.[<to_$t:lower>]() {
                         Some(v) => Ok($t(v)),
