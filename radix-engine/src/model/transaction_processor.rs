@@ -31,7 +31,7 @@ pub struct TransactionProcessorRunInput {
     pub instructions: Vec<ExecutableInstruction>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum TransactionProcessorError {
     InvalidRequestData(DecodeError),
     RuntimeError(RuntimeError),

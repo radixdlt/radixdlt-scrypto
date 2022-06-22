@@ -82,7 +82,7 @@ pub enum InvalidTable {
 }
 
 /// Represents an error when invoking an export of a Scrypto module.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 pub enum InvokeError {
     MemoryAllocError,
 
