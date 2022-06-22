@@ -104,6 +104,20 @@ macro_rules! types {
                 }
             }
 
+            impl FromPrimitive for $t {
+                fn from_i64(n: i64) -> Option<Self> {
+                    [<bigint_to_$t:lower>] (BigInt::from_i64(n)).ok()
+                }
+                fn from_i128(n: i128) -> Option<Self> {
+                    [<bigint_to_$t:lower>] (BigInt::from_i128(n)).ok()
+                }
+                fn from_u64(n: u64) -> Option<Self> {
+                    [<bigint_to_$t:lower>] (BigInt::from_u64(n)).ok()
+                }
+                fn from_u128(n: u128) -> Option<Self> {
+                    [<bigint_to_$t:lower>] (BigInt::from_u128(n)).ok()
+                }
+            }
             )*
         }
     }
@@ -226,7 +240,7 @@ types! {
 }
 
 #[derive(Debug)]
-pub enum ParseBigIntError {
+pub enum ParseIntError {
     NegativeToUnsigned,
     Overflow,
 }
@@ -925,7 +939,7 @@ macro_rules! self_expr {
         if <$t>::BITS >= 256 {
             BigInt::from_signed_bytes_le(&$self.0)
         } else {
-            $self.0
+            $self.0.into()
         }
     };
 }
@@ -947,7 +961,7 @@ macro_rules! checked_impl_large {
                 impl AddAssign<$o> for $t {
                     #[inline]
                     fn add_assign(&mut self, other: $o) {
-                        *self = *self + other;
+                        *self = (*self + other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl AddAssign, add_assign for $t, $o }
@@ -965,7 +979,7 @@ macro_rules! checked_impl_large {
                 impl SubAssign<$o> for $t {
                     #[inline]
                     fn sub_assign(&mut self, other: $o) {
-                        *self = *self - other;
+                        *self = (*self - other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl SubAssign, sub_assign for $t, $o }
@@ -983,7 +997,7 @@ macro_rules! checked_impl_large {
                 impl MulAssign<$o> for $t {
                     #[inline]
                     fn mul_assign(&mut self, other: $o) {
-                        *self = *self * other;
+                        *self = (*self * other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl MulAssign, mul_assign for $t, $o }
@@ -1001,7 +1015,7 @@ macro_rules! checked_impl_large {
                 impl DivAssign<$o> for $t {
                     #[inline]
                     fn div_assign(&mut self, other: $o) {
-                        *self = *self / other;
+                        *self = (*self / other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl DivAssign, div_assign for $t, $o }
@@ -1019,7 +1033,7 @@ macro_rules! checked_impl_large {
                 impl RemAssign<$o> for $t {
                     #[inline]
                     fn rem_assign(&mut self, other: $o) {
-                        *self = *self % other;
+                        *self = (*self % other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl RemAssign, rem_assign for $t, $o }
@@ -1038,7 +1052,7 @@ macro_rules! checked_impl_large {
                 impl BitXorAssign<$o> for $t {
                     #[inline]
                     fn bitxor_assign(&mut self, other: $o) {
-                        *self = *self ^ other;
+                        *self = (*self ^ other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl BitXorAssign, bitxor_assign for $t, $o }
@@ -1056,7 +1070,7 @@ macro_rules! checked_impl_large {
                 impl BitOrAssign<$o> for $t {
                     #[inline]
                     fn bitor_assign(&mut self, other: $o) {
-                        *self = *self | other;
+                        *self = (*self | other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl BitOrAssign, bitor_assign for $t, $o }
@@ -1074,19 +1088,20 @@ macro_rules! checked_impl_large {
                 impl BitAndAssign<$o> for $t {
                     #[inline]
                     fn bitand_assign(&mut self, other: $o) {
-                        *self = *self & other;
+                        *self = (*self & other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl BitAndAssign, bitand_assign for $t, $o }
 
                 impl Pow<$o> for $t {
+                    type Output = $t;
+
                     /// Raises self to the power of `exp`, using exponentiation by squaring.
                     ///
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     fn pow(self, other: $o) -> $t {
-                        type Output = $t;
                         self_expr!($t, self).pow(other_expr!($t, $o, other)).try_into().unwrap()
                     }
                 }
@@ -1094,6 +1109,7 @@ macro_rules! checked_impl_large {
                 forward_ref_binop! { impl Pow, pow for $t, $o }
 
                 impl PrimIntExt<$o> for $t {
+                    type Output = $t;
                     /// Shifts the bits to the left by a specified amount, `n`,
                     /// wrapping the truncated bits to the end of the resulting
                     /// integer.
@@ -1117,8 +1133,7 @@ macro_rules! checked_impl_large {
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     fn rotate_left(self, n: $o) -> Self {
-                        type Output = $t;
-                        let rot: u32 = n % Self::BITS;
+                        let rot: u32 = (n % Self::BITS).into();
                         let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
                         let big_rot = big.clone().shl(rot);
                         big_rot.bitor(big.shr(Self::BITS - rot)).try_into().unwrap()
@@ -1147,8 +1162,7 @@ macro_rules! checked_impl_large {
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     fn rotate_right(self, n: $o) -> Self {
-                        type Output = $t;
-                        let rot: u32 = n % Self::BITS;
+                        let rot: u32 = (n % Self::BITS).into();
                         let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
                         let big_rot = big.clone().shr(rot);
                         big_rot.bitor(big.shl(Self::BITS - rot)).try_into().unwrap()
@@ -1177,7 +1191,7 @@ macro_rules! checked_impl_small {
                 impl AddAssign<$o> for $t {
                     #[inline]
                     fn add_assign(&mut self, other: $o) {
-                        *self = *self + other;
+                        *self = (*self + other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl AddAssign, add_assign for $t, $o }
@@ -1195,7 +1209,7 @@ macro_rules! checked_impl_small {
                 impl SubAssign<$o> for $t {
                     #[inline]
                     fn sub_assign(&mut self, other: $o) {
-                        *self = *self - other;
+                        *self = (*self - other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl SubAssign, sub_assign for $t, $o }
@@ -1213,7 +1227,7 @@ macro_rules! checked_impl_small {
                 impl MulAssign<$o> for $t {
                     #[inline]
                     fn mul_assign(&mut self, other: $o) {
-                        *self = *self * other;
+                        *self = (*self * other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl MulAssign, mul_assign for $t, $o }
@@ -1231,7 +1245,7 @@ macro_rules! checked_impl_small {
                 impl DivAssign<$o> for $t {
                     #[inline]
                     fn div_assign(&mut self, other: $o) {
-                        *self = *self / other;
+                        *self = (*self / other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl DivAssign, div_assign for $t, $o }
@@ -1249,7 +1263,7 @@ macro_rules! checked_impl_small {
                 impl RemAssign<$o> for $t {
                     #[inline]
                     fn rem_assign(&mut self, other: $o) {
-                        *self = *self % other;
+                        *self = (*self % other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl RemAssign, rem_assign for $t, $o }
@@ -1268,7 +1282,7 @@ macro_rules! checked_impl_small {
                 impl BitXorAssign<$o> for $t {
                     #[inline]
                     fn bitxor_assign(&mut self, other: $o) {
-                        *self = *self ^ other;
+                        *self = (*self ^ other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl BitXorAssign, bitxor_assign for $t, $o }
@@ -1286,7 +1300,7 @@ macro_rules! checked_impl_small {
                 impl BitOrAssign<$o> for $t {
                     #[inline]
                     fn bitor_assign(&mut self, other: $o) {
-                        *self = *self | other;
+                        *self = (*self | other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl BitOrAssign, bitor_assign for $t, $o }
@@ -1304,7 +1318,7 @@ macro_rules! checked_impl_small {
                 impl BitAndAssign<$o> for $t {
                     #[inline]
                     fn bitand_assign(&mut self, other: $o) {
-                        *self = *self & other;
+                        *self = (*self & other).try_into().unwrap();
                     }
                 }
                 forward_ref_op_assign! { impl BitAndAssign, bitand_assign for $t, $o }
@@ -1409,9 +1423,9 @@ checked_impl_large! {
 (U384, I128, I384), (U384, I256, I256), (U384, I384, I384), (U384, I512, I512),
 
 (U512, U8, U512), (U512, U16, U512), (U512, U32, U512), (U512, U64, U512),
-(U512, U128, U512), (U512, U256, U256), (U512, U384, U384), (U512, U512, U512),
+(U512, U128, U512), (U512, U256, U512), (U512, U384, U512), (U512, U512, U512),
 (U512, I8, I512), (U512, I16, I512), (U512, I32, I512), (U512, I64, I512),
-(U512, I128, I512), (U512, I256, I256), (U512, I384, I384), (U512, I512, I512),
+(U512, I128, I512), (U512, I256, I512), (U512, I384, I512), (U512, I512, I512),
 
 (I256, u8, I256), (I256, u16, I256), (I256, u32, I256), (I256, u64, I256),
 (I256, u128, I256), (I256, i8, I256), (I256, i16, I256), (I256, i32, I256),
@@ -1431,14 +1445,14 @@ checked_impl_large! {
 (I256, I128, I256), (I256, I256, I256), (I256, I384, I384),
 
 (I384, U8, I384), (I384, U16, I384), (I384, U32, I384), (I384, U64, I384),
-(I384, U128, I384), (I384, U256, I256), (I384, U384, I384), (I384, U512, I512),
+(I384, U128, I384), (I384, U256, I384), (I384, U384, I384), (I384, U512, I512),
 (I384, I8, I384), (I384, I16, I384), (I384, I32, I384), (I384, I64, I384),
-(I384, I128, I384), (I384, I256, I256), (I384, I384, I384), (I384, I512, I512),
+(I384, I128, I384), (I384, I256, I384), (I384, I384, I384), (I384, I512, I512),
 
 (I512, U8, I512), (I512, U16, I512), (I512, U32, I512), (I512, U64, I512),
-(I512, U128, I512), (I512, U256, I256), (I512, U384, I384), (I512, U512, I512),
+(I512, U128, I512), (I512, U256, I512), (I512, U384, I512), (I512, U512, I512),
 (I512, I8, I512), (I512, I16, I512), (I512, I32, I512), (I512, I64, I512),
-(I512, I128, I512), (I512, I256, I256), (I512, I384, I384), (I512, I512, I512) }
+(I512, I128, I512), (I512, I256, I512), (I512, I384, I512), (I512, I512, I512) }
 
 checked_impl_small! {
 //(self, other, output)
@@ -1459,7 +1473,10 @@ checked_impl_small! {
 (U128, i64, I128), (U128, i128, I128),
 
 (U8, U8, U8), (U8, U16, U16), (U8, U32, U32), (U8, U64, U64), (U8, U128, U128),
+(U8, U256, U256), (U8, U384, U384), (U8, U512, U512),
 (U8, I8, I8), (U8, I16, I16), (U8, I32, I32), (U8, I64, I64), (U8, I128, I128),
+(U8, I256, I256), (U8, I384, I384), (U8, I512, I512),
+
 (U16, U8, U16), (U16, U16, U16), (U16, U32, U32), (U16, U64, U64), (U16, U128, U128),
 (U16, U256, U256), (U16, U384, U384), (U16, U512, U512), (U16, I8, I16), (U16, I16, I16),
 (U16, I32, I32), (U16, I64, I64), (U16, I128, I128), (U16, I256, I256), (U16, I384, I384),
@@ -1858,6 +1875,21 @@ macro_rules! checked_int_impl_large {
                 }
 
             }
+
+            impl ToPrimitive for $t {
+                fn to_i64(&self) -> Option<i64> {
+                    BigInt::from_signed_bytes_le(&self.0).to_i64()
+                } 
+                fn to_i128(&self) -> Option<i128> {
+                    BigInt::from_signed_bytes_le(&self.0).to_i128()
+                }
+                fn to_u64(&self) -> Option<u64> {
+                    BigInt::from_signed_bytes_le(&self.0).to_u64()
+                }
+                fn to_u128(&self) -> Option<u128> {
+                    BigInt::from_signed_bytes_le(&self.0).to_u128()
+                }
+            }
         }
     }
 }
@@ -2183,6 +2215,21 @@ macro_rules! checked_int_impl_small {
                     }
                 }
             }
+
+            impl ToPrimitive for $t {
+                fn to_i64(&self) -> Option<i64> {
+                    i64::try_from(self.0).ok()
+                } 
+                fn to_i128(&self) -> Option<i128> {
+                    i128::try_from(self.0).ok()
+                }
+                fn to_u64(&self) -> Option<u64> {
+                    u64::try_from(self.0).ok()
+                }
+                fn to_u128(&self) -> Option<u128> {
+                    u128::try_from(self.0).ok()
+                }
+            }
         }
         )*}
 }
@@ -2397,15 +2444,38 @@ macro_rules! checked_int_impl_unsigned_small {
 checked_int_impl_unsigned_large! { U256, U384, U512 }
 checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
 
-macro_rules! impl_bigint_to_large {
+macro_rules! impl_bigint_to_large_unsigned {
     ($($t:ty),*) => {
         $(
             paste! {
-                fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseBigIntError> {
+                fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseIntError> {
                     let bytes = b.to_signed_bytes_le();
                     const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
                     if bytes.len() > T_BYTES {
-                        return Err(ParseBigIntError::Overflow);
+                        return Err(ParseIntError::Overflow);
+                    }
+                    let mut buf = if b.is_negative() {
+                        return Err(ParseIntError::Negative);
+                    } else {
+                        [0u8; T_BYTES]
+                    };
+                    buf[..bytes.len()].copy_from_slice(&bytes);
+                    Ok($t(buf))
+                }
+            }
+        )*
+    }
+}
+
+macro_rules! impl_bigint_to_large_signed {
+    ($($t:ty),*) => {
+        $(
+            paste! {
+                fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseIntError> {
+                    let bytes = b.to_signed_bytes_le();
+                    const T_BYTES: usize = (<$t>::BITS / 8 ) as usize;
+                    if bytes.len() > T_BYTES {
+                        return Err(ParseIntError::Overflow);
                     }
                     let mut buf = if b.is_negative() {
                         [255u8; T_BYTES]
@@ -2420,14 +2490,17 @@ macro_rules! impl_bigint_to_large {
     }
 }
 
-macro_rules! impl_bigint_to_small {
+macro_rules! impl_bigint_to_small_unsigned {
     ($($t:ty),*) => {
         $(
             paste! {
-                fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseBigIntError> {
+                fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseIntError> {
+                    if b.is_negative() {
+                        return Err(ParseIntError::Negative);
+                    }
                     match b.[<to_$t:lower>]() {
                         Some(v) => Ok($t(v)),
-                        None => Err(ParseBigIntError::Overflow),
+                        None => Err(ParseIntError::Overflow),
                     }
                 }
             }
@@ -2435,8 +2508,25 @@ macro_rules! impl_bigint_to_small {
     }
 }
 
-impl_bigint_to_large! { I256, I384, I512, U256, U384, U512 }
-impl_bigint_to_small! { I8, I16, I32, I64, I128, U8, U16, U32, U64, U128 }
+macro_rules! impl_bigint_to_small_signed {
+    ($($t:ty),*) => {
+        $(
+            paste! {
+                fn [<bigint_to_$t:lower>](b: BigInt) -> Result<$t, ParseIntError> {
+                    match b.[<to_$t:lower>]() {
+                        Some(v) => Ok($t(v)),
+                        None => Err(ParseIntError::Overflow),
+                    }
+                }
+            }
+        )*
+    }
+}
+
+impl_bigint_to_large_signed! { I256, I384, I512 }
+impl_bigint_to_large_unsigned! { U256, U384, U512 }
+impl_bigint_to_small_signed! { I8, I16, I32, I64, I128 }
+impl_bigint_to_small_unsigned! { U8, U16, U32, U64, U128 }
 
 macro_rules! from_int {
     ($(($t:ident, $o:ident)),*) => {
@@ -2452,13 +2542,99 @@ macro_rules! from_int {
     };
 }
 
+macro_rules! try_from_small {
+    ($t:ident, ($($o:ident),*)) => {
+        $(
+            paste! {
+                impl TryFrom<$o> for $t {
+                    type Error = ParseIntError;
+                    fn try_from(val: $o) -> Result<$t, ParseIntError> {
+                        val.0.try_into()
+                    }
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! try_from_large {
+    ($t:ident, ($($o:ident),*)) => {
+        $(
+            paste! {
+                impl TryFrom<$o> for $t {
+                    type Error = ParseIntError;
+                    fn try_from(val: $o) -> Result<$t, ParseIntError> {
+                        BigInt::from_signed_bytes_le(val.0).try_into()
+                    }
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! try_from_large_all {
+    ($($t:ident),*) => {
+        $(
+            try_from_large! { $t, (I256, I384, I512) }
+            try_from_large! { $t, (U256, U384, U512) }
+        )*
+    };
+}
+
+macro_rules! try_from_small_all {
+    ($($t:ident),*) => {
+        $(
+            try_from_small! { $t, (I8, I16, I32, I64, I128) }
+            try_from_small! { $t, (U8, U16, U32, U64, U128) }
+        )*
+    };
+}
+
+try_from_large_all! { U8, U16, U32, U64, U128, I8, I16, I32, I64, I128 }
+try_from_small_all! { U256, U384, U512, I256, I384, I512 }
+
+try_from_large! {U256, (I256, I384, I512)}
+try_from_large! {U384, (I256, I384, I512)}
+try_from_large! {U512, (I256, I384, I512)}
+try_from_large! {U256, (U384, U512)}
+try_from_large! {U384, (U256, U512)}
+try_from_large! {U512, (U256, U384)}
+try_from_large! {I256, (U256, U384, U512)}
+try_from_large! {I384, (U256, U384, U512)}
+try_from_large! {I512, (U256, U384, U512)}
+try_from_large! {I256, (I384, I512)}
+try_from_large! {I384, (I256, I512)}
+try_from_large! {I512, (I256, I384)}
+try_from_small! {U8, (I8, I16, I32, I64, I128)}
+try_from_small! {U16, (I8, I16, I32, I64, I128)}
+try_from_small! {U32, (I8, I16, I32, I64, I128)}
+try_from_small! {U64, (I8, I16, I32, I64, I128)}
+try_from_small! {U128, (I8, I16, I32, I64, I128)}
+try_from_small! {I8, (U8, U16, U32, U64, U128)}
+try_from_small! {I16, (U8, U16, U32, U64, U128)}
+try_from_small! {I32, (U8, U16, U32, U64, U128)}
+try_from_small! {I64, (U8, U16, U32, U64, U128)}
+try_from_small! {I128, (U8, U16, U32, U64, U128)}
+try_from_small! {U8, (U16, U32, U64, U128)}
+try_from_small! {U16, (U8, U32, U64, U128)}
+try_from_small! {U32, (U8, U16, U64, U128)}
+try_from_small! {U64, (U8, U16, U32, U128)}
+try_from_small! {U128, (U8, U16, U32, U64)}
+try_from_small! {I8, (I16, I32, I64, I128)}
+try_from_small! {I16, (I8, I32, I64, I128)}
+try_from_small! {I32, (I8, I16, I64, I128)}
+try_from_small! {I64, (I8, I16, I32, I128)}
+try_from_small! {I128, (I8, I16, I32, I64)}
+
+
+
 macro_rules! try_from_big_int_to_signed {
     ($($t:ident),*) => {
         $(
             paste! {
                 impl TryFrom<BigInt> for $t {
-                    type Error = ParseBigIntError;
-                    fn try_from(val: BigInt) -> Result<$t, ParseBigIntError> {
+                    type Error = ParseIntError;
+                    fn try_from(val: BigInt) -> Result<$t, ParseIntError> {
                         [<bigint_to_$t:lower>](val)
                     }
                 }
@@ -2472,11 +2648,11 @@ macro_rules! try_from_big_int_to_unsigned {
         $(
             paste! {
                 impl TryFrom<BigInt> for $t {
-                    type Error = ParseBigIntError;
+                    type Error = ParseIntError;
 
                     fn try_from(val: BigInt) -> Result<Self, Self::Error>  {
                         if val.is_negative() {
-                            return Err(ParseBigIntError::NegativeToUnsigned);
+                            return Err(ParseIntError::NegativeToUnsigned);
                         }
                         [<bigint_to_$t:lower>](val)
                     }
@@ -2659,3 +2835,4 @@ mod tests {
 // TODO: test write
 // TODO: documentationpart update
 // TODO: sbor integration
+// TODO: remove FIXME lines
