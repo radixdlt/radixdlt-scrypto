@@ -2560,7 +2560,7 @@ macro_rules! try_from_large {
                 impl TryFrom<$o> for $t {
                     type Error = ParseIntError;
                     fn try_from(val: $o) -> Result<$t, ParseIntError> {
-                        BigInt::from_signed_bytes_le(val.0).try_into()
+                        BigInt::from_signed_bytes_le(&val.0).try_into()
                     }
                 }
             }
