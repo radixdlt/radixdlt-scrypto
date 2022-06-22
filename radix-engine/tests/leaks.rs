@@ -55,3 +55,19 @@ fn dangling_bucket_should_fail() {
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Bucket)));
 }
+
+#[test]
+fn dangling_worktop_should_fail() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("leaks");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(package_address, "Leaks", "get_bucket", to_struct!())
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Worktop)));
+}
