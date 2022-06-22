@@ -285,6 +285,37 @@ impl<'a> REValueRef<'a> {
         ScryptoValue::from_value(value).unwrap()
     }
 
+    fn component_get<S: ReadableSubstateStore>(
+        &self,
+        track: &mut Track<S>,
+    ) -> ScryptoValue {
+        match self {
+            REValueRef::Track(address) => {
+                let component_val = track.read_value(address.clone());
+                let component = component_val.component();
+                return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
+            }
+            _ => panic!("Unexpected component ref")
+        }
+    }
+
+    fn component_put<S: ReadableSubstateStore>(
+        &mut self,
+        value: ScryptoValue,
+        to_store: HashMap<StoredValueId, StoredValue>,
+        track: &mut Track<S>,
+    ) {
+        match self {
+            REValueRef::Track(address) => {
+                track
+                    .write_component_value(address.clone().into(), value.raw)
+                    .unwrap();
+                track.insert_objects_into_component(to_store, address.clone().into());
+            }
+            _ => panic!("Unexpected component ref")
+        }
+    }
+
     fn execute<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         value_id: ValueId,
@@ -359,7 +390,7 @@ pub enum SNodeExecution<'a> {
 
 enum SubstateEntry<'a> {
     KeyValueStore(REValueRef<'a>, ScryptoValue),
-    ComponentTracked(ComponentAddress),
+    Component(REValueRef<'a>),
     ComponentInfoTracked(ComponentAddress),
 }
 
@@ -1353,7 +1384,7 @@ where
                     return Err(RuntimeError::InvalidDataAccess);
                 }
                 (
-                    SubstateEntry::ComponentTracked(component_address.clone()),
+                    SubstateEntry::Component(REValueRef::Track(component_address.into())),
                     ValueRefType::Committed {
                         component_address: component_address.clone(),
                     },
@@ -1435,10 +1466,8 @@ where
 
         // Read current value
         let current_value = match &store {
-            SubstateEntry::ComponentTracked(component_address) => {
-                let component_val = self.track.read_value(component_address.clone());
-                let component = component_val.component();
-                ScryptoValue::from_slice(component.state()).expect("Expected to decode")
+            SubstateEntry::Component(component_ref) => {
+                component_ref.component_get(&mut self.track)
             }
             SubstateEntry::ComponentInfoTracked(component_address) => {
                 let component_val = self
@@ -1479,12 +1508,8 @@ where
                     SubstateEntry::ComponentInfoTracked(..) => {
                         return Err(RuntimeError::InvalidDataWrite);
                     }
-                    SubstateEntry::ComponentTracked(component_address) => {
-                        self.track
-                            .write_component_value(component_address, value.raw)
-                            .unwrap();
-                        self.track
-                            .insert_objects_into_component(to_store_values, component_address);
+                    SubstateEntry::Component(mut component_ref) => {
+                        component_ref.component_put(value, to_store_values, self.track);
                     }
                     SubstateEntry::KeyValueStore(mut stored_value, key) => {
                         stored_value.kv_store_put(key.raw, value, to_store_values, self.track);
