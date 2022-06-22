@@ -7,7 +7,7 @@ use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use forward_ref::*;
 use num_bigint::BigInt;
-use num_traits::{FromPrimitive, Num, Signed, ToPrimitive, Zero};
+use num_traits::{FromPrimitive, Num, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
 use std::cmp::min;
 use std::default::Default;
@@ -285,7 +285,7 @@ macro_rules! sh {
             let len = min(
                 (<$t>::BITS / 8) as usize,
                 to_shift.to_signed_bytes_le().len(),
-                );
+            );
             let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
             to_shift.shl(shift).to_signed_bytes_le()[..len]
                 .try_into()
@@ -306,7 +306,7 @@ macro_rules! sh {
         let len = min(
             (<$t>::BITS / 8) as usize,
             to_shift.to_signed_bytes_le().len(),
-            );
+        );
         let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
         to_shift.shl(shift).to_signed_bytes_le()[..len]
             .try_into()
@@ -327,7 +327,7 @@ macro_rules! sh {
             let len = min(
                 (<$t>::BITS / 8) as usize,
                 to_shift.to_signed_bytes_le().len(),
-                );
+            );
             let shift = $other;
             to_shift.shl(shift).to_signed_bytes_le()[..len]
                 .try_into()
@@ -349,7 +349,7 @@ macro_rules! sh {
         let len = min(
             (<$t>::BITS / 8) as usize,
             to_shift.to_signed_bytes_le().len(),
-            );
+        );
         let shift = $other.0;
         to_shift.shl(shift).to_signed_bytes_le()[..len]
             .try_into()
@@ -894,6 +894,12 @@ shift_impl_all_large! {I256, I384, I512, U256, U384, U512}
 
 shift_impl_all_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
 
+trait PrimIntExt<T> {
+    type Output;
+    fn rotate_left(self, other: T) -> Self;
+    fn rotate_right(self, other: T) -> Self;
+}
+
 macro_rules! other_expr {
     ($t:ty, $o:ty, $other:ident) => {
         paste! {
@@ -911,7 +917,7 @@ macro_rules! other_expr {
                 }
             }
         }
-    }
+    };
 }
 
 macro_rules! self_expr {
@@ -921,7 +927,7 @@ macro_rules! self_expr {
         } else {
             $self.0
         }
-    }
+    };
 }
 
 macro_rules! checked_impl_large {
@@ -1072,17 +1078,22 @@ macro_rules! checked_impl_large {
                     }
                 }
                 forward_ref_op_assign! { impl BitAndAssign, bitand_assign for $t, $o }
-                
-                impl $t {
+
+                impl Pow<$o> for $t {
                     /// Raises self to the power of `exp`, using exponentiation by squaring.
                     ///
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                    pub fn pow(self, exp: $o) -> $t {
-                        BigInt::from_signed_bytes_le(&self.0).pow(exp).try_into().unwrap()
+                    fn pow(self, other: $o) -> $t {
+                        type Output = $t;
+                        self_expr!($t, self).pow(other_expr!($t, $o, other)).try_into().unwrap()
                     }
+                }
 
+                forward_ref_binop! { impl Pow, pow for $t, $o }
+
+                impl PrimIntExt<$o> for $t {
                     /// Shifts the bits to the left by a specified amount, `n`,
                     /// wrapping the truncated bits to the end of the resulting
                     /// integer.
@@ -1105,7 +1116,8 @@ macro_rules! checked_impl_large {
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                    pub fn rotate_left(self, n: $o) -> $t {
+                    fn rotate_left(self, n: $o) -> Self {
+                        type Output = $t;
                         let rot: u32 = n % Self::BITS;
                         let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
                         let big_rot = big.clone().shl(rot);
@@ -1134,13 +1146,15 @@ macro_rules! checked_impl_large {
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                    pub fn rotate_right(self, n: $o) -> $t {
+                    fn rotate_right(self, n: $o) -> Self {
+                        type Output = $t;
                         let rot: u32 = n % Self::BITS;
                         let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
                         let big_rot = big.clone().shr(rot);
                         big_rot.bitor(big.shl(Self::BITS - rot)).try_into().unwrap()
                     }
                 }
+
                 )*
         }
     };
@@ -1295,19 +1309,24 @@ macro_rules! checked_impl_small {
                 }
                 forward_ref_op_assign! { impl BitAndAssign, bitand_assign for $t, $o }
 
-                impl $t {
+                impl Pow<$o> for $t {
                     /// Raises self to the power of `exp`, using exponentiation by squaring.
                     ///
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                    pub fn pow(self, exp: $o) -> $t {
-                        $t(self.0.checked_pow(exp.try_into().unwrap()).unwrap())
+                    fn pow(self, other: $o) -> $t {
+                        type Output = $t;
+                        $t(self.0.checked_pow(other.try_into().unwrap()).unwrap())
                     }
+                }
 
+                forward_ref_binop! { impl Pow, pow for $t, $o }
+
+                impl PrimIntExt<$o> for $t {
                     /// Shifts the bits to the left by a specified amount, `n`,
                     /// wrapping the truncated bits to the end of the resulting
-                    /// integer. 
+                    /// integer.
                     ///
                     /// Please note this isn't the same operation as the `<<` shifting
                     /// operator! This method can not overflow as opposed to '<<'.
@@ -1327,8 +1346,9 @@ macro_rules! checked_impl_small {
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                    pub const fn rotate_left(self, n: $o) -> $t {
-                        $t(self.0.rotate_left(n))
+                    fn rotate_left(self, n: $o) -> Self {
+                        type Output = $t;
+                        $t(self.0.rotate_left(n.try_into().unwrap()))
                     }
 
                     /// Shifts the bits to the right by a specified amount, `n`,
@@ -1353,8 +1373,9 @@ macro_rules! checked_impl_small {
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
-                    pub const fn rotate_right(self, n: u32) -> $t {
-                        $t(self.0.rotate_right(n))
+                    fn rotate_right(self, n: $o) -> Self {
+                        type Output = $t;
+                        $t(self.0.rotate_right(n.try_into().unwrap()))
                     }
                 }
 
@@ -1364,155 +1385,157 @@ macro_rules! checked_impl_small {
 }
 
 checked_impl_large! {
-    //(self, other, output)
-    (U256, u8, U256), (U256, u16, U256), (U256, u32, U256), (U256, u64, U256), 
-(U256, u128, U256), (U256, i8, I256), (U256, i16, I256), (U256, i32, I256), 
+//(self, other, output)
+(U256, u8, U256), (U256, u16, U256), (U256, u32, U256), (U256, u64, U256),
+(U256, u128, U256), (U256, i8, I256), (U256, i16, I256), (U256, i32, I256),
 (U256, i64, I256), (U256, i128, I256),
 
-(U384, u8, U384), (U384, u16, U384), (U384, u32, U384), (U384, u64, U384), 
-(U384, u128, U384), (U384, i8, I384), (U384, i16, I384), (U384, i32, I384), 
+(U384, u8, U384), (U384, u16, U384), (U384, u32, U384), (U384, u64, U384),
+(U384, u128, U384), (U384, i8, I384), (U384, i16, I384), (U384, i32, I384),
 (U384, i64, I384), (U384, i128, I384),
 
-(U512, u8, U512), (U512, u16, U512), (U512, u32, U512), (U512, u64, U512), 
-(U512, u128, U512), (U512, i8, I512), (U512, i16, I512), (U512, i32, I512), 
+(U512, u8, U512), (U512, u16, U512), (U512, u32, U512), (U512, u64, U512),
+(U512, u128, U512), (U512, i8, I512), (U512, i16, I512), (U512, i32, I512),
 (U512, i64, I512), (U512, i128, I512),
 
-(U256, U8, U256), (U256, U16, U256), (U256, U32, U256), (U256, U64, U256), 
-(U256, U128, U256), (U256, U256, U256), (U256, U384, U384), (U256, U512, U512), 
-(U256, I8, I256), (U256, I16, I256), (U256, I32, I256), (U256, I64, I256), 
+(U256, U8, U256), (U256, U16, U256), (U256, U32, U256), (U256, U64, U256),
+(U256, U128, U256), (U256, U256, U256), (U256, U384, U384), (U256, U512, U512),
+(U256, I8, I256), (U256, I16, I256), (U256, I32, I256), (U256, I64, I256),
 (U256, I128, I256), (U256, I256, I256), (U256, I384, I384),
 
-(U384, U8, U384), (U384, U16, U384), (U384, U32, U384), (U384, U64, U384), 
-(U384, U128, U384), (U384, U256, U256), (U384, U384, U384), (U384, U512, U512), 
-(U384, I8, I384), (U384, I16, I384), (U384, I32, I384), (U384, I64, I384), 
+(U384, U8, U384), (U384, U16, U384), (U384, U32, U384), (U384, U64, U384),
+(U384, U128, U384), (U384, U256, U256), (U384, U384, U384), (U384, U512, U512),
+(U384, I8, I384), (U384, I16, I384), (U384, I32, I384), (U384, I64, I384),
 (U384, I128, I384), (U384, I256, I256), (U384, I384, I384), (U384, I512, I512),
 
-(U512, U8, U512), (U512, U16, U512), (U512, U32, U512), (U512, U64, U512), 
-(U512, U128, U512), (U512, U256, U256), (U512, U384, U384), (U512, U512, U512), 
-(U512, I8, I512), (U512, I16, I512), (U512, I32, I512), (U512, I64, I512), 
+(U512, U8, U512), (U512, U16, U512), (U512, U32, U512), (U512, U64, U512),
+(U512, U128, U512), (U512, U256, U256), (U512, U384, U384), (U512, U512, U512),
+(U512, I8, I512), (U512, I16, I512), (U512, I32, I512), (U512, I64, I512),
 (U512, I128, I512), (U512, I256, I256), (U512, I384, I384), (U512, I512, I512),
 
-(I256, u8, I256), (I256, u16, I256), (I256, u32, I256), (I256, u64, I256), 
-(I256, u128, I256), (I256, i8, I256), (I256, i16, I256), (I256, i32, I256), 
+(I256, u8, I256), (I256, u16, I256), (I256, u32, I256), (I256, u64, I256),
+(I256, u128, I256), (I256, i8, I256), (I256, i16, I256), (I256, i32, I256),
 (I256, i64, I256), (I256, i128, I256),
 
-(I384, u8, I384), (I384, u16, I384), (I384, u32, I384), (I384, u64, I384), 
-(I384, u128, I384), (I384, i8, I384), (I384, i16, I384), (I384, i32, I384), 
+(I384, u8, I384), (I384, u16, I384), (I384, u32, I384), (I384, u64, I384),
+(I384, u128, I384), (I384, i8, I384), (I384, i16, I384), (I384, i32, I384),
 (I384, i64, I384), (I384, i128, I384),
 
-(I512, u8, I512), (I512, u16, I512), (I512, u32, I512), (I512, u64, I512), 
-(I512, u128, I512), (I512, i8, I512), (I512, i16, I512), (I512, i32, I512), 
+(I512, u8, I512), (I512, u16, I512), (I512, u32, I512), (I512, u64, I512),
+(I512, u128, I512), (I512, i8, I512), (I512, i16, I512), (I512, i32, I512),
 (I512, i64, I512), (I512, i128, I512),
 
-    (I256, U8, I256), (I256, U16, I256), (I256, U32, I256), (I256, U64, I256), 
-(I256, U128, I256), (I256, U256, I256), (I256, U384, I384), (I256, U512, I512), 
-(I256, I8, I256), (I256, I16, I256), (I256, I32, I256), (I256, I64, I256), 
+(I256, U8, I256), (I256, U16, I256), (I256, U32, I256), (I256, U64, I256),
+(I256, U128, I256), (I256, U256, I256), (I256, U384, I384), (I256, U512, I512),
+(I256, I8, I256), (I256, I16, I256), (I256, I32, I256), (I256, I64, I256),
 (I256, I128, I256), (I256, I256, I256), (I256, I384, I384),
 
-    (I384, U8, I384), (I384, U16, I384), (I384, U32, I384), (I384, U64, I384), 
-(I384, U128, I384), (I384, U256, I256), (I384, U384, I384), (I384, U512, I512), 
-(I384, I8, I384), (I384, I16, I384), (I384, I32, I384), (I384, I64, I384), 
+(I384, U8, I384), (I384, U16, I384), (I384, U32, I384), (I384, U64, I384),
+(I384, U128, I384), (I384, U256, I256), (I384, U384, I384), (I384, U512, I512),
+(I384, I8, I384), (I384, I16, I384), (I384, I32, I384), (I384, I64, I384),
 (I384, I128, I384), (I384, I256, I256), (I384, I384, I384), (I384, I512, I512),
 
-    (I512, U8, I512), (I512, U16, I512), (I512, U32, I512), (I512, U64, I512), 
-(I512, U128, I512), (I512, U256, I256), (I512, U384, I384), (I512, U512, I512), 
-(I512, I8, I512), (I512, I16, I512), (I512, I32, I512), (I512, I64, I512), 
+(I512, U8, I512), (I512, U16, I512), (I512, U32, I512), (I512, U64, I512),
+(I512, U128, I512), (I512, U256, I256), (I512, U384, I384), (I512, U512, I512),
+(I512, I8, I512), (I512, I16, I512), (I512, I32, I512), (I512, I64, I512),
 (I512, I128, I512), (I512, I256, I256), (I512, I384, I384), (I512, I512, I512) }
 
-checked_impl_small! { 
-    //(self, other, output)
-    (U8, u8, U8), (U8, u16, U16), (U8, u32, U32), (U8, u64, U64), (U8, u128, U128), 
+checked_impl_small! {
+//(self, other, output)
+(U8, u8, U8), (U8, u16, U16), (U8, u32, U32), (U8, u64, U64), (U8, u128, U128),
 (U8, i8, I8), (U8, i16, I16), (U8, i32, I32), (U8, i64, I64), (U8, i128, I128),
 
-    (U16, u8, U16), (U16, u16, U16), (U16, u32, U32), (U16, u64, U64), (U16, u128, U128), 
+(U16, u8, U16), (U16, u16, U16), (U16, u32, U32), (U16, u64, U64), (U16, u128, U128),
 (U16, i8, I16), (U16, i16, I16), (U16, i32, I32), (U16, i64, I64), (U16, i128, I128),
 
-    (U32, u8, U32), (U32, u16, U32), (U32, u32, U32), (U32, u64, U64), (U32, u128, U128), 
+(U32, u8, U32), (U32, u16, U32), (U32, u32, U32), (U32, u64, U64), (U32, u128, U128),
 (U32, i8, I32), (U32, i16, I32), (U32, i32, I32), (U32, i64, I64), (U32, i128, I128),
 
-    (U64, u8, U64), (U64, u16, U64), (U64, u32, U64), (U64, u64, U64), (U64, u128, U128), 
+(U64, u8, U64), (U64, u16, U64), (U64, u32, U64), (U64, u64, U64), (U64, u128, U128),
 (U64, i8, I64), (U64, i16, I64), (U64, i32, I64), (U64, i64, I64), (U64, i128, I128),
 
-    (U128, u8, U128), (U128, u16, U128), (U128, u32, U128), (U128, u64, U128), 
-(U128, u128, U128), (U128, i8, I128), (U128, i16, I128), (U128, i32, I128), 
+(U128, u8, U128), (U128, u16, U128), (U128, u32, U128), (U128, u64, U128),
+(U128, u128, U128), (U128, i8, I128), (U128, i16, I128), (U128, i32, I128),
 (U128, i64, I128), (U128, i128, I128),
 
-    (U16, U8, U16), (U16, U16, U16), (U16, U32, U32), (U16, U64, U64), (U16, U128, U128), 
-(U16, U256, U256), (U16, U384, U384), (U16, U512, U512), (U16, I8, I16), (U16, I16, I16), 
-(U16, I32, I32), (U16, I64, I64), (U16, I128, I128), (U16, I256, I256), (U16, I384, I384), 
+(U8, U8, U8), (U8, U16, U16), (U8, U32, U32), (U8, U64, U64), (U8, U128, U128),
+(U8, I8, I8), (U8, I16, I16), (U8, I32, I32), (U8, I64, I64), (U8, I128, I128),
+(U16, U8, U16), (U16, U16, U16), (U16, U32, U32), (U16, U64, U64), (U16, U128, U128),
+(U16, U256, U256), (U16, U384, U384), (U16, U512, U512), (U16, I8, I16), (U16, I16, I16),
+(U16, I32, I32), (U16, I64, I64), (U16, I128, I128), (U16, I256, I256), (U16, I384, I384),
 (U16, I512, I512),
 
-    (U32, U8, U32), (U32, U16, U32), (U32, U32, U32), (U32, U64, U64), (U32, U128, U128), 
-(U32, U256, U256), (U32, U384, U384), (U32, U512, U512), (U32, I8, I32), (U32, I16, I32), 
-(U32, I32, I32), (U32, I64, I64), (U32, I128, I128), (U32, I256, I256), (U32, I384, I384), 
+(U32, U8, U32), (U32, U16, U32), (U32, U32, U32), (U32, U64, U64), (U32, U128, U128),
+(U32, U256, U256), (U32, U384, U384), (U32, U512, U512), (U32, I8, I32), (U32, I16, I32),
+(U32, I32, I32), (U32, I64, I64), (U32, I128, I128), (U32, I256, I256), (U32, I384, I384),
 (U32, I512, I512),
 
-    (U64, U8, U64), (U64, U16, U64), (U64, U32, U64), (U64, U64, U64), (U64, U128, U128), 
-(U64, U256, U256), (U64, U384, U384), (U64, U512, U512), (U64, I8, I64), (U64, I16, I64), 
-(U64, I32, I64), (U64, I64, I64), (U64, I128, I128), (U64, I256, I256), (U64, I384, I384), 
+(U64, U8, U64), (U64, U16, U64), (U64, U32, U64), (U64, U64, U64), (U64, U128, U128),
+(U64, U256, U256), (U64, U384, U384), (U64, U512, U512), (U64, I8, I64), (U64, I16, I64),
+(U64, I32, I64), (U64, I64, I64), (U64, I128, I128), (U64, I256, I256), (U64, I384, I384),
 (U64, I512, I512),
 
-    (U128, U8, U128), (U128, U16, U128), (U128, U32, U128), (U128, U64, U128), 
-(U128, U128, U128), (U128, U256, U256), (U128, U384, U384), (U128, U512, U512), 
-(U128, I8, I128), (U128, I16, I128), (U128, I32, I128), (U128, I64, I128), 
+(U128, U8, U128), (U128, U16, U128), (U128, U32, U128), (U128, U64, U128),
+(U128, U128, U128), (U128, U256, U256), (U128, U384, U384), (U128, U512, U512),
+(U128, I8, I128), (U128, I16, I128), (U128, I32, I128), (U128, I64, I128),
 (U128, I128, I128), (U128, I256, I256), (U128, I384, I384), (U128, I512, I512),
 
-    (I8, u8, I8), (I8, u16, I16), (I8, u32, I32), (I8, u64, I64), (I8, u128, I128), 
+(I8, u8, I8), (I8, u16, I16), (I8, u32, I32), (I8, u64, I64), (I8, u128, I128),
 (I8, i8, I8), (I8, i16, I16), (I8, i32, I32), (I8, i64, I64), (I8, i128, I128),
 
-    (I16, u8, I16), (I16, u16, I16), (I16, u32, I32), (I16, u64, I64), (I16, u128, I128), 
+(I16, u8, I16), (I16, u16, I16), (I16, u32, I32), (I16, u64, I64), (I16, u128, I128),
 (I16, i8, I16), (I16, i16, I16), (I16, i32, I32), (I16, i64, I64), (I16, i128, I128),
 
-    (I32, u8, I32), (I32, u16, I32), (I32, u32, I32), (I32, u64, I64), (I32, u128, I128), 
+(I32, u8, I32), (I32, u16, I32), (I32, u32, I32), (I32, u64, I64), (I32, u128, I128),
 (I32, i8, I32), (I32, i16, I32), (I32, i32, I32), (I32, i64, I64), (I32, i128, I128),
 
-    (I64, u8, I64), (I64, u16, I64), (I64, u32, I64), (I64, u64, I64), (I64, u128, I128), 
+(I64, u8, I64), (I64, u16, I64), (I64, u32, I64), (I64, u64, I64), (I64, u128, I128),
 (I64, i8, I64), (I64, i16, I64), (I64, i32, I64), (I64, i64, I64), (I64, i128, I128),
 
-    (I128, u8, I128), (I128, u16, I128), (I128, u32, I128), (I128, u64, I128), 
-(I128, u128, I128), (I128, i8, I128), (I128, i16, I128), (I128, i32, I128), 
+(I128, u8, I128), (I128, u16, I128), (I128, u32, I128), (I128, u64, I128),
+(I128, u128, I128), (I128, i8, I128), (I128, i16, I128), (I128, i32, I128),
 (I128, i64, I128), (I128, i128, I128),
 
-    (I8, U8, I8), (I8, U16, I16), (I8, U32, I32), (I8, U64, I64), (I8, U128, I128), 
-(I8, U256, I256), (I8, U384, I384), (I8, U512, I512), (I8, I8, I8), (I8, I16, I16), 
-(I8, I32, I32), (I8, I64, I64), (I8, I128, I128), (I8, I256, I256), (I8, I384, I384), 
+(I8, U8, I8), (I8, U16, I16), (I8, U32, I32), (I8, U64, I64), (I8, U128, I128),
+(I8, U256, I256), (I8, U384, I384), (I8, U512, I512), (I8, I8, I8), (I8, I16, I16),
+(I8, I32, I32), (I8, I64, I64), (I8, I128, I128), (I8, I256, I256), (I8, I384, I384),
 (I8, I512, I512),
 
-    (I16, U8, I16), (I16, U16, I16), (I16, U32, I32), (I16, U64, I64), (I16, U128, I128), 
-(I16, U256, I256), (I16, U384, I384), (I16, U512, I512), (I16, I8, I16), (I16, I16, I16), 
-(I16, I32, I32), (I16, I64, I64), (I16, I128, I128), (I16, I256, I256), (I16, I384, I384), 
+(I16, U8, I16), (I16, U16, I16), (I16, U32, I32), (I16, U64, I64), (I16, U128, I128),
+(I16, U256, I256), (I16, U384, I384), (I16, U512, I512), (I16, I8, I16), (I16, I16, I16),
+(I16, I32, I32), (I16, I64, I64), (I16, I128, I128), (I16, I256, I256), (I16, I384, I384),
 (I16, I512, I512),
 
-    (I32, U8, I32), (I32, U16, I32), (I32, U32, I32), (I32, U64, I64), (I32, U128, I128), 
-(I32, U256, I256), (I32, U384, I384), (I32, U512, I512), (I32, I8, I32), (I32, I16, I32), 
-(I32, I32, I32), (I32, I64, I64), (I32, I128, I128), (I32, I256, I256), (I32, I384, I384), 
+(I32, U8, I32), (I32, U16, I32), (I32, U32, I32), (I32, U64, I64), (I32, U128, I128),
+(I32, U256, I256), (I32, U384, I384), (I32, U512, I512), (I32, I8, I32), (I32, I16, I32),
+(I32, I32, I32), (I32, I64, I64), (I32, I128, I128), (I32, I256, I256), (I32, I384, I384),
 (I32, I512, I512),
 
-    (I64, U8, I64), (I64, U16, I64), (I64, U32, I64), (I64, U64, I64), (I64, U128, I128), 
-(I64, U256, I256), (I64, U384, I384), (I64, U512, I512), (I64, I8, I64), (I64, I16, I64), 
-(I64, I32, I64), (I64, I64, I64), (I64, I128, I128), (I64, I256, I256), (I64, I384, I384), 
+(I64, U8, I64), (I64, U16, I64), (I64, U32, I64), (I64, U64, I64), (I64, U128, I128),
+(I64, U256, I256), (I64, U384, I384), (I64, U512, I512), (I64, I8, I64), (I64, I16, I64),
+(I64, I32, I64), (I64, I64, I64), (I64, I128, I128), (I64, I256, I256), (I64, I384, I384),
 (I64, I512, I512),
 
-    (I128, U8, I128), (I128, U16, I128), (I128, U32, I128), (I128, U64, I128), 
-(I128, U128, I128), (I128, U256, I256), (I128, U384, I384), (I128, U512, I512), 
-(I128, I8, I128), (I128, I16, I128), (I128, I32, I128), (I128, I64, I128), 
+(I128, U8, I128), (I128, U16, I128), (I128, U32, I128), (I128, U64, I128),
+(I128, U128, I128), (I128, U256, I256), (I128, U384, I384), (I128, U512, I512),
+(I128, I8, I128), (I128, I16, I128), (I128, I32, I128), (I128, I64, I128),
 (I128, I128, I128), (I128, I256, I256), (I128, I384, I384), (I128, I512, I512) }
 
 macro_rules! checked_impl_not_large {
-    ($($t:ident),*) => {
-        $(
-            impl Not for $t {
-                type Output = $t;
+            ($($t:ident),*) => {
+                $(
+                    impl Not for $t {
+                        type Output = $t;
 
-                #[inline]
-                fn not(self) -> $t {
-                    self.0.iter().map(|x| x.not()).collect::<Vec<u8>>().try_into().unwrap()
-                }
+                        #[inline]
+                        fn not(self) -> $t {
+                            self.0.iter().map(|x| x.not()).collect::<Vec<u8>>().try_into().unwrap()
+                        }
+                    }
+                    forward_ref_unop! { impl Not, not for $t }
+                )*
             }
-            forward_ref_unop! { impl Not, not for $t }
-        )*
-    }
-}
+        }
 
 macro_rules! checked_impl_not_small {
     ($($t:ident),*) => {
@@ -1551,7 +1574,7 @@ macro_rules! checked_impl_neg_signed {
 checked_impl_neg_signed! {I8, I16, I32, I64, I128, I256, I384, I512}
 
 macro_rules! checked_int_impl_large {
-    (type_id: $t:ident, bytes_len: $bytes_len:literal, MIN: $min: expr, MAX: $max: expr, fn pow(self, exp: $o:ident)) => {
+    (type_id: $t:ident, bytes_len: $bytes_len:literal, MIN: $min: expr, MAX: $max: expr) => {
         paste! {
             impl $t {
                 /// Returns the smallest value that can be represented by this integer type.
@@ -1840,21 +1863,20 @@ macro_rules! checked_int_impl_large {
 }
 
 macro_rules! checked_unsigned_large {
-    ($($t:ident, $o:ident, $bytes_len:literal),*) => {
+    ($($t:ident, $bytes_len:literal),*) => {
         $(
             checked_int_impl_large! {
                 type_id: $t,
                 bytes_len: $bytes_len,
                 MIN: $t([0u8; $bytes_len]),
-                MAX: $t([0xffu8; $bytes_len]),
-                fn pow(self, exp: $o)
+                MAX: $t([0xffu8; $bytes_len])
             }
         )*
     }
 }
 
 macro_rules! checked_signed_large {
-    ( $($t:ident, $o:ident, $bytes_len:literal),* ) => {
+    ( $($t:ident, $bytes_len:literal),* ) => {
         $(
             checked_int_impl_large! {
                 type_id: $t,
@@ -1868,35 +1890,26 @@ macro_rules! checked_signed_large {
                     let mut arr = [0xff; $bytes_len];
                     arr[$bytes_len - 1] = 0x7f;
                     $t(arr)
-                },
-                fn pow(self, exp: $o)
+                }
             }
         )*
     }
 }
 
-macro_rules! checked_all {
-    ($($t:ident),*) => {
-        $(
-
-            checked_signed_large! {
-                I256, $t, 32,
-                I384, $t, 48,
-                I512, $t, 64
-            }
-
-            checked_unsigned_large! {
-                U256, $t, 32,
-                U384, $t, 48,
-                U512, $t, 64
-            }
-        )*
-    };
+checked_signed_large! {
+    I256, 32,
+    I384, 48,
+    I512, 64
 }
-checked_all! { i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
+
+checked_unsigned_large! {
+    U256, 32,
+    U384, 48,
+    U512, 64
+}
 
 macro_rules! checked_int_impl_small {
-    ($(($t:ident, $o:ident)),*) => {$(
+    ($($t:ident),*) => {$(
         paste! {
             impl $t {
                 /// Returns the smallest value that can be represented by this integer type.
@@ -2171,17 +2184,10 @@ macro_rules! checked_int_impl_small {
                 }
             }
         }
-    )*}
+        )*}
 }
 
-macro_rules! checked_impl_all {
-    ($($t:ident),*) => {$(
-        checked_int_impl_small! { (I8, $t), (I16, $t), (I32, $t), (I64, $t), (I128, $t) }
-        checked_int_impl_small! { (U8, $t), (U16, $t), (U32, $t), (U64, $t), (U128, $t) }
-    )*}
-}
-
-checked_impl_all! { i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
+checked_int_impl_small! { I8, I16, I32, I64, I128, U8, U16, U32, U64, U128 }
 
 macro_rules! leading_zeros_large {
     () => {
