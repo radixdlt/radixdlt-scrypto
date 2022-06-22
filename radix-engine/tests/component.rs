@@ -69,11 +69,13 @@ fn invalid_blueprint_name_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error.");
-    assert_eq!(
-        error,
-        RuntimeError::BlueprintNotFound(package_address, "NonExistentBlueprint".to_string())
-    );
+    receipt.expect_err(|e| {
+        if let RuntimeError::BlueprintNotFound(addr, blueprint) = e {
+            addr.eq(&package_address) && blueprint.eq("NonExistentBlueprint")
+        } else {
+            false
+        }
+    });
 }
 
 #[test]
@@ -95,8 +97,13 @@ fn reentrancy_should_not_be_possible() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error.");
-    assert_eq!(error, RuntimeError::ComponentReentrancy(component_address))
+    receipt.expect_err(|e| {
+        if let RuntimeError::ComponentReentrancy(address) = e {
+            address.eq(&component_address)
+        } else {
+            false
+        }
+    });
 }
 
 #[test]
@@ -115,6 +122,11 @@ fn missing_component_address_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error.");
-    assert_eq!(error, RuntimeError::ComponentNotFound(component_address));
+    receipt.expect_err(|e| {
+        if let RuntimeError::ComponentNotFound(address) = e {
+            address.eq(&component_address)
+        } else {
+            false
+        }
+    });
 }

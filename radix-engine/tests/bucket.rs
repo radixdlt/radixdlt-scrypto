@@ -88,18 +88,18 @@ fn test_take_with_invalid_granularity() {
         .unwrap()
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    assert_eq!(
-        receipt.result,
-        Err(RuntimeError::BucketError(
-            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
-                dec!("1.123"),
-                2
-            ))
-        ))
-    );
+    receipt.expect_err(|e| {
+        if let RuntimeError::BucketError(BucketError::ResourceContainerError(
+            ResourceContainerError::InvalidAmount(amount, granularity),
+        )) = e
+        {
+            amount.eq(&dec!("1.123")) && *granularity == 2
+        } else {
+            false
+        }
+    });
 }
 
 #[test]
@@ -123,18 +123,18 @@ fn test_take_with_negative_amount() {
         .unwrap()
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    assert_eq!(
-        receipt.result,
-        Err(RuntimeError::BucketError(
-            BucketError::ResourceContainerError(ResourceContainerError::InvalidAmount(
-                dec!("-2"),
-                2
-            ))
-        ))
-    );
+    receipt.expect_err(|e| {
+        if let RuntimeError::BucketError(BucketError::ResourceContainerError(
+            ResourceContainerError::InvalidAmount(amount, granularity),
+        )) = e
+        {
+            amount.eq(&dec!("-2")) && *granularity == 2
+        } else {
+            false
+        }
+    });
 }
 
 #[test]
