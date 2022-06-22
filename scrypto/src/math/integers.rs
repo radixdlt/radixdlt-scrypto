@@ -106,16 +106,16 @@ macro_rules! types {
 
             impl FromPrimitive for $t {
                 fn from_i64(n: i64) -> Option<Self> {
-                    [<bigint_to_$t:lower>] (BigInt::from_i64(n)).ok()
+                    [<bigint_to_$t:lower>] (BigInt::from(n)).ok()
                 }
                 fn from_i128(n: i128) -> Option<Self> {
-                    [<bigint_to_$t:lower>] (BigInt::from_i128(n)).ok()
+                    [<bigint_to_$t:lower>] (BigInt::from(n)).ok()
                 }
                 fn from_u64(n: u64) -> Option<Self> {
-                    [<bigint_to_$t:lower>] (BigInt::from_u64(n)).ok()
+                    [<bigint_to_$t:lower>] (BigInt::from(n)).ok()
                 }
                 fn from_u128(n: u128) -> Option<Self> {
-                    [<bigint_to_$t:lower>] (BigInt::from_u128(n)).ok()
+                    [<bigint_to_$t:lower>] (BigInt::from(n)).ok()
                 }
             }
             )*
@@ -915,32 +915,27 @@ trait PrimIntExt<T> {
 }
 
 macro_rules! other_expr {
+    (I256|I384|I512|U256|U384|U512, I256|I384|I512|U256|U384|U512, $other:ident) => {
+        &BigInt::from_signed_bytes_le(&$other.0)
+    };
+
+    (I256|I384|I512|U256|U384|U512, $o:ty, $other:ident) => {
+        &BigInt::from($other.0)
+    };
+    ($t:ty, I256|I384|I512|U256|U384|U512, $other:ident) => {
+        BigInt::from_signed_bytes_le(&$other.0).try_into().unwrap()
+    };
     ($t:ty, $o:ty, $other:ident) => {
-        paste! {
-            if <$t>::BITS >= 256 {
-                if <$o>::BITS >= 256 {
-                    &BigInt::from_signed_bytes_le(&$other.0)
-                } else {
-                    &BigInt::from($other.0)
-                }
-            } else {
-                if <$o>::BITS >= 256 {
-                    BigInt::from_signed_bytes_le(&$other.0).try_into().unwrap()
-                } else {
-                    $other.0.try_into().unwrap()
-                }
-            }
-        }
+        $other.0.try_into().unwrap()
     };
 }
 
 macro_rules! self_expr {
-    ($t:ty, $self:ident) => {
-        if <$t>::BITS >= 256 {
-            BigInt::from_signed_bytes_le(&$self.0)
-        } else {
-            $self.0.into()
-        }
+    (I256|I384|I512|U256|U384|U512, $self:ident) => {
+        BigInt::from_signed_bytes_le(&$self.0)
+    };
+    ($t:ident, $self:ident) => {
+        $self.0.into()
     };
 }
 
@@ -1133,7 +1128,7 @@ macro_rules! checked_impl_large {
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     fn rotate_left(self, n: $o) -> Self {
-                        let rot: u32 = (n % Self::BITS).into();
+                        let rot: u32 = (n % Self::BITS).to_u32();
                         let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
                         let big_rot = big.clone().shl(rot);
                         big_rot.bitor(big.shr(Self::BITS - rot)).try_into().unwrap()
@@ -1162,7 +1157,7 @@ macro_rules! checked_impl_large {
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     fn rotate_right(self, n: $o) -> Self {
-                        let rot: u32 = (n % Self::BITS).into();
+                        let rot: u32 = (n % Self::BITS).to_u32();
                         let big: BigInt = BigInt::from_signed_bytes_le(&self.0);
                         let big_rot = big.clone().shr(rot);
                         big_rot.bitor(big.shl(Self::BITS - rot)).try_into().unwrap()
@@ -1324,13 +1319,14 @@ macro_rules! checked_impl_small {
                 forward_ref_op_assign! { impl BitAndAssign, bitand_assign for $t, $o }
 
                 impl Pow<$o> for $t {
+
+                    type Output = $t;
                     /// Raises self to the power of `exp`, using exponentiation by squaring.
                     ///
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     fn pow(self, other: $o) -> $t {
-                        type Output = $t;
                         $t(self.0.checked_pow(other.try_into().unwrap()).unwrap())
                     }
                 }
@@ -1338,6 +1334,7 @@ macro_rules! checked_impl_small {
                 forward_ref_binop! { impl Pow, pow for $t, $o }
 
                 impl PrimIntExt<$o> for $t {
+                    type Output = $t;
                     /// Shifts the bits to the left by a specified amount, `n`,
                     /// wrapping the truncated bits to the end of the resulting
                     /// integer.
@@ -1361,7 +1358,6 @@ macro_rules! checked_impl_small {
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                     fn rotate_left(self, n: $o) -> Self {
-                        type Output = $t;
                         $t(self.0.rotate_left(n.try_into().unwrap()))
                     }
 
