@@ -126,13 +126,13 @@ fn dangling_vault_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(
-        runtime_error,
-        RuntimeError::ResourceCheckFailure(ResourceFailure::Resource(
-            receipt.new_resource_addresses[0]
-        ))
-    );
+    receipt.expect_err(|e| {
+        if let RuntimeError::ResourceCheckFailure(ResourceFailure::Resource(addr)) = e {
+            addr.eq(&receipt.new_resource_addresses[0])
+        } else {
+            false
+        }
+    });
 }
 
 #[test]

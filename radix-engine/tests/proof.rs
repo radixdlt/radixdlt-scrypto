@@ -251,13 +251,9 @@ fn cant_move_restricted_proof() {
         .unwrap()
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
-    println!("{:?}", receipt);
 
     // Assert
-    assert_eq!(
-        receipt.result,
-        Err(RuntimeError::CantMoveRestrictedProof(1025))
-    );
+    receipt.expect_err(|e| matches!(e, RuntimeError::CantMoveRestrictedProof(_)));
 }
 
 #[test]

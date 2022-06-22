@@ -27,11 +27,12 @@ fn dangling_key_value_store_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(
-        runtime_error,
-        RuntimeError::ResourceCheckFailure(ResourceFailure::UnclaimedKeyValueStore)
-    );
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ResourceCheckFailure(ResourceFailure::UnclaimedKeyValueStore)
+        )
+    });
 }
 
 #[test]
