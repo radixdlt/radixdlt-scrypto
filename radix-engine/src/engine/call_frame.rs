@@ -135,7 +135,7 @@ impl Into<TransientValue> for REValue {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueRefType {
     Uncommitted {
-        root: KeyValueStoreId,
+        root: ValueId,
         ancestors: Vec<KeyValueStoreId>,
     },
     Committed {
@@ -1037,7 +1037,7 @@ where
                             } => {
                                 let root_value = self
                                     .owned_values
-                                    .get_mut(&ValueId::kv_store_id(root))
+                                    .get_mut(&root)
                                     .unwrap()
                                     .get_mut();
                                 let root_store = match root_value {
@@ -1478,7 +1478,7 @@ where
                     (
                         SubstateEntry::KeyValueStore(REValueRef::Owned(ref_store), key),
                         ValueRefType::Uncommitted {
-                            root: kv_store_id.clone(),
+                            root: ValueId::kv_store_id(kv_store_id.clone()),
                             ancestors: vec![],
                         },
                     )
@@ -1497,7 +1497,7 @@ where
                             };
                             let root_value = self
                                 .owned_values
-                                .get_mut(&ValueId::kv_store_id(*root))
+                                .get_mut(root)
                                 .unwrap();
                             let ref_store = root_value
                                 .get_mut()
