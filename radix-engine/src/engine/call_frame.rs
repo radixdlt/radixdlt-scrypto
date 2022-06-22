@@ -1050,11 +1050,8 @@ where
                                 root,
                                 ref ancestors,
                             } => {
-                                let root_value = self
-                                    .owned_values
-                                    .get_mut(&root)
-                                    .unwrap()
-                                    .get_mut();
+                                let root_value =
+                                    self.owned_values.get_mut(&root).unwrap().get_mut();
                                 let root_store = match root_value {
                                     REValue::Stored(root_store) => root_store,
                                     _ => panic!("Invalid type"),
@@ -1483,7 +1480,9 @@ where
                                     TrackError::NotFound => {
                                         RuntimeError::ComponentNotFound(component_address)
                                     }
-                                    TrackError::Reentrancy => panic!("Should not run into reentrancy"),
+                                    TrackError::Reentrancy => {
+                                        panic!("Should not run into reentrancy")
+                                    }
                                 })?;
                             (
                                 SubstateEntry::Component(REValueRef::Track(address), offset),
@@ -1527,10 +1526,7 @@ where
                                 root: root.clone(),
                                 ancestors: next_ancestors,
                             };
-                            let root_value = self
-                                .owned_values
-                                .get_mut(root)
-                                .unwrap();
+                            let root_value = self.owned_values.get_mut(root).unwrap();
                             let ref_store = root_value
                                 .get_mut()
                                 .to_stored()

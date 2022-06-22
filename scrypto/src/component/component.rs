@@ -26,6 +26,22 @@ impl LocalComponent {
         }
     }
 
+    /// Returns the package ID of this component.
+    pub fn package_address(&self) -> PackageAddress {
+        let address = DataAddress::Component(self.component_address, ComponentOffset::Info);
+        let input = RadixEngineInput::ReadData(address);
+        let output: (PackageAddress, String) = call_engine(input);
+        output.0
+    }
+
+    /// Returns the blueprint name of this component.
+    pub fn blueprint_name(&self) -> String {
+        let address = DataAddress::Component(self.component_address, ComponentOffset::Info);
+        let input = RadixEngineInput::ReadData(address);
+        let output: (PackageAddress, String) = call_engine(input);
+        output.1
+    }
+
     pub fn add_access_check(mut self, authorization: AccessRules) -> Self {
         self.access_rules_list.push(authorization);
         self
