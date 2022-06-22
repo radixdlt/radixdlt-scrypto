@@ -8,7 +8,14 @@ blueprint! {
             Self {}.instantiate();
         }
 
-        pub fn dangling_vault() -> () {
+        pub fn dangling_bucket() {
+            let _bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .initial_supply(1);
+        }
+
+        pub fn dangling_vault() {
             let bucket = ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)
                 .metadata("name", "TestToken")
