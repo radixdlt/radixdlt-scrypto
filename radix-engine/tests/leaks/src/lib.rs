@@ -36,5 +36,14 @@ blueprint! {
             map.insert("hello".to_owned(), "world".to_owned());
             map.get(&"hello".to_owned());
         }
+
+        pub fn dangling_bucket_with_proof() -> Proof {
+            let bucket = ResourceBuilder::new_fungible()
+                .divisibility(DIVISIBILITY_MAXIMUM)
+                .metadata("name", "TestToken")
+                .initial_supply(1);
+
+            bucket.create_proof()
+        }
     }
 }
