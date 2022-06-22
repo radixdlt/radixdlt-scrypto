@@ -11,6 +11,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
+use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
@@ -285,7 +286,7 @@ impl<'a> REValueRef<'a> {
         ScryptoValue::from_value(value).unwrap()
     }
 
-    fn component_get<S: ReadableSubstateStore>(
+    fn component_get_state<S: ReadableSubstateStore>(
         &self,
         track: &mut Track<S>,
     ) -> ScryptoValue {
@@ -294,6 +295,24 @@ impl<'a> REValueRef<'a> {
                 let component_val = track.read_value(address.clone());
                 let component = component_val.component();
                 return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
+            }
+            _ => panic!("Unexpected component ref")
+        }
+    }
+
+    fn component_get_info<S: ReadableSubstateStore>(
+        &self,
+        track: &mut Track<S>,
+    ) -> ScryptoValue {
+        match self {
+            REValueRef::Track(address) => {
+                let component_val = track.borrow_global_value(address.clone()).unwrap();
+                let component = component_val.component();
+                let info = (
+                    component.package_address().clone(),
+                    component.blueprint_name().to_string(),
+                );
+                return ScryptoValue::from_typed(&info);
             }
             _ => panic!("Unexpected component ref")
         }
@@ -390,8 +409,7 @@ pub enum SNodeExecution<'a> {
 
 enum SubstateEntry<'a> {
     KeyValueStore(REValueRef<'a>, ScryptoValue),
-    Component(REValueRef<'a>),
-    ComponentInfoTracked(ComponentAddress),
+    Component(REValueRef<'a>, ComponentOffset),
 }
 
 pub enum DataInstruction {
@@ -401,8 +419,7 @@ pub enum DataInstruction {
 
 pub enum SubstateAddress {
     KeyValueEntry(KeyValueStoreId, ScryptoValue),
-    Component(ComponentAddress),
-    ComponentInfo(ComponentAddress),
+    Component(ComponentAddress, ComponentOffset),
 }
 
 impl<'a> SNodeExecution<'a> {
@@ -1377,28 +1394,28 @@ where
 
         // Get reference to data address
         let (store, ref_type) = match address {
-            SubstateAddress::Component(component_address) => {
-                // TODO: use this check for all address types
+            SubstateAddress::Component(component_address, offset) => {
                 let address = component_address.into();
-                if !self.readable_values.contains(&address) {
-                    return Err(RuntimeError::InvalidDataAccess);
+
+                // TODO: use this check for all address types
+                match offset {
+                    ComponentOffset::State => {
+                        if !self.readable_values.contains(&address) {
+                            return Err(RuntimeError::InvalidDataAccess);
+                        }
+                    }
+                    ComponentOffset::Info => {
+                        self.track
+                            .borrow_global_value(component_address.clone())
+                            .map_err(|e| match e {
+                                TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
+                                TrackError::Reentrancy => panic!("Should not run into reentrancy"),
+                            })?;
+                    }
                 }
+
                 (
-                    SubstateEntry::Component(REValueRef::Track(component_address.into())),
-                    ValueRefType::Committed {
-                        component_address: component_address.clone(),
-                    },
-                )
-            }
-            SubstateAddress::ComponentInfo(component_address) => {
-                self.track
-                    .borrow_global_value(component_address.clone())
-                    .map_err(|e| match e {
-                        TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
-                        TrackError::Reentrancy => panic!("Should not run into reentrancy"),
-                    })?;
-                (
-                    SubstateEntry::ComponentInfoTracked(component_address.clone()),
+                    SubstateEntry::Component(REValueRef::Track(address), offset),
                     ValueRefType::Committed {
                         component_address: component_address.clone(),
                     },
@@ -1466,20 +1483,12 @@ where
 
         // Read current value
         let current_value = match &store {
-            SubstateEntry::Component(component_ref) => {
-                component_ref.component_get(&mut self.track)
-            }
-            SubstateEntry::ComponentInfoTracked(component_address) => {
-                let component_val = self
-                    .track
-                    .borrow_global_value(component_address.clone())
-                    .unwrap();
-                let component = component_val.component();
-                let info = (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                );
-                ScryptoValue::from_typed(&info)
+            SubstateEntry::Component(component_ref, offset) => {
+                match offset {
+                    ComponentOffset::State => component_ref.component_get_state(&mut self.track),
+                    ComponentOffset::Info => component_ref.component_get_info(&mut self.track),
+                }
+
             }
             SubstateEntry::KeyValueStore(store, key) => {
                 store.kv_store_get(&key.raw, &mut self.track)
@@ -1505,11 +1514,13 @@ where
 
                 // Write values
                 match store {
-                    SubstateEntry::ComponentInfoTracked(..) => {
-                        return Err(RuntimeError::InvalidDataWrite);
-                    }
-                    SubstateEntry::Component(mut component_ref) => {
-                        component_ref.component_put(value, to_store_values, self.track);
+                    SubstateEntry::Component(mut component_ref, offset) => {
+                        match offset {
+                            ComponentOffset::State => component_ref.component_put(value, to_store_values, self.track),
+                            ComponentOffset::Info => {
+                                return Err(RuntimeError::InvalidDataWrite);
+                            }
+                        }
                     }
                     SubstateEntry::KeyValueStore(mut stored_value, key) => {
                         stored_value.kv_store_put(key.raw, value, to_store_values, self.track);

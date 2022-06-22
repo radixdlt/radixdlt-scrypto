@@ -114,11 +114,8 @@ where
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
             }
-            DataAddress::Component(component_address) => {
-                SubstateAddress::Component(component_address)
-            }
-            DataAddress::ComponentInfo(component_address) => {
-                SubstateAddress::ComponentInfo(component_address)
+            DataAddress::Component(component_address, offset) => {
+                SubstateAddress::Component(component_address, offset)
             }
         };
 
@@ -136,11 +133,8 @@ where
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
             }
-            DataAddress::Component(component_address) => {
-                SubstateAddress::Component(component_address)
-            }
-            DataAddress::ComponentInfo(component_address) => {
-                SubstateAddress::ComponentInfo(component_address)
+            DataAddress::Component(component_address, offset) => {
+                SubstateAddress::Component(component_address, offset)
             }
         };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;

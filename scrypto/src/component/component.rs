@@ -70,7 +70,7 @@ impl Component {
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let address = DataAddress::ComponentInfo(self.0);
+        let address = DataAddress::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.0
@@ -78,7 +78,7 @@ impl Component {
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let address = DataAddress::ComponentInfo(self.0);
+        let address = DataAddress::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.1

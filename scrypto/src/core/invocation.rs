@@ -23,9 +23,15 @@ pub enum SNodeRef {
     TransactionProcessor,
 }
 
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum ComponentOffset {
+    Info,
+    State,
+}
+
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum DataAddress {
     KeyValueEntry(KeyValueStoreId, Vec<u8>),
-    Component(ComponentAddress),
-    ComponentInfo(ComponentAddress),
+    Component(ComponentAddress, ComponentOffset),
 }
