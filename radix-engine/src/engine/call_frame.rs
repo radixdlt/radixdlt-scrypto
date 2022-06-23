@@ -234,7 +234,7 @@ pub enum REValueLocation {
 }
 
 impl REValueLocation {
-    fn to_ref<'a>(&self, value_id: &StoredValueId, owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>) -> REValueRef<'a> {
+    fn to_ref<'a>(&self, value_id: &ValueId, owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>) -> REValueRef<'a> {
         match self {
             REValueLocation::Owned {
                 root,
@@ -245,19 +245,29 @@ impl REValueLocation {
                     REValue::Stored(root_store) => root_store,
                     _ => panic!("Invalid type"),
                 };
-                let value = root_store.get_child(ancestors, &value_id);
-                REValueRef::Owned(REOwnedValueRef::Child(value))
+
+                match value_id {
+                    ValueId::Stored(stored_value_id) => {
+                        let value = root_store.get_child(ancestors, &stored_value_id);
+                        REValueRef::Owned(REOwnedValueRef::Child(value))
+                    }
+                    _ => panic!("Unexpected value id")
+                }
             }
             REValueLocation::Track { component_address } => {
                 let address = match value_id {
-                    StoredValueId::VaultId(vault_id) => {
+                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
                         let vault_address = (*component_address, *vault_id);
                         vault_address.into()
-                    },
-                    StoredValueId::KeyValueStoreId(kv_store_id) => {
+                    }
+                    ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => {
                         let vault_address = (*component_address, *kv_store_id);
                         vault_address.into()
                     }
+                    ValueId::Component(component_address) => {
+                        component_address.clone().into()
+                    }
+                    _ => panic!("Unexpected value id")
                 };
 
                 REValueRef::Track(address)
@@ -1093,7 +1103,8 @@ where
             },
             SNodeRef::VaultRef(vault_id) => {
                 let (resource_address, snode_state) = {
-                    if let Some(value) = self.owned_values.get(&ValueId::vault_id(*vault_id)) {
+                    let value_id = ValueId::vault_id(*vault_id);
+                    if let Some(value) = self.owned_values.get(&value_id) {
                         let resource_address = match value.borrow().deref() {
                             REValue::Stored(StoredValue::Vault(vault)) => vault.resource_address(),
                             _ => panic!("Expected vault"),
@@ -1102,13 +1113,13 @@ where
                         (
                             resource_address,
                             SNodeExecution::ValueRef2(
-                                ValueId::vault_id(*vault_id),
+                                value_id,
                                 REValueRef::Owned(REOwnedValueRef::Root(value.borrow_mut())),
                             ),
                         )
                     } else {
-                        let value_id = StoredValueId::VaultId(*vault_id);
-                        let maybe_value_ref = self.refed_values.get(&value_id);
+                        let stored_value_id = StoredValueId::VaultId(*vault_id);
+                        let maybe_value_ref = self.refed_values.get(&stored_value_id);
                         let location = maybe_value_ref
                             .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?;
                         let mut value_ref = location.to_ref(&value_id, &mut self.owned_values);
