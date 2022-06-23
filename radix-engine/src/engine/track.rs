@@ -448,8 +448,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                         .insert(address.clone(), SubstateValue::Resource(resource_manager));
                 }
                 Address::Vault(..) => {
-                    let vault: Vault =
-                        scrypto_decode(&substate.value).unwrap();
+                    let vault: Vault = scrypto_decode(&substate.value).unwrap();
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Vault(vault));
                 }

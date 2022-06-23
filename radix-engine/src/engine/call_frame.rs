@@ -26,7 +26,6 @@ use crate::wasm::*;
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
 pub struct CallFrame<
-    'r,
     'p, // Parent frame lifetime
     's, // Substate store lifetime
     't, // Track lifetime
@@ -63,9 +62,6 @@ pub struct CallFrame<
     // TODO: Merge with refed_values
     /// Readable values
     readable_values: HashMap<Address, REValueLocation>,
-
-    /// Values borrowed from the parent frame
-    borrowed_values: HashMap<Address, REOwnedValueRef<'r>>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
@@ -237,12 +233,10 @@ pub enum REValueLocation {
 impl REValueLocation {
     fn child(&self, value_id: ValueId) -> REValueLocation {
         match self {
-            REValueLocation::OwnedRoot => {
-                REValueLocation::Owned {
-                    root: value_id,
-                    ancestors: vec![],
-                }
-            }
+            REValueLocation::OwnedRoot => REValueLocation::Owned {
+                root: value_id,
+                ancestors: vec![],
+            },
             REValueLocation::Owned { root, ancestors } => {
                 let mut next_ancestors = ancestors.clone();
                 let kv_store_id = value_id.into();
@@ -253,15 +247,17 @@ impl REValueLocation {
                 };
                 value_ref_type
             }
-            REValueLocation::Track { component_address } => {
-                REValueLocation::Track {
-                    component_address: *component_address,
-                }
-            }
+            REValueLocation::Track { component_address } => REValueLocation::Track {
+                component_address: *component_address,
+            },
         }
     }
 
-    fn to_ref<'a>(&self, value_id: &ValueId, owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>) -> REValueRef<'a> {
+    fn to_ref<'a>(
+        &self,
+        value_id: &ValueId,
+        owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
+    ) -> REValueRef<'a> {
         match self {
             REValueLocation::OwnedRoot => {
                 let cell = owned_values.get_mut(value_id).unwrap();
@@ -283,7 +279,7 @@ impl REValueLocation {
                         let value = root_store.get_child(ancestors, &stored_value_id);
                         REValueRef::Owned(REOwnedValueRef::Child(value))
                     }
-                    _ => panic!("Unexpected value id")
+                    _ => panic!("Unexpected value id"),
                 }
             }
             REValueLocation::Track { component_address } => {
@@ -294,10 +290,8 @@ impl REValueLocation {
                     ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => {
                         Address::KeyValueStore(*component_address, *kv_store_id)
                     }
-                    ValueId::Component(component_address) => {
-                        component_address.clone().into()
-                    }
-                    _ => panic!("Unexpected value id")
+                    ValueId::Component(component_address) => component_address.clone().into(),
+                    _ => panic!("Unexpected value id"),
                 };
 
                 REValueRef::Track(address)
@@ -447,17 +441,12 @@ impl<'a> REValueRef<'a> {
         }
     }
 
-    fn vault_address<S: ReadableSubstateStore>(
-        &mut self,
-        track: &mut Track<S>,
-    ) -> ResourceAddress {
+    fn vault_address<S: ReadableSubstateStore>(&mut self, track: &mut Track<S>) -> ResourceAddress {
         match self {
-            REValueRef::Owned(REOwnedValueRef::Root(re_value)) => {
-                match re_value.to_stored() {
-                    StoredValue::Vault(vault) => vault.resource_address(),
-                    _ => panic!("Unexpected value")
-                }
-            }
+            REValueRef::Owned(REOwnedValueRef::Root(re_value)) => match re_value.to_stored() {
+                StoredValue::Vault(vault) => vault.resource_address(),
+                _ => panic!("Unexpected value"),
+            },
             REValueRef::Owned(REOwnedValueRef::Child(stored_value)) => {
                 stored_value.vault().resource_address()
             }
@@ -622,7 +611,7 @@ impl<'a> SNodeExecution<'a> {
     }
 }
 
-impl<'r, 'p, 's, 't, 'w, S, W, I> CallFrame<'r, 'p, 's, 't, 'w, S, W, I>
+impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -703,7 +692,6 @@ where
             wasm_instrumenter,
             owned_values: celled_owned_values,
             refed_values: HashMap::new(),
-            borrowed_values: HashMap::new(),
             readable_values,
             worktop,
             auth_zone,
@@ -888,7 +876,7 @@ where
     }
 }
 
-impl<'r, 'p, 's, 't, 'w, S, W, I> SystemApi<W, I> for CallFrame<'r, 'p, 's, 't, 'w, S, W, I>
+impl<'p, 's, 't, 'w, S, W, I> SystemApi<W, I> for CallFrame<'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -1092,14 +1080,19 @@ where
                         }
                     })?;
                     locked_values.insert(address.clone());
-                    readable_values.insert(address.clone(), REValueLocation::Track { component_address });
+                    readable_values.insert(
+                        address.clone(),
+                        REValueLocation::Track { component_address },
+                    );
 
-                    let component_val = self.track.read_value(component_address);
-                    let component = component_val.component();
-                    let package_address = component.package_address();
-                    let blueprint_name = component.blueprint_name().to_string();
-                    drop(component);
-                    drop(component_val);
+                    let (package_address, blueprint_name) = {
+                        let component_val = self.track.read_value(component_address);
+                        let component = component_val.component();
+                        (
+                            component.package_address(),
+                            component.blueprint_name().to_string(),
+                        )
+                    };
 
                     let package_value = self
                         .track
@@ -1124,12 +1117,11 @@ where
                         });
                     }
 
-                    let component_val = self.track.read_value(component_address);
-                    let component = component_val.component();
-                    let (_, method_auths) =
-                        component.method_authorization(&abi.structure, &fn_ident);
-                    drop(component);
-                    drop(component_val);
+                    let (_, method_auths) = {
+                        let component_val = self.track.read_value(component_address);
+                        let component = component_val.component();
+                        component.method_authorization(&abi.structure, &fn_ident)
+                    };
 
                     let actor_info = ScryptoActorInfo::component(
                         package_address,
@@ -1147,7 +1139,8 @@ where
                 } else {
                     let stored_value_id = StoredValueId::VaultId(*vault_id);
                     let maybe_value_ref = self.refed_values.get(&stored_value_id);
-                    maybe_value_ref.ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?
+                    maybe_value_ref
+                        .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?
                 };
 
                 let mut value_ref = location.to_ref(&value_id, &mut self.owned_values);
@@ -1163,16 +1156,18 @@ where
                             }
                         })?;
                         locked_values.insert(address.clone());
-                        readable_values
-                            .insert(address.clone(), REValueLocation::Track { component_address: *component_address });
+                        readable_values.insert(
+                            address.clone(),
+                            REValueLocation::Track {
+                                component_address: *component_address,
+                            },
+                        );
                     }
                     // TODO: Follow Track pattern above for all locations
                     _ => {}
                 }
-                let snode_state = SNodeExecution::ValueRef2(
-                    ValueId::vault_id(*vault_id),
-                    value_ref,
-                );
+                let snode_state =
+                    SNodeExecution::ValueRef2(ValueId::vault_id(*vault_id), value_ref);
 
                 let substate_value = self
                     .track
@@ -1528,10 +1523,13 @@ where
                 let address = component_address.into();
                 let value_id = ValueId::Component(component_address);
 
-                let location= match offset {
+                let location = match offset {
                     ComponentOffset::State => {
                         // TODO: use this check for all address types
-                        self.readable_values.get(&address).cloned().ok_or(RuntimeError::InvalidDataAccess)?
+                        self.readable_values
+                            .get(&address)
+                            .cloned()
+                            .ok_or(RuntimeError::InvalidDataAccess)?
                     }
                     ComponentOffset::Info => {
                         if self.owned_values.contains_key(&value_id) {
@@ -1541,7 +1539,9 @@ where
                                 .borrow_global_value(component_address.clone())
                                 .map_err(|e| match e {
                                     TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
-                                    TrackError::Reentrancy => panic!("Should not run into reentrancy"),
+                                    TrackError::Reentrancy => {
+                                        panic!("Should not run into reentrancy")
+                                    }
                                 })?;
                             REValueLocation::Track { component_address }
                         }
@@ -1551,7 +1551,7 @@ where
                 SubstateEntry {
                     location,
                     value_id,
-                    offset: SubstateOffset::Component(offset)
+                    offset: SubstateOffset::Component(offset),
                 }
             }
             SubstateAddress::KeyValueEntry(kv_store_id, key) => {
@@ -1578,12 +1578,14 @@ where
 
         // Read current value
         let (current_value, cur_children) = {
-            let value_ref = entry.location.to_ref(&entry.value_id, &mut self.owned_values);
+            let value_ref = entry
+                .location
+                .to_ref(&entry.value_id, &mut self.owned_values);
             let current_value = match &entry.offset {
                 SubstateOffset::Component(offset) => match offset {
                     ComponentOffset::State => value_ref.component_get_state(&mut self.track),
                     ComponentOffset::Info => value_ref.component_get_info(&mut self.track),
-                }
+                },
                 SubstateOffset::KeyValueStore(key) => {
                     value_ref.kv_store_get(&key.raw, &mut self.track)
                 }
@@ -1596,7 +1598,10 @@ where
         match instruction {
             DataInstruction::Read => {
                 for stored_value_id in cur_children {
-                    self.refed_values.insert(stored_value_id, entry.location.child(entry.value_id.clone()));
+                    self.refed_values.insert(
+                        stored_value_id,
+                        entry.location.child(entry.value_id.clone()),
+                    );
                 }
                 Ok(current_value)
             }
@@ -1609,14 +1614,18 @@ where
                 // TODO: verify against some schema
 
                 // Write values
-                let mut value_ref = entry.location.to_ref(&entry.value_id, &mut self.owned_values);
+                let mut value_ref = entry
+                    .location
+                    .to_ref(&entry.value_id, &mut self.owned_values);
                 match entry.offset {
                     SubstateOffset::Component(offset) => match offset {
-                        ComponentOffset::State => value_ref.component_put(value, to_store_values, &mut self.track),
+                        ComponentOffset::State => {
+                            value_ref.component_put(value, to_store_values, &mut self.track)
+                        }
                         ComponentOffset::Info => {
                             return Err(RuntimeError::InvalidDataWrite);
                         }
-                    }
+                    },
                     SubstateOffset::KeyValueStore(key) => {
                         value_ref.kv_store_put(key.raw, value, to_store_values, self.track);
                     }
