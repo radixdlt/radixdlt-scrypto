@@ -17,9 +17,9 @@ use crate::fee::*;
 use crate::model::Component;
 use crate::wasm::*;
 
-pub struct RadixEngineWasmRuntime<'s, S, W, I>
+pub struct RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
 where
-    S: SystemApi<W, I>,
+    S: SystemApi<'borrowed, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
@@ -27,11 +27,12 @@ where
     system_api: &'s mut S,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
+    phantom3: PhantomData<&'borrowed ()>,
 }
 
-impl<'s, S, W, I> RadixEngineWasmRuntime<'s, S, W, I>
+impl<'borrowed, 's, S, W, I> RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
 where
-    S: SystemApi<W, I>,
+    S: SystemApi<'borrowed, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
@@ -41,6 +42,7 @@ where
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
+            phantom3: PhantomData,
         }
     }
 
@@ -160,8 +162,8 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'s, S, W, I>
+impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let cost = self.fee_table().wasm_engine_call_cost();

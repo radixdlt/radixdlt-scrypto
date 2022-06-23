@@ -6,13 +6,13 @@ use scrypto::prelude::AccessRules;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::{DataInstruction, SubstateAddress};
+use crate::engine::call_frame::{DataInstruction, REValueRef, SubstateAddress};
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
 use crate::wasm::*;
 
-pub trait SystemApi<W, I>
+pub trait SystemApi<'borrowed, W, I>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -58,6 +58,9 @@ where
         resource_address: ResourceAddress,
         resource_manager: ResourceManager,
     );
+
+    fn borrow_value(&mut self, value_id: &ValueId) -> REValueRef<'borrowed>;
+    fn return_value(&mut self, value_id: ValueId, val_ref: REValueRef<'borrowed>);
 
     fn borrow_global_mut_value(&mut self, address: Address) -> SubstateValue;
     fn return_global_mut_value(&mut self, address: Address, value: SubstateValue);

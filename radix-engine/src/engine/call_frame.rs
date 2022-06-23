@@ -26,6 +26,7 @@ use crate::wasm::*;
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
 pub struct CallFrame<
+    'borrowed,
     'p, // Parent frame lifetime
     's, // Substate store lifetime
     't, // Track lifetime
@@ -62,6 +63,8 @@ pub struct CallFrame<
     // TODO: Merge with refed_values
     /// Readable values
     readable_values: HashMap<Address, REValueLocation>,
+
+    borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
@@ -465,7 +468,7 @@ impl<'a> REValueRef<'a> {
         }
     }
 
-    fn execute<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    fn execute<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         value_id: ValueId,
         fn_ident: &str,
@@ -584,7 +587,7 @@ pub enum SubstateAddress {
 }
 
 impl<'a> SNodeExecution<'a> {
-    fn execute<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    fn execute<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         self,
         fn_ident: &str,
         input: ScryptoValue,
@@ -632,7 +635,7 @@ impl<'a> SNodeExecution<'a> {
     }
 }
 
-impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
+impl<'borrowed, 'p, 's, 't, 'w, S, W, I> CallFrame<'borrowed, 'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -714,6 +717,7 @@ where
             owned_values: celled_owned_values,
             refed_values: HashMap::new(),
             readable_values,
+            borrowed_values: HashMap::new(),
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -897,7 +901,7 @@ where
     }
 }
 
-impl<'p, 's, 't, 'w, S, W, I> SystemApi<W, I> for CallFrame<'p, 's, 't, 'w, S, W, I>
+impl<'borrowed, 'p, 's, 't, 'w, S, W, I> SystemApi<'borrowed, W, I> for CallFrame<'borrowed, 'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -1374,6 +1378,20 @@ where
 
     fn return_global_mut_value(&mut self, address: Address, value: SubstateValue) {
         self.track.return_borrowed_global_mut_value(address, value)
+    }
+
+    fn borrow_value(&mut self, value_id: &ValueId) -> REValueRef<'borrowed> {
+        let owned = self.borrowed_values.remove(value_id).unwrap();
+        REValueRef::Owned(owned)
+    }
+
+    fn return_value(&mut self, value_id: ValueId, val_ref: REValueRef<'borrowed>) {
+        match val_ref {
+            REValueRef::Owned(owned) => {
+                self.borrowed_values.insert(value_id.clone(), owned);
+            }
+            _ => {}
+        }
     }
 
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {

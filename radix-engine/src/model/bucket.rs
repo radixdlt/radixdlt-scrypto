@@ -158,7 +158,7 @@ impl Bucket {
         self.container.borrow_mut()
     }
 
-    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         bucket_id: BucketId,
         method_name: &str,
@@ -237,7 +237,7 @@ impl Bucket {
         }
     }
 
-    pub fn consuming_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn consuming_main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         self,
         method_name: &str,
         arg: ScryptoValue,

@@ -46,13 +46,13 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn static_main<'s, S, W, I>(
+    pub fn static_main<'borrowed, 's, S, W, I>(
         method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, PackageError>
     where
-        S: SystemApi<W, I>,
+        S: SystemApi<'borrowed, W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
     {
@@ -69,7 +69,7 @@ impl ValidatedPackage {
         }
     }
 
-    pub fn invoke<'s, S, W, I>(
+    pub fn invoke<'borrowed, 's, S, W, I>(
         &self,
         actor: &ScryptoActorInfo,
         fn_ident: &str,
@@ -77,7 +77,7 @@ impl ValidatedPackage {
         system_api: &mut S,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        S: SystemApi<W, I>,
+        S: SystemApi<'borrowed, W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
     {

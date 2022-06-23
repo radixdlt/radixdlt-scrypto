@@ -332,7 +332,7 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         method_name: &str,
         arg: ScryptoValue,

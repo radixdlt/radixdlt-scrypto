@@ -161,7 +161,7 @@ impl Vault {
         self.container.borrow_mut()
     }
 
-    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         vault_id: VaultId,
         method_name: &str,
