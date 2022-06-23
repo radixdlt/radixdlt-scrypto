@@ -523,6 +523,18 @@ impl<'a> REValueRef<'a> {
                     .main(*bucket_id, fn_ident, input, system)
                     .map_err(RuntimeError::BucketError)
             }
+            ValueId::Transient(TransientValueId::Proof(..)) => {
+                let proof = match self {
+                    REValueRef::Owned(REOwnedValueRef::Root(root)) => match root.deref_mut() {
+                        REValue::Transient(TransientValue::Proof(proof)) => proof,
+                        _ => panic!("Expecting to be a proof"),
+                    }
+                    _ => panic!("Expecting to be a proof"),
+                };
+                proof
+                    .main(fn_ident, input, system)
+                    .map_err(RuntimeError::ProofError)
+            }
             _ => panic!("Unexpected value"),
         }?;
 
@@ -546,7 +558,6 @@ pub enum SNodeExecution<'a> {
     Consumed(TransientValue),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    ValueRef(ValueId, RefMut<'a, REValue>),
     ValueRef2(ValueId, REValueRef<'a>),
     Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
@@ -611,12 +622,6 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::Worktop(mut worktop) => worktop
                 .main(fn_ident, input, system)
                 .map_err(RuntimeError::WorktopError),
-            SNodeExecution::ValueRef(_, mut value) => match value.deref_mut() {
-                REValue::Transient(TransientValue::Proof(proof)) => proof
-                    .main(fn_ident, input, system)
-                    .map_err(RuntimeError::ProofError),
-                _ => panic!("Unexpected value to execute"),
-            },
             SNodeExecution::ValueRef2(value_id, mut value_ref) => {
                 value_ref.execute(value_id, fn_ident, input, system)
             }
@@ -1043,8 +1048,9 @@ where
                     .owned_values
                     .get(&value_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                let proof = proof_cell.borrow_mut();
-                Ok((SNodeExecution::ValueRef(value_id, proof), vec![]))
+                let ref_mut = proof_cell.borrow_mut();
+                let value_ref = REValueRef::Owned(REOwnedValueRef::Root(ref_mut));
+                Ok((SNodeExecution::ValueRef2(value_id, value_ref), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1211,7 +1217,6 @@ where
                 // Resource auth check includes caller
                 SNodeExecution::Scrypto(..)
                 | SNodeExecution::ValueRef2(..)
-                | SNodeExecution::ValueRef(ValueId::Transient(TransientValueId::Bucket(..)), ..)
                 | SNodeExecution::Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
