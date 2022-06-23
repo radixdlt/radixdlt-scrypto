@@ -511,6 +511,18 @@ impl<'a> REValueRef<'a> {
                     .main(*resource_address, fn_ident, input, system)
                     .map_err(RuntimeError::ResourceManagerError)
             }
+            ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
+                let bucket = match self {
+                    REValueRef::Owned(REOwnedValueRef::Root(root)) => match root.deref_mut() {
+                        REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                        _ => panic!("Expecting to be a bucket"),
+                    }
+                    _ => panic!("Expecting to be a bucket"),
+                };
+                bucket
+                    .main(*bucket_id, fn_ident, input, system)
+                    .map_err(RuntimeError::BucketError)
+            }
             _ => panic!("Unexpected value"),
         }?;
 
@@ -599,10 +611,7 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::Worktop(mut worktop) => worktop
                 .main(fn_ident, input, system)
                 .map_err(RuntimeError::WorktopError),
-            SNodeExecution::ValueRef(value_id, mut value) => match value.deref_mut() {
-                REValue::Transient(TransientValue::Bucket(bucket)) => bucket
-                    .main(value_id.into(), fn_ident, input, system)
-                    .map_err(RuntimeError::BucketError),
+            SNodeExecution::ValueRef(_, mut value) => match value.deref_mut() {
                 REValue::Transient(TransientValue::Proof(proof)) => proof
                     .main(fn_ident, input, system)
                     .map_err(RuntimeError::ProofError),
@@ -1024,8 +1033,9 @@ where
                     .owned_values
                     .get(&value_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
-                let bucket = bucket_cell.borrow_mut();
-                Ok((SNodeExecution::ValueRef(value_id, bucket), vec![]))
+                let ref_mut = bucket_cell.borrow_mut();
+                let value_ref = REValueRef::Owned(REOwnedValueRef::Root(ref_mut));
+                Ok((SNodeExecution::ValueRef2(value_id, value_ref), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
