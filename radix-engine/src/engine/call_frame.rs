@@ -263,12 +263,10 @@ impl REValueLocation {
             REValueLocation::Track { component_address } => {
                 let address = match value_id {
                     ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
-                        let vault_address = (*component_address, *vault_id);
-                        vault_address.into()
+                        Address::Vault(*component_address, *vault_id)
                     }
                     ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => {
-                        let vault_address = (*component_address, *kv_store_id);
-                        vault_address.into()
+                        Address::KeyValueStore(*component_address, *kv_store_id)
                     }
                     ValueId::Component(component_address) => {
                         component_address.clone().into()
@@ -519,10 +517,10 @@ pub enum SNodeExecution<'a> {
     Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
 
-enum SubstateEntry<'a> {
-    KeyValueStore(REValueRef<'a>, ScryptoValue),
+enum SubstateEntry {
+    KeyValueStore(REValueLocation, ValueId, ScryptoValue),
     Component(REValueLocation),
-    ComponentInfo(REValueRef<'a>),
+    ComponentInfo(REValueLocation, ValueId),
 }
 
 pub enum DataInstruction {
@@ -1511,64 +1509,53 @@ where
                     }
                     ComponentOffset::Info => {
                         let value_id = ValueId::Component(component_address);
-                        let maybe_cell = self.owned_values.get_mut(&value_id);
-                        if let Some(cell) = maybe_cell {
-                            let ref_value = cell.borrow_mut();
-                            (
-                                SubstateEntry::ComponentInfo(REValueRef::Owned(
-                                    REOwnedValueRef::Root(ref_value),
-                                )),
-                                REValueLocation::Owned {
-                                    root: ValueId::Component(component_address),
-                                    ancestors: vec![],
-                                },
-                            )
+
+                        let location = if self.owned_values.contains_key(&value_id) {
+                            REValueLocation::OwnedRoot
                         } else {
                             self.track
                                 .borrow_global_value(component_address.clone())
                                 .map_err(|e| match e {
-                                    TrackError::NotFound => {
-                                        RuntimeError::ComponentNotFound(component_address)
-                                    }
-                                    TrackError::Reentrancy => {
-                                        panic!("Should not run into reentrancy")
-                                    }
+                                    TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
+                                    TrackError::Reentrancy => panic!("Should not run into reentrancy"),
                                 })?;
-                            (
-                                SubstateEntry::ComponentInfo(REValueRef::Track(address)),
-                                REValueLocation::Track {
-                                    component_address: component_address.clone(),
-                                },
-                            )
-                        }
+                            REValueLocation::Track { component_address }
+                        };
+
+                        (
+                            SubstateEntry::ComponentInfo(location, value_id),
+                            REValueLocation::Owned {
+                                root: ValueId::Component(component_address),
+                                ancestors: vec![],
+                            },
+                        )
                     }
                 }
             }
             SubstateAddress::KeyValueEntry(kv_store_id, key) => {
                 verify_stored_key(&key)?;
 
-                let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
+                let value_id = ValueId::kv_store_id(kv_store_id.clone());
 
-                let location = if self.owned_values.contains_key(&ValueId::kv_store_id(kv_store_id.clone())) {
+                let location = if self.owned_values.contains_key(&value_id) {
                     &REValueLocation::OwnedRoot
                 } else {
-                    let maybe_value_ref = self.refed_values.get(&value_id);
+                    let stored_value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
+                    let maybe_value_ref = self.refed_values.get(&stored_value_id);
                     maybe_value_ref
                         .ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?
                 };
 
+                let entry = SubstateEntry::KeyValueStore(
+                    location.clone(),
+                    value_id,
+                    key,
+                );
+
                 match location {
                     REValueLocation::OwnedRoot => {
-                        let ref_store = self
-                            .owned_values
-                            .get_mut(&ValueId::kv_store_id(kv_store_id))
-                            .unwrap()
-                            .borrow_mut();
                         (
-                            SubstateEntry::KeyValueStore(
-                                REValueRef::Owned(REOwnedValueRef::Root(ref_store)),
-                                key,
-                            ),
+                            entry,
                             REValueLocation::Owned {
                                 root: ValueId::kv_store_id(kv_store_id.clone()),
                                 ancestors: vec![],
@@ -1582,23 +1569,11 @@ where
                             root: root.clone(),
                             ancestors: next_ancestors,
                         };
-                        let root_value = self.owned_values.get_mut(root).unwrap();
-                        let ref_store = root_value
-                            .get_mut()
-                            .to_stored()
-                            .get_child(ancestors, &value_id);
-                        (
-                            SubstateEntry::KeyValueStore(
-                                REValueRef::Owned(REOwnedValueRef::Child(ref_store)),
-                                key,
-                            ),
-                            value_ref_type,
-                        )
+                        (entry, value_ref_type)
                     }
                     REValueLocation::Track { component_address } => {
-                        let address = Address::KeyValueStore(*component_address, kv_store_id);
                         (
-                            SubstateEntry::KeyValueStore(REValueRef::Track(address), key),
+                            entry,
                             REValueLocation::Track {
                                 component_address: *component_address,
                             },
@@ -1619,11 +1594,13 @@ where
                 };
                 value_ref.component_get_state(&mut self.track)
             }
-            SubstateEntry::ComponentInfo(component_ref) => {
+            SubstateEntry::ComponentInfo(location, value_id) => {
+                let component_ref = location.to_ref(value_id, &mut self.owned_values);
                 component_ref.component_get_info(&mut self.track)
             }
-            SubstateEntry::KeyValueStore(store, key) => {
-                store.kv_store_get(&key.raw, &mut self.track)
+            SubstateEntry::KeyValueStore(location, value_id, key) => {
+                let kv_ref = location.to_ref(value_id, &mut self.owned_values);
+                kv_ref.kv_store_get(&key.raw, &mut self.track)
             }
         };
         let cur_children = to_stored_ids(current_value.stored_value_ids())?;
@@ -1655,11 +1632,12 @@ where
                         };
                         value_ref.component_put(value, to_store_values, &mut self.track)
                     },
-                    SubstateEntry::ComponentInfo(_) => {
+                    SubstateEntry::ComponentInfo(..) => {
                         return Err(RuntimeError::InvalidDataWrite);
                     }
-                    SubstateEntry::KeyValueStore(mut stored_value, key) => {
-                        stored_value.kv_store_put(key.raw, value, to_store_values, self.track);
+                    SubstateEntry::KeyValueStore(location, value_id, key) => {
+                        let mut kv_store_ref = location.to_ref(&value_id, &mut self.owned_values);
+                        kv_store_ref.kv_store_put(key.raw, value, to_store_values, self.track);
                     }
                 }
 
