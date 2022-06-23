@@ -248,7 +248,20 @@ impl REValueLocation {
                 let value = root_store.get_child(ancestors, &value_id);
                 REValueRef::Owned(REOwnedValueRef::Child(value))
             }
-            _ => panic!("Un")
+            REValueLocation::Track { component_address } => {
+                let address = match value_id {
+                    StoredValueId::VaultId(vault_id) => {
+                        let vault_address = (*component_address, *vault_id);
+                        vault_address.into()
+                    },
+                    StoredValueId::KeyValueStoreId(kv_store_id) => {
+                        let vault_address = (*component_address, *kv_store_id);
+                        vault_address.into()
+                    }
+                };
+
+                REValueRef::Track(address)
+            }
         }
     }
 }
@@ -401,6 +414,12 @@ impl<'a> REValueRef<'a> {
         match self {
             REValueRef::Owned(REOwnedValueRef::Child(stored_value)) => {
                 stored_value.vault().resource_address()
+            }
+
+            REValueRef::Track(address) => {
+                let vault_val = track.read_value(address.clone());
+                let vault = vault_val.vault();
+                vault.resource_address()
             }
             _ => panic!("Unexpected component ref"),
         }
@@ -1090,23 +1109,11 @@ where
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
                         let maybe_value_ref = self.refed_values.get(&value_id);
-                        let value_ref = maybe_value_ref
+                        let location = maybe_value_ref
                             .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?;
-                        match value_ref {
-                            REValueLocation::Owned {
-                                root,
-                                ref ancestors,
-                            } => {
-                                let mut value_ref = value_ref.to_ref(&value_id, &mut self.owned_values);
-                                let resource_address = value_ref.vault_address(&mut self.track);
-                                (
-                                    resource_address,
-                                    SNodeExecution::ValueRef2(
-                                        ValueId::vault_id(*vault_id),
-                                        value_ref,
-                                    ),
-                                )
-                            }
+                        let mut value_ref = location.to_ref(&value_id, &mut self.owned_values);
+                        let resource_address = value_ref.vault_address(&mut self.track);
+                        match location {
                             REValueLocation::Track { component_address } => {
                                 let vault_address = (*component_address, *vault_id);
                                 let address: Address = vault_address.into();
@@ -1119,18 +1126,17 @@ where
                                 locked_values.insert(address.clone());
                                 readable_values
                                     .insert(address.clone(), REValueLocation::Track { component_address: *component_address });
-                                let vault_val = self.track.read_value(address.clone());
-                                let vault = vault_val.vault();
-                                let resource_address = vault.resource_address();
-                                (
-                                    resource_address,
-                                    SNodeExecution::ValueRef2(
-                                        ValueId::vault_id(*vault_id),
-                                        REValueRef::Track(address),
-                                    ),
-                                )
                             }
+                            // TODO: Follow Track pattern above for all locations
+                            _ => {}
                         }
+                        (
+                            resource_address,
+                            SNodeExecution::ValueRef2(
+                                ValueId::vault_id(*vault_id),
+                                value_ref,
+                            ),
+                        )
                     }
                 };
 
