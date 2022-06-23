@@ -60,10 +60,12 @@ pub struct CallFrame<
 
     /// Referenced values
     refed_values: HashMap<StoredValueId, REValueLocation>,
-
     // TODO: Merge with refed_values
     /// Readable values
-    readable_values: HashMap<Address, REValueRef<'r>>,
+    readable_values: HashMap<Address, REValueLocation>,
+
+    /// Values borrowed from the parent frame
+    borrowed_values: HashMap<Address, REOwnedValueRef<'r>>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
@@ -448,7 +450,7 @@ pub enum SNodeExecution<'a> {
 
 enum SubstateEntry<'a> {
     KeyValueStore(REValueRef<'a>, ScryptoValue),
-    Component(Address),
+    Component(REValueLocation),
     ComponentInfo(REValueRef<'a>),
 }
 
@@ -582,7 +584,7 @@ where
         auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
-        readable_values: HashMap<Address, REValueRef<'r>>,
+        readable_values: HashMap<Address, REValueLocation>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
@@ -601,6 +603,7 @@ where
             wasm_instrumenter,
             owned_values: celled_owned_values,
             refed_values: HashMap::new(),
+            borrowed_values: HashMap::new(),
             readable_values,
             worktop,
             auth_zone,
@@ -989,7 +992,7 @@ where
                         }
                     })?;
                     locked_values.insert(address.clone());
-                    readable_values.insert(address.clone(), REValueRef::Track(address));
+                    readable_values.insert(address.clone(), REValueLocation::Track { component_address });
 
                     let component_val = self.track.read_value(component_address);
                     let component = component_val.component();
@@ -1092,7 +1095,7 @@ where
                                 })?;
                                 locked_values.insert(address.clone());
                                 readable_values
-                                    .insert(address.clone(), REValueRef::Track(address.clone()));
+                                    .insert(address.clone(), REValueLocation::Track { component_address: *component_address });
                                 let vault_val = self.track.read_value(address.clone());
                                 let vault = vault_val.vault();
                                 let resource_address = vault.resource_address();
@@ -1464,12 +1467,9 @@ where
                 // TODO: use this check for all address types
                 match offset {
                     ComponentOffset::State => {
-                        if !self.readable_values.contains_key(&address) {
-                            return Err(RuntimeError::InvalidDataAccess);
-                        }
-
+                        let location = self.readable_values.get(&address).cloned().ok_or(RuntimeError::InvalidDataAccess)?;
                         (
-                            SubstateEntry::Component(address),
+                            SubstateEntry::Component(location),
                             REValueLocation::Track {
                                 component_address: component_address.clone(),
                             },
@@ -1574,11 +1574,15 @@ where
 
         // Read current value
         let current_value = match &store {
-            SubstateEntry::Component(address) => self
-                .readable_values
-                .get(address)
-                .unwrap()
-                .component_get_state(&mut self.track),
+            SubstateEntry::Component(location) => {
+                let value_ref = match location {
+                    REValueLocation::Track { component_address } => {
+                        REValueRef::Track(component_address.clone().into())
+                    }
+                    _ => panic!("Expected track")
+                };
+                value_ref.component_get_state(&mut self.track)
+            }
             SubstateEntry::ComponentInfo(component_ref) => {
                 component_ref.component_get_info(&mut self.track)
             }
@@ -1606,11 +1610,15 @@ where
 
                 // Write values
                 match store {
-                    SubstateEntry::Component(address) => self
-                        .readable_values
-                        .get_mut(&address)
-                        .unwrap()
-                        .component_put(value, to_store_values, self.track),
+                    SubstateEntry::Component(location) => {
+                        let mut value_ref = match location {
+                            REValueLocation::Track { component_address } => {
+                                REValueRef::Track(component_address.clone().into())
+                            }
+                            _ => panic!("Expected track")
+                        };
+                        value_ref.component_put(value, to_store_values, &mut self.track)
+                    },
                     SubstateEntry::ComponentInfo(_) => {
                         return Err(RuntimeError::InvalidDataWrite);
                     }
