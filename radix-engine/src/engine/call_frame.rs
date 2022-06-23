@@ -231,10 +231,13 @@ pub enum REValueLocation {
     },
 }
 
+pub enum REOwnedValueRef<'a> {
+    Root(RefMut<'a, REValue>),
+    Child(RefMut<'a, StoredValue>),
+}
 
 pub enum REValueRef<'a> {
-    Owned(RefMut<'a, REValue>),
-    Ref(RefMut<'a, StoredValue>),
+    Owned(REOwnedValueRef<'a>),
     Track(Address),
 }
 
@@ -246,12 +249,23 @@ impl<'a> REValueRef<'a> {
         to_store: HashMap<StoredValueId, StoredValue>,
         track: &mut Track<S>,
     ) {
-        let store = match self {
-            REValueRef::Owned(value) => match value.deref_mut() {
-                REValue::Stored(stored_value) => stored_value,
-                _ => panic!("Expecting to be stored value"),
-            },
-            REValueRef::Ref(stored_value) => stored_value,
+        match self {
+            REValueRef::Owned(owned) => {
+                let store = match owned {
+                    REOwnedValueRef::Root(root) => match root.deref_mut() {
+                        REValue::Stored(stored_value) => stored_value,
+                        _ => panic!("Expecting to be stored value"),
+                    },
+                    REOwnedValueRef::Child(stored_value) => stored_value,
+                };
+                store.insert_children(to_store);
+                match store {
+                    StoredValue::KeyValueStore { store, .. } => {
+                        store.put(key, value);
+                    }
+                    _ => panic!("Expecting to be kv store"),
+                }
+            }
             REValueRef::Track(address) => {
                 let component_address =
                     if let Address::KeyValueStore(component_address, _) = &address {
@@ -266,15 +280,7 @@ impl<'a> REValueRef<'a> {
                     SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                 );
                 track.insert_objects_into_component(to_store, *component_address);
-                return;
             }
-        };
-        store.insert_children(to_store);
-        match store {
-            StoredValue::KeyValueStore { store, .. } => {
-                store.put(key, value);
-            }
-            _ => panic!("Expecting to be kv store"),
         }
     }
 
@@ -283,32 +289,33 @@ impl<'a> REValueRef<'a> {
         key: &[u8],
         track: &mut Track<S>,
     ) -> ScryptoValue {
-        let store = match self {
-            REValueRef::Owned(value) => match value.deref() {
-                REValue::Stored(stored_value) => stored_value.kv_store(),
-                _ => panic!("Expecting to be a vault"),
-            },
-            REValueRef::Ref(stored_value) => stored_value.kv_store(),
+        let maybe_value = match self {
+            REValueRef::Owned(owned) => {
+                let store = match owned {
+                    REOwnedValueRef::Root(root) => match root.deref() {
+                        REValue::Stored(stored_value) => stored_value.kv_store(),
+                        _ => panic!("Expecting to be stored value"),
+                    },
+                    REOwnedValueRef::Child(stored_value) => stored_value.kv_store(),
+                };
+                store.get(key).map(|v| v.dom)
+            }
             REValueRef::Track(address) => {
                 let substate_value = track.read_key_value(address.clone(), key.to_vec());
-                let value = substate_value.kv_entry().as_ref().map_or(
-                    Value::Option {
-                        value: Box::new(Option::None),
-                    },
-                    |bytes| Value::Option {
-                        value: Box::new(Some(decode_any(bytes).unwrap())),
-                    },
-                );
-                return ScryptoValue::from_value(value).unwrap();
+                substate_value
+                    .kv_entry()
+                    .as_ref()
+                    .map(|bytes| decode_any(bytes).unwrap())
             }
         };
 
-        let value = store.get(key).map_or(
+        // TODO: Cleanup
+        let value = maybe_value.map_or(
             Value::Option {
                 value: Box::new(Option::None),
             },
             |v| Value::Option {
-                value: Box::new(Some(v.dom)),
+                value: Box::new(Some(v)),
             },
         );
         ScryptoValue::from_value(value).unwrap()
@@ -327,8 +334,8 @@ impl<'a> REValueRef<'a> {
 
     fn component_get_info<S: ReadableSubstateStore>(&self, track: &mut Track<S>) -> ScryptoValue {
         let info = match self {
-            REValueRef::Owned(ref_value) => {
-                let component = ref_value.to_component();
+            REValueRef::Owned(REOwnedValueRef::Root(root)) => {
+                let component = root.to_component();
                 (
                     component.package_address().clone(),
                     component.blueprint_name().to_string(),
@@ -377,13 +384,15 @@ impl<'a> REValueRef<'a> {
         let rtn = match &value_id {
             ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
                 let vault = match self {
-                    REValueRef::Owned(value) => match value.deref_mut() {
-                        REValue::Stored(StoredValue::Vault(vault)) => vault,
-                        _ => panic!("Expecting to be a vault"),
-                    },
-                    REValueRef::Ref(stored_value) => match stored_value.deref_mut() {
-                        StoredValue::Vault(vault) => vault,
-                        _ => panic!("Expecting to be a vault"),
+                    REValueRef::Owned(owned) => match owned {
+                        REOwnedValueRef::Root(root) => match root.deref_mut() {
+                            REValue::Stored(StoredValue::Vault(vault)) => vault,
+                            _ => panic!("Expecting to be a vault"),
+                        },
+                        REOwnedValueRef::Child(stored_value) => match stored_value.deref_mut() {
+                            StoredValue::Vault(vault) => vault,
+                            _ => panic!("Expecting to be a vault"),
+                        },
                     },
                     REValueRef::Track(address) => {
                         let vault = system.borrow_global_mut_value(address.clone());
@@ -1040,7 +1049,7 @@ where
                             resource_address,
                             SNodeExecution::ValueRef2(
                                 ValueId::vault_id(*vault_id),
-                                REValueRef::Owned(value.borrow_mut()),
+                                REValueRef::Owned(REOwnedValueRef::Root(value.borrow_mut())),
                             ),
                         )
                     } else {
@@ -1068,7 +1077,7 @@ where
                                     resource_address,
                                     SNodeExecution::ValueRef2(
                                         ValueId::vault_id(*vault_id),
-                                        REValueRef::Ref(value),
+                                        REValueRef::Owned(REOwnedValueRef::Child(value)),
                                     ),
                                 )
                             }
@@ -1082,7 +1091,8 @@ where
                                     }
                                 })?;
                                 locked_values.insert(address.clone());
-                                readable_values.insert(address.clone(), REValueRef::Track(address.clone()));
+                                readable_values
+                                    .insert(address.clone(), REValueRef::Track(address.clone()));
                                 let vault_val = self.track.read_value(address.clone());
                                 let vault = vault_val.vault();
                                 let resource_address = vault.resource_address();
@@ -1471,7 +1481,9 @@ where
                         if let Some(cell) = maybe_cell {
                             let ref_value = cell.borrow_mut();
                             (
-                                SubstateEntry::ComponentInfo(REValueRef::Owned(ref_value)),
+                                SubstateEntry::ComponentInfo(REValueRef::Owned(
+                                    REOwnedValueRef::Root(ref_value),
+                                )),
                                 REValueLocation::Owned {
                                     root: ValueId::Component(component_address),
                                     ancestors: vec![],
@@ -1511,7 +1523,10 @@ where
                         .unwrap()
                         .borrow_mut();
                     (
-                        SubstateEntry::KeyValueStore(REValueRef::Owned(ref_store), key),
+                        SubstateEntry::KeyValueStore(
+                            REValueRef::Owned(REOwnedValueRef::Root(ref_store)),
+                            key,
+                        ),
                         REValueLocation::Owned {
                             root: ValueId::kv_store_id(kv_store_id.clone()),
                             ancestors: vec![],
@@ -1536,7 +1551,10 @@ where
                                 .to_stored()
                                 .get_child(ancestors, &value_id);
                             (
-                                SubstateEntry::KeyValueStore(REValueRef::Ref(ref_store), key),
+                                SubstateEntry::KeyValueStore(
+                                    REValueRef::Owned(REOwnedValueRef::Child(ref_store)),
+                                    key,
+                                ),
                                 value_ref_type,
                             )
                         }
@@ -1556,9 +1574,11 @@ where
 
         // Read current value
         let current_value = match &store {
-            SubstateEntry::Component(address) => {
-                self.readable_values.get(address).unwrap().component_get_state(&mut self.track)
-            },
+            SubstateEntry::Component(address) => self
+                .readable_values
+                .get(address)
+                .unwrap()
+                .component_get_state(&mut self.track),
             SubstateEntry::ComponentInfo(component_ref) => {
                 component_ref.component_get_info(&mut self.track)
             }
@@ -1586,9 +1606,11 @@ where
 
                 // Write values
                 match store {
-                    SubstateEntry::Component(address) => {
-                        self.readable_values.get_mut(&address).unwrap().component_put(value, to_store_values, self.track)
-                    }
+                    SubstateEntry::Component(address) => self
+                        .readable_values
+                        .get_mut(&address)
+                        .unwrap()
+                        .component_put(value, to_store_values, self.track),
                     SubstateEntry::ComponentInfo(_) => {
                         return Err(RuntimeError::InvalidDataWrite);
                     }
