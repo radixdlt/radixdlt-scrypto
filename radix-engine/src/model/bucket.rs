@@ -209,7 +209,8 @@ impl Bucket {
                 let bucket1 = system_api
                     .take_bucket(input.bucket.0)
                     .map_err(|_| BucketError::CouldNotTakeBucket)?;
-                bucket0.put(bucket1)
+                bucket0
+                    .put(bucket1)
                     .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -244,7 +245,12 @@ impl Bucket {
         Ok(rtn)
     }
 
-    pub fn consuming_main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn consuming_main<
+        'borrowed,
+        S: SystemApi<'borrowed, W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    >(
         self,
         method_name: &str,
         arg: ScryptoValue,

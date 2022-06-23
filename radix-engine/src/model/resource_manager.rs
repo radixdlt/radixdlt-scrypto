@@ -311,7 +311,12 @@ impl ResourceManager {
         Ok(validated)
     }
 
-    fn mint_non_fungibles<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    fn mint_non_fungibles<
+        'borrowed,
+        S: SystemApi<'borrowed, W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    >(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
@@ -378,7 +383,12 @@ impl ResourceManager {
         }
     }
 
-    pub fn static_main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn static_main<
+        'borrowed,
+        S: SystemApi<'borrowed, W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    >(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,

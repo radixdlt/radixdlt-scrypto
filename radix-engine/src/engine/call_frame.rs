@@ -231,7 +231,7 @@ pub enum REValueLocation {
     Borrowed,
     Track {
         component_address: ComponentAddress,
-    }
+    },
 }
 
 impl REValueLocation {
@@ -323,13 +323,21 @@ pub enum REValueRef<'a> {
 impl<'a> REValueRef<'a> {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            REValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => {
-                match root.deref_mut() {
-                    REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
-                    _ => panic!("Expecting to be a bucket"),
-                }
-            }
+            REValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => match root.deref_mut() {
+                REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                _ => panic!("Expecting to be a bucket"),
+            },
             _ => panic!("Expecting to be a bucket"),
+        }
+    }
+
+    pub fn proof(&mut self) -> &mut Proof {
+        match self {
+            REValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => match root.deref_mut() {
+                REValue::Transient(TransientValue::Proof(proof)) => proof,
+                _ => panic!("Expecting to be a proof"),
+            },
+            _ => panic!("Expecting to be a proof"),
         }
     }
 
@@ -525,18 +533,6 @@ impl<'a> REValueRef<'a> {
                 resman
                     .main(*resource_address, fn_ident, input, system)
                     .map_err(RuntimeError::ResourceManagerError)
-            }
-            ValueId::Transient(TransientValueId::Proof(..)) => {
-                let proof = match self {
-                    REValueRef::Owned(REOwnedValueRef::Root(root)) => match root.deref_mut() {
-                        REValue::Transient(TransientValue::Proof(proof)) => proof,
-                        _ => panic!("Expecting to be a proof"),
-                    }
-                    _ => panic!("Expecting to be a proof"),
-                };
-                proof
-                    .main(fn_ident, input, system)
-                    .map_err(RuntimeError::ProofError)
             }
             _ => panic!("Unexpected value"),
         }?;
@@ -752,21 +748,24 @@ where
         let output = {
             let rtn = match execution {
                 SNodeExecution::Static(state) => match state {
-                    StaticSNodeState::System => {
-                        System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
-                    }
+                    StaticSNodeState::System => System::static_main(fn_ident, input, self)
+                        .map_err(RuntimeError::SystemError),
                     StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
                         fn_ident, input, self,
                     )
-                        .map_err(|e| match e {
-                            TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                            TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                            TransactionProcessorError::RuntimeError(e) => e,
-                        }),
-                    StaticSNodeState::Package => ValidatedPackage::static_main(fn_ident, input, self)
-                        .map_err(RuntimeError::PackageError),
-                    StaticSNodeState::Resource => ResourceManager::static_main(fn_ident, input, self)
-                        .map_err(RuntimeError::ResourceManagerError),
+                    .map_err(|e| match e {
+                        TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                        TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                        TransactionProcessorError::RuntimeError(e) => e,
+                    }),
+                    StaticSNodeState::Package => {
+                        ValidatedPackage::static_main(fn_ident, input, self)
+                            .map_err(RuntimeError::PackageError)
+                    }
+                    StaticSNodeState::Resource => {
+                        ResourceManager::static_main(fn_ident, input, self)
+                            .map_err(RuntimeError::ResourceManagerError)
+                    }
                 },
                 SNodeExecution::Consumed(state) => match state {
                     TransientValue::Bucket(bucket) => bucket
@@ -785,15 +784,17 @@ where
                 SNodeExecution::ValueRef(value_id, mut value_ref) => {
                     value_ref.execute(value_id, fn_ident, input, self)
                 }
-                SNodeExecution::ValueRef2(value_id, _location) => {
-                    match value_id {
-                        ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
-                            Bucket::main(bucket_id, fn_ident, input, self)
-                                .map_err(RuntimeError::BucketError)
-                        }
-                        _ => panic!("Unexpected")
+                SNodeExecution::ValueRef2(value_id, _location) => match value_id {
+                    ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
+                        Bucket::main(bucket_id, fn_ident, input, self)
+                            .map_err(RuntimeError::BucketError)
                     }
-                }
+                    ValueId::Transient(TransientValueId::Proof(..)) => {
+                        Proof::main(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ProofError)
+                    }
+                    _ => panic!("Unexpected"),
+                },
                 SNodeExecution::Scrypto(ref actor, ref package) => {
                     package.invoke(&actor, fn_ident, input, self)
                 }
@@ -906,7 +907,8 @@ where
     }
 }
 
-impl<'borrowed, 'p, 's, 't, 'w, S, W, I> SystemApi<'borrowed, W, I> for CallFrame<'borrowed, 'p, 's, 't, 'w, S, W, I>
+impl<'borrowed, 'p, 's, 't, 'w, S, W, I> SystemApi<'borrowed, W, I>
+    for CallFrame<'borrowed, 'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -1052,7 +1054,10 @@ where
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
 
-                Ok((SNodeExecution::ValueRef2(value_id, REValueLocation::Borrowed), vec![]))
+                Ok((
+                    SNodeExecution::ValueRef2(value_id, REValueLocation::Borrowed),
+                    vec![],
+                ))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
@@ -1061,8 +1066,12 @@ where
                     .get(&value_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let ref_mut = proof_cell.borrow_mut();
-                let value_ref = REValueRef::Owned(REOwnedValueRef::Root(ref_mut));
-                Ok((SNodeExecution::ValueRef(value_id, value_ref), vec![]))
+                let value_ref = REOwnedValueRef::Root(ref_mut);
+                borrowed_values.insert(value_id.clone(), value_ref);
+                Ok((
+                    SNodeExecution::ValueRef2(value_id, REValueLocation::Borrowed),
+                    vec![],
+                ))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1201,8 +1210,7 @@ where
                     // TODO: Follow Track pattern above for all locations
                     _ => {}
                 }
-                let snode_state =
-                    SNodeExecution::ValueRef(ValueId::vault_id(*vault_id), value_ref);
+                let snode_state = SNodeExecution::ValueRef(ValueId::vault_id(*vault_id), value_ref);
 
                 let substate_value = self
                     .track
