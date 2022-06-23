@@ -447,6 +447,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Resource(resource_manager));
                 }
+                Address::Vault(..) => {
+                    let vault: Vault =
+                        scrypto_decode(&substate.value).unwrap();
+                    self.read_substates
+                        .insert(address.clone(), SubstateValue::Vault(vault));
+                }
                 _ => panic!("Reading value of invalid address"),
             }
             let value = self.read_substates.get(&address).unwrap();
