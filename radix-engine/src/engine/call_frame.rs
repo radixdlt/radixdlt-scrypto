@@ -233,6 +233,26 @@ pub enum REValueLocation {
     },
 }
 
+impl REValueLocation {
+    fn to_ref<'a>(&self, value_id: &StoredValueId, owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>) -> REValueRef<'a> {
+        match self {
+            REValueLocation::Owned {
+                root,
+                ref ancestors,
+            } => {
+                let root_value = owned_values.get_mut(&root).unwrap().get_mut();
+                let root_store = match root_value {
+                    REValue::Stored(root_store) => root_store,
+                    _ => panic!("Invalid type"),
+                };
+                let value = root_store.get_child(ancestors, &value_id);
+                REValueRef::Owned(REOwnedValueRef::Child(value))
+            }
+            _ => panic!("Un")
+        }
+    }
+}
+
 pub enum REOwnedValueRef<'a> {
     Root(RefMut<'a, REValue>),
     Child(RefMut<'a, StoredValue>),
@@ -369,6 +389,18 @@ impl<'a> REValueRef<'a> {
                     .write_component_value(address.clone().into(), value.raw)
                     .unwrap();
                 track.insert_objects_into_component(to_store, address.clone().into());
+            }
+            _ => panic!("Unexpected component ref"),
+        }
+    }
+
+    fn vault_address<S: ReadableSubstateStore>(
+        &mut self,
+        track: &mut Track<S>,
+    ) -> ResourceAddress {
+        match self {
+            REValueRef::Owned(REOwnedValueRef::Child(stored_value)) => {
+                stored_value.vault().resource_address()
             }
             _ => panic!("Unexpected component ref"),
         }
@@ -1065,22 +1097,13 @@ where
                                 root,
                                 ref ancestors,
                             } => {
-                                let root_value =
-                                    self.owned_values.get_mut(&root).unwrap().get_mut();
-                                let root_store = match root_value {
-                                    REValue::Stored(root_store) => root_store,
-                                    _ => panic!("Invalid type"),
-                                };
-                                let value = root_store.get_child(ancestors, &value_id);
-                                let resource_address = match value.deref() {
-                                    StoredValue::Vault(vault) => vault.resource_address(),
-                                    _ => panic!("Expected vault"),
-                                };
+                                let mut value_ref = value_ref.to_ref(&value_id, &mut self.owned_values);
+                                let resource_address = value_ref.vault_address(&mut self.track);
                                 (
                                     resource_address,
                                     SNodeExecution::ValueRef2(
                                         ValueId::vault_id(*vault_id),
-                                        REValueRef::Owned(REOwnedValueRef::Child(value)),
+                                        value_ref,
                                     ),
                                 )
                             }
