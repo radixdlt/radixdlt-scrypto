@@ -225,9 +225,10 @@ pub enum REValueLocation {
         root: ValueId,
         ancestors: Vec<KeyValueStoreId>,
     },
+    Borrowed(ValueId),
     Track {
         component_address: ComponentAddress,
-    },
+    }
 }
 
 impl REValueLocation {
@@ -246,6 +247,9 @@ impl REValueLocation {
                     ancestors: next_ancestors,
                 };
                 value_ref_type
+            }
+            REValueLocation::Borrowed(_) => {
+                panic!("Unsupported");
             }
             REValueLocation::Track { component_address } => REValueLocation::Track {
                 component_address: *component_address,
@@ -281,6 +285,9 @@ impl REValueLocation {
                     }
                     _ => panic!("Unexpected value id"),
                 }
+            }
+            REValueLocation::Borrowed(_) => {
+                panic!("Unsupported");
             }
             REValueLocation::Track { component_address } => {
                 let address = match value_id {
