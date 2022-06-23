@@ -543,10 +543,15 @@ pub enum SNodeExecution<'a> {
     Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
 
-enum SubstateEntry {
-    KeyValueStore(REValueLocation, ValueId, ScryptoValue),
-    Component(REValueLocation),
-    ComponentInfo(REValueLocation, ValueId),
+struct SubstateEntry {
+    location: REValueLocation,
+    value_id: ValueId,
+    offset: SubstateOffset,
+}
+
+enum SubstateOffset {
+    KeyValueStore(ScryptoValue),
+    Component(ComponentOffset),
 }
 
 pub enum DataInstruction {
@@ -1518,25 +1523,18 @@ where
         };
 
         // Get reference to data address
-        let (store, ref_location) = match address {
+        let entry = match address {
             SubstateAddress::Component(component_address, offset) => {
                 let address = component_address.into();
+                let value_id = ValueId::Component(component_address);
 
-                // TODO: use this check for all address types
-                match offset {
+                let location= match offset {
                     ComponentOffset::State => {
-                        let location = self.readable_values.get(&address).cloned().ok_or(RuntimeError::InvalidDataAccess)?;
-                        (
-                            SubstateEntry::Component(location),
-                            REValueLocation::Track {
-                                component_address: component_address.clone(),
-                            },
-                        )
+                        // TODO: use this check for all address types
+                        self.readable_values.get(&address).cloned().ok_or(RuntimeError::InvalidDataAccess)?
                     }
                     ComponentOffset::Info => {
-                        let value_id = ValueId::Component(component_address);
-
-                        let location = if self.owned_values.contains_key(&value_id) {
+                        if self.owned_values.contains_key(&value_id) {
                             REValueLocation::OwnedRoot
                         } else {
                             self.track
@@ -1546,15 +1544,14 @@ where
                                     TrackError::Reentrancy => panic!("Should not run into reentrancy"),
                                 })?;
                             REValueLocation::Track { component_address }
-                        };
-
-                        let child_location = location.child(value_id.clone());
-
-                        (
-                            SubstateEntry::ComponentInfo(location, value_id),
-                            child_location,
-                        )
+                        }
                     }
+                };
+
+                SubstateEntry {
+                    location,
+                    value_id,
+                    offset: SubstateOffset::Component(offset)
                 }
             }
             SubstateAddress::KeyValueEntry(kv_store_id, key) => {
@@ -1571,45 +1568,35 @@ where
                         .ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?
                 };
 
-                let entry = SubstateEntry::KeyValueStore(
-                    location.clone(),
+                SubstateEntry {
+                    location: location.clone(),
                     value_id,
-                    key,
-                );
-
-                let child_location = location.child(value_id.clone());
-
-                (entry, child_location)
+                    offset: SubstateOffset::KeyValueStore(key),
+                }
             }
         };
 
         // Read current value
-        let current_value = match &store {
-            SubstateEntry::Component(location) => {
-                let value_ref = match location {
-                    REValueLocation::Track { component_address } => {
-                        REValueRef::Track(component_address.clone().into())
-                    }
-                    _ => panic!("Expected track")
-                };
-                value_ref.component_get_state(&mut self.track)
-            }
-            SubstateEntry::ComponentInfo(location, value_id) => {
-                let component_ref = location.to_ref(value_id, &mut self.owned_values);
-                component_ref.component_get_info(&mut self.track)
-            }
-            SubstateEntry::KeyValueStore(location, value_id, key) => {
-                let kv_ref = location.to_ref(value_id, &mut self.owned_values);
-                kv_ref.kv_store_get(&key.raw, &mut self.track)
-            }
+        let (current_value, cur_children) = {
+            let value_ref = entry.location.to_ref(&entry.value_id, &mut self.owned_values);
+            let current_value = match &entry.offset {
+                SubstateOffset::Component(offset) => match offset {
+                    ComponentOffset::State => value_ref.component_get_state(&mut self.track),
+                    ComponentOffset::Info => value_ref.component_get_info(&mut self.track),
+                }
+                SubstateOffset::KeyValueStore(key) => {
+                    value_ref.kv_store_get(&key.raw, &mut self.track)
+                }
+            };
+            let cur_children = to_stored_ids(current_value.stored_value_ids())?;
+            (current_value, cur_children)
         };
-        let cur_children = to_stored_ids(current_value.stored_value_ids())?;
 
         // Fulfill method
         match instruction {
             DataInstruction::Read => {
                 for stored_value_id in cur_children {
-                    self.refed_values.insert(stored_value_id, ref_location.clone());
+                    self.refed_values.insert(stored_value_id, entry.location.child(entry.value_id.clone()));
                 }
                 Ok(current_value)
             }
@@ -1622,22 +1609,16 @@ where
                 // TODO: verify against some schema
 
                 // Write values
-                match store {
-                    SubstateEntry::Component(location) => {
-                        let mut value_ref = match location {
-                            REValueLocation::Track { component_address } => {
-                                REValueRef::Track(component_address.clone().into())
-                            }
-                            _ => panic!("Expected track")
-                        };
-                        value_ref.component_put(value, to_store_values, &mut self.track)
-                    },
-                    SubstateEntry::ComponentInfo(..) => {
-                        return Err(RuntimeError::InvalidDataWrite);
+                let mut value_ref = entry.location.to_ref(&entry.value_id, &mut self.owned_values);
+                match entry.offset {
+                    SubstateOffset::Component(offset) => match offset {
+                        ComponentOffset::State => value_ref.component_put(value, to_store_values, &mut self.track),
+                        ComponentOffset::Info => {
+                            return Err(RuntimeError::InvalidDataWrite);
+                        }
                     }
-                    SubstateEntry::KeyValueStore(location, value_id, key) => {
-                        let mut kv_store_ref = location.to_ref(&value_id, &mut self.owned_values);
-                        kv_store_ref.kv_store_put(key.raw, value, to_store_values, self.track);
+                    SubstateOffset::KeyValueStore(key) => {
+                        value_ref.kv_store_put(key.raw, value, to_store_values, self.track);
                     }
                 }
 
