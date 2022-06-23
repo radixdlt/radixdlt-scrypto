@@ -235,6 +235,32 @@ pub enum REValueLocation {
 }
 
 impl REValueLocation {
+    fn child(&self, value_id: ValueId) -> REValueLocation {
+        match self {
+            REValueLocation::OwnedRoot => {
+                REValueLocation::Owned {
+                    root: value_id,
+                    ancestors: vec![],
+                }
+            }
+            REValueLocation::Owned { root, ancestors } => {
+                let mut next_ancestors = ancestors.clone();
+                let kv_store_id = value_id.into();
+                next_ancestors.push(kv_store_id);
+                let value_ref_type = REValueLocation::Owned {
+                    root: root.clone(),
+                    ancestors: next_ancestors,
+                };
+                value_ref_type
+            }
+            REValueLocation::Track { component_address } => {
+                REValueLocation::Track {
+                    component_address: *component_address,
+                }
+            }
+        }
+    }
+
     fn to_ref<'a>(&self, value_id: &ValueId, owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>) -> REValueRef<'a> {
         match self {
             REValueLocation::OwnedRoot => {
@@ -1522,12 +1548,11 @@ where
                             REValueLocation::Track { component_address }
                         };
 
+                        let child_location = location.child(value_id.clone());
+
                         (
                             SubstateEntry::ComponentInfo(location, value_id),
-                            REValueLocation::Owned {
-                                root: ValueId::Component(component_address),
-                                ancestors: vec![],
-                            },
+                            child_location,
                         )
                     }
                 }
@@ -1552,34 +1577,9 @@ where
                     key,
                 );
 
-                match location {
-                    REValueLocation::OwnedRoot => {
-                        (
-                            entry,
-                            REValueLocation::Owned {
-                                root: ValueId::kv_store_id(kv_store_id.clone()),
-                                ancestors: vec![],
-                            },
-                        )
-                    }
-                    REValueLocation::Owned { root, ancestors } => {
-                        let mut next_ancestors = ancestors.clone();
-                        next_ancestors.push(kv_store_id);
-                        let value_ref_type = REValueLocation::Owned {
-                            root: root.clone(),
-                            ancestors: next_ancestors,
-                        };
-                        (entry, value_ref_type)
-                    }
-                    REValueLocation::Track { component_address } => {
-                        (
-                            entry,
-                            REValueLocation::Track {
-                                component_address: *component_address,
-                            },
-                        )
-                    }
-                }
+                let child_location = location.child(value_id.clone());
+
+                (entry, child_location)
             }
         };
 
