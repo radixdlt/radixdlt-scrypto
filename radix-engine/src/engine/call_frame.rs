@@ -59,7 +59,7 @@ pub struct CallFrame<
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Referenced values
-    refed_values: HashMap<StoredValueId, ValueRefType>,
+    refed_values: HashMap<StoredValueId, REValueLocation>,
 
     // TODO: Merge with refed_values
     /// Readable values
@@ -138,17 +138,6 @@ impl Into<TransientValue> for REValue {
             _ => panic!("Expected a stored value"),
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValueRefType {
-    Uncommitted {
-        root: ValueId,
-        ancestors: Vec<KeyValueStoreId>,
-    },
-    Committed {
-        component_address: ComponentAddress,
-    },
 }
 
 #[macro_export]
@@ -230,6 +219,18 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     }
     Ok(())
 }
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum REValueLocation {
+    Owned {
+        root: ValueId,
+        ancestors: Vec<KeyValueStoreId>,
+    },
+    Track {
+        component_address: ComponentAddress,
+    },
+}
+
 
 pub enum REValueRef<'a> {
     Owned(RefMut<'a, REValue>),
@@ -1048,7 +1049,7 @@ where
                         let value_ref = maybe_value_ref
                             .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?;
                         match value_ref {
-                            ValueRefType::Uncommitted {
+                            REValueLocation::Owned {
                                 root,
                                 ref ancestors,
                             } => {
@@ -1071,7 +1072,7 @@ where
                                     ),
                                 )
                             }
-                            ValueRefType::Committed { component_address } => {
+                            REValueLocation::Track { component_address } => {
                                 let vault_address = (component_address, *vault_id);
                                 let address: Address = vault_address.into();
                                 self.track.take_lock(address.clone()).map_err(|e| match e {
@@ -1459,7 +1460,7 @@ where
 
                         (
                             SubstateEntry::Component(address),
-                            ValueRefType::Committed {
+                            REValueLocation::Track {
                                 component_address: component_address.clone(),
                             },
                         )
@@ -1471,7 +1472,7 @@ where
                             let ref_value = cell.borrow_mut();
                             (
                                 SubstateEntry::ComponentInfo(REValueRef::Owned(ref_value)),
-                                ValueRefType::Uncommitted {
+                                REValueLocation::Owned {
                                     root: ValueId::Component(component_address),
                                     ancestors: vec![],
                                 },
@@ -1489,7 +1490,7 @@ where
                                 })?;
                             (
                                 SubstateEntry::ComponentInfo(REValueRef::Track(address)),
-                                ValueRefType::Committed {
+                                REValueLocation::Track {
                                     component_address: component_address.clone(),
                                 },
                             )
@@ -1511,7 +1512,7 @@ where
                         .borrow_mut();
                     (
                         SubstateEntry::KeyValueStore(REValueRef::Owned(ref_store), key),
-                        ValueRefType::Uncommitted {
+                        REValueLocation::Owned {
                             root: ValueId::kv_store_id(kv_store_id.clone()),
                             ancestors: vec![],
                         },
@@ -1522,10 +1523,10 @@ where
                     let value_ref = maybe_value_ref
                         .ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
                     match &value_ref {
-                        ValueRefType::Uncommitted { root, ancestors } => {
+                        REValueLocation::Owned { root, ancestors } => {
                             let mut next_ancestors = ancestors.clone();
                             next_ancestors.push(kv_store_id);
-                            let value_ref_type = ValueRefType::Uncommitted {
+                            let value_ref_type = REValueLocation::Owned {
                                 root: root.clone(),
                                 ancestors: next_ancestors,
                             };
@@ -1539,11 +1540,11 @@ where
                                 value_ref_type,
                             )
                         }
-                        ValueRefType::Committed { component_address } => {
+                        REValueLocation::Track { component_address } => {
                             let address = Address::KeyValueStore(*component_address, kv_store_id);
                             (
                                 SubstateEntry::KeyValueStore(REValueRef::Track(address), key),
-                                ValueRefType::Committed {
+                                REValueLocation::Track {
                                     component_address: *component_address,
                                 },
                             )
