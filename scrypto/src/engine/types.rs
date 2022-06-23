@@ -80,4 +80,13 @@ impl Into<u32> for ValueId {
     }
 }
 
+impl Into<ComponentAddress> for ValueId {
+    fn into(self) -> ComponentAddress {
+        match self {
+            ValueId::Component(component_address) => component_address,
+            _ => panic!("Not a component address"),
+        }
+    }
+}
+
 pub use crate::constants::*;

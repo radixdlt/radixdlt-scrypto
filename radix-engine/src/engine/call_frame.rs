@@ -230,7 +230,7 @@ pub enum REValueLocation {
     },
     Borrowed,
     Track {
-        component_address: ComponentAddress,
+        parent: Option<ComponentAddress>,
     },
 }
 
@@ -254,8 +254,8 @@ impl REValueLocation {
             REValueLocation::Borrowed => {
                 panic!("Unsupported");
             }
-            REValueLocation::Track { component_address } => REValueLocation::Track {
-                component_address: *component_address,
+            REValueLocation::Track { parent } => REValueLocation::Track {
+                parent: Some(parent.unwrap_or_else(|| value_id.into()))
             },
         }
     }
@@ -292,13 +292,13 @@ impl REValueLocation {
             REValueLocation::Borrowed => {
                 panic!("Unsupported");
             }
-            REValueLocation::Track { component_address } => {
+            REValueLocation::Track { parent } => {
                 let address = match value_id {
                     ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
-                        Address::Vault(*component_address, *vault_id)
+                        Address::Vault(parent.unwrap(), *vault_id)
                     }
                     ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => {
-                        Address::KeyValueStore(*component_address, *kv_store_id)
+                        Address::KeyValueStore(parent.unwrap(), *kv_store_id)
                     }
                     ValueId::Component(component_address) => component_address.clone().into(),
                     _ => panic!("Unexpected value id"),
@@ -1031,11 +1031,11 @@ where
                         }
                         TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
                     })?;
-
                 let method_auth = resman_value
                     .resource_manager()
                     .get_auth(&fn_ident, &input)
                     .clone();
+
                 Ok((
                     SNodeExecution::ValueRef(
                         ValueId::Resource(resource_address.clone()),
@@ -1124,10 +1124,8 @@ where
                         }
                     })?;
                     locked_values.insert(address.clone());
-                    readable_values.insert(
-                        address.clone(),
-                        REValueLocation::Track { component_address },
-                    );
+                    readable_values
+                        .insert(address.clone(), REValueLocation::Track { parent: None });
 
                     let (package_address, blueprint_name) = {
                         let component_val = self.track.read_value(component_address);
@@ -1190,8 +1188,8 @@ where
                 let mut value_ref = location.to_ref(&value_id, &mut self.owned_values);
                 let resource_address = value_ref.vault_address(&mut self.track);
                 match location {
-                    REValueLocation::Track { component_address } => {
-                        let vault_address = (*component_address, *vault_id);
+                    REValueLocation::Track { parent } => {
+                        let vault_address = (parent.unwrap(), *vault_id);
                         let address: Address = vault_address.into();
                         self.track.take_lock(address.clone()).map_err(|e| match e {
                             TrackError::NotFound => panic!("Expected to find vault"),
@@ -1203,7 +1201,7 @@ where
                         readable_values.insert(
                             address.clone(),
                             REValueLocation::Track {
-                                component_address: *component_address,
+                                parent: parent.clone(),
                             },
                         );
                     }
@@ -1601,7 +1599,7 @@ where
                                         panic!("Should not run into reentrancy")
                                     }
                                 })?;
-                            REValueLocation::Track { component_address }
+                            REValueLocation::Track { parent: None }
                         }
                     }
                 };
