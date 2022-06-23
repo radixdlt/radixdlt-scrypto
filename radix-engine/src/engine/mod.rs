@@ -8,7 +8,7 @@ mod transaction_executor;
 mod transaction_receipt;
 mod wasm_runtime;
 
-pub use call_frame::CallFrame;
+pub use call_frame::{CallFrame, REValueRef, REOwnedValueRef, REValue, TransientValue};
 pub use errors::*;
 pub use precommitted_kv_store::*;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};

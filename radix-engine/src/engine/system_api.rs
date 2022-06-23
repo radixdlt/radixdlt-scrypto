@@ -59,8 +59,8 @@ where
         resource_manager: ResourceManager,
     );
 
-    fn borrow_value(&mut self, value_id: &ValueId) -> REValueRef<'borrowed>;
-    fn return_value(&mut self, value_id: ValueId, val_ref: REValueRef<'borrowed>);
+    fn borrow_native_value(&mut self, value_id: &ValueId) -> REValueRef<'borrowed>;
+    fn return_native_value(&mut self, value_id: ValueId, val_ref: REValueRef<'borrowed>);
 
     fn borrow_global_mut_value(&mut self, address: Address) -> SubstateValue;
     fn return_global_mut_value(&mut self, address: Address, value: SubstateValue);

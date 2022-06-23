@@ -228,7 +228,7 @@ pub enum REValueLocation {
         root: ValueId,
         ancestors: Vec<KeyValueStoreId>,
     },
-    Borrowed(ValueId),
+    Borrowed,
     Track {
         component_address: ComponentAddress,
     }
@@ -251,7 +251,7 @@ impl REValueLocation {
                 };
                 value_ref_type
             }
-            REValueLocation::Borrowed(_) => {
+            REValueLocation::Borrowed => {
                 panic!("Unsupported");
             }
             REValueLocation::Track { component_address } => REValueLocation::Track {
@@ -289,7 +289,7 @@ impl REValueLocation {
                     _ => panic!("Unexpected value id"),
                 }
             }
-            REValueLocation::Borrowed(_) => {
+            REValueLocation::Borrowed => {
                 panic!("Unsupported");
             }
             REValueLocation::Track { component_address } => {
@@ -321,6 +321,18 @@ pub enum REValueRef<'a> {
 }
 
 impl<'a> REValueRef<'a> {
+    pub fn bucket(&mut self) -> &mut Bucket {
+        match self {
+            REValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => {
+                match root.deref_mut() {
+                    REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                    _ => panic!("Expecting to be a bucket"),
+                }
+            }
+            _ => panic!("Expecting to be a bucket"),
+        }
+    }
+
     fn kv_store_put<S: ReadableSubstateStore>(
         &mut self,
         key: Vec<u8>,
@@ -514,18 +526,6 @@ impl<'a> REValueRef<'a> {
                     .main(*resource_address, fn_ident, input, system)
                     .map_err(RuntimeError::ResourceManagerError)
             }
-            ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
-                let bucket = match self {
-                    REValueRef::Owned(REOwnedValueRef::Root(root)) => match root.deref_mut() {
-                        REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
-                        _ => panic!("Expecting to be a bucket"),
-                    }
-                    _ => panic!("Expecting to be a bucket"),
-                };
-                bucket
-                    .main(*bucket_id, fn_ident, input, system)
-                    .map_err(RuntimeError::BucketError)
-            }
             ValueId::Transient(TransientValueId::Proof(..)) => {
                 let proof = match self {
                     REValueRef::Owned(REOwnedValueRef::Root(root)) => match root.deref_mut() {
@@ -562,6 +562,7 @@ pub enum SNodeExecution<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId, REValueRef<'a>),
+    ValueRef2(ValueId, REValueLocation),
     Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
 
@@ -584,55 +585,6 @@ pub enum DataInstruction {
 pub enum SubstateAddress {
     KeyValueEntry(KeyValueStoreId, ScryptoValue),
     Component(ComponentAddress, ComponentOffset),
-}
-
-impl<'a> SNodeExecution<'a> {
-    fn execute<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
-        self,
-        fn_ident: &str,
-        input: ScryptoValue,
-        system: &mut S,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        match self {
-            SNodeExecution::Static(state) => match state {
-                StaticSNodeState::System => {
-                    System::static_main(fn_ident, input, system).map_err(RuntimeError::SystemError)
-                }
-                StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
-                    fn_ident, input, system,
-                )
-                .map_err(|e| match e {
-                    TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                    TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                    TransactionProcessorError::RuntimeError(e) => e,
-                }),
-                StaticSNodeState::Package => ValidatedPackage::static_main(fn_ident, input, system)
-                    .map_err(RuntimeError::PackageError),
-                StaticSNodeState::Resource => ResourceManager::static_main(fn_ident, input, system)
-                    .map_err(RuntimeError::ResourceManagerError),
-            },
-            SNodeExecution::Consumed(state) => match state {
-                TransientValue::Bucket(bucket) => bucket
-                    .consuming_main(fn_ident, input, system)
-                    .map_err(RuntimeError::BucketError),
-                TransientValue::Proof(proof) => proof
-                    .main_consume(fn_ident, input)
-                    .map_err(RuntimeError::ProofError),
-            },
-            SNodeExecution::AuthZone(mut auth_zone) => auth_zone
-                .main(fn_ident, input, system)
-                .map_err(RuntimeError::AuthZoneError),
-            SNodeExecution::Worktop(mut worktop) => worktop
-                .main(fn_ident, input, system)
-                .map_err(RuntimeError::WorktopError),
-            SNodeExecution::ValueRef(value_id, mut value_ref) => {
-                value_ref.execute(value_id, fn_ident, input, system)
-            }
-            SNodeExecution::Scrypto(ref actor, ref package) => {
-                package.invoke(&actor, fn_ident, input, system)
-            }
-        }
-    }
 }
 
 impl<'borrowed, 'p, 's, 't, 'w, S, W, I> CallFrame<'borrowed, 'p, 's, 't, 'w, S, W, I>
@@ -681,6 +633,7 @@ where
             Some(RefCell::new(Worktop::new())),
             HashMap::new(),
             HashMap::new(),
+            HashMap::new(),
             None,
             cost_unit_counter,
             fee_table,
@@ -698,6 +651,7 @@ where
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
         readable_values: HashMap<Address, REValueLocation>,
+        borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
@@ -717,7 +671,7 @@ where
             owned_values: celled_owned_values,
             refed_values: HashMap::new(),
             readable_values,
-            borrowed_values: HashMap::new(),
+            borrowed_values,
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -795,7 +749,58 @@ where
             .consume(Self::fee_table_helper(&mut self.fee_table).engine_run_cost())
             .map_err(RuntimeError::CostingError)?;
 
-        let output = execution.execute(fn_ident, input, self)?;
+        let output = {
+            let rtn = match execution {
+                SNodeExecution::Static(state) => match state {
+                    StaticSNodeState::System => {
+                        System::static_main(fn_ident, input, self).map_err(RuntimeError::SystemError)
+                    }
+                    StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
+                        fn_ident, input, self,
+                    )
+                        .map_err(|e| match e {
+                            TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                            TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                            TransactionProcessorError::RuntimeError(e) => e,
+                        }),
+                    StaticSNodeState::Package => ValidatedPackage::static_main(fn_ident, input, self)
+                        .map_err(RuntimeError::PackageError),
+                    StaticSNodeState::Resource => ResourceManager::static_main(fn_ident, input, self)
+                        .map_err(RuntimeError::ResourceManagerError),
+                },
+                SNodeExecution::Consumed(state) => match state {
+                    TransientValue::Bucket(bucket) => bucket
+                        .consuming_main(fn_ident, input, self)
+                        .map_err(RuntimeError::BucketError),
+                    TransientValue::Proof(proof) => proof
+                        .main_consume(fn_ident, input)
+                        .map_err(RuntimeError::ProofError),
+                },
+                SNodeExecution::AuthZone(mut auth_zone) => auth_zone
+                    .main(fn_ident, input, self)
+                    .map_err(RuntimeError::AuthZoneError),
+                SNodeExecution::Worktop(mut worktop) => worktop
+                    .main(fn_ident, input, self)
+                    .map_err(RuntimeError::WorktopError),
+                SNodeExecution::ValueRef(value_id, mut value_ref) => {
+                    value_ref.execute(value_id, fn_ident, input, self)
+                }
+                SNodeExecution::ValueRef2(value_id, _location) => {
+                    match value_id {
+                        ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
+                            Bucket::main(bucket_id, fn_ident, input, self)
+                                .map_err(RuntimeError::BucketError)
+                        }
+                        _ => panic!("Unexpected")
+                    }
+                }
+                SNodeExecution::Scrypto(ref actor, ref package) => {
+                    package.invoke(&actor, fn_ident, input, self)
+                }
+            }?;
+
+            rtn
+        };
 
         // Prevent vaults/kvstores from being returned
         self.process_return_data(snode_ref, &output)?;
@@ -951,6 +956,7 @@ where
 
         let mut locked_values = HashSet::new();
         let mut readable_values = HashMap::new();
+        let mut borrowed_values = HashMap::new();
 
         // Authorization and state load
         let (loaded_snode, method_auths) = match &snode_ref {
@@ -1043,8 +1049,10 @@ where
                     .get(&value_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let ref_mut = bucket_cell.borrow_mut();
-                let value_ref = REValueRef::Owned(REOwnedValueRef::Root(ref_mut));
-                Ok((SNodeExecution::ValueRef(value_id, value_ref), vec![]))
+                let value_ref = REOwnedValueRef::Root(ref_mut);
+                borrowed_values.insert(value_id.clone(), value_ref);
+
+                Ok((SNodeExecution::ValueRef2(value_id, REValueLocation::Borrowed), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
@@ -1278,6 +1286,7 @@ where
             },
             taken_values,
             readable_values,
+            borrowed_values,
             self.auth_zone.as_ref(),
             cost_unit_counter,
             fee_table,
@@ -1287,8 +1296,9 @@ where
         let run_result = frame.run(Some(snode_ref), loaded_snode, &fn_ident, input);
 
         // re-gain ownership of the cost unit counter and fee table
-        self.cost_unit_counter = frame.cost_unit_counter;
-        self.fee_table = frame.fee_table;
+        self.cost_unit_counter = frame.cost_unit_counter.take();
+        self.fee_table = frame.fee_table.take();
+        drop(frame);
 
         // unwrap and continue
         let (result, received_values) = run_result?;
@@ -1380,12 +1390,12 @@ where
         self.track.return_borrowed_global_mut_value(address, value)
     }
 
-    fn borrow_value(&mut self, value_id: &ValueId) -> REValueRef<'borrowed> {
+    fn borrow_native_value(&mut self, value_id: &ValueId) -> REValueRef<'borrowed> {
         let owned = self.borrowed_values.remove(value_id).unwrap();
         REValueRef::Owned(owned)
     }
 
-    fn return_value(&mut self, value_id: ValueId, val_ref: REValueRef<'borrowed>) {
+    fn return_native_value(&mut self, value_id: ValueId, val_ref: REValueRef<'borrowed>) {
         match val_ref {
             REValueRef::Owned(owned) => {
                 self.borrowed_values.insert(value_id.clone(), owned);
