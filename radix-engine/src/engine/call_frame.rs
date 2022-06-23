@@ -1187,7 +1187,7 @@ where
 
                 let mut value_ref = location.to_ref(&value_id, &mut self.owned_values);
                 let resource_address = value_ref.vault_address(&mut self.track);
-                match location {
+                let next_location = match location {
                     REValueLocation::Track { parent } => {
                         let vault_address = (parent.unwrap(), *vault_id);
                         let address: Address = vault_address.into();
@@ -1204,11 +1204,23 @@ where
                                 parent: parent.clone(),
                             },
                         );
+                        REValueLocation::Track { parent: parent.clone() }
+                    }
+                    REValueLocation::OwnedRoot | REValueLocation::Owned { .. } => {
+                        let owned_ref = match value_ref {
+                            REValueRef::Owned(owned) => owned,
+                            _ => panic!("Unexpected"),
+                        };
+                        borrowed_values.insert(value_id, owned_ref);
+                        REValueLocation::Borrowed
                     }
                     // TODO: Follow Track pattern above for all locations
-                    _ => {}
-                }
-                let snode_state = SNodeExecution::ValueRef(ValueId::vault_id(*vault_id), value_ref);
+                    _ => panic!("Unexpected")
+                };
+                let execution = SNodeExecution::ValueRef2(
+                    value_id,
+                    next_location,
+                );
 
                 let substate_value = self
                     .track
@@ -1220,7 +1232,7 @@ where
                 };
 
                 let method_auth = resource_manager.get_vault_auth(&fn_ident);
-                Ok((snode_state, vec![method_auth.clone()]))
+                Ok((execution, vec![method_auth.clone()]))
             }
         }?;
 
