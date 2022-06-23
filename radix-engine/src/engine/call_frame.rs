@@ -220,7 +220,7 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone)]
 pub enum REValueLocation {
     Owned {
         root: ValueId,
@@ -1054,7 +1054,7 @@ where
                         )
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
-                        let maybe_value_ref = self.refed_values.get(&value_id).cloned();
+                        let maybe_value_ref = self.refed_values.get(&value_id);
                         let value_ref = maybe_value_ref
                             .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?;
                         match value_ref {
@@ -1082,7 +1082,7 @@ where
                                 )
                             }
                             REValueLocation::Track { component_address } => {
-                                let vault_address = (component_address, *vault_id);
+                                let vault_address = (*component_address, *vault_id);
                                 let address: Address = vault_address.into();
                                 self.track.take_lock(address.clone()).map_err(|e| match e {
                                     TrackError::NotFound => panic!("Expected to find vault"),
@@ -1457,7 +1457,7 @@ where
         };
 
         // Get reference to data address
-        let (store, ref_type) = match address {
+        let (store, ref_location) = match address {
             SubstateAddress::Component(component_address, offset) => {
                 let address = component_address.into();
 
@@ -1534,7 +1534,7 @@ where
                     )
                 } else {
                     let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
-                    let maybe_value_ref = self.refed_values.get(&value_id).cloned();
+                    let maybe_value_ref = self.refed_values.get(&value_id);
                     let value_ref = maybe_value_ref
                         .ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
                     match &value_ref {
@@ -1592,7 +1592,7 @@ where
         match instruction {
             DataInstruction::Read => {
                 for stored_value_id in cur_children {
-                    self.refed_values.insert(stored_value_id, ref_type.clone());
+                    self.refed_values.insert(stored_value_id, ref_location.clone());
                 }
                 Ok(current_value)
             }
