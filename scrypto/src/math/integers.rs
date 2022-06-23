@@ -419,9 +419,36 @@ macro_rules! sh {
         $t($self.0.checked_shl(u32::try_from($other).unwrap()).unwrap())
     };
     (small.shr(builtin_unsigned), $self:tt, $other:tt, $t:tt) => {
-            $t($self.0.checked_shr(u32::try_from($other).unwrap()).unwrap())
-        };
-        (small.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {
+        $t($self.0.checked_shr(u32::try_from($other).unwrap()).unwrap())
+    };
+    (small.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {
+        $t($self
+            .0
+            .checked_shl({
+                if $other > u32::MAX.into() {
+                    panic!("overflow")
+                } else {
+                    let other_le_bytes = $other.0[0..4].try_into().unwrap();
+                    u32::from_le_bytes(other_le_bytes)
+                }
+            })
+            .unwrap())
+    };
+    (small.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {
+        $t($self
+            .0
+            .checked_shr({
+                if $other > u32::MAX.into() {
+                    panic!("overflow")
+                } else {
+                    let other_le_bytes = $other.0[0..4].try_into().unwrap();
+                    u32::from_le_bytes(other_le_bytes)
+                }
+            })
+            .unwrap())
+    };
+    (small.shl(large_signed), $self:tt, $other:tt, $t:tt) => {
+        if $other > 0.into() {
             $t($self
                 .0
                 .checked_shl({
@@ -433,8 +460,22 @@ macro_rules! sh {
                     }
                 })
                 .unwrap())
-        };
-        (small.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {
+        } else {
+            $t($self
+                .0
+                .checked_shr({
+                    if $other.abs() > u32::MAX.into() {
+                        panic!("overflow")
+                    } else {
+                        let other_le_bytes = $other.abs().0[0..4].try_into().unwrap();
+                        u32::from_le_bytes(other_le_bytes)
+                    }
+                })
+                .unwrap())
+        }
+    };
+    (small.shr(large_signed), $self:tt, $other:tt, $t:tt) => {
+        if $other > 0.into() {
             $t($self
                 .0
                 .checked_shr({
@@ -446,67 +487,26 @@ macro_rules! sh {
                     }
                 })
                 .unwrap())
-        };
-        (small.shl(large_signed), $self:tt, $other:tt, $t:tt) => {
-            if $other > 0.into() {
-                $t($self
-                    .0
-                    .checked_shl({
-                        if $other > u32::MAX.into() {
-                            panic!("overflow")
-                        } else {
-                            let other_le_bytes = $other.0[0..4].try_into().unwrap();
-                            u32::from_le_bytes(other_le_bytes)
-                        }
-                    })
-                    .unwrap())
-            } else {
-                $t($self
-                    .0
-                    .checked_shr({
-                        if $other.abs() > u32::MAX.into() {
-                            panic!("overflow")
-                        } else {
-                            let other_le_bytes = $other.abs().0[0..4].try_into().unwrap();
-                            u32::from_le_bytes(other_le_bytes)
-                        }
-                    })
-                    .unwrap())
-            }
-        };
-        (small.shr(large_signed), $self:tt, $other:tt, $t:tt) => {
-            if $other > 0.into() {
-                $t($self
-                    .0
-                    .checked_shr({
-                        if $other > u32::MAX.into() {
-                            panic!("overflow")
-                        } else {
-                            let other_le_bytes = $other.0[0..4].try_into().unwrap();
-                            u32::from_le_bytes(other_le_bytes)
-                        }
-                    })
-                    .unwrap())
-            } else {
-                $t($self
-                    .0
-                    .checked_shl({
-                        if $other.abs() > u32::MAX.into() {
-                            panic!("overflow")
-                        } else {
-                            let other_le_bytes = $other.abs().0[0..4].try_into().unwrap();
-                            u32::from_le_bytes(other_le_bytes)
-                        }
-                    })
-                    .unwrap())
-            }
-        };
-    }
+        } else {
+            $t($self
+                .0
+                .checked_shl({
+                    if $other.abs() > u32::MAX.into() {
+                        panic!("overflow")
+                    } else {
+                        let other_le_bytes = $other.abs().0[0..4].try_into().unwrap();
+                        u32::from_le_bytes(other_le_bytes)
+                    }
+                })
+                .unwrap())
+        }
+    };
+}
 
-    // large: U256, U384, U512, I256, I384, I512
-    // small: U8, U16, U32, U64, U128, I8, I16, I32, I64, I128
-    // builtin: u8, u16, u32, u64, u128, i8, i16, i32, i64, i128
-    macro_rules! shift_impl_all_large {
+// large: U256, U384, U512, I256, I384, I512
+// small: U8, U16, U32, U64, U128, I8, I16, I32, I64, I128
+// builtin: u8, u16, u32, u64, u128, i8, i16, i32, i64, i128
+macro_rules! shift_impl_all_large {
         ($($t:ty),*) => {
             $(
                 sh_impl!{
@@ -689,7 +689,7 @@ macro_rules! sh {
         };
     }
 
-    macro_rules! shift_impl_all_small {
+macro_rules! shift_impl_all_small {
         ($($t:ty),*) => {
             $(
                 sh_impl!{
@@ -904,125 +904,125 @@ macro_rules! sh {
         };
     }
 
-    shift_impl_all_large! {I256, I384, I512, U256, U384, U512}
+shift_impl_all_large! {I256, I384, I512, U256, U384, U512}
 
-    shift_impl_all_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
+shift_impl_all_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
 
-    trait PrimIntExt<T> {
-        type Output;
-        fn rotate_left(self, other: T) -> Self;
-        fn rotate_right(self, other: T) -> Self;
-    }
-    macro_rules! other_expr_large {
-        (I256, $other:ident) => {
-            BigInt::from_signed_bytes_le(&$other.0)
-        };
-        (I384, $other:ident) => {
-            BigInt::from_signed_bytes_le(&$other.0)
-        };
-        (I512, $other:ident) => {
-            BigInt::from_signed_bytes_le(&$other.0)
-        };
-        (U256, $other:ident) => {
-            BigInt::from_bytes_le(Sign::Plus, &$other.0)
-        };
-        (U384, $other:ident) => {
-            BigInt::from_bytes_le(Sign::Plus, &$other.0)
-        };
-        (U512, $other:ident) => {
-            BigInt::from_bytes_le(Sign::Plus, &$other.0)
-        };
+trait PrimIntExt<T> {
+    type Output;
+    fn rotate_left(self, other: T) -> Self;
+    fn rotate_right(self, other: T) -> Self;
+}
+macro_rules! other_expr_large {
+    (I256, $other:ident) => {
+        BigInt::from_signed_bytes_le(&$other.0)
+    };
+    (I384, $other:ident) => {
+        BigInt::from_signed_bytes_le(&$other.0)
+    };
+    (I512, $other:ident) => {
+        BigInt::from_signed_bytes_le(&$other.0)
+    };
+    (U256, $other:ident) => {
+        BigInt::from_bytes_le(Sign::Plus, &$other.0)
+    };
+    (U384, $other:ident) => {
+        BigInt::from_bytes_le(Sign::Plus, &$other.0)
+    };
+    (U512, $other:ident) => {
+        BigInt::from_bytes_le(Sign::Plus, &$other.0)
+    };
 
-        (i8, $other:ident) => {
-            BigInt::from($other)
-        };
-        (i16, $other:ident) => {
-            BigInt::from($other)
-        };
-        (i32, $other:ident) => {
-            BigInt::from($other)
-        };
-        (i64, $other:ident) => {
-            BigInt::from($other)
-        };
-        (i128, $other:ident) => {
-            BigInt::from($other)
-        };
-        (u8, $other:ident) => {
-            BigInt::from($other)
-        };
-        (u16, $other:ident) => {
-            BigInt::from($other)
-        };
-        (u32, $other:ident) => {
-            BigInt::from($other)
-        };
-        (u64, $other:ident) => {
-            BigInt::from($other)
-        };
-        (u128, $other:ident) => {
-            BigInt::from($other)
-        };
-        ($o:ty, $other:ident) => {
-            BigInt::from($other.0)
-        };
-    }
+    (i8, $other:ident) => {
+        BigInt::from($other)
+    };
+    (i16, $other:ident) => {
+        BigInt::from($other)
+    };
+    (i32, $other:ident) => {
+        BigInt::from($other)
+    };
+    (i64, $other:ident) => {
+        BigInt::from($other)
+    };
+    (i128, $other:ident) => {
+        BigInt::from($other)
+    };
+    (u8, $other:ident) => {
+        BigInt::from($other)
+    };
+    (u16, $other:ident) => {
+        BigInt::from($other)
+    };
+    (u32, $other:ident) => {
+        BigInt::from($other)
+    };
+    (u64, $other:ident) => {
+        BigInt::from($other)
+    };
+    (u128, $other:ident) => {
+        BigInt::from($other)
+    };
+    ($o:ty, $other:ident) => {
+        BigInt::from($other.0)
+    };
+}
 
-    macro_rules! other_expr_small {
-        (I256, $other:ident) => {
-            BigInt::from_signed_bytes_le(&$other.0)
-        };
-        (I384, $other:ident) => {
-            BigInt::from_signed_bytes_le(&$other.0)
-        };
-        (I512, $other:ident) => {
-            BigInt::from_signed_bytes_le(&$other.0)
-        };
-        (U256, $other:ident) => {
-            BigInt::from_bytes_le(Sign::Plus, &$other.0)
-        };
-        (U384, $other:ident) => {
-            BigInt::from_bytes_le(Sign::Plus, &$other.0)
-        };
-        (U512, $other:ident) => {
-            BigInt::from_bytes_le(Sign::Plus, &$other.0)
-        };
-        (i8, $other:ident) => {
-            $other
-        };
-        (i16, $other:ident) => {
-            $other
-        };
-        (i32, $other:ident) => {
-            $other
-        };
-        (i64, $other:ident) => {
-            $other
-        };
-        (i128, $other:ident) => {
-            $other
-        };
-        (u8, $other:ident) => {
-            $other
-        };
-        (u16, $other:ident) => {
-            $other
-        };
-        (u32, $other:ident) => {
-            $other
-        };
-        (u64, $other:ident) => {
-            $other
-        };
-        (u128, $other:ident) => {
-            $other
-        };
-        ($o:ty, $other:ident) => {
-            $other.0
-        };
-    }
+macro_rules! other_expr_small {
+    (I256, $other:ident) => {
+        BigInt::from_signed_bytes_le(&$other.0)
+    };
+    (I384, $other:ident) => {
+        BigInt::from_signed_bytes_le(&$other.0)
+    };
+    (I512, $other:ident) => {
+        BigInt::from_signed_bytes_le(&$other.0)
+    };
+    (U256, $other:ident) => {
+        BigInt::from_bytes_le(Sign::Plus, &$other.0)
+    };
+    (U384, $other:ident) => {
+        BigInt::from_bytes_le(Sign::Plus, &$other.0)
+    };
+    (U512, $other:ident) => {
+        BigInt::from_bytes_le(Sign::Plus, &$other.0)
+    };
+    (i8, $other:ident) => {
+        $other
+    };
+    (i16, $other:ident) => {
+        $other
+    };
+    (i32, $other:ident) => {
+        $other
+    };
+    (i64, $other:ident) => {
+        $other
+    };
+    (i128, $other:ident) => {
+        $other
+    };
+    (u8, $other:ident) => {
+        $other
+    };
+    (u16, $other:ident) => {
+        $other
+    };
+    (u32, $other:ident) => {
+        $other
+    };
+    (u64, $other:ident) => {
+        $other
+    };
+    (u128, $other:ident) => {
+        $other
+    };
+    ($o:ty, $other:ident) => {
+        $other.0
+    };
+}
 
-    macro_rules! checked_impl_large {
+macro_rules! checked_impl_large {
         ($(($t:ty, $o:ty, $out:ty)),*) => {
             paste! {
                 $(
@@ -1252,7 +1252,7 @@ macro_rules! sh {
         };
     }
 
-    macro_rules! checked_impl_small {
+macro_rules! checked_impl_small {
         ($(($t:ty, $o:ty, $out:ty)),*) => {
             paste! {
                 $(
@@ -1957,7 +1957,7 @@ macro_rules! checked_int_impl_large {
             impl ToPrimitive for $t {
                 fn to_i64(&self) -> Option<i64> {
                     BigInt::from_signed_bytes_le(&self.0).to_i64()
-                } 
+                }
                 fn to_i128(&self) -> Option<i128> {
                     BigInt::from_signed_bytes_le(&self.0).to_i128()
                 }
@@ -2297,7 +2297,7 @@ macro_rules! checked_int_impl_small {
             impl ToPrimitive for $t {
                 fn to_i64(&self) -> Option<i64> {
                     i64::try_from(self.0).ok()
-                } 
+                }
                 fn to_i128(&self) -> Option<i128> {
                     i128::try_from(self.0).ok()
                 }
@@ -2354,18 +2354,18 @@ macro_rules! checked_int_impl_signed {
 
                     $leading_zeros
 
-                        /// Computes the absolute value of `self`, with overflow causing panic.
-                        ///
-                        /// The only case where such overflow can occur is when one takes the absolute value of the negative
-                        /// minimal value for the type this is a positive value that is too large to represent in the type. In
-                        /// such a case, this function panics.
-                        ///
-                        #[inline]
-                        #[must_use = "this returns the result of the operation, \
-                          without modifying the original"]
-                        pub fn abs($self) -> $t {
-                            $base.abs().try_into().unwrap()
-                        }
+                    /// Computes the absolute value of `self`, with overflow causing panic.
+                    ///
+                    /// The only case where such overflow can occur is when one takes the absolute value of the negative
+                    /// minimal value for the type this is a positive value that is too large to represent in the type. In
+                    /// such a case, this function panics.
+                    ///
+                    #[inline]
+                    #[must_use = "this returns the result of the operation, \
+                      without modifying the original"]
+                    pub fn abs($self) -> $t {
+                        $base.abs().try_into().unwrap()
+                    }
 
                     /// Returns a number representing sign of `self`.
                     ///
@@ -2445,6 +2445,7 @@ macro_rules! checked_int_impl_signed_all_large {
         }
     )*}
 }
+
 macro_rules! checked_int_impl_signed_all_small {
     ($($t:ident),*) => {$(
         checked_int_impl_signed! {
@@ -2722,8 +2723,6 @@ try_from_small! {I16, (I8, I32, I64, I128)}
 try_from_small! {I32, (I8, I16, I64, I128)}
 try_from_small! {I64, (I8, I16, I32, I128)}
 try_from_small! {I128, (I8, I16, I32, I64)}
-
-
 
 macro_rules! try_from_big_int_to_signed {
     ($($t:ident),*) => {
