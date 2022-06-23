@@ -26,6 +26,7 @@ use crate::wasm::*;
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
 pub struct CallFrame<
+    'r,
     'p, // Parent frame lifetime
     's, // Substate store lifetime
     't, // Track lifetime
@@ -62,7 +63,7 @@ pub struct CallFrame<
 
     // TODO: Merge with refed_values
     /// Readable values
-    readable_values: HashSet<Address>,
+    readable_values: HashMap<Address, REValueRef<'r>>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
@@ -437,7 +438,8 @@ pub enum SNodeExecution<'a> {
 
 enum SubstateEntry<'a> {
     KeyValueStore(REValueRef<'a>, ScryptoValue),
-    Component(REValueRef<'a>, ComponentOffset),
+    Component(Address),
+    ComponentInfo(REValueRef<'a>),
 }
 
 pub enum DataInstruction {
@@ -508,7 +510,7 @@ impl<'a> SNodeExecution<'a> {
     }
 }
 
-impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
+impl<'r, 'p, 's, 't, 'w, S, W, I> CallFrame<'r, 'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -553,7 +555,7 @@ where
             ))),
             Some(RefCell::new(Worktop::new())),
             HashMap::new(),
-            HashSet::new(),
+            HashMap::new(),
             None,
             cost_unit_counter,
             fee_table,
@@ -570,7 +572,7 @@ where
         auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
-        readable_values: HashSet<Address>,
+        readable_values: HashMap<Address, REValueRef<'r>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
@@ -773,7 +775,7 @@ where
     }
 }
 
-impl<'p, 's, 't, 'w, S, W, I> SystemApi<W, I> for CallFrame<'p, 's, 't, 'w, S, W, I>
+impl<'r, 'p, 's, 't, 'w, S, W, I> SystemApi<W, I> for CallFrame<'r, 'p, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -822,7 +824,7 @@ where
         }
 
         let mut locked_values = HashSet::new();
-        let mut readable_values = HashSet::new();
+        let mut readable_values = HashMap::new();
 
         // Authorization and state load
         let (loaded_snode, method_auths) = match &snode_ref {
@@ -977,7 +979,7 @@ where
                         }
                     })?;
                     locked_values.insert(address.clone());
-                    readable_values.insert(address);
+                    readable_values.insert(address.clone(), REValueRef::Track(address));
 
                     let component_val = self.track.read_value(component_address);
                     let component = component_val.component();
@@ -1079,7 +1081,7 @@ where
                                     }
                                 })?;
                                 locked_values.insert(address.clone());
-                                readable_values.insert(address.clone());
+                                readable_values.insert(address.clone(), REValueRef::Track(address.clone()));
                                 let vault_val = self.track.read_value(address.clone());
                                 let vault = vault_val.vault();
                                 let resource_address = vault.resource_address();
@@ -1451,11 +1453,12 @@ where
                 // TODO: use this check for all address types
                 match offset {
                     ComponentOffset::State => {
-                        if !self.readable_values.contains(&address) {
+                        if !self.readable_values.contains_key(&address) {
                             return Err(RuntimeError::InvalidDataAccess);
                         }
+
                         (
-                            SubstateEntry::Component(REValueRef::Track(address), offset),
+                            SubstateEntry::Component(address),
                             ValueRefType::Committed {
                                 component_address: component_address.clone(),
                             },
@@ -1467,7 +1470,7 @@ where
                         if let Some(cell) = maybe_cell {
                             let ref_value = cell.borrow_mut();
                             (
-                                SubstateEntry::Component(REValueRef::Owned(ref_value), offset),
+                                SubstateEntry::ComponentInfo(REValueRef::Owned(ref_value)),
                                 ValueRefType::Uncommitted {
                                     root: ValueId::Component(component_address),
                                     ancestors: vec![],
@@ -1485,7 +1488,7 @@ where
                                     }
                                 })?;
                             (
-                                SubstateEntry::Component(REValueRef::Track(address), offset),
+                                SubstateEntry::ComponentInfo(REValueRef::Track(address)),
                                 ValueRefType::Committed {
                                     component_address: component_address.clone(),
                                 },
@@ -1552,10 +1555,12 @@ where
 
         // Read current value
         let current_value = match &store {
-            SubstateEntry::Component(component_ref, offset) => match offset {
-                ComponentOffset::State => component_ref.component_get_state(&mut self.track),
-                ComponentOffset::Info => component_ref.component_get_info(&mut self.track),
+            SubstateEntry::Component(address) => {
+                self.readable_values.get(address).unwrap().component_get_state(&mut self.track)
             },
+            SubstateEntry::ComponentInfo(component_ref) => {
+                component_ref.component_get_info(&mut self.track)
+            }
             SubstateEntry::KeyValueStore(store, key) => {
                 store.kv_store_get(&key.raw, &mut self.track)
             }
@@ -1580,14 +1585,12 @@ where
 
                 // Write values
                 match store {
-                    SubstateEntry::Component(mut component_ref, offset) => match offset {
-                        ComponentOffset::State => {
-                            component_ref.component_put(value, to_store_values, self.track)
-                        }
-                        ComponentOffset::Info => {
-                            return Err(RuntimeError::InvalidDataWrite);
-                        }
-                    },
+                    SubstateEntry::Component(address) => {
+                        self.readable_values.get_mut(&address).unwrap().component_put(value, to_store_values, self.track)
+                    }
+                    SubstateEntry::ComponentInfo(_) => {
+                        return Err(RuntimeError::InvalidDataWrite);
+                    }
                     SubstateEntry::KeyValueStore(mut stored_value, key) => {
                         stored_value.kv_store_put(key.raw, value, to_store_values, self.track);
                     }
