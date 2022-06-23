@@ -558,7 +558,7 @@ pub enum SNodeExecution<'a> {
     Consumed(TransientValue),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    ValueRef2(ValueId, REValueRef<'a>),
+    ValueRef(ValueId, REValueRef<'a>),
     Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
 
@@ -622,7 +622,7 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::Worktop(mut worktop) => worktop
                 .main(fn_ident, input, system)
                 .map_err(RuntimeError::WorktopError),
-            SNodeExecution::ValueRef2(value_id, mut value_ref) => {
+            SNodeExecution::ValueRef(value_id, mut value_ref) => {
                 value_ref.execute(value_id, fn_ident, input, system)
             }
             SNodeExecution::Scrypto(ref actor, ref package) => {
@@ -1025,7 +1025,7 @@ where
                     .get_auth(&fn_ident, &input)
                     .clone();
                 Ok((
-                    SNodeExecution::ValueRef2(
+                    SNodeExecution::ValueRef(
                         ValueId::Resource(resource_address.clone()),
                         REValueRef::Track(resource_address.clone().into()),
                     ),
@@ -1040,7 +1040,7 @@ where
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let ref_mut = bucket_cell.borrow_mut();
                 let value_ref = REValueRef::Owned(REOwnedValueRef::Root(ref_mut));
-                Ok((SNodeExecution::ValueRef2(value_id, value_ref), vec![]))
+                Ok((SNodeExecution::ValueRef(value_id, value_ref), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
@@ -1050,7 +1050,7 @@ where
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let ref_mut = proof_cell.borrow_mut();
                 let value_ref = REValueRef::Owned(REOwnedValueRef::Root(ref_mut));
-                Ok((SNodeExecution::ValueRef2(value_id, value_ref), vec![]))
+                Ok((SNodeExecution::ValueRef(value_id, value_ref), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1190,7 +1190,7 @@ where
                     _ => {}
                 }
                 let snode_state =
-                    SNodeExecution::ValueRef2(ValueId::vault_id(*vault_id), value_ref);
+                    SNodeExecution::ValueRef(ValueId::vault_id(*vault_id), value_ref);
 
                 let substate_value = self
                     .track
@@ -1216,7 +1216,7 @@ where
             match &loaded_snode {
                 // Resource auth check includes caller
                 SNodeExecution::Scrypto(..)
-                | SNodeExecution::ValueRef2(..)
+                | SNodeExecution::ValueRef(..)
                 | SNodeExecution::Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
