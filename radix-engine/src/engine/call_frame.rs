@@ -62,7 +62,7 @@ pub struct CallFrame<
     refed_values: HashMap<StoredValueId, REValueLocation>,
     // TODO: Merge with refed_values
     /// Readable values
-    readable_values: HashMap<Address, REValueLocation>,
+    readable_values: HashMap<ValueId, REValueLocation>,
 
     borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
 
@@ -652,7 +652,7 @@ where
         auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
-        readable_values: HashMap<Address, REValueLocation>,
+        readable_values: HashMap<ValueId, REValueLocation>,
         borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
@@ -1131,7 +1131,7 @@ where
                     })?;
                     locked_values.insert(address.clone());
                     readable_values
-                        .insert(address.clone(), REValueLocation::Track { parent: None });
+                        .insert(ValueId::Component(component_address), REValueLocation::Track { parent: None });
 
                     let (package_address, blueprint_name) = {
                         let component_val = self.track.read_value(component_address);
@@ -1205,7 +1205,7 @@ where
                         })?;
                         locked_values.insert(address.clone());
                         readable_values.insert(
-                            address.clone(),
+                            value_id.clone(),
                             REValueLocation::Track {
                                 parent: parent.clone(),
                             },
@@ -1593,14 +1593,13 @@ where
         // Get reference to data address
         let entry = match address {
             SubstateAddress::Component(component_address, offset) => {
-                let address = component_address.into();
                 let value_id = ValueId::Component(component_address);
 
                 let location = match offset {
                     ComponentOffset::State => {
                         // TODO: use this check for all address types
                         self.readable_values
-                            .get(&address)
+                            .get(&value_id)
                             .cloned()
                             .ok_or(RuntimeError::InvalidDataAccess)?
                     }
