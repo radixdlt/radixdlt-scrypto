@@ -539,17 +539,6 @@ pub enum SNodeExecution<'a> {
     Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
 
-struct SubstateEntry {
-    location: REValueLocation,
-    value_id: ValueId,
-    offset: SubstateOffset,
-}
-
-enum SubstateOffset {
-    KeyValueStore(ScryptoValue),
-    Component(ComponentOffset),
-}
-
 pub enum DataInstruction {
     Read,
     Write(ScryptoValue),
@@ -1581,50 +1570,30 @@ where
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
         let location = self.readable_values.get(&value_id)
-            .cloned()
             .or_else(|| {
                 // Allow global read access to any component info
                 if let SubstateAddress::Component(component_address, ComponentOffset::Info) = address {
                     if self.owned_values.contains_key(&value_id) {
-                        return Some(REValueLocation::OwnedRoot);
+                        return Some(&REValueLocation::OwnedRoot);
                     } else if self.track.borrow_global_value(component_address).is_ok() {
-                        return Some(REValueLocation::Track { parent: None });
+                        return Some(&REValueLocation::Track { parent: None });
                     }
                 }
 
                 None
             }).ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
 
-        // Get reference to data address
-        let entry = match address {
-            SubstateAddress::Component(.., offset) => {
-                SubstateEntry {
-                    location,
-                    value_id,
-                    offset: SubstateOffset::Component(offset),
-                }
-            }
-            SubstateAddress::KeyValueEntry(.., key) => {
-                verify_stored_key(&key)?;
-                SubstateEntry {
-                    location,
-                    value_id,
-                    offset: SubstateOffset::KeyValueStore(key),
-                }
-            }
-        };
-
         // Read current value
         let (current_value, cur_children) = {
-            let value_ref = entry
-                .location
-                .to_ref(&entry.value_id, &mut self.owned_values);
-            let current_value = match &entry.offset {
-                SubstateOffset::Component(offset) => match offset {
+            let value_ref = location
+                .to_ref(&value_id, &mut self.owned_values);
+            let current_value = match &address {
+                SubstateAddress::Component(.., offset) => match offset {
                     ComponentOffset::State => value_ref.component_get_state(&mut self.track),
                     ComponentOffset::Info => value_ref.component_get_info(&mut self.track),
                 },
-                SubstateOffset::KeyValueStore(key) => {
+                SubstateAddress::KeyValueEntry(.., key) => {
+                    verify_stored_key(key)?;
                     value_ref.kv_store_get(&key.raw, &mut self.track)
                 }
             };
@@ -1635,8 +1604,9 @@ where
         // Fulfill method
         match instruction {
             DataInstruction::Read => {
+                let parent_location = location.clone();
                 for stored_value_id in cur_children {
-                    let child_location = entry.location.child(entry.value_id.clone());
+                    let child_location = parent_location.child(value_id.clone());
                     self.refed_values.insert(stored_value_id, child_location.clone());
 
                     // Extend current readable space when kv stores are found
@@ -1655,11 +1625,10 @@ where
                 // TODO: verify against some schema
 
                 // Write values
-                let mut value_ref = entry
-                    .location
-                    .to_ref(&entry.value_id, &mut self.owned_values);
-                match entry.offset {
-                    SubstateOffset::Component(offset) => match offset {
+                let mut value_ref = location
+                    .to_ref(&value_id, &mut self.owned_values);
+                match address {
+                    SubstateAddress::Component(.., offset) => match offset {
                         ComponentOffset::State => {
                             value_ref.component_put(value, to_store_values, &mut self.track)
                         }
@@ -1667,7 +1636,7 @@ where
                             return Err(RuntimeError::InvalidDataWrite);
                         }
                     },
-                    SubstateOffset::KeyValueStore(key) => {
+                    SubstateAddress::KeyValueEntry(.., key) => {
                         value_ref.kv_store_put(key.raw, value, to_store_values, self.track);
                     }
                 }
