@@ -8,11 +8,11 @@ sbor = { path = "../sbor", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
 clap = { version = "3.1.17", features = ["derive", "cargo"] }
 hex = { version = "0.4.3", default-features = false }
-p256 = { git = "https://github.com/radixdlt/elliptic-curves", branch = "alloc", default-features = false, features = ["ecdsa"] }
-
+ed25519 = { version = "1.5.2", default-features = false }
+secp256k1 = { version = "0.23.1", default-features = false, features = ["global-context", "bitcoin_hashes"]}
 
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["sbor/std", "scrypto/std", "hex/std"]
-alloc = ["sbor/alloc", "scrypto/alloc", "hex/alloc"]
+std = ["sbor/std", "scrypto/std", "hex/std", "ed25519/std", "secp256k1/std"]
+alloc = ["sbor/alloc", "scrypto/alloc", "hex/alloc", "ed25519/alloc", "secp256k1/alloc"]

@@ -1,15 +1,14 @@
-use p256::ecdsa::Signature;
-use p256::ecdsa::{signature::Verifier, VerifyingKey};
-use p256::elliptic_curve::sec1::{FromEncodedPoint, ToEncodedPoint};
-use p256::{EncodedPoint, PublicKey};
 use sbor::rust::borrow::ToOwned;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use secp256k1::{ecdsa::Signature, Message, PublicKey};
 
 use crate::abi::{scrypto_type, ScryptoType};
+
+use super::hash;
 
 /// Represents an ECDSA public key.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -27,8 +26,7 @@ pub enum SignatureValidationError {}
 pub struct EcdsaVerifier;
 
 impl EcdsaPublicKey {
-    // uncompressed
-    pub const LENGTH: usize = 65;
+    pub const LENGTH: usize = 33;
 }
 
 impl EcdsaSignature {
@@ -37,8 +35,9 @@ impl EcdsaSignature {
 
 impl EcdsaVerifier {
     pub fn verify(msg: &[u8], pk: &EcdsaPublicKey, sig: &EcdsaSignature) -> bool {
-        let verifier = VerifyingKey::from(pk.0);
-        verifier.verify(msg, &sig.0).is_ok()
+        let h = hash(msg);
+        let m = Message::from_slice(&h.0).expect("The slice is a valid hash");
+        sig.0.verify(&m, &pk.0).is_ok()
     }
 }
 
@@ -94,20 +93,14 @@ impl TryFrom<&[u8]> for EcdsaPublicKey {
             return Err(ParseEcdsaPublicKeyError::InvalidLength(slice.len()));
         }
 
-        let pk = PublicKey::from_encoded_point(
-            &EncodedPoint::from_bytes(slice).map_err(|_| ParseEcdsaPublicKeyError::InvalidKey)?,
-        );
-        if pk.is_some().unwrap_u8() > 0 {
-            Ok(EcdsaPublicKey(pk.unwrap()))
-        } else {
-            Err(ParseEcdsaPublicKeyError::InvalidKey)
-        }
+        let pk = PublicKey::from_slice(slice).map_err(|_| ParseEcdsaPublicKeyError::InvalidKey)?;
+        Ok(EcdsaPublicKey(pk))
     }
 }
 
 impl EcdsaPublicKey {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_encoded_point(false).as_bytes().to_vec()
+        self.0.serialize().to_vec()
     }
 }
 
@@ -121,15 +114,15 @@ impl TryFrom<&[u8]> for EcdsaSignature {
             return Err(ParseEcdsaSignatureError::InvalidLength(slice.len()));
         }
 
-        let signature =
-            Signature::try_from(slice).map_err(|_| ParseEcdsaSignatureError::InvalidSignature)?;
+        let signature = Signature::from_compact(slice)
+            .map_err(|_| ParseEcdsaSignatureError::InvalidSignature)?;
         Ok(EcdsaSignature(signature))
     }
 }
 
 impl EcdsaSignature {
     pub fn to_vec(&self) -> Vec<u8> {
-        self.0.to_vec()
+        self.0.serialize_compact().to_vec()
     }
 }
 
