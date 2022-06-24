@@ -95,13 +95,6 @@ pub enum REValue {
 }
 
 impl REValue {
-    fn to_component(&self) -> &Component {
-        match self {
-            REValue::Component { component, .. } => component,
-            _ => panic!("Expected a component"),
-        }
-    }
-
     fn to_stored(&mut self) -> &mut StoredValue {
         match self {
             REValue::Stored(stored_value) => stored_value,
@@ -430,6 +423,32 @@ pub enum REOwnedValueRef<'a> {
     Child(RefMut<'a, StoredValue>),
 }
 
+impl<'a> REOwnedValueRef<'a> {
+    fn component(&self) -> &Component {
+        match self {
+            REOwnedValueRef::Root(root) => {
+                match root.deref() {
+                    REValue::Component { component, .. } => component,
+                    _ => panic!("Expected a component"),
+                }
+            }
+            REOwnedValueRef::Child(..) => panic!("Not supported")
+        }
+    }
+
+    fn mut_component(&mut self) -> &mut Component {
+        match self {
+            REOwnedValueRef::Root(root) => {
+                match root.deref_mut() {
+                    REValue::Component { component, .. } => component,
+                    _ => panic!("Expected a component"),
+                }
+            }
+            REOwnedValueRef::Child(..) => panic!("Not supported")
+        }
+    }
+}
+
 pub enum REValueRef<'a, 'b> {
     Owned(REOwnedValueRef<'a>),
     Borrowed(&'b REOwnedValueRef<'a>),
@@ -529,6 +548,10 @@ impl<'a, 'b> REValueRef<'a, 'b> {
                 let component = component_val.component();
                 return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
             }
+            REValueRef::Borrowed(owned) => {
+                let component = owned.component();
+                return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
+            }
             _ => panic!("Unexpected component ref"),
         }
     }
@@ -555,8 +578,8 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         track: &mut Track<S>,
     ) -> (PackageAddress, String) {
         match self {
-            REValueRef::Owned(REOwnedValueRef::Root(root)) => {
-                let component = root.to_component();
+            REValueRef::Owned(owned) => {
+                let component = owned.component();
                 (
                     component.package_address().clone(),
                     component.blueprint_name().to_string(),
@@ -581,8 +604,8 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         track: &mut Track<S>,
     ) -> Vec<MethodAuthorization> {
         match self {
-            REValueRef::Owned(REOwnedValueRef::Root(root)) => {
-                let component = root.to_component();
+            REValueRef::Owned(owned) => {
+                let component = owned.mut_component();
                 component.method_authorization(schema, fn_ident)
             },
             REValueRef::Track(address) => {
