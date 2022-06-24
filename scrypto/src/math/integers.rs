@@ -245,669 +245,6 @@ pub enum ParseIntError {
     Overflow,
 }
 
-macro_rules! sh_impl {
-    (to_sh: $t:ty, other: $o:ty, other_var: $other:ident, self_var: $self:ident, shl_expr: $shl_expr:expr, shr_expr: $shr_expr:expr ) => {
-        paste! {
-            impl Shl<$o> for $t {
-                type Output = $t;
-
-                #[inline]
-                fn shl($self, $other: $o) -> $t {
-                    $shl_expr
-                }
-            }
-            forward_ref_binop! { impl Shl, shl for $t, $o }
-
-            impl ShlAssign<$o> for $t {
-                #[inline]
-                fn shl_assign(&mut self, $other: $o) {
-                    *self = *self << $other;
-                }
-            }
-            forward_ref_op_assign! { impl ShlAssign, shl_assign for $t, $o }
-
-            impl Shr<$o> for $t {
-                type Output = $t;
-
-                #[inline]
-                fn shr($self, $other: $o) -> $t {
-                    $shr_expr
-                }
-            }
-            forward_ref_binop! { impl Shr, shr for $t, $o }
-
-            impl ShrAssign<$o> for $t {
-                #[inline]
-                fn shr_assign(&mut self, $other: $o) {
-                    *self = *self >> $other;
-                }
-            }
-            forward_ref_op_assign! { impl ShrAssign, shr_assign for $t, $o }
-        }
-    };
-}
-
-// large: U256, U384, U512, I256, I384, I512
-// small: U8, U16, U32, U64, U128, I8, I16, I32, I64, I128
-// builtin: u8, u16, u32, u64, u128, i8, i16, i32, i64, i128
-macro_rules! sh {
-    (large.shl(large_signed), $self:tt, $other:tt, $t:tt) => {
-        if BigInt::from_signed_bytes_le(&$other.0).abs() > BigInt::from(<$t>::BITS) {
-            panic!("overflow");
-        } else {
-            let to_shift = BigInt::from_signed_bytes_le(&$self.0);
-            let len = min(
-                (<$t>::BITS / 8) as usize,
-                to_shift.to_signed_bytes_le().len(),
-            );
-            let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
-            to_shift.shl(shift).to_signed_bytes_le()[..len]
-                .try_into()
-                .unwrap()
-        }
-    };
-    (large.shr(large_signed), $self:tt, $other:tt, $t:tt) => {
-        if BigInt::from_signed_bytes_le(&$other.0).abs() > BigInt::from(<$t>::BITS) {
-            panic!("overflow");
-        } else {
-            let to_shift = BigInt::from_signed_bytes_le(&$self.0);
-            let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
-            to_shift.shr(shift).try_into().unwrap()
-        }
-    };
-    (large.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {{
-        let to_shift = BigInt::from_signed_bytes_le(&$self.0);
-        let len = min(
-            (<$t>::BITS / 8) as usize,
-            to_shift.to_signed_bytes_le().len(),
-        );
-        let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
-        to_shift.shl(shift).to_signed_bytes_le()[..len]
-            .try_into()
-            .unwrap()
-    }};
-    (large.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {{
-        let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
-        BigInt::from_signed_bytes_le(&$self.0)
-            .shr(shift)
-            .try_into()
-            .unwrap()
-    }};
-    (large.shl(builtin), $self:tt, $other:tt, $t:tt) => {
-        if $other > <$t>::BITS.try_into().unwrap() {
-            panic!("overflow");
-        } else {
-            let to_shift = BigInt::from_signed_bytes_le(&$self.0);
-            let len = min(
-                (<$t>::BITS / 8) as usize,
-                to_shift.to_signed_bytes_le().len(),
-            );
-            let shift = $other;
-            to_shift.shl(shift).to_signed_bytes_le()[..len]
-                .try_into()
-                .unwrap()
-        }
-    };
-    (large.shr(builtin), $self:tt, $other:tt, $t:tt) => {
-        if $other > <$t>::BITS.try_into().unwrap() {
-            panic!("overflow");
-        } else {
-            BigInt::from_signed_bytes_le(&$self.0)
-                .shr($other)
-                .try_into()
-                .unwrap()
-        }
-    };
-    (large.shl(small), $self:tt, $other:tt, $t:tt) => {
-        let to_shift = BigInt::from_signed_bytes_le(&$self.0);
-        let len = min(
-            (<$t>::BITS / 8) as usize,
-            to_shift.to_signed_bytes_le().len(),
-        );
-        let shift = $other.0;
-        to_shift.shl(shift).to_signed_bytes_le()[..len]
-            .try_into()
-            .unwrap()
-    };
-    (large.shr(small), $self:tt, $other:tt, $t:tt) => {
-        BigInt::from_signed_bytes_le(&$self.0)
-            .shr($other.0)
-            .try_into()
-            .unwrap()
-    };
-    (small.shl(small_signed), $self:tt, $other:tt, $t:tt) => {
-        if $other.0 < 0 {
-            $t($self.0.checked_shr(-$other.0 as u32).unwrap())
-        } else {
-            $t($self.0.checked_shl($other.0 as u32).unwrap())
-        }
-    };
-    (small.shr(small_signed), $self:tt, $other:tt, $t:tt) => {
-        if $other.0 < 0 {
-            $t($self.0.checked_shl(-$other.0 as u32).unwrap())
-        } else {
-            $t($self.0.checked_shr($other.0 as u32).unwrap())
-        }
-    };
-    (small.shl(small_unsigned), $self:tt, $other:tt, $t:tt) => {
-        $t($self
-            .0
-            .checked_shl(u32::try_from($other.0).unwrap())
-            .unwrap())
-    };
-    (small.shr(small_unsigned), $self:tt, $other:tt, $t:tt) => {
-        $t($self
-            .0
-            .checked_shr(u32::try_from($other.0).unwrap())
-            .unwrap())
-    };
-    (small.shl(builtin_signed), $self:tt, $other:tt, $t:tt) => {
-        if $other < 0 {
-            $t($self.0.checked_shr(-$other as u32).unwrap())
-        } else {
-            $t($self.0.checked_shl($other as u32).unwrap())
-        }
-    };
-    (small.shr(builtin_signed), $self:tt, $other:tt, $t:tt) => {
-        if $other < 0 {
-            $t($self.0.checked_shl(-$other as u32).unwrap())
-        } else {
-            $t($self.0.checked_shr($other as u32).unwrap())
-        }
-    };
-    (small.shl(builtin_unsigned), $self:tt, $other:tt, $t:tt) => {
-        $t($self.0.checked_shl(u32::try_from($other).unwrap()).unwrap())
-    };
-    (small.shr(builtin_unsigned), $self:tt, $other:tt, $t:tt) => {
-        $t($self.0.checked_shr(u32::try_from($other).unwrap()).unwrap())
-    };
-    (small.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {
-        $t($self
-            .0
-            .checked_shl({
-                if $other > u32::MAX.into() {
-                    panic!("overflow")
-                } else {
-                    let other_le_bytes = $other.0[0..4].try_into().unwrap();
-                    u32::from_le_bytes(other_le_bytes)
-                }
-            })
-            .unwrap())
-    };
-    (small.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {
-        $t($self
-            .0
-            .checked_shr({
-                if $other > u32::MAX.into() {
-                    panic!("overflow")
-                } else {
-                    let other_le_bytes = $other.0[0..4].try_into().unwrap();
-                    u32::from_le_bytes(other_le_bytes)
-                }
-            })
-            .unwrap())
-    };
-    (small.shl(large_signed), $self:tt, $other:tt, $t:tt) => {
-        if $other > 0.into() {
-            $t($self
-                .0
-                .checked_shl({
-                    if $other > u32::MAX.into() {
-                        panic!("overflow")
-                    } else {
-                        let other_le_bytes = $other.0[0..4].try_into().unwrap();
-                        u32::from_le_bytes(other_le_bytes)
-                    }
-                })
-                .unwrap())
-        } else {
-            $t($self
-                .0
-                .checked_shr({
-                    if $other.abs() > u32::MAX.into() {
-                        panic!("overflow")
-                    } else {
-                        let other_le_bytes = $other.abs().0[0..4].try_into().unwrap();
-                        u32::from_le_bytes(other_le_bytes)
-                    }
-                })
-                .unwrap())
-        }
-    };
-    (small.shr(large_signed), $self:tt, $other:tt, $t:tt) => {
-        if $other > 0.into() {
-            $t($self
-                .0
-                .checked_shr({
-                    if $other > u32::MAX.into() {
-                        panic!("overflow")
-                    } else {
-                        let other_le_bytes = $other.0[0..4].try_into().unwrap();
-                        u32::from_le_bytes(other_le_bytes)
-                    }
-                })
-                .unwrap())
-        } else {
-            $t($self
-                .0
-                .checked_shl({
-                    if $other.abs() > u32::MAX.into() {
-                        panic!("overflow")
-                    } else {
-                        let other_le_bytes = $other.abs().0[0..4].try_into().unwrap();
-                        u32::from_le_bytes(other_le_bytes)
-                    }
-                })
-                .unwrap())
-        }
-    };
-}
-
-// large: U256, U384, U512, I256, I384, I512
-// small: U8, U16, U32, U64, U128, I8, I16, I32, I64, I128
-// builtin: u8, u16, u32, u64, u128, i8, i16, i32, i64, i128
-macro_rules! shift_impl_all_large {
-        ($($t:ty),*) => {
-            $(
-                sh_impl!{
-                    to_sh: $t,
-                    other: I256,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(large_signed), self, other, $t},
-                    shr_expr: sh!{large.shr(large_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I384,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(large_signed), self, other, $t},
-                    shr_expr: sh!{large.shr(large_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I512,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(large_signed), self, other, $t},
-                    shr_expr: sh!{large.shr(large_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U256,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(large_unsigned), self, other, $t},
-                    shr_expr: sh!{large.shr(large_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U384,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(large_unsigned), self, other, $t},
-                    shr_expr: sh!{large.shr(large_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U512,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(large_unsigned), self, other, $t},
-                    shr_expr: sh!{large.shr(large_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: i16,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(builtin), self, other, $t},
-                    shr_expr: sh!{large.shr(builtin), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: i32,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(builtin), self, other, $t},
-                    shr_expr: sh!{large.shr(builtin), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: i64,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(builtin), self, other, $t},
-                    shr_expr: sh!{large.shr(builtin), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: i128,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(builtin), self, other, $t},
-                    shr_expr: sh!{large.shr(builtin), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: u16,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(builtin), self, other, $t},
-                    shr_expr: sh!{large.shr(builtin), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: u32,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(builtin), self, other, $t},
-                    shr_expr: sh!{large.shr(builtin), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: u64,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(builtin), self, other, $t},
-                    shr_expr: sh!{large.shr(builtin), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: u128,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(builtin), self, other, $t},
-                    shr_expr: sh!{large.shr(builtin), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I16,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(small), self, other, $t},
-                    shr_expr: sh!{large.shr(small), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I32,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(small), self, other, $t},
-                    shr_expr: sh!{large.shr(small), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I64,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(small), self, other, $t},
-                    shr_expr: sh!{large.shr(small), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I128,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(small), self, other, $t},
-                    shr_expr: sh!{large.shr(small), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U16,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(small), self, other, $t},
-                    shr_expr: sh!{large.shr(small), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U32,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(small), self, other, $t},
-                    shr_expr: sh!{large.shr(small), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U64,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(small), self, other, $t},
-                    shr_expr: sh!{large.shr(small), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U128,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{large.shl(small), self, other, $t},
-                    shr_expr: sh!{large.shr(small), self, other, $t}
-                }
-                )*
-        };
-    }
-
-macro_rules! shift_impl_all_small {
-        ($($t:ty),*) => {
-            $(
-                sh_impl!{
-                    to_sh: $t,
-                    other: I8,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I16,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I32,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I64,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I128,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U8,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U16,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U32,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U64,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U128,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: i8,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: i16,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: i32,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: i64,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: i128,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: u8,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: u16,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: u32,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: u64,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: u128,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I256,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(large_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(large_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I384,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(large_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(large_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: I512,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(large_signed), self, other, $t},
-                    shr_expr: sh!{small.shr(large_signed), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U256,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(large_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(large_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U384,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(large_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(large_unsigned), self, other, $t}
-                }
-                sh_impl!{
-                    to_sh: $t,
-                    other: U512,
-                    other_var: other,
-                    self_var: self,
-                    shl_expr: sh!{small.shl(large_unsigned), self, other, $t},
-                    shr_expr: sh!{small.shr(large_unsigned), self, other, $t}
-                }
-                )*
-        };
-    }
-
-shift_impl_all_large! {I256, I384, I512, U256, U384, U512}
-
-shift_impl_all_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
-
 trait PrimIntExt<T> {
     type Output;
     fn rotate_left(self, other: T) -> Self;
@@ -2616,7 +1953,7 @@ macro_rules! from_int {
 }
 
 macro_rules! try_from_builtin {
-    ($(($t:ident, $o:ident)),*) => {
+    ($t:ident, ($($o:ident),*)) => {
         $(
             paste! {
                 impl TryFrom<$o> for $t {
@@ -2630,13 +1967,19 @@ macro_rules! try_from_builtin {
     };
 }
 
-try_from_builtin! {
-    (I8, u8),
-    (I16, u16),
-    (I32, u32),
-    (I64, u64),
-    (I128, u128)
-}
+try_from_builtin! {I8, (u8, u16, u32, u64, u128, i16, i32, i64, i128)}
+try_from_builtin! {I16, (i32, i64, i128, u16, u32, u64, u128)}
+try_from_builtin! {I32, (i64, i128, u32, u64, u128)}
+try_from_builtin! {I64, (i128, u64, u128)}
+try_from_builtin! {I128, (u128)}
+try_from_builtin! {U8, (i8, i16, i32, i64, i128, u16, u32, u64, u128)}
+try_from_builtin! {U16, (i8, i16, i32, i64, i128, u32, u64, u128)}
+try_from_builtin! {U32, (i8, i16, i32, i64, i128, u64, u128)}
+try_from_builtin! {U64, (i8, i16, i32, i64, i128, u128)}
+try_from_builtin! {U128, (i8, i16, i32, i64, i128)}
+try_from_builtin! {U256, (i8, i16, i32, i64, i128)}
+try_from_builtin! {U384, (i8, i16, i32, i64, i128)}
+try_from_builtin! {U512, (i8, i16, i32, i64, i128)}
 
 macro_rules! try_from_small {
     ($t:ident, ($($o:ident),*)) => {
@@ -2853,78 +2196,784 @@ try_from_big_int_to_unsigned! { U8, U16, U32, U64, U128, U256, U384, U512 }
 try_from_vec_and_slice! { I256, I384, I512, U256, U384, U512 }
 from_array! { I256, I384, I512, U256, U384, U512 }
 
+macro_rules! sh_impl {
+    (to_sh: $t:ty, other: $o:ty, other_var: $other:ident, self_var: $self:ident, shl_expr: $shl_expr:expr, shr_expr: $shr_expr:expr ) => {
+        paste! {
+            impl Shl<$o> for $t {
+                type Output = $t;
+
+                #[inline]
+                fn shl($self, $other: $o) -> $t {
+                    $shl_expr
+                }
+            }
+            forward_ref_binop! { impl Shl, shl for $t, $o }
+
+            impl ShlAssign<$o> for $t {
+                #[inline]
+                fn shl_assign(&mut self, $other: $o) {
+                    *self = *self << $other;
+                }
+            }
+            forward_ref_op_assign! { impl ShlAssign, shl_assign for $t, $o }
+
+            impl Shr<$o> for $t {
+                type Output = $t;
+
+                #[inline]
+                fn shr($self, $other: $o) -> $t {
+                    $shr_expr
+                }
+            }
+            forward_ref_binop! { impl Shr, shr for $t, $o }
+
+            impl ShrAssign<$o> for $t {
+                #[inline]
+                fn shr_assign(&mut self, $other: $o) {
+                    *self = *self >> $other;
+                }
+            }
+            forward_ref_op_assign! { impl ShrAssign, shr_assign for $t, $o }
+        }
+    };
+}
+
+// large: U256, U384, U512, I256, I384, I512
+// small: U8, U16, U32, U64, U128, I8, I16, I32, I64, I128
+// builtin: u8, u16, u32, u64, u128, i8, i16, i32, i64, i128
+macro_rules! sh {
+    (large.shl(large_signed), $self:tt, $other:tt, $t:tt) => {
+        if BigInt::from_signed_bytes_le(&$other.0).abs() > BigInt::from(<$t>::BITS) {
+            panic!("overflow");
+        } else {
+            let to_shift = BigInt::from_signed_bytes_le(&$self.0);
+            let len = min(
+                (<$t>::BITS / 8) as usize,
+                to_shift.to_signed_bytes_le().len(),
+            );
+            let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
+            to_shift.shl(shift).to_signed_bytes_le()[..len]
+                .try_into()
+                .unwrap()
+        }
+    };
+    (large.shr(large_signed), $self:tt, $other:tt, $t:tt) => {
+        if BigInt::from_signed_bytes_le(&$other.0).abs() > BigInt::from(<$t>::BITS) {
+            panic!("overflow");
+        } else {
+            let to_shift = BigInt::from_signed_bytes_le(&$self.0);
+            let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
+            to_shift.shr(shift).try_into().unwrap()
+        }
+    };
+    (large.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {{
+        let to_shift = BigInt::from_signed_bytes_le(&$self.0);
+        let len = min(
+            (<$t>::BITS / 8) as usize,
+            to_shift.to_signed_bytes_le().len(),
+        );
+        let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
+        to_shift.shl(shift).to_signed_bytes_le()[..len]
+            .try_into()
+            .unwrap()
+    }};
+    (large.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {{
+        let shift = BigInt::from_signed_bytes_le(&$other.0).to_i128().unwrap();
+        BigInt::from_signed_bytes_le(&$self.0)
+            .shr(shift)
+            .try_into()
+            .unwrap()
+    }};
+    (large.shl(builtin), $self:tt, $other:tt, $t:tt) => {
+        if $other > <$t>::BITS.try_into().unwrap() {
+            panic!("overflow");
+        } else {
+            let to_shift = BigInt::from_signed_bytes_le(&$self.0);
+            let len = min(
+                (<$t>::BITS / 8) as usize,
+                to_shift.to_signed_bytes_le().len(),
+            );
+            let shift = $other;
+            to_shift.shl(shift).to_signed_bytes_le()[..len]
+                .try_into()
+                .unwrap()
+        }
+    };
+    (large.shr(builtin), $self:tt, $other:tt, $t:tt) => {
+        if $other > <$t>::BITS.try_into().unwrap() {
+            panic!("overflow");
+        } else {
+            BigInt::from_signed_bytes_le(&$self.0)
+                .shr($other)
+                .try_into()
+                .unwrap()
+        }
+    };
+    (large.shl(small), $self:tt, $other:tt, $t:tt) => {
+        let to_shift = BigInt::from_signed_bytes_le(&$self.0);
+        let len = min(
+            (<$t>::BITS / 8) as usize,
+            to_shift.to_signed_bytes_le().len(),
+        );
+        let shift = $other.0;
+        to_shift.shl(shift).to_signed_bytes_le()[..len]
+            .try_into()
+            .unwrap()
+    };
+    (large.shr(small), $self:tt, $other:tt, $t:tt) => {
+        BigInt::from_signed_bytes_le(&$self.0)
+            .shr($other.0)
+            .try_into()
+            .unwrap()
+    };
+    (small.shl(small_signed), $self:tt, $other:tt, $t:tt) => {
+        if $other.0 < 0 {
+            $t($self.0.checked_shr(-$other.0 as u32).unwrap())
+        } else {
+            $t($self.0.checked_shl($other.0 as u32).unwrap())
+        }
+    };
+    (small.shr(small_signed), $self:tt, $other:tt, $t:tt) => {
+        if $other.0 < 0 {
+            $t($self.0.checked_shl(-$other.0 as u32).unwrap())
+        } else {
+            $t($self.0.checked_shr($other.0 as u32).unwrap())
+        }
+    };
+    (small.shl(small_unsigned), $self:tt, $other:tt, $t:tt) => {
+        $t($self
+            .0
+            .checked_shl(u32::try_from($other.0).unwrap())
+            .unwrap())
+    };
+    (small.shr(small_unsigned), $self:tt, $other:tt, $t:tt) => {
+        $t($self
+            .0
+            .checked_shr(u32::try_from($other.0).unwrap())
+            .unwrap())
+    };
+    (small.shl(builtin_signed), $self:tt, $other:tt, $t:tt) => {
+        if $other < 0 {
+            $t($self.0.checked_shr(-$other as u32).unwrap())
+        } else {
+            $t($self.0.checked_shl($other as u32).unwrap())
+        }
+    };
+    (small.shr(builtin_signed), $self:tt, $other:tt, $t:tt) => {
+        if $other < 0 {
+            $t($self.0.checked_shl(-$other as u32).unwrap())
+        } else {
+            $t($self.0.checked_shr($other as u32).unwrap())
+        }
+    };
+    (small.shl(builtin_unsigned), $self:tt, $other:tt, $t:tt) => {
+        $t($self.0.checked_shl(u32::try_from($other).unwrap()).unwrap())
+    };
+    (small.shr(builtin_unsigned), $self:tt, $other:tt, $t:tt) => {
+        $t($self.0.checked_shr(u32::try_from($other).unwrap()).unwrap())
+    };
+    (small.shl(large_unsigned), $self:tt, $other:tt, $t:tt) => {
+        $t($self
+            .0
+            .checked_shl({
+                if $other > u32::MAX.into() {
+                    panic!("overflow")
+                } else {
+                    let other_le_bytes = $other.0[0..4].try_into().unwrap();
+                    u32::from_le_bytes(other_le_bytes)
+                }
+            })
+            .unwrap())
+    };
+    (small.shr(large_unsigned), $self:tt, $other:tt, $t:tt) => {
+        $t($self
+            .0
+            .checked_shr({
+                if $other > u32::MAX.into() {
+                    panic!("overflow")
+                } else {
+                    let other_le_bytes = $other.0[0..4].try_into().unwrap();
+                    u32::from_le_bytes(other_le_bytes)
+                }
+            })
+            .unwrap())
+    };
+    (small.shl(large_signed), $self:tt, $other:tt, $t:tt) => {
+        if $other > 0.into() {
+            $t($self
+                .0
+                .checked_shl({
+                    if $other > u32::MAX.into() {
+                        panic!("overflow")
+                    } else {
+                        let other_le_bytes = $other.0[0..4].try_into().unwrap();
+                        u32::from_le_bytes(other_le_bytes)
+                    }
+                })
+                .unwrap())
+        } else {
+            $t($self
+                .0
+                .checked_shr({
+                    if $other.abs() > u32::MAX.into() {
+                        panic!("overflow")
+                    } else {
+                        let other_le_bytes = $other.abs().0[0..4].try_into().unwrap();
+                        u32::from_le_bytes(other_le_bytes)
+                    }
+                })
+                .unwrap())
+        }
+    };
+    (small.shr(large_signed), $self:tt, $other:tt, $t:tt) => {
+        if $other > 0.into() {
+            $t($self
+                .0
+                .checked_shr({
+                    if $other > u32::MAX.into() {
+                        panic!("overflow")
+                    } else {
+                        let other_le_bytes = $other.0[0..4].try_into().unwrap();
+                        u32::from_le_bytes(other_le_bytes)
+                    }
+                })
+                .unwrap())
+        } else {
+            $t($self
+                .0
+                .checked_shl({
+                    if $other.abs() > u32::MAX.into() {
+                        panic!("overflow")
+                    } else {
+                        let other_le_bytes = $other.abs().0[0..4].try_into().unwrap();
+                        u32::from_le_bytes(other_le_bytes)
+                    }
+                })
+                .unwrap())
+        }
+    };
+}
+
+// large: U256, U384, U512, I256, I384, I512
+// small: U8, U16, U32, U64, U128, I8, I16, I32, I64, I128
+// builtin: u8, u16, u32, u64, u128, i8, i16, i32, i64, i128
+macro_rules! shift_impl_all_large {
+        ($($t:ty),*) => {
+            $(
+                sh_impl!{
+                    to_sh: $t,
+                    other: I256,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(large_signed), self, other, $t},
+                    shr_expr: sh!{large.shr(large_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I384,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(large_signed), self, other, $t},
+                    shr_expr: sh!{large.shr(large_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I512,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(large_signed), self, other, $t},
+                    shr_expr: sh!{large.shr(large_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U256,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(large_unsigned), self, other, $t},
+                    shr_expr: sh!{large.shr(large_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U384,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(large_unsigned), self, other, $t},
+                    shr_expr: sh!{large.shr(large_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U512,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(large_unsigned), self, other, $t},
+                    shr_expr: sh!{large.shr(large_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: i16,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(builtin), self, other, $t},
+                    shr_expr: sh!{large.shr(builtin), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: i32,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(builtin), self, other, $t},
+                    shr_expr: sh!{large.shr(builtin), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: i64,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(builtin), self, other, $t},
+                    shr_expr: sh!{large.shr(builtin), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: i128,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(builtin), self, other, $t},
+                    shr_expr: sh!{large.shr(builtin), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: u16,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(builtin), self, other, $t},
+                    shr_expr: sh!{large.shr(builtin), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: u32,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(builtin), self, other, $t},
+                    shr_expr: sh!{large.shr(builtin), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: u64,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(builtin), self, other, $t},
+                    shr_expr: sh!{large.shr(builtin), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: u128,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(builtin), self, other, $t},
+                    shr_expr: sh!{large.shr(builtin), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I16,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(small), self, other, $t},
+                    shr_expr: sh!{large.shr(small), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I32,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(small), self, other, $t},
+                    shr_expr: sh!{large.shr(small), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I64,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(small), self, other, $t},
+                    shr_expr: sh!{large.shr(small), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I128,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(small), self, other, $t},
+                    shr_expr: sh!{large.shr(small), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U16,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(small), self, other, $t},
+                    shr_expr: sh!{large.shr(small), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U32,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(small), self, other, $t},
+                    shr_expr: sh!{large.shr(small), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U64,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(small), self, other, $t},
+                    shr_expr: sh!{large.shr(small), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U128,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{large.shl(small), self, other, $t},
+                    shr_expr: sh!{large.shr(small), self, other, $t}
+                }
+                )*
+        };
+    }
+
+macro_rules! shift_impl_all_small {
+        ($($t:ty),*) => {
+            $(
+                sh_impl!{
+                    to_sh: $t,
+                    other: I8,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I16,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I32,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I64,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I128,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(small_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U8,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U16,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U32,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U64,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U128,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(small_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(small_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: i8,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: i16,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: i32,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: i64,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: i128,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: u8,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: u16,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: u32,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: u64,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: u128,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(builtin_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(builtin_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I256,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(large_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(large_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I384,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(large_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(large_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: I512,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(large_signed), self, other, $t},
+                    shr_expr: sh!{small.shr(large_signed), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U256,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(large_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(large_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U384,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(large_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(large_unsigned), self, other, $t}
+                }
+                sh_impl!{
+                    to_sh: $t,
+                    other: U512,
+                    other_var: other,
+                    self_var: self,
+                    shl_expr: sh!{small.shl(large_unsigned), self, other, $t},
+                    shr_expr: sh!{small.shr(large_unsigned), self, other, $t}
+                }
+                )*
+        };
+    }
+
+shift_impl_all_large! {I256, I384, I512, U256, U384, U512}
+
+shift_impl_all_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     macro_rules! test_impl {
-        ($(($I:ident, $i: ident)),*) => ($(
+        ($($i:ident),*) => ($(
 
-                paste::item! {
+                paste! {
                     #[test]
                     #[should_panic]
-                    fn [<test_add_overflow$i>]() {
-                        let a = $I(<$i>::MAX) + $I(1 as $i); // panics on overflow
-                        assert_eq!(a , $I(<$i>::MAX));
+                    fn [<test_add_overflow_$i:lower>]() {
+                        let _ = <$i>::MAX + <$i>::try_from(1u8).unwrap(); // panics on overflow
                     }
 
                     #[test]
                     #[should_panic]
-                    fn  [<test_sub_overflow$i>]() {
-                        let _ = $I(<$i>::MIN) - $I(1 as $i); // panics because of overflow
+                    fn  [<test_sub_overflow_$i:lower>]() {
+                        let _ = <$i>::MIN - <$i>::try_from(1u8).unwrap(); // panics on overflow
                     }
 
                     #[test]
                     #[should_panic]
-                    fn  [<test_mul_overflow$i>]() {
-                        let _ = $I(<$i>::MAX) * $I(2 as $i); // panics because of overflow
+                    fn  [<test_mul_overflow_$i:lower>]() {
+                        let _ = <$i>::MAX * <$i>::try_from(2u8).unwrap(); // panics because of overflow
                     }
 
                     #[test]
                     #[should_panic]
-                    fn  [<test_div_overflow$i>]() {
-                        let _ = $I(<$i>::MIN) / $I(0 as $i); // panics because of division by zero
+                    fn  [<test_div_overflow_$i:lower>]() {
+                        let _ = <$i>::MIN / <$i>::try_from(0u8).unwrap(); // panics because of division by zero
                     }
 
                     #[test]
                     #[should_panic]
-                    fn  [<test_rem_overflow$i>]() {
-                        let _ = $I(<$i>::MIN) % $I(0); // panics because of division by zero
+                    fn  [<test_rem_overflow_$i:lower>]() {
+                        let _ = <$i>::MIN % $i::try_from(0u8).unwrap(); // panics because of division by zero
                     }
 
                     #[test]
                     #[should_panic]
-                    fn  [<test_shl_overflow$i>]() {
-                        let _ = $I(<$i>::MAX) << ((<$i>::BITS + 1) as $i);  // panics because of overflow
+                    fn  [<test_shl_overflow_$i:lower>]() {
+                        let _ = <$i>::MAX << (<$i>::BITS + 1);  // panics because of overflow
                     }
 
                     #[test]
                     #[should_panic]
-                    fn  [<test_shr_overflow$i>]() {
-                        let _ = $I(<$i>::MIN) >> (($i::BITS + 1) as $i);  // panics because of overflow
+                    fn  [<test_shr_overflow_$i:lower>]() {
+                        let _ = <$i>::MAX >> (<$i>::BITS + 1);  // panics because of overflow
                     }
 
                     #[test]
                     #[should_panic]
-                    fn  [<test_shl_overflow_neg$i>]() {
-                        let _ = $I(<$i>::MIN) << (($i::BITS + 1) as $i);  // panics because of overflow
+                    fn  [<test_shl_overflow_neg_$i:lower>]() {
+                        let _ = <$i>::MIN << (<$i>::BITS + 1);  // panics because of overflow
                     }
 
                     #[test]
                     #[should_panic]
-                    fn  [<test_shr_overflow_neg$i>]() {
-                        let _ = $I(<$i>::MIN) >> (($i::BITS + 1) as $i);  // panics because of overflow
+                    fn  [<test_shr_overflow_neg_$i:lower>]() {
+                        let _ = <$i>::MIN >> (<$i>::BITS + 1);  // panics because of overflow
                     }
 
                     #[test]
                     #[should_panic]
-                    fn  [<test_pow_overflow$i>]() {
-                        let _ = $I(<$i>::MAX).pow(2u32);          // panics because of overflow
+                    fn  [<test_pow_overflow_$i:lower>]() {
+                        let _ = <$i>::MAX.pow(2u8);          // panics because of overflow
                     }
+
+                    #[test]
+                    fn [<test_binary_$i:lower>]() {
+                        let bin = <$i>::try_from(0x0b).unwrap();
+                        assert_eq!(format!("{:b}", bin), "1011");
+                    }
+
+                    #[test]
+                    fn [<test_octal_$i:lower>]() {
+                        let oct = <$i>::try_from(0x0b).unwrap();
+                        assert_eq!(format!("{:o}", oct), "13");
+                    }
+
+                    #[test]
+                    fn [<test_hex_lower_$i:lower>]() {
+                        let hex_lower = <$i>::try_from(0x0b).unwrap();
+                        assert_eq!(format!("{:x}", hex_lower), "b");
+                    }
+
+                    #[test]
+                    fn [<test_hex_upper_$i:lower>]() {
+                        let hex_upper = <$i>::try_from(0x0b).unwrap();
+                        assert_eq!(format!("{:X}", hex_upper), "B");
+                    }
+                    
+                    #[test]
+                    fn [<test_zero_$i:lower>]() {
+                        let zero = <$i>::try_from(0u8).unwrap();
+                        assert_eq!(zero, <$i>::zero());
+                    }
+
+                    #[test]
+                    fn [<test_is_zero_$i:lower>]() {
+                        let zero = <$i>::try_from(0u8).unwrap();
+                        assert_eq!(zero.is_zero(), true);
+                    }
+
+                    #[test]
+                    fn [<test_set_zero_$i:lower>]() {
+                        let mut zero = <$i>::try_from(1u8).unwrap();
+                        zero.set_zero();
+                        assert_eq!(zero.is_zero(), true);
+                    }
+
                 }
         )*)
     }
-    test_impl! { (I8, i8), (I16, i16), (I32, i32), (I64, i64), (I128, i128), (U8, u8), (U16, u16), (U32, u32), (U64, u64), (U128, u128) }
+    test_impl! { I8, I16, I32, I64, I128, I256, I384, I512, U8, U16, U32, U64, U128, U256, U384, U512 }
 }
 
 // TODO: from string
