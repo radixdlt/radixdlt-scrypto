@@ -25,6 +25,12 @@ impl LocalComponent {
             access_rules_list: Vec::new(),
         }
     }
+    /// Invokes a method on this component.
+    pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
+        let output = Runtime::call_method(self.component_address, method, args);
+
+        scrypto_decode(&output).unwrap()
+    }
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
