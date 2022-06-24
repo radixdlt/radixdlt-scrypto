@@ -1,5 +1,5 @@
-mod private_key;
+mod ecdsa;
 mod signer;
 
-pub use private_key::*;
+pub use ecdsa::*;
 pub use signer::*;

@@ -10,11 +10,11 @@ use crate::misc::copy_u8_array;
 
 /// Represents an ED25519 public key.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Ed25519PublicKey([u8; Self::LENGTH]);
+pub struct Ed25519PublicKey(pub [u8; Self::LENGTH]);
 
 /// Represents an ED25519 signature.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Ed25519Signature([u8; Self::LENGTH]);
+pub struct Ed25519Signature(pub [u8; Self::LENGTH]);
 
 /// Represents an error ocurred when validating a signature.
 #[derive(Debug, Clone, PartialEq, Eq)]

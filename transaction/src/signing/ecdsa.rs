@@ -9,13 +9,13 @@ impl EcdsaPrivateKey {
     pub const LENGTH: usize = 32;
 
     pub fn public_key(&self) -> EcdsaPublicKey {
-        EcdsaPublicKey(PublicKey::from_secret_key_global(&self.0))
+        EcdsaPublicKey(PublicKey::from_secret_key_global(&self.0).serialize())
     }
 
     pub fn sign(&self, msg: &[u8]) -> EcdsaSignature {
         let h = hash(msg);
         let m = Message::from_slice(&h.0).expect("The slice is a valid hash");
-        EcdsaSignature(self.0.sign_ecdsa(m))
+        EcdsaSignature(self.0.sign_ecdsa(m).serialize_compact())
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -40,6 +40,8 @@ impl EcdsaPrivateKey {
 
 #[cfg(test)]
 mod tests {
+    use crate::validation::verify_ecdsa;
+
     use super::*;
     use sbor::rust::str::FromStr;
     use scrypto::{
@@ -64,7 +66,7 @@ mod tests {
         assert_eq!(sk.public_key(), pk);
         assert_eq!(scrypto::crypto::hash(test_message), hash);
         assert_eq!(sk.sign(test_message.as_bytes()), sig);
-        assert!(EcdsaVerifier::verify(test_message.as_bytes(), &pk, &sig));
+        assert!(verify_ecdsa(test_message.as_bytes(), &pk, &sig));
     }
 
     #[test]

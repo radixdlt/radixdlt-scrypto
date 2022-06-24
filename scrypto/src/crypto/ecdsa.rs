@@ -10,11 +10,11 @@ use crate::misc::copy_u8_array;
 
 /// Represents an ECDSA public key.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EcdsaPublicKey([u8; Self::LENGTH]);
+pub struct EcdsaPublicKey(pub [u8; Self::LENGTH]);
 
 /// Represents an ECDSA signature.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EcdsaSignature([u8; Self::LENGTH]);
+pub struct EcdsaSignature(pub [u8; Self::LENGTH]);
 
 /// Represents an error ocurred when validating a signature.
 #[derive(Debug, Clone, PartialEq, Eq)]
