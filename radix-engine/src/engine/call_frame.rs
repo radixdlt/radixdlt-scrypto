@@ -536,7 +536,7 @@ pub enum SNodeExecution<'a> {
     Consumed(TransientValue),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    ValueRef2(ValueId, REValueLocation),
+    ValueRef(ValueId),
     Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
 
@@ -759,7 +759,7 @@ where
                 SNodeExecution::Worktop(mut worktop) => worktop
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::WorktopError),
-                SNodeExecution::ValueRef2(value_id, _location) => match value_id {
+                SNodeExecution::ValueRef(value_id) => match value_id {
                     ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
                         Bucket::main(bucket_id, fn_ident, input, self)
                             .map_err(RuntimeError::BucketError)
@@ -1023,10 +1023,7 @@ where
                 );
 
                 Ok((
-                    SNodeExecution::ValueRef2(
-                        value_id,
-                        REValueLocation::Track { parent: None },
-                    ),
+                    SNodeExecution::ValueRef(value_id),
                     vec![method_auth],
                 ))
             }
@@ -1041,7 +1038,7 @@ where
                 borrowed_values.insert(value_id.clone(), value_ref);
 
                 Ok((
-                    SNodeExecution::ValueRef2(value_id, REValueLocation::Borrowed),
+                    SNodeExecution::ValueRef(value_id),
                     vec![],
                 ))
             }
@@ -1055,7 +1052,7 @@ where
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
                 Ok((
-                    SNodeExecution::ValueRef2(value_id, REValueLocation::Borrowed),
+                    SNodeExecution::ValueRef(value_id),
                     vec![],
                 ))
             }
@@ -1173,7 +1170,7 @@ where
 
                 let mut value_ref = location.to_ref(&value_id, &mut self.owned_values);
                 let resource_address = value_ref.vault_address(&mut self.track);
-                let next_location = match location {
+                match location {
                     REValueLocation::Track { parent } => {
                         let vault_address = (parent.unwrap(), *vault_id);
                         let address: Address = vault_address.into();
@@ -1190,7 +1187,6 @@ where
                                 parent: parent.clone(),
                             },
                         );
-                        REValueLocation::Track { parent: parent.clone() }
                     }
                     REValueLocation::OwnedRoot | REValueLocation::Owned { .. } => {
                         let owned_ref = match value_ref {
@@ -1198,15 +1194,10 @@ where
                             _ => panic!("Unexpected"),
                         };
                         borrowed_values.insert(value_id, owned_ref);
-                        REValueLocation::Borrowed
                     }
                     // TODO: Follow Track pattern above for all locations
                     _ => panic!("Unexpected")
-                };
-                let execution = SNodeExecution::ValueRef2(
-                    value_id,
-                    next_location,
-                );
+                }
 
                 let substate_value = self
                     .track
@@ -1218,7 +1209,7 @@ where
                 };
 
                 let method_auth = resource_manager.get_vault_auth(&fn_ident);
-                Ok((execution, vec![method_auth.clone()]))
+                Ok((SNodeExecution::ValueRef(value_id), vec![method_auth.clone()]))
             }
         }?;
 
@@ -1232,8 +1223,8 @@ where
             match &loaded_snode {
                 // Resource auth check includes caller
                 SNodeExecution::Scrypto(..)
-                | SNodeExecution::ValueRef2(ValueId::Resource(..), ..)
-                | SNodeExecution::ValueRef2(ValueId::Stored(StoredValueId::VaultId(..)), ..)
+                | SNodeExecution::ValueRef(ValueId::Resource(..), ..)
+                | SNodeExecution::ValueRef(ValueId::Stored(StoredValueId::VaultId(..)), ..)
                 | SNodeExecution::Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
