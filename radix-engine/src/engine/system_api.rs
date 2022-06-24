@@ -62,9 +62,6 @@ where
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed>;
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
 
-    fn borrow_global_mut_value(&mut self, address: Address) -> SubstateValue;
-    fn return_global_mut_value(&mut self, address: Address, value: SubstateValue);
-
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
 
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError>;

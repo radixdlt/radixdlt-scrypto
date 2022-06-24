@@ -1375,17 +1375,6 @@ where
             .return_borrowed_global_mut_value(resource_address, resource_manager)
     }
 
-    fn borrow_global_mut_value(&mut self, address: Address) -> SubstateValue {
-        self.track
-            .borrow_global_mut_value(address)
-            .map(|v| v.into())
-            .unwrap()
-    }
-
-    fn return_global_mut_value(&mut self, address: Address, value: SubstateValue) {
-        self.track.return_borrowed_global_mut_value(address, value)
-    }
-
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
         if let Some(owned) = self.borrowed_values.remove(value_id) {
             RENativeValueRef::Owned(owned)
@@ -1406,7 +1395,11 @@ where
                 _ => panic!("Unexpected")
             };
 
-            let value = self.borrow_global_mut_value(address.clone());
+            let value = self.track
+                .borrow_global_mut_value(address.clone())
+                .map(|v| v.into())
+                .unwrap();
+
             RENativeValueRef::Track(address, value)
         }
     }
@@ -1417,7 +1410,7 @@ where
                 self.borrowed_values.insert(value_id.clone(), owned);
             }
             RENativeValueRef::Track(address, value) => {
-                self.track.return_borrowed_global_mut_value(address, value);
+                self.track.return_borrowed_global_mut_value(address, value)
             }
         }
     }
