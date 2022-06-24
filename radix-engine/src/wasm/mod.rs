@@ -1,4 +1,5 @@
 mod constants;
+mod cost_rules;
 mod errors;
 mod prepare;
 mod traits;
@@ -13,6 +14,7 @@ mod wasmi;
 pub use self::wasmer::*;
 pub use self::wasmi::*;
 pub use constants::*;
+pub use cost_rules::*;
 pub use errors::*;
 pub use prepare::*;
 pub use traits::*;

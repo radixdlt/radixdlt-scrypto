@@ -172,8 +172,8 @@ pub fn handle_manifest<O: std::io::Write>(
                 writeln!(out, "{:?}", receipt).map_err(Error::IOError)?;
             }
 
-            if let Err(error) = &receipt.result {
-                Err(Error::TransactionExecutionError(error.clone()))
+            if let Err(error) = receipt.result {
+                Err(Error::TransactionExecutionError(error))
             } else {
                 let mut configs = get_configs()?;
                 configs.nonce = nonce + 1;

@@ -11,7 +11,7 @@ use crate::model::*;
 use crate::wasm::InvokeError;
 
 /// Represents an error when executing a transaction.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug)]
 pub enum RuntimeError {
     /// Error when invoking a blueprint or component (recursive).
     InvokeError(Box<InvokeError>),
@@ -127,7 +127,7 @@ pub enum RuntimeError {
     CostingError(CostUnitCounterError),
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 pub enum ResourceFailure {
     Resource(ResourceAddress),
     Resources(Vec<ResourceAddress>),
