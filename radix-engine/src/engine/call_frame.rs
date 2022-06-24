@@ -874,11 +874,14 @@ where
         };
 
         // Moved values must have their references removed
-        for (_, value) in &taken {
+        for (id, value) in &taken {
+            self.readable_values.remove(id);
+
             match value {
                 REValue::Stored(stored_value) => {
                     for id in stored_value.all_descendants() {
                         self.refed_values.remove(&id);
+                        self.readable_values.remove(&ValueId::Stored(id.clone()));
                     }
                 }
                 _ => {}
@@ -1543,13 +1546,15 @@ where
 
     fn create_kv_store(&mut self) -> KeyValueStoreId {
         let kv_store_id = self.track.new_kv_store_id();
+        let value_id = ValueId::kv_store_id(kv_store_id.clone());
         self.owned_values.insert(
-            ValueId::kv_store_id(kv_store_id.clone()),
+            value_id.clone(),
             RefCell::new(REValue::Stored(StoredValue::KeyValueStore {
                 store: PreCommittedKeyValueStore::new(),
                 child_values: InMemoryChildren::new(),
             })),
         );
+        self.readable_values.insert(value_id, REValueLocation::OwnedRoot);
         kv_store_id
     }
 
@@ -1579,7 +1584,7 @@ where
                         self.readable_values
                             .get(&value_id)
                             .cloned()
-                            .ok_or(RuntimeError::InvalidDataAccess)?
+                            .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?
                     }
                     ComponentOffset::Info => {
                         if self.owned_values.contains_key(&value_id) {
@@ -1608,18 +1613,13 @@ where
                 verify_stored_key(&key)?;
 
                 let value_id = ValueId::kv_store_id(kv_store_id.clone());
-
-                let location = if self.owned_values.contains_key(&value_id) {
-                    &REValueLocation::OwnedRoot
-                } else {
-                    let stored_value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
-                    let maybe_value_ref = self.refed_values.get(&stored_value_id);
-                    maybe_value_ref
-                        .ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?
-                };
+                let location = self.readable_values
+                    .get(&value_id)
+                    .cloned()
+                    .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
 
                 SubstateEntry {
-                    location: location.clone(),
+                    location,
                     value_id,
                     offset: SubstateOffset::KeyValueStore(key),
                 }
@@ -1648,10 +1648,13 @@ where
         match instruction {
             DataInstruction::Read => {
                 for stored_value_id in cur_children {
-                    self.refed_values.insert(
-                        stored_value_id,
-                        entry.location.child(entry.value_id.clone()),
-                    );
+                    let child_location = entry.location.child(entry.value_id.clone());
+                    self.refed_values.insert(stored_value_id, child_location.clone());
+
+                    // Extend current readable space when kv stores are found
+                    if let StoredValueId::KeyValueStoreId(..) = stored_value_id {
+                        self.readable_values.insert(ValueId::Stored(stored_value_id.clone()), child_location);
+                    }
                 }
                 Ok(current_value)
             }
