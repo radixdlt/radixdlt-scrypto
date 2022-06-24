@@ -177,6 +177,8 @@ pub enum ScryptoCustomValueCheckError {
     InvalidHash(ParseHashError),
     InvalidEcdsaPublicKey(ParseEcdsaPublicKeyError),
     InvalidEcdsaSignature(ParseEcdsaSignatureError),
+    InvalidEd25519PublicKey(ParseEd25519PublicKeyError),
+    InvalidEd25519Signature(ParseEd25519SignatureError),
     InvalidBucket(ParseBucketError),
     InvalidProof(ParseProofError),
     InvalidKeyValueStore(ParseKeyValueStoreError),
@@ -232,6 +234,14 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             ScryptoType::EcdsaSignature => {
                 EcdsaSignature::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidEcdsaSignature)?;
+            }
+            ScryptoType::Ed25519PublicKey => {
+                Ed25519PublicKey::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEd25519PublicKey)?;
+            }
+            ScryptoType::Ed25519Signature => {
+                Ed25519Signature::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidEd25519Signature)?;
             }
             ScryptoType::Decimal => {
                 Decimal::try_from(data).map_err(ScryptoCustomValueCheckError::InvalidDecimal)?;
@@ -487,6 +497,18 @@ impl ScryptoValueFormatter {
                 format!(
                     "EcdsaSignature(\"{}\")",
                     EcdsaSignature::try_from(data).unwrap()
+                )
+            }
+            ScryptoType::Ed25519PublicKey => {
+                format!(
+                    "Ed25519PublicKey(\"{}\")",
+                    Ed25519PublicKey::try_from(data).unwrap()
+                )
+            }
+            ScryptoType::Ed25519Signature => {
+                format!(
+                    "Ed25519Signature(\"{}\")",
+                    Ed25519Signature::try_from(data).unwrap()
                 )
             }
             ScryptoType::Bucket => {

@@ -8,26 +8,26 @@ use sbor::*;
 use crate::abi::{scrypto_type, ScryptoType};
 use crate::misc::copy_u8_array;
 
-/// Represents an ECDSA public key.
+/// Represents an ED25519 public key.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EcdsaPublicKey([u8; Self::LENGTH]);
+pub struct Ed25519PublicKey([u8; Self::LENGTH]);
 
-/// Represents an ECDSA signature.
+/// Represents an ED25519 signature.
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct EcdsaSignature([u8; Self::LENGTH]);
+pub struct Ed25519Signature([u8; Self::LENGTH]);
 
 /// Represents an error ocurred when validating a signature.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SignatureValidationError {}
 
-/// Ecdsa signature verifier.
-pub struct EcdsaVerifier;
+/// Ed25519 signature verifier.
+pub struct Ed25519Verifier;
 
-impl EcdsaPublicKey {
-    pub const LENGTH: usize = 33;
+impl Ed25519PublicKey {
+    pub const LENGTH: usize = 32;
 }
 
-impl EcdsaSignature {
+impl Ed25519Signature {
     pub const LENGTH: usize = 64;
 }
 
@@ -35,35 +35,35 @@ impl EcdsaSignature {
 // error
 //======
 
-/// Represents an error when parsing ECDSA public key from hex.
+/// Represents an error when parsing ED25519 public key from hex.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseEcdsaPublicKeyError {
+pub enum ParseEd25519PublicKeyError {
     InvalidHex(String),
     InvalidLength(usize),
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseEcdsaPublicKeyError {}
+impl std::error::Error for ParseEd25519PublicKeyError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseEcdsaPublicKeyError {
+impl fmt::Display for ParseEd25519PublicKeyError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseEcdsaSignatureError {
+pub enum ParseEd25519SignatureError {
     InvalidHex(String),
     InvalidLength(usize),
 }
 
-/// Represents an error when parsing ECDSA signature from hex.
+/// Represents an error when parsing ED25519 signature from hex.
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseEcdsaSignatureError {}
+impl std::error::Error for ParseEd25519SignatureError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseEcdsaSignatureError {
+impl fmt::Display for ParseEd25519SignatureError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
@@ -73,89 +73,89 @@ impl fmt::Display for ParseEcdsaSignatureError {
 // binary
 //======
 
-impl TryFrom<&[u8]> for EcdsaPublicKey {
-    type Error = ParseEcdsaPublicKeyError;
+impl TryFrom<&[u8]> for Ed25519PublicKey {
+    type Error = ParseEd25519PublicKeyError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != EcdsaPublicKey::LENGTH {
-            return Err(ParseEcdsaPublicKeyError::InvalidLength(slice.len()));
+        if slice.len() != Ed25519PublicKey::LENGTH {
+            return Err(ParseEd25519PublicKeyError::InvalidLength(slice.len()));
         }
 
-        Ok(EcdsaPublicKey(copy_u8_array(slice)))
+        Ok(Ed25519PublicKey(copy_u8_array(slice)))
     }
 }
 
-impl EcdsaPublicKey {
+impl Ed25519PublicKey {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-scrypto_type!(EcdsaPublicKey, ScryptoType::EcdsaPublicKey, Vec::new());
+scrypto_type!(Ed25519PublicKey, ScryptoType::Ed25519PublicKey, Vec::new());
 
-impl TryFrom<&[u8]> for EcdsaSignature {
-    type Error = ParseEcdsaSignatureError;
+impl TryFrom<&[u8]> for Ed25519Signature {
+    type Error = ParseEd25519SignatureError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        if slice.len() != EcdsaSignature::LENGTH {
-            return Err(ParseEcdsaSignatureError::InvalidLength(slice.len()));
+        if slice.len() != Ed25519Signature::LENGTH {
+            return Err(ParseEd25519SignatureError::InvalidLength(slice.len()));
         }
 
-        Ok(EcdsaSignature(copy_u8_array(slice)))
+        Ok(Ed25519Signature(copy_u8_array(slice)))
     }
 }
 
-impl EcdsaSignature {
+impl Ed25519Signature {
     pub fn to_vec(&self) -> Vec<u8> {
         self.0.to_vec()
     }
 }
 
-scrypto_type!(EcdsaSignature, ScryptoType::EcdsaSignature, Vec::new());
+scrypto_type!(Ed25519Signature, ScryptoType::Ed25519Signature, Vec::new());
 
 //======
 // text
 //======
 
-impl FromStr for EcdsaPublicKey {
-    type Err = ParseEcdsaPublicKeyError;
+impl FromStr for Ed25519PublicKey {
+    type Err = ParseEd25519PublicKeyError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes =
-            hex::decode(s).map_err(|_| ParseEcdsaPublicKeyError::InvalidHex(s.to_owned()))?;
+            hex::decode(s).map_err(|_| ParseEd25519PublicKeyError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl fmt::Display for EcdsaPublicKey {
+impl fmt::Display for Ed25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Debug for EcdsaPublicKey {
+impl fmt::Debug for Ed25519PublicKey {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }
 }
 
-impl FromStr for EcdsaSignature {
-    type Err = ParseEcdsaSignatureError;
+impl FromStr for Ed25519Signature {
+    type Err = ParseEd25519SignatureError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let bytes =
-            hex::decode(s).map_err(|_| ParseEcdsaSignatureError::InvalidHex(s.to_owned()))?;
+            hex::decode(s).map_err(|_| ParseEd25519SignatureError::InvalidHex(s.to_owned()))?;
         Self::try_from(bytes.as_slice())
     }
 }
 
-impl fmt::Display for EcdsaSignature {
+impl fmt::Display for Ed25519Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", hex::encode(self.to_vec()))
     }
 }
 
-impl fmt::Debug for EcdsaSignature {
+impl fmt::Debug for Ed25519Signature {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self)
     }

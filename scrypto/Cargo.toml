@@ -6,12 +6,9 @@ edition = "2021"
 [dependencies]
 sha2 = { version = "0.10.2", default-features = false }
 sha3 = { version = "0.10.1", default-features = false }
-ed25519 = { version = "1.5.2", default-features = false }
-secp256k1 = { version = "0.23.1", default-features = false, features = ["global-context", "bitcoin_hashes"]}
 hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 num-bigint = { version = "0.4.3", default-features = false }
-hashbrown = { version = "0.12.1", optional = true } 
 cargo_toml = { version = "0.11.5", optional = true }
 sbor = { path = "../sbor", default-features = false }
 scrypto-abi = { path = "../scrypto-abi", default-features = false }
@@ -20,8 +17,8 @@ scrypto-derive = { path = "../scrypto-derive", default-features = false }
 [features]
 # You should enable either `std` or `alloc`
 default = ["std"]
-std = ["hex/std", "sbor/std", "scrypto-abi/std", "scrypto-derive/std", "ed25519/std", "secp256k1/std", "cargo_toml"]
-alloc = ["hashbrown", "hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc", "ed25519/alloc", "secp256k1/alloc"]
+std = ["hex/std", "sbor/std", "scrypto-abi/std", "scrypto-derive/std", "cargo_toml"]
+alloc = ["hex/alloc", "sbor/alloc", "scrypto-abi/alloc", "scrypto-derive/alloc"]
 
 # Turn on this feature to enable tracing.
 trace = ["scrypto-derive/trace"]
