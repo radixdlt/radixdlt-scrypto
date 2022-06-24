@@ -260,6 +260,37 @@ impl REValueLocation {
         }
     }
 
+    fn borrow_native_ref<'borrowed, S: ReadableSubstateStore>(
+        &self,
+        value_id: &ValueId,
+        borrowed_values: &mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
+        track: &mut Track<S>
+    ) -> RENativeValueRef<'borrowed> {
+        match self {
+            REValueLocation::Borrowed => {
+                let owned = borrowed_values.remove(value_id).expect("Should exist");
+                RENativeValueRef::Owned(owned)
+            }
+            REValueLocation::Track { parent } => {
+                let address = match value_id {
+                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
+                        Address::Vault(parent.unwrap(), *vault_id)
+                    }
+                    ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
+                    _ => panic!("Unexpected"),
+                };
+
+                let value = track
+                    .borrow_global_mut_value(address.clone())
+                    .map(|v| v.into())
+                    .unwrap();
+
+                RENativeValueRef::Track(address, value)
+            }
+            _ => panic!("Unexpected")
+        }
+    }
+
     fn to_ref<'a>(
         &self,
         value_id: &ValueId,
@@ -360,6 +391,22 @@ impl<'a> RENativeValueRef<'a> {
         match self {
             RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
             _ => panic!("Expecting to be tracked"),
+        }
+    }
+
+    pub fn return_to_location<S: ReadableSubstateStore>(
+        self,
+        value_id: ValueId,
+        borrowed_values: &mut HashMap<ValueId, REOwnedValueRef<'a>>,
+        track: &mut Track<S>
+    ) {
+        match self {
+            RENativeValueRef::Owned(owned) => {
+                borrowed_values.insert(value_id.clone(), owned);
+            }
+            RENativeValueRef::Track(address, value) => {
+                track.return_borrowed_global_mut_value(address, value)
+            }
         }
     }
 }
@@ -1360,41 +1407,11 @@ where
 
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
         let location = self.readable_values.get(value_id).unwrap();
-        match location {
-            REValueLocation::Borrowed => {
-                let owned = self.borrowed_values.remove(value_id).expect("Should exist");
-                RENativeValueRef::Owned(owned)
-            }
-            REValueLocation::Track { parent } => {
-                let address = match value_id {
-                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
-                        Address::Vault(parent.unwrap(), *vault_id)
-                    }
-                    ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
-                    _ => panic!("Unexpected"),
-                };
-
-                let value = self
-                    .track
-                    .borrow_global_mut_value(address.clone())
-                    .map(|v| v.into())
-                    .unwrap();
-
-                RENativeValueRef::Track(address, value)
-            }
-            _ => panic!("Unexpected")
-        }
+        location.borrow_native_ref(value_id, &mut self.borrowed_values, &mut self.track)
     }
 
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>) {
-        match val_ref {
-            RENativeValueRef::Owned(owned) => {
-                self.borrowed_values.insert(value_id.clone(), owned);
-            }
-            RENativeValueRef::Track(address, value) => {
-                self.track.return_borrowed_global_mut_value(address, value)
-            }
-        }
+        val_ref.return_to_location(value_id, &mut self.borrowed_values, &mut self.track)
     }
 
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
