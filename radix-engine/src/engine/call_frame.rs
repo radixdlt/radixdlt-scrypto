@@ -1066,6 +1066,7 @@ where
                 let ref_mut = bucket_cell.borrow_mut();
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
+                readable_values.insert(value_id.clone(), REValueLocation::Borrowed);
 
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
@@ -1078,6 +1079,7 @@ where
                 let ref_mut = proof_cell.borrow_mut();
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
+                readable_values.insert(value_id.clone(), REValueLocation::Borrowed);
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
@@ -1256,7 +1258,8 @@ where
                     }
                     REValueLocation::OwnedRoot | REValueLocation::Owned { .. } => {
                         let owned_ref = cur_location.to_owned_ref(&value_id, &mut self.owned_values);
-                        borrowed_values.insert(value_id, owned_ref);
+                        borrowed_values.insert(value_id.clone(), owned_ref);
+                        readable_values.insert(value_id, REValueLocation::Borrowed);
                     }
                     _ => panic!("Unexpected"),
                 }
@@ -1428,28 +1431,30 @@ where
     }
 
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
-        if let Some(owned) = self.borrowed_values.remove(value_id) {
-            RENativeValueRef::Owned(owned)
-        } else {
-            let location = self.readable_values.get(value_id).unwrap();
-            let address = match location {
-                REValueLocation::Track { parent } => match value_id {
+        let location = self.readable_values.get(value_id).unwrap();
+        match location {
+            REValueLocation::Borrowed => {
+                let owned = self.borrowed_values.remove(value_id).expect("Should exist");
+                RENativeValueRef::Owned(owned)
+            }
+            REValueLocation::Track { parent } => {
+                let address = match value_id {
                     ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
                         Address::Vault(parent.unwrap(), *vault_id)
                     }
                     ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
                     _ => panic!("Unexpected"),
-                },
-                _ => panic!("Unexpected"),
-            };
+                };
 
-            let value = self
-                .track
-                .borrow_global_mut_value(address.clone())
-                .map(|v| v.into())
-                .unwrap();
+                let value = self
+                    .track
+                    .borrow_global_mut_value(address.clone())
+                    .map(|v| v.into())
+                    .unwrap();
 
-            RENativeValueRef::Track(address, value)
+                RENativeValueRef::Track(address, value)
+            }
+            _ => panic!("Unexpected")
         }
     }
 
