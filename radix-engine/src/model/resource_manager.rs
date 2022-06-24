@@ -440,20 +440,28 @@ impl ResourceManager {
             "update_auth" => {
                 let input: ResourceManagerUpdateAuthInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let method_entry = resource_manager.authorization.get_mut(&input.method).unwrap();
+                let method_entry = resource_manager
+                    .authorization
+                    .get_mut(&input.method)
+                    .unwrap();
                 method_entry.main(MethodAccessRuleMethod::Update(input.access_rule))
             }
             "lock_auth" => {
                 let input: ResourceManagerLockAuthInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let method_entry = resource_manager.authorization.get_mut(&input.method).unwrap();
+                let method_entry = resource_manager
+                    .authorization
+                    .get_mut(&input.method)
+                    .unwrap();
                 method_entry.main(MethodAccessRuleMethod::Lock())
             }
             "create_vault" => {
                 let _: ResourceManagerCreateVaultInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let container =
-                    ResourceContainer::new_empty(resource_address, resource_manager.resource_type());
+                let container = ResourceContainer::new_empty(
+                    resource_address,
+                    resource_manager.resource_type(),
+                );
                 let vault_id = system_api
                     .create_vault(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateVault)?;
@@ -464,8 +472,10 @@ impl ResourceManager {
             "create_bucket" => {
                 let _: ResourceManagerCreateBucketInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let container =
-                    ResourceContainer::new_empty(resource_address, resource_manager.resource_type());
+                let container = ResourceContainer::new_empty(
+                    resource_address,
+                    resource_manager.resource_type(),
+                );
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
@@ -476,7 +486,8 @@ impl ResourceManager {
             "mint" => {
                 let input: ResourceManagerMintInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let container = resource_manager.mint(input.mint_params, resource_address, system_api)?;
+                let container =
+                    resource_manager.mint(input.mint_params, resource_address, system_api)?;
                 let bucket_id = system_api
                     .create_bucket(container)
                     .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;

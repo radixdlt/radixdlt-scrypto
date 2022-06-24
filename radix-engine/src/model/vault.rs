@@ -178,7 +178,8 @@ impl Vault {
                 let bucket = system_api
                     .take_bucket(input.bucket.0)
                     .map_err(|_| VaultError::CouldNotTakeBucket)?;
-                vault.put(bucket)
+                vault
+                    .put(bucket)
                     .map_err(VaultError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }

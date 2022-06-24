@@ -255,7 +255,7 @@ impl REValueLocation {
                 panic!("Unsupported");
             }
             REValueLocation::Track { parent } => REValueLocation::Track {
-                parent: Some(parent.unwrap_or_else(|| value_id.into()))
+                parent: Some(parent.unwrap_or_else(|| value_id.into())),
             },
         }
     }
@@ -318,20 +318,24 @@ pub enum RENativeValueRef<'a> {
 impl<'a> RENativeValueRef<'a> {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            RENativeValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => match root.deref_mut() {
-                REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
-                _ => panic!("Expecting to be a bucket"),
-            },
+            RENativeValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => {
+                match root.deref_mut() {
+                    REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                    _ => panic!("Expecting to be a bucket"),
+                }
+            }
             _ => panic!("Expecting to be a bucket"),
         }
     }
 
     pub fn proof(&mut self) -> &mut Proof {
         match self {
-            RENativeValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => match root.deref_mut() {
-                REValue::Transient(TransientValue::Proof(proof)) => proof,
-                _ => panic!("Expecting to be a proof"),
-            },
+            RENativeValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => {
+                match root.deref_mut() {
+                    REValue::Transient(TransientValue::Proof(proof)) => proof,
+                    _ => panic!("Expecting to be a proof"),
+                }
+            }
             _ => panic!("Expecting to be a proof"),
         }
     }
@@ -348,18 +352,13 @@ impl<'a> RENativeValueRef<'a> {
                     _ => panic!("Expecting to be a vault"),
                 },
             },
-            RENativeValueRef::Track(_address, value) => {
-                value.vault_mut()
-
-            }
+            RENativeValueRef::Track(_address, value) => value.vault_mut(),
         }
     }
 
     pub fn resource_manager(&mut self) -> &mut ResourceManager {
         match self {
-            RENativeValueRef::Track(_address, value) => {
-                value.resource_manager_mut()
-            }
+            RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
             _ => panic!("Expecting to be tracked"),
         }
     }
@@ -1007,25 +1006,22 @@ where
             SNodeRef::ResourceRef(resource_address) => {
                 let value_id = ValueId::Resource(*resource_address);
                 let address: Address = Address::Resource(*resource_address);
-                let substate = self.track.borrow_global_value(address.clone()).map_err(|e| match e {
-                    TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
-                    TrackError::Reentrancy => {
-                        panic!("Resource call has caused reentrancy")
-                    }
-                })?;
+                let substate =
+                    self.track
+                        .borrow_global_value(address.clone())
+                        .map_err(|e| match e {
+                            TrackError::NotFound => {
+                                RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                            }
+                            TrackError::Reentrancy => {
+                                panic!("Resource call has caused reentrancy")
+                            }
+                        })?;
                 let resource_manager = substate.resource_manager();
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
-                readable_values.insert(
-                    value_id.clone(),
-                    REValueLocation::Track {
-                        parent: None,
-                    },
-                );
+                readable_values.insert(value_id.clone(), REValueLocation::Track { parent: None });
 
-                Ok((
-                    SNodeExecution::ValueRef(value_id),
-                    vec![method_auth],
-                ))
+                Ok((SNodeExecution::ValueRef(value_id), vec![method_auth]))
             }
             SNodeRef::BucketRef(bucket_id) => {
                 let value_id = ValueId::Transient(TransientValueId::Bucket(*bucket_id));
@@ -1037,10 +1033,7 @@ where
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
 
-                Ok((
-                    SNodeExecution::ValueRef(value_id),
-                    vec![],
-                ))
+                Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
@@ -1051,10 +1044,7 @@ where
                 let ref_mut = proof_cell.borrow_mut();
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
-                Ok((
-                    SNodeExecution::ValueRef(value_id),
-                    vec![],
-                ))
+                Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -1107,8 +1097,10 @@ where
                         }
                     })?;
                     locked_values.insert(address.clone());
-                    readable_values
-                        .insert(ValueId::Component(component_address), REValueLocation::Track { parent: None });
+                    readable_values.insert(
+                        ValueId::Component(component_address),
+                        REValueLocation::Track { parent: None },
+                    );
 
                     let (package_address, blueprint_name) = {
                         let component_val = self.track.read_value(component_address);
@@ -1158,8 +1150,9 @@ where
                 }
             },
             SNodeRef::VaultRef(vault_id) => {
+                // Find value
                 let value_id = ValueId::vault_id(*vault_id);
-                let location = if self.owned_values.contains_key(&value_id) {
+                let cur_location = if self.owned_values.contains_key(&value_id) {
                     &REValueLocation::OwnedRoot
                 } else {
                     let stored_value_id = StoredValueId::VaultId(*vault_id);
@@ -1168,19 +1161,24 @@ where
                         .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?
                 };
 
-                let mut value_ref = location.to_ref(&value_id, &mut self.owned_values);
-                let resource_address = value_ref.vault_address(&mut self.track);
-                match location {
+                // Retrieve Method Authorization
+                let method_auth = {
+                    let mut value_ref = cur_location.to_ref(&value_id, &mut self.owned_values);
+                    let resource_address = value_ref.vault_address(&mut self.track);
+                    let substate_value = self
+                        .track
+                        .borrow_global_value(resource_address.clone())
+                        .unwrap();
+                    let resource_manager = match substate_value {
+                        SubstateValue::Resource(resource_manager) => resource_manager,
+                        _ => panic!("Value is not a resource manager"),
+                    };
+                    resource_manager.get_vault_auth(&fn_ident).clone()
+                };
+
+                // Setup next frame
+                match cur_location {
                     REValueLocation::Track { parent } => {
-                        let vault_address = (parent.unwrap(), *vault_id);
-                        let address: Address = vault_address.into();
-                        self.track.take_lock(address.clone()).map_err(|e| match e {
-                            TrackError::NotFound => panic!("Expected to find vault"),
-                            TrackError::Reentrancy => {
-                                panic!("Vault call has caused reentrancy")
-                            }
-                        })?;
-                        locked_values.insert(address.clone());
                         readable_values.insert(
                             value_id.clone(),
                             REValueLocation::Track {
@@ -1189,27 +1187,17 @@ where
                         );
                     }
                     REValueLocation::OwnedRoot | REValueLocation::Owned { .. } => {
+                        let value_ref = cur_location.to_ref(&value_id, &mut self.owned_values);
                         let owned_ref = match value_ref {
                             REValueRef::Owned(owned) => owned,
                             _ => panic!("Unexpected"),
                         };
                         borrowed_values.insert(value_id, owned_ref);
                     }
-                    // TODO: Follow Track pattern above for all locations
-                    _ => panic!("Unexpected")
+                    _ => panic!("Unexpected"),
                 }
 
-                let substate_value = self
-                    .track
-                    .borrow_global_value(resource_address.clone())
-                    .unwrap();
-                let resource_manager = match substate_value {
-                    SubstateValue::Resource(resource_manager) => resource_manager,
-                    _ => panic!("Value is not a resource manager"),
-                };
-
-                let method_auth = resource_manager.get_vault_auth(&fn_ident);
-                Ok((SNodeExecution::ValueRef(value_id), vec![method_auth.clone()]))
+                Ok((SNodeExecution::ValueRef(value_id), vec![method_auth]))
             }
         }?;
 
@@ -1381,21 +1369,18 @@ where
         } else {
             let location = self.readable_values.get(value_id).unwrap();
             let address = match location {
-                REValueLocation::Track { parent } => {
-                    match value_id {
-                        ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
-                            Address::Vault(parent.unwrap(), *vault_id)
-                        }
-                        ValueId::Resource(resouce_address) => {
-                            Address::Resource(*resouce_address)
-                        }
-                        _ => panic!("Unexpected")
+                REValueLocation::Track { parent } => match value_id {
+                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
+                        Address::Vault(parent.unwrap(), *vault_id)
                     }
-                }
-                _ => panic!("Unexpected")
+                    ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
+                    _ => panic!("Unexpected"),
+                },
+                _ => panic!("Unexpected"),
             };
 
-            let value = self.track
+            let value = self
+                .track
                 .borrow_global_mut_value(address.clone())
                 .map(|v| v.into())
                 .unwrap();
