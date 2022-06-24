@@ -354,6 +354,15 @@ impl<'a> RENativeValueRef<'a> {
             }
         }
     }
+
+    pub fn resource_manager(&mut self) -> &mut ResourceManager {
+        match self {
+            RENativeValueRef::Track(_address, value) => {
+                value.resource_manager_mut()
+            }
+            _ => panic!("Expecting to be tracked"),
+        }
+    }
 }
 
 pub enum REOwnedValueRef<'a> {
@@ -513,40 +522,6 @@ impl<'a> REValueRef<'a> {
             }
         }
     }
-
-    fn execute<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
-        &mut self,
-        value_id: ValueId,
-        fn_ident: &str,
-        input: ScryptoValue,
-        system: &mut S,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        let mut to_return = HashMap::new();
-
-        let rtn = match &value_id {
-            ValueId::Resource(resource_address) => {
-                let resman = match self {
-                    REValueRef::Track(address) => {
-                        let value = system.borrow_global_mut_value(address.clone());
-                        to_return.insert(address.clone(), value);
-                        to_return.get_mut(&address).unwrap().resource_manager_mut()
-                    }
-                    _ => panic!("Expecting to be tracked"),
-                };
-
-                resman
-                    .main(*resource_address, fn_ident, input, system)
-                    .map_err(RuntimeError::ResourceManagerError)
-            }
-            _ => panic!("Unexpected value"),
-        }?;
-
-        for (address, value) in to_return.drain() {
-            system.return_global_mut_value(address, value);
-        }
-
-        Ok(rtn)
-    }
 }
 
 pub enum StaticSNodeState {
@@ -561,7 +536,6 @@ pub enum SNodeExecution<'a> {
     Consumed(TransientValue),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    ValueRef(ValueId, REValueRef<'a>),
     ValueRef2(ValueId, REValueLocation),
     Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
@@ -785,9 +759,6 @@ where
                 SNodeExecution::Worktop(mut worktop) => worktop
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::WorktopError),
-                SNodeExecution::ValueRef(value_id, mut value_ref) => {
-                    value_ref.execute(value_id, fn_ident, input, self)
-                }
                 SNodeExecution::ValueRef2(value_id, _location) => match value_id {
                     ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
                         Bucket::main(bucket_id, fn_ident, input, self)
@@ -800,6 +771,10 @@ where
                     ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
                         Vault::main(vault_id, fn_ident, input, self)
                             .map_err(RuntimeError::VaultError)
+                    }
+                    ValueId::Resource(resource_address) => {
+                        ResourceManager::main(resource_address, fn_ident, input, self)
+                            .map_err(RuntimeError::ResourceManagerError)
                     }
                     _ => panic!("Unexpected"),
                 },
@@ -1030,24 +1005,27 @@ where
                 }
             }
             SNodeRef::ResourceRef(resource_address) => {
-                let resman_value = self
-                    .track
-                    .borrow_global_value(resource_address.clone())
-                    .map_err(|e| match e {
-                        TrackError::NotFound => {
-                            RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                        }
-                        TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
-                    })?;
-                let method_auth = resman_value
-                    .resource_manager()
-                    .get_auth(&fn_ident, &input)
-                    .clone();
+                let value_id = ValueId::Resource(*resource_address);
+                let address: Address = Address::Resource(*resource_address);
+                let substate = self.track.borrow_global_value(address.clone()).map_err(|e| match e {
+                    TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+                    TrackError::Reentrancy => {
+                        panic!("Resource call has caused reentrancy")
+                    }
+                })?;
+                let resource_manager = substate.resource_manager();
+                let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
+                readable_values.insert(
+                    value_id.clone(),
+                    REValueLocation::Track {
+                        parent: None,
+                    },
+                );
 
                 Ok((
-                    SNodeExecution::ValueRef(
-                        ValueId::Resource(resource_address.clone()),
-                        REValueRef::Track(resource_address.clone().into()),
+                    SNodeExecution::ValueRef2(
+                        value_id,
+                        REValueLocation::Track { parent: None },
                     ),
                     vec![method_auth],
                 ))
@@ -1254,7 +1232,7 @@ where
             match &loaded_snode {
                 // Resource auth check includes caller
                 SNodeExecution::Scrypto(..)
-                | SNodeExecution::ValueRef(ValueId::Resource(..), ..)
+                | SNodeExecution::ValueRef2(ValueId::Resource(..), ..)
                 | SNodeExecution::ValueRef2(ValueId::Stored(StoredValueId::VaultId(..)), ..)
                 | SNodeExecution::Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
@@ -1427,6 +1405,9 @@ where
                     match value_id {
                         ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
                             Address::Vault(parent.unwrap(), *vault_id)
+                        }
+                        ValueId::Resource(resouce_address) => {
+                            Address::Resource(*resouce_address)
                         }
                         _ => panic!("Unexpected")
                     }
