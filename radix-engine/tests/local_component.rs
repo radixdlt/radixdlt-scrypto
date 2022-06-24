@@ -27,7 +27,6 @@ fn local_component_should_return_correct_info() {
     receipt.expect_success();
 }
 
-/*
 #[test]
 fn local_component_should_be_callable() {
     // Arrange
@@ -48,4 +47,3 @@ fn local_component_should_be_callable() {
     // Assert
     receipt.expect_success();
 }
-*/
