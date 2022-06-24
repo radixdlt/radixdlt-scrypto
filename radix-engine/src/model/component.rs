@@ -35,7 +35,7 @@ impl Component {
         &self,
         schema: &Type,
         method_name: &str,
-    ) -> (ScryptoValue, Vec<MethodAuthorization>) {
+    ) -> Vec<MethodAuthorization> {
         let data = ScryptoValue::from_slice(&self.state).unwrap();
 
         let mut authorizations = Vec::new();
@@ -45,7 +45,7 @@ impl Component {
             authorizations.push(authorization);
         }
 
-        (data, authorizations)
+        authorizations
     }
 
     pub fn authorization(&self) -> &[AccessRules] {

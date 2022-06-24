@@ -260,16 +260,16 @@ impl REValueLocation {
         }
     }
 
-    fn to_ref<'a>(
+    fn to_owned_ref<'a>(
         &self,
         value_id: &ValueId,
         owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
-    ) -> REValueRef<'a> {
+    ) -> REOwnedValueRef<'a> {
         match self {
             REValueLocation::OwnedRoot => {
                 let cell = owned_values.get_mut(value_id).unwrap();
                 let ref_mut = cell.borrow_mut();
-                REValueRef::Owned(REOwnedValueRef::Root(ref_mut))
+                REOwnedValueRef::Root(ref_mut)
             }
             REValueLocation::Owned {
                 root,
@@ -284,10 +284,23 @@ impl REValueLocation {
                 match value_id {
                     ValueId::Stored(stored_value_id) => {
                         let value = root_store.get_child(ancestors, &stored_value_id);
-                        REValueRef::Owned(REOwnedValueRef::Child(value))
+                        REOwnedValueRef::Child(value)
                     }
                     _ => panic!("Unexpected value id"),
                 }
+            }
+            _ => panic!("Not an owned ref")
+        }
+    }
+
+    fn to_ref<'a>(
+        &self,
+        value_id: &ValueId,
+        owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
+    ) -> REValueRef<'a> {
+        match self {
+            REValueLocation::OwnedRoot | REValueLocation::Owned { .. } => {
+                REValueRef::Owned(self.to_owned_ref(value_id, owned_values))
             }
             REValueLocation::Borrowed => {
                 panic!("Unsupported");
@@ -501,6 +514,26 @@ impl<'a> REValueRef<'a> {
                     component.package_address().clone(),
                     component.blueprint_name().to_string(),
                 )
+            }
+            _ => panic!("Unexpected component ref"),
+        }
+    }
+
+    fn component_authorization<S: ReadableSubstateStore>(
+        &mut self,
+        schema: &Type,
+        fn_ident: &str,
+        track: &mut Track<S>,
+    ) -> Vec<MethodAuthorization> {
+        match self {
+            REValueRef::Owned(REOwnedValueRef::Root(root)) => {
+                let component = root.to_component();
+                component.method_authorization(schema, fn_ident)
+            },
+            REValueRef::Track(address) => {
+                let component_val = track.borrow_global_value(address.clone()).unwrap();
+                let component = component_val.component();
+                component.method_authorization(schema, fn_ident)
             }
             _ => panic!("Unexpected component ref"),
         }
@@ -1150,11 +1183,9 @@ where
                             });
                         }
 
-                        let (_, method_auths) = {
-                            let address: Address = component_address.into();
-                            let substate = self.track.borrow_global_value(address.clone()).unwrap();
-                            let component = substate.component();
-                            component.method_authorization(&abi.structure, &fn_ident)
+                        let method_auths = {
+                            let mut value_ref = cur_location.to_ref(&value_id, &mut self.owned_values);
+                            value_ref.component_authorization(&abi.structure, &fn_ident, &mut self.track)
                         };
 
                         (method_auths, package)
@@ -1172,9 +1203,13 @@ where
                             })?;
                             locked_values.insert(address.clone());
                             readable_values.insert(
-                                ValueId::Component(component_address),
+                                value_id,
                                 REValueLocation::Track { parent: None },
                             );
+                        }
+                        REValueLocation::OwnedRoot => {
+                            let owned_ref = cur_location.to_owned_ref(&value_id, &mut self.owned_values);
+                            borrowed_values.insert(value_id, owned_ref);
                         }
                         _ => panic!("Unexpected"),
                     }
@@ -1220,11 +1255,7 @@ where
                         );
                     }
                     REValueLocation::OwnedRoot | REValueLocation::Owned { .. } => {
-                        let value_ref = cur_location.to_ref(&value_id, &mut self.owned_values);
-                        let owned_ref = match value_ref {
-                            REValueRef::Owned(owned) => owned,
-                            _ => panic!("Unexpected"),
-                        };
+                        let owned_ref = cur_location.to_owned_ref(&value_id, &mut self.owned_values);
                         borrowed_values.insert(value_id, owned_ref);
                     }
                     _ => panic!("Unexpected"),
