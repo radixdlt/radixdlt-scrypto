@@ -9,7 +9,10 @@ use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use scrypto::abi::BlueprintAbi;
 use scrypto::prelude::HashMap;
-use wasm_instrument::{gas_metering, inject_stack_limiter};
+use wasm_instrument::{
+    gas_metering::{self, Rules},
+    inject_stack_limiter,
+};
 use wasmi_validation::{validate_module, PlainValidator};
 
 use crate::wasm::{constants::*, errors::*, PrepareError};
@@ -334,17 +337,12 @@ impl WasmModule {
         Ok(self)
     }
 
-    pub fn inject_instruction_metering(
+    pub fn inject_instruction_metering<R: Rules>(
         mut self,
-        instruction_cost: u32,
-        grow_memory_cost: u32,
+        rules: &R,
     ) -> Result<Self, PrepareError> {
-        self.module = gas_metering::inject(
-            self.module,
-            &gas_metering::ConstantCostRules::new(instruction_cost, grow_memory_cost),
-            MODULE_ENV_NAME,
-        )
-        .map_err(|_| PrepareError::RejectedByInstructionMetering)?;
+        self.module = gas_metering::inject(self.module, rules, MODULE_ENV_NAME)
+            .map_err(|_| PrepareError::RejectedByInstructionMetering)?;
 
         Ok(self)
     }

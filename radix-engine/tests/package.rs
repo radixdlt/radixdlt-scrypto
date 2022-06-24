@@ -34,13 +34,14 @@ fn missing_memory_should_cause_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be error.");
-    assert_eq!(
-        error,
-        RuntimeError::PackageError(PackageError::InvalidWasm(PrepareError::InvalidMemory(
-            InvalidMemory::NoMemorySection
-        )))
-    );
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            &RuntimeError::PackageError(PackageError::InvalidWasm(PrepareError::InvalidMemory(
+                InvalidMemory::NoMemorySection
+            )))
+        )
+    });
 }
 
 #[test]
@@ -56,11 +57,13 @@ fn large_return_len_should_cause_memory_access_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error.");
-    assert_eq!(
-        error,
-        RuntimeError::InvokeError(InvokeError::MemoryAccessError.into())
-    );
+    receipt.expect_err(|e| {
+        if let RuntimeError::InvokeError(b) = e {
+            matches!(**b, InvokeError::MemoryAccessError)
+        } else {
+            false
+        }
+    });
 }
 
 #[test]
@@ -76,11 +79,13 @@ fn overflow_return_len_should_cause_memory_access_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error.");
-    assert_eq!(
-        error,
-        RuntimeError::InvokeError(InvokeError::MemoryAccessError.into())
-    );
+    receipt.expect_err(|e| {
+        if let RuntimeError::InvokeError(b) = e {
+            matches!(**b, InvokeError::MemoryAccessError)
+        } else {
+            false
+        }
+    });
 }
 
 #[test]
@@ -97,10 +102,7 @@ fn zero_return_len_should_cause_data_validation_error() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error.");
-    if !matches!(error, RuntimeError::InvokeError(_)) {
-        panic!("{} should be data validation error", error);
-    }
+    receipt.expect_err(|e| matches!(e, RuntimeError::InvokeError(_)));
 }
 
 #[test]
@@ -147,11 +149,12 @@ fn test_basic_package_missing_export() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    let error = receipt.result.expect_err("Should be an error.");
-    assert!(matches!(
-        error,
-        RuntimeError::PackageError(PackageError::InvalidWasm(
-            PrepareError::MissingExport { .. }
-        ))
-    ))
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::PackageError(PackageError::InvalidWasm(
+                PrepareError::MissingExport { .. }
+            ))
+        )
+    });
 }
