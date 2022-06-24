@@ -31,7 +31,7 @@ pub struct TransactionProcessorRunInput {
     pub instructions: Vec<ExecutableInstruction>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
 pub enum TransactionProcessorError {
     InvalidRequestData(DecodeError),
     RuntimeError(RuntimeError),
@@ -336,7 +336,9 @@ impl TransactionProcessor {
                             .remove(proof_id)
                             .map(|real_id| {
                                 system_api.invoke_snode(
-                                    SNodeRef::Consumed(ValueId::Transient(TransientValueId::Proof(real_id))),
+                                    SNodeRef::Consumed(ValueId::Transient(
+                                        TransientValueId::Proof(real_id),
+                                    )),
                                     "drop".to_string(),
                                     ScryptoValue::from_typed(&ConsumingProofDropInput {}),
                                 )
@@ -449,7 +451,9 @@ impl TransactionProcessor {
                                 for (_, real_id) in proof_id_mapping.drain() {
                                     system_api
                                         .invoke_snode(
-                                            SNodeRef::Consumed(ValueId::Transient(TransientValueId::Proof(real_id))),
+                                            SNodeRef::Consumed(ValueId::Transient(
+                                                TransientValueId::Proof(real_id),
+                                            )),
                                             "drop".to_string(),
                                             ScryptoValue::from_typed(&ConsumingProofDropInput {}),
                                         )

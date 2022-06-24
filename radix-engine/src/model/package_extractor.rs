@@ -36,8 +36,7 @@ fn extract_abi(code: &[u8]) -> Result<HashMap<String, BlueprintAbi>, ExtractAbiE
 
     let metering_params = WasmMeteringParams::new(
         WASM_METERING_V1,
-        WASM_INSTRUCTION_COST,
-        WASM_GROW_MEMORY_COST,
+        InstructionCostRules::constant(WASM_INSTRUCTION_COST, WASM_GROW_MEMORY_COST),
         WASM_MAX_STACK_SIZE,
     );
     let instrumented_code = wasm_instrumenter.instrument(code, &metering_params);

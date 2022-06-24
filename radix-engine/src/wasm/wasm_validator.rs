@@ -33,7 +33,8 @@ impl WasmValidator {
         // Not all "valid" wasm modules are instrumentable, with the instrumentation library
         // we are using. To deal with this, we attempt to instrument the input module with
         // some mocked parameters and reject it if fails to do so.
-        let mocked_wasm_metering_params = WasmMeteringParams::new(1, 1, 100, 500);
+        let mocked_wasm_metering_params =
+            WasmMeteringParams::new(1, InstructionCostRules::constant(1, 100), 500);
 
         WasmModule::init(code)?
             .enforce_no_floating_point()?
@@ -45,10 +46,7 @@ impl WasmValidator {
             .enforce_function_limit(self.max_number_of_functions)?
             .enforce_global_limit(self.max_number_of_globals)?
             .enforce_export_constraints(blueprints)?
-            .inject_instruction_metering(
-                mocked_wasm_metering_params.instruction_cost(),
-                mocked_wasm_metering_params.grow_memory_cost(),
-            )?
+            .inject_instruction_metering(mocked_wasm_metering_params.instruction_cost_rules())?
             .inject_stack_metering(mocked_wasm_metering_params.max_stack_size())?
             .ensure_instantiatable()?
             .ensure_compilable()?

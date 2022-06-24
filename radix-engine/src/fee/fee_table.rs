@@ -1,4 +1,4 @@
-use crate::wasm::WasmMeteringParams;
+use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
 pub const TX_VALIDATION_COST_PER_BYTE: u32 = 20;
 
@@ -25,8 +25,7 @@ impl FeeTable {
             engine_run_cost: ENGINE_RUN_COST,
             wasm_metering_params: WasmMeteringParams::new(
                 WASM_METERING_V1,
-                WASM_INSTRUCTION_COST,
-                WASM_GROW_MEMORY_COST,
+                InstructionCostRules::constant(WASM_INSTRUCTION_COST, WASM_GROW_MEMORY_COST),
                 WASM_MAX_STACK_SIZE,
             ),
         }

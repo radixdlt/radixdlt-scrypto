@@ -59,14 +59,17 @@ fn mint_with_bad_granularity_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(
-        runtime_error,
-        RuntimeError::ResourceManagerError(ResourceManagerError::InvalidAmount(
-            Decimal::from("0.1"),
-            0
-        ))
-    );
+    receipt.expect_err(|e| {
+        if let RuntimeError::ResourceManagerError(ResourceManagerError::InvalidAmount(
+            amount,
+            granularity,
+        )) = e
+        {
+            amount.eq(&Decimal::from("0.1")) && *granularity == 0
+        } else {
+            false
+        }
+    });
 }
 
 #[test]
@@ -89,9 +92,10 @@ fn mint_too_much_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    let runtime_error = receipt.result.expect_err("Should be runtime error");
-    assert_eq!(
-        runtime_error,
-        RuntimeError::ResourceManagerError(ResourceManagerError::MaxMintAmountExceeded)
-    );
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ResourceManagerError(ResourceManagerError::MaxMintAmountExceeded)
+        )
+    })
 }

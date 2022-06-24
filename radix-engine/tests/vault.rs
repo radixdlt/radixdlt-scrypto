@@ -132,9 +132,11 @@ fn dangling_vault_should_fail() {
     // Assert
     let resource_address = receipt.new_resource_addresses[0].clone();
     receipt.expect_err(|e| {
-        let expected =
-            RuntimeError::ResourceCheckFailure(ResourceFailure::Resource(resource_address));
-        e.eq(&expected)
+        if let RuntimeError::ResourceCheckFailure(ResourceFailure::Resource(addr)) = e {
+            addr.eq(&resource_address)
+        } else {
+            false
+        }
     });
 }
 

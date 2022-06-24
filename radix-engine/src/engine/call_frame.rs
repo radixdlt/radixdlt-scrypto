@@ -799,7 +799,7 @@ where
                         };
                         let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
                         vec![method_auth.clone()]
-                    },
+                    }
                     REValue::Transient(TransientValue::Proof(_)) => vec![],
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
