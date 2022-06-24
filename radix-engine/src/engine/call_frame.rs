@@ -310,6 +310,32 @@ impl REValueLocation {
     }
 }
 
+pub enum RENativeValueRef<'a> {
+    Owned(REOwnedValueRef<'a>),
+}
+
+impl<'a> RENativeValueRef<'a> {
+    pub fn bucket(&mut self) -> &mut Bucket {
+        match self {
+            RENativeValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => match root.deref_mut() {
+                REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                _ => panic!("Expecting to be a bucket"),
+            },
+            _ => panic!("Expecting to be a bucket"),
+        }
+    }
+
+    pub fn proof(&mut self) -> &mut Proof {
+        match self {
+            RENativeValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => match root.deref_mut() {
+                REValue::Transient(TransientValue::Proof(proof)) => proof,
+                _ => panic!("Expecting to be a proof"),
+            },
+            _ => panic!("Expecting to be a proof"),
+        }
+    }
+}
+
 pub enum REOwnedValueRef<'a> {
     Root(RefMut<'a, REValue>),
     Child(RefMut<'a, StoredValue>),
@@ -321,26 +347,6 @@ pub enum REValueRef<'a> {
 }
 
 impl<'a> REValueRef<'a> {
-    pub fn bucket(&mut self) -> &mut Bucket {
-        match self {
-            REValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => match root.deref_mut() {
-                REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
-                _ => panic!("Expecting to be a bucket"),
-            },
-            _ => panic!("Expecting to be a bucket"),
-        }
-    }
-
-    pub fn proof(&mut self) -> &mut Proof {
-        match self {
-            REValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => match root.deref_mut() {
-                REValue::Transient(TransientValue::Proof(proof)) => proof,
-                _ => panic!("Expecting to be a proof"),
-            },
-            _ => panic!("Expecting to be a proof"),
-        }
-    }
-
     fn kv_store_put<S: ReadableSubstateStore>(
         &mut self,
         key: Vec<u8>,
@@ -1408,17 +1414,16 @@ where
         self.track.return_borrowed_global_mut_value(address, value)
     }
 
-    fn borrow_native_value(&mut self, value_id: &ValueId) -> REValueRef<'borrowed> {
+    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
         let owned = self.borrowed_values.remove(value_id).unwrap();
-        REValueRef::Owned(owned)
+        RENativeValueRef::Owned(owned)
     }
 
-    fn return_native_value(&mut self, value_id: ValueId, val_ref: REValueRef<'borrowed>) {
+    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>) {
         match val_ref {
-            REValueRef::Owned(owned) => {
+            RENativeValueRef::Owned(owned) => {
                 self.borrowed_values.insert(value_id.clone(), owned);
             }
-            _ => {}
         }
     }
 
