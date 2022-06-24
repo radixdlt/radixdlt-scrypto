@@ -465,8 +465,28 @@ impl<'a> REValueRef<'a> {
         }
     }
 
-    fn component_get_info<S: ReadableSubstateStore>(&self, track: &mut Track<S>) -> ScryptoValue {
-        let info = match self {
+    fn component_put<S: ReadableSubstateStore>(
+        &mut self,
+        value: ScryptoValue,
+        to_store: HashMap<StoredValueId, StoredValue>,
+        track: &mut Track<S>,
+    ) {
+        match self {
+            REValueRef::Track(address) => {
+                track
+                    .write_component_value(address.clone().into(), value.raw)
+                    .unwrap();
+                track.insert_objects_into_component(to_store, address.clone().into());
+            }
+            _ => panic!("Unexpected component ref"),
+        }
+    }
+
+    fn component_info<S: ReadableSubstateStore>(
+        &mut self,
+        track: &mut Track<S>,
+    ) -> (PackageAddress, String) {
+        match self {
             REValueRef::Owned(REOwnedValueRef::Root(root)) => {
                 let component = root.to_component();
                 (
@@ -481,25 +501,6 @@ impl<'a> REValueRef<'a> {
                     component.package_address().clone(),
                     component.blueprint_name().to_string(),
                 )
-            }
-            _ => panic!("Unexpected component ref"),
-        };
-
-        return ScryptoValue::from_typed(&info);
-    }
-
-    fn component_put<S: ReadableSubstateStore>(
-        &mut self,
-        value: ScryptoValue,
-        to_store: HashMap<StoredValueId, StoredValue>,
-        track: &mut Track<S>,
-    ) {
-        match self {
-            REValueRef::Track(address) => {
-                track
-                    .write_component_value(address.clone().into(), value.raw)
-                    .unwrap();
-                track.insert_objects_into_component(to_store, address.clone().into());
             }
             _ => panic!("Unexpected component ref"),
         }
@@ -1089,62 +1090,94 @@ where
                 }
                 ScryptoActor::Component(component_address) => {
                     let component_address = *component_address;
-                    let address: Address = component_address.into();
-                    self.track.take_lock(address.clone()).map_err(|e| match e {
-                        TrackError::NotFound => RuntimeError::ComponentNotFound(component_address),
-                        TrackError::Reentrancy => {
-                            RuntimeError::ComponentReentrancy(component_address)
-                        }
-                    })?;
-                    locked_values.insert(address.clone());
-                    readable_values.insert(
-                        ValueId::Component(component_address),
-                        REValueLocation::Track { parent: None },
-                    );
 
-                    let (package_address, blueprint_name) = {
-                        let component_val = self.track.read_value(component_address);
-                        let component = component_val.component();
-                        (
-                            component.package_address(),
-                            component.blueprint_name().to_string(),
+                    // Find value
+                    let value_id = ValueId::Component(component_address);
+                    let cur_location = if self.owned_values.contains_key(&value_id) {
+                        REValueLocation::OwnedRoot
+                    } else {
+                        let address: Address = component_address.into();
+                        self.track
+                            .borrow_global_value(address.clone())
+                            .map_err(|e| match e {
+                                TrackError::NotFound => {
+                                    RuntimeError::ComponentNotFound(component_address)
+                                }
+                                TrackError::Reentrancy => {
+                                    RuntimeError::ComponentReentrancy(component_address)
+                                }
+                            })?;
+                        REValueLocation::Track { parent: None }
+                    };
+
+                    let actor_info = {
+                        let mut value_ref = cur_location.to_ref(&value_id, &mut self.owned_values);
+                        let (package_address, blueprint_name) =
+                            value_ref.component_info(&mut self.track);
+                        ScryptoActorInfo::component(
+                            package_address,
+                            blueprint_name,
+                            component_address,
                         )
                     };
 
-                    let package_value = self
-                        .track
-                        .borrow_global_value(package_address.clone())
-                        .map_err(|e| match e {
-                            TrackError::NotFound => RuntimeError::PackageNotFound(package_address),
-                            TrackError::Reentrancy => {
-                                panic!("Package reentrancy error should never occur.")
-                            }
-                        })?;
-                    let package = package_value.package().clone();
-                    let abi = package
-                        .blueprint_abi(&blueprint_name)
-                        .expect("Blueprint not found for existing component");
-                    let fn_abi = abi
-                        .get_fn_abi(&fn_ident)
-                        .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
-                    if !fn_abi.input.matches(&input.dom) {
-                        return Err(RuntimeError::InvalidFnInput {
-                            fn_ident,
-                            input: input.dom,
-                        });
-                    }
+                    // Retrieve Method Authorization
+                    let (method_auths, package) = {
+                        let package_address = actor_info.package_address().clone();
+                        let blueprint_name = actor_info.blueprint_name().to_string();
+                        let package_value = self
+                            .track
+                            .borrow_global_value(package_address)
+                            .map_err(|e| match e {
+                                TrackError::NotFound => {
+                                    RuntimeError::PackageNotFound(package_address)
+                                }
+                                TrackError::Reentrancy => {
+                                    panic!("Package reentrancy error should never occur.")
+                                }
+                            })?;
+                        let package = package_value.package().clone();
+                        let abi = package
+                            .blueprint_abi(&blueprint_name)
+                            .expect("Blueprint not found for existing component");
+                        let fn_abi = abi
+                            .get_fn_abi(&fn_ident)
+                            .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
+                        if !fn_abi.input.matches(&input.dom) {
+                            return Err(RuntimeError::InvalidFnInput {
+                                fn_ident,
+                                input: input.dom,
+                            });
+                        }
 
-                    let (_, method_auths) = {
-                        let component_val = self.track.read_value(component_address);
-                        let component = component_val.component();
-                        component.method_authorization(&abi.structure, &fn_ident)
+                        let (_, method_auths) = {
+                            let address: Address = component_address.into();
+                            let substate = self.track.borrow_global_value(address.clone()).unwrap();
+                            let component = substate.component();
+                            component.method_authorization(&abi.structure, &fn_ident)
+                        };
+
+                        (method_auths, package)
                     };
 
-                    let actor_info = ScryptoActorInfo::component(
-                        package_address,
-                        blueprint_name.to_string(),
-                        component_address,
-                    );
+                    // Setup next frame
+                    match cur_location {
+                        REValueLocation::Track { .. } => {
+                            let address: Address = component_address.into();
+                            self.track.take_lock(address.clone()).map_err(|e| match e {
+                                TrackError::NotFound => panic!("Should exist"),
+                                TrackError::Reentrancy => {
+                                    RuntimeError::ComponentReentrancy(component_address)
+                                }
+                            })?;
+                            locked_values.insert(address.clone());
+                            readable_values.insert(
+                                ValueId::Component(component_address),
+                                REValueLocation::Track { parent: None },
+                            );
+                        }
+                        _ => panic!("Unexpected"),
+                    }
 
                     Ok((SNodeExecution::Scrypto(actor_info, package), method_auths))
                 }
@@ -1623,13 +1656,15 @@ where
 
         // Read current value
         let (current_value, cur_children) = {
-            let value_ref = entry
+            let mut value_ref = entry
                 .location
                 .to_ref(&entry.value_id, &mut self.owned_values);
             let current_value = match &entry.offset {
                 SubstateOffset::Component(offset) => match offset {
                     ComponentOffset::State => value_ref.component_get_state(&mut self.track),
-                    ComponentOffset::Info => value_ref.component_get_info(&mut self.track),
+                    ComponentOffset::Info => {
+                        ScryptoValue::from_typed(&value_ref.component_info(&mut self.track))
+                    }
                 },
                 SubstateOffset::KeyValueStore(key) => {
                     value_ref.kv_store_get(&key.raw, &mut self.track)
