@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::prelude::{AccessRule, AccessRules};
 
-use crate::core::SNodeRef;
+use crate::core::{DataAddress, SNodeRef};
 use crate::engine::types::*;
 
 #[cfg(target_arch = "wasm32")]
@@ -33,14 +33,11 @@ macro_rules! sfunctions {
 pub enum RadixEngineInput {
     InvokeSNode(SNodeRef, String, Vec<u8>),
     CreateComponent(String, Vec<u8>, Vec<AccessRules>),
-    GetComponentInfo(ComponentAddress),
-    GetComponentState(ComponentAddress),
-    PutComponentState(ComponentAddress, Vec<u8>),
     CreateKeyValueStore(),
-    GetKeyValueStoreEntry(KeyValueStoreId, Vec<u8>),
-    PutKeyValueStoreEntry(KeyValueStoreId, Vec<u8>, Vec<u8>),
+    GetActor(),
+    ReadData(DataAddress),
+    WriteData(DataAddress, Vec<u8>),
     EmitLog(Level, String),
     GenerateUuid(),
-    GetActor(),
     CheckAccessRule(AccessRule, Vec<ProofId>),
 }

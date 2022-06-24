@@ -70,28 +70,30 @@ impl Component {
 
     /// Returns the state of this component.
     pub fn get_state<T: ComponentState>(&self) -> T {
-        let input = RadixEngineInput::GetComponentState(self.0);
-        let output: Vec<u8> = call_engine(input);
-
-        scrypto_decode(&output).unwrap()
+        let address = DataAddress::Component(self.0);
+        let input = RadixEngineInput::ReadData(address);
+        call_engine(input)
     }
 
     /// Updates the state of this component.
     pub fn put_state<T: ComponentState>(&self, state: T) {
-        let input = RadixEngineInput::PutComponentState(self.0, scrypto_encode(&state));
-        let _: () = call_engine(input);
+        let address = DataAddress::Component(self.0);
+        let input = RadixEngineInput::WriteData(address, scrypto_encode(&state));
+        call_engine(input)
     }
 
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let input = RadixEngineInput::GetComponentInfo(self.0);
+        let address = DataAddress::ComponentInfo(self.0);
+        let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.0
     }
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let input = RadixEngineInput::GetComponentInfo(self.0);
+        let address = DataAddress::ComponentInfo(self.0);
+        let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.1
     }

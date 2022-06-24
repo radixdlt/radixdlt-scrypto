@@ -5,7 +5,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::KVStoreCall;
+use crate::engine::call_frame::{DataInstruction, SubstateAddress};
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
@@ -74,17 +74,12 @@ where
 
     fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
 
-    fn get_component_info(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<(PackageAddress, String), RuntimeError>;
-
     fn create_kv_store(&mut self) -> KeyValueStoreId;
 
-    fn kv_store_call(
+    fn data(
         &mut self,
-        kv_store_id: KeyValueStoreId,
-        input: KVStoreCall,
+        address: SubstateAddress,
+        instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError>;
 
     fn get_epoch(&mut self) -> u64;
