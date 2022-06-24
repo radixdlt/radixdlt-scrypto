@@ -1573,51 +1573,39 @@ where
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };
 
+        let value_id = match address {
+            SubstateAddress::Component(component_address, ..) => ValueId::Component(component_address),
+            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(kv_store_id),
+        };
+
+        // Get location
+        // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
+        let location = self.readable_values.get(&value_id)
+            .cloned()
+            .or_else(|| {
+                // Allow global read access to any component info
+                if let SubstateAddress::Component(component_address, ComponentOffset::Info) = address {
+                    if self.owned_values.contains_key(&value_id) {
+                        return Some(REValueLocation::OwnedRoot);
+                    } else if self.track.borrow_global_value(component_address).is_ok() {
+                        return Some(REValueLocation::Track { parent: None });
+                    }
+                }
+
+                None
+            }).ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
+
         // Get reference to data address
         let entry = match address {
-            SubstateAddress::Component(component_address, offset) => {
-                let value_id = ValueId::Component(component_address);
-
-                let location = match offset {
-                    ComponentOffset::State => {
-                        // TODO: use this check for all address types
-                        self.readable_values
-                            .get(&value_id)
-                            .cloned()
-                            .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?
-                    }
-                    ComponentOffset::Info => {
-                        if self.owned_values.contains_key(&value_id) {
-                            REValueLocation::OwnedRoot
-                        } else {
-                            self.track
-                                .borrow_global_value(component_address.clone())
-                                .map_err(|e| match e {
-                                    TrackError::NotFound => RuntimeError::ValueNotFound(value_id),
-                                    TrackError::Reentrancy => {
-                                        panic!("Should not run into reentrancy")
-                                    }
-                                })?;
-                            REValueLocation::Track { parent: None }
-                        }
-                    }
-                };
-
+            SubstateAddress::Component(.., offset) => {
                 SubstateEntry {
                     location,
                     value_id,
                     offset: SubstateOffset::Component(offset),
                 }
             }
-            SubstateAddress::KeyValueEntry(kv_store_id, key) => {
+            SubstateAddress::KeyValueEntry(.., key) => {
                 verify_stored_key(&key)?;
-
-                let value_id = ValueId::kv_store_id(kv_store_id.clone());
-                let location = self.readable_values
-                    .get(&value_id)
-                    .cloned()
-                    .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
-
                 SubstateEntry {
                     location,
                     value_id,
