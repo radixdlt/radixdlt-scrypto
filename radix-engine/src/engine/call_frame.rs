@@ -312,6 +312,7 @@ impl REValueLocation {
 
 pub enum RENativeValueRef<'a> {
     Owned(REOwnedValueRef<'a>),
+    Track(Address, SubstateValue),
 }
 
 impl<'a> RENativeValueRef<'a> {
@@ -332,6 +333,25 @@ impl<'a> RENativeValueRef<'a> {
                 _ => panic!("Expecting to be a proof"),
             },
             _ => panic!("Expecting to be a proof"),
+        }
+    }
+
+    pub fn vault(&mut self) -> &mut Vault {
+        match self {
+            RENativeValueRef::Owned(owned) => match owned {
+                REOwnedValueRef::Root(root) => match root.deref_mut() {
+                    REValue::Stored(StoredValue::Vault(vault)) => vault,
+                    _ => panic!("Expecting to be a vault"),
+                },
+                REOwnedValueRef::Child(stored_value) => match stored_value.deref_mut() {
+                    StoredValue::Vault(vault) => vault,
+                    _ => panic!("Expecting to be a vault"),
+                },
+            },
+            RENativeValueRef::Track(_address, value) => {
+                value.vault_mut()
+
+            }
         }
     }
 }
@@ -504,28 +524,6 @@ impl<'a> REValueRef<'a> {
         let mut to_return = HashMap::new();
 
         let rtn = match &value_id {
-            ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
-                let vault = match self {
-                    REValueRef::Owned(owned) => match owned {
-                        REOwnedValueRef::Root(root) => match root.deref_mut() {
-                            REValue::Stored(StoredValue::Vault(vault)) => vault,
-                            _ => panic!("Expecting to be a vault"),
-                        },
-                        REOwnedValueRef::Child(stored_value) => match stored_value.deref_mut() {
-                            StoredValue::Vault(vault) => vault,
-                            _ => panic!("Expecting to be a vault"),
-                        },
-                    },
-                    REValueRef::Track(address) => {
-                        let vault = system.borrow_global_mut_value(address.clone());
-                        to_return.insert(address.clone(), vault);
-                        to_return.get_mut(&address).unwrap().vault_mut()
-                    }
-                };
-                vault
-                    .main(*vault_id, fn_ident, input, system)
-                    .map_err(RuntimeError::VaultError)
-            }
             ValueId::Resource(resource_address) => {
                 let resman = match self {
                     REValueRef::Track(address) => {
@@ -798,6 +796,10 @@ where
                     ValueId::Transient(TransientValueId::Proof(..)) => {
                         Proof::main(value_id, fn_ident, input, self)
                             .map_err(RuntimeError::ProofError)
+                    }
+                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
+                        Vault::main(vault_id, fn_ident, input, self)
+                            .map_err(RuntimeError::VaultError)
                     }
                     _ => panic!("Unexpected"),
                 },
@@ -1252,7 +1254,8 @@ where
             match &loaded_snode {
                 // Resource auth check includes caller
                 SNodeExecution::Scrypto(..)
-                | SNodeExecution::ValueRef(..)
+                | SNodeExecution::ValueRef(ValueId::Resource(..), ..)
+                | SNodeExecution::ValueRef2(ValueId::Stored(StoredValueId::VaultId(..)), ..)
                 | SNodeExecution::Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
@@ -1415,14 +1418,34 @@ where
     }
 
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
-        let owned = self.borrowed_values.remove(value_id).unwrap();
-        RENativeValueRef::Owned(owned)
+        if let Some(owned) = self.borrowed_values.remove(value_id) {
+            RENativeValueRef::Owned(owned)
+        } else {
+            let location = self.readable_values.get(value_id).unwrap();
+            let address = match location {
+                REValueLocation::Track { parent } => {
+                    match value_id {
+                        ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
+                            Address::Vault(parent.unwrap(), *vault_id)
+                        }
+                        _ => panic!("Unexpected")
+                    }
+                }
+                _ => panic!("Unexpected")
+            };
+
+            let value = self.borrow_global_mut_value(address.clone());
+            RENativeValueRef::Track(address, value)
+        }
     }
 
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>) {
         match val_ref {
             RENativeValueRef::Owned(owned) => {
                 self.borrowed_values.insert(value_id.clone(), owned);
+            }
+            RENativeValueRef::Track(address, value) => {
+                self.track.return_borrowed_global_mut_value(address, value);
             }
         }
     }
