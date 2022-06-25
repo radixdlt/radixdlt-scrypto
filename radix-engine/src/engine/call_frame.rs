@@ -225,7 +225,11 @@ pub enum REValueLocation {
         root: ValueId,
         ancestors: Vec<KeyValueStoreId>,
     },
-    Borrowed,
+    BorrowedRoot,
+    Borrowed {
+        root: ValueId,
+        ancestors: Vec<KeyValueStoreId>,
+    },
     Track {
         parent: Option<ComponentAddress>,
     },
@@ -242,14 +246,17 @@ impl REValueLocation {
                 let mut next_ancestors = ancestors.clone();
                 let kv_store_id = value_id.into();
                 next_ancestors.push(kv_store_id);
-                let value_ref_type = REValueLocation::Owned {
+                REValueLocation::Owned {
                     root: root.clone(),
                     ancestors: next_ancestors,
-                };
-                value_ref_type
+                }
             }
-            REValueLocation::Borrowed => {
-                panic!("Unsupported");
+            REValueLocation::BorrowedRoot => REValueLocation::Borrowed {
+                root: value_id,
+                ancestors: vec![],
+            },
+            REValueLocation::Borrowed { .. } => {
+                panic!("Not supported");
             }
             REValueLocation::Track { parent } => REValueLocation::Track {
                 parent: Some(parent.unwrap_or_else(|| value_id.into())),
@@ -261,10 +268,10 @@ impl REValueLocation {
         &self,
         value_id: &ValueId,
         borrowed_values: &mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
-        track: &mut Track<S>
+        track: &mut Track<S>,
     ) -> RENativeValueRef<'borrowed> {
         match self {
-            REValueLocation::Borrowed => {
+            REValueLocation::BorrowedRoot => {
                 let owned = borrowed_values.remove(value_id).expect("Should exist");
                 RENativeValueRef::Owned(owned)
             }
@@ -284,7 +291,7 @@ impl REValueLocation {
 
                 RENativeValueRef::Track(address, value)
             }
-            _ => panic!("Unexpected")
+            _ => panic!("Unexpected"),
         }
     }
 
@@ -309,15 +316,14 @@ impl REValueLocation {
                     _ => panic!("Invalid type"),
                 };
 
-                match value_id {
-                    ValueId::Stored(stored_value_id) => {
-                        let value = root_store.get_child(ancestors, &stored_value_id);
-                        REOwnedValueRef::Child(value)
-                    }
+                let stored_value_id = match value_id {
+                    ValueId::Stored(stored_value_id) => stored_value_id,
                     _ => panic!("Unexpected value id"),
-                }
+                };
+                let value = root_store.get_child(ancestors, stored_value_id);
+                REOwnedValueRef::Child(value)
             }
-            _ => panic!("Not an owned ref")
+            _ => panic!("Not an owned ref"),
         }
     }
 
@@ -331,8 +337,20 @@ impl REValueLocation {
             REValueLocation::OwnedRoot | REValueLocation::Owned { .. } => {
                 REValueRef::Owned(self.to_owned_ref(value_id, owned_values))
             }
-            REValueLocation::Borrowed => {
+            REValueLocation::BorrowedRoot => {
                 REValueRef::Borrowed(borrowed_values.get_mut(value_id).unwrap())
+            }
+            REValueLocation::Borrowed { root, ancestors } => {
+                let borrowed = borrowed_values.get_mut(root).unwrap();
+                let stored_value_id = match value_id {
+                    ValueId::Stored(stored_value_id) => stored_value_id,
+                    _ => panic!("Unexpected value id"),
+                };
+                let value = borrowed
+                    .mut_component()
+                    .child_values
+                    .get_child(ancestors, stored_value_id);
+                REValueRef::BorrowedChild(value)
             }
             REValueLocation::Track { parent } => {
                 let address = match value_id {
@@ -409,7 +427,7 @@ impl<'a> RENativeValueRef<'a> {
         self,
         value_id: ValueId,
         borrowed_values: &mut HashMap<ValueId, REOwnedValueRef<'a>>,
-        track: &mut Track<S>
+        track: &mut Track<S>,
     ) {
         match self {
             RENativeValueRef::Owned(owned) => {
@@ -430,25 +448,21 @@ pub enum REOwnedValueRef<'a> {
 impl<'a> REOwnedValueRef<'a> {
     fn component(&self) -> &ComponentAndChildren {
         match self {
-            REOwnedValueRef::Root(root) => {
-                match root.deref() {
-                    REValue::Component(component_and_children) => component_and_children,
-                    _ => panic!("Expected a component"),
-                }
-            }
-            REOwnedValueRef::Child(..) => panic!("Not supported")
+            REOwnedValueRef::Root(root) => match root.deref() {
+                REValue::Component(component_and_children) => component_and_children,
+                _ => panic!("Expected a component"),
+            },
+            REOwnedValueRef::Child(..) => panic!("Not supported"),
         }
     }
 
     fn mut_component(&mut self) -> &mut ComponentAndChildren {
         match self {
-            REOwnedValueRef::Root(root) => {
-                match root.deref_mut() {
-                    REValue::Component(component_and_children) => component_and_children,
-                    _ => panic!("Expected a component"),
-                }
-            }
-            REOwnedValueRef::Child(..) => panic!("Not supported")
+            REOwnedValueRef::Root(root) => match root.deref_mut() {
+                REValue::Component(component_and_children) => component_and_children,
+                _ => panic!("Expected a component"),
+            },
+            REOwnedValueRef::Child(..) => panic!("Not supported"),
         }
     }
 }
@@ -456,6 +470,7 @@ impl<'a> REOwnedValueRef<'a> {
 pub enum REValueRef<'a, 'b> {
     Owned(REOwnedValueRef<'a>),
     Borrowed(&'a mut REOwnedValueRef<'b>),
+    BorrowedChild(RefMut<'a, StoredValue>),
     Track(Address),
 }
 
@@ -486,6 +501,15 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             }
             REValueRef::Borrowed(..) => {
                 panic!("Not supported");
+            }
+            REValueRef::BorrowedChild(store) => {
+                store.insert_children(to_store);
+                match store.deref_mut() {
+                    StoredValue::KeyValueStore { store, .. } => {
+                        store.put(key, value);
+                    }
+                    _ => panic!("Expecting to be kv store"),
+                }
             }
             REValueRef::Track(address) => {
                 let component_address =
@@ -523,6 +547,9 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             }
             REValueRef::Borrowed(..) => {
                 panic!("Not supported");
+            }
+            REValueRef::BorrowedChild(stored_value) => {
+                stored_value.kv_store().get(key).map(|v| v.dom)
             }
             REValueRef::Track(address) => {
                 let substate_value = track.read_key_value(address.clone(), key.to_vec());
@@ -616,7 +643,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             REValueRef::Owned(owned) => {
                 let component = owned.mut_component();
                 component.component.method_authorization(schema, fn_ident)
-            },
+            }
             REValueRef::Track(address) => {
                 let component_val = track.borrow_global_value(address.clone()).unwrap();
                 let component = component_val.component();
@@ -635,7 +662,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             REValueRef::Owned(REOwnedValueRef::Child(stored_value)) => {
                 stored_value.vault().resource_address()
             }
-            REValueRef::Borrowed(..) => {
+            REValueRef::Borrowed(..) | REValueRef::BorrowedChild(..) => {
                 panic!("Not supported");
             }
             REValueRef::Track(address) => {
@@ -1148,7 +1175,7 @@ where
                 let ref_mut = bucket_cell.borrow_mut();
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
-                readable_values.insert(value_id.clone(), REValueLocation::Borrowed);
+                readable_values.insert(value_id.clone(), REValueLocation::BorrowedRoot);
 
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
@@ -1161,7 +1188,7 @@ where
                 let ref_mut = proof_cell.borrow_mut();
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
-                readable_values.insert(value_id.clone(), REValueLocation::Borrowed);
+                readable_values.insert(value_id.clone(), REValueLocation::BorrowedRoot);
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
@@ -1228,7 +1255,11 @@ where
                     };
 
                     let actor_info = {
-                        let mut value_ref = cur_location.to_ref(&value_id, &mut self.owned_values, &mut self.borrowed_values);
+                        let mut value_ref = cur_location.to_ref(
+                            &value_id,
+                            &mut self.owned_values,
+                            &mut self.borrowed_values,
+                        );
                         let (package_address, blueprint_name) =
                             value_ref.component_info(&mut self.track);
                         ScryptoActorInfo::component(
@@ -1268,8 +1299,16 @@ where
                         }
 
                         let method_auths = {
-                            let mut value_ref = cur_location.to_ref(&value_id, &mut self.owned_values, &mut self.borrowed_values);
-                            value_ref.component_authorization(&abi.structure, &fn_ident, &mut self.track)
+                            let mut value_ref = cur_location.to_ref(
+                                &value_id,
+                                &mut self.owned_values,
+                                &mut self.borrowed_values,
+                            );
+                            value_ref.component_authorization(
+                                &abi.structure,
+                                &fn_ident,
+                                &mut self.track,
+                            )
                         };
 
                         (method_auths, package)
@@ -1286,15 +1325,14 @@ where
                                 }
                             })?;
                             locked_values.insert(address.clone());
-                            readable_values.insert(
-                                value_id,
-                                REValueLocation::Track { parent: None },
-                            );
+                            readable_values
+                                .insert(value_id, REValueLocation::Track { parent: None });
                         }
                         REValueLocation::OwnedRoot => {
-                            let owned_ref = cur_location.to_owned_ref(&value_id, &mut self.owned_values);
+                            let owned_ref =
+                                cur_location.to_owned_ref(&value_id, &mut self.owned_values);
                             borrowed_values.insert(value_id, owned_ref);
-                            readable_values.insert(value_id, REValueLocation::Borrowed);
+                            readable_values.insert(value_id, REValueLocation::BorrowedRoot);
                         }
                         _ => panic!("Unexpected"),
                     }
@@ -1316,7 +1354,11 @@ where
 
                 // Retrieve Method Authorization
                 let method_auth = {
-                    let mut value_ref = cur_location.to_ref(&value_id, &mut self.owned_values, &mut self.borrowed_values);
+                    let mut value_ref = cur_location.to_ref(
+                        &value_id,
+                        &mut self.owned_values,
+                        &mut self.borrowed_values,
+                    );
                     let resource_address = value_ref.vault_address(&mut self.track);
                     let substate_value = self
                         .track
@@ -1340,9 +1382,10 @@ where
                         );
                     }
                     REValueLocation::OwnedRoot | REValueLocation::Owned { .. } => {
-                        let owned_ref = cur_location.to_owned_ref(&value_id, &mut self.owned_values);
+                        let owned_ref =
+                            cur_location.to_owned_ref(&value_id, &mut self.owned_values);
                         borrowed_values.insert(value_id.clone(), owned_ref);
-                        readable_values.insert(value_id, REValueLocation::Borrowed);
+                        readable_values.insert(value_id, REValueLocation::BorrowedRoot);
                     }
                     _ => panic!("Unexpected"),
                 }
@@ -1598,9 +1641,10 @@ where
             .into_inner();
 
         let (mut component, child_values) = match value {
-            REValue::Component(component_with_children) => {
-                (component_with_children.component, component_with_children.child_values)
-            }
+            REValue::Component(component_with_children) => (
+                component_with_children.component,
+                component_with_children.child_values,
+            ),
             _ => panic!("Expected to be a component"),
         };
 
@@ -1651,8 +1695,8 @@ where
             ValueId::Component(component_address),
             RefCell::new(REValue::Component(ComponentAndChildren {
                 component,
-                child_values: InMemoryChildren::with_values(to_store_values)
-            }))
+                child_values: InMemoryChildren::with_values(to_store_values),
+            })),
         );
         Ok(component_address)
     }
@@ -1667,7 +1711,8 @@ where
                 child_values: InMemoryChildren::new(),
             })),
         );
-        self.readable_values.insert(value_id, REValueLocation::OwnedRoot);
+        self.readable_values
+            .insert(value_id, REValueLocation::OwnedRoot);
         kv_store_id
     }
 
@@ -1687,16 +1732,22 @@ where
         };
 
         let value_id = match address {
-            SubstateAddress::Component(component_address, ..) => ValueId::Component(component_address),
+            SubstateAddress::Component(component_address, ..) => {
+                ValueId::Component(component_address)
+            }
             SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(kv_store_id),
         };
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let location = self.readable_values.get(&value_id)
+        let location = self
+            .readable_values
+            .get(&value_id)
             .or_else(|| {
                 // Allow global read access to any component info
-                if let SubstateAddress::Component(component_address, ComponentOffset::Info) = address {
+                if let SubstateAddress::Component(component_address, ComponentOffset::Info) =
+                    address
+                {
                     if self.owned_values.contains_key(&value_id) {
                         return Some(&REValueLocation::OwnedRoot);
                     } else if self.track.borrow_global_value(component_address).is_ok() {
@@ -1705,12 +1756,13 @@ where
                 }
 
                 None
-            }).ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
+            })
+            .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
 
         // Read current value
         let (current_value, cur_children) = {
-            let mut value_ref = location
-                .to_ref(&value_id, &mut self.owned_values, &mut self.borrowed_values);
+            let mut value_ref =
+                location.to_ref(&value_id, &mut self.owned_values, &mut self.borrowed_values);
             let current_value = match &address {
                 SubstateAddress::Component(.., offset) => match offset {
                     ComponentOffset::State => value_ref.component_get_state(&mut self.track),
@@ -1733,11 +1785,13 @@ where
                 let parent_location = location.clone();
                 for stored_value_id in cur_children {
                     let child_location = parent_location.child(value_id.clone());
-                    self.refed_values.insert(stored_value_id, child_location.clone());
+                    self.refed_values
+                        .insert(stored_value_id, child_location.clone());
 
                     // Extend current readable space when kv stores are found
                     if let StoredValueId::KeyValueStoreId(..) = stored_value_id {
-                        self.readable_values.insert(ValueId::Stored(stored_value_id.clone()), child_location);
+                        self.readable_values
+                            .insert(ValueId::Stored(stored_value_id.clone()), child_location);
                     }
                 }
                 Ok(current_value)
@@ -1751,8 +1805,8 @@ where
                 // TODO: verify against some schema
 
                 // Write values
-                let mut value_ref = location
-                    .to_ref(&value_id, &mut self.owned_values, &mut self.borrowed_values);
+                let mut value_ref =
+                    location.to_ref(&value_id, &mut self.owned_values, &mut self.borrowed_values);
                 match address {
                     SubstateAddress::Component(.., offset) => match offset {
                         ComponentOffset::State => {

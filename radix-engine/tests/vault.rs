@@ -381,7 +381,6 @@ fn create_mutable_vault_with_get_resource_manager() {
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("vault");
 
-
     // Act
     let manifest = ManifestBuilder::new()
         .call_function(

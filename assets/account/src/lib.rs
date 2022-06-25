@@ -7,9 +7,14 @@ blueprint! {
 
     impl Account {
         fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {
-            let vaults = KeyValueStore::new();
+            let account = Self {
+                vaults: KeyValueStore::new(),
+            }
+            .instantiate();
+
             if let Some(b) = bucket {
-                vaults.insert(b.resource_address(), Vault::with_bucket(b));
+                // Test out the local component calls
+                let _: () = account.call("deposit", vec![scrypto_encode(&b)]);
             }
 
             let access_rules = AccessRules::new()
@@ -18,10 +23,7 @@ blueprint! {
                 .method("deposit_batch", rule!(allow_all))
                 .default(withdraw_rule);
 
-            Self { vaults }
-                .instantiate()
-                .add_access_check(access_rules)
-                .globalize()
+            account.add_access_check(access_rules).globalize()
         }
 
         pub fn new(withdraw_rule: AccessRule) -> ComponentAddress {
