@@ -10,13 +10,29 @@ blueprint! {
             self.secret
         }
 
-        pub fn call_local_component() -> ComponentAddress {
+        pub fn set_secret(&mut self, next: u32) {
+            self.secret = next;
+        }
+
+        pub fn read_local_component() -> ComponentAddress {
             let local_component = Self {
                 secret: 12345
             }.instantiate();
 
             let rtn: u32 = local_component.call("get_secret", vec![]);
             assert_eq!(12345, rtn);
+
+            local_component.globalize()
+        }
+
+        pub fn write_local_component() -> ComponentAddress {
+            let local_component = Self {
+                secret: 12345
+            }.instantiate();
+
+            let _: () = local_component.call("set_secret", vec![scrypto_encode(&99999u32)]);
+            let rtn: u32 = local_component.call("get_secret", vec![]);
+            assert_eq!(99999, rtn);
 
             local_component.globalize()
         }

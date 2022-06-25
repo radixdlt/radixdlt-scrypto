@@ -84,14 +84,18 @@ pub enum TransientValue {
     Proof(Proof),
 }
 
+// TODO: Merge with stored values structure
+#[derive(Debug)]
+pub struct ComponentAndChildren {
+    component: Component,
+    child_values: InMemoryChildren,
+}
+
 #[derive(Debug)]
 pub enum REValue {
     Stored(StoredValue),
     Transient(TransientValue),
-    Component {
-        component: Component,
-        child_values: InMemoryChildren,
-    },
+    Component(ComponentAndChildren),
 }
 
 impl REValue {
@@ -322,13 +326,13 @@ impl REValueLocation {
         value_id: &ValueId,
         owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
         borrowed_values: &'a mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
-    ) -> REValueRef<'a, 'a> {
+    ) -> REValueRef<'a, 'borrowed> {
         match self {
             REValueLocation::OwnedRoot | REValueLocation::Owned { .. } => {
                 REValueRef::Owned(self.to_owned_ref(value_id, owned_values))
             }
             REValueLocation::Borrowed => {
-                REValueRef::Borrowed(borrowed_values.get(value_id).unwrap())
+                REValueRef::Borrowed(borrowed_values.get_mut(value_id).unwrap())
             }
             REValueLocation::Track { parent } => {
                 let address = match value_id {
@@ -424,11 +428,11 @@ pub enum REOwnedValueRef<'a> {
 }
 
 impl<'a> REOwnedValueRef<'a> {
-    fn component(&self) -> &Component {
+    fn component(&self) -> &ComponentAndChildren {
         match self {
             REOwnedValueRef::Root(root) => {
                 match root.deref() {
-                    REValue::Component { component, .. } => component,
+                    REValue::Component(component_and_children) => component_and_children,
                     _ => panic!("Expected a component"),
                 }
             }
@@ -436,11 +440,11 @@ impl<'a> REOwnedValueRef<'a> {
         }
     }
 
-    fn mut_component(&mut self) -> &mut Component {
+    fn mut_component(&mut self) -> &mut ComponentAndChildren {
         match self {
             REOwnedValueRef::Root(root) => {
                 match root.deref_mut() {
-                    REValue::Component { component, .. } => component,
+                    REValue::Component(component_and_children) => component_and_children,
                     _ => panic!("Expected a component"),
                 }
             }
@@ -451,7 +455,7 @@ impl<'a> REOwnedValueRef<'a> {
 
 pub enum REValueRef<'a, 'b> {
     Owned(REOwnedValueRef<'a>),
-    Borrowed(&'b REOwnedValueRef<'a>),
+    Borrowed(&'a mut REOwnedValueRef<'b>),
     Track(Address),
 }
 
@@ -549,7 +553,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
                 return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
             }
             REValueRef::Borrowed(owned) => {
-                let component = owned.component();
+                let component = &owned.component().component;
                 return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
             }
             _ => panic!("Unexpected component ref"),
@@ -569,6 +573,11 @@ impl<'a, 'b> REValueRef<'a, 'b> {
                     .unwrap();
                 track.insert_objects_into_component(to_store, address.clone().into());
             }
+            REValueRef::Borrowed(owned) => {
+                let component = owned.mut_component();
+                component.component.set_state(value.raw);
+                component.child_values.insert_children(to_store);
+            }
             _ => panic!("Unexpected component ref"),
         }
     }
@@ -579,7 +588,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
     ) -> (PackageAddress, String) {
         match self {
             REValueRef::Owned(owned) => {
-                let component = owned.component();
+                let component = &owned.component().component;
                 (
                     component.package_address().clone(),
                     component.blueprint_name().to_string(),
@@ -606,7 +615,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         match self {
             REValueRef::Owned(owned) => {
                 let component = owned.mut_component();
-                component.method_authorization(schema, fn_ident)
+                component.component.method_authorization(schema, fn_ident)
             },
             REValueRef::Track(address) => {
                 let component_val = track.borrow_global_value(address.clone()).unwrap();
@@ -1589,10 +1598,9 @@ where
             .into_inner();
 
         let (mut component, child_values) = match value {
-            REValue::Component {
-                component,
-                child_values,
-            } => (component, child_values),
+            REValue::Component(component_with_children) => {
+                (component_with_children.component, component_with_children.child_values)
+            }
             _ => panic!("Expected to be a component"),
         };
 
@@ -1641,10 +1649,10 @@ where
         let component_address = self.track.new_component_address();
         self.owned_values.insert(
             ValueId::Component(component_address),
-            RefCell::new(REValue::Component {
+            RefCell::new(REValue::Component(ComponentAndChildren {
                 component,
-                child_values: InMemoryChildren::with_values(to_store_values),
-            }),
+                child_values: InMemoryChildren::with_values(to_store_values)
+            }))
         );
         Ok(component_address)
     }

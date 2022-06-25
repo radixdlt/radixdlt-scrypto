@@ -28,7 +28,7 @@ fn local_component_should_return_correct_info() {
 }
 
 #[test]
-fn local_component_should_be_callable() {
+fn local_component_should_be_callable_read_only() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("component");
@@ -38,7 +38,28 @@ fn local_component_should_be_callable() {
         .call_function(
             package_address,
             "LocalComponent",
-            "call_local_component",
+            "read_local_component",
+            to_struct!(),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![]);
+
+    // Assert
+    receipt.expect_success();
+}
+
+#[test]
+fn local_component_should_be_callable_with_write() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("component");
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "LocalComponent",
+            "write_local_component",
             to_struct!(),
         )
         .build();
