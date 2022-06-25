@@ -69,6 +69,7 @@ fn local_component_should_be_callable_with_write() {
     receipt.expect_success();
 }
 
+/*
 #[test]
 fn recursion_bomb() {
     // Arrange
@@ -93,3 +94,4 @@ fn recursion_bomb() {
     // Assert
     receipt.expect_success();
 }
+ */

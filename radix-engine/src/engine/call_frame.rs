@@ -350,7 +350,7 @@ impl REValueLocation {
                     .mut_component()
                     .child_values
                     .get_child(ancestors, stored_value_id);
-                REValueRef::BorrowedChild(value)
+                REValueRef::Owned(REOwnedValueRef::Child(value))
             }
             REValueLocation::Track { parent } => {
                 let address = match value_id {
@@ -470,7 +470,6 @@ impl<'a> REOwnedValueRef<'a> {
 pub enum REValueRef<'a, 'b> {
     Owned(REOwnedValueRef<'a>),
     Borrowed(&'a mut REOwnedValueRef<'b>),
-    BorrowedChild(RefMut<'a, StoredValue>),
     Track(Address),
 }
 
@@ -501,15 +500,6 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             }
             REValueRef::Borrowed(..) => {
                 panic!("Not supported");
-            }
-            REValueRef::BorrowedChild(store) => {
-                store.insert_children(to_store);
-                match store.deref_mut() {
-                    StoredValue::KeyValueStore { store, .. } => {
-                        store.put(key, value);
-                    }
-                    _ => panic!("Expecting to be kv store"),
-                }
             }
             REValueRef::Track(address) => {
                 let component_address =
@@ -547,9 +537,6 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             }
             REValueRef::Borrowed(..) => {
                 panic!("Not supported");
-            }
-            REValueRef::BorrowedChild(stored_value) => {
-                stored_value.kv_store().get(key).map(|v| v.dom)
             }
             REValueRef::Track(address) => {
                 let substate_value = track.read_key_value(address.clone(), key.to_vec());
@@ -662,7 +649,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             REValueRef::Owned(REOwnedValueRef::Child(stored_value)) => {
                 stored_value.vault().resource_address()
             }
-            REValueRef::Borrowed(..) | REValueRef::BorrowedChild(..) => {
+            REValueRef::Borrowed(..) => {
                 panic!("Not supported");
             }
             REValueRef::Track(address) => {
