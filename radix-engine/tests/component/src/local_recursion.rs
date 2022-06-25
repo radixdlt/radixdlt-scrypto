@@ -6,18 +6,27 @@ blueprint! {
     }
 
     impl LocalRecursionBomb {
-        pub fn recurse(&mut self) -> ComponentAddress {
+        pub fn recurse(&mut self) -> Bucket {
             let amount_to_take = self.vault.amount() - 1;
             let bucket = self.vault.take(amount_to_take);
-            Self::recursion_bomb(bucket)
+            let mut returned_bucket = Self::recursion_bomb(bucket);
+            returned_bucket.put(self.vault.take(1));
+            returned_bucket
         }
 
-        pub fn recursion_bomb(bucket: Bucket) -> ComponentAddress {
+        pub fn recursion_bomb(bucket: Bucket) -> Bucket {
+            if bucket.amount().is_zero() {
+                return bucket;
+            }
+
             let local_component = Self {
-                vault: Vault::with_bucket(bucket)
-            }.instantiate();
-            let _: ComponentAddress = local_component.call("recurse", vec![]);
-            local_component.globalize()
+                vault: Vault::with_bucket(bucket),
+            }
+            .instantiate();
+
+            let rtn: Bucket = local_component.call("recurse", vec![]);
+            local_component.globalize();
+            rtn
         }
     }
 }
