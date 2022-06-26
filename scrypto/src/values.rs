@@ -232,6 +232,10 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                 ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
             }
+            ScryptoType::Component => {
+                ComponentAddress::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
+            }
             ScryptoType::KeyValueStore => {
                 let map = KeyValueStore::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidKeyValueStore)?;
@@ -487,6 +491,12 @@ impl ScryptoValueFormatter {
                 format!(
                     "ComponentAddress(\"{}\")",
                     ComponentAddress::try_from(data).unwrap()
+                )
+            }
+            ScryptoType::Component => {
+                format!(
+                    "Component(\"{}\")",
+                    Component::try_from(data).unwrap()
                 )
             }
             ScryptoType::KeyValueStore => format!(

@@ -24,14 +24,9 @@ pub trait ComponentState: Encode + Decode {
     fn instantiate(self) -> Component;
 }
 
-/// An instance of a blueprint, which lives in the ledger state.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ComponentAddress(pub [u8; 26]);
-
-impl ComponentAddress {}
 
 /// Represents an instantiated component.
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Component(pub(crate) ComponentAddress);
 
 impl Component {
@@ -78,6 +73,57 @@ impl Component {
         addr
     }
 }
+
+//========
+// binary
+//========
+
+impl TryFrom<&[u8]> for Component {
+    type Error = ParseComponentAddressError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        let component_address = ComponentAddress::try_from(slice)?;
+        Ok(Self(component_address))
+    }
+}
+
+impl Component {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+scrypto_type!(Component, ScryptoType::Component, Vec::new());
+
+//======
+// text
+//======
+
+impl FromStr for Component {
+    type Err = ParseComponentAddressError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ComponentAddress::from_str(s).map(|a| Component(a))
+    }
+}
+
+impl fmt::Display for Component {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Debug for Component {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self)
+    }
+}
+
+/// An instance of a blueprint, which lives in the ledger state.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ComponentAddress(pub [u8; 26]);
+
+impl ComponentAddress {}
 
 //========
 // error

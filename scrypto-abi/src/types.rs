@@ -60,6 +60,7 @@ pub enum ScryptoType {
     // component
     PackageAddress,
     ComponentAddress,
+    Component,
     KeyValueStore,
 
     // crypto
