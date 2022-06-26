@@ -2,7 +2,7 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::buffer::scrypto_encode;
 use crate::bytes_vec_to_struct;
 use crate::component::*;
 use crate::core::*;
@@ -82,8 +82,7 @@ impl Runtime {
             "transaction_hash".to_string(),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     /// Returns the current epoch number.
@@ -93,7 +92,6 @@ impl Runtime {
             "current_epoch".to_string(),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 }
