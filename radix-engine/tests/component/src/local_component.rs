@@ -14,6 +14,19 @@ blueprint! {
             self.secret = next;
         }
 
+        pub fn try_to_read_local_component_with_auth(
+            some_non_fungible: NonFungibleAddress,
+        ) -> ComponentAddress {
+            let mut local_component = Self { secret: 12345 }.instantiate();
+            local_component
+                .add_access_check(AccessRules::new().default(rule!(require(some_non_fungible))));
+
+            let rtn: u32 = local_component.call("get_secret", vec![]);
+            assert_eq!(12345, rtn);
+
+            local_component.globalize()
+        }
+
         pub fn read_local_component() -> ComponentAddress {
             let local_component = Self { secret: 12345 }.instantiate();
 

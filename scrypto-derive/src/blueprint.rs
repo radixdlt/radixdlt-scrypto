@@ -692,6 +692,7 @@ mod tests {
                     };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
+
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Test {
                     component_address: ::scrypto::component::ComponentAddress,

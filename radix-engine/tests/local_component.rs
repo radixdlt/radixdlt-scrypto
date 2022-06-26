@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use radix_engine::engine::RuntimeError;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -67,6 +68,61 @@ fn local_component_should_be_callable_with_write() {
 
     // Assert
     receipt.expect_success();
+}
+
+#[test]
+fn local_component_with_access_rules_should_not_be_callable() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("component");
+    let (public_key, _, account) = test_runner.new_account();
+    let auth_resource_address = test_runner.create_non_fungible_resource(account);
+    let auth_id = NonFungibleId::from_u32(1);
+    let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id);
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_function(
+            package_address,
+            "LocalComponent",
+            "try_to_read_local_component_with_auth",
+            to_struct!(auth_address),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::AuthorizationError { .. }));
+}
+
+#[test]
+fn local_component_with_access_rules_should_be_callable() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let package_address = test_runner.extract_and_publish_package("component");
+    let (public_key, _, account) = test_runner.new_account();
+    let auth_resource_address = test_runner.create_non_fungible_resource(account);
+    let auth_id = NonFungibleId::from_u32(1);
+    let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id.clone());
+
+    // Act
+    let manifest = ManifestBuilder::new()
+        .call_method(
+            account,
+            "create_proof_by_ids",
+            to_struct!(BTreeSet::from([auth_id.clone()]), auth_resource_address),
+        )
+        .call_function(
+            package_address,
+            "LocalComponent",
+            "try_to_read_local_component_with_auth",
+            to_struct!(auth_address),
+        )
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+
+    // Assert
+    receipt.expect_success()
 }
 
 #[test]
