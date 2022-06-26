@@ -1,18 +1,28 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::buffer::scrypto_decode;
+use scrypto::component::ComponentAddAccessCheckInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRules;
 use scrypto::values::*;
+use crate::engine::SystemApi;
 
 use crate::model::{convert, MethodAuthorization};
+use crate::wasm::{WasmEngine, WasmInstance};
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ComponentError {
+    InvalidRequestData(DecodeError),
+    MethodNotFound,
+}
 
 /// A component is an instance of blueprint.
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub struct Component {
     package_address: PackageAddress,
     blueprint_name: String,
-    auths: Vec<AccessRules>,
+    access_rules: Vec<AccessRules>,
     state: Vec<u8>,
 }
 
@@ -20,13 +30,13 @@ impl Component {
     pub fn new(
         package_address: PackageAddress,
         blueprint_name: String,
-        method_auth: Vec<AccessRules>,
+        access_rules: Vec<AccessRules>,
         state: Vec<u8>,
     ) -> Self {
         Self {
             package_address,
             blueprint_name,
-            auths: method_auth,
+            access_rules,
             state,
         }
     }
@@ -39,7 +49,7 @@ impl Component {
         let data = ScryptoValue::from_slice(&self.state).unwrap();
 
         let mut authorizations = Vec::new();
-        for auth in &self.auths {
+        for auth in &self.access_rules {
             let method_auth = auth.get(method_name);
             let authorization = convert(schema, &data.dom, method_auth);
             authorizations.push(authorization);
@@ -49,7 +59,7 @@ impl Component {
     }
 
     pub fn authorization(&self) -> &[AccessRules] {
-        &self.auths
+        &self.access_rules
     }
 
     pub fn package_address(&self) -> PackageAddress {
@@ -69,6 +79,30 @@ impl Component {
     }
 
     pub fn set_access_rules(&mut self, access_rules: Vec<AccessRules>) {
-        self.auths = access_rules;
+        self.access_rules = access_rules;
+    }
+
+    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+        value_id: ValueId,
+        fn_ident: &str,
+        arg: ScryptoValue,
+        system_api: &mut S,
+    ) -> Result<ScryptoValue, ComponentError> {
+        let mut ref_mut = system_api.borrow_native_value(&value_id);
+        let component = ref_mut.component();
+
+        let rtn = match fn_ident {
+            "add_access_check" => {
+                let input: ComponentAddAccessCheckInput =
+                    scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
+
+                component.access_rules.push(input.access_rules);
+                Ok(ScryptoValue::from_typed(&()))
+            }
+            _ => Err(ComponentError::MethodNotFound),
+        }?;
+
+        system_api.return_native_value(value_id, ref_mut);
+        Ok(rtn)
     }
 }

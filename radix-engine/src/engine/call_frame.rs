@@ -425,6 +425,19 @@ impl<'a> RENativeValueRef<'a> {
         }
     }
 
+    pub fn component(&mut self) -> &mut Component {
+        match self {
+            RENativeValueRef::Owned(owned) => match owned {
+                REOwnedValueRef::Root(root) => match root.deref_mut() {
+                    REValue::Component(component) => &mut component.component,
+                    _ => panic!("Expecting to be a component"),
+                },
+                _ => panic!("Expecting to be a component"),
+            },
+            _ => panic!("Expecting to be a component")
+        }
+    }
+
     pub fn resource_manager(&mut self) -> &mut ResourceManager {
         match self {
             RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
@@ -911,6 +924,10 @@ where
                         ResourceManager::main(resource_address, fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
                     }
+                    ValueId::Component(..) => {
+                        Component::main(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ComponentError)
+                    }
                     _ => panic!("Unexpected"),
                 },
                 SNodeExecution::Scrypto(ref actor, ref package) => {
@@ -1339,6 +1356,45 @@ where
                     Ok((SNodeExecution::Scrypto(actor_info, package), method_auths))
                 }
             },
+            SNodeRef::Component(component_address) => {
+                let component_address = *component_address;
+
+                // Find value
+                let value_id = ValueId::Component(component_address);
+                let cur_location = if self.owned_values.contains_key(&value_id) {
+                    REValueLocation::OwnedRoot
+                } else {
+                    let address: Address = component_address.into();
+                    self.track
+                        .borrow_global_value(address.clone())
+                        .map_err(|e| match e {
+                            TrackError::NotFound => {
+                                RuntimeError::ComponentNotFound(component_address)
+                            }
+                            TrackError::Reentrancy => {
+                                RuntimeError::ComponentReentrancy(component_address)
+                            }
+                        })?;
+                    REValueLocation::Track { parent: None }
+                };
+
+                // Setup next frame
+                match cur_location {
+                    REValueLocation::OwnedRoot => {
+                        let owned_ref = cur_location.to_owned_ref(
+                            &value_id,
+                            &mut self.owned_values,
+                            &mut self.borrowed_values,
+                        );
+                        borrowed_values.insert(value_id, owned_ref);
+                        readable_values.insert(value_id, REValueLocation::BorrowedRoot);
+                    }
+                    _ => panic!("Unexpected"),
+                }
+
+                Ok((SNodeExecution::ValueRef(value_id), vec![]))
+            }
+
             SNodeRef::VaultRef(vault_id) => {
                 // Find value
                 let value_id = ValueId::vault_id(*vault_id);

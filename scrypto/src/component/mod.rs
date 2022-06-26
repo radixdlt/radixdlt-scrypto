@@ -5,6 +5,7 @@ mod system;
 
 pub use component::{
     Component, ComponentAddress, ComponentState, LocalComponent, ParseComponentAddressError,
+    ComponentAddAccessCheckInput
 };
 pub use kv_store::{KeyValueStore, ParseKeyValueStoreError};
 pub use package::{

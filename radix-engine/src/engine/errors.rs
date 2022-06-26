@@ -74,6 +74,7 @@ pub enum RuntimeError {
 
     /// Resource manager access error.
     ResourceManagerError(ResourceManagerError),
+    ComponentError(ComponentError),
 
     /// Bucket access error.
     BucketError(BucketError),

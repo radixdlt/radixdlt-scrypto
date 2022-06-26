@@ -13,6 +13,11 @@ use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ComponentAddAccessCheckInput {
+    pub access_rules: AccessRules,
+}
+
 pub struct LocalComponent {
     component_address: ComponentAddress,
     access_rules_list: Vec<AccessRules>,
@@ -48,8 +53,8 @@ impl LocalComponent {
         output.1
     }
 
-    pub fn add_access_check(mut self, authorization: AccessRules) -> Self {
-        self.access_rules_list.push(authorization);
+    pub fn add_access_check(mut self, access_rules: AccessRules) -> Self {
+        self.access_rules_list.push(access_rules);
         self
     }
 
