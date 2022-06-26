@@ -1,7 +1,7 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::prelude::{AccessRule};
+use scrypto::prelude::AccessRule;
 
 use crate::core::{DataAddress, SNodeRef};
 use crate::engine::types::*;

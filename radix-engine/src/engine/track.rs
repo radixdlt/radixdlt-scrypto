@@ -550,7 +550,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             .insert(address.encode(), cell.into_inner());
     }
 
-    // TODO: Add checks to see verify that immutable values aren't being borrowed
     pub fn borrow_global_mut_value<A: Into<Address>>(
         &mut self,
         addr: A,
@@ -582,6 +581,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 Address::Vault(..) => {
                     let vault = scrypto_decode(&substate.value).unwrap();
                     Ok(SubstateValue::Vault(vault))
+                }
+                Address::Package(..) => {
+                    let package = scrypto_decode(&substate.value).unwrap();
+                    Ok(SubstateValue::Package(package))
                 }
                 _ => panic!("Attempting to borrow unsupported value"),
             }

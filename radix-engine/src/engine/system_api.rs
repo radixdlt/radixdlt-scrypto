@@ -75,10 +75,7 @@ where
 
     fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress;
 
-    fn globalize(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<(), RuntimeError>;
+    fn globalize(&mut self, component_address: ComponentAddress) -> Result<(), RuntimeError>;
 
     fn create_local_component(
         &mut self,

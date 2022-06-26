@@ -48,6 +48,7 @@ pub enum ValueId {
     Stored(StoredValueId),
     Resource(ResourceAddress),
     Component(ComponentAddress),
+    Package(PackageAddress),
 }
 
 impl ValueId {

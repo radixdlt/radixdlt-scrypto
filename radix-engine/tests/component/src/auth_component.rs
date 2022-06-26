@@ -7,9 +7,7 @@ blueprint! {
 
     impl AuthComponent {
         pub fn create_component(some_non_fungible: NonFungibleAddress) -> ComponentAddress {
-            let mut component = Self {
-                some_non_fungible
-            }.instantiate();
+            let mut component = Self { some_non_fungible }.instantiate();
             component.add_access_check(
                 AccessRules::new()
                     .method("get_secret", rule!(require("some_non_fungible")))

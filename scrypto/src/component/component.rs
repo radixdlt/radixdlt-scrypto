@@ -24,9 +24,7 @@ pub struct LocalComponent {
 
 impl LocalComponent {
     pub fn new(component_address: ComponentAddress) -> Self {
-        Self {
-            component_address,
-        }
+        Self { component_address }
     }
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
@@ -55,9 +53,7 @@ impl LocalComponent {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::Component(self.component_address),
             "add_access_check".to_string(),
-            scrypto_encode(&ComponentAddAccessCheckInput {
-                access_rules
-            }),
+            scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
         let output: Vec<u8> = call_engine(input);
         let _: () = scrypto_decode(&output).unwrap();

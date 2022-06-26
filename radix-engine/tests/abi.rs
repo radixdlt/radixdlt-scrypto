@@ -4,11 +4,11 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use crate::ExpectedResult::{InvalidInput, InvalidOutput, Success};
 use radix_engine::engine::RuntimeError;
+use radix_engine::model::ComponentError;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
-/*
 #[test]
 fn test_invalid_access_rule_methods() {
     // Arrange
@@ -28,14 +28,16 @@ fn test_invalid_access_rule_methods() {
 
     // Assert
     let error = receipt.result.expect_err("Should be an error.");
-    if !matches!(error, RuntimeError::BlueprintFunctionDoesNotExist(_)) {
+    if !matches!(
+        error,
+        RuntimeError::ComponentError(ComponentError::BlueprintFunctionDoesNotExist(..))
+    ) {
         panic!(
             "Should be an function does not exist but error was {}",
             error
         );
     }
 }
- */
 
 enum ExpectedResult {
     Success,

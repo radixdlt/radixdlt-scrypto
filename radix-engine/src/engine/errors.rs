@@ -52,7 +52,6 @@ pub enum RuntimeError {
     /// Component does not exist.
     ComponentNotFound(ComponentAddress),
 
-    BlueprintFunctionDoesNotExist(String),
     ComponentDecodeError(DecodeError),
 
     /// Resource manager does not exist.
@@ -119,7 +118,7 @@ pub enum RuntimeError {
     /// Can't move restricted proof.
     CantMoveRestrictedProof(ValueId),
 
-    InvalidInvocation,
+    NotSupported,
 
     CostingError(CostUnitCounterError),
 }

@@ -73,8 +73,7 @@ where
         component_address: ComponentAddress,
     ) -> Result<(), RuntimeError> {
         // Abi checks
-        self.system_api
-            .globalize(component_address)
+        self.system_api.globalize(component_address)
     }
 
     fn handle_create_local_component(
@@ -173,9 +172,9 @@ impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInst
             RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => self
                 .handle_invoke_snode(snode_ref, fn_ident, input_bytes)
                 .map(encode),
-            RadixEngineInput::Globalize(component_address) => self
-                .handle_globalize(component_address)
-                .map(encode),
+            RadixEngineInput::Globalize(component_address) => {
+                self.handle_globalize(component_address).map(encode)
+            }
             RadixEngineInput::CreateLocalComponent(blueprint_name, state) => self
                 .handle_create_local_component(blueprint_name, state)
                 .map(encode),

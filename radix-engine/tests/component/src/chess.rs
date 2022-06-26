@@ -9,8 +9,7 @@ blueprint! {
         pub fn create_game(players: [NonFungibleAddress; 2]) -> ComponentAddress {
             let access_rules = AccessRules::new().method("make_move", rule!(require("players/0")));
 
-            let mut component = Self { players }
-                .instantiate();
+            let mut component = Self { players }.instantiate();
             component.add_access_check(access_rules);
             component.globalize()
         }

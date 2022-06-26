@@ -11,7 +11,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{ComponentOffset};
+use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
@@ -286,6 +286,7 @@ impl REValueLocation {
                         Address::Vault(parent.unwrap(), *vault_id)
                     }
                     ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
+                    ValueId::Package(package_address) => Address::Package(*package_address),
                     _ => panic!("Unexpected"),
                 };
 
@@ -433,7 +434,14 @@ impl<'a> RENativeValueRef<'a> {
                 },
                 _ => panic!("Expecting to be a component"),
             },
-            _ => panic!("Expecting to be a component")
+            _ => panic!("Expecting to be a component"),
+        }
+    }
+
+    pub fn package(&mut self) -> &ValidatedPackage {
+        match self {
+            RENativeValueRef::Track(_address, value) => value.package(),
+            _ => panic!("Expecting to be tracked"),
         }
     }
 
@@ -923,10 +931,8 @@ where
                         ResourceManager::main(resource_address, fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
                     }
-                    ValueId::Component(..) => {
-                        Component::main(value_id, fn_ident, input, self)
-                            .map_err(RuntimeError::ComponentError)
-                    }
+                    ValueId::Component(..) => Component::main(value_id, fn_ident, input, self)
+                        .map_err(RuntimeError::ComponentError),
                     _ => panic!("Unexpected"),
                 },
                 SNodeExecution::Scrypto(ref actor, ref package) => {
@@ -1363,18 +1369,7 @@ where
                 let cur_location = if self.owned_values.contains_key(&value_id) {
                     REValueLocation::OwnedRoot
                 } else {
-                    let address: Address = component_address.into();
-                    self.track
-                        .borrow_global_value(address.clone())
-                        .map_err(|e| match e {
-                            TrackError::NotFound => {
-                                RuntimeError::ComponentNotFound(component_address)
-                            }
-                            TrackError::Reentrancy => {
-                                RuntimeError::ComponentReentrancy(component_address)
-                            }
-                        })?;
-                    REValueLocation::Track { parent: None }
+                    return Err(RuntimeError::NotSupported);
                 };
 
                 // Setup next frame
@@ -1385,7 +1380,13 @@ where
                             &mut self.owned_values,
                             &mut self.borrowed_values,
                         );
+                        let package_address = owned_ref.component().component.package_address();
+
                         borrowed_values.insert(value_id, owned_ref);
+                        readable_values.insert(
+                            ValueId::Package(package_address),
+                            REValueLocation::Track { parent: None },
+                        );
                         readable_values.insert(value_id, REValueLocation::BorrowedRoot);
                     }
                     _ => panic!("Unexpected"),
@@ -1688,10 +1689,7 @@ where
         self.track.create_uuid_value(package).into()
     }
 
-    fn globalize(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<(), RuntimeError> {
+    fn globalize(&mut self, component_address: ComponentAddress) -> Result<(), RuntimeError> {
         let value = self
             .owned_values
             .remove(&ValueId::Component(component_address))
