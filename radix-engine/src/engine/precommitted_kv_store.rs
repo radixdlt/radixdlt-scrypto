@@ -96,6 +96,10 @@ pub enum StoredValue {
         store: PreCommittedKeyValueStore,
         child_values: InMemoryChildren,
     },
+    Component {
+        component: Component,
+        child_values: InMemoryChildren,
+    },
     Vault(Vault),
 }
 
@@ -123,8 +127,9 @@ impl StoredValue {
 
     pub fn all_descendants(&self) -> Vec<StoredValueId> {
         match self {
-            StoredValue::KeyValueStore { child_values, .. } => child_values.all_descendants(),
-            _ => Vec::new(),
+            StoredValue::KeyValueStore { child_values, .. }
+            | StoredValue::Component { child_values, .. } => child_values.all_descendants(),
+            StoredValue::Vault(..) => Vec::new(),
         }
     }
 
@@ -134,10 +139,11 @@ impl StoredValue {
         id: &StoredValueId,
     ) -> RefMut<StoredValue> {
         match self {
-            StoredValue::KeyValueStore { child_values, .. } => {
+            StoredValue::KeyValueStore { child_values, .. }
+            | StoredValue::Component {child_values, .. } => {
                 child_values.get_child(ancestors, id)
             }
-            _ => panic!("Expected to be store"),
+            StoredValue::Vault(..) => panic!("Expected to be store"),
         }
     }
 
@@ -147,17 +153,19 @@ impl StoredValue {
         id: &StoredValueId,
     ) -> &mut StoredValue {
         match self {
-            StoredValue::KeyValueStore { child_values, .. } => {
+            StoredValue::KeyValueStore { child_values, .. }
+            | StoredValue::Component { child_values, .. }=> {
                 child_values.get_child_mut(ancestors, id)
             }
-            _ => panic!("Expected to be store"),
+            StoredValue::Vault(..) => panic!("Expected to be store"),
         }
     }
 
     pub fn insert_children(&mut self, values: HashMap<StoredValueId, StoredValue>) {
         match self {
-            StoredValue::KeyValueStore { child_values, .. } => child_values.insert_children(values),
-            _ => panic!("Expected to be store"),
+            StoredValue::KeyValueStore { child_values, .. }
+            | StoredValue::Component { child_values, .. } => child_values.insert_children(values),
+            StoredValue::Vault(..) => panic!("Expected to be store"),
         }
     }
 }

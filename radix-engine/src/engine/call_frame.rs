@@ -11,7 +11,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::ComponentOffset;
+use scrypto::prelude::{ComponentOffset};
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
@@ -83,18 +83,10 @@ pub enum TransientValue {
     Proof(Proof),
 }
 
-// TODO: Merge with stored values structure
-#[derive(Debug)]
-pub struct ComponentAndChildren {
-    component: Component,
-    child_values: InMemoryChildren,
-}
-
 #[derive(Debug)]
 pub enum REValue {
     Stored(StoredValue),
     Transient(TransientValue),
-    Component(ComponentAndChildren),
 }
 
 impl REValue {
@@ -109,8 +101,8 @@ impl REValue {
         match self {
             REValue::Stored(StoredValue::Vault(..)) => Err(DropFailure::Vault),
             REValue::Stored(StoredValue::KeyValueStore { .. }) => Err(DropFailure::KeyValueStore),
+            REValue::Stored(StoredValue::Component { .. }) => Err(DropFailure::Component),
             REValue::Transient(TransientValue::Bucket(..)) => Err(DropFailure::Bucket),
-            REValue::Component { .. } => Err(DropFailure::Component),
             REValue::Transient(TransientValue::Proof(proof)) => {
                 proof.drop();
                 Ok(())
@@ -337,8 +329,7 @@ impl REValueLocation {
                     _ => panic!("Unexpected value id"),
                 };
                 let value = borrowed
-                    .mut_component()
-                    .child_values
+                    .mut_stored_value()
                     .get_child(ancestors, stored_value_id);
                 REOwnedValueRef::Child(value)
             }
@@ -370,7 +361,7 @@ impl REValueLocation {
                         Address::KeyValueStore(parent.unwrap(), *kv_store_id)
                     }
                     ValueId::Stored(StoredValueId::Component(component_address)) => {
-                        Address::Component(*component_address)
+                        Address::GlobalComponent(*component_address)
                     },
                     _ => panic!("Unexpected value id"),
                 };
@@ -431,7 +422,7 @@ impl<'a> RENativeValueRef<'a> {
         match self {
             RENativeValueRef::Owned(owned) => match owned {
                 REOwnedValueRef::Root(root) => match root.deref_mut() {
-                    REValue::Component(component) => &mut component.component,
+                    REValue::Stored(StoredValue::Component { component, .. }) => component,
                     _ => panic!("Expecting to be a component"),
                 },
                 _ => panic!("Expecting to be a component"),
@@ -477,20 +468,20 @@ pub enum REOwnedValueRef<'a> {
 }
 
 impl<'a> REOwnedValueRef<'a> {
-    fn component(&self) -> &ComponentAndChildren {
+    fn component(&self) -> &Component {
         match self {
             REOwnedValueRef::Root(root) => match root.deref() {
-                REValue::Component(component_and_children) => component_and_children,
+                REValue::Stored(StoredValue::Component { component, .. }) => component,
                 _ => panic!("Expected a component"),
             },
             REOwnedValueRef::Child(..) => panic!("Not supported"),
         }
     }
 
-    fn mut_component(&mut self) -> &mut ComponentAndChildren {
+    fn mut_stored_value(&mut self) -> &mut StoredValue {
         match self {
             REOwnedValueRef::Root(root) => match root.deref_mut() {
-                REValue::Component(component_and_children) => component_and_children,
+                REValue::Stored(stored_value) => stored_value,
                 _ => panic!("Expected a component"),
             },
             REOwnedValueRef::Child(..) => panic!("Not supported"),
@@ -598,7 +589,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
                 return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
             }
             REValueRef::Borrowed(owned) => {
-                let component = &owned.component().component;
+                let component = &owned.component();
                 return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
             }
             _ => panic!("Unexpected component ref"),
@@ -619,9 +610,13 @@ impl<'a, 'b> REValueRef<'a, 'b> {
                 track.insert_objects_into_component(to_store, address.clone().into());
             }
             REValueRef::Borrowed(owned) => {
-                let component = owned.mut_component();
-                component.component.set_state(value.raw);
-                component.child_values.insert_children(to_store);
+                let stored_value = owned.mut_stored_value();
+                let component = match stored_value {
+                    StoredValue::Component { component, .. } => component,
+                    _ => panic!("Unexpected"),
+                };
+                component.set_state(value.raw);
+                stored_value.insert_children(to_store);
             }
             _ => panic!("Unexpected component ref"),
         }
@@ -633,7 +628,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
     ) -> (PackageAddress, String) {
         match self {
             REValueRef::Owned(owned) => {
-                let component = &owned.component().component;
+                let component = &owned.component();
                 (
                     component.package_address().clone(),
                     component.blueprint_name().to_string(),
@@ -659,8 +654,12 @@ impl<'a, 'b> REValueRef<'a, 'b> {
     ) -> Vec<MethodAuthorization> {
         match self {
             REValueRef::Owned(owned) => {
-                let component = owned.mut_component();
-                component.component.method_authorization(schema, fn_ident)
+                let stored_value = owned.mut_stored_value();
+                let component = match stored_value {
+                    StoredValue::Component { component, .. } => component,
+                    _ => panic!("Unexpected"),
+                };
+                component.method_authorization(schema, fn_ident)
             }
             REValueRef::Track(address) => {
                 let component_val = track.borrow_global_value(address.clone()).unwrap();
@@ -1384,7 +1383,7 @@ where
                             &mut self.owned_values,
                             &mut self.borrowed_values,
                         );
-                        let package_address = owned_ref.component().component.package_address();
+                        let package_address = owned_ref.component().package_address();
 
                         borrowed_values.insert(value_id, owned_ref);
                         readable_values.insert(
@@ -1701,9 +1700,9 @@ where
             .into_inner();
 
         let (component, child_values) = match value {
-            REValue::Component(component_with_children) => (
-                component_with_children.component,
-                component_with_children.child_values,
+            REValue::Stored(StoredValue::Component { component, child_values }) => (
+                component,
+                child_values,
             ),
             _ => panic!("Expected to be a component"),
         };
@@ -1737,7 +1736,7 @@ where
         let component_address = self.track.new_component_address();
         self.owned_values.insert(
             ValueId::Stored(StoredValueId::Component(component_address)),
-            RefCell::new(REValue::Component(ComponentAndChildren {
+            RefCell::new(REValue::Stored(StoredValue::Component {
                 component,
                 child_values: InMemoryChildren::with_values(to_store_values),
             })),

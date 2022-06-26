@@ -74,11 +74,12 @@ pub struct VirtualSubstateId(pub SubstateParentId, pub Vec<u8>);
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Address {
     Resource(ResourceAddress),
-    Component(ComponentAddress),
+    GlobalComponent(ComponentAddress),
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
     KeyValueStore(ComponentAddress, KeyValueStoreId),
     Vault(ComponentAddress, VaultId),
+    LocalComponent(ComponentAddress, ComponentAddress),
 }
 
 #[derive(Debug)]
@@ -105,11 +106,16 @@ impl Address {
     fn encode(&self) -> Vec<u8> {
         match self {
             Address::Resource(resource_address) => scrypto_encode(resource_address),
-            Address::Component(component_address) => scrypto_encode(component_address),
+            Address::GlobalComponent(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
             Address::Vault(component_address, vault_id) => {
                 let mut vault_address = scrypto_encode(component_address);
                 vault_address.extend(scrypto_encode(vault_id));
+                vault_address
+            }
+            Address::LocalComponent(component_address, child_id) => {
+                let mut vault_address = scrypto_encode(component_address);
+                vault_address.extend(scrypto_encode(child_id));
                 vault_address
             }
             Address::NonFungibleSet(resource_address) => {
@@ -132,7 +138,7 @@ impl Into<Address> for PackageAddress {
 
 impl Into<Address> for ComponentAddress {
     fn into(self) -> Address {
-        Address::Component(self)
+        Address::GlobalComponent(self)
     }
 }
 
@@ -148,6 +154,12 @@ impl Into<Address> for (ComponentAddress, VaultId) {
     }
 }
 
+impl Into<Address> for (ComponentAddress, ComponentAddress) {
+    fn into(self) -> Address {
+        Address::LocalComponent(self.0, self.1)
+    }
+}
+
 impl Into<PackageAddress> for Address {
     fn into(self) -> PackageAddress {
         if let Address::Package(package_address) = self {
@@ -160,7 +172,7 @@ impl Into<PackageAddress> for Address {
 
 impl Into<ComponentAddress> for Address {
     fn into(self) -> ComponentAddress {
-        if let Address::Component(component_address) = self {
+        if let Address::GlobalComponent(component_address) = self {
             return component_address;
         } else {
             panic!("Address is not a component address");
@@ -376,7 +388,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             }
             SubstateValue::Component(_) => {
                 let component_address = self.new_component_address();
-                Address::Component(component_address)
+                Address::GlobalComponent(component_address)
             }
             SubstateValue::Resource(ref resource_manager) => {
                 let resource_address = self.new_resource_address();
@@ -436,7 +448,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Package(package));
                 }
-                Address::Component(_) => {
+                Address::GlobalComponent(_) => {
                     let component: Component = scrypto_decode(&substate.value).unwrap();
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Component(component));
@@ -477,7 +489,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
             self.downed_substates.push(substate.phys_id);
             let value = match address {
-                Address::Component(_) => {
+                Address::GlobalComponent(_) => {
                     let component = scrypto_decode(&substate.value).unwrap();
                     SubstateValue::Component(component)
                 }
@@ -570,7 +582,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             self.downed_substates.push(substate.phys_id);
             borrowed_substates.insert(address.clone());
             match address {
-                Address::Component(_) => {
+                Address::GlobalComponent(_) => {
                     let component = scrypto_decode(&substate.value).unwrap();
                     Ok(SubstateValue::Component(component))
                 }
@@ -771,6 +783,18 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 StoredValue::Vault(vault) => {
                     let addr: (ComponentAddress, VaultId) = (component_address, id.into());
                     self.create_uuid_value_2(addr, vault);
+                }
+                StoredValue::Component {
+                    component,
+                    child_values,
+                } => {
+                    let addr: (ComponentAddress, ComponentAddress) = (component_address, id.into());
+                    self.create_uuid_value_2(addr, component);
+                    let child_values = child_values
+                        .into_iter()
+                        .map(|(id, v)| (id, v.into_inner()))
+                        .collect();
+                    self.insert_objects_into_component(child_values, component_address);
                 }
                 StoredValue::KeyValueStore {
                     store,

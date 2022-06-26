@@ -34,6 +34,15 @@ pub enum StoredValueId {
     VaultId(VaultId),
 }
 
+impl Into<ComponentAddress> for StoredValueId {
+    fn into(self) -> ComponentAddress {
+        match self {
+            StoredValueId::Component(component_address) => component_address,
+            _ => panic!("Expected to be a component"),
+        }
+    }
+}
+
 impl Into<(Hash, u32)> for StoredValueId {
     fn into(self) -> KeyValueStoreId {
         match self {
