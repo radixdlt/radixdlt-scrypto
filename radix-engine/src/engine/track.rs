@@ -386,10 +386,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 let package_address = self.new_package_address();
                 Address::Package(package_address)
             }
-            SubstateValue::Component(_) => {
-                let component_address = self.new_component_address();
-                Address::GlobalComponent(component_address)
-            }
             SubstateValue::Resource(ref resource_manager) => {
                 let resource_address = self.new_resource_address();
                 // TODO: Move this into application layer
@@ -448,7 +444,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Package(package));
                 }
-                Address::GlobalComponent(_) => {
+                Address::GlobalComponent(_) | Address::LocalComponent(..) => {
                     let component: Component = scrypto_decode(&substate.value).unwrap();
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Component(component));
@@ -464,7 +460,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     self.read_substates
                         .insert(address.clone(), SubstateValue::Vault(vault));
                 }
-                _ => panic!("Reading value of invalid address"),
+                _ => panic!("Reading value of invalid address {:?}", address),
             }
             let value = self.read_substates.get(&address).unwrap();
             Ok(value)
@@ -489,7 +485,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
             self.downed_substates.push(substate.phys_id);
             let value = match address {
-                Address::GlobalComponent(_) => {
+                Address::GlobalComponent(_) | Address::LocalComponent(..) => {
                     let component = scrypto_decode(&substate.value).unwrap();
                     SubstateValue::Component(component)
                 }
@@ -501,7 +497,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     let vault = scrypto_decode(&substate.value).unwrap();
                     SubstateValue::Vault(vault)
                 }
-                _ => panic!("Attempting to borrow unsupported value"),
+                _ => panic!("Attempting to borrow unsupported value {:?}", address),
             };
 
             self.borrowed_substates_2

@@ -361,7 +361,11 @@ impl REValueLocation {
                         Address::KeyValueStore(parent.unwrap(), *kv_store_id)
                     }
                     ValueId::Stored(StoredValueId::Component(component_address)) => {
-                        Address::GlobalComponent(*component_address)
+                        if let Some(parent) = parent {
+                            Address::LocalComponent(*parent, *component_address)
+                        } else {
+                            Address::GlobalComponent(*component_address)
+                        }
                     }
                     _ => panic!("Unexpected value id"),
                 };
@@ -1340,8 +1344,13 @@ where
 
                     // Setup next frame
                     match cur_location {
-                        REValueLocation::Track { .. } => {
-                            let address: Address = component_address.into();
+                        REValueLocation::Track { parent } => {
+                            let address = if let Some(parent) = parent {
+                                Address::LocalComponent(*parent, component_address)
+                            } else {
+                                Address::GlobalComponent(component_address)
+                            };
+
                             self.track.take_lock(address.clone()).map_err(|e| match e {
                                 TrackError::NotFound => panic!("Should exist"),
                                 TrackError::Reentrancy => {
@@ -1349,8 +1358,12 @@ where
                                 }
                             })?;
                             locked_values.insert(address.clone());
-                            readable_values
-                                .insert(value_id, REValueLocation::Track { parent: None });
+                            readable_values.insert(
+                                value_id,
+                                REValueLocation::Track {
+                                    parent: parent.clone(),
+                                },
+                            );
                         }
                         REValueLocation::OwnedRoot | REValueLocation::Borrowed { .. } => {
                             let owned_ref = cur_location.to_owned_ref(
