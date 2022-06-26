@@ -147,9 +147,7 @@ impl StoredValue {
     ) -> RefMut<StoredValue> {
         match self {
             StoredValue::KeyValueStore { child_values, .. }
-            | StoredValue::Component {child_values, .. } => {
-                child_values.get_child(ancestors, id)
-            }
+            | StoredValue::Component { child_values, .. } => child_values.get_child(ancestors, id),
             StoredValue::Vault(..) => panic!("Expected to be store"),
         }
     }
@@ -161,7 +159,7 @@ impl StoredValue {
     ) -> &mut StoredValue {
         match self {
             StoredValue::KeyValueStore { child_values, .. }
-            | StoredValue::Component { child_values, .. }=> {
+            | StoredValue::Component { child_values, .. } => {
                 child_values.get_child_mut(ancestors, id)
             }
             StoredValue::Vault(..) => panic!("Expected to be store"),

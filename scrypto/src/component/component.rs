@@ -24,7 +24,6 @@ pub trait ComponentState: Encode + Decode {
     fn instantiate(self) -> Component;
 }
 
-
 /// Represents an instantiated component.
 #[derive(PartialEq, Eq, Hash)]
 pub struct Component(pub(crate) ComponentAddress);
@@ -50,7 +49,6 @@ impl Component {
         let output: (PackageAddress, String) = call_engine(input);
         output.1
     }
-
 
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeSNode(

@@ -15,9 +15,7 @@ blueprint! {
         }
 
         pub fn new(secret: u32) -> Component {
-            Self {
-                secret
-            }.instantiate()
+            Self { secret }.instantiate()
         }
 
         pub fn try_to_read_local_component_with_auth(

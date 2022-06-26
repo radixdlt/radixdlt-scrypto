@@ -84,7 +84,7 @@ pub enum ScryptoType {
 const MAPPING: [(ScryptoType, u8, &str); 14] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
-    (ScryptoType::Component, 0x82, "ComponentAddress"), // 130
+    (ScryptoType::Component, 0x82, "ComponentAddress"),    // 130
     (ScryptoType::KeyValueStore, 0x83, "KeyValueStore"),   // 131
     (ScryptoType::Hash, 0x90, "Hash"),                     // 144
     (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"),

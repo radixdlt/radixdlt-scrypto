@@ -11,7 +11,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{ComponentOffset};
+use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
@@ -362,7 +362,7 @@ impl REValueLocation {
                     }
                     ValueId::Stored(StoredValueId::Component(component_address)) => {
                         Address::GlobalComponent(*component_address)
-                    },
+                    }
                     _ => panic!("Unexpected value id"),
                 };
 
@@ -474,9 +474,7 @@ impl<'a> REOwnedValueRef<'a> {
                 REValue::Stored(StoredValue::Component { component, .. }) => component,
                 _ => panic!("Expected a component"),
             },
-            REOwnedValueRef::Child(stored_value) => {
-                stored_value.component()
-            },
+            REOwnedValueRef::Child(stored_value) => stored_value.component(),
         }
     }
 
@@ -933,7 +931,7 @@ where
                     ValueId::Stored(StoredValueId::Component(..)) => {
                         Component::main(value_id, fn_ident, input, self)
                             .map_err(RuntimeError::ComponentError)
-                    },
+                    }
                     ValueId::Resource(resource_address) => {
                         ResourceManager::main(resource_address, fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
@@ -1700,15 +1698,17 @@ where
     fn globalize(&mut self, component_address: ComponentAddress) -> Result<(), RuntimeError> {
         let value = self
             .owned_values
-            .remove(&ValueId::Stored(StoredValueId::Component(component_address)))
+            .remove(&ValueId::Stored(StoredValueId::Component(
+                component_address,
+            )))
             .ok_or(RuntimeError::ComponentNotFound(component_address))?
             .into_inner();
 
         let (component, child_values) = match value {
-            REValue::Stored(StoredValue::Component { component, child_values }) => (
+            REValue::Stored(StoredValue::Component {
                 component,
                 child_values,
-            ),
+            }) => (component, child_values),
             _ => panic!("Expected to be a component"),
         };
 
