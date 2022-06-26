@@ -53,8 +53,7 @@ impl ComponentSystem {
             "publish".to_string(),
             scrypto_encode(&PackagePublishInput { package }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     /// Instantiates a component.

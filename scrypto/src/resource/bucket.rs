@@ -74,8 +74,7 @@ impl Bucket {
             "take".to_string(),
             scrypto_encode(&BucketTakeInput { amount }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     sfunctions! {

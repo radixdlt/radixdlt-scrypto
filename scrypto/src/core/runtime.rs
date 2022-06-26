@@ -62,7 +62,7 @@ impl Runtime {
     }
 
     /// Invokes a method on a component.
-    pub fn call_method<S: AsRef<str>, T:Decode>(
+    pub fn call_method<S: AsRef<str>, T: Decode>(
         component_address: ComponentAddress,
         method: S,
         args: Vec<Vec<u8>>,
