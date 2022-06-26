@@ -104,6 +104,13 @@ pub enum StoredValue {
 }
 
 impl StoredValue {
+    pub fn component(&self) -> &Component {
+        match self {
+            StoredValue::Component { component, .. } => component,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
     pub fn kv_store(&self) -> &PreCommittedKeyValueStore {
         match self {
             StoredValue::KeyValueStore { store, .. } => store,

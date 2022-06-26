@@ -474,7 +474,9 @@ impl<'a> REOwnedValueRef<'a> {
                 REValue::Stored(StoredValue::Component { component, .. }) => component,
                 _ => panic!("Expected a component"),
             },
-            REOwnedValueRef::Child(..) => panic!("Not supported"),
+            REOwnedValueRef::Child(stored_value) => {
+                stored_value.component()
+            },
         }
     }
 
@@ -482,9 +484,9 @@ impl<'a> REOwnedValueRef<'a> {
         match self {
             REOwnedValueRef::Root(root) => match root.deref_mut() {
                 REValue::Stored(stored_value) => stored_value,
-                _ => panic!("Expected a component"),
+                _ => panic!("Expected a stored value"),
             },
-            REOwnedValueRef::Child(..) => panic!("Not supported"),
+            REOwnedValueRef::Child(stored_value) => stored_value,
         }
     }
 }
@@ -1257,9 +1259,12 @@ where
                     let component_address = *component_address;
 
                     // Find value
-                    let value_id = ValueId::Stored(StoredValueId::Component(component_address));
+                    let stored_value_id = StoredValueId::Component(component_address);
+                    let value_id = ValueId::Stored(stored_value_id.clone());
                     let cur_location = if self.owned_values.contains_key(&value_id) {
-                        REValueLocation::OwnedRoot
+                        &REValueLocation::OwnedRoot
+                    } else if let Some(location) = self.refed_values.get(&stored_value_id) {
+                        location
                     } else {
                         let address: Address = component_address.into();
                         self.track
@@ -1272,7 +1277,7 @@ where
                                     RuntimeError::ComponentReentrancy(component_address)
                                 }
                             })?;
-                        REValueLocation::Track { parent: None }
+                        &REValueLocation::Track { parent: None }
                     };
 
                     let actor_info = {
@@ -1349,7 +1354,7 @@ where
                             readable_values
                                 .insert(value_id, REValueLocation::Track { parent: None });
                         }
-                        REValueLocation::OwnedRoot => {
+                        REValueLocation::OwnedRoot | REValueLocation::Borrowed { .. } => {
                             let owned_ref = cur_location.to_owned_ref(
                                 &value_id,
                                 &mut self.owned_values,
