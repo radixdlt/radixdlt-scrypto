@@ -14,10 +14,16 @@ blueprint! {
             self.secret = next;
         }
 
+        pub fn new(secret: u32) -> Component {
+            Self {
+                secret
+            }.instantiate()
+        }
+
         pub fn try_to_read_local_component_with_auth(
             some_non_fungible: NonFungibleAddress,
         ) -> ComponentAddress {
-            let mut local_component = Self { secret: 12345 }.instantiate();
+            let mut local_component = Self::new(12345);
             local_component
                 .add_access_check(AccessRules::new().default(rule!(require(some_non_fungible))));
 
@@ -28,7 +34,7 @@ blueprint! {
         }
 
         pub fn read_local_component() -> ComponentAddress {
-            let local_component = Self { secret: 12345 }.instantiate();
+            let local_component = Self::new(12345);
 
             let rtn: u32 = local_component.call("get_secret", vec![]);
             assert_eq!(12345, rtn);
@@ -37,7 +43,7 @@ blueprint! {
         }
 
         pub fn write_local_component() -> ComponentAddress {
-            let local_component = Self { secret: 12345 }.instantiate();
+            let local_component = Self::new(12345);
 
             let _: () = local_component.call("set_secret", vec![scrypto_encode(&99999u32)]);
             let rtn: u32 = local_component.call("get_secret", vec![]);
@@ -50,7 +56,7 @@ blueprint! {
             expected_package_address: PackageAddress,
             expected_blueprint_name: String,
         ) -> ComponentAddress {
-            let local_component = Self { secret: 12345 }.instantiate();
+            let local_component = Self::new(12345);
 
             assert_eq!(local_component.package_address(), expected_package_address);
             assert_eq!(local_component.blueprint_name(), expected_blueprint_name);
