@@ -61,14 +61,14 @@ impl ComponentSystem {
         &self,
         blueprint_name: &str,
         state: T,
-    ) -> LocalComponent {
+    ) -> Component {
         let input = RadixEngineInput::CreateComponent(
             blueprint_name.to_owned(),
             scrypto_encode(&state),
         );
         let component_address: ComponentAddress = call_engine(input);
 
-        LocalComponent::new(component_address)
+        Component(component_address)
     }
 }
 
