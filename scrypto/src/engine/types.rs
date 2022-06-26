@@ -30,6 +30,7 @@ pub enum TransientValueId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum StoredValueId {
     KeyValueStoreId(KeyValueStoreId),
+    Component(ComponentAddress),
     VaultId(VaultId),
 }
 
@@ -38,6 +39,7 @@ impl Into<(Hash, u32)> for StoredValueId {
         match self {
             StoredValueId::KeyValueStoreId(id) => id,
             StoredValueId::VaultId(id) => id,
+            StoredValueId::Component(..) => panic!("ComponentAddress not expected"),
         }
     }
 }
@@ -47,7 +49,6 @@ pub enum ValueId {
     Transient(TransientValueId),
     Stored(StoredValueId),
     Resource(ResourceAddress),
-    Component(ComponentAddress),
     Package(PackageAddress),
 }
 
@@ -84,7 +85,7 @@ impl Into<u32> for ValueId {
 impl Into<ComponentAddress> for ValueId {
     fn into(self) -> ComponentAddress {
         match self {
-            ValueId::Component(component_address) => component_address,
+            ValueId::Stored(StoredValueId::Component(component_address)) => component_address,
             _ => panic!("Not a component address"),
         }
     }

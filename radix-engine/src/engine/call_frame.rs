@@ -369,7 +369,9 @@ impl REValueLocation {
                     ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => {
                         Address::KeyValueStore(parent.unwrap(), *kv_store_id)
                     }
-                    ValueId::Component(component_address) => component_address.clone().into(),
+                    ValueId::Stored(StoredValueId::Component(component_address)) => {
+                        Address::Component(*component_address)
+                    },
                     _ => panic!("Unexpected value id"),
                 };
 
@@ -927,12 +929,14 @@ where
                         Vault::main(vault_id, fn_ident, input, self)
                             .map_err(RuntimeError::VaultError)
                     }
+                    ValueId::Stored(StoredValueId::Component(..)) => {
+                        Component::main(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ComponentError)
+                    },
                     ValueId::Resource(resource_address) => {
                         ResourceManager::main(resource_address, fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
                     }
-                    ValueId::Component(..) => Component::main(value_id, fn_ident, input, self)
-                        .map_err(RuntimeError::ComponentError),
                     _ => panic!("Unexpected"),
                 },
                 SNodeExecution::Scrypto(ref actor, ref package) => {
@@ -1254,7 +1258,7 @@ where
                     let component_address = *component_address;
 
                     // Find value
-                    let value_id = ValueId::Component(component_address);
+                    let value_id = ValueId::Stored(StoredValueId::Component(component_address));
                     let cur_location = if self.owned_values.contains_key(&value_id) {
                         REValueLocation::OwnedRoot
                     } else {
@@ -1365,7 +1369,7 @@ where
                 let component_address = *component_address;
 
                 // Find value
-                let value_id = ValueId::Component(component_address);
+                let value_id = ValueId::Stored(StoredValueId::Component(component_address));
                 let cur_location = if self.owned_values.contains_key(&value_id) {
                     REValueLocation::OwnedRoot
                 } else {
@@ -1692,7 +1696,7 @@ where
     fn globalize(&mut self, component_address: ComponentAddress) -> Result<(), RuntimeError> {
         let value = self
             .owned_values
-            .remove(&ValueId::Component(component_address))
+            .remove(&ValueId::Stored(StoredValueId::Component(component_address)))
             .ok_or(RuntimeError::ComponentNotFound(component_address))?
             .into_inner();
 
@@ -1732,7 +1736,7 @@ where
 
         let component_address = self.track.new_component_address();
         self.owned_values.insert(
-            ValueId::Component(component_address),
+            ValueId::Stored(StoredValueId::Component(component_address)),
             RefCell::new(REValue::Component(ComponentAndChildren {
                 component,
                 child_values: InMemoryChildren::with_values(to_store_values),
@@ -1773,7 +1777,7 @@ where
 
         let value_id = match address {
             SubstateAddress::Component(component_address, ..) => {
-                ValueId::Component(component_address)
+                ValueId::Stored(StoredValueId::Component(component_address))
             }
             SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(kv_store_id),
         };

@@ -82,6 +82,9 @@ impl ScryptoValue {
         for kv_store_id in &self.kv_store_ids {
             value_ids.insert(ValueId::kv_store_id(*kv_store_id));
         }
+        for component_address in &self.component_addresses {
+            value_ids.insert(ValueId::Stored(StoredValueId::Component(*component_address)));
+        }
         for (bucket_id, _) in &self.bucket_ids {
             value_ids.insert(ValueId::Transient(TransientValueId::Bucket(*bucket_id)));
         }
@@ -98,6 +101,9 @@ impl ScryptoValue {
         }
         for kv_store_id in &self.kv_store_ids {
             value_ids.insert(ValueId::kv_store_id(*kv_store_id));
+        }
+        for component_address in &self.component_addresses {
+            value_ids.insert(ValueId::Stored(StoredValueId::Component(*component_address)));
         }
         value_ids
     }
