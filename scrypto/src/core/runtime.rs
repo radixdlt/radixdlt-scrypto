@@ -44,12 +44,12 @@ impl Runtime {
     }
 
     /// Invokes a function on a blueprint.
-    pub fn call_function<S: AsRef<str>>(
+    pub fn call_function<S: AsRef<str>, T: Decode>(
         package_address: PackageAddress,
         blueprint_name: S,
         function: S,
         args: Vec<Vec<u8>>,
-    ) -> Vec<u8> {
+    ) -> T {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::Scrypto(ScryptoActor::Blueprint(
                 package_address,
@@ -58,25 +58,21 @@ impl Runtime {
             function.as_ref().to_string(),
             bytes_vec_to_struct!(args),
         );
-        let output: Vec<u8> = call_engine(input);
-
-        output
+        call_engine(input)
     }
 
     /// Invokes a method on a component.
-    pub fn call_method<S: AsRef<str>>(
+    pub fn call_method<S: AsRef<str>, T:Decode>(
         component_address: ComponentAddress,
         method: S,
         args: Vec<Vec<u8>>,
-    ) -> Vec<u8> {
+    ) -> T {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             method.as_ref().to_string(),
             bytes_vec_to_struct!(args),
         );
-        let output: Vec<u8> = call_engine(input);
-
-        output
+        call_engine(input)
     }
 
     /// Returns the transaction hash.
