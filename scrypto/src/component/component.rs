@@ -32,9 +32,7 @@ pub struct Component(pub(crate) ComponentAddress);
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let output = Runtime::call_method(self.0, method, args);
-
-        scrypto_decode(&output).unwrap()
+        Runtime::call_method(self.0, method, args)
     }
 
     /// Returns the package ID of this component.
@@ -60,8 +58,7 @@ impl Component {
             "add_access_check".to_string(),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
-        let output: Vec<u8> = call_engine(input);
-        let _: () = scrypto_decode(&output).unwrap();
+        let _: () = call_engine(input);
 
         self
     }

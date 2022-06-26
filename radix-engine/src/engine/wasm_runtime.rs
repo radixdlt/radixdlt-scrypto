@@ -60,12 +60,9 @@ where
         snode_ref: SNodeRef,
         fn_ident: String,
         input: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
-        let result = self
-            .system_api
-            .invoke_snode(snode_ref, fn_ident, call_data)?;
-        Ok(result.raw)
+        self.system_api.invoke_snode(snode_ref, fn_ident, call_data)
     }
 
     fn handle_globalize(
@@ -169,9 +166,9 @@ impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInst
         let input: RadixEngineInput =
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
         match input {
-            RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => self
-                .handle_invoke_snode(snode_ref, fn_ident, input_bytes)
-                .map(encode),
+            RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => {
+                self.handle_invoke_snode(snode_ref, fn_ident, input_bytes)
+            }
             RadixEngineInput::Globalize(component_address) => {
                 self.handle_globalize(component_address).map(encode)
             }
