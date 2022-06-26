@@ -67,12 +67,11 @@ where
         snode_ref: SNodeRef,
         fn_ident: String,
         input: Vec<u8>,
-    ) -> Result<Vec<u8>, RuntimeError> {
+    ) -> Result<ScryptoValue, RuntimeError> {
         let call_data = ScryptoValue::from_slice(&input).map_err(RuntimeError::DecodeError)?;
-        let result = self
+        self
             .system_api
-            .invoke_snode(snode_ref, fn_ident, call_data)?;
-        Ok(result.raw)
+            .invoke_snode(snode_ref, fn_ident, call_data)
     }
 
     fn handle_create_component(
@@ -186,8 +185,7 @@ impl<'s, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
             scrypto_decode(&input.raw).map_err(|_| InvokeError::InvalidRadixEngineInput)?;
         match input {
             RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => self
-                .handle_invoke_snode(snode_ref, fn_ident, input_bytes)
-                .map(encode),
+                .handle_invoke_snode(snode_ref, fn_ident, input_bytes),
             RadixEngineInput::CreateComponent(blueprint_name, state, access_rules_list) => self
                 .handle_create_component(blueprint_name, state, access_rules_list)
                 .map(encode),
