@@ -8,6 +8,7 @@ use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
+/*
 #[test]
 fn test_invalid_access_rule_methods() {
     // Arrange
@@ -34,6 +35,7 @@ fn test_invalid_access_rule_methods() {
         );
     }
 }
+ */
 
 enum ExpectedResult {
     Success,

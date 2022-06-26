@@ -8,22 +8,22 @@ blueprint! {
 
     impl CrossComponent {
         pub fn create_component_with_auth(access_rules: AccessRules) -> ComponentAddress {
-            Self {
+            let mut component = Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .instantiate()
-            .add_access_check(access_rules)
-            .globalize()
+            .instantiate();
+            component.add_access_check(access_rules);
+            component.globalize()
         }
 
         pub fn create_component() -> ComponentAddress {
-            Self {
+            let component = Self {
                 secret: "Secret".to_owned(),
                 auth_vault: None,
             }
-            .instantiate()
-            .globalize()
+            .instantiate();
+            component.globalize()
         }
 
         pub fn put_auth(&mut self, mut auth_bucket: Vec<Bucket>) {

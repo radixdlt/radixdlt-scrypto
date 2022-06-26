@@ -20,14 +20,12 @@ pub struct ComponentAddAccessCheckInput {
 
 pub struct LocalComponent {
     component_address: ComponentAddress,
-    access_rules_list: Vec<AccessRules>,
 }
 
 impl LocalComponent {
     pub fn new(component_address: ComponentAddress) -> Self {
         Self {
             component_address,
-            access_rules_list: Vec::new(),
         }
     }
     /// Invokes a method on this component.
@@ -53,14 +51,23 @@ impl LocalComponent {
         output.1
     }
 
-    pub fn add_access_check(mut self, access_rules: AccessRules) -> Self {
-        self.access_rules_list.push(access_rules);
+    pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::Component(self.component_address),
+            "add_access_check".to_string(),
+            scrypto_encode(&ComponentAddAccessCheckInput {
+                access_rules
+            }),
+        );
+        let output: Vec<u8> = call_engine(input);
+        let _: () = scrypto_decode(&output).unwrap();
+
         self
     }
 
     pub fn globalize(self) -> ComponentAddress {
         let addr = self.component_address.clone();
-        let input = RadixEngineInput::Globalize(self.component_address, self.access_rules_list);
+        let input = RadixEngineInput::Globalize(self.component_address);
         let _: () = call_engine(input);
         addr
     }

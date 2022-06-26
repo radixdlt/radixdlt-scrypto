@@ -11,12 +11,11 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
-use scrypto::prelude::{AccessRules, ComponentOffset};
+use scrypto::prelude::{ComponentOffset};
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -1692,7 +1691,6 @@ where
     fn globalize(
         &mut self,
         component_address: ComponentAddress,
-        access_rules_list: Vec<AccessRules>,
     ) -> Result<(), RuntimeError> {
         let value = self
             .owned_values
@@ -1700,7 +1698,7 @@ where
             .ok_or(RuntimeError::ComponentNotFound(component_address))?
             .into_inner();
 
-        let (mut component, child_values) = match value {
+        let (component, child_values) = match value {
             REValue::Component(component_with_children) => (
                 component_with_children.component,
                 component_with_children.child_values,
@@ -1708,22 +1706,6 @@ where
             _ => panic!("Expected to be a component"),
         };
 
-        // Abi checks
-        let package = self
-            .track
-            .borrow_global_value(component.package_address())
-            .unwrap()
-            .package();
-        let blueprint_abi = package.blueprint_abi(component.blueprint_name()).unwrap();
-        for access_rules in &access_rules_list {
-            for (func_name, _) in access_rules.iter() {
-                if !blueprint_abi.contains_fn(func_name.as_str()) {
-                    return Err(BlueprintFunctionDoesNotExist(func_name.to_string()));
-                }
-            }
-        }
-
-        component.set_access_rules(access_rules_list);
         self.track.create_uuid_value_2(component_address, component);
 
         let mut to_store_values = HashMap::new();

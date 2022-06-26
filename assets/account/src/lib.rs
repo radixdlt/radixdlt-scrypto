@@ -7,7 +7,7 @@ blueprint! {
 
     impl Account {
         fn internal_new(withdraw_rule: AccessRule, bucket: Option<Bucket>) -> ComponentAddress {
-            let account = Self {
+            let mut account = Self {
                 vaults: KeyValueStore::new(),
             }
             .instantiate();
@@ -22,8 +22,9 @@ blueprint! {
                 .method("deposit", rule!(allow_all))
                 .method("deposit_batch", rule!(allow_all))
                 .default(withdraw_rule);
+            account.add_access_check(access_rules);
 
-            account.add_access_check(access_rules).globalize()
+            account.globalize()
         }
 
         pub fn new(withdraw_rule: AccessRule) -> ComponentAddress {

@@ -78,10 +78,6 @@ impl Component {
         self.state = new_state;
     }
 
-    pub fn set_access_rules(&mut self, access_rules: Vec<AccessRules>) {
-        self.access_rules = access_rules;
-    }
-
     pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         value_id: ValueId,
         fn_ident: &str,
@@ -95,6 +91,23 @@ impl Component {
             "add_access_check" => {
                 let input: ComponentAddAccessCheckInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
+
+                // Abi checks
+                /*
+                let package = self
+                    .track
+                    .borrow_global_value(component.package_address())
+                    .unwrap()
+                    .package();
+                let blueprint_abi = package.blueprint_abi(component.blueprint_name()).unwrap();
+                for access_rules in &access_rules_list {
+                    for (func_name, _) in access_rules.iter() {
+                        if !blueprint_abi.contains_fn(func_name.as_str()) {
+                            return Err(BlueprintFunctionDoesNotExist(func_name.to_string()));
+                        }
+                    }
+                }
+                 */
 
                 component.access_rules.push(input.access_rules);
                 Ok(ScryptoValue::from_typed(&()))
