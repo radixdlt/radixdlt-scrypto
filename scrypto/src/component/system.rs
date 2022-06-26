@@ -57,12 +57,12 @@ impl ComponentSystem {
     }
 
     /// Instantiates a component.
-    pub fn to_component_state_with_auth<T: ComponentState>(
+    pub fn create_component<T: ComponentState>(
         &self,
         blueprint_name: &str,
         state: T,
     ) -> LocalComponent {
-        let input = RadixEngineInput::CreateLocalComponent(
+        let input = RadixEngineInput::CreateComponent(
             blueprint_name.to_owned(),
             scrypto_encode(&state),
         );

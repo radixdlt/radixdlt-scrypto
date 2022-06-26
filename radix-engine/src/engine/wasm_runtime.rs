@@ -175,7 +175,7 @@ impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInst
             RadixEngineInput::Globalize(component_address) => {
                 self.handle_globalize(component_address).map(encode)
             }
-            RadixEngineInput::CreateLocalComponent(blueprint_name, state) => self
+            RadixEngineInput::CreateComponent(blueprint_name, state) => self
                 .handle_create_local_component(blueprint_name, state)
                 .map(encode),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),

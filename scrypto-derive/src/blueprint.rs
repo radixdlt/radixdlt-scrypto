@@ -55,7 +55,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
 
             impl ::scrypto::component::ComponentState for #bp_ident {
                 fn instantiate(self) -> ::scrypto::component::LocalComponent {
-                    ::scrypto::component::component_system().to_component_state_with_auth(
+                    ::scrypto::component::component_system().create_component(
                         #bp_name,
                         self
                     )
@@ -541,7 +541,7 @@ mod tests {
 
                     impl ::scrypto::component::ComponentState for Test {
                         fn instantiate(self) -> ::scrypto::component::LocalComponent {
-                            ::scrypto::component::component_system().to_component_state_with_auth(
+                            ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             )
@@ -669,7 +669,7 @@ mod tests {
 
                     impl ::scrypto::component::ComponentState for Test {
                         fn instantiate(self) -> ::scrypto::component::LocalComponent {
-                            ::scrypto::component::component_system().to_component_state_with_auth(
+                            ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             )
