@@ -32,6 +32,7 @@ pub struct ScryptoValue {
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
     pub kv_store_ids: HashSet<KeyValueStoreId>,
+    pub component_addresses: HashSet<ComponentAddress>,
 }
 
 impl ScryptoValue {
@@ -69,6 +70,7 @@ impl ScryptoValue {
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
             kv_store_ids: checker.kv_stores.iter().map(|e| e.id).collect(),
+            component_addresses: checker.components.iter().map(|e| e.0).collect(),
         })
     }
 
@@ -181,6 +183,7 @@ pub struct ScryptoCustomValueChecker {
     pub proofs: HashMap<Proof, SborPath>,
     pub vaults: HashSet<Vault>,
     pub kv_stores: HashSet<KeyValueStore<(), ()>>,
+    pub components: HashSet<Component>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -210,6 +213,7 @@ impl ScryptoCustomValueChecker {
             proofs: HashMap::new(),
             vaults: HashSet::new(),
             kv_stores: HashSet::new(),
+            components: HashSet::new(),
         }
     }
 }
@@ -233,8 +237,11 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
             }
             ScryptoType::Component => {
-                ComponentAddress::try_from(data)
+                let component = Component::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
+                if !self.components.insert(component) {
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
+                }
             }
             ScryptoType::KeyValueStore => {
                 let map = KeyValueStore::try_from(data)
