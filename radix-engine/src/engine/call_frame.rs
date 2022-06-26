@@ -609,9 +609,16 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         match self {
             REValueRef::Track(address) => {
                 track
-                    .write_component_value(address.clone().into(), value.raw)
+                    .write_component_value(address.clone(), value.raw)
                     .unwrap();
-                track.insert_objects_into_component(to_store, address.clone().into());
+
+                let parent_address = match address {
+                    Address::GlobalComponent(address) => *address,
+                    Address::LocalComponent(parent, ..) => *parent,
+                    _ => panic!("Expected component address"),
+                };
+
+                track.insert_objects_into_component(to_store, parent_address);
             }
             REValueRef::Borrowed(owned) => {
                 let stored_value = owned.mut_stored_value();

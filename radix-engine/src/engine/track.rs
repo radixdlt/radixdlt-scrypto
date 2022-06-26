@@ -531,10 +531,13 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     // TODO: Replace with more generic write_value once Component is split into more substates
     pub fn write_component_value(
         &mut self,
-        addr: ComponentAddress,
+        address: Address,
         value: Vec<u8>,
     ) -> Result<(), TrackError> {
-        let address: Address = addr.into();
+        match address {
+            Address::GlobalComponent(..) | Address::LocalComponent(..) => {}
+            _ => panic!("Unexpected address"),
+        }
 
         if !self.borrowed_substates_2.contains_key(&address) {
             return Err(TrackError::NotFound);
