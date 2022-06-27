@@ -111,6 +111,15 @@ impl REValue {
     }
 }
 
+impl Into<Bucket> for REValue {
+    fn into(self) -> Bucket {
+        match self {
+            REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+            _ => panic!("Expected to be a bucket"),
+        }
+    }
+}
+
 impl Into<StoredValue> for REValue {
     fn into(self) -> StoredValue {
         match self {
@@ -1651,6 +1660,13 @@ where
         val_ref.return_to_location(value_id, &mut self.borrowed_values, &mut self.track)
     }
 
+    fn take_native_value(&mut self, value_id: &ValueId) -> REValue {
+        self.owned_values
+            .remove(&value_id)
+            .unwrap()
+            .into_inner()
+    }
+
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
         let value = self
             .owned_values
@@ -1664,18 +1680,6 @@ where
             REValue::Transient(TransientValue::Proof(proof)) => Ok(proof),
             _ => panic!("Expected proof"),
         }
-    }
-
-    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
-        self.owned_values
-            .remove(&ValueId::Transient(TransientValueId::Bucket(
-                bucket_id.clone(),
-            )))
-            .map(|value| match value.into_inner() {
-                REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
-                _ => panic!("Expected bucket"),
-            })
-            .ok_or(RuntimeError::BucketNotFound(bucket_id))
     }
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {

@@ -60,10 +60,9 @@ where
 
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed>;
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
+    fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
-
-    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError>;
 
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError>;
 

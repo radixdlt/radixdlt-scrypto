@@ -206,11 +206,11 @@ impl Bucket {
             "put" => {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
-                let bucket1 = system_api
-                    .take_bucket(input.bucket.0)
-                    .map_err(|_| BucketError::CouldNotTakeBucket)?;
+                let other_bucket = system_api
+                    .take_native_value(&ValueId::Transient(TransientValueId::Bucket(input.bucket.0)))
+                    .into();
                 bucket0
-                    .put(bucket1)
+                    .put(other_bucket)
                     .map_err(BucketError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
