@@ -455,6 +455,11 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
             }
 
             impl #bp_ident {
+                pub fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                    self.component.add_access_check(access_rules);
+                    self
+                }
+
                 #(#functions)*
 
                 #(#methods)*
@@ -619,6 +624,10 @@ mod tests {
                         component: ::scrypto::component::Component,
                     }
                     impl Test {
+                        pub fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                            self.component.add_access_check(access_rules);
+                            self
+                        }
                         pub fn y(arg0: u32) -> u32 {
                             ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
                         }
@@ -683,6 +692,10 @@ mod tests {
                         component: ::scrypto::component::Component,
                     }
                     impl Test {
+                        pub fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                            self.component.add_access_check(access_rules);
+                            self
+                        }
                     }
                 }
             },
