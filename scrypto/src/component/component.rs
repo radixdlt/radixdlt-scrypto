@@ -6,7 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::*;
+use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};

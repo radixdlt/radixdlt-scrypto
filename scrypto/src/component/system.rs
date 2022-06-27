@@ -1,12 +1,11 @@
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::*;
-use sbor::rust::string::ToString;
-
 use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::collections::*;
+use sbor::rust::string::ToString;
 
 /// Represents the Radix Engine component subsystem.
 ///
