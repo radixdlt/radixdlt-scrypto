@@ -446,28 +446,18 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     }
 
     let output = quote! {
-        #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-        pub struct #bp_ident {
-            component_address: ::scrypto::component::ComponentAddress,
-        }
+        pub mod component {
+            use super::*;
 
-        impl #bp_ident {
-            #(#functions)*
-
-            #(#methods)*
-        }
-
-        impl From<::scrypto::component::ComponentAddress> for #bp_ident {
-            fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                Self {
-                    component_address
-                }
+            #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+            pub struct #bp_ident {
+                component_address: ::scrypto::component::ComponentAddress,
             }
-        }
 
-        impl From<#bp_ident> for ::scrypto::component::ComponentAddress {
-            fn from(a: #bp_ident) -> ::scrypto::component::ComponentAddress {
-                a.component_address
+            impl #bp_ident {
+                #(#functions)*
+
+                #(#methods)*
             }
         }
     };
@@ -619,26 +609,22 @@ mod tests {
                     };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test {
-                    component_address: ::scrypto::component::ComponentAddress,
-                }
-                impl Test {
-                    pub fn y(arg0: u32) -> u32 {
-                        ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
+
+
+                pub mod component {
+                    use super::*;
+
+                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                    pub struct Test {
+                        component_address: ::scrypto::component::ComponentAddress,
                     }
-                    pub fn x(&self, arg0: u32) -> u32 {
-                        ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0))
-                    }
-                }
-                impl From<::scrypto::component::ComponentAddress> for Test {
-                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                        Self { component_address }
-                    }
-                }
-                impl From<Test> for ::scrypto::component::ComponentAddress {
-                    fn from(a: Test) -> ::scrypto::component::ComponentAddress {
-                        a.component_address
+                    impl Test {
+                        pub fn y(arg0: u32) -> u32 {
+                            ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
+                        }
+                        pub fn x(&self, arg0: u32) -> u32 {
+                            ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0))
+                        }
                     }
                 }
             },
@@ -689,20 +675,14 @@ mod tests {
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
 
-                #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
-                pub struct Test {
-                    component_address: ::scrypto::component::ComponentAddress,
-                }
-                impl Test {
-                }
-                impl From<::scrypto::component::ComponentAddress> for Test {
-                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                        Self { component_address }
+                pub mod component {
+                    use super::*;
+
+                    #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
+                    pub struct Test {
+                        component_address: ::scrypto::component::ComponentAddress,
                     }
-                }
-                impl From<Test> for ::scrypto::component::ComponentAddress {
-                    fn from(a: Test) -> ::scrypto::component::ComponentAddress {
-                        a.component_address
+                    impl Test {
                     }
                 }
             },
