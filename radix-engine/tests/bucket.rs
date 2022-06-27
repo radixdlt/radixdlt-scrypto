@@ -8,46 +8,66 @@ use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
 
-#[test]
-fn test_bucket() {
+fn test_bucket_internal(method_name: &str) {
+    // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
     let package_address = test_runner.extract_and_publish_package("bucket");
 
+    // Act
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "BucketTest", "combine", to_struct!())
-        .call_function(package_address, "BucketTest", "split", to_struct!())
-        .call_function(package_address, "BucketTest", "borrow", to_struct!())
-        .call_function(package_address, "BucketTest", "query", to_struct!())
-        .call_function(
-            package_address,
-            "BucketTest",
-            "test_restricted_transfer",
-            to_struct!(),
-        )
-        .call_function(package_address, "BucketTest", "test_burn", to_struct!())
-        .call_function(
-            package_address,
-            "BucketTest",
-            "test_burn_freely",
-            to_struct!(),
-        )
-        .call_function(
-            package_address,
-            "BucketTest",
-            "create_empty_bucket_fungible",
-            to_struct!(),
-        )
-        .call_function(
-            package_address,
-            "BucketTest",
-            "create_empty_bucket_non_fungible",
-            to_struct!(),
-        )
+        .call_function(package_address, "BucketTest", method_name, to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+
+    // Assert
     receipt.expect_success();
+}
+
+#[test]
+fn test_bucket_combine() {
+    test_bucket_internal("combine");
+}
+
+#[test]
+fn test_bucket_split() {
+    test_bucket_internal("split");
+}
+
+#[test]
+fn test_bucket_borrow() {
+    test_bucket_internal("borrow");
+}
+
+#[test]
+fn test_bucket_query() {
+    test_bucket_internal("query");
+}
+
+#[test]
+fn test_bucket_restricted_transfer() {
+    test_bucket_internal("test_restricted_transfer");
+}
+
+#[test]
+fn test_bucket_burn() {
+    test_bucket_internal("test_burn");
+}
+
+#[test]
+fn test_bucket_burn_freely() {
+    test_bucket_internal("test_burn_freely");
+}
+
+#[test]
+fn test_bucket_empty_fungible() {
+    test_bucket_internal("create_empty_bucket_fungible");
+}
+
+#[test]
+fn test_bucket_empty_non_fungible() {
+    test_bucket_internal("create_empty_bucket_non_fungible");
 }
 
 #[test]

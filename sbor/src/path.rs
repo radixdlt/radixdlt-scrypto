@@ -72,10 +72,22 @@ impl<'a> SborValueRetriever<'a> {
         }
 
         match value {
-            Value::Struct { fields } | Value::Enum { fields, .. } => self.get_from_vector(fields),
-            Value::Array { elements, .. } | Value::Vec { elements, .. } => {
-                self.get_from_vector(elements)
-            }
+            Value::Struct { fields: vec }
+            | Value::Enum { fields: vec, .. }
+            | Value::Array { elements: vec, .. }
+            | Value::Vec { elements: vec, .. }
+            | Value::Tuple { elements: vec, .. }
+            | Value::TreeSet { elements: vec, .. }
+            | Value::TreeMap { elements: vec, .. }
+            | Value::HashSet { elements: vec, .. }
+            | Value::HashMap { elements: vec, .. } => self.get_from_vector(vec),
+            Value::Option { value } => match value.as_ref() {
+                Option::Some(value) => Option::Some(value),
+                Option::None => Option::None,
+            },
+            Value::Result { value } => match value.as_ref() {
+                Ok(result) | Err(result) => Some(result),
+            },
             _ => Option::None,
         }
     }
@@ -93,12 +105,22 @@ impl<'a> SborValueRetriever<'a> {
         }
 
         match value {
-            Value::Struct { fields } | Value::Enum { fields, .. } => {
-                self.get_from_vector_mut(fields)
-            }
-            Value::Array { elements, .. } | Value::Vec { elements, .. } => {
-                self.get_from_vector_mut(elements)
-            }
+            Value::Struct { fields: vec }
+            | Value::Enum { fields: vec, .. }
+            | Value::Array { elements: vec, .. }
+            | Value::Vec { elements: vec, .. }
+            | Value::Tuple { elements: vec, .. }
+            | Value::TreeSet { elements: vec, .. }
+            | Value::TreeMap { elements: vec, .. }
+            | Value::HashSet { elements: vec, .. }
+            | Value::HashMap { elements: vec, .. } => self.get_from_vector_mut(vec),
+            Value::Option { value } => match value.as_mut() {
+                Option::Some(value) => Option::Some(value),
+                Option::None => Option::None,
+            },
+            Value::Result { value } => match value.as_mut() {
+                Ok(result) | Err(result) => Some(result),
+            },
             _ => Option::None,
         }
     }
