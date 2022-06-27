@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct StoredLocalComponent {
-        component: crate::local_component::LocalComponent,
+        component: crate::LocalComponent,
     }
 
     impl StoredLocalComponent {
@@ -15,7 +15,7 @@ blueprint! {
         }
 
         pub fn new(secret: u32) -> crate::stored_local_component::StoredLocalComponent {
-            let component = crate::local_component::LocalComponent::new(secret);
+            let component = crate::LocalComponent::new(secret);
 
             Self { component }.instantiate()
         }

@@ -170,7 +170,11 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(module_ident: &Ident, bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<TokenStream>> {
+fn generate_dispatcher(
+    module_ident: &Ident,
+    bp_ident: &Ident,
+    items: &[ImplItem],
+) -> Result<Vec<TokenStream>> {
     let mut functions = Vec::new();
 
     for item in items {
