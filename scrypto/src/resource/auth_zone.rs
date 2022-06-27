@@ -2,7 +2,6 @@ use sbor::rust::collections::BTreeSet;
 use sbor::rust::string::ToString;
 use sbor::*;
 
-use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::Decimal;
