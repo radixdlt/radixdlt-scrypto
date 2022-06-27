@@ -9,7 +9,7 @@ scrypto = { path = "../scrypto", default-features = false }
 clap = { version = "3.1.17", features = ["derive", "cargo"] }
 hex = { version = "0.4.3", default-features = false }
 ed25519-dalek = { version = "1.0.1", default-features = false, features = ["u64_backend"]}
-secp256k1 = { version = "0.23.1", default-features = false, features = ["global-context", "bitcoin_hashes"]}
+secp256k1 = { version = "0.23.1", default-features = false, features = ["global-context"]}
 
 [features]
 # You should enable either `std` or `alloc`
