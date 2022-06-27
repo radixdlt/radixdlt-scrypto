@@ -42,8 +42,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         ));
     }
 
+    let module_ident = format_ident!("{}_impl", bp_ident);
+
     let output_mod = quote! {
-        pub mod blueprint {
+        #[allow(non_snake_case)]
+        pub mod #module_ident {
             use super::*;
 
             #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
@@ -69,7 +72,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("Generated mod: \n{}", quote! { #output_mod });
     let method_input_structs = generate_method_input_structs(bp_ident, bp_items);
 
-    let functions = generate_dispatcher(bp_ident, bp_items)?;
+    let functions = generate_dispatcher(&module_ident, bp_ident, bp_items)?;
     let output_dispatcher = quote! {
         #(#method_input_structs)*
         #(#functions)*
@@ -89,7 +92,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             use ::sbor::rust::vec::Vec;
 
             let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
-            let structure: Type = blueprint::#bp_ident::describe();
+            let structure: Type = #module_ident::#bp_ident::describe();
             let output = BlueprintAbi {
                 structure,
                 fns,
@@ -167,7 +170,7 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<TokenStream>> {
+fn generate_dispatcher(module_ident: &Ident, bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<TokenStream>> {
     let mut functions = Vec::new();
 
     for item in items {
@@ -197,7 +200,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can't have more than 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = {
+                                let #mutability state: #module_ident::#bp_ident = {
                                     let address = DataAddress::Component(component_address, ComponentOffset::State);
                                     let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
                                     ::scrypto::engine::call_engine(input)
@@ -243,7 +246,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                 // call the function
                 let stmt: Stmt = parse_quote! {
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
-                        &blueprint::#bp_ident::#ident(#(#dispatch_args),*)
+                        &#module_ident::#bp_ident::#ident(#(#dispatch_args),*)
                     );
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
@@ -524,7 +527,8 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                pub mod blueprint {
+                #[allow(non_snake_case)]
+                pub mod Test_impl {
                     use super::*;
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
@@ -574,12 +578,12 @@ mod tests {
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                     let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                    let state: blueprint::Test = {
+                    let state: Test_impl::Test = {
                         let address = DataAddress::Component(component_address, ComponentOffset::State);
                         let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
                         ::scrypto::engine::call_engine(input)
                     };
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, input.arg0));
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(&state, input.arg0));
                     rtn
                 }
 
@@ -593,7 +597,7 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(input.arg0));
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::y(input.arg0));
                     rtn
                 }
 
@@ -620,7 +624,7 @@ mod tests {
                             export_name: "Test_y".to_string(),
                         }
                     ];
-                    let structure: Type = blueprint::Test::describe();
+                    let structure: Type = Test_impl::Test::describe();
                     let output = BlueprintAbi {
                         structure,
                         fns,
@@ -669,7 +673,8 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                pub mod blueprint {
+                #[allow(non_snake_case)]
+                pub mod Test_impl {
                     use super::*;
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
@@ -700,7 +705,7 @@ mod tests {
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
                     let fns: Vec<Fn> = vec![];
-                    let structure: Type = blueprint::Test::describe();
+                    let structure: Type = Test_impl::Test::describe();
                     let output = BlueprintAbi {
                         structure,
                         fns,
