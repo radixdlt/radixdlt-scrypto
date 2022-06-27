@@ -24,9 +24,9 @@ blueprint! {
             }
             .instantiate();
 
-            let rtn: Bucket = local_component.call("recurse", vec![]);
+            let rtn_bucket = local_component.recurse();
             local_component.globalize();
-            rtn
+            rtn_bucket
         }
     }
 }

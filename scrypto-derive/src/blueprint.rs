@@ -458,9 +458,6 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
             }
 
             impl ::scrypto::component::LComponent for #bp_ident {
-                fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-                    self.component.call(method, args)
-                }
                 fn package_address(&self) -> PackageAddress {
                     self.component.package_address()
                 }
@@ -645,9 +642,6 @@ mod tests {
                     }
 
                     impl ::scrypto::component::LComponent for Test {
-                        fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-                            self.component.call(method, args)
-                        }
                         fn package_address(&self) -> PackageAddress {
                             self.component.package_address()
                         }
@@ -732,9 +726,6 @@ mod tests {
                     }
 
                     impl ::scrypto::component::LComponent for Test {
-                        fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-                            self.component.call(method, args)
-                        }
                         fn package_address(&self) -> PackageAddress {
                             self.component.package_address()
                         }

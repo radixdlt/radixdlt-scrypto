@@ -10,14 +10,14 @@ blueprint! {
             self.components
                 .get(&0u32)
                 .unwrap()
-                .call("get_secret", vec![])
+                .get_secret()
         }
 
         pub fn parent_set_secret(&mut self, next: u32) {
             self.components
                 .get(&0u32)
                 .unwrap()
-                .call("set_secret", vec![scrypto_encode(&next)])
+                .set_secret(next)
         }
 
         pub fn new(secret: u32) -> component::StoredKVLocalComponent {
@@ -35,7 +35,7 @@ blueprint! {
         pub fn call_read_on_stored_component_in_owned_component() -> ComponentAddress {
             let my_component = Self::new(12345);
 
-            let rtn: u32 = my_component.call("parent_get_secret", vec![]);
+            let rtn = my_component.parent_get_secret();
             assert_eq!(12345, rtn);
 
             my_component.globalize()
@@ -44,8 +44,8 @@ blueprint! {
         pub fn call_write_on_stored_component_in_owned_component() -> ComponentAddress {
             let my_component = Self::new(12345);
 
-            let _: () = my_component.call("parent_set_secret", vec![scrypto_encode(&99999u32)]);
-            let rtn: u32 = my_component.call("parent_get_secret", vec![]);
+            my_component.parent_set_secret(99999);
+            let rtn = my_component.parent_get_secret();
             assert_eq!(99999, rtn);
 
             my_component.globalize()

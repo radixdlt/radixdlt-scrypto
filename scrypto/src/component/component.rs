@@ -25,7 +25,6 @@ pub trait ComponentState<C: LComponent>: Encode + Decode {
 }
 
 pub trait LComponent {
-    fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T;
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;
     fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
