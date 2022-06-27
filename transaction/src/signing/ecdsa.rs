@@ -13,7 +13,7 @@ impl EcdsaPrivateKey {
     }
 
     pub fn sign(&self, msg: &[u8]) -> EcdsaSignature {
-        let h = hash(msg);
+        let h = sha256(msg);
         let m = Message::from_slice(&h.0).expect("The slice is a valid hash");
         EcdsaSignature(self.0.sign_ecdsa(m).serialize_compact())
     }
@@ -40,9 +40,8 @@ impl EcdsaPrivateKey {
 
 #[cfg(test)]
 mod tests {
-    use crate::validation::verify_ecdsa;
-
     use super::*;
+    use crate::validation::verify_ecdsa;
     use sbor::rust::str::FromStr;
     use scrypto::{
         crypto::Hash,
@@ -52,7 +51,6 @@ mod tests {
 
     #[test]
     fn sign_and_verify() {
-        // From Babylon Wallet PoC
         let test_sk = "0000000000000000000000000000000000000000000000000000000000000001";
         let test_pk = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
         let test_message = "{\"a\":\"banan\"}";
