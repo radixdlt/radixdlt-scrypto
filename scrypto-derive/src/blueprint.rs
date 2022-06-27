@@ -454,24 +454,26 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                 component: ::scrypto::component::Component,
             }
 
-            impl #bp_ident {
-                pub fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
+            impl ::scrypto::component::LocalComponent for #bp_ident {
+                fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
                     self.component.call(method, args)
                 }
-                pub fn package_address(&self) -> PackageAddress {
+                fn package_address(&self) -> PackageAddress {
                     self.component.package_address()
                 }
-                pub fn blueprint_name(&self) -> String {
+                fn blueprint_name(&self) -> String {
                     self.blueprint_name()
                 }
-                pub fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
                     self.component.add_access_check(access_rules);
                     self
                 }
-                pub fn globalize(self) -> ComponentAddress {
+                fn globalize(self) -> ComponentAddress {
                     self.component.globalize()
                 }
+            }
 
+            impl #bp_ident {
                 #(#functions)*
 
                 #(#methods)*
@@ -635,23 +637,27 @@ mod tests {
                     pub struct Test {
                         component: ::scrypto::component::Component,
                     }
-                    impl Test {
-                        pub fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
+
+                    impl ::scrypto::component::LocalComponent for Test {
+                        fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
                             self.component.call(method, args)
                         }
-                        pub fn package_address(&self) -> PackageAddress {
+                        fn package_address(&self) -> PackageAddress {
                             self.component.package_address()
                         }
-                        pub fn blueprint_name(&self) -> String {
+                        fn blueprint_name(&self) -> String {
                             self.blueprint_name()
                         }
-                        pub fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                        fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
                             self.component.add_access_check(access_rules);
                             self
                         }
-                        pub fn globalize(self) -> ComponentAddress {
+                        fn globalize(self) -> ComponentAddress {
                             self.component.globalize()
                         }
+                    }
+
+                    impl Test {
                         pub fn y(arg0: u32) -> u32 {
                             ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
                         }
@@ -715,23 +721,27 @@ mod tests {
                     pub struct Test {
                         component: ::scrypto::component::Component,
                     }
-                    impl Test {
-                        pub fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
+
+                    impl ::scrypto::component::LocalComponent for Test {
+                        fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
                             self.component.call(method, args)
                         }
-                        pub fn package_address(&self) -> PackageAddress {
+                        fn package_address(&self) -> PackageAddress {
                             self.component.package_address()
                         }
-                        pub fn blueprint_name(&self) -> String {
+                        fn blueprint_name(&self) -> String {
                             self.blueprint_name()
                         }
-                        pub fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                        fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
                             self.component.add_access_check(access_rules);
                             self
                         }
-                        pub fn globalize(self) -> ComponentAddress {
+                        fn globalize(self) -> ComponentAddress {
                             self.component.globalize()
                         }
+                    }
+
+                    impl Test {
                     }
                 }
             },
