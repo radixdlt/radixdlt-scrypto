@@ -2,7 +2,7 @@ use sbor::rust::borrow::ToOwned;
 use sbor::rust::vec::Vec;
 use sbor::*;
 
-use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::buffer::scrypto_encode;
 use crate::bytes_vec_to_struct;
 use crate::component::*;
 use crate::core::*;
@@ -44,12 +44,12 @@ impl Runtime {
     }
 
     /// Invokes a function on a blueprint.
-    pub fn call_function<S: AsRef<str>>(
+    pub fn call_function<S: AsRef<str>, T: Decode>(
         package_address: PackageAddress,
         blueprint_name: S,
         function: S,
         args: Vec<Vec<u8>>,
-    ) -> Vec<u8> {
+    ) -> T {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::Scrypto(ScryptoActor::Blueprint(
                 package_address,
@@ -58,25 +58,21 @@ impl Runtime {
             function.as_ref().to_string(),
             bytes_vec_to_struct!(args),
         );
-        let output: Vec<u8> = call_engine(input);
-
-        output
+        call_engine(input)
     }
 
     /// Invokes a method on a component.
-    pub fn call_method<S: AsRef<str>>(
+    pub fn call_method<S: AsRef<str>, T: Decode>(
         component_address: ComponentAddress,
         method: S,
         args: Vec<Vec<u8>>,
-    ) -> Vec<u8> {
+    ) -> T {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::Scrypto(ScryptoActor::Component(component_address)),
             method.as_ref().to_string(),
             bytes_vec_to_struct!(args),
         );
-        let output: Vec<u8> = call_engine(input);
-
-        output
+        call_engine(input)
     }
 
     /// Returns the transaction hash.
@@ -86,8 +82,7 @@ impl Runtime {
             "transaction_hash".to_string(),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     /// Returns the current epoch number.
@@ -97,7 +92,6 @@ impl Runtime {
             "current_epoch".to_string(),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 }

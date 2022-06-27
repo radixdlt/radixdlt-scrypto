@@ -6,7 +6,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::scrypto_decode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine, types::ProofId};
 use crate::math::*;
