@@ -72,13 +72,30 @@ impl ScryptoValue {
         })
     }
 
-    pub fn stored_value_ids(&self) -> HashSet<StoredValueId> {
+    pub fn value_ids(&self) -> HashSet<ValueId> {
         let mut value_ids = HashSet::new();
         for vault_id in &self.vault_ids {
-            value_ids.insert(StoredValueId::VaultId(vault_id.clone()));
+            value_ids.insert(ValueId::vault_id(*vault_id));
         }
         for kv_store_id in &self.kv_store_ids {
-            value_ids.insert(StoredValueId::KeyValueStoreId(kv_store_id.clone()));
+            value_ids.insert(ValueId::kv_store_id(*kv_store_id));
+        }
+        for (bucket_id, _) in &self.bucket_ids {
+            value_ids.insert(ValueId::Transient(TransientValueId::Bucket(*bucket_id)));
+        }
+        for (proof_id, _) in &self.proof_ids {
+            value_ids.insert(ValueId::Transient(TransientValueId::Proof(*proof_id)));
+        }
+        value_ids
+    }
+
+    pub fn stored_value_ids(&self) -> HashSet<ValueId> {
+        let mut value_ids = HashSet::new();
+        for vault_id in &self.vault_ids {
+            value_ids.insert(ValueId::vault_id(*vault_id));
+        }
+        for kv_store_id in &self.kv_store_ids {
+            value_ids.insert(ValueId::kv_store_id(*kv_store_id));
         }
         value_ids
     }

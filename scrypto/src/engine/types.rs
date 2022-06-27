@@ -14,16 +14,68 @@ pub use crate::resource::NonFungibleAddress;
 pub use crate::resource::NonFungibleId;
 pub use crate::resource::ResourceAddress;
 pub use crate::resource::ResourceType;
+pub use crate::sbor::*;
 
 pub type KeyValueStoreId = (Hash, u32);
+pub type VaultId = (Hash, u32);
 pub type BucketId = u32;
 pub type ProofId = u32;
-pub type VaultId = (Hash, u32);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+pub enum TransientValueId {
+    Bucket(BucketId),
+    Proof(ProofId),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum StoredValueId {
     KeyValueStoreId(KeyValueStoreId),
     VaultId(VaultId),
+}
+
+impl Into<(Hash, u32)> for StoredValueId {
+    fn into(self) -> KeyValueStoreId {
+        match self {
+            StoredValueId::KeyValueStoreId(id) => id,
+            StoredValueId::VaultId(id) => id,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
+pub enum ValueId {
+    Transient(TransientValueId),
+    Stored(StoredValueId),
+}
+
+impl ValueId {
+    pub fn kv_store_id(id: KeyValueStoreId) -> Self {
+        ValueId::Stored(StoredValueId::KeyValueStoreId(id))
+    }
+
+    pub fn vault_id(id: VaultId) -> Self {
+        ValueId::Stored(StoredValueId::VaultId(id))
+    }
+}
+
+impl Into<(Hash, u32)> for ValueId {
+    fn into(self) -> KeyValueStoreId {
+        match self {
+            ValueId::Stored(StoredValueId::KeyValueStoreId(id)) => id,
+            ValueId::Stored(StoredValueId::VaultId(id)) => id,
+            _ => panic!("Not a stored id"),
+        }
+    }
+}
+
+impl Into<u32> for ValueId {
+    fn into(self) -> u32 {
+        match self {
+            ValueId::Transient(TransientValueId::Bucket(id)) => id,
+            ValueId::Transient(TransientValueId::Proof(id)) => id,
+            _ => panic!("Not a transient id"),
+        }
+    }
 }
 
 pub use crate::constants::*;

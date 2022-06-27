@@ -654,25 +654,29 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     pub fn insert_objects_into_component(
         &mut self,
-        values: Vec<StoredValue>,
+        values: HashMap<StoredValueId, StoredValue>,
         component_address: ComponentAddress,
     ) {
-        for value in values {
+        for (id, value) in values {
             match value {
-                StoredValue::Vault(vault_id, vault) => {
-                    self.create_uuid_value_2((component_address, vault_id), vault);
+                StoredValue::Vault(vault) => {
+                    let addr: (ComponentAddress, VaultId) = (component_address, id.into());
+                    self.create_uuid_value_2(addr, vault);
                 }
                 StoredValue::KeyValueStore {
-                    id,
                     store,
                     child_values,
                 } => {
+                    let id = id.into();
                     self.create_key_space(component_address, id);
                     let parent_address = Address::KeyValueStore(component_address, id);
                     for (k, v) in store.store {
                         self.set_key_value(parent_address.clone(), k, Some(v));
                     }
-                    let child_values = child_values.into_values().map(|v| v.into_inner()).collect();
+                    let child_values = child_values
+                        .into_iter()
+                        .map(|(id, v)| (id, v.into_inner()))
+                        .collect();
                     self.insert_objects_into_component(child_values, component_address);
                 }
             }

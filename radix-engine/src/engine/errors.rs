@@ -60,11 +60,12 @@ pub enum RuntimeError {
     ResourceManagerNotFound(ResourceAddress),
 
     InvalidDataWrite,
-    ValueNotFound(StoredValueId),
+    ValueNotFound(ValueId),
 
     /// Key Value Store does not exist.
     KeyValueStoreNotFound(KeyValueStoreId),
 
+    MovingInvalidType,
     StoredValueRemoved(StoredValueId),
     StoredValueChangedChildren,
 
@@ -118,7 +119,7 @@ pub enum RuntimeError {
     CantMoveLockedBucket,
 
     /// Can't move restricted proof.
-    CantMoveRestrictedProof(ProofId),
+    CantMoveRestrictedProof(ValueId),
 
     InvalidInvocation,
 

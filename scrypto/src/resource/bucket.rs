@@ -8,6 +8,7 @@ use sbor::*;
 use crate::abi::*;
 use crate::buffer::scrypto_encode;
 use crate::core::SNodeRef;
+use crate::engine::types::{TransientValueId, ValueId};
 use crate::engine::{api::*, call_engine, types::BucketId};
 use crate::math::*;
 use crate::misc::*;
@@ -60,7 +61,7 @@ impl Bucket {
     }
 
     sfunctions! {
-        SNodeRef::Bucket(self.0) => {
+        SNodeRef::Consumed(ValueId::Transient(TransientValueId::Bucket(self.0))) => {
            pub fn burn(self) -> () {
                 ConsumingBucketBurnInput {}
             }

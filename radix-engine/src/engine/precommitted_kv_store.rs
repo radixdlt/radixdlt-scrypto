@@ -9,11 +9,10 @@ use crate::model::*;
 #[derive(Debug)]
 pub enum StoredValue {
     KeyValueStore {
-        id: KeyValueStoreId,
         store: PreCommittedKeyValueStore,
         child_values: HashMap<StoredValueId, RefCell<StoredValue>>,
     },
-    Vault(VaultId, Vault),
+    Vault(Vault),
 }
 
 impl StoredValue {
@@ -33,7 +32,7 @@ impl StoredValue {
 
     pub fn vault(&self) -> &Vault {
         match self {
-            StoredValue::Vault(_, vault) => vault,
+            StoredValue::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
         }
     }
@@ -97,16 +96,10 @@ impl StoredValue {
         }
     }
 
-    pub fn insert_children(&mut self, values: Vec<StoredValue>) {
+    pub fn insert_children(&mut self, values: HashMap<StoredValueId, StoredValue>) {
         match self {
             StoredValue::KeyValueStore { child_values, .. } => {
-                for value in values {
-                    let id = match &value {
-                        StoredValue::KeyValueStore { id, .. } => {
-                            StoredValueId::KeyValueStoreId(*id)
-                        }
-                        StoredValue::Vault(id, _) => StoredValueId::VaultId(*id),
-                    };
+                for (id, value) in values {
                     child_values.insert(id, RefCell::new(value));
                 }
             }

@@ -3,7 +3,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::core::ScryptoActor;
-use crate::engine::types::{BucketId, KeyValueStoreId, ProofId, VaultId};
+use crate::engine::types::{BucketId, KeyValueStoreId, ProofId, ValueId, VaultId};
 use crate::prelude::ComponentAddress;
 use crate::resource::ResourceAddress;
 
@@ -16,10 +16,9 @@ pub enum SNodeRef {
     Scrypto(ScryptoActor),
     ResourceStatic,
     ResourceRef(ResourceAddress),
-    Bucket(BucketId),
+    Consumed(ValueId),
     BucketRef(BucketId),
     ProofRef(ProofId),
-    Proof(ProofId),
     VaultRef(VaultId),
     TransactionProcessor,
 }

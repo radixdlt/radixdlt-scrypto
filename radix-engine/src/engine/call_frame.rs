@@ -1,4 +1,3 @@
-use sbor::path::SborPath;
 use sbor::rust::boxed::Box;
 use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
@@ -53,9 +52,7 @@ pub struct CallFrame<
     wasm_instrumenter: &'w mut WasmInstrumenter,
 
     /// Owned Values
-    buckets: HashMap<BucketId, RefCell<Bucket>>,
-    proofs: HashMap<ProofId, RefCell<Proof>>,
-    owned_values: HashMap<StoredValueId, RefCell<StoredValue>>,
+    owned_values: HashMap<ValueId, RefCell<REValue>>,
     worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
 
@@ -74,6 +71,45 @@ pub struct CallFrame<
     fee_table: Option<FeeTable>,
 
     phantom: PhantomData<I>,
+}
+
+#[derive(Debug)]
+pub enum TransientValue {
+    Bucket(Bucket),
+    Proof(Proof),
+}
+
+#[derive(Debug)]
+pub enum REValue {
+    Stored(StoredValue),
+    Transient(TransientValue),
+}
+
+impl REValue {
+    fn to_stored(&mut self) -> &mut StoredValue {
+        match self {
+            REValue::Stored(stored_value) => stored_value,
+            _ => panic!("Expected a stored value"),
+        }
+    }
+}
+
+impl Into<StoredValue> for REValue {
+    fn into(self) -> StoredValue {
+        match self {
+            REValue::Stored(stored_value) => stored_value,
+            _ => panic!("Expected a stored value"),
+        }
+    }
+}
+
+impl Into<TransientValue> for REValue {
+    fn into(self) -> TransientValue {
+        match self {
+            REValue::Transient(transient_value) => transient_value,
+            _ => panic!("Expected a stored value"),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -103,18 +139,42 @@ fn verify_stored_value_update(
 ) -> Result<(), RuntimeError> {
     // TODO: optimize intersection search
     for old_id in old.iter() {
-        if !missing.contains(old_id) {
+        if !missing.contains(&old_id) {
             return Err(RuntimeError::StoredValueRemoved(old_id.clone()));
         }
     }
 
     for missing_id in missing.iter() {
         if !old.contains(missing_id) {
-            return Err(RuntimeError::ValueNotFound(missing_id.clone()));
+            return Err(RuntimeError::ValueNotFound(ValueId::Stored(*missing_id)));
         }
     }
 
     Ok(())
+}
+
+fn to_stored_ids(ids: HashSet<ValueId>) -> Result<HashSet<StoredValueId>, RuntimeError> {
+    let mut stored_ids = HashSet::new();
+    for id in ids {
+        match id {
+            ValueId::Stored(stored_id) => stored_ids.insert(stored_id),
+            _ => return Err(RuntimeError::MovingInvalidType),
+        };
+    }
+    Ok(stored_ids)
+}
+
+fn to_stored_values(
+    values: HashMap<ValueId, REValue>,
+) -> Result<HashMap<StoredValueId, StoredValue>, RuntimeError> {
+    let mut stored_values = HashMap::new();
+    for (id, value) in values {
+        match id {
+            ValueId::Stored(stored_id) => stored_values.insert(stored_id, value.into()),
+            _ => return Err(RuntimeError::MovingInvalidType),
+        };
+    }
+    Ok(stored_values)
 }
 
 fn verify_stored_value(value: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -143,17 +203,61 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-pub enum ConsumedSNodeState {
-    Bucket(Bucket),
-    Proof(Proof),
+pub enum REValueRef<'a> {
+    Owned(RefMut<'a, REValue>),
+    Ref(RefMut<'a, StoredValue>),
+}
+
+impl<'a> REValueRef<'a> {
+    fn to_stored_mut(&mut self) -> &mut StoredValue {
+        match self {
+            REValueRef::Owned(value) => match value.deref_mut() {
+                REValue::Stored(stored_value) => stored_value,
+                _ => panic!("Expecting to be stored value"),
+            },
+            REValueRef::Ref(stored_value) => stored_value,
+        }
+    }
+
+    fn to_mut_vault(&mut self) -> &mut Vault {
+        match self {
+            REValueRef::Owned(value) => match value.deref_mut() {
+                REValue::Stored(StoredValue::Vault(vault)) => vault,
+                _ => panic!("Expecting to be a vault"),
+            },
+            REValueRef::Ref(stored_value) => match stored_value.deref_mut() {
+                StoredValue::Vault(vault) => vault,
+                _ => panic!("Expecting to be a vault"),
+            },
+        }
+    }
+
+    fn kv_store(&self) -> &PreCommittedKeyValueStore {
+        match self {
+            REValueRef::Owned(value) => match value.deref() {
+                REValue::Stored(stored_value) => stored_value.kv_store(),
+                _ => panic!("Expecting to be a vault"),
+            },
+            REValueRef::Ref(stored_value) => stored_value.kv_store(),
+        }
+    }
+
+    fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
+        match self {
+            REValueRef::Owned(value) => match value.deref_mut() {
+                REValue::Stored(stored_value) => stored_value.kv_store_mut(),
+                _ => panic!("Expecting to be a vault"),
+            },
+            REValueRef::Ref(stored_value) => stored_value.kv_store_mut(),
+        }
+    }
 }
 
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Bucket(BucketId, RefMut<'a, Bucket>),
-    Proof(ProofId, RefMut<'a, Proof>),
-    Vault(RefMut<'a, StoredValue>),
+    ValueRef(ValueId, RefMut<'a, REValue>),
+    Vault(VaultId, REValueRef<'a>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
 }
 
@@ -166,7 +270,7 @@ pub enum StaticSNodeState {
 
 pub enum SNodeState<'a> {
     Static(StaticSNodeState),
-    Consumed(ConsumedSNodeState),
+    Consumed(TransientValue),
     Borrowed(BorrowedSNodeState<'a>),
     Tracked(
         Address,
@@ -177,11 +281,10 @@ pub enum SNodeState<'a> {
 
 pub enum SNodeExecution<'a> {
     Static(StaticSNodeState),
-    Consumed(ConsumedSNodeState),
+    Consumed(TransientValue),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
-    Bucket(BucketId, RefMut<'a, Bucket>),
-    Proof(ProofId, RefMut<'a, Proof>),
+    ValueRef(ValueId, RefMut<'a, REValue>),
     Vault(VaultId, &'a mut Vault),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
     Resource(Address, &'a mut ResourceManager),
@@ -189,7 +292,7 @@ pub enum SNodeExecution<'a> {
 }
 
 enum SubstateEntry<'a> {
-    KeyValueStoreRef(&'a mut StoredValue, ScryptoValue),
+    KeyValueStoreRef(REValueRef<'a>, ScryptoValue),
     KeyValueStoreTracked(ComponentAddress, KeyValueStoreId, ScryptoValue),
     Component(ComponentAddress, &'a mut Component),
     ComponentInfo(ComponentAddress, &'a Component),
@@ -233,10 +336,10 @@ impl<'a> SNodeExecution<'a> {
                     .map_err(RuntimeError::ResourceManagerError),
             },
             SNodeExecution::Consumed(state) => match state {
-                ConsumedSNodeState::Bucket(bucket) => bucket
+                TransientValue::Bucket(bucket) => bucket
                     .consuming_main(fn_ident, input, system)
                     .map_err(RuntimeError::BucketError),
-                ConsumedSNodeState::Proof(proof) => proof
+                TransientValue::Proof(proof) => proof
                     .main_consume(fn_ident, input)
                     .map_err(RuntimeError::ProofError),
             },
@@ -249,12 +352,15 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::Blueprint(info, package) => {
                 package.invoke(&info, fn_ident, input, system)
             }
-            SNodeExecution::Bucket(bucket_id, mut bucket) => bucket
-                .main(bucket_id, fn_ident, input, system)
-                .map_err(RuntimeError::BucketError),
-            SNodeExecution::Proof(_id, mut proof) => proof
-                .main(fn_ident, input, system)
-                .map_err(RuntimeError::ProofError),
+            SNodeExecution::ValueRef(value_id, mut value) => match value.deref_mut() {
+                REValue::Transient(TransientValue::Bucket(bucket)) => bucket
+                    .main(value_id.into(), fn_ident, input, system)
+                    .map_err(RuntimeError::BucketError),
+                REValue::Transient(TransientValue::Proof(proof)) => proof
+                    .main(fn_ident, input, system)
+                    .map_err(RuntimeError::ProofError),
+                _ => panic!("Unexpected value to execute"),
+            },
             SNodeExecution::Vault(vault_id, vault) => vault
                 .main(vault_id, fn_ident, input, system)
                 .map_err(RuntimeError::VaultError),
@@ -266,12 +372,6 @@ impl<'a> SNodeExecution<'a> {
             }
         }
     }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum MoveMethod {
-    AsReturn,
-    AsArgument,
 }
 
 impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
@@ -319,7 +419,6 @@ where
             ))),
             Some(RefCell::new(Worktop::new())),
             HashMap::new(),
-            HashMap::new(),
             None,
             cost_unit_counter,
             fee_table,
@@ -335,20 +434,14 @@ where
         wasm_instrumenter: &'w mut WasmInstrumenter,
         auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<RefCell<Worktop>>,
-        buckets: HashMap<BucketId, Bucket>,
-        proofs: HashMap<ProofId, Proof>,
+        owned_values: HashMap<ValueId, REValue>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
     ) -> Self {
-        let mut celled_buckets = HashMap::new();
-        for (id, b) in buckets {
-            celled_buckets.insert(id, RefCell::new(b));
-        }
-
-        let mut celled_proofs = HashMap::new();
-        for (id, proof) in proofs {
-            celled_proofs.insert(id, RefCell::new(proof));
+        let mut celled_owned_values = HashMap::new();
+        for (id, value) in owned_values {
+            celled_owned_values.insert(id, RefCell::new(value));
         }
 
         Self {
@@ -358,9 +451,7 @@ where
             track,
             wasm_engine,
             wasm_instrumenter,
-            buckets: celled_buckets,
-            proofs: celled_proofs,
-            owned_values: HashMap::new(),
+            owned_values: celled_owned_values,
             refed_values: HashMap::new(),
             refed_components: HashMap::new(),
             worktop,
@@ -377,30 +468,32 @@ where
         let mut success = true;
         let mut resource = ResourceFailure::Unknown;
 
-        for (bucket_id, ref_bucket) in &self.buckets {
-            trace!(
-                self,
-                Level::Warn,
-                "Dangling bucket: {}, {:?}",
-                bucket_id,
-                ref_bucket
-            );
-            resource = ResourceFailure::Resource(ref_bucket.borrow().resource_address());
-            success = false;
-        }
-
-        let values: HashMap<StoredValueId, StoredValue> = self
+        let values: HashMap<ValueId, REValue> = self
             .owned_values
             .drain()
             .map(|(id, c)| (id, c.into_inner()))
             .collect();
         for (_, value) in values {
             trace!(self, Level::Warn, "Dangling value: {:?}", value);
-            resource = match value {
-                StoredValue::Vault(_, vault) => ResourceFailure::Resource(vault.resource_address()),
-                StoredValue::KeyValueStore { .. } => ResourceFailure::UnclaimedKeyValueStore,
+            let some_resource_failure = match value {
+                REValue::Stored(StoredValue::Vault(vault)) => {
+                    Some(ResourceFailure::Resource(vault.resource_address()))
+                }
+                REValue::Stored(StoredValue::KeyValueStore { .. }) => {
+                    Some(ResourceFailure::UnclaimedKeyValueStore)
+                }
+                REValue::Transient(TransientValue::Bucket(bucket)) => {
+                    Some(ResourceFailure::Resource(bucket.resource_address()))
+                }
+                REValue::Transient(TransientValue::Proof(proof)) => {
+                    proof.drop();
+                    None
+                }
             };
-            success = false;
+            if let Some(resource_failure) = some_resource_failure {
+                resource = resource_failure;
+                success = false;
+            }
         }
 
         if let Some(ref_worktop) = &self.worktop {
@@ -449,87 +542,13 @@ where
         Ok(())
     }
 
-    /// Sends buckets to another component/blueprint, either as argument or return
-    fn send_buckets(
-        from: &mut HashMap<BucketId, RefCell<Bucket>>,
-        bucket_ids: &HashMap<BucketId, SborPath>,
-    ) -> Result<HashMap<BucketId, Bucket>, RuntimeError> {
-        let mut buckets = HashMap::new();
-        for (bucket_id, _) in bucket_ids {
-            let bucket = from
-                .remove(bucket_id)
-                .ok_or(RuntimeError::BucketNotFound(*bucket_id))?
-                .into_inner();
-            if bucket.is_locked() {
-                return Err(RuntimeError::CantMoveLockedBucket);
-            }
-            buckets.insert(*bucket_id, bucket);
-        }
-        Ok(buckets)
-    }
-
-    /// Sends proofs to another component/blueprint, either as argument or return
-    fn send_vaults(
-        &mut self,
-        vault_ids: &HashSet<VaultId>,
-    ) -> Result<HashMap<VaultId, Vault>, RuntimeError> {
-        let mut vault_ids_to_take = HashSet::new();
-        for vault_id in vault_ids {
-            vault_ids_to_take.insert(StoredValueId::VaultId(*vault_id));
-        }
-        let vaults_to_take = self.take_set(&vault_ids_to_take)?;
-
-        let mut vaults = HashMap::new();
-        for vault_to_take in vaults_to_take {
-            match vault_to_take {
-                StoredValue::Vault(vault_id, vault) => {
-                    vaults.insert(vault_id, vault);
-                }
-                _ => panic!("Expected vault but was {:?}", vault_to_take),
-            }
-        }
-
-        Ok(vaults)
-    }
-
-    /// Sends proofs to another component/blueprint, either as argument or return
-    fn send_proofs(
-        from: &mut HashMap<ProofId, RefCell<Proof>>,
-        proof_ids: &HashMap<ProofId, SborPath>,
-        method: MoveMethod,
-    ) -> Result<HashMap<ProofId, Proof>, RuntimeError> {
-        let mut proofs = HashMap::new();
-        for (proof_id, _) in proof_ids {
-            let mut proof = from
-                .remove(proof_id)
-                .ok_or(RuntimeError::ProofNotFound(*proof_id))?
-                .into_inner();
-            if proof.is_restricted() {
-                return Err(RuntimeError::CantMoveRestrictedProof(*proof_id));
-            }
-            if matches!(method, MoveMethod::AsArgument) {
-                proof.change_to_restricted();
-            }
-            proofs.insert(*proof_id, proof);
-        }
-        Ok(proofs)
-    }
-
     pub fn run(
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'p>,
         fn_ident: &str,
         input: ScryptoValue,
-    ) -> Result<
-        (
-            ScryptoValue,
-            HashMap<BucketId, Bucket>,
-            HashMap<ProofId, Proof>,
-            HashMap<VaultId, Vault>,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(ScryptoValue, HashMap<ValueId, REValue>), RuntimeError> {
         let remaining_cost_units = self.cost_unit_counter().remaining();
         trace!(
             self,
@@ -557,18 +576,13 @@ where
                 BorrowedSNodeState::Blueprint(info, package) => {
                     SNodeExecution::Blueprint(info, package)
                 }
-                BorrowedSNodeState::Bucket(bucket_id, bucket) => {
-                    SNodeExecution::Bucket(bucket_id, bucket)
+                BorrowedSNodeState::ValueRef(value_id, value) => {
+                    SNodeExecution::ValueRef(value_id, value)
                 }
-                BorrowedSNodeState::Proof(proof_id, proof) => {
-                    SNodeExecution::Proof(proof_id, proof)
-                }
-                BorrowedSNodeState::Vault(value) => {
+                BorrowedSNodeState::Vault(vault_id, value) => {
                     ref_container = Some(value);
-                    match ref_container.as_mut().unwrap().deref_mut() {
-                        StoredValue::Vault(id, vault) => SNodeExecution::Vault(*id, vault),
-                        _ => panic!("Should be a vault"),
-                    }
+                    let vault = ref_container.as_mut().unwrap().to_mut_vault();
+                    SNodeExecution::Vault(vault_id, vault)
                 }
             },
             SNodeState::Tracked(address, value, mut meta) => match value {
@@ -603,19 +617,18 @@ where
             self.track.return_borrowed_global_mut_value(address, value);
         }
 
+        // Prevent vaults/kvstores from being returned
         self.process_return_data(snode_ref, &output)?;
 
-        // figure out what buckets and resources to return
-        let moving_buckets = Self::send_buckets(&mut self.buckets, &output.bucket_ids)?;
-        let moving_proofs =
-            Self::send_proofs(&mut self.proofs, &output.proof_ids, MoveMethod::AsReturn)?;
-        let moving_vaults = self.send_vaults(&output.vault_ids)?;
-
-        // drop proofs and check resource leak
-        for (_, proof) in self.proofs.drain() {
-            proof.into_inner().drop();
+        // Take values to return
+        let values_to_take = output.value_ids();
+        let (taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::ValueNotFound(missing_value));
         }
 
+        // drop proofs and check resource leak
         if self.auth_zone.is_some() {
             self.invoke_snode(
                 SNodeRef::AuthZoneRef,
@@ -623,7 +636,6 @@ where
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
-
         self.check_resource()?;
 
         let remaining_cost_units = self.cost_unit_counter().remaining();
@@ -634,7 +646,7 @@ where
             remaining_cost_units
         );
 
-        Ok((output, moving_buckets, moving_proofs, moving_vaults))
+        Ok((output, taken_values))
     }
 
     fn cost_unit_counter_helper(counter: &mut Option<CostUnitCounter>) -> &mut CostUnitCounter {
@@ -661,80 +673,52 @@ where
 
     fn take_available_values(
         &mut self,
-        value_ids: HashSet<StoredValueId>,
-    ) -> (HashMap<StoredValueId, StoredValue>, HashSet<StoredValueId>) {
-        let (taken, missing) = self.take_available(value_ids);
-        for (_, value) in &taken {
-            for id in value.all_descendants() {
-                self.refed_values.remove(&id);
-            }
-        }
-        (taken, missing)
-    }
+        value_ids: HashSet<ValueId>,
+    ) -> Result<(HashMap<ValueId, REValue>, HashSet<ValueId>), RuntimeError> {
+        let (taken, missing) = {
+            let mut taken_values = HashMap::new();
+            let mut missing_values = HashSet::new();
 
-    fn take_values(
-        &mut self,
-        value_ids: &HashSet<StoredValueId>,
-    ) -> Result<Vec<StoredValue>, RuntimeError> {
-        let values = self.take_set(value_ids)?;
-        for value in &values {
-            for id in value.all_descendants() {
-                self.refed_values.remove(&id);
-            }
-        }
-        Ok(values)
-    }
+            for id in value_ids {
+                let maybe = self.owned_values.remove(&id);
+                if let Some(celled_value) = maybe {
+                    let value = celled_value.into_inner();
+                    match &value {
+                        REValue::Transient(TransientValue::Bucket(bucket)) => {
+                            if bucket.is_locked() {
+                                return Err(RuntimeError::CantMoveLockedBucket);
+                            }
+                        }
+                        REValue::Transient(TransientValue::Proof(proof)) => {
+                            if proof.is_restricted() {
+                                return Err(RuntimeError::CantMoveRestrictedProof(id));
+                            }
+                        }
+                        _ => {}
+                    }
 
-    pub fn take_available(
-        &mut self,
-        other: HashSet<StoredValueId>,
-    ) -> (HashMap<StoredValueId, StoredValue>, HashSet<StoredValueId>) {
-        let mut taken_values = HashMap::new();
-        let mut missing_values = HashSet::new();
-
-        for id in other {
-            let maybe = self.owned_values.remove(&id);
-            if let Some(value) = maybe {
-                taken_values.insert(id, value.into_inner());
-            } else {
-                missing_values.insert(id);
-            }
-        }
-
-        (taken_values, missing_values)
-    }
-
-    pub fn take_set(
-        &mut self,
-        other: &HashSet<StoredValueId>,
-    ) -> Result<Vec<StoredValue>, RuntimeError> {
-        let mut taken_values = Vec::new();
-
-        for id in other {
-            let value = self
-                .owned_values
-                .remove(id)
-                .ok_or(RuntimeError::ValueNotFound(*id))?
-                .into_inner();
-            taken_values.push(value);
-        }
-
-        Ok(taken_values)
-    }
-
-    pub fn get_owned_kv_store_mut<'a>(
-        owned_values: &'a mut HashMap<StoredValueId, RefCell<StoredValue>>,
-        kv_store_id: &KeyValueStoreId,
-    ) -> Option<&'a mut PreCommittedKeyValueStore> {
-        owned_values
-            .get_mut(&StoredValueId::KeyValueStoreId(*kv_store_id))
-            .map(|v| {
-                let stored_value = v.get_mut();
-                match stored_value {
-                    StoredValue::KeyValueStore { store, .. } => store,
-                    _ => panic!("Expected KV store"),
+                    taken_values.insert(id, value);
+                } else {
+                    missing_values.insert(id);
                 }
-            })
+            }
+
+            (taken_values, missing_values)
+        };
+
+        // Moved values must have their references removed
+        for (_, value) in &taken {
+            match value {
+                REValue::Stored(stored_value) => {
+                    for id in stored_value.all_descendants() {
+                        self.refed_values.remove(&id);
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        Ok((taken, missing))
     }
 }
 
@@ -766,22 +750,24 @@ where
             &fn_ident
         );
 
+        // Prevent vaults/kvstores from being moved
         Self::process_call_data(&input)?;
 
         // Figure out what buckets and proofs to move from this process
-        let mut moving_buckets = HashMap::new();
-        let mut moving_proofs = HashMap::new();
-        moving_buckets.extend(Self::send_buckets(&mut self.buckets, &input.bucket_ids)?);
-        moving_proofs.extend(Self::send_proofs(
-            &mut self.proofs,
-            &input.proof_ids,
-            MoveMethod::AsArgument,
-        )?);
-        for bucket in &moving_buckets {
-            trace!(self, Level::Debug, "Sending bucket: {:?}", bucket);
+        let values_to_take = input.value_ids();
+        let (mut taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::ValueNotFound(missing_value));
         }
-        for proof in &moving_proofs {
-            trace!(self, Level::Debug, "Sending proof: {:?}", proof);
+
+        // Internal state update to taken values
+        for (_, value) in &mut taken_values {
+            trace!(self, Level::Debug, "Sending value: {:?}", value);
+            match value {
+                REValue::Transient(TransientValue::Proof(proof)) => proof.change_to_restricted(),
+                _ => {}
+            }
         }
 
         // Authorization and state load
@@ -792,6 +778,34 @@ where
             }
             SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
             SNodeRef::SystemStatic => Ok((Static(StaticSNodeState::System), vec![])),
+            SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
+            SNodeRef::Consumed(value_id) => {
+                let value = self
+                    .owned_values
+                    .remove(value_id)
+                    .ok_or(RuntimeError::ValueNotFound(*value_id))?
+                    .into_inner();
+
+                let method_auths = match &value {
+                    REValue::Transient(TransientValue::Bucket(bucket)) => {
+                        let resource_address = bucket.resource_address();
+                        let substate_value = self
+                            .track
+                            .borrow_global_value(resource_address.clone())
+                            .expect("There should be no problem retrieving resource manager");
+                        let resource_manager = match substate_value {
+                            SubstateValue::Resource(resource_manager) => resource_manager,
+                            _ => panic!("Value is not a resource manager"),
+                        };
+                        let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
+                        vec![method_auth.clone()]
+                    }
+                    REValue::Transient(TransientValue::Proof(_)) => vec![],
+                    _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
+                };
+
+                Ok((Consumed(value.into()), method_auths))
+            }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
                     let borrowed = auth_zone.borrow_mut();
@@ -807,6 +821,50 @@ where
                 } else {
                     Err(RuntimeError::WorktopDoesNotExist)
                 }
+            }
+            SNodeRef::ResourceRef(resource_address) => {
+                let resman_value = self
+                    .track
+                    .borrow_global_mut_value(resource_address.clone())
+                    .map_err(|e| match e {
+                        TrackError::NotFound => {
+                            RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                        }
+                        TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
+                    })?;
+
+                let method_auth = resman_value
+                    .resource_manager()
+                    .get_auth(&fn_ident, &input)
+                    .clone();
+                Ok((
+                    Tracked(resource_address.clone().into(), resman_value, None),
+                    vec![method_auth],
+                ))
+            }
+            SNodeRef::BucketRef(bucket_id) => {
+                let value_id = ValueId::Transient(TransientValueId::Bucket(*bucket_id));
+                let bucket_cell = self
+                    .owned_values
+                    .get(&value_id)
+                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
+                let bucket = bucket_cell.borrow_mut();
+                Ok((
+                    Borrowed(BorrowedSNodeState::ValueRef(value_id, bucket)),
+                    vec![],
+                ))
+            }
+            SNodeRef::ProofRef(proof_id) => {
+                let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
+                let proof_cell = self
+                    .owned_values
+                    .get(&value_id)
+                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
+                let proof = proof_cell.borrow_mut();
+                Ok((
+                    Borrowed(BorrowedSNodeState::ValueRef(value_id, proof)),
+                    vec![],
+                ))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -908,111 +966,52 @@ where
                     ))
                 }
             },
-            SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
-            SNodeRef::ResourceRef(resource_address) => {
-                let resman_value = self
-                    .track
-                    .borrow_global_mut_value(resource_address.clone())
-                    .map_err(|e| match e {
-                        TrackError::NotFound => {
-                            RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                        }
-                        TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
-                    })?;
-
-                let method_auth = resman_value
-                    .resource_manager()
-                    .get_auth(&fn_ident, &input)
-                    .clone();
-                Ok((
-                    Tracked(resource_address.clone().into(), resman_value, None),
-                    vec![method_auth],
-                ))
-            }
-            SNodeRef::Bucket(bucket_id) => {
-                let bucket = self
-                    .buckets
-                    .remove(&bucket_id)
-                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?
-                    .into_inner();
-                let resource_address = bucket.resource_address();
-                let substate_value = self
-                    .track
-                    .borrow_global_value(resource_address.clone())
-                    .expect("There should be no problem retrieving resource manager");
-                let resource_manager = match substate_value {
-                    SubstateValue::Resource(resource_manager) => resource_manager,
-                    _ => panic!("Value is not a resource manager"),
-                };
-                let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
-                Ok((
-                    Consumed(ConsumedSNodeState::Bucket(bucket)),
-                    vec![method_auth.clone()],
-                ))
-            }
-            SNodeRef::BucketRef(bucket_id) => {
-                let bucket_cell = self
-                    .buckets
-                    .get(&bucket_id)
-                    .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
-                let bucket = bucket_cell.borrow_mut();
-                Ok((
-                    Borrowed(BorrowedSNodeState::Bucket(bucket_id.clone(), bucket)),
-                    vec![],
-                ))
-            }
-            SNodeRef::ProofRef(proof_id) => {
-                let proof_cell = self
-                    .proofs
-                    .get(&proof_id)
-                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                let proof = proof_cell.borrow_mut();
-                Ok((
-                    Borrowed(BorrowedSNodeState::Proof(proof_id.clone(), proof)),
-                    vec![],
-                ))
-            }
-            SNodeRef::Proof(proof_id) => {
-                let proof = self
-                    .proofs
-                    .remove(&proof_id)
-                    .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?
-                    .into_inner();
-                Ok((Consumed(ConsumedSNodeState::Proof(proof)), vec![]))
-            }
             SNodeRef::VaultRef(vault_id) => {
                 let (resource_address, snode_state) = {
-                    if let Some(value) = self.owned_values.get(&StoredValueId::VaultId(*vault_id)) {
+                    if let Some(value) = self.owned_values.get(&ValueId::vault_id(*vault_id)) {
                         let resource_address = match value.borrow().deref() {
-                            StoredValue::Vault(_, vault) => vault.resource_address(),
+                            REValue::Stored(StoredValue::Vault(vault)) => vault.resource_address(),
                             _ => panic!("Expected vault"),
                         };
 
                         (
                             resource_address,
-                            Borrowed(BorrowedSNodeState::Vault(value.borrow_mut())),
+                            Borrowed(BorrowedSNodeState::Vault(
+                                *vault_id,
+                                REValueRef::Owned(value.borrow_mut()),
+                            )),
                         )
                     } else {
                         let value_id = StoredValueId::VaultId(*vault_id);
                         let maybe_value_ref = self.refed_values.get(&value_id).cloned();
-                        let value_ref =
-                            maybe_value_ref.ok_or(RuntimeError::ValueNotFound(value_id.clone()))?;
+                        let value_ref = maybe_value_ref
+                            .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?;
                         match value_ref {
                             ValueRefType::Uncommitted {
                                 root,
                                 ref ancestors,
                             } => {
-                                let root_store = self
+                                let root_value = self
                                     .owned_values
-                                    .get_mut(&StoredValueId::KeyValueStoreId(root))
+                                    .get_mut(&ValueId::kv_store_id(root))
                                     .unwrap()
                                     .get_mut();
+                                let root_store = match root_value {
+                                    REValue::Stored(root_store) => root_store,
+                                    _ => panic!("Invalid type"),
+                                };
                                 let value = root_store.get_child(ancestors, &value_id);
                                 let resource_address = match value.deref() {
-                                    StoredValue::Vault(_, vault) => vault.resource_address(),
+                                    StoredValue::Vault(vault) => vault.resource_address(),
                                     _ => panic!("Expected vault"),
                                 };
-                                (resource_address, Borrowed(BorrowedSNodeState::Vault(value)))
+                                (
+                                    resource_address,
+                                    Borrowed(BorrowedSNodeState::Vault(
+                                        *vault_id,
+                                        REValueRef::Ref(value),
+                                    )),
+                                )
                             }
                             ValueRefType::Committed { component_address } => {
                                 let vault_address = (component_address, *vault_id);
@@ -1060,9 +1059,12 @@ where
                 // Resource auth check includes caller
                 Tracked(..)
                 | Borrowed(BorrowedSNodeState::Vault(..))
-                | Borrowed(BorrowedSNodeState::Bucket(..))
+                | Borrowed(BorrowedSNodeState::ValueRef(
+                    ValueId::Transient(TransientValueId::Bucket(..)),
+                    ..,
+                ))
                 | Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Consumed(ConsumedSNodeState::Bucket(..)) => {
+                | Consumed(TransientValue::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
@@ -1118,8 +1120,7 @@ where
                 }
                 _ => None,
             },
-            moving_buckets,
-            moving_proofs,
+            taken_values,
             self.auth_zone.as_ref(),
             cost_unit_counter,
             fee_table,
@@ -1132,23 +1133,13 @@ where
         self.cost_unit_counter = frame.cost_unit_counter;
         self.fee_table = frame.fee_table;
 
-        // unwrap and contine
-        let (result, received_buckets, received_proofs, mut received_vaults) = run_result?;
+        // unwrap and continue
+        let (result, received_values) = run_result?;
 
         // move buckets and proofs to this process.
-        for (bucket_id, bucket) in received_buckets {
-            trace!(self, Level::Debug, "Received bucket: {:?}", bucket);
-            self.buckets.insert(bucket_id, RefCell::new(bucket));
-        }
-        for (proof_id, proof) in received_proofs {
-            trace!(self, Level::Debug, "Received proof: {:?}", proof);
-            self.proofs.insert(proof_id, RefCell::new(proof));
-        }
-        for (vault_id, vault) in received_vaults.drain() {
-            self.owned_values.insert(
-                StoredValueId::VaultId(vault_id.clone()),
-                RefCell::new(StoredValue::Vault(vault_id, vault)),
-            );
+        for (id, value) in received_values {
+            trace!(self, Level::Debug, "Received value: {:?}", value);
+            self.owned_values.insert(id, RefCell::new(value));
         }
 
         Ok(result)
@@ -1217,40 +1208,57 @@ where
     }
 
     fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
-        let proof = self
-            .proofs
-            .remove(&proof_id)
+        let value = self
+            .owned_values
+            .remove(&ValueId::Transient(TransientValueId::Proof(
+                proof_id.clone(),
+            )))
             .ok_or(RuntimeError::ProofNotFound(proof_id))?
             .into_inner();
 
-        Ok(proof)
+        match value {
+            REValue::Transient(TransientValue::Proof(proof)) => Ok(proof),
+            _ => panic!("Expected proof"),
+        }
     }
 
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
-        self.buckets
-            .remove(&bucket_id)
-            .map(RefCell::into_inner)
+        self.owned_values
+            .remove(&ValueId::Transient(TransientValueId::Bucket(
+                bucket_id.clone(),
+            )))
+            .map(|value| match value.into_inner() {
+                REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                _ => panic!("Expected bucket"),
+            })
             .ok_or(RuntimeError::BucketNotFound(bucket_id))
     }
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
         let proof_id = self.track.new_proof_id();
-        self.proofs.insert(proof_id, RefCell::new(proof));
+        self.owned_values.insert(
+            ValueId::Transient(TransientValueId::Proof(proof_id)),
+            RefCell::new(REValue::Transient(TransientValue::Proof(proof))),
+        );
         Ok(proof_id)
     }
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
         let bucket_id = self.track.new_bucket_id();
-        self.buckets
-            .insert(bucket_id, RefCell::new(Bucket::new(container)));
+        self.owned_values.insert(
+            ValueId::Transient(TransientValueId::Bucket(bucket_id)),
+            RefCell::new(REValue::Transient(TransientValue::Bucket(Bucket::new(
+                container,
+            )))),
+        );
         Ok(bucket_id)
     }
 
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
         let vault_id = self.track.new_vault_id();
         self.owned_values.insert(
-            StoredValueId::VaultId(vault_id.clone()),
-            RefCell::new(StoredValue::Vault(vault_id, Vault::new(container))),
+            ValueId::vault_id(vault_id.clone()),
+            RefCell::new(REValue::Stored(StoredValue::Vault(Vault::new(container)))),
         );
         Ok(vault_id)
     }
@@ -1267,22 +1275,27 @@ where
         let value =
             ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
         verify_stored_value(&value)?;
-        let values = self.take_values(&value.stored_value_ids())?;
+        let value_ids = value.stored_value_ids();
+        let (taken_values, mut missing) = self.take_available_values(value_ids)?;
+        let first_missing_value = missing.drain().nth(0);
+        if let Some(missing_value) = first_missing_value {
+            return Err(RuntimeError::ValueNotFound(missing_value));
+        }
+        let to_store_values = to_stored_values(taken_values)?;
         let address = self.track.create_uuid_value(component);
         self.track
-            .insert_objects_into_component(values, address.clone().into());
+            .insert_objects_into_component(to_store_values, address.clone().into());
         Ok(address.into())
     }
 
     fn create_kv_store(&mut self) -> KeyValueStoreId {
         let kv_store_id = self.track.new_kv_store_id();
         self.owned_values.insert(
-            StoredValueId::KeyValueStoreId(kv_store_id.clone()),
-            RefCell::new(StoredValue::KeyValueStore {
-                id: kv_store_id,
+            ValueId::kv_store_id(kv_store_id.clone()),
+            RefCell::new(REValue::Stored(StoredValue::KeyValueStore {
                 store: PreCommittedKeyValueStore::new(),
                 child_values: HashMap::new(),
-            }),
+            })),
         );
         kv_store_id
     }
@@ -1297,7 +1310,7 @@ where
             DataInstruction::Write(value) => {
                 verify_stored_value(value)?;
                 let value_ids = value.stored_value_ids();
-                self.take_available_values(value_ids)
+                self.take_available_values(value_ids)?
             }
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };
@@ -1344,15 +1357,16 @@ where
 
                 if self
                     .owned_values
-                    .contains_key(&StoredValueId::KeyValueStoreId(kv_store_id.clone()))
+                    .contains_key(&ValueId::kv_store_id(kv_store_id.clone()))
                 {
                     let ref_store = self
                         .owned_values
-                        .get_mut(&StoredValueId::KeyValueStoreId(kv_store_id))
+                        .get_mut(&ValueId::kv_store_id(kv_store_id))
                         .unwrap()
-                        .get_mut();
+                        .borrow_mut();
+                    //.get_mut();
                     (
-                        SubstateEntry::KeyValueStoreRef(ref_store, key),
+                        SubstateEntry::KeyValueStoreRef(REValueRef::Owned(ref_store), key),
                         ValueRefType::Uncommitted {
                             root: kv_store_id.clone(),
                             ancestors: vec![],
@@ -1373,12 +1387,14 @@ where
                             };
                             let root_value = self
                                 .owned_values
-                                .get_mut(&StoredValueId::KeyValueStoreId(*root))
+                                .get_mut(&ValueId::kv_store_id(*root))
                                 .unwrap();
-                            let ref_store =
-                                root_value.get_mut().get_child_mut(ancestors, &value_id);
+                            let ref_store = root_value
+                                .get_mut()
+                                .to_stored()
+                                .get_child(ancestors, &value_id);
                             (
-                                SubstateEntry::KeyValueStoreRef(ref_store, key),
+                                SubstateEntry::KeyValueStoreRef(REValueRef::Ref(ref_store), key),
                                 value_ref_type,
                             )
                         }
@@ -1451,23 +1467,25 @@ where
                 ScryptoValue::from_value(value).unwrap()
             }
         };
-        let cur_children = current_value.stored_value_ids();
+        let cur_children = to_stored_ids(current_value.stored_value_ids())?;
 
         // Fulfill method
         match instruction {
             DataInstruction::Read => {
-                for value_id in cur_children {
-                    self.refed_values.insert(value_id, ref_type.clone());
+                for stored_value_id in cur_children {
+                    self.refed_values.insert(stored_value_id, ref_type.clone());
                 }
                 Ok(current_value)
             }
             DataInstruction::Write(value) => {
+                let missing = to_stored_ids(missing)?;
                 verify_stored_value_update(&cur_children, &missing)?;
+
+                let to_store_values = to_stored_values(taken_values)?;
 
                 // TODO: verify against some schema
 
                 // Write values
-                let new_values = taken_values.into_values().collect();
                 match store {
                     SubstateEntry::ComponentInfo(..) | SubstateEntry::ComponentInfoTracked(..) => {
                         return Err(RuntimeError::InvalidDataWrite);
@@ -1475,11 +1493,13 @@ where
                     SubstateEntry::Component(component_address, component) => {
                         component.set_state(value.raw);
                         self.track
-                            .insert_objects_into_component(new_values, component_address);
+                            .insert_objects_into_component(to_store_values, component_address);
                     }
-                    SubstateEntry::KeyValueStoreRef(stored_value, key) => {
+                    SubstateEntry::KeyValueStoreRef(mut stored_value, key) => {
                         stored_value.kv_store_mut().put(key.raw, value);
-                        stored_value.insert_children(new_values);
+                        stored_value
+                            .to_stored_mut()
+                            .insert_children(to_store_values);
                     }
                     SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
                         self.track.set_key_value(
@@ -1488,7 +1508,7 @@ where
                             SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                         );
                         self.track
-                            .insert_objects_into_component(new_values, component_address);
+                            .insert_objects_into_component(to_store_values, component_address);
                     }
                 }
 
@@ -1521,9 +1541,12 @@ where
         let proofs = proof_ids
             .iter()
             .map(|proof_id| {
-                self.proofs
-                    .get(&proof_id)
-                    .map(|p| p.borrow().clone())
+                self.owned_values
+                    .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
+                    .map(|p| match p.borrow().deref() {
+                        REValue::Transient(TransientValue::Proof(proof)) => proof.clone(),
+                        _ => panic!("Expected proof"),
+                    })
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))
             })
             .collect::<Result<Vec<Proof>, RuntimeError>>()?;

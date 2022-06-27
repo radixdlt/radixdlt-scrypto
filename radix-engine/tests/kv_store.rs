@@ -4,7 +4,7 @@ pub mod test_runner;
 use crate::test_runner::TestRunner;
 use radix_engine::engine::ResourceFailure;
 use radix_engine::engine::RuntimeError;
-use scrypto::engine::types::StoredValueId;
+use scrypto::engine::types::{StoredValueId, ValueId};
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -284,7 +284,12 @@ fn cannot_directly_reference_inserted_vault() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(StoredValueId::VaultId(_))));
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
+        )
+    });
 }
 
 #[test]
@@ -305,7 +310,12 @@ fn cannot_directly_reference_vault_after_container_moved() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(StoredValueId::VaultId(_))));
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
+        )
+    });
 }
 
 #[test]
@@ -326,5 +336,10 @@ fn cannot_directly_reference_vault_after_container_stored() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::ValueNotFound(StoredValueId::VaultId(_))));
+    receipt.expect_err(|e| {
+        matches!(
+            e,
+            RuntimeError::ValueNotFound(ValueId::Stored(StoredValueId::VaultId(_)))
+        )
+    });
 }
