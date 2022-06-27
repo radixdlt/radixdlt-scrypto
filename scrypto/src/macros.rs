@@ -381,12 +381,11 @@ macro_rules! external_interface_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&self $(, $method_args: $method_types)*) -> $method_output {
-            let rtn = ::scrypto::core::Runtime::call_method(
+            ::scrypto::core::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 ::scrypto::args!($($method_args),*)
-            );
-            ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
+            )
         }
         ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
@@ -400,7 +399,7 @@ macro_rules! external_interface_members {
                 self.component_address,
                 stringify!($method_name),
                 ::scrypto::args!($($method_args),*)
-            );
+            )
         }
         ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
@@ -410,12 +409,11 @@ macro_rules! external_interface_members {
         $($rest:tt)*
     ) => {
         pub fn $method_name(&mut self $(, $method_args: $method_types)*) -> $method_output {
-            let rtn = ::scrypto::core::Runtime::call_method(
+            ::scrypto::core::Runtime::call_method(
                 self.component_address,
                 stringify!($method_name),
                 ::scrypto::args!($($method_args),*)
-            );
-            ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
+            )
         }
         ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
@@ -429,7 +427,7 @@ macro_rules! external_interface_members {
                 self.component_address,
                 stringify!($method_name),
                 ::scrypto::args!($($method_args),*)
-            );
+            )
         }
         ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
@@ -453,13 +451,12 @@ macro_rules! external_interface_members {
         $($rest:tt)*
     ) => {
         pub fn $func_name($($func_args: $func_types),*) -> $func_output {
-            let rtn = ::scrypto::core::Runtime::call_function(
+            ::scrypto::core::Runtime::call_function(
                 ::scrypto::component::PackageAddress::from_str(::scrypto::package_address_from_context!($blueprint_context)).unwrap(),
                 ::scrypto::blueprint_name_from_context!($blueprint_context),
                 stringify!($func_name),
                 ::scrypto::args!($($func_args),*)
-            );
-            ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
+            )
         }
         ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
@@ -475,7 +472,7 @@ macro_rules! external_interface_members {
                 ::scrypto::blueprint_name_from_context!($blueprint_context),
                 stringify!($func_name),
                 ::scrypto::args!($($func_args),*)
-            );
+            )
         }
         ::scrypto::external_interface_members!($blueprint_context, $($rest)*);
     };
