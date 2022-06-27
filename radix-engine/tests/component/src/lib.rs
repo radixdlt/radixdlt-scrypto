@@ -11,4 +11,3 @@ pub mod package;
 pub mod reentrant_component;
 pub mod stored_kv_local_component;
 pub mod stored_local_component;
-pub mod typed_cross_component_call;

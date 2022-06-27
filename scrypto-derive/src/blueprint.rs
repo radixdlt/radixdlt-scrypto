@@ -426,11 +426,11 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                ::scrypto::core::Runtime::call_method(
-                                    self.component_address,
-                                    #name,
-                                    ::scrypto::args!(#(#input_args),*)
-                                )
+                                self.component.call(#name, vec![
+                                    #(
+                                        scrypto_encode(&#input_args)
+                                    ),*
+                                ])
                             }
                         });
                     }
@@ -451,7 +451,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
 
             #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
             pub struct #bp_ident {
-                component_address: ::scrypto::component::ComponentAddress,
+                component: ::scrypto::component::Component,
             }
 
             impl #bp_ident {
@@ -616,14 +616,14 @@ mod tests {
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                     pub struct Test {
-                        component_address: ::scrypto::component::ComponentAddress,
+                        component: ::scrypto::component::Component,
                     }
                     impl Test {
                         pub fn y(arg0: u32) -> u32 {
                             ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
                         }
                         pub fn x(&self, arg0: u32) -> u32 {
-                            ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0))
+                            self.component.call("x", vec![scrypto_encode(&arg0)])
                         }
                     }
                 }
@@ -680,7 +680,7 @@ mod tests {
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                     pub struct Test {
-                        component_address: ::scrypto::component::ComponentAddress,
+                        component: ::scrypto::component::Component,
                     }
                     impl Test {
                     }
