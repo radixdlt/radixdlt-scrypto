@@ -9,12 +9,14 @@ use transaction::builder::TransactionBuilder;
 use transaction::model::Network;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
+use transaction::signing::Ed25519PrivateKey;
 use transaction::validation::verify_ecdsa;
+use transaction::validation::verify_ed25519;
 use transaction::validation::TestEpochManager;
 use transaction::validation::TestIntentHashManager;
 use transaction::validation::TransactionValidator;
 
-fn bench_signature_validation(c: &mut Criterion) {
+fn bench_ecdsa_validation(c: &mut Criterion) {
     let message = "This is a long message".repeat(100);
     let signer = EcdsaPrivateKey::from_u64(123123123123).unwrap();
     let public_key = signer.public_key();
@@ -23,6 +25,19 @@ fn bench_signature_validation(c: &mut Criterion) {
     c.bench_function("Signature validation", |b| {
         b.iter(|| {
             verify_ecdsa(message.as_bytes(), &public_key, &signature);
+        })
+    });
+}
+
+fn bench_ed25519_validation(c: &mut Criterion) {
+    let message = "This is a long message".repeat(100);
+    let signer = Ed25519PrivateKey::from_u64(123123123123).unwrap();
+    let public_key = signer.public_key();
+    let signature = signer.sign(message.as_bytes());
+
+    c.bench_function("Signature validation", |b| {
+        b.iter(|| {
+            verify_ed25519(message.as_bytes(), &public_key, &signature);
         })
     });
 }
