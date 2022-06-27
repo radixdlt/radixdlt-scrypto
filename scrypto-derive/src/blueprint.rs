@@ -415,24 +415,22 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                     if mutable.is_none() {
                         functions.push(parse_quote! {
                             pub fn #ident(#(#input_args: #input_types),*) -> #output {
-                                let rtn = ::scrypto::core::Runtime::call_function(
+                                ::scrypto::core::Runtime::call_function(
                                     ::scrypto::core::Runtime::package_address(),
                                     #bp_name,
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
-                                );
-                                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
+                                )
                             }
                         });
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                let rtn = ::scrypto::core::Runtime::call_method(
+                                ::scrypto::core::Runtime::call_method(
                                     self.component_address,
                                     #name,
                                     ::scrypto::args!(#(#input_args),*)
-                                );
-                                ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
+                                )
                             }
                         });
                     }
@@ -627,12 +625,10 @@ mod tests {
                 }
                 impl Test {
                     pub fn y(arg0: u32) -> u32 {
-                        let rtn = ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0));
-                        ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
+                        ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
                     }
                     pub fn x(&self, arg0: u32) -> u32 {
-                        let rtn = ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0));
-                        ::scrypto::buffer::scrypto_decode(&rtn).unwrap()
+                        ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0))
                     }
                 }
                 impl From<::scrypto::component::ComponentAddress> for Test {

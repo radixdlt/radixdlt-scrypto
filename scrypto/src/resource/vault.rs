@@ -8,7 +8,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::buffer::scrypto_encode;
 use crate::core::SNodeRef;
 use crate::crypto::*;
 use crate::engine::{api::*, call_engine, types::VaultId};
@@ -66,8 +66,7 @@ impl Vault {
             "create_vault".to_string(),
             scrypto_encode(&ResourceManagerCreateVaultInput {}),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     /// Creates an empty vault and fills it with an initial bucket of resource.
@@ -83,8 +82,7 @@ impl Vault {
             "take".to_string(),
             scrypto_encode(&VaultTakeInput { amount }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     sfunctions! {

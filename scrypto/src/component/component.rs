@@ -6,7 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::*;
+use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
@@ -37,9 +37,7 @@ pub struct Component(pub(crate) ComponentAddress);
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let output = Runtime::call_method(self.0, method, args);
-
-        scrypto_decode(&output).unwrap()
+        Runtime::call_method(self.0, method, args)
     }
 
     /// Returns the package ID of this component.
@@ -58,15 +56,13 @@ impl Component {
         output.1
     }
 
-
     pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::Component(self.0),
             "add_access_check".to_string(),
             scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
         );
-        let output: Vec<u8> = call_engine(input);
-        let _: () = scrypto_decode(&output).unwrap();
+        let _: () = call_engine(input);
 
         self
     }

@@ -22,8 +22,7 @@ macro_rules! sfunctions {
                     stringify!($method_name).to_string(),
                     scrypto::buffer::scrypto_encode(&$arg)
                 );
-                let output: sbor::rust::vec::Vec<u8> = call_engine(input);
-                scrypto_decode(&output).unwrap()
+                call_engine(input)
             }
         )+
     };

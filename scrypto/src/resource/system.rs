@@ -1,9 +1,8 @@
 use sbor::rust::collections::HashMap;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
 
-use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::buffer::scrypto_encode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::resource::*;
@@ -59,8 +58,7 @@ impl ResourceSystem {
                 mint_params,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 }
 
