@@ -32,11 +32,15 @@ wabt = { version = "0.10.0" }
 criterion = { version = "0.3", features = ["html_reports"] }
 
 [[bench]]
-name = "transfer"
+name = "radix_engine"
 harness = false
 
 [[bench]]
-name = "cost_estimate"
+name = "transaction"
+harness = false
+
+[[bench]]
+name = "wasm"
 harness = false
 
 [features]
