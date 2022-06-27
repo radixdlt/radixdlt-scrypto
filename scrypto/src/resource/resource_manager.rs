@@ -8,7 +8,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::buffer::scrypto_encode;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
@@ -114,8 +114,7 @@ impl ResourceManager {
                 access_rule,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn set_burnable(&mut self, access_rule: AccessRule) -> () {
@@ -127,8 +126,7 @@ impl ResourceManager {
                 access_rule,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn set_withdrawable(&mut self, access_rule: AccessRule) -> () {
@@ -140,8 +138,7 @@ impl ResourceManager {
                 access_rule,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn set_depositable(&mut self, access_rule: AccessRule) -> () {
@@ -153,8 +150,7 @@ impl ResourceManager {
                 access_rule,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn set_updateable_metadata(&self, access_rule: AccessRule) -> () {
@@ -166,8 +162,7 @@ impl ResourceManager {
                 access_rule,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn set_updateable_non_fungible_data(&self, access_rule: AccessRule) -> () {
@@ -179,8 +174,7 @@ impl ResourceManager {
                 access_rule,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn lock_mintable(&mut self) -> () {
@@ -191,8 +185,7 @@ impl ResourceManager {
                 method: ResourceMethodAuthKey::Mint,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn lock_burnable(&mut self) -> () {
@@ -203,8 +196,7 @@ impl ResourceManager {
                 method: ResourceMethodAuthKey::Burn,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn lock_withdrawable(&mut self) -> () {
@@ -215,8 +207,7 @@ impl ResourceManager {
                 method: ResourceMethodAuthKey::Withdraw,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn lock_depositable(&mut self) -> () {
@@ -227,8 +218,7 @@ impl ResourceManager {
                 method: ResourceMethodAuthKey::Deposit,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn lock_updateable_metadata(&mut self) -> () {
@@ -239,8 +229,7 @@ impl ResourceManager {
                 method: ResourceMethodAuthKey::UpdateMetadata,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     pub fn lock_updateable_non_fungible_data(&mut self) -> () {
@@ -251,8 +240,7 @@ impl ResourceManager {
                 method: ResourceMethodAuthKey::UpdateNonFungibleData,
             }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     fn mint_internal(&mut self, mint_params: MintParams) -> Bucket {
@@ -261,8 +249,7 @@ impl ResourceManager {
             "mint".to_string(),
             scrypto_encode(&ResourceManagerMintInput { mint_params }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     fn update_non_fungible_data_internal(&mut self, id: NonFungibleId, data: Vec<u8>) -> () {
@@ -271,8 +258,7 @@ impl ResourceManager {
             "update_non_fungible_data".to_string(),
             scrypto_encode(&ResourceManagerUpdateNonFungibleDataInput { id, data }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     fn get_non_fungible_data_internal(&self, id: NonFungibleId) -> [Vec<u8>; 2] {
@@ -281,8 +267,7 @@ impl ResourceManager {
             "non_fungible_data".to_string(),
             scrypto_encode(&ResourceManagerGetNonFungibleInput { id }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     sfunctions! {

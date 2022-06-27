@@ -6,7 +6,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
@@ -74,9 +73,7 @@ pub struct Component(pub(crate) ComponentAddress);
 impl Component {
     /// Invokes a method on this component.
     pub fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
-        let output = Runtime::call_method(self.0, method, args);
-
-        scrypto_decode(&output).unwrap()
+        Runtime::call_method(self.0, method, args)
     }
 
     /// Returns the package ID of this component.
