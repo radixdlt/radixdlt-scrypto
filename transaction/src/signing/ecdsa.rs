@@ -13,7 +13,7 @@ impl EcdsaPrivateKey {
     }
 
     pub fn sign(&self, msg: &[u8]) -> EcdsaSignature {
-        let h = sha256(msg);
+        let h = sha256(sha256(msg));
         let m = Message::from_slice(&h.0).expect("The slice is a valid hash");
         EcdsaSignature(self.0.sign_ecdsa(m).serialize_compact())
     }
@@ -44,7 +44,6 @@ mod tests {
     use crate::validation::verify_ecdsa;
     use sbor::rust::str::FromStr;
     use scrypto::{
-        crypto::Hash,
         prelude::ECDSA_TOKEN,
         resource::{NonFungibleAddress, NonFungibleId},
     };
@@ -53,16 +52,13 @@ mod tests {
     fn sign_and_verify() {
         let test_sk = "0000000000000000000000000000000000000000000000000000000000000001";
         let test_pk = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
-        let test_message = "{\"a\":\"banan\"}";
-        let test_hash = "c43a1e3a7e822c97004267324ba8df88d114ab3e019d0e85eccb1ff8592d6d36";
-        let test_signature = "403b07ead5e7513064163c23590444d72b2db0fc14a08a9312f483578ed8e1aa317b54b96124b2bb31775ae6a62ae4107ea0549199343243dc19d0df36261d51";
+        let test_message = "Test";
+        let test_signature = "79224ea514206706298d8d620f660828f7987068d6d02757e6f3cbbf4a51ab133395db69db1bc9b2726dd99e34efc252d8258dcb003ebaba42be349f50f7765e";
         let sk = EcdsaPrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
         let pk = EcdsaPublicKey::from_str(test_pk).unwrap();
-        let hash = Hash::from_str(test_hash).unwrap();
         let sig = EcdsaSignature::from_str(test_signature).unwrap();
 
         assert_eq!(sk.public_key(), pk);
-        assert_eq!(scrypto::crypto::hash(test_message), hash);
         assert_eq!(sk.sign(test_message.as_bytes()), sig);
         assert!(verify_ecdsa(test_message.as_bytes(), &pk, &sig));
     }

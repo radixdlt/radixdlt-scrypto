@@ -53,8 +53,8 @@ mod tests {
     fn sign_and_verify() {
         let test_sk = "0000000000000000000000000000000000000000000000000000000000000001";
         let test_pk = "4cb5abf6ad79fbf5abbccafcc269d85cd2651ed4b885b5869f241aedf0a5ba29";
-        let test_message = "{\"a\":\"banan\"}";
-        let test_signature = "2e9bbc5d2246cbe5b1234b328437e0b504c912b5f81e4826a22c63830e3ffb3ef457e81b79222235cc3143185794b8759292422a0b90e644b820dedbb7d7f50f";
+        let test_message = "Test";
+        let test_signature = "ce993adc51111309a041faa65cbcf1154d21ed0ecdc2d54070bc90b9deb744aa8605b3f686fa178fba21070b4a4678e54eee3486a881e0e328251cd37966de09";
         let sk = Ed25519PrivateKey::from_bytes(&hex::decode(test_sk).unwrap()).unwrap();
         let pk = Ed25519PublicKey::from_str(test_pk).unwrap();
         let sig = Ed25519Signature::from_str(test_signature).unwrap();

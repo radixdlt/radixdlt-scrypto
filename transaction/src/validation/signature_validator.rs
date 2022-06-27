@@ -7,7 +7,7 @@ pub fn verify_ecdsa(
 ) -> bool {
     if let Ok(sig) = secp256k1::ecdsa::Signature::from_compact(&signature.0) {
         if let Ok(pk) = secp256k1::PublicKey::from_slice(&public_key.0) {
-            let hash = sha256(message);
+            let hash = sha256(sha256(message));
             let msg =
                 secp256k1::Message::from_slice(&hash.0).expect("Hash is always a valid message");
             return sig.verify(&msg, &pk).is_ok();
