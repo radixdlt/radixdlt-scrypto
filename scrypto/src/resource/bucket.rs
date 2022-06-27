@@ -6,7 +6,7 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::{scrypto_decode, scrypto_encode};
+use crate::buffer::scrypto_encode;
 use crate::core::SNodeRef;
 use crate::engine::types::{TransientValueId, ValueId};
 use crate::engine::{api::*, call_engine, types::BucketId};
@@ -57,8 +57,7 @@ impl Bucket {
             "create_bucket".to_string(),
             scrypto_encode(&ResourceManagerCreateBucketInput {}),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     sfunctions! {
@@ -75,8 +74,7 @@ impl Bucket {
             "take".to_string(),
             scrypto_encode(&BucketTakeInput { amount }),
         );
-        let output: Vec<u8> = call_engine(input);
-        scrypto_decode(&output).unwrap()
+        call_engine(input)
     }
 
     sfunctions! {
