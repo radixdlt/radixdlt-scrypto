@@ -14,7 +14,7 @@ blueprint! {
             self.secret = next;
         }
 
-        pub fn new(secret: u32) -> component::LocalComponent {
+        pub fn new(secret: u32) -> crate::local_component::LocalComponent {
             Self { secret }.instantiate()
         }
 

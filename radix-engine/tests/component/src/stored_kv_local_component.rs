@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct StoredKVLocalComponent {
-        components: KeyValueStore<u32, crate::local_component::component::LocalComponent>,
+        components: KeyValueStore<u32, crate::local_component::LocalComponent>,
     }
 
     impl StoredKVLocalComponent {
@@ -20,8 +20,8 @@ blueprint! {
                 .set_secret(next)
         }
 
-        pub fn new(secret: u32) -> component::StoredKVLocalComponent {
-            let component = crate::local_component::component::LocalComponent::new(secret);
+        pub fn new(secret: u32) -> crate::stored_kv_local_component::StoredKVLocalComponent {
+            let component = crate::local_component::LocalComponent::new(secret);
             let components = KeyValueStore::new();
             components.insert(0u32, component);
 
