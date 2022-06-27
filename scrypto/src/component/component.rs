@@ -19,12 +19,12 @@ pub struct ComponentAddAccessCheckInput {
 }
 
 /// Represents the state of a component.
-pub trait ComponentState: Encode + Decode {
+pub trait ComponentState<C: LComponent>: Encode + Decode {
     /// Instantiates a component from this data structure.
-    fn instantiate(self) -> Component;
+    fn instantiate(self) -> C;
 }
 
-pub trait LocalComponent {
+pub trait LComponent {
     fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T;
     fn package_address(&self) -> PackageAddress;
     fn blueprint_name(&self) -> String;

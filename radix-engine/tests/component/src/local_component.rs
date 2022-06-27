@@ -14,7 +14,7 @@ blueprint! {
             self.secret = next;
         }
 
-        pub fn new(secret: u32) -> Component {
+        pub fn new(secret: u32) -> component::LocalComponent {
             Self { secret }.instantiate()
         }
 
@@ -22,10 +22,9 @@ blueprint! {
             some_non_fungible: NonFungibleAddress,
         ) -> ComponentAddress {
             let mut local_component = Self::new(12345);
-            local_component
-                .add_access_check(AccessRules::new().default(rule!(require(some_non_fungible))));
+            local_component.add_access_check(AccessRules::new().default(rule!(require(some_non_fungible))));
 
-            let rtn: u32 = local_component.call("get_secret", vec![]);
+            let rtn = local_component.get_secret();
             assert_eq!(12345, rtn);
 
             local_component.globalize()
@@ -34,7 +33,7 @@ blueprint! {
         pub fn read_local_component() -> ComponentAddress {
             let local_component = Self::new(12345);
 
-            let rtn: u32 = local_component.call("get_secret", vec![]);
+            let rtn = local_component.get_secret();
             assert_eq!(12345, rtn);
 
             local_component.globalize()
@@ -42,9 +41,8 @@ blueprint! {
 
         pub fn write_local_component() -> ComponentAddress {
             let local_component = Self::new(12345);
-
-            let _: () = local_component.call("set_secret", vec![scrypto_encode(&99999u32)]);
-            let rtn: u32 = local_component.call("get_secret", vec![]);
+            local_component.set_secret(99999u32);
+            let rtn = local_component.get_secret();
             assert_eq!(99999, rtn);
 
             local_component.globalize()
@@ -56,8 +54,14 @@ blueprint! {
         ) -> ComponentAddress {
             let local_component = Self::new(12345);
 
-            assert_eq!(local_component.package_address(), expected_package_address);
-            assert_eq!(local_component.blueprint_name(), expected_blueprint_name);
+            assert_eq!(
+                local_component.package_address(),
+                expected_package_address
+            );
+            assert_eq!(
+                local_component.blueprint_name(),
+                expected_blueprint_name
+            );
 
             local_component.globalize()
         }

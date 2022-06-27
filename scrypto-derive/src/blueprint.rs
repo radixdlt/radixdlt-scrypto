@@ -53,12 +53,15 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #(#bp_items)*
             }
 
-            impl ::scrypto::component::ComponentState for #bp_ident {
-                fn instantiate(self) -> ::scrypto::component::Component {
-                    ::scrypto::component::component_system().create_component(
+            impl ::scrypto::component::ComponentState<super::component::#bp_ident> for #bp_ident {
+                fn instantiate(self) -> super::component::#bp_ident {
+                    let component = ::scrypto::component::component_system().create_component(
                         #bp_name,
                         self
-                    )
+                    );
+                    super::component::#bp_ident {
+                        component
+                    }
                 }
             }
         }
@@ -451,10 +454,10 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
 
             #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
             pub struct #bp_ident {
-                component: ::scrypto::component::Component,
+                pub component: ::scrypto::component::Component,
             }
 
-            impl ::scrypto::component::LocalComponent for #bp_ident {
+            impl ::scrypto::component::LComponent for #bp_ident {
                 fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
                     self.component.call(method, args)
                 }
@@ -462,7 +465,7 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                     self.component.package_address()
                 }
                 fn blueprint_name(&self) -> String {
-                    self.blueprint_name()
+                    self.component.blueprint_name()
                 }
                 fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
                     self.component.add_access_check(access_rules);
@@ -546,12 +549,15 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> ::scrypto::component::Component {
-                            ::scrypto::component::component_system().create_component(
+                    impl ::scrypto::component::ComponentState<super::component::Test> for Test {
+                        fn instantiate(self) -> super::component::Test {
+                            let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
-                            )
+                            );
+                            super::component::Test {
+                                component
+                            }
                         }
                     }
                 }
@@ -635,10 +641,10 @@ mod tests {
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                     pub struct Test {
-                        component: ::scrypto::component::Component,
+                        pub component: ::scrypto::component::Component,
                     }
 
-                    impl ::scrypto::component::LocalComponent for Test {
+                    impl ::scrypto::component::LComponent for Test {
                         fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
                             self.component.call(method, args)
                         }
@@ -646,7 +652,7 @@ mod tests {
                             self.component.package_address()
                         }
                         fn blueprint_name(&self) -> String {
-                            self.blueprint_name()
+                            self.component.blueprint_name()
                         }
                         fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
                             self.component.add_access_check(access_rules);
@@ -688,12 +694,15 @@ mod tests {
                     impl Test {
                     }
 
-                    impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> ::scrypto::component::Component {
-                            ::scrypto::component::component_system().create_component(
+                    impl ::scrypto::component::ComponentState<super::component::Test> for Test {
+                        fn instantiate(self) -> super::component::Test {
+                            let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
-                            )
+                            );
+                            super::component::Test {
+                                component
+                            }
                         }
                     }
                 }
@@ -719,10 +728,10 @@ mod tests {
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                     pub struct Test {
-                        component: ::scrypto::component::Component,
+                        pub component: ::scrypto::component::Component,
                     }
 
-                    impl ::scrypto::component::LocalComponent for Test {
+                    impl ::scrypto::component::LComponent for Test {
                         fn call<T: ::sbor::Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T {
                             self.component.call(method, args)
                         }
@@ -730,7 +739,7 @@ mod tests {
                             self.component.package_address()
                         }
                         fn blueprint_name(&self) -> String {
-                            self.blueprint_name()
+                            self.component.blueprint_name()
                         }
                         fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
                             self.component.add_access_check(access_rules);

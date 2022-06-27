@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct StoredLocalComponent {
-        component: Component,
+        component: crate::local_component::component::LocalComponent,
     }
 
     impl StoredLocalComponent {
@@ -15,14 +15,8 @@ blueprint! {
                 .call("set_secret", vec![scrypto_encode(&next)])
         }
 
-        pub fn new(secret: u32) -> Component {
-            let package_address = Runtime::package_address();
-            let component = Runtime::call_function(
-                package_address,
-                "LocalComponent",
-                "new",
-                vec![scrypto_encode(&secret)],
-            );
+        pub fn new(secret: u32) -> component::StoredLocalComponent {
+            let component = crate::local_component::component::LocalComponent::new(secret);
 
             Self { component }.instantiate()
         }
