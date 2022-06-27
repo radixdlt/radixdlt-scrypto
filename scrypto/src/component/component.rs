@@ -24,6 +24,14 @@ pub trait ComponentState: Encode + Decode {
     fn instantiate(self) -> Component;
 }
 
+pub trait LocalComponent {
+    fn call<T: Decode>(&self, method: &str, args: Vec<Vec<u8>>) -> T;
+    fn package_address(&self) -> PackageAddress;
+    fn blueprint_name(&self) -> String;
+    fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self;
+    fn globalize(self) -> ComponentAddress;
+}
+
 /// Represents an instantiated component.
 #[derive(PartialEq, Eq, Hash)]
 pub struct Component(pub(crate) ComponentAddress);
