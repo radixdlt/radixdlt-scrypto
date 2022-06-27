@@ -22,7 +22,7 @@ fn bench_ecdsa_validation(c: &mut Criterion) {
     let public_key = signer.public_key();
     let signature = signer.sign(message.as_bytes());
 
-    c.bench_function("Signature validation", |b| {
+    c.bench_function("ECDSA signature validation", |b| {
         b.iter(|| {
             verify_ecdsa(message.as_bytes(), &public_key, &signature);
         })
@@ -35,7 +35,7 @@ fn bench_ed25519_validation(c: &mut Criterion) {
     let public_key = signer.public_key();
     let signature = signer.sign(message.as_bytes());
 
-    c.bench_function("Signature validation", |b| {
+    c.bench_function("ED25519 signature validation", |b| {
         b.iter(|| {
             verify_ed25519(message.as_bytes(), &public_key, &signature);
         })
@@ -108,7 +108,8 @@ fn bench_wasm_instantiation(c: &mut Criterion) {
 
 criterion_group!(
     cost_estimate,
-    bench_signature_validation,
+    bench_ecdsa_validation,
+    bench_ed25519_validation,
     bench_transaction_validation,
     bench_wasm_validation,
     bench_wasm_instantiation
