@@ -10,6 +10,7 @@
 //!
 
 #![cfg_attr(not(feature = "std"), no_std)]
+#![feature(type_name_of_val)]
 
 #[cfg(not(any(feature = "std", feature = "alloc")))]
 compile_error!("Either feature `std` or `alloc` must be enabled for this crate.");
