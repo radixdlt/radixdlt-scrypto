@@ -5,11 +5,12 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::{DataInstruction, REValueByComplexity, SubstateAddress};
+use crate::engine::call_frame::{DataInstruction, SubstateAddress};
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
 use crate::wasm::*;
+use crate::engine::values::*;
 
 pub trait SystemApi<'borrowed, W, I>
 where
