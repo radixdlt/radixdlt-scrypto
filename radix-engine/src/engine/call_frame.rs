@@ -309,13 +309,14 @@ impl REValueLocation {
     fn borrow_native_ref<'borrowed, S: ReadableSubstateStore>(
         &self,
         value_id: &ValueId,
+        owned_values: &mut HashMap<ValueId, RefCell<REValue>>,
         borrowed_values: &mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
         track: &mut Track<S>,
     ) -> RENativeValueRef<'borrowed> {
         match self {
             REValueLocation::BorrowedRoot => {
                 let owned = borrowed_values.remove(value_id).expect("Should exist");
-                RENativeValueRef::Owned(owned)
+                RENativeValueRef::OwnedRef(owned)
             }
             REValueLocation::Track { parent } => {
                 let address = match value_id {
@@ -334,7 +335,12 @@ impl REValueLocation {
 
                 RENativeValueRef::Track(address, value)
             }
-            _ => panic!("Unexpected"),
+            REValueLocation::OwnedRoot => {
+                let cell = owned_values.remove(value_id).unwrap();
+                let value = cell.into_inner();
+                RENativeValueRef::Owned(value)
+            }
+            _ => panic!("Unexpected {:?} {:?}", self, value_id),
         }
     }
 
@@ -421,15 +427,16 @@ impl REValueLocation {
     }
 }
 
-pub enum RENativeValueRef<'a> {
-    Owned(REOwnedValueRef<'a>),
+pub enum RENativeValueRef<'borrowed> {
+    Owned(REValue),
+    OwnedRef(REOwnedValueRef<'borrowed>),
     Track(Address, SubstateValue),
 }
 
-impl<'a> RENativeValueRef<'a> {
+impl<'borrowed> RENativeValueRef<'borrowed> {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            RENativeValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => {
+            RENativeValueRef::OwnedRef(REOwnedValueRef::Root(ref mut root)) => {
                 match root.deref_mut() {
                     REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
                     _ => panic!("Expecting to be a bucket"),
@@ -441,7 +448,7 @@ impl<'a> RENativeValueRef<'a> {
 
     pub fn proof(&mut self) -> &mut Proof {
         match self {
-            RENativeValueRef::Owned(REOwnedValueRef::Root(ref mut root)) => {
+            RENativeValueRef::OwnedRef(REOwnedValueRef::Root(ref mut root)) => {
                 match root.deref_mut() {
                     REValue::Transient(TransientValue::Proof(proof)) => proof,
                     _ => panic!("Expecting to be a proof"),
@@ -453,7 +460,8 @@ impl<'a> RENativeValueRef<'a> {
 
     pub fn vault(&mut self) -> &mut Vault {
         match self {
-            RENativeValueRef::Owned(owned) => match owned {
+            RENativeValueRef::Owned(..) => panic!("Unexpected"),
+            RENativeValueRef::OwnedRef(owned) => match owned {
                 REOwnedValueRef::Root(root) => match root.deref_mut() {
                     REValue::Stored(StoredValue::Vault(vault)) => vault,
                     _ => panic!("Expecting to be a vault"),
@@ -469,7 +477,7 @@ impl<'a> RENativeValueRef<'a> {
 
     pub fn component(&mut self) -> &mut Component {
         match self {
-            RENativeValueRef::Owned(owned) => match owned {
+            RENativeValueRef::OwnedRef(owned) => match owned {
                 REOwnedValueRef::Root(root) => match root.deref_mut() {
                     REValue::Stored(StoredValue::Component { component, .. }) => component,
                     _ => panic!("Expecting to be a component"),
@@ -490,18 +498,22 @@ impl<'a> RENativeValueRef<'a> {
     pub fn resource_manager(&mut self) -> &mut ResourceManager {
         match self {
             RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
-            _ => panic!("Expecting to be tracked"),
+            _ => panic!("Unexpected"),
         }
     }
 
-    pub fn return_to_location<S: ReadableSubstateStore>(
+    pub fn return_to_location<'a, S: ReadableSubstateStore>(
         self,
         value_id: ValueId,
-        borrowed_values: &mut HashMap<ValueId, REOwnedValueRef<'a>>,
+        owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
+        borrowed_values: &mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
         track: &mut Track<S>,
     ) {
         match self {
-            RENativeValueRef::Owned(owned) => {
+            RENativeValueRef::Owned(value) => {
+                owned_values.insert(value_id, RefCell::new(value));
+            }
+            RENativeValueRef::OwnedRef(owned) => {
                 borrowed_values.insert(value_id.clone(), owned);
             }
             RENativeValueRef::Track(address, value) => {
@@ -1679,11 +1691,21 @@ where
 
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
         let location = self.readable_values.get(value_id).unwrap();
-        location.borrow_native_ref(value_id, &mut self.borrowed_values, &mut self.track)
+        location.borrow_native_ref(
+            value_id,
+            &mut self.owned_values,
+            &mut self.borrowed_values,
+            &mut self.track
+        )
     }
 
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>) {
-        val_ref.return_to_location(value_id, &mut self.borrowed_values, &mut self.track)
+        val_ref.return_to_location(
+            value_id,
+            &mut self.owned_values,
+            &mut self.borrowed_values,
+            &mut self.track
+        )
     }
 
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue {
@@ -1713,6 +1735,7 @@ where
         };
 
         self.owned_values.insert(id, RefCell::new(value));
+
         self.readable_values.insert(
             id.clone(),
             REValueLocation::OwnedRoot,
@@ -1763,7 +1786,12 @@ where
     }
 
     fn native_globalize(&mut self, value_id: &ValueId) {
-        let value = self.owned_values.remove(value_id).unwrap().into_inner();
+        let mut values = HashSet::new();
+        values.insert(value_id.clone());
+        let (taken_values, missing) = self.take_available_values(values).unwrap();
+        assert!(missing.is_empty());
+        assert!(taken_values.len() == 1);
+        let value = taken_values.into_values().nth(0).unwrap();
 
         let (component, child_values) = match value {
             REValue::Stored(StoredValue::Component {
