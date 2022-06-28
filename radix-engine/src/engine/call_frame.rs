@@ -113,9 +113,37 @@ impl REValue {
     }
 }
 
-impl Into<REValue> for Bucket {
-    fn into(self) -> REValue {
-        REValue::Transient(TransientValue::Bucket(self))
+impl Into<(REValue, HashSet<ValueId>)> for Bucket {
+    fn into(self) -> (REValue, HashSet<ValueId>) {
+        (REValue::Transient(TransientValue::Bucket(self)), HashSet::new())
+    }
+}
+
+impl Into<(REValue, HashSet<ValueId>)> for Proof {
+    fn into(self) -> (REValue, HashSet<ValueId>) {
+        (REValue::Transient(TransientValue::Proof(self)), HashSet::new())
+    }
+}
+
+impl Into<(REValue, HashSet<ValueId>)> for Vault {
+    fn into(self) -> (REValue, HashSet<ValueId>) {
+        (REValue::Stored(StoredValue::Vault(self)), HashSet::new())
+}
+}
+
+impl Into<(REValue, HashSet<ValueId>)> for PreCommittedKeyValueStore {
+    fn into(self) -> (REValue, HashSet<ValueId>) {
+        let value = REValue::Stored(StoredValue::KeyValueStore {
+            store: self,
+            child_values: InMemoryChildren::new(),
+        });
+        (value, HashSet::new())
+    }
+}
+
+impl Into<(REValue, HashSet<ValueId>)> for ValidatedPackage {
+    fn into(self) -> (REValue, HashSet<ValueId>) {
+        (REValue::Package(self), HashSet::new())
     }
 }
 
@@ -125,27 +153,6 @@ impl Into<Bucket> for REValue {
             REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
             _ => panic!("Expected to be a bucket"),
         }
-    }
-}
-
-impl Into<REValue> for Proof {
-    fn into(self) -> REValue {
-        REValue::Transient(TransientValue::Proof(self))
-    }
-}
-
-impl Into<REValue> for Vault {
-    fn into(self) -> REValue {
-        REValue::Stored(StoredValue::Vault(self))
-    }
-}
-
-impl Into<REValue> for PreCommittedKeyValueStore {
-    fn into(self) -> REValue {
-        REValue::Stored(StoredValue::KeyValueStore {
-            store: self,
-            child_values: InMemoryChildren::new(),
-        })
     }
 }
 
@@ -1714,8 +1721,8 @@ where
         self.owned_values.remove(&value_id).unwrap().into_inner()
     }
 
-    fn native_create<V: Into<REValue>>(&mut self, v: V) -> ValueId {
-        let value = v.into();
+    fn native_create<V: Into<(REValue, HashSet<ValueId>)>>(&mut self, v: V) -> ValueId {
+        let (value, children) = v.into();
         let id = match value {
             REValue::Transient(TransientValue::Bucket(..)) => {
                 let bucket_id = self.track.new_bucket_id();

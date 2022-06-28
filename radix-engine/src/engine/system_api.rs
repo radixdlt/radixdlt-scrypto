@@ -2,6 +2,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
+use scrypto::prelude::HashSet;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
@@ -42,7 +43,7 @@ where
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
 
-    fn native_create<V: Into<REValue>>(&mut self, value: V) -> ValueId;
+    fn native_create<V: Into<(REValue, HashSet<ValueId>)>>(&mut self, value: V) -> ValueId;
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
     fn create_local_component(
         &mut self,
