@@ -78,15 +78,10 @@ pub struct CallFrame<
 }
 
 #[derive(Debug)]
-pub enum TransientValue {
+pub enum REValue {
     Bucket(Bucket),
     Proof(Proof),
-}
-
-#[derive(Debug)]
-pub enum REValue {
     Stored(REPersistedChildValue),
-    Transient(TransientValue),
     Package(ValidatedPackage),
 }
 
@@ -97,8 +92,8 @@ impl REValue {
             REValue::Stored(REPersistedChildValue::Vault(..)) => Err(DropFailure::Vault),
             REValue::Stored(REPersistedChildValue::KeyValueStore { .. }) => Err(DropFailure::KeyValueStore),
             REValue::Stored(REPersistedChildValue::Component { .. }) => Err(DropFailure::Component),
-            REValue::Transient(TransientValue::Bucket(..)) => Err(DropFailure::Bucket),
-            REValue::Transient(TransientValue::Proof(proof)) => {
+            REValue::Bucket(..) => Err(DropFailure::Bucket),
+            REValue::Proof(proof) => {
                 proof.drop();
                 Ok(())
             }
@@ -109,7 +104,7 @@ impl REValue {
 impl Into<Bucket> for REValue {
     fn into(self) -> Bucket {
         match self {
-            REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+            REValue::Bucket(bucket) => bucket,
             _ => panic!("Expected to be a bucket"),
         }
     }
@@ -118,7 +113,7 @@ impl Into<Bucket> for REValue {
 impl Into<Proof> for REValue {
     fn into(self) -> Proof {
         match self {
-            REValue::Transient(TransientValue::Proof(proof)) => proof,
+            REValue::Proof(proof) => proof,
             _ => panic!("Expected to be a proof"),
         }
     }
@@ -365,7 +360,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
         match self {
             RENativeValueRef::OwnedRef(REOwnedValueRef::Root(ref mut root)) => {
                 match root.deref_mut() {
-                    REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
+                    REValue::Bucket(bucket) => bucket,
                     _ => panic!("Expecting to be a bucket"),
                 }
             }
@@ -377,7 +372,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
         match self {
             RENativeValueRef::OwnedRef(REOwnedValueRef::Root(ref mut root)) => {
                 match root.deref_mut() {
-                    REValue::Transient(TransientValue::Proof(proof)) => proof,
+                    REValue::Proof(proof) => proof,
                     _ => panic!("Expecting to be a proof"),
                 }
             }
@@ -1048,12 +1043,12 @@ where
                 if let Some(celled_value) = maybe {
                     let value = celled_value.into_inner();
                     match &value {
-                        REValue::Transient(TransientValue::Bucket(bucket)) => {
+                        REValue::Bucket(bucket) => {
                             if bucket.is_locked() {
                                 return Err(RuntimeError::CantMoveLockedBucket);
                             }
                         }
-                        REValue::Transient(TransientValue::Proof(proof)) => {
+                        REValue::Proof(proof) => {
                             if proof.is_restricted() {
                                 return Err(RuntimeError::CantMoveRestrictedProof(id));
                             }
@@ -1133,7 +1128,7 @@ where
         for (_, value) in &mut next_owned_values {
             trace!(self, Level::Debug, "Sending value: {:?}", value);
             match value {
-                REValue::Transient(TransientValue::Proof(proof)) => proof.change_to_restricted(),
+                REValue::Proof(proof) => proof.change_to_restricted(),
                 _ => {}
             }
         }
@@ -1168,7 +1163,7 @@ where
                     .into_inner();
 
                 let method_auths = match &value {
-                    REValue::Transient(TransientValue::Bucket(bucket)) => {
+                    REValue::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         let substate_value = self
                             .track
@@ -1185,7 +1180,7 @@ where
                         );
                         vec![method_auth.clone()]
                     }
-                    REValue::Transient(TransientValue::Proof(_)) => vec![],
+                    REValue::Proof(_) => vec![],
                     REValue::Stored(REPersistedChildValue::Component {..}) => vec![],
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
@@ -1913,7 +1908,7 @@ where
                 self.owned_values
                     .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
                     .map(|p| match p.borrow().deref() {
-                        REValue::Transient(TransientValue::Proof(proof)) => proof.clone(),
+                        REValue::Proof(proof) => proof.clone(),
                         _ => panic!("Expected proof"),
                     })
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))

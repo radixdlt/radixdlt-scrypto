@@ -55,8 +55,8 @@ impl Into<REValue> for REPrimitiveValue {
     fn into(self) -> REValue {
         match self {
             REPrimitiveValue::Package(package) => REValue::Package(package),
-            REPrimitiveValue::Bucket(bucket) => REValue::Transient(TransientValue::Bucket(bucket)),
-            REPrimitiveValue::Proof(proof) => REValue::Transient(TransientValue::Proof(proof)),
+            REPrimitiveValue::Bucket(bucket) => REValue::Bucket(bucket),
+            REPrimitiveValue::Proof(proof) => REValue::Proof(proof),
             REPrimitiveValue::KeyValue(store) => {
                 REValue::Stored(REPersistedChildValue::KeyValueStore {
                     store: store,
