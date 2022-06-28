@@ -189,7 +189,7 @@ impl Vault {
                 let input: VaultTakeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take(input.amount)?;
-                let bucket_id = system_api.native_create(Bucket::new(container)).into();
+                let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -198,7 +198,7 @@ impl Vault {
                 let input: VaultTakeNonFungiblesInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take_non_fungibles(&input.non_fungible_ids)?;
-                let bucket_id = system_api.native_create(Bucket::new(container)).into();
+                let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -229,7 +229,7 @@ impl Vault {
                 let proof = vault
                     .create_proof(ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api.native_create(proof).into();
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -240,7 +240,7 @@ impl Vault {
                 let proof = vault
                     .create_proof_by_amount(input.amount, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api.native_create(proof).into();
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -251,7 +251,7 @@ impl Vault {
                 let proof = vault
                     .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api.native_create(proof).into();
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

@@ -103,7 +103,7 @@ impl AuthZone {
                 let _: AuthZonePopInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let proof = self.pop()?;
-                let proof_id = system_api.native_create(proof).into();
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -129,7 +129,7 @@ impl AuthZone {
                     .map_err(|_| AuthZoneError::CouldNotGetResource)?;
                 let resource_type = resource_manager.resource_type();
                 let proof = self.create_proof(input.resource_address, resource_type)?;
-                let proof_id = system_api.native_create(proof).into();
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -146,7 +146,7 @@ impl AuthZone {
                     input.resource_address,
                     resource_type,
                 )?;
-                let proof_id = system_api.native_create(proof).into();
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -160,7 +160,7 @@ impl AuthZone {
                 let resource_type = resource_manager.resource_type();
                 let proof =
                     self.create_proof_by_ids(&input.ids, input.resource_address, resource_type)?;
-                let proof_id = system_api.native_create(proof).into();
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

@@ -408,7 +408,7 @@ impl ResourceManager {
                     let container =
                         resource_manager.mint(mint_params, resource_address, system_api)?;
                     system_api.return_native_value(resource_id, value);
-                    let bucket_id = system_api.native_create(Bucket::new(container)).into();
+                    let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
                     Some(scrypto::resource::Bucket(bucket_id))
                 } else {
                     None
@@ -456,7 +456,7 @@ impl ResourceManager {
                     resource_address,
                     resource_manager.resource_type(),
                 );
-                let vault_id = system_api.native_create(Vault::new(container)).into();
+                let vault_id = system_api.native_create(Vault::new(container)).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Vault(
                     vault_id,
                 )))
@@ -468,7 +468,7 @@ impl ResourceManager {
                     resource_address,
                     resource_manager.resource_type(),
                 );
-                let bucket_id = system_api.native_create(Bucket::new(container)).into();
+                let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -478,7 +478,7 @@ impl ResourceManager {
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let container =
                     resource_manager.mint(input.mint_params, resource_address, system_api)?;
-                let bucket_id = system_api.native_create(Bucket::new(container)).into();
+                let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))

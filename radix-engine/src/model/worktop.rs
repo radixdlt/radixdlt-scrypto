@@ -238,7 +238,7 @@ impl Worktop {
                     let resource_type = resource_manager.resource_type();
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
-                let bucket_id = system_api.native_create(Bucket::new(resource_container)).into();
+                let bucket_id = system_api.native_create(Bucket::new(resource_container)).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -259,7 +259,7 @@ impl Worktop {
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
-                let bucket_id = system_api.native_create(Bucket::new(resource_container)).into();
+                let bucket_id = system_api.native_create(Bucket::new(resource_container)).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -280,7 +280,7 @@ impl Worktop {
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
-                let bucket_id = system_api.native_create(Bucket::new(resource_container)).into();
+                let bucket_id = system_api.native_create(Bucket::new(resource_container)).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -326,7 +326,7 @@ impl Worktop {
                         .take_all_liquid()
                         .map_err(WorktopError::ResourceContainerError)?;
                     if !container.is_empty() {
-                        let bucket_id = system_api.native_create(Bucket::new(container)).into();
+                        let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
                         buckets.push(scrypto::resource::Bucket(bucket_id));
                     }
                 }

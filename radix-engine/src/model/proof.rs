@@ -362,7 +362,7 @@ impl Proof {
                 let _: ProofCloneInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let cloned_proof = proof.clone();
-                let proof_id = system_api.native_create(cloned_proof).into();
+                let proof_id = system_api.native_create(cloned_proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

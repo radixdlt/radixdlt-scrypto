@@ -42,12 +42,8 @@ where
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
 
-    fn native_create<V: Into<REValueByComplexity>>(&mut self, v: V) -> ValueId;
+    fn native_create<V: Into<REValueByComplexity>>(&mut self, v: V) -> Result<ValueId, RuntimeError>;
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
-    fn create_local_component(
-        &mut self,
-        component: Component,
-    ) -> Result<ComponentAddress, RuntimeError>;
 
     fn data(
         &mut self,

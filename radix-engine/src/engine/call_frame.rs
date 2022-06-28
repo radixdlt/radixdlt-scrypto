@@ -95,6 +95,29 @@ pub enum REComplexValue {
     Component(Component)
 }
 
+impl REComplexValue {
+    fn get_children(&self) -> Result<HashSet<ValueId>, RuntimeError> {
+        match self {
+            REComplexValue::Component(component) => {
+                let value =
+                    ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
+                Ok(value.value_ids())
+            }
+        }
+    }
+
+    fn into_re_value(self, children: HashMap<StoredValueId, StoredValue>) -> REValue {
+        match self {
+            REComplexValue::Component(component) => {
+                REValue::Stored(StoredValue::Component {
+                    component,
+                    child_values: InMemoryChildren::with_values(children),
+                })
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum REPrimitiveValue {
     Package(ValidatedPackage),
@@ -107,6 +130,7 @@ pub enum REPrimitiveValue {
 #[derive(Debug)]
 pub enum REValueByComplexity {
     Primitive(REPrimitiveValue),
+    Complex(REComplexValue),
 }
 
 impl Into<REValue> for REPrimitiveValue {
@@ -158,8 +182,11 @@ impl Into<REValueByComplexity> for ValidatedPackage {
     }
 }
 
-
-
+impl Into<REValueByComplexity> for Component {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Complex(REComplexValue::Component(self))
+    }
+}
 
 impl REValue {
     fn to_stored(&mut self) -> &mut StoredValue {
@@ -1757,9 +1784,9 @@ where
         self.owned_values.remove(&value_id).unwrap().into_inner()
     }
 
-    fn native_create<V: Into<REValueByComplexity>>(&mut self, v: V) -> ValueId {
-        let value = v.into();
-        let id = match value {
+    fn native_create<V: Into<REValueByComplexity>>(&mut self, v: V) -> Result<ValueId, RuntimeError> {
+        let value_by_complexity = v.into();
+        let id = match value_by_complexity {
             REValueByComplexity::Primitive(REPrimitiveValue::Bucket(..)) => {
                 let bucket_id = self.track.new_bucket_id();
                 ValueId::Transient(TransientValueId::Bucket(bucket_id))
@@ -1780,13 +1807,26 @@ where
                 let package_address = self.track.new_package_address();
                 ValueId::Package(package_address)
             }
+            REValueByComplexity::Complex(REComplexValue::Component(..)) => {
+                let component_address = self.track.new_component_address();
+                ValueId::Stored(StoredValueId::Component(component_address))
+            }
         };
 
-        match value {
-            REValueByComplexity::Primitive(primitive) => {
-                self.owned_values.insert(id, RefCell::new(primitive.into()));
+        let re_value = match value_by_complexity {
+            REValueByComplexity::Primitive(primitive) => primitive.into(),
+            REValueByComplexity::Complex(complex) => {
+                let children = complex.get_children()?;
+                let (taken_values, mut missing) = self.take_available_values(children, true)?;
+                let first_missing_value = missing.drain().nth(0);
+                if let Some(missing_value) = first_missing_value {
+                    return Err(RuntimeError::ValueNotFound(missing_value));
+                }
+                let to_store_values = to_stored_values(taken_values)?;
+                complex.into_re_value(to_store_values)
             }
-        }
+        };
+        self.owned_values.insert(id, RefCell::new(re_value));
 
         match id {
             ValueId::Stored(StoredValueId::KeyValueStoreId(..)) => {
@@ -1798,7 +1838,7 @@ where
             _ => {}
         }
 
-        id
+        Ok(id)
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
@@ -1810,31 +1850,6 @@ where
         );
 
         resource_address
-    }
-
-    fn create_local_component(
-        &mut self,
-        component: Component,
-    ) -> Result<ComponentAddress, RuntimeError> {
-        let value =
-            ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
-        let value_ids = value.value_ids();
-        let (taken_values, mut missing) = self.take_available_values(value_ids, true)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::ValueNotFound(missing_value));
-        }
-        let to_store_values = to_stored_values(taken_values)?;
-
-        let component_address = self.track.new_component_address();
-        self.owned_values.insert(
-            ValueId::Stored(StoredValueId::Component(component_address)),
-            RefCell::new(REValue::Stored(StoredValue::Component {
-                component,
-                child_values: InMemoryChildren::with_values(to_store_values),
-            })),
-        );
-        Ok(component_address)
     }
 
     fn native_globalize(&mut self, value_id: &ValueId) {
