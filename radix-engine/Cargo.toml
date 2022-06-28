@@ -8,8 +8,6 @@ sbor = { path = "../sbor", default-features = false }
 scrypto = { path = "../scrypto", default-features = false }
 transaction = { path = "../transaction", default-features = false }
 colored = { version = "2.0.0", default-features = false }
-lru = { version = "0.7.5" }
-bencher = { version = "0.1.5" }
 hex = { version = "0.4.3", default-features = false }
 indexmap = { version = "1.8.1" }
 
@@ -31,9 +29,18 @@ wasmer-compiler-singlepass = { version = "2.2.1", optional = true }
 
 [dev-dependencies]
 wabt = { version = "0.10.0" }
+criterion = { version = "0.3", features = ["html_reports"] }
 
 [[bench]]
-name = "bench"
+name = "radix_engine"
+harness = false
+
+[[bench]]
+name = "transaction"
+harness = false
+
+[[bench]]
+name = "wasm"
 harness = false
 
 [features]
