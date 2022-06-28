@@ -33,32 +33,10 @@ where
 
     fn native_globalize(&mut self, value_id: &ValueId);
 
-    fn get_non_fungible(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<NonFungible>;
-
-    fn set_non_fungible(
-        &mut self,
-        non_fungible_address: NonFungibleAddress,
-        non_fungible: Option<NonFungible>,
-    );
-
     fn borrow_global_resource_manager(
         &mut self,
         resource_address: ResourceAddress,
     ) -> Result<&ResourceManager, RuntimeError>;
-
-    fn borrow_global_mut_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ResourceManager, RuntimeError>;
-
-    fn return_borrowed_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-        resource_manager: ResourceManager,
-    );
 
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed>;
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
@@ -80,6 +58,15 @@ where
         address: SubstateAddress,
         instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError>;
+    fn get_non_fungible(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<NonFungible>;
+    fn set_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+        non_fungible: Option<NonFungible>,
+    );
 
     fn get_epoch(&mut self) -> u64;
 

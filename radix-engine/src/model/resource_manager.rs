@@ -402,15 +402,12 @@ impl ResourceManager {
                     ResourceManager::new(input.resource_type, input.metadata, input.access_rules)?;
                 let resource_address = system_api.create_resource(resource_manager);
                 let bucket_id = if let Some(mint_params) = input.mint_params {
-                    let mut resource_manager = system_api
-                        .borrow_global_mut_resource_manager(resource_address)
-                        .unwrap();
+                    let resource_id = ValueId::Resource(resource_address);
+                    let mut value = system_api.borrow_native_value(&resource_id);
+                    let resource_manager = value.resource_manager();
                     let container =
                         resource_manager.mint(mint_params, resource_address, system_api)?;
-                    system_api.return_borrowed_global_resource_manager(
-                        resource_address,
-                        resource_manager,
-                    );
+                    system_api.return_native_value(resource_id, value);
 
                     let bucket_id = system_api
                         .create_bucket(container)

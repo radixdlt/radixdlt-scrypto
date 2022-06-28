@@ -267,9 +267,9 @@ impl Bucket {
 
                 // Notify resource manager, TODO: Should not need to notify manually
                 let resource_address = bucket.resource_address();
-                let mut resource_manager = system_api
-                    .borrow_global_mut_resource_manager(resource_address)
-                    .unwrap();
+                let resource_id = ValueId::Resource(resource_address);
+                let mut value = system_api.borrow_native_value(&resource_id);
+                let resource_manager = value.resource_manager();
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
                     for id in bucket.total_ids().unwrap() {
@@ -277,8 +277,7 @@ impl Bucket {
                         system_api.set_non_fungible(non_fungible_address, Option::None);
                     }
                 }
-                system_api
-                    .return_borrowed_global_resource_manager(resource_address, resource_manager);
+                system_api.return_native_value(resource_id, value);
 
                 Ok(ScryptoValue::from_typed(&()))
             }

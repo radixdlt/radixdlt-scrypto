@@ -1179,6 +1179,10 @@ where
                             _ => panic!("Value is not a resource manager"),
                         };
                         let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
+                        readable_values.insert(
+                            ValueId::Resource(resource_address),
+                            REValueLocation::Track { parent: None },
+                        );
                         vec![method_auth.clone()]
                     }
                     REValue::Transient(TransientValue::Proof(_)) => vec![],
@@ -1437,11 +1441,11 @@ where
                         let package_address = owned_ref.component().package_address();
 
                         borrowed_values.insert(value_id, owned_ref);
+                        readable_values.insert(value_id, REValueLocation::BorrowedRoot);
                         readable_values.insert(
                             ValueId::Package(package_address),
                             REValueLocation::Track { parent: None },
                         );
-                        readable_values.insert(value_id, REValueLocation::BorrowedRoot);
                     }
                     _ => panic!("Unexpected"),
                 }
@@ -1646,30 +1650,6 @@ where
             })
     }
 
-    fn borrow_global_mut_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ResourceManager, RuntimeError> {
-        self.track
-            .borrow_global_mut_value(resource_address.clone())
-            .map(|v| v.into())
-            .map_err(|e| match e {
-                TrackError::NotFound => {
-                    RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                }
-                TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
-            })
-    }
-
-    fn return_borrowed_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-        resource_manager: ResourceManager,
-    ) {
-        self.track
-            .return_borrowed_global_mut_value(resource_address, resource_manager)
-    }
-
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
         let location = self.readable_values.get(value_id).unwrap();
         location.borrow_native_ref(value_id, &mut self.borrowed_values, &mut self.track)
@@ -1713,37 +1693,18 @@ where
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
-        self.track.create_uuid_value(resource_manager).into()
+        let resource_address = self.track.create_uuid_value(resource_manager).into();
+
+        self.readable_values.insert(
+            ValueId::Resource(resource_address),
+            REValueLocation::Track { parent: None },
+        );
+
+        resource_address
     }
 
     fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress {
         self.track.create_uuid_value(package).into()
-    }
-
-    fn native_globalize(&mut self, value_id: &ValueId) {
-        let value = self.owned_values.remove(value_id).unwrap().into_inner();
-
-        let (component, child_values) = match value {
-            REValue::Stored(StoredValue::Component {
-                component,
-                child_values,
-            }) => (component, child_values),
-            _ => panic!("Expected to be a component"),
-        };
-
-        let component_address = match value_id {
-            ValueId::Stored(StoredValueId::Component(component_address)) => *component_address,
-            _ => panic!("Expected to be a component address"),
-        };
-
-        self.track.create_uuid_value_2(component_address, component);
-
-        let mut to_store_values = HashMap::new();
-        for (id, cell) in child_values.into_iter() {
-            to_store_values.insert(id, cell.into_inner());
-        }
-        self.track
-            .insert_objects_into_component(to_store_values, component_address);
     }
 
     fn create_local_component(
@@ -1770,6 +1731,32 @@ where
             })),
         );
         Ok(component_address)
+    }
+
+    fn native_globalize(&mut self, value_id: &ValueId) {
+        let value = self.owned_values.remove(value_id).unwrap().into_inner();
+
+        let (component, child_values) = match value {
+            REValue::Stored(StoredValue::Component {
+                component,
+                child_values,
+            }) => (component, child_values),
+            _ => panic!("Expected to be a component"),
+        };
+
+        let component_address = match value_id {
+            ValueId::Stored(StoredValueId::Component(component_address)) => *component_address,
+            _ => panic!("Expected to be a component address"),
+        };
+
+        self.track.create_uuid_value_2(component_address, component);
+
+        let mut to_store_values = HashMap::new();
+        for (id, cell) in child_values.into_iter() {
+            to_store_values.insert(id, cell.into_inner());
+        }
+        self.track
+            .insert_objects_into_component(to_store_values, component_address);
     }
 
     fn create_kv_store(&mut self) -> KeyValueStoreId {
