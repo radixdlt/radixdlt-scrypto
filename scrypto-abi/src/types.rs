@@ -67,6 +67,8 @@ pub enum ScryptoType {
     Hash,
     EcdsaPublicKey,
     EcdsaSignature,
+    Ed25519PublicKey,
+    Ed25519Signature,
 
     // math
     Decimal,
@@ -81,19 +83,21 @@ pub enum ScryptoType {
 }
 
 // Need to update `scrypto-derive/src/import.rs` after changing the table below
-const MAPPING: [(ScryptoType, u8, &str); 14] = [
+const MAPPING: [(ScryptoType, u8, &str); 16] = [
     (ScryptoType::PackageAddress, 0x80, "PackageAddress"), // 128
     (ScryptoType::ComponentAddress, 0x81, "ComponentAddress"), // 129
     (ScryptoType::Component, 0x82, "ComponentAddress"),    // 130
     (ScryptoType::KeyValueStore, 0x83, "KeyValueStore"),   // 131
     (ScryptoType::Hash, 0x90, "Hash"),                     // 144
-    (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"),
-    (ScryptoType::EcdsaSignature, 0x93, "EcdsaSignature"),
-    (ScryptoType::Decimal, 0xa1, "Decimal"), // 161
-    (ScryptoType::Bucket, 0xb1, "Bucket"),   // 177
-    (ScryptoType::Proof, 0xb2, "Proof"),     // 178
-    (ScryptoType::Vault, 0xb3, "Vault"),     // 179
-    (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"), // 180
+    (ScryptoType::EcdsaPublicKey, 0x91, "EcdsaPublicKey"), // 145
+    (ScryptoType::EcdsaSignature, 0x92, "EcdsaSignature"), // 146
+    (ScryptoType::Ed25519PublicKey, 0x93, "Ed25519PublicKey"), // 147
+    (ScryptoType::Ed25519Signature, 0x94, "Ed25519Signature"), // 148
+    (ScryptoType::Decimal, 0xa1, "Decimal"),               // 161
+    (ScryptoType::Bucket, 0xb1, "Bucket"),                 // 177
+    (ScryptoType::Proof, 0xb2, "Proof"),                   // 178
+    (ScryptoType::Vault, 0xb3, "Vault"),                   // 179
+    (ScryptoType::NonFungibleId, 0xb4, "NonFungibleId"),   // 180
     (ScryptoType::NonFungibleAddress, 0xb5, "NonFungibleAddress"), // 181
     (ScryptoType::ResourceAddress, 0xb6, "ResourceAddress"), // 182
 ];
