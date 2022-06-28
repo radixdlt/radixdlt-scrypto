@@ -1,7 +1,4 @@
-#[macro_use]
-extern crate bencher;
-use bencher::Bencher;
-
+use criterion::{criterion_group, criterion_main, Criterion};
 use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::wasm::DefaultWasmEngine;
@@ -12,7 +9,7 @@ use transaction::builder::ManifestBuilder;
 use transaction::model::TestTransaction;
 use transaction::signing::EcdsaPrivateKey;
 
-fn bench_transfer(b: &mut Bencher) {
+fn bench_transfer(c: &mut Criterion) {
     // Set up environment.
     let mut substate_store = InMemorySubstateStore::with_bootstrap();
     let mut wasm_engine = DefaultWasmEngine::new();
@@ -53,16 +50,18 @@ fn bench_transfer(b: &mut Bencher) {
 
     // Loop
     let mut nonce = 3;
-    b.iter(|| {
-        let receipt = executor.execute(&TestTransaction::new(
-            manifest.clone(),
-            nonce,
-            vec![public_key],
-        ));
-        receipt.result.expect("It should work");
-        nonce += 1;
+    c.bench_function("Transfer", |b| {
+        b.iter(|| {
+            let receipt = executor.execute(&TestTransaction::new(
+                manifest.clone(),
+                nonce,
+                vec![public_key],
+            ));
+            receipt.result.expect("It should work");
+            nonce += 1;
+        })
     });
 }
 
-benchmark_group!(radix_engine, bench_transfer);
-benchmark_main!(radix_engine);
+criterion_group!(radix_engine, bench_transfer);
+criterion_main!(radix_engine);
