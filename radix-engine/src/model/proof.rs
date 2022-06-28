@@ -387,7 +387,6 @@ impl Proof {
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
-
         let proof: Proof = system_api.take_native_value(&value_id).into();
         match method_name {
             "drop" => {

@@ -215,7 +215,9 @@ impl Worktop {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .take_native_value(&ValueId::Transient(TransientValueId::Bucket(input.bucket.0)))
+                    .take_native_value(&ValueId::Transient(TransientValueId::Bucket(
+                        input.bucket.0,
+                    )))
                     .into();
                 self.put(bucket)
                     .map_err(WorktopError::ResourceContainerError)?;

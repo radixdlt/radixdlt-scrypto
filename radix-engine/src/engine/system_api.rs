@@ -31,7 +31,7 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn globalize(&mut self, component_address: ComponentAddress) -> Result<(), RuntimeError>;
+    fn native_globalize(&mut self, value_id: &ValueId);
 
     fn get_non_fungible(
         &mut self,

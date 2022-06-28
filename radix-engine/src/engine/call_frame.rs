@@ -939,7 +939,11 @@ where
                         Proof::main_consume(value_id, fn_ident, input, self)
                             .map_err(RuntimeError::ProofError)
                     }
-                    _ => panic!("Unexpected")
+                    ValueId::Stored(StoredValueId::Component(..)) => {
+                        Component::main_consume(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ComponentError)
+                    }
+                    _ => panic!("Unexpected"),
                 },
                 SNodeExecution::AuthZone(mut auth_zone) => auth_zone
                     .main(fn_ident, input, self)
@@ -1119,14 +1123,14 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.value_ids();
-        let (mut taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let (mut next_owned_values, mut missing) = self.take_available_values(values_to_take)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
         }
 
         // Internal state update to taken values
-        for (_, value) in &mut taken_values {
+        for (_, value) in &mut next_owned_values {
             trace!(self, Level::Debug, "Sending value: {:?}", value);
             match value {
                 REValue::Transient(TransientValue::Proof(proof)) => proof.change_to_restricted(),
@@ -1137,7 +1141,6 @@ where
         let mut locked_values = HashSet::new();
         let mut readable_values = HashMap::new();
         let mut borrowed_values = HashMap::new();
-        let mut owned_values = HashMap::new();
 
         // Authorization and state load
         let (loaded_snode, method_auths) = match &snode_ref {
@@ -1179,10 +1182,11 @@ where
                         vec![method_auth.clone()]
                     }
                     REValue::Transient(TransientValue::Proof(_)) => vec![],
+                    REValue::Stored(StoredValue::Component {..}) => vec![],
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                owned_values.insert(*value_id, value);
+                next_owned_values.insert(*value_id, value);
 
                 Ok((SNodeExecution::Consumed(*value_id), method_auths))
             }
@@ -1571,7 +1575,7 @@ where
                 }
                 _ => None,
             },
-            taken_values,
+            next_owned_values,
             readable_values,
             borrowed_values,
             self.auth_zone.as_ref(),
@@ -1676,10 +1680,7 @@ where
     }
 
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue {
-        self.owned_values
-            .remove(&value_id)
-            .unwrap()
-            .into_inner()
+        self.owned_values.remove(&value_id).unwrap().into_inner()
     }
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
@@ -1719,14 +1720,8 @@ where
         self.track.create_uuid_value(package).into()
     }
 
-    fn globalize(&mut self, component_address: ComponentAddress) -> Result<(), RuntimeError> {
-        let value = self
-            .owned_values
-            .remove(&ValueId::Stored(StoredValueId::Component(
-                component_address,
-            )))
-            .ok_or(RuntimeError::ComponentNotFound(component_address))?
-            .into_inner();
+    fn native_globalize(&mut self, value_id: &ValueId) {
+        let value = self.owned_values.remove(value_id).unwrap().into_inner();
 
         let (component, child_values) = match value {
             REValue::Stored(StoredValue::Component {
@@ -1734,6 +1729,11 @@ where
                 child_values,
             }) => (component, child_values),
             _ => panic!("Expected to be a component"),
+        };
+
+        let component_address = match value_id {
+            ValueId::Stored(StoredValueId::Component(component_address)) => *component_address,
+            _ => panic!("Expected to be a component address"),
         };
 
         self.track.create_uuid_value_2(component_address, component);
@@ -1744,7 +1744,6 @@ where
         }
         self.track
             .insert_objects_into_component(to_store_values, component_address);
-        Ok(())
     }
 
     fn create_local_component(

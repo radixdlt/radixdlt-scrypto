@@ -207,7 +207,9 @@ impl Bucket {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
-                    .take_native_value(&ValueId::Transient(TransientValueId::Bucket(input.bucket.0)))
+                    .take_native_value(&ValueId::Transient(TransientValueId::Bucket(
+                        input.bucket.0,
+                    )))
                     .into();
                 bucket0
                     .put(other_bucket)
@@ -256,7 +258,6 @@ impl Bucket {
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, BucketError> {
-
         match method_name {
             "burn" => {
                 let _: ConsumingBucketBurnInput =
