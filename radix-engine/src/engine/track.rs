@@ -685,7 +685,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new package ID.
-    fn new_package_address(&mut self) -> PackageAddress {
+    pub fn new_package_address(&mut self) -> PackageAddress {
         // Security Alert: ensure ID allocating will practically never fail
         let package_address = self
             .id_allocator

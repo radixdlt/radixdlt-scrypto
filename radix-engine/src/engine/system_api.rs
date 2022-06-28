@@ -44,7 +44,6 @@ where
 
     fn native_create<V: Into<REValue>>(&mut self, value: V) -> ValueId;
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
-    fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress;
     fn create_local_component(
         &mut self,
         component: Component,

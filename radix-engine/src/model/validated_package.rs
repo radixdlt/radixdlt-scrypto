@@ -6,7 +6,7 @@ use sbor::*;
 use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActorInfo;
-use scrypto::prelude::PackagePublishInput;
+use scrypto::prelude::{PackageAddress, PackagePublishInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
@@ -62,7 +62,9 @@ impl ValidatedPackage {
                     .map_err(|e| PackageError::InvalidRequestData(e))?;
                 let package =
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
-                let package_address = system_api.create_package(package);
+                let value_id = system_api.native_create(REValue::Package(package));
+                system_api.native_globalize(&value_id);
+                let package_address: PackageAddress = value_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
             _ => Err(MethodNotFound(method_name.to_string())),

@@ -87,6 +87,7 @@ pub enum TransientValue {
 pub enum REValue {
     Stored(StoredValue),
     Transient(TransientValue),
+    Package(ValidatedPackage),
 }
 
 impl REValue {
@@ -99,6 +100,7 @@ impl REValue {
 
     fn try_drop(self) -> Result<(), DropFailure> {
         match self {
+            REValue::Package(..) => Err(DropFailure::Package),
             REValue::Stored(StoredValue::Vault(..)) => Err(DropFailure::Vault),
             REValue::Stored(StoredValue::KeyValueStore { .. }) => Err(DropFailure::KeyValueStore),
             REValue::Stored(StoredValue::Component { .. }) => Err(DropFailure::Component),
@@ -1731,15 +1733,24 @@ where
                 let kv_store_id = self.track.new_kv_store_id();
                 ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id))
             }
+            REValue::Package(..) => {
+                let package_address = self.track.new_package_address();
+                ValueId::Package(package_address)
+            }
             _ => panic!("Unexpected")
         };
 
         self.owned_values.insert(id, RefCell::new(value));
 
-        self.readable_values.insert(
-            id.clone(),
-            REValueLocation::OwnedRoot,
-        );
+        match id {
+            ValueId::Stored(StoredValueId::KeyValueStoreId(..)) => {
+                self.readable_values.insert(
+                    id.clone(),
+                    REValueLocation::OwnedRoot,
+                );
+            }
+            _ => {}
+        }
 
         id
     }
@@ -1753,10 +1764,6 @@ where
         );
 
         resource_address
-    }
-
-    fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress {
-        self.track.create_uuid_value(package).into()
     }
 
     fn create_local_component(
@@ -1793,27 +1800,35 @@ where
         assert!(taken_values.len() == 1);
         let value = taken_values.into_values().nth(0).unwrap();
 
-        let (component, child_values) = match value {
+        let (substate, maybe_child_values) = match value {
             REValue::Stored(StoredValue::Component {
                 component,
                 child_values,
-            }) => (component, child_values),
-            _ => panic!("Expected to be a component"),
+            }) => {
+                (SubstateValue::Component(component), Some(child_values))
+            },
+            REValue::Package(package) => {
+                (SubstateValue::Package(package), None)
+            },
+            _ => panic!("Not expected"),
         };
 
-        let component_address = match value_id {
-            ValueId::Stored(StoredValueId::Component(component_address)) => *component_address,
+        let address = match value_id {
+            ValueId::Stored(StoredValueId::Component(component_address)) => Address::GlobalComponent(*component_address),
+            ValueId::Package(package_address) => Address::Package(*package_address),
             _ => panic!("Expected to be a component address"),
         };
 
-        self.track.create_uuid_value_2(component_address, component);
+        self.track.create_uuid_value_2(address.clone(), substate);
 
-        let mut to_store_values = HashMap::new();
-        for (id, cell) in child_values.into_iter() {
-            to_store_values.insert(id, cell.into_inner());
+        if let Some(child_values) = maybe_child_values {
+            let mut to_store_values = HashMap::new();
+            for (id, cell) in child_values.into_iter() {
+                to_store_values.insert(id, cell.into_inner());
+            }
+            self.track
+                .insert_objects_into_component(to_store_values, address.into());
         }
-        self.track
-            .insert_objects_into_component(to_store_values, component_address);
     }
 
     fn data(

@@ -100,4 +100,13 @@ impl Into<ComponentAddress> for ValueId {
     }
 }
 
+impl Into<PackageAddress> for ValueId {
+    fn into(self) -> PackageAddress {
+        match self {
+            ValueId::Package(package_address) => package_address,
+            _ => panic!("Not a package address"),
+        }
+    }
+}
+
 pub use crate::constants::*;
