@@ -238,10 +238,7 @@ impl Worktop {
                     let resource_type = resource_manager.resource_type();
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
-
-                let bucket_id = system_api
-                    .create_bucket(resource_container)
-                    .map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                let bucket_id = system_api.native_create(Bucket::new(resource_container)).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -262,9 +259,7 @@ impl Worktop {
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
-                let bucket_id = system_api
-                    .create_bucket(resource_container)
-                    .map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                let bucket_id = system_api.native_create(Bucket::new(resource_container)).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -285,9 +280,7 @@ impl Worktop {
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
-                let bucket_id = system_api
-                    .create_bucket(resource_container)
-                    .map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                let bucket_id = system_api.native_create(Bucket::new(resource_container)).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -333,9 +326,7 @@ impl Worktop {
                         .take_all_liquid()
                         .map_err(WorktopError::ResourceContainerError)?;
                     if !container.is_empty() {
-                        let bucket_id = system_api
-                            .create_bucket(container)
-                            .map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                        let bucket_id = system_api.native_create(Bucket::new(container)).into();
                         buckets.push(scrypto::resource::Bucket(bucket_id));
                     }
                 }

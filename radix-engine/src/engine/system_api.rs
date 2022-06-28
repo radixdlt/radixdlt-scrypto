@@ -42,7 +42,7 @@ where
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
 
-    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
+    fn native_create<V: Into<REValue>>(&mut self, value: V) -> ValueId;
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError>;
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError>;
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;

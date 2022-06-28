@@ -111,6 +111,12 @@ impl REValue {
     }
 }
 
+impl Into<REValue> for Bucket {
+    fn into(self) -> REValue {
+        REValue::Transient(TransientValue::Bucket(self))
+    }
+}
+
 impl Into<Bucket> for REValue {
     fn into(self) -> Bucket {
         match self {
@@ -1672,15 +1678,19 @@ where
         Ok(proof_id)
     }
 
-    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
-        let bucket_id = self.track.new_bucket_id();
-        self.owned_values.insert(
-            ValueId::Transient(TransientValueId::Bucket(bucket_id)),
-            RefCell::new(REValue::Transient(TransientValue::Bucket(Bucket::new(
-                container,
-            )))),
-        );
-        Ok(bucket_id)
+
+    fn native_create<V: Into<REValue>>(&mut self, v: V) -> ValueId {
+        let value = v.into();
+        let id = match value {
+            REValue::Transient(TransientValue::Bucket(..)) => {
+                let bucket_id = self.track.new_bucket_id();
+                ValueId::Transient(TransientValueId::Bucket(bucket_id))
+            }
+            _ => panic!("Unexpected")
+        };
+
+        self.owned_values.insert(id, RefCell::new(value));
+        id
     }
 
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {

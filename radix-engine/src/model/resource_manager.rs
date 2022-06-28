@@ -20,7 +20,7 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
-use crate::model::NonFungible;
+use crate::model::{Bucket, NonFungible};
 use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
 use crate::wasm::*;
@@ -408,10 +408,7 @@ impl ResourceManager {
                     let container =
                         resource_manager.mint(mint_params, resource_address, system_api)?;
                     system_api.return_native_value(resource_id, value);
-
-                    let bucket_id = system_api
-                        .create_bucket(container)
-                        .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                    let bucket_id = system_api.native_create(Bucket::new(container)).into();
                     Some(scrypto::resource::Bucket(bucket_id))
                 } else {
                     None
@@ -473,9 +470,7 @@ impl ResourceManager {
                     resource_address,
                     resource_manager.resource_type(),
                 );
-                let bucket_id = system_api
-                    .create_bucket(container)
-                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                let bucket_id = system_api.native_create(Bucket::new(container)).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -485,9 +480,7 @@ impl ResourceManager {
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let container =
                     resource_manager.mint(input.mint_params, resource_address, system_api)?;
-                let bucket_id = system_api
-                    .create_bucket(container)
-                    .map_err(|_| ResourceManagerError::CouldNotCreateBucket)?;
+                let bucket_id = system_api.native_create(Bucket::new(container)).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
