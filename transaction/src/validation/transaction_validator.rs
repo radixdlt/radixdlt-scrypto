@@ -281,7 +281,7 @@ impl TransactionValidator {
         let intent_payload = transaction.signed_intent.intent.to_bytes();
         let mut signers = HashSet::new();
         for sig in &transaction.signed_intent.intent_signatures {
-            if !EcdsaVerifier::verify(&intent_payload, &sig.0, &sig.1) {
+            if !verify_ecdsa(&intent_payload, &sig.0, &sig.1) {
                 return Err(SignatureValidationError::InvalidIntentSignature);
             }
             if !signers.insert(sig.0.to_vec()) {
@@ -291,7 +291,7 @@ impl TransactionValidator {
 
         // verify notary signature
         let signed_intent_payload = transaction.signed_intent.to_bytes();
-        if !EcdsaVerifier::verify(
+        if !verify_ecdsa(
             &signed_intent_payload,
             &transaction.signed_intent.intent.header.notary_public_key,
             &transaction.notary_signature,
