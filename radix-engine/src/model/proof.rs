@@ -376,16 +376,24 @@ impl Proof {
         Ok(rtn)
     }
 
-    pub fn main_consume(
-        self,
+    pub fn main_consume<
+        'borrowed,
+        S: SystemApi<'borrowed, W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    >(
+        value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
+        system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
+
+        let proof: Proof = system_api.take_native_value(&value_id).into();
         match method_name {
             "drop" => {
                 let _: ConsumingProofDropInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-                self.drop();
+                proof.drop();
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(UnknownMethod),

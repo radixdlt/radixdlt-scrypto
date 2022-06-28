@@ -251,23 +251,27 @@ impl Bucket {
         W: WasmEngine<I>,
         I: WasmInstance,
     >(
-        self,
+        value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, BucketError> {
+
         match method_name {
             "burn" => {
                 let _: ConsumingBucketBurnInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
+
+                let bucket: Bucket = system_api.take_native_value(&value_id).into();
+
                 // Notify resource manager, TODO: Should not need to notify manually
-                let resource_address = self.resource_address();
+                let resource_address = bucket.resource_address();
                 let mut resource_manager = system_api
                     .borrow_global_mut_resource_manager(resource_address)
                     .unwrap();
-                resource_manager.burn(self.total_amount());
+                resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
-                    for id in self.total_ids().unwrap() {
+                    for id in bucket.total_ids().unwrap() {
                         let non_fungible_address = NonFungibleAddress::new(resource_address, id);
                         system_api.set_non_fungible(non_fungible_address, Option::None);
                     }

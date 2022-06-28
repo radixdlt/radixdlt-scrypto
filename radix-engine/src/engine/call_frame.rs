@@ -729,7 +729,7 @@ pub enum StaticSNodeState {
 
 pub enum SNodeExecution<'a> {
     Static(StaticSNodeState),
-    Consumed(TransientValue),
+    Consumed(ValueId),
     AuthZone(RefMut<'a, AuthZone>),
     Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId),
@@ -930,13 +930,16 @@ where
                             .map_err(RuntimeError::ResourceManagerError)
                     }
                 },
-                SNodeExecution::Consumed(state) => match state {
-                    TransientValue::Bucket(bucket) => bucket
-                        .consuming_main(fn_ident, input, self)
-                        .map_err(RuntimeError::BucketError),
-                    TransientValue::Proof(proof) => proof
-                        .main_consume(fn_ident, input)
-                        .map_err(RuntimeError::ProofError),
+                SNodeExecution::Consumed(value_id) => match value_id {
+                    ValueId::Transient(TransientValueId::Bucket(..)) => {
+                        Bucket::consuming_main(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::BucketError)
+                    }
+                    ValueId::Transient(TransientValueId::Proof(..)) => {
+                        Proof::main_consume(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ProofError)
+                    }
+                    _ => panic!("Unexpected")
                 },
                 SNodeExecution::AuthZone(mut auth_zone) => auth_zone
                     .main(fn_ident, input, self)
@@ -1134,6 +1137,7 @@ where
         let mut locked_values = HashSet::new();
         let mut readable_values = HashMap::new();
         let mut borrowed_values = HashMap::new();
+        let mut owned_values = HashMap::new();
 
         // Authorization and state load
         let (loaded_snode, method_auths) = match &snode_ref {
@@ -1178,7 +1182,9 @@ where
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                Ok((SNodeExecution::Consumed(value.into()), method_auths))
+                owned_values.insert(*value_id, value);
+
+                Ok((SNodeExecution::Consumed(*value_id), method_auths))
             }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
@@ -1510,7 +1516,7 @@ where
                 SNodeExecution::Scrypto(..)
                 | SNodeExecution::ValueRef(ValueId::Resource(..), ..)
                 | SNodeExecution::ValueRef(ValueId::Stored(StoredValueId::VaultId(..)), ..)
-                | SNodeExecution::Consumed(TransientValue::Bucket(..)) => {
+                | SNodeExecution::Consumed(ValueId::Transient(TransientValueId::Bucket(..))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
