@@ -229,9 +229,7 @@ impl Vault {
                 let proof = vault
                     .create_proof(ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api
-                    .create_proof(proof)
-                    .map_err(|_| VaultError::CouldNotCreateProof)?;
+                let proof_id = system_api.native_create(proof).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -242,9 +240,7 @@ impl Vault {
                 let proof = vault
                     .create_proof_by_amount(input.amount, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api
-                    .create_proof(proof)
-                    .map_err(|_| VaultError::CouldNotCreateProof)?;
+                let proof_id = system_api.native_create(proof).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -255,9 +251,7 @@ impl Vault {
                 let proof = vault
                     .create_proof_by_ids(&input.ids, ResourceContainerId::Vault(vault_id))
                     .map_err(VaultError::ProofError)?;
-                let proof_id = system_api
-                    .create_proof(proof)
-                    .map_err(|_| VaultError::CouldNotCreateProof)?;
+                let proof_id = system_api.native_create(proof).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

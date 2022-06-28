@@ -20,7 +20,7 @@ use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
-use crate::model::{Bucket, NonFungible};
+use crate::model::{Bucket, NonFungible, Vault};
 use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
 use crate::wasm::*;
@@ -456,9 +456,7 @@ impl ResourceManager {
                     resource_address,
                     resource_manager.resource_type(),
                 );
-                let vault_id = system_api
-                    .create_vault(container)
-                    .map_err(|_| ResourceManagerError::CouldNotCreateVault)?;
+                let vault_id = system_api.native_create(Vault::new(container)).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Vault(
                     vault_id,
                 )))

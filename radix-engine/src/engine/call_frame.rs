@@ -126,6 +126,18 @@ impl Into<Bucket> for REValue {
     }
 }
 
+impl Into<REValue> for Proof {
+    fn into(self) -> REValue {
+        REValue::Transient(TransientValue::Proof(self))
+    }
+}
+
+impl Into<REValue> for Vault {
+    fn into(self) -> REValue {
+        REValue::Stored(StoredValue::Vault(self))
+    }
+}
+
 impl Into<Proof> for REValue {
     fn into(self) -> Proof {
         match self {
@@ -1669,16 +1681,6 @@ where
         self.owned_values.remove(&value_id).unwrap().into_inner()
     }
 
-    fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
-        let proof_id = self.track.new_proof_id();
-        self.owned_values.insert(
-            ValueId::Transient(TransientValueId::Proof(proof_id)),
-            RefCell::new(REValue::Transient(TransientValue::Proof(proof))),
-        );
-        Ok(proof_id)
-    }
-
-
     fn native_create<V: Into<REValue>>(&mut self, v: V) -> ValueId {
         let value = v.into();
         let id = match value {
@@ -1686,20 +1688,19 @@ where
                 let bucket_id = self.track.new_bucket_id();
                 ValueId::Transient(TransientValueId::Bucket(bucket_id))
             }
+            REValue::Transient(TransientValue::Proof(..)) => {
+                let proof_id = self.track.new_proof_id();
+                ValueId::Transient(TransientValueId::Proof(proof_id))
+            }
+            REValue::Stored(StoredValue::Vault(..)) => {
+                let vault_id = self.track.new_vault_id();
+                ValueId::Stored(StoredValueId::VaultId(vault_id))
+            }
             _ => panic!("Unexpected")
         };
 
         self.owned_values.insert(id, RefCell::new(value));
         id
-    }
-
-    fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
-        let vault_id = self.track.new_vault_id();
-        self.owned_values.insert(
-            ValueId::vault_id(vault_id.clone()),
-            RefCell::new(REValue::Stored(StoredValue::Vault(Vault::new(container)))),
-        );
-        Ok(vault_id)
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {

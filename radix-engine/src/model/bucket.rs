@@ -228,9 +228,7 @@ impl Bucket {
                 let proof = bucket0
                     .create_proof(bucket_id)
                     .map_err(BucketError::ProofError)?;
-                let proof_id = system_api
-                    .create_proof(proof)
-                    .map_err(|_| BucketError::CouldNotCreateProof)?;
+                let proof_id = system_api.native_create(proof).into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
