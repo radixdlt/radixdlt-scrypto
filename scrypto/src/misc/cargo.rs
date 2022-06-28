@@ -1,7 +1,19 @@
-use cargo_toml::{Manifest, Product};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+
+// Pattern matching to find the crate name. Not a sound solution but saves from
+// heavy serialization frameworks.
+fn extract_crate_name(mut content: &str) -> Result<String, ()> {
+    let idx = content.find("name").ok_or(())?;
+    content = &content[idx + 4..];
+
+    let idx = content.find('"').ok_or(())?;
+    content = &content[idx + 1..];
+
+    let end = content.find('"').ok_or(())?;
+    Ok(content[..end].to_string())
+}
 
 /// Compiles a Scrypto package.
 pub fn compile_package<P: AsRef<Path>>(package_dir: P) -> Vec<u8> {
@@ -18,13 +30,11 @@ pub fn compile_package<P: AsRef<Path>>(package_dir: P) -> Vec<u8> {
     // resolve wasm name
     let mut cargo = package_dir.as_ref().to_owned();
     cargo.push("Cargo.toml");
-    let manifest = Manifest::from_path(&cargo).unwrap();
-    let wasm_name = if let Some(Product { name: Some(x), .. }) = manifest.lib {
-        // lib name
-        x
-    } else if let Some(pkg) = manifest.package {
-        // package name
-        pkg.name.replace("-", "_")
+    let wasm_name = if cargo.exists() {
+        let content = fs::read_to_string(cargo).expect("Failed to read the Cargo.toml file");
+        extract_crate_name(&content)
+            .expect("Failed to extract crate name from the Cargo.toml file")
+            .replace("-", "_")
     } else {
         // file name
         package_dir
@@ -47,4 +57,25 @@ pub fn compile_package<P: AsRef<Path>>(package_dir: P) -> Vec<u8> {
 
     // return
     fs::read(path).unwrap()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract_crate_name() {
+        assert_eq!(
+            "hello-world",
+            extract_crate_name(
+                r#"
+                [package]
+                name = "hello-world"
+                version = "0.1.0"
+                edition = "2021"
+                "#
+            )
+            .unwrap()
+        )
+    }
 }
