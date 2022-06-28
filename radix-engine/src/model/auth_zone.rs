@@ -113,9 +113,9 @@ impl AuthZone {
             "push" => {
                 let input: AuthZonePushInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let mut proof = system_api
-                    .take_proof(input.proof.0)
-                    .map_err(|_| AuthZoneError::CouldNotGetProof)?;
+                let mut proof: Proof = system_api
+                    .take_native_value(&ValueId::Transient(TransientValueId::Proof(input.proof.0)))
+                    .into();
                 // FIXME: this is a hack for now until we can get snode_state into process
                 // FIXME: and be able to determine which snode the proof is going into
                 proof.change_to_unrestricted();

@@ -31,6 +31,8 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
+    fn globalize(&mut self, component_address: ComponentAddress) -> Result<(), RuntimeError>;
+
     fn get_non_fungible(
         &mut self,
         non_fungible_address: &NonFungibleAddress,
@@ -63,24 +65,14 @@ where
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
 
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
-
     fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError>;
-
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError>;
-
-    fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError>;
-
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
-
     fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress;
-
-    fn globalize(&mut self, component_address: ComponentAddress) -> Result<(), RuntimeError>;
-
     fn create_local_component(
         &mut self,
         component: Component,
     ) -> Result<ComponentAddress, RuntimeError>;
-
     fn create_kv_store(&mut self) -> KeyValueStoreId;
 
     fn data(

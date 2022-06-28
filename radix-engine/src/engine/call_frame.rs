@@ -120,6 +120,15 @@ impl Into<Bucket> for REValue {
     }
 }
 
+impl Into<Proof> for REValue {
+    fn into(self) -> Proof {
+        match self {
+            REValue::Transient(TransientValue::Proof(proof)) => proof,
+            _ => panic!("Expected to be a proof"),
+        }
+    }
+}
+
 impl Into<StoredValue> for REValue {
     fn into(self) -> StoredValue {
         match self {
@@ -1665,21 +1674,6 @@ where
             .remove(&value_id)
             .unwrap()
             .into_inner()
-    }
-
-    fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
-        let value = self
-            .owned_values
-            .remove(&ValueId::Transient(TransientValueId::Proof(
-                proof_id.clone(),
-            )))
-            .ok_or(RuntimeError::ProofNotFound(proof_id))?
-            .into_inner();
-
-        match value {
-            REValue::Transient(TransientValue::Proof(proof)) => Ok(proof),
-            _ => panic!("Expected proof"),
-        }
     }
 
     fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
