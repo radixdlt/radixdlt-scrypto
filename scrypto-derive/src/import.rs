@@ -317,6 +317,8 @@ fn get_native_type(ty: &des::Type) -> Result<(Type, Vec<Item>)> {
                 ScryptoType::Hash => "::scrypto::crypto::Hash",
                 ScryptoType::EcdsaPublicKey => "::scrypto::crypto::EcdsaPublicKey",
                 ScryptoType::EcdsaSignature => "::scrypto::crypto::EcdsaSignature",
+                ScryptoType::Ed25519PublicKey => "::scrypto::crypto::Ed25519PublicKey",
+                ScryptoType::Ed25519Signature => "::scrypto::crypto::Ed25519Signature",
                 ScryptoType::Decimal => "::scrypto::math::Decimal",
                 ScryptoType::Bucket => "::scrypto::resource::Bucket",
                 ScryptoType::Proof => "::scrypto::resource::Proof",
