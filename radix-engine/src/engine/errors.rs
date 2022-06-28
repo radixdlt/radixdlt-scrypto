@@ -87,6 +87,8 @@ pub enum RuntimeError {
     /// Error when generating or accessing proof.
     ProofError(ProofError),
 
+    ValueNotAllowed,
+
     /// Bucket is not allowed.
     BucketNotAllowed,
 

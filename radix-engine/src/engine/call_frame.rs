@@ -90,6 +90,77 @@ pub enum REValue {
     Package(ValidatedPackage),
 }
 
+#[derive(Debug)]
+pub enum REComplexValue {
+    Component(Component)
+}
+
+#[derive(Debug)]
+pub enum REPrimitiveValue {
+    Package(ValidatedPackage),
+    Bucket(Bucket),
+    Proof(Proof),
+    KeyValue(PreCommittedKeyValueStore),
+    Vault(Vault),
+}
+
+#[derive(Debug)]
+pub enum REValueByComplexity {
+    Primitive(REPrimitiveValue),
+}
+
+impl Into<REValue> for REPrimitiveValue {
+    fn into(self) -> REValue {
+        match self {
+            REPrimitiveValue::Package(package) => REValue::Package(package),
+            REPrimitiveValue::Bucket(bucket) => REValue::Transient(TransientValue::Bucket(bucket)),
+            REPrimitiveValue::Proof(proof) => REValue::Transient(TransientValue::Proof(proof)),
+            REPrimitiveValue::KeyValue(store) => {
+                REValue::Stored(StoredValue::KeyValueStore {
+                    store: store,
+                    child_values: InMemoryChildren::new(),
+                })
+            },
+            REPrimitiveValue::Vault(vault) => {
+                REValue::Stored(StoredValue::Vault(vault))
+            }
+        }
+    }
+}
+
+impl Into<REValueByComplexity> for Bucket {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Primitive(REPrimitiveValue::Bucket(self))
+    }
+}
+
+impl Into<REValueByComplexity> for Proof {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Primitive(REPrimitiveValue::Proof(self))
+    }
+}
+
+impl Into<REValueByComplexity> for Vault {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Primitive(REPrimitiveValue::Vault(self))
+    }
+}
+
+impl Into<REValueByComplexity> for PreCommittedKeyValueStore {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Primitive(REPrimitiveValue::KeyValue(self))
+    }
+}
+
+impl Into<REValueByComplexity> for ValidatedPackage {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Primitive(REPrimitiveValue::Package(self))
+    }
+}
+
+
+
+
 impl REValue {
     fn to_stored(&mut self) -> &mut StoredValue {
         match self {
@@ -113,39 +184,6 @@ impl REValue {
     }
 }
 
-impl Into<(REValue, HashSet<ValueId>)> for Bucket {
-    fn into(self) -> (REValue, HashSet<ValueId>) {
-        (REValue::Transient(TransientValue::Bucket(self)), HashSet::new())
-    }
-}
-
-impl Into<(REValue, HashSet<ValueId>)> for Proof {
-    fn into(self) -> (REValue, HashSet<ValueId>) {
-        (REValue::Transient(TransientValue::Proof(self)), HashSet::new())
-    }
-}
-
-impl Into<(REValue, HashSet<ValueId>)> for Vault {
-    fn into(self) -> (REValue, HashSet<ValueId>) {
-        (REValue::Stored(StoredValue::Vault(self)), HashSet::new())
-}
-}
-
-impl Into<(REValue, HashSet<ValueId>)> for PreCommittedKeyValueStore {
-    fn into(self) -> (REValue, HashSet<ValueId>) {
-        let value = REValue::Stored(StoredValue::KeyValueStore {
-            store: self,
-            child_values: InMemoryChildren::new(),
-        });
-        (value, HashSet::new())
-    }
-}
-
-impl Into<(REValue, HashSet<ValueId>)> for ValidatedPackage {
-    fn into(self) -> (REValue, HashSet<ValueId>) {
-        (REValue::Package(self), HashSet::new())
-    }
-}
 
 impl Into<Bucket> for REValue {
     fn into(self) -> Bucket {
@@ -235,16 +273,6 @@ fn to_stored_values(
         };
     }
     Ok(stored_values)
-}
-
-fn verify_stored_value(value: &ScryptoValue) -> Result<(), RuntimeError> {
-    if !value.bucket_ids.is_empty() {
-        return Err(RuntimeError::BucketNotAllowed);
-    }
-    if !value.proof_ids.is_empty() {
-        return Err(RuntimeError::ProofNotAllowed);
-    }
-    Ok(())
 }
 
 fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -1035,7 +1063,7 @@ where
 
         // Take values to return
         let values_to_take = output.value_ids();
-        let (taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1086,6 +1114,7 @@ where
     fn take_available_values(
         &mut self,
         value_ids: HashSet<ValueId>,
+        persistent_only: bool,
     ) -> Result<(HashMap<ValueId, REValue>, HashSet<ValueId>), RuntimeError> {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
@@ -1095,18 +1124,25 @@ where
                 let maybe = self.owned_values.remove(&id);
                 if let Some(celled_value) = maybe {
                     let value = celled_value.into_inner();
-                    match &value {
-                        REValue::Transient(TransientValue::Bucket(bucket)) => {
-                            if bucket.is_locked() {
-                                return Err(RuntimeError::CantMoveLockedBucket);
-                            }
+                    if persistent_only {
+                        match &value {
+                            REValue::Stored(..) => {}
+                            _ => return Err(RuntimeError::ValueNotAllowed)
                         }
-                        REValue::Transient(TransientValue::Proof(proof)) => {
-                            if proof.is_restricted() {
-                                return Err(RuntimeError::CantMoveRestrictedProof(id));
+                    } else {
+                        match &value {
+                            REValue::Transient(TransientValue::Bucket(bucket)) => {
+                                if bucket.is_locked() {
+                                    return Err(RuntimeError::CantMoveLockedBucket);
+                                }
                             }
+                            REValue::Transient(TransientValue::Proof(proof)) => {
+                                if proof.is_restricted() {
+                                    return Err(RuntimeError::CantMoveRestrictedProof(id));
+                                }
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
 
                     taken_values.insert(id, value);
@@ -1171,7 +1207,7 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.value_ids();
-        let (mut next_owned_values, mut missing) = self.take_available_values(values_to_take)?;
+        let (mut next_owned_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1721,33 +1757,36 @@ where
         self.owned_values.remove(&value_id).unwrap().into_inner()
     }
 
-    fn native_create<V: Into<(REValue, HashSet<ValueId>)>>(&mut self, v: V) -> ValueId {
-        let (value, children) = v.into();
+    fn native_create<V: Into<REValueByComplexity>>(&mut self, v: V) -> ValueId {
+        let value = v.into();
         let id = match value {
-            REValue::Transient(TransientValue::Bucket(..)) => {
+            REValueByComplexity::Primitive(REPrimitiveValue::Bucket(..)) => {
                 let bucket_id = self.track.new_bucket_id();
                 ValueId::Transient(TransientValueId::Bucket(bucket_id))
             }
-            REValue::Transient(TransientValue::Proof(..)) => {
+            REValueByComplexity::Primitive(REPrimitiveValue::Proof(..)) => {
                 let proof_id = self.track.new_proof_id();
                 ValueId::Transient(TransientValueId::Proof(proof_id))
             }
-            REValue::Stored(StoredValue::Vault(..)) => {
+            REValueByComplexity::Primitive(REPrimitiveValue::Vault(..)) => {
                 let vault_id = self.track.new_vault_id();
                 ValueId::Stored(StoredValueId::VaultId(vault_id))
             }
-            REValue::Stored(StoredValue::KeyValueStore { .. }) => {
+            REValueByComplexity::Primitive(REPrimitiveValue::KeyValue(..)) => {
                 let kv_store_id = self.track.new_kv_store_id();
                 ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id))
             }
-            REValue::Package(..) => {
+            REValueByComplexity::Primitive(REPrimitiveValue::Package(..)) => {
                 let package_address = self.track.new_package_address();
                 ValueId::Package(package_address)
             }
-            _ => panic!("Unexpected")
         };
 
-        self.owned_values.insert(id, RefCell::new(value));
+        match value {
+            REValueByComplexity::Primitive(primitive) => {
+                self.owned_values.insert(id, RefCell::new(primitive.into()));
+            }
+        }
 
         match id {
             ValueId::Stored(StoredValueId::KeyValueStoreId(..)) => {
@@ -1779,9 +1818,8 @@ where
     ) -> Result<ComponentAddress, RuntimeError> {
         let value =
             ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
-        verify_stored_value(&value)?;
-        let value_ids = value.stored_value_ids();
-        let (taken_values, mut missing) = self.take_available_values(value_ids)?;
+        let value_ids = value.value_ids();
+        let (taken_values, mut missing) = self.take_available_values(value_ids, true)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1802,7 +1840,7 @@ where
     fn native_globalize(&mut self, value_id: &ValueId) {
         let mut values = HashSet::new();
         values.insert(value_id.clone());
-        let (taken_values, missing) = self.take_available_values(values).unwrap();
+        let (taken_values, missing) = self.take_available_values(values, false).unwrap();
         assert!(missing.is_empty());
         assert!(taken_values.len() == 1);
         let value = taken_values.into_values().nth(0).unwrap();
@@ -1846,9 +1884,8 @@ where
         // If write, take values from current frame
         let (taken_values, missing) = match &instruction {
             DataInstruction::Write(value) => {
-                verify_stored_value(value)?;
-                let value_ids = value.stored_value_ids();
-                self.take_available_values(value_ids)?
+                let value_ids = value.value_ids();
+                self.take_available_values(value_ids, true)?
             }
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };
@@ -1897,7 +1934,7 @@ where
                     value_ref.kv_store_get(&key.raw, &mut self.track)
                 }
             };
-            let cur_children = to_stored_ids(current_value.stored_value_ids())?;
+            let cur_children = to_stored_ids(current_value.value_ids())?;
             (current_value, cur_children)
         };
 
