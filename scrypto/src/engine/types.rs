@@ -71,6 +71,15 @@ impl ValueId {
     }
 }
 
+impl Into<StoredValueId> for ValueId {
+    fn into(self) -> StoredValueId {
+        match self {
+            ValueId::Stored(id) => id,
+            _ => panic!("Not a stored id"),
+        }
+    }
+}
+
 impl Into<(Hash, u32)> for ValueId {
     fn into(self) -> KeyValueStoreId {
         match self {

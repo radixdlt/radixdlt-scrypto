@@ -24,10 +24,10 @@ impl REComplexValue {
         }
     }
 
-    pub fn into_re_value(self, children: HashMap<StoredValueId, StoredValue>) -> REValue {
+    pub fn into_re_value(self, children: HashMap<StoredValueId, REPersistedChildValue>) -> REValue {
         match self {
             REComplexValue::Component(component) => {
-                REValue::Stored(StoredValue::Component {
+                REValue::Stored(REPersistedChildValue::Component {
                     component,
                     child_values: InMemoryChildren::with_values(children),
                 })
@@ -58,13 +58,13 @@ impl Into<REValue> for REPrimitiveValue {
             REPrimitiveValue::Bucket(bucket) => REValue::Transient(TransientValue::Bucket(bucket)),
             REPrimitiveValue::Proof(proof) => REValue::Transient(TransientValue::Proof(proof)),
             REPrimitiveValue::KeyValue(store) => {
-                REValue::Stored(StoredValue::KeyValueStore {
+                REValue::Stored(REPersistedChildValue::KeyValueStore {
                     store: store,
                     child_values: InMemoryChildren::new(),
                 })
             },
             REPrimitiveValue::Vault(vault) => {
-                REValue::Stored(StoredValue::Vault(vault))
+                REValue::Stored(REPersistedChildValue::Vault(vault))
             }
         }
     }
@@ -109,7 +109,7 @@ impl Into<REValueByComplexity> for Component {
 
 #[derive(Debug)]
 pub struct InMemoryChildren {
-    child_values: HashMap<StoredValueId, RefCell<StoredValue>>,
+    child_values: HashMap<StoredValueId, RefCell<REPersistedChildValue>>,
 }
 
 impl InMemoryChildren {
@@ -119,7 +119,7 @@ impl InMemoryChildren {
         }
     }
 
-    pub fn with_values(values: HashMap<StoredValueId, StoredValue>) -> Self {
+    pub fn with_values(values: HashMap<StoredValueId, REPersistedChildValue>) -> Self {
         let mut child_values = HashMap::new();
         for (id, value) in values.into_iter() {
             child_values.insert(id, RefCell::new(value));
@@ -127,7 +127,7 @@ impl InMemoryChildren {
         InMemoryChildren { child_values }
     }
 
-    pub fn into_iter(self) -> IntoIter<StoredValueId, RefCell<StoredValue>> {
+    pub fn into_iter(self) -> IntoIter<StoredValueId, RefCell<REPersistedChildValue>> {
         self.child_values.into_iter()
     }
 
@@ -145,7 +145,7 @@ impl InMemoryChildren {
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
-    ) -> RefMut<StoredValue> {
+    ) -> RefMut<REPersistedChildValue> {
         if ancestors.is_empty() {
             let value = self
                 .child_values
@@ -166,7 +166,7 @@ impl InMemoryChildren {
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
-    ) -> &mut StoredValue {
+    ) -> &mut REPersistedChildValue {
         if ancestors.is_empty() {
             let value = self
                 .child_values
@@ -183,7 +183,7 @@ impl InMemoryChildren {
         value.get_mut().get_child_mut(rest, id)
     }
 
-    pub fn insert_children(&mut self, values: HashMap<StoredValueId, StoredValue>) {
+    pub fn insert_children(&mut self, values: HashMap<StoredValueId, REPersistedChildValue>) {
         for (id, value) in values {
             self.child_values.insert(id, RefCell::new(value));
         }
@@ -191,7 +191,7 @@ impl InMemoryChildren {
 }
 
 #[derive(Debug)]
-pub enum StoredValue {
+pub enum REPersistedChildValue {
     KeyValueStore {
         store: PreCommittedKeyValueStore,
         child_values: InMemoryChildren,
@@ -203,40 +203,51 @@ pub enum StoredValue {
     Vault(Vault),
 }
 
-impl StoredValue {
+impl TryInto<REPersistedChildValue> for REValue {
+    type Error = RuntimeError;
+
+    fn try_into(self) -> Result<REPersistedChildValue, Self::Error> {
+        match self {
+            REValue::Stored(persisted) => Ok(persisted),
+            _ => Err(RuntimeError::ValueNotAllowed)
+        }
+    }
+}
+
+impl REPersistedChildValue {
     pub fn component(&self) -> &Component {
         match self {
-            StoredValue::Component { component, .. } => component,
+            REPersistedChildValue::Component { component, .. } => component,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn kv_store(&self) -> &PreCommittedKeyValueStore {
         match self {
-            StoredValue::KeyValueStore { store, .. } => store,
+            REPersistedChildValue::KeyValueStore { store, .. } => store,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
         match self {
-            StoredValue::KeyValueStore { store, .. } => store,
+            REPersistedChildValue::KeyValueStore { store, .. } => store,
             _ => panic!("Expected to be a store"),
         }
     }
 
     pub fn vault(&self) -> &Vault {
         match self {
-            StoredValue::Vault(vault) => vault,
+            REPersistedChildValue::Vault(vault) => vault,
             _ => panic!("Expected to be a vault"),
         }
     }
 
     pub fn all_descendants(&self) -> Vec<StoredValueId> {
         match self {
-            StoredValue::KeyValueStore { child_values, .. }
-            | StoredValue::Component { child_values, .. } => child_values.all_descendants(),
-            StoredValue::Vault(..) => Vec::new(),
+            REPersistedChildValue::KeyValueStore { child_values, .. }
+            | REPersistedChildValue::Component { child_values, .. } => child_values.all_descendants(),
+            REPersistedChildValue::Vault(..) => Vec::new(),
         }
     }
 
@@ -244,11 +255,11 @@ impl StoredValue {
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
-    ) -> RefMut<StoredValue> {
+    ) -> RefMut<REPersistedChildValue> {
         match self {
-            StoredValue::KeyValueStore { child_values, .. }
-            | StoredValue::Component { child_values, .. } => child_values.get_child(ancestors, id),
-            StoredValue::Vault(..) => panic!("Expected to be store"),
+            REPersistedChildValue::KeyValueStore { child_values, .. }
+            | REPersistedChildValue::Component { child_values, .. } => child_values.get_child(ancestors, id),
+            REPersistedChildValue::Vault(..) => panic!("Expected to be store"),
         }
     }
 
@@ -256,21 +267,21 @@ impl StoredValue {
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
-    ) -> &mut StoredValue {
+    ) -> &mut REPersistedChildValue {
         match self {
-            StoredValue::KeyValueStore { child_values, .. }
-            | StoredValue::Component { child_values, .. } => {
+            REPersistedChildValue::KeyValueStore { child_values, .. }
+            | REPersistedChildValue::Component { child_values, .. } => {
                 child_values.get_child_mut(ancestors, id)
             }
-            StoredValue::Vault(..) => panic!("Expected to be store"),
+            REPersistedChildValue::Vault(..) => panic!("Expected to be store"),
         }
     }
 
-    pub fn insert_children(&mut self, values: HashMap<StoredValueId, StoredValue>) {
+    pub fn insert_children(&mut self, values: HashMap<StoredValueId, REPersistedChildValue>) {
         match self {
-            StoredValue::KeyValueStore { child_values, .. }
-            | StoredValue::Component { child_values, .. } => child_values.insert_children(values),
-            StoredValue::Vault(..) => panic!("Expected to be store"),
+            REPersistedChildValue::KeyValueStore { child_values, .. }
+            | REPersistedChildValue::Component { child_values, .. } => child_values.insert_children(values),
+            REPersistedChildValue::Vault(..) => panic!("Expected to be store"),
         }
     }
 }

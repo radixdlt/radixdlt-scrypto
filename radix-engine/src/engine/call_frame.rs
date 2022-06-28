@@ -85,7 +85,7 @@ pub enum TransientValue {
 
 #[derive(Debug)]
 pub enum REValue {
-    Stored(StoredValue),
+    Stored(REPersistedChildValue),
     Transient(TransientValue),
     Package(ValidatedPackage),
 }
@@ -94,9 +94,9 @@ impl REValue {
     fn try_drop(self) -> Result<(), DropFailure> {
         match self {
             REValue::Package(..) => Err(DropFailure::Package),
-            REValue::Stored(StoredValue::Vault(..)) => Err(DropFailure::Vault),
-            REValue::Stored(StoredValue::KeyValueStore { .. }) => Err(DropFailure::KeyValueStore),
-            REValue::Stored(StoredValue::Component { .. }) => Err(DropFailure::Component),
+            REValue::Stored(REPersistedChildValue::Vault(..)) => Err(DropFailure::Vault),
+            REValue::Stored(REPersistedChildValue::KeyValueStore { .. }) => Err(DropFailure::KeyValueStore),
+            REValue::Stored(REPersistedChildValue::Component { .. }) => Err(DropFailure::Component),
             REValue::Transient(TransientValue::Bucket(..)) => Err(DropFailure::Bucket),
             REValue::Transient(TransientValue::Proof(proof)) => {
                 proof.drop();
@@ -120,24 +120,6 @@ impl Into<Proof> for REValue {
         match self {
             REValue::Transient(TransientValue::Proof(proof)) => proof,
             _ => panic!("Expected to be a proof"),
-        }
-    }
-}
-
-impl Into<StoredValue> for REValue {
-    fn into(self) -> StoredValue {
-        match self {
-            REValue::Stored(stored_value) => stored_value,
-            _ => panic!("Expected a stored value"),
-        }
-    }
-}
-
-impl Into<TransientValue> for REValue {
-    fn into(self) -> TransientValue {
-        match self {
-            REValue::Transient(transient_value) => transient_value,
-            _ => panic!("Expected a stored value"),
         }
     }
 }
@@ -181,19 +163,6 @@ fn to_stored_ids(ids: HashSet<ValueId>) -> Result<HashSet<StoredValueId>, Runtim
         };
     }
     Ok(stored_ids)
-}
-
-fn to_stored_values(
-    values: HashMap<ValueId, REValue>,
-) -> Result<HashMap<StoredValueId, StoredValue>, RuntimeError> {
-    let mut stored_values = HashMap::new();
-    for (id, value) in values {
-        match id {
-            ValueId::Stored(stored_id) => stored_values.insert(stored_id, value.into()),
-            _ => return Err(RuntimeError::MovingInvalidType),
-        };
-    }
-    Ok(stored_values)
 }
 
 fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -421,11 +390,11 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
             RENativeValueRef::Owned(..) => panic!("Unexpected"),
             RENativeValueRef::OwnedRef(owned) => match owned {
                 REOwnedValueRef::Root(root) => match root.deref_mut() {
-                    REValue::Stored(StoredValue::Vault(vault)) => vault,
+                    REValue::Stored(REPersistedChildValue::Vault(vault)) => vault,
                     _ => panic!("Expecting to be a vault"),
                 },
                 REOwnedValueRef::Child(stored_value) => match stored_value.deref_mut() {
-                    StoredValue::Vault(vault) => vault,
+                    REPersistedChildValue::Vault(vault) => vault,
                     _ => panic!("Expecting to be a vault"),
                 },
             },
@@ -437,7 +406,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
         match self {
             RENativeValueRef::OwnedRef(owned) => match owned {
                 REOwnedValueRef::Root(root) => match root.deref_mut() {
-                    REValue::Stored(StoredValue::Component { component, .. }) => component,
+                    REValue::Stored(REPersistedChildValue::Component { component, .. }) => component,
                     _ => panic!("Expecting to be a component"),
                 },
                 _ => panic!("Expecting to be a component"),
@@ -483,21 +452,21 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
 
 pub enum REOwnedValueRef<'a> {
     Root(RefMut<'a, REValue>),
-    Child(RefMut<'a, StoredValue>),
+    Child(RefMut<'a, REPersistedChildValue>),
 }
 
 impl<'a> REOwnedValueRef<'a> {
     fn component(&self) -> &Component {
         match self {
             REOwnedValueRef::Root(root) => match root.deref() {
-                REValue::Stored(StoredValue::Component { component, .. }) => component,
+                REValue::Stored(REPersistedChildValue::Component { component, .. }) => component,
                 _ => panic!("Expected a component"),
             },
             REOwnedValueRef::Child(stored_value) => stored_value.component(),
         }
     }
 
-    fn mut_stored_value(&mut self) -> &mut StoredValue {
+    fn mut_stored_value(&mut self) -> &mut REPersistedChildValue {
         match self {
             REOwnedValueRef::Root(root) => match root.deref_mut() {
                 REValue::Stored(stored_value) => stored_value,
@@ -519,7 +488,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         &mut self,
         key: Vec<u8>,
         value: ScryptoValue,
-        to_store: HashMap<StoredValueId, StoredValue>,
+        to_store: HashMap<StoredValueId, REPersistedChildValue>,
         track: &mut Track<S>,
     ) {
         match self {
@@ -533,7 +502,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
                 };
                 store.insert_children(to_store);
                 match store {
-                    StoredValue::KeyValueStore { store, .. } => {
+                    REPersistedChildValue::KeyValueStore { store, .. } => {
                         store.put(key, value);
                     }
                     _ => panic!("Expecting to be kv store"),
@@ -618,7 +587,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
     fn component_put<S: ReadableSubstateStore>(
         &mut self,
         value: ScryptoValue,
-        to_store: HashMap<StoredValueId, StoredValue>,
+        to_store: HashMap<StoredValueId, REPersistedChildValue>,
         track: &mut Track<S>,
     ) {
         match self {
@@ -638,7 +607,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             REValueRef::Borrowed(owned) => {
                 let stored_value = owned.mut_stored_value();
                 let component = match stored_value {
-                    StoredValue::Component { component, .. } => component,
+                    REPersistedChildValue::Component { component, .. } => component,
                     _ => panic!("Unexpected"),
                 };
                 component.set_state(value.raw);
@@ -682,7 +651,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             REValueRef::Owned(owned) => {
                 let stored_value = owned.mut_stored_value();
                 let component = match stored_value {
-                    StoredValue::Component { component, .. } => component,
+                    REPersistedChildValue::Component { component, .. } => component,
                     _ => panic!("Unexpected"),
                 };
                 component.method_authorization(schema, fn_ident)
@@ -699,7 +668,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
     fn vault_address<S: ReadableSubstateStore>(&mut self, track: &mut Track<S>) -> ResourceAddress {
         match self {
             REValueRef::Owned(REOwnedValueRef::Root(re_value)) => match re_value.deref_mut() {
-                REValue::Stored(StoredValue::Vault(vault)) => vault.resource_address(),
+                REValue::Stored(REPersistedChildValue::Vault(vault)) => vault.resource_address(),
                 _ => panic!("Unexpected value"),
             },
             REValueRef::Owned(REOwnedValueRef::Child(stored_value)) => {
@@ -984,7 +953,7 @@ where
 
         // Take values to return
         let values_to_take = output.value_ids();
-        let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
+        let (taken_values, mut missing) = self.take_available_values(values_to_take)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1032,10 +1001,43 @@ where
         Self::fee_table_helper(&self.fee_table)
     }
 
+    fn take_persistent_child_values(
+        &mut self,
+        value_ids: HashSet<ValueId>,
+    ) -> Result<(HashMap<StoredValueId, REPersistedChildValue>, HashSet<ValueId>), RuntimeError> {
+        let (taken, missing) = {
+            let mut taken_values = HashMap::new();
+            let mut missing_values = HashSet::new();
+
+            for id in value_ids {
+                let maybe = self.owned_values.remove(&id);
+                if let Some(celled_value) = maybe {
+                    let persisted_value: REPersistedChildValue = celled_value.into_inner().try_into()?;
+                    let stored_id: StoredValueId = id.into();
+                    taken_values.insert(stored_id, persisted_value);
+                } else {
+                    missing_values.insert(id);
+                }
+            }
+
+            (taken_values, missing_values)
+        };
+
+        // Moved values must have their references removed
+        for (id, value) in taken.iter() {
+            self.readable_values.remove(&ValueId::Stored(id.clone()));
+            for id in value.all_descendants() {
+                self.refed_values.remove(&id);
+                self.readable_values.remove(&ValueId::Stored(id));
+            }
+        }
+
+        Ok((taken, missing))
+    }
+
     fn take_available_values(
         &mut self,
         value_ids: HashSet<ValueId>,
-        persistent_only: bool,
     ) -> Result<(HashMap<ValueId, REValue>, HashSet<ValueId>), RuntimeError> {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
@@ -1045,25 +1047,18 @@ where
                 let maybe = self.owned_values.remove(&id);
                 if let Some(celled_value) = maybe {
                     let value = celled_value.into_inner();
-                    if persistent_only {
-                        match &value {
-                            REValue::Stored(..) => {}
-                            _ => return Err(RuntimeError::ValueNotAllowed)
-                        }
-                    } else {
-                        match &value {
-                            REValue::Transient(TransientValue::Bucket(bucket)) => {
-                                if bucket.is_locked() {
-                                    return Err(RuntimeError::CantMoveLockedBucket);
-                                }
+                    match &value {
+                        REValue::Transient(TransientValue::Bucket(bucket)) => {
+                            if bucket.is_locked() {
+                                return Err(RuntimeError::CantMoveLockedBucket);
                             }
-                            REValue::Transient(TransientValue::Proof(proof)) => {
-                                if proof.is_restricted() {
-                                    return Err(RuntimeError::CantMoveRestrictedProof(id));
-                                }
-                            }
-                            _ => {}
                         }
+                        REValue::Transient(TransientValue::Proof(proof)) => {
+                            if proof.is_restricted() {
+                                return Err(RuntimeError::CantMoveRestrictedProof(id));
+                            }
+                        }
+                        _ => {}
                     }
 
                     taken_values.insert(id, value);
@@ -1128,7 +1123,7 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.value_ids();
-        let (mut next_owned_values, mut missing) = self.take_available_values(values_to_take, false)?;
+        let (mut next_owned_values, mut missing) = self.take_available_values(values_to_take)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1191,7 +1186,7 @@ where
                         vec![method_auth.clone()]
                     }
                     REValue::Transient(TransientValue::Proof(_)) => vec![],
-                    REValue::Stored(StoredValue::Component {..}) => vec![],
+                    REValue::Stored(REPersistedChildValue::Component {..}) => vec![],
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
@@ -1711,13 +1706,12 @@ where
             REValueByComplexity::Primitive(primitive) => primitive.into(),
             REValueByComplexity::Complex(complex) => {
                 let children = complex.get_children()?;
-                let (taken_values, mut missing) = self.take_available_values(children, true)?;
+                let (child_values, mut missing) = self.take_persistent_child_values(children)?;
                 let first_missing_value = missing.drain().nth(0);
                 if let Some(missing_value) = first_missing_value {
                     return Err(RuntimeError::ValueNotFound(missing_value));
                 }
-                let to_store_values = to_stored_values(taken_values)?;
-                complex.into_re_value(to_store_values)
+                complex.into_re_value(child_values)
             }
         };
         self.owned_values.insert(id, RefCell::new(re_value));
@@ -1749,13 +1743,13 @@ where
     fn native_globalize(&mut self, value_id: &ValueId) {
         let mut values = HashSet::new();
         values.insert(value_id.clone());
-        let (taken_values, missing) = self.take_available_values(values, false).unwrap();
+        let (taken_values, missing) = self.take_available_values(values).unwrap();
         assert!(missing.is_empty());
         assert!(taken_values.len() == 1);
         let value = taken_values.into_values().nth(0).unwrap();
 
         let (substate, maybe_child_values) = match value {
-            REValue::Stored(StoredValue::Component {
+            REValue::Stored(REPersistedChildValue::Component {
                 component,
                 child_values,
             }) => {
@@ -1794,7 +1788,7 @@ where
         let (taken_values, missing) = match &instruction {
             DataInstruction::Write(value) => {
                 let value_ids = value.value_ids();
-                self.take_available_values(value_ids, true)?
+                self.take_persistent_child_values(value_ids)?
             }
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };
@@ -1868,8 +1862,6 @@ where
                 let missing = to_stored_ids(missing)?;
                 verify_stored_value_update(&cur_children, &missing)?;
 
-                let to_store_values = to_stored_values(taken_values)?;
-
                 // TODO: verify against some schema
 
                 // Write values
@@ -1878,14 +1870,14 @@ where
                 match address {
                     SubstateAddress::Component(.., offset) => match offset {
                         ComponentOffset::State => {
-                            value_ref.component_put(value, to_store_values, &mut self.track)
+                            value_ref.component_put(value, taken_values, &mut self.track)
                         }
                         ComponentOffset::Info => {
                             return Err(RuntimeError::InvalidDataWrite);
                         }
                     },
                     SubstateAddress::KeyValueEntry(.., key) => {
-                        value_ref.kv_store_put(key.raw, value, to_store_values, self.track);
+                        value_ref.kv_store_put(key.raw, value, taken_values, self.track);
                     }
                 }
 

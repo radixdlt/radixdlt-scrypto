@@ -11,7 +11,7 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
-use crate::engine::{StoredValue, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::{REPersistedChildValue, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -774,16 +774,16 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     pub fn insert_objects_into_component(
         &mut self,
-        values: HashMap<StoredValueId, StoredValue>,
+        values: HashMap<StoredValueId, REPersistedChildValue>,
         component_address: ComponentAddress,
     ) {
         for (id, value) in values {
             match value {
-                StoredValue::Vault(vault) => {
+                REPersistedChildValue::Vault(vault) => {
                     let addr: (ComponentAddress, VaultId) = (component_address, id.into());
                     self.create_uuid_value_2(addr, vault);
                 }
-                StoredValue::Component {
+                REPersistedChildValue::Component {
                     component,
                     child_values,
                 } => {
@@ -795,7 +795,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                         .collect();
                     self.insert_objects_into_component(child_values, component_address);
                 }
-                StoredValue::KeyValueStore {
+                REPersistedChildValue::KeyValueStore {
                     store,
                     child_values,
                 } => {
