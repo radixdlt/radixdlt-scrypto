@@ -90,16 +90,7 @@ pub enum REValue {
     Package(ValidatedPackage),
 }
 
-
-
 impl REValue {
-    fn to_stored(&mut self) -> &mut StoredValue {
-        match self {
-            REValue::Stored(stored_value) => stored_value,
-            _ => panic!("Expected a stored value"),
-        }
-    }
-
     fn try_drop(self) -> Result<(), DropFailure> {
         match self {
             REValue::Package(..) => Err(DropFailure::Package),
@@ -114,7 +105,6 @@ impl REValue {
         }
     }
 }
-
 
 impl Into<Bucket> for REValue {
     fn into(self) -> Bucket {
@@ -708,8 +698,8 @@ impl<'a, 'b> REValueRef<'a, 'b> {
 
     fn vault_address<S: ReadableSubstateStore>(&mut self, track: &mut Track<S>) -> ResourceAddress {
         match self {
-            REValueRef::Owned(REOwnedValueRef::Root(re_value)) => match re_value.to_stored() {
-                StoredValue::Vault(vault) => vault.resource_address(),
+            REValueRef::Owned(REOwnedValueRef::Root(re_value)) => match re_value.deref_mut() {
+                REValue::Stored(StoredValue::Vault(vault)) => vault.resource_address(),
                 _ => panic!("Unexpected value"),
             },
             REValueRef::Owned(REOwnedValueRef::Child(stored_value)) => {
