@@ -138,6 +138,15 @@ impl Into<REValue> for Vault {
     }
 }
 
+impl Into<REValue> for PreCommittedKeyValueStore {
+    fn into(self) -> REValue {
+        REValue::Stored(StoredValue::KeyValueStore {
+            store: self,
+            child_values: InMemoryChildren::new(),
+        })
+    }
+}
+
 impl Into<Proof> for REValue {
     fn into(self) -> Proof {
         match self {
@@ -1696,10 +1705,19 @@ where
                 let vault_id = self.track.new_vault_id();
                 ValueId::Stored(StoredValueId::VaultId(vault_id))
             }
+            REValue::Stored(StoredValue::KeyValueStore { .. }) => {
+                let kv_store_id = self.track.new_kv_store_id();
+                ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id))
+            }
             _ => panic!("Unexpected")
         };
 
         self.owned_values.insert(id, RefCell::new(value));
+        self.readable_values.insert(
+            id.clone(),
+            REValueLocation::OwnedRoot,
+        );
+
         id
     }
 
@@ -1768,21 +1786,6 @@ where
         }
         self.track
             .insert_objects_into_component(to_store_values, component_address);
-    }
-
-    fn create_kv_store(&mut self) -> KeyValueStoreId {
-        let kv_store_id = self.track.new_kv_store_id();
-        let value_id = ValueId::kv_store_id(kv_store_id.clone());
-        self.owned_values.insert(
-            value_id.clone(),
-            RefCell::new(REValue::Stored(StoredValue::KeyValueStore {
-                store: PreCommittedKeyValueStore::new(),
-                child_values: InMemoryChildren::new(),
-            })),
-        );
-        self.readable_values
-            .insert(value_id, REValueLocation::OwnedRoot);
-        kv_store_id
     }
 
     fn data(

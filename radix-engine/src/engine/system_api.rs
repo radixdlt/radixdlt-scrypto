@@ -49,7 +49,6 @@ where
         &mut self,
         component: Component,
     ) -> Result<ComponentAddress, RuntimeError>;
-    fn create_kv_store(&mut self) -> KeyValueStoreId;
 
     fn data(
         &mut self,
