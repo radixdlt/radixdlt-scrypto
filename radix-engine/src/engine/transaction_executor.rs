@@ -92,8 +92,8 @@ where
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,
-            cost_unit_counter,
-            fee_table,
+            &mut cost_unit_counter,
+            &fee_table,
         );
 
         // Invoke the transaction processor

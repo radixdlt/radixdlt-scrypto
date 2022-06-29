@@ -28,8 +28,9 @@ pub struct CallFrame<
     'p, // Parent frame lifetime
     's, // Substate store lifetime
     't, // Track lifetime
-    'w, // WASM engine lifetime
-    S,  // Substore store type
+    'w, // WASM engine & instrumenter lifetime
+    'c, // Costing
+    S,  // Substate store type
     W,  // WASM engine type
     I,  // WASM instance type
 > where
@@ -51,6 +52,11 @@ pub struct CallFrame<
     /// Wasm Instrumenter
     wasm_instrumenter: &'w mut WasmInstrumenter,
 
+    /// Remaining cost unit counter
+    cost_unit_counter: &'c mut CostUnitCounter,
+    /// Fee table
+    fee_table: &'c FeeTable,
+
     /// Owned Values
     owned_values: HashMap<ValueId, RefCell<REValue>>,
     auth_zone: Option<RefCell<AuthZone>>,
@@ -62,12 +68,6 @@ pub struct CallFrame<
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
-
-    /// There is a single cost unit counter and a single fee table per transaction execution.
-    /// When a call ocurrs, they're passed from the parent to the child, and returned
-    /// after the invocation.
-    cost_unit_counter: Option<CostUnitCounter>,
-    fee_table: Option<FeeTable>,
 
     phantom: PhantomData<I>,
 }
@@ -368,7 +368,7 @@ impl<'a> SNodeExecution<'a> {
     }
 }
 
-impl<'p, 's, 't, 'w, S, W, I> CallFrame<'p, 's, 't, 'w, S, W, I>
+impl<'p, 's, 't, 'w, 'c, S, W, I> CallFrame<'p, 's, 't, 'w, 'c, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -381,8 +381,8 @@ where
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
-        cost_unit_counter: CostUnitCounter,
-        fee_table: FeeTable,
+        cost_unit_counter: &'c mut CostUnitCounter,
+        fee_table: &'c FeeTable,
     ) -> Self {
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
@@ -408,13 +408,13 @@ where
             track,
             wasm_engine,
             wasm_instrumenter,
+            cost_unit_counter,
+            fee_table,
             Some(RefCell::new(AuthZone::new_with_proofs(
                 initial_auth_zone_proofs,
             ))),
             HashMap::new(),
             None,
-            cost_unit_counter,
-            fee_table,
         )
     }
 
@@ -425,11 +425,11 @@ where
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
+        cost_unit_counter: &'c mut CostUnitCounter,
+        fee_table: &'c FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_values: HashMap<ValueId, REValue>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
-        cost_unit_counter: CostUnitCounter,
-        fee_table: FeeTable,
     ) -> Self {
         let mut celled_owned_values = HashMap::new();
         for (id, value) in owned_values {
@@ -443,13 +443,13 @@ where
             track,
             wasm_engine,
             wasm_instrumenter,
+            cost_unit_counter,
+            fee_table,
             owned_values: celled_owned_values,
             refed_values: HashMap::new(),
             refed_components: HashMap::new(),
             auth_zone,
             caller_auth_zone,
-            cost_unit_counter: Some(cost_unit_counter),
-            fee_table: Some(fee_table),
             phantom: PhantomData,
         }
     }
@@ -539,10 +539,6 @@ where
             remaining_cost_units
         );
 
-        Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
-            .consume(Self::fee_table_helper(&mut self.fee_table).engine_run_cost())
-            .map_err(RuntimeError::CostingError)?;
-
         let mut to_return = HashMap::new();
 
         // TODO: Find a better way to get rid of borrowed value does not live long enough issue
@@ -630,28 +626,6 @@ where
         Ok((output, taken_values))
     }
 
-    fn cost_unit_counter_helper(counter: &mut Option<CostUnitCounter>) -> &mut CostUnitCounter {
-        counter
-            .as_mut()
-            .expect("Frame doens't own a cost unit counter")
-    }
-
-    pub fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
-        // Use helper method to support paritial borrow of self
-        // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
-        Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
-    }
-
-    fn fee_table_helper(fee_table: &Option<FeeTable>) -> &FeeTable {
-        fee_table.as_ref().expect("Frame doens't own a fee table")
-    }
-
-    pub fn fee_table(&self) -> &FeeTable {
-        // Use helper method to support paritial borrow of self
-        // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
-        Self::fee_table_helper(&self.fee_table)
-    }
-
     fn take_available_values(
         &mut self,
         value_ids: HashSet<ValueId>,
@@ -703,7 +677,7 @@ where
     }
 }
 
-impl<'p, 's, 't, 'w, S, W, I> SystemApi<W, I> for CallFrame<'p, 's, 't, 'w, S, W, I>
+impl<'p, 's, 't, 'w, 'c, S, W, I> SystemApi<W, I> for CallFrame<'p, 's, 't, 'w, 'c, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -1061,16 +1035,6 @@ where
             }
         }
 
-        // Prepare moving cost unit counter and fee table
-        let cost_unit_counter = self
-            .cost_unit_counter
-            .take()
-            .expect("Frame doesn't own a cost unit counter");
-        let fee_table = self
-            .fee_table
-            .take()
-            .expect("Frame doesn't own a fee table");
-
         // start a new frame
         let mut frame = CallFrame::new(
             self.transaction_hash,
@@ -1079,6 +1043,8 @@ where
             self.track,
             self.wasm_engine,
             self.wasm_instrumenter,
+            self.cost_unit_counter,
+            self.fee_table,
             match loaded_snode {
                 Borrowed(BorrowedSNodeState::Blueprint(..))
                 | Tracked(..)
@@ -1089,19 +1055,10 @@ where
             },
             taken_values,
             self.auth_zone.as_ref(),
-            cost_unit_counter,
-            fee_table,
         );
 
         // invoke the main function
-        let run_result = frame.run(Some(snode_ref), loaded_snode, &fn_ident, input);
-
-        // re-gain ownership of the cost unit counter and fee table
-        self.cost_unit_counter = frame.cost_unit_counter;
-        self.fee_table = frame.fee_table;
-
-        // unwrap and continue
-        let (result, received_values) = run_result?;
+        let (result, received_values) = frame.run(Some(snode_ref), loaded_snode, &fn_ident, input)?;
 
         // move buckets and proofs to this process.
         for (id, value) in received_values {
@@ -1533,10 +1490,10 @@ where
     }
 
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
-        self.cost_unit_counter()
+        self.cost_unit_counter
     }
 
     fn fee_table(&self) -> &FeeTable {
-        self.fee_table()
+        self.fee_table
     }
 }
