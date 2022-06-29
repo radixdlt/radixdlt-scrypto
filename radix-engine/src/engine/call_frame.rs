@@ -62,8 +62,8 @@ pub struct CallFrame<
     worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
 
-    /// Borrowed Values from parent call frames
-    borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
+    /// Borrowed Values from call frames up the stack
+    frame_borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
     /// There is a single cost unit counter and a single fee table per transaction execution.
@@ -269,12 +269,13 @@ impl REValueLocation {
         }
     }
 
-    fn to_ref<'a, 'borrowed: 'a>(
+    fn to_ref<'a, 'borrowed: 'a, 'c, 's, S: ReadableSubstateStore>(
         &self,
         value_id: &ValueId,
         owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
         borrowed_values: &'a mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
-    ) -> REValueRef<'a, 'borrowed> {
+        track: &'c mut Track<'s, S>
+    ) -> REValueRef<'a, 'borrowed, 'c, 's, S> {
         match self {
             REValueLocation::OwnedRoot
             | REValueLocation::Owned { .. }
@@ -302,7 +303,7 @@ impl REValueLocation {
                     _ => panic!("Unexpected value id"),
                 };
 
-                REValueRef::Track(address)
+                REValueRef::Track(track, address)
             }
         }
     }
@@ -450,19 +451,18 @@ impl<'a> REOwnedValueRef<'a> {
     }
 }
 
-pub enum REValueRef<'a, 'b> {
+pub enum REValueRef<'a, 'b, 'c, 's, S: ReadableSubstateStore> {
     Owned(REOwnedValueRef<'a>),
     Borrowed(&'a mut REOwnedValueRef<'b>),
-    Track(Address),
+    Track(&'c mut Track<'s, S>, Address),
 }
 
-impl<'a, 'b> REValueRef<'a, 'b> {
-    fn kv_store_put<S: ReadableSubstateStore>(
+impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
+    fn kv_store_put(
         &mut self,
         key: Vec<u8>,
         value: ScryptoValue,
-        to_store: HashMap<StoredValueId, REPersistedChildValue>,
-        track: &mut Track<S>,
+        to_store: HashMap<StoredValueId, REPersistedChildValue>
     ) {
         match self {
             REValueRef::Owned(owned) => {
@@ -473,7 +473,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             REValueRef::Borrowed(..) => {
                 panic!("Not supported");
             }
-            REValueRef::Track(address) => {
+            REValueRef::Track(track, address) => {
                 let component_address =
                     if let Address::KeyValueStore(component_address, _) = &address {
                         component_address
@@ -491,26 +491,19 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         }
     }
 
-    fn kv_store_get<S: ReadableSubstateStore>(
-        &self,
+    fn kv_store_get(
+        &mut self,
         key: &[u8],
-        track: &mut Track<S>,
     ) -> ScryptoValue {
         let maybe_value = match self {
             REValueRef::Owned(owned) => {
-                let store = match owned {
-                    REOwnedValueRef::Root(root) => match root.deref() {
-                        REValue::KeyValueStore { store, .. } => store,
-                        _ => panic!("Expecting to be stored value"),
-                    },
-                    REOwnedValueRef::Child(stored_value) => stored_value.kv_store(),
-                };
+                let store = owned.kv_store_mut();
                 store.get(key).map(|v| v.dom)
             }
             REValueRef::Borrowed(..) => {
                 panic!("Not supported");
             }
-            REValueRef::Track(address) => {
+            REValueRef::Track(track, address) => {
                 let substate_value = track.read_key_value(address.clone(), key.to_vec());
                 substate_value
                     .kv_entry()
@@ -531,9 +524,9 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         ScryptoValue::from_value(value).unwrap()
     }
 
-    fn component_get_state<S: ReadableSubstateStore>(&self, track: &mut Track<S>) -> ScryptoValue {
+    fn component_get_state(&self) -> ScryptoValue {
         match self {
-            REValueRef::Track(address) => {
+            REValueRef::Track(track, address) => {
                 let component_val = track.read_value(address.clone());
                 let component = component_val.component();
                 return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
@@ -546,14 +539,13 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         }
     }
 
-    fn component_put<S: ReadableSubstateStore>(
+    fn component_put(
         &mut self,
         value: ScryptoValue,
         to_store: HashMap<StoredValueId, REPersistedChildValue>,
-        track: &mut Track<S>,
     ) {
         match self {
-            REValueRef::Track(address) => {
+            REValueRef::Track(track, address) => {
                 track
                     .write_component_value(address.clone(), value.raw)
                     .unwrap();
@@ -576,9 +568,8 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         }
     }
 
-    fn component_info<S: ReadableSubstateStore>(
+    fn component_info(
         &mut self,
-        track: &mut Track<S>,
     ) -> (PackageAddress, String) {
         match self {
             REValueRef::Owned(owned) => {
@@ -588,7 +579,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
                     component.blueprint_name().to_string(),
                 )
             }
-            REValueRef::Track(address) => {
+            REValueRef::Track(track, address) => {
                 let component_val = track.borrow_global_value(address.clone()).unwrap();
                 let component = component_val.component();
                 (
@@ -600,18 +591,17 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         }
     }
 
-    fn component_authorization<S: ReadableSubstateStore>(
+    fn component_authorization(
         &mut self,
         schema: &Type,
         fn_ident: &str,
-        track: &mut Track<S>,
     ) -> Vec<MethodAuthorization> {
         match self {
             REValueRef::Owned(owned) => {
                 let component = owned.component_mut();
                 component.method_authorization(schema, fn_ident)
             }
-            REValueRef::Track(address) => {
+            REValueRef::Track(track, address) => {
                 let component_val = track.borrow_global_value(address.clone()).unwrap();
                 let component = component_val.component();
                 component.method_authorization(schema, fn_ident)
@@ -620,7 +610,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
         }
     }
 
-    fn vault_address<S: ReadableSubstateStore>(&mut self, track: &mut Track<S>) -> ResourceAddress {
+    fn vault_address(&mut self) -> ResourceAddress {
         match self {
             REValueRef::Owned(REOwnedValueRef::Root(re_value)) => match re_value.deref_mut() {
                 REValue::Vault(vault) => vault.resource_address(),
@@ -632,7 +622,7 @@ impl<'a, 'b> REValueRef<'a, 'b> {
             REValueRef::Borrowed(..) => {
                 panic!("Not supported");
             }
-            REValueRef::Track(address) => {
+            REValueRef::Track(track, address) => {
                 let vault_val = track.borrow_global_value(address.clone()).unwrap();
                 let vault = vault_val.vault();
                 vault.resource_address()
@@ -750,7 +740,7 @@ where
             wasm_instrumenter,
             owned_values: celled_owned_values,
             value_refs: readable_values,
-            borrowed_values,
+            frame_borrowed_values: borrowed_values,
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -1294,10 +1284,11 @@ where
                         let mut value_ref = cur_location.to_ref(
                             &value_id,
                             &mut self.owned_values,
-                            &mut self.borrowed_values,
+                            &mut self.frame_borrowed_values,
+                            &mut self.track,
                         );
                         let (package_address, blueprint_name) =
-                            value_ref.component_info(&mut self.track);
+                            value_ref.component_info();
                         ScryptoActorInfo::component(
                             package_address,
                             blueprint_name,
@@ -1338,12 +1329,12 @@ where
                             let mut value_ref = cur_location.to_ref(
                                 &value_id,
                                 &mut self.owned_values,
-                                &mut self.borrowed_values,
+                                &mut self.frame_borrowed_values,
+                                &mut self.track,
                             );
                             value_ref.component_authorization(
                                 &abi.structure,
                                 &fn_ident,
-                                &mut self.track,
                             )
                         };
 
@@ -1372,7 +1363,7 @@ where
                             let owned_ref = cur_location.to_owned_ref(
                                 &value_id,
                                 &mut self.owned_values,
-                                &mut self.borrowed_values,
+                                &mut self.frame_borrowed_values,
                             );
                             borrowed_values.insert(value_id, owned_ref);
                             REValueLocation::BorrowedRoot
@@ -1409,7 +1400,7 @@ where
                         let owned_ref = cur_location.to_owned_ref(
                             &value_id,
                             &mut self.owned_values,
-                            &mut self.borrowed_values,
+                            &mut self.frame_borrowed_values,
                         );
                         let package_address = owned_ref.component().package_address();
 
@@ -1452,9 +1443,10 @@ where
                     let mut value_ref = cur_location.to_ref(
                         &value_id,
                         &mut self.owned_values,
-                        &mut self.borrowed_values,
+                        &mut self.frame_borrowed_values,
+                        &mut self.track,
                     );
-                    let resource_address = value_ref.vault_address(&mut self.track);
+                    let resource_address = value_ref.vault_address();
                     let substate_value = self
                         .track
                         .borrow_global_value(resource_address.clone())
@@ -1485,7 +1477,7 @@ where
                         let owned_ref = cur_location.to_owned_ref(
                             &value_id,
                             &mut self.owned_values,
-                            &mut self.borrowed_values,
+                            &mut self.frame_borrowed_values,
                         );
                         borrowed_values.insert(value_id.clone(), owned_ref);
                         readable_values.insert(
@@ -1650,7 +1642,7 @@ where
         info.location.borrow_native_ref(
             value_id,
             &mut self.owned_values,
-            &mut self.borrowed_values,
+            &mut self.frame_borrowed_values,
             &mut self.track
         )
     }
@@ -1659,7 +1651,7 @@ where
         val_ref.return_to_location(
             value_id,
             &mut self.owned_values,
-            &mut self.borrowed_values,
+            &mut self.frame_borrowed_values,
             &mut self.track
         )
     }
@@ -1835,18 +1827,22 @@ where
 
         // Read current value
         let (current_value, cur_children) = {
-            let mut value_ref =
-                location.to_ref(&value_id, &mut self.owned_values, &mut self.borrowed_values);
+            let mut value_ref = location.to_ref(
+                &value_id,
+                &mut self.owned_values,
+                &mut self.frame_borrowed_values,
+                &mut self.track,
+            );
             let current_value = match &address {
                 SubstateAddress::Component(.., offset) => match offset {
-                    ComponentOffset::State => value_ref.component_get_state(&mut self.track),
+                    ComponentOffset::State => value_ref.component_get_state(),
                     ComponentOffset::Info => {
-                        ScryptoValue::from_typed(&value_ref.component_info(&mut self.track))
+                        ScryptoValue::from_typed(&value_ref.component_info())
                     }
                 },
                 SubstateAddress::KeyValueEntry(.., key) => {
                     verify_stored_key(key)?;
-                    value_ref.kv_store_get(&key.raw, &mut self.track)
+                    value_ref.kv_store_get(&key.raw)
                 }
             };
             let cur_children = to_stored_ids(current_value.value_ids())?;
@@ -1878,19 +1874,23 @@ where
                 // TODO: verify against some schema
 
                 // Write values
-                let mut value_ref =
-                    location.to_ref(&value_id, &mut self.owned_values, &mut self.borrowed_values);
+                let mut value_ref = location.to_ref(
+                    &value_id,
+                    &mut self.owned_values,
+                    &mut self.frame_borrowed_values,
+                    &mut self.track,
+                );
                 match address {
                     SubstateAddress::Component(.., offset) => match offset {
                         ComponentOffset::State => {
-                            value_ref.component_put(value, taken_values, &mut self.track)
+                            value_ref.component_put(value, taken_values)
                         }
                         ComponentOffset::Info => {
                             return Err(RuntimeError::InvalidDataWrite);
                         }
                     },
                     SubstateAddress::KeyValueEntry(.., key) => {
-                        value_ref.kv_store_put(key.raw, value, taken_values, self.track);
+                        value_ref.kv_store_put(key.raw, value, taken_values);
                     }
                 }
 
