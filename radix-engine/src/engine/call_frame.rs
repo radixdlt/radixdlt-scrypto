@@ -61,7 +61,7 @@ pub struct CallFrame<
     borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
 
     /// Logical Id to Value mapping
-    refed_values: HashMap<StoredValueId, REValueInfo>,
+    refed_values: HashMap<ValueId, REValueInfo>,
     // TODO: Merge with refed_values
     /// Readable values
     readable_values: HashMap<ValueId, REValueInfo>,
@@ -985,7 +985,7 @@ where
         for (id, value) in taken.iter() {
             self.readable_values.remove(&ValueId::Stored(id.clone()));
             for id in value.all_descendants() {
-                self.refed_values.remove(&id);
+                self.refed_values.remove(&ValueId::Stored(id));
                 self.readable_values.remove(&ValueId::Stored(id));
             }
         }
@@ -1033,7 +1033,7 @@ where
             self.readable_values.remove(id);
             if let Some(children) = value.get_children_store() {
                 for id in children.all_descendants() {
-                    self.refed_values.remove(&id);
+                    self.refed_values.remove(&ValueId::Stored(id));
                     self.readable_values.remove(&ValueId::Stored(id.clone()));
                 }
             }
@@ -1279,7 +1279,7 @@ where
                     let value_id = ValueId::Stored(stored_value_id.clone());
                     let cur_location = if self.owned_values.contains_key(&value_id) {
                         &REValueLocation::OwnedRoot
-                    } else if let Some(REValueInfo { location, .. }) = self.refed_values.get(&stored_value_id) {
+                    } else if let Some(REValueInfo { location, .. }) = self.refed_values.get(&value_id) {
                         location
                     } else {
                         let address: Address = component_address.into();
@@ -1447,8 +1447,7 @@ where
                 let cur_location = if self.owned_values.contains_key(&value_id) {
                     &REValueLocation::OwnedRoot
                 } else {
-                    let stored_value_id = StoredValueId::VaultId(*vault_id);
-                    let maybe_value_ref = self.refed_values.get(&stored_value_id);
+                    let maybe_value_ref = self.refed_values.get(&value_id);
                     maybe_value_ref
                         .map(|info| &info.location)
                         .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?
@@ -1874,7 +1873,7 @@ where
                         visible,
                     };
                     self.refed_values
-                        .insert(stored_value_id, child_info.clone());
+                        .insert(ValueId::Stored(stored_value_id.clone()), child_info.clone());
 
                     // Extend current readable space when kv stores are found
                     if let StoredValueId::KeyValueStoreId(..) = stored_value_id {
