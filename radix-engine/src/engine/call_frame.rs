@@ -1058,7 +1058,8 @@ where
         );
 
         // invoke the main function
-        let (result, received_values) = frame.run(Some(snode_ref), loaded_snode, &fn_ident, input)?;
+        let (result, received_values) =
+            frame.run(Some(snode_ref), loaded_snode, &fn_ident, input)?;
 
         // move buckets and proofs to this process.
         for (id, value) in received_values {
