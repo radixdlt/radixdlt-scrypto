@@ -64,7 +64,7 @@ pub struct CallFrame<
     refed_values: HashMap<StoredValueId, REValueInfo>,
     // TODO: Merge with refed_values
     /// Readable values
-    readable_values: HashMap<ValueId, REValueLocation>,
+    readable_values: HashMap<ValueId, REValueInfo>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
@@ -733,7 +733,7 @@ where
         auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
-        readable_values: HashMap<ValueId, REValueLocation>,
+        readable_values: HashMap<ValueId, REValueInfo>,
         borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
@@ -1135,7 +1135,10 @@ where
                         let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
                         readable_values.insert(
                             ValueId::Resource(resource_address),
-                            REValueLocation::Track { parent: None },
+                            REValueInfo {
+                                location: REValueLocation::Track { parent: None },
+                                visible: true,
+                            }
                         );
                         vec![method_auth.clone()]
                     }
@@ -1180,7 +1183,13 @@ where
                         })?;
                 let resource_manager = substate.resource_manager();
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
-                readable_values.insert(value_id.clone(), REValueLocation::Track { parent: None });
+                readable_values.insert(
+                    value_id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::Track { parent: None },
+                        visible: true,
+                    }
+                );
 
                 Ok((SNodeExecution::ValueRef(value_id), vec![method_auth]))
             }
@@ -1193,7 +1202,13 @@ where
                 let ref_mut = bucket_cell.borrow_mut();
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
-                readable_values.insert(value_id.clone(), REValueLocation::BorrowedRoot);
+                readable_values.insert(
+                    value_id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::BorrowedRoot,
+                        visible: true,
+                    }
+                );
 
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
@@ -1206,7 +1221,13 @@ where
                 let ref_mut = proof_cell.borrow_mut();
                 let value_ref = REOwnedValueRef::Root(ref_mut);
                 borrowed_values.insert(value_id.clone(), value_ref);
-                readable_values.insert(value_id.clone(), REValueLocation::BorrowedRoot);
+                readable_values.insert(
+                    value_id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::BorrowedRoot,
+                        visible: true,
+                    }
+                );
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
@@ -1336,7 +1357,7 @@ where
                     };
 
                     // Setup next frame
-                    match cur_location {
+                    let next_frame_location = match cur_location {
                         REValueLocation::Track { parent } => {
                             let address = if let Some(parent) = parent {
                                 Address::LocalComponent(*parent, component_address)
@@ -1351,12 +1372,7 @@ where
                                 }
                             })?;
                             locked_values.insert(address.clone());
-                            readable_values.insert(
-                                value_id,
-                                REValueLocation::Track {
-                                    parent: parent.clone(),
-                                },
-                            );
+                            REValueLocation::Track { parent: parent.clone() }
                         }
                         REValueLocation::OwnedRoot | REValueLocation::Borrowed { .. } => {
                             let owned_ref = cur_location.to_owned_ref(
@@ -1365,10 +1381,19 @@ where
                                 &mut self.borrowed_values,
                             );
                             borrowed_values.insert(value_id, owned_ref);
-                            readable_values.insert(value_id, REValueLocation::BorrowedRoot);
+                            REValueLocation::BorrowedRoot
                         }
                         _ => panic!("Unexpected"),
-                    }
+                    };
+
+                    readable_values.insert(
+                        value_id,
+                        REValueInfo {
+                            location: next_frame_location,
+                            visible: true,
+                        }
+                    );
+
 
                     Ok((SNodeExecution::Scrypto(actor_info, package), method_auths))
                 }
@@ -1395,10 +1420,19 @@ where
                         let package_address = owned_ref.component().package_address();
 
                         borrowed_values.insert(value_id, owned_ref);
-                        readable_values.insert(value_id, REValueLocation::BorrowedRoot);
+                        readable_values.insert(
+                            value_id,
+                            REValueInfo {
+                                location: REValueLocation::BorrowedRoot,
+                                visible: true,
+                            }
+                        );
                         readable_values.insert(
                             ValueId::Package(package_address),
-                            REValueLocation::Track { parent: None },
+                            REValueInfo {
+                                location: REValueLocation::Track { parent: None },
+                                visible: true,
+                            }
                         );
                     }
                     _ => panic!("Unexpected"),
@@ -1444,9 +1478,12 @@ where
                     REValueLocation::Track { parent } => {
                         readable_values.insert(
                             value_id.clone(),
-                            REValueLocation::Track {
-                                parent: parent.clone(),
-                            },
+                            REValueInfo {
+                                location: REValueLocation::Track {
+                                    parent: parent.clone(),
+                                },
+                                visible: true
+                            }
                         );
                     }
                     REValueLocation::OwnedRoot
@@ -1458,7 +1495,13 @@ where
                             &mut self.borrowed_values,
                         );
                         borrowed_values.insert(value_id.clone(), owned_ref);
-                        readable_values.insert(value_id, REValueLocation::BorrowedRoot);
+                        readable_values.insert(
+                            value_id,
+                            REValueInfo {
+                                location: REValueLocation::BorrowedRoot,
+                                visible: true,
+                            }
+                        );
                     }
                     _ => panic!("Unexpected vault location {:?}", cur_location),
                 }
@@ -1606,8 +1649,12 @@ where
     }
 
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
-        let location = self.readable_values.get(value_id).unwrap();
-        location.borrow_native_ref(
+        let info = self.readable_values.get(value_id).unwrap();
+        if !info.visible {
+            panic!("Trying to read value which is not visible.")
+        }
+
+        info.location.borrow_native_ref(
             value_id,
             &mut self.owned_values,
             &mut self.borrowed_values,
@@ -1675,7 +1722,10 @@ where
             ValueId::Stored(StoredValueId::KeyValueStoreId(..)) => {
                 self.readable_values.insert(
                     id.clone(),
-                    REValueLocation::OwnedRoot,
+                    REValueInfo {
+                        location: REValueLocation::OwnedRoot,
+                        visible: true,
+                    },
                 );
             }
             _ => {}
@@ -1687,9 +1737,13 @@ where
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
         let resource_address = self.track.create_uuid_value(resource_manager).into();
 
+        // TODO: Remove
         self.readable_values.insert(
             ValueId::Resource(resource_address),
-            REValueLocation::Track { parent: None },
+            REValueInfo {
+                location: REValueLocation::Track { parent: None },
+                visible: true,
+            },
         );
 
         resource_address
@@ -1757,7 +1811,7 @@ where
 
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let location = self
+        let value_info = self
             .readable_values
             .get(&value_id)
             .or_else(|| {
@@ -1766,15 +1820,25 @@ where
                     address
                 {
                     if self.owned_values.contains_key(&value_id) {
-                        return Some(&REValueLocation::OwnedRoot);
+                        return Some(&REValueInfo {
+                            location: REValueLocation::OwnedRoot,
+                            visible: true,
+                        });
                     } else if self.track.borrow_global_value(component_address).is_ok() {
-                        return Some(&REValueLocation::Track { parent: None });
+                        return Some(&REValueInfo {
+                            location: REValueLocation::Track { parent: None },
+                            visible: true,
+                        });
                     }
                 }
 
                 None
             })
             .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
+        if !value_info.visible {
+            return Err(RuntimeError::InvalidDataAccess(value_id));
+        }
+        let location = &value_info.location;
 
         // Read current value
         let (current_value, cur_children) = {
@@ -1802,17 +1866,20 @@ where
                 let parent_location = location.clone();
                 for stored_value_id in cur_children {
                     let child_location = parent_location.child(value_id.clone());
+
+                    // Extend current readable space when kv stores are found
+                    let visible = matches!(stored_value_id, StoredValueId::KeyValueStoreId(..));
                     let child_info = REValueInfo {
                         location: child_location.clone(),
-                        visible: false
+                        visible,
                     };
                     self.refed_values
-                        .insert(stored_value_id, child_info);
+                        .insert(stored_value_id, child_info.clone());
 
                     // Extend current readable space when kv stores are found
                     if let StoredValueId::KeyValueStoreId(..) = stored_value_id {
                         self.readable_values
-                            .insert(ValueId::Stored(stored_value_id.clone()), child_location);
+                            .insert(ValueId::Stored(stored_value_id.clone()), child_info);
                     }
                 }
                 Ok(current_value)
