@@ -4,6 +4,7 @@ use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
+use sbor::rust::format;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
@@ -503,6 +504,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     let vault = scrypto_decode(&substate.value).unwrap();
                     SubstateValue::Vault(vault)
                 }
+                Address::Package(..) => {
+                    let package = scrypto_decode(&substate.value).unwrap();
+                    SubstateValue::Package(package)
+                }
                 _ => panic!("Attempting to borrow unsupported value {:?}", address),
             };
 
@@ -524,7 +529,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     pub fn take_value<A: Into<Address>>(&mut self, addr: A) -> SubstateValue {
         let address: Address = addr.into();
-        match self.borrowed_substates_2.insert(address, TAKEN).expect("value was never locked") {
+        match self.borrowed_substates_2.insert(address.clone(), TAKEN).expect(&format!("{:?} was never locked", address)) {
             BorrowedSubstate::LOADED(value) => value,
             BorrowedSubstate::TAKEN => panic!("Value was already taken"),
         }
@@ -534,13 +539,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         &mut self,
         addr: A,
         value: V,
-    ) -> Result<(), TrackError> {
+    ) {
         let address: Address = addr.into();
 
         self.borrowed_substates_2.get(&address).expect("value was never locked");
         self.borrowed_substates_2
             .insert(address, BorrowedSubstate::LOADED(value.into()));
-        Ok(())
     }
 
     // TODO: Replace with more generic write_value once Component is split into more substates
@@ -548,26 +552,22 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         &mut self,
         address: Address,
         value: Vec<u8>,
-    ) -> Result<(), TrackError> {
+    ) {
         match address {
             Address::GlobalComponent(..) | Address::LocalComponent(..) => {}
             _ => panic!("Unexpected address"),
         }
 
-        if !self.borrowed_substates_2.contains_key(&address) {
-            return Err(TrackError::NotFound);
-        }
         let borrowed = self
             .borrowed_substates_2
             .get_mut(&address)
-            .unwrap();
+            .expect("Value was never locked");
         match borrowed {
             BorrowedSubstate::TAKEN => panic!("Value was taken"),
             BorrowedSubstate::LOADED(component_val) => {
                 component_val.component_mut().set_state(value);
             }
         }
-        Ok(())
     }
 
     pub fn release_lock<A: Into<Address>>(&mut self, addr: A) {
@@ -582,62 +582,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 self.up_substates.insert(address.encode(), value);
             }
         }
-    }
-
-    pub fn borrow_global_mut_value<A: Into<Address>>(
-        &mut self,
-        addr: A,
-    ) -> Result<SubstateValue, TrackError> {
-        let address = addr.into();
-        let maybe_value = self.up_substates.remove(&address.encode());
-        let mut borrowed_substates = self.borrowed_substates.borrow_mut();
-        if let Some(value) = maybe_value {
-            borrowed_substates.insert(address);
-            return Ok(value);
-        }
-
-        if borrowed_substates.contains(&address) {
-            return Err(TrackError::Reentrancy);
-        }
-
-        if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
-            self.downed_substates.push(substate.phys_id);
-            borrowed_substates.insert(address.clone());
-            match address {
-                Address::GlobalComponent(_) => {
-                    let component = scrypto_decode(&substate.value).unwrap();
-                    Ok(SubstateValue::Component(component))
-                }
-                Address::Resource(_) => {
-                    let resource_manager = scrypto_decode(&substate.value).unwrap();
-                    Ok(SubstateValue::Resource(resource_manager))
-                }
-                Address::Vault(..) => {
-                    let vault = scrypto_decode(&substate.value).unwrap();
-                    Ok(SubstateValue::Vault(vault))
-                }
-                Address::Package(..) => {
-                    let package = scrypto_decode(&substate.value).unwrap();
-                    Ok(SubstateValue::Package(package))
-                }
-                _ => panic!("Attempting to borrow unsupported value"),
-            }
-        } else {
-            Err(TrackError::NotFound)
-        }
-    }
-
-    pub fn return_borrowed_global_mut_value<A: Into<Address>, V: Into<SubstateValue>>(
-        &mut self,
-        addr: A,
-        value: V,
-    ) {
-        let address = addr.into();
-        let mut borrowed_substates = self.borrowed_substates.borrow_mut();
-        if !borrowed_substates.remove(&address) {
-            panic!("Value was never borrowed");
-        }
-        self.up_substates.insert(address.encode(), value.into());
     }
 
     /// Returns the value of a key value pair
