@@ -52,6 +52,11 @@ pub struct CallFrame<
     /// Wasm Instrumenter
     wasm_instrumenter: &'w mut WasmInstrumenter,
 
+    /// All ref values accessible by this call frame. The value may be located in one of the following:
+    /// 1. borrowed values
+    /// 2. track
+    value_refs: HashMap<ValueId, REValueInfo>,
+
     /// Owned Values
     owned_values: HashMap<ValueId, RefCell<REValue>>,
     worktop: Option<RefCell<Worktop>>,
@@ -59,14 +64,6 @@ pub struct CallFrame<
 
     /// Borrowed Values from parent call frames
     borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
-
-    /// Logical Id to Value mapping
-    refed_values: HashMap<ValueId, REValueInfo>,
-    // TODO: Merge with refed_values
-    /// Readable values
-    readable_values: HashMap<ValueId, REValueInfo>,
-
-    /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
     /// There is a single cost unit counter and a single fee table per transaction execution.
@@ -752,8 +749,7 @@ where
             wasm_engine,
             wasm_instrumenter,
             owned_values: celled_owned_values,
-            refed_values: HashMap::new(),
-            readable_values,
+            value_refs: readable_values,
             borrowed_values,
             worktop,
             auth_zone,
@@ -983,10 +979,9 @@ where
 
         // Moved values must have their references removed
         for (id, value) in taken.iter() {
-            self.readable_values.remove(&ValueId::Stored(id.clone()));
+            self.value_refs.remove(&ValueId::Stored(id.clone()));
             for id in value.all_descendants() {
-                self.refed_values.remove(&ValueId::Stored(id));
-                self.readable_values.remove(&ValueId::Stored(id));
+                self.value_refs.remove(&ValueId::Stored(id));
             }
         }
 
@@ -1030,11 +1025,10 @@ where
 
         // Moved values must have their references removed
         for (id, value) in &taken {
-            self.readable_values.remove(id);
+            self.value_refs.remove(id);
             if let Some(children) = value.get_children_store() {
                 for id in children.all_descendants() {
-                    self.refed_values.remove(&ValueId::Stored(id));
-                    self.readable_values.remove(&ValueId::Stored(id.clone()));
+                    self.value_refs.remove(&ValueId::Stored(id.clone()));
                 }
             }
         }
@@ -1279,7 +1273,7 @@ where
                     let value_id = ValueId::Stored(stored_value_id.clone());
                     let cur_location = if self.owned_values.contains_key(&value_id) {
                         &REValueLocation::OwnedRoot
-                    } else if let Some(REValueInfo { location, .. }) = self.refed_values.get(&value_id) {
+                    } else if let Some(REValueInfo { location, .. }) = self.value_refs.get(&value_id) {
                         location
                     } else {
                         let address: Address = component_address.into();
@@ -1447,7 +1441,7 @@ where
                 let cur_location = if self.owned_values.contains_key(&value_id) {
                     &REValueLocation::OwnedRoot
                 } else {
-                    let maybe_value_ref = self.refed_values.get(&value_id);
+                    let maybe_value_ref = self.value_refs.get(&value_id);
                     maybe_value_ref
                         .map(|info| &info.location)
                         .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?
@@ -1648,7 +1642,7 @@ where
     }
 
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
-        let info = self.readable_values.get(value_id).unwrap();
+        let info = self.value_refs.get(value_id).unwrap();
         if !info.visible {
             panic!("Trying to read value which is not visible.")
         }
@@ -1719,7 +1713,7 @@ where
 
         match id {
             ValueId::Stored(StoredValueId::KeyValueStoreId(..)) => {
-                self.readable_values.insert(
+                self.value_refs.insert(
                     id.clone(),
                     REValueInfo {
                         location: REValueLocation::OwnedRoot,
@@ -1737,7 +1731,7 @@ where
         let resource_address = self.track.create_uuid_value(resource_manager).into();
 
         // TODO: Remove
-        self.readable_values.insert(
+        self.value_refs.insert(
             ValueId::Resource(resource_address),
             REValueInfo {
                 location: REValueLocation::Track { parent: None },
@@ -1811,7 +1805,7 @@ where
         // Get location
         // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
         let value_info = self
-            .readable_values
+            .value_refs
             .get(&value_id)
             .or_else(|| {
                 // Allow global read access to any component info
@@ -1869,17 +1863,11 @@ where
                     // Extend current readable space when kv stores are found
                     let visible = matches!(stored_value_id, StoredValueId::KeyValueStoreId(..));
                     let child_info = REValueInfo {
-                        location: child_location.clone(),
+                        location: child_location,
                         visible,
                     };
-                    self.refed_values
-                        .insert(ValueId::Stored(stored_value_id.clone()), child_info.clone());
-
-                    // Extend current readable space when kv stores are found
-                    if let StoredValueId::KeyValueStoreId(..) = stored_value_id {
-                        self.readable_values
-                            .insert(ValueId::Stored(stored_value_id.clone()), child_info);
-                    }
+                    self.value_refs
+                        .insert(ValueId::Stored(stored_value_id), child_info);
                 }
                 Ok(current_value)
             }
