@@ -9,6 +9,72 @@ use crate::engine::*;
 use crate::model::*;
 
 #[derive(Debug)]
+pub enum REValue {
+    Bucket(Bucket),
+    Proof(Proof),
+    Vault(Vault),
+    KeyValueStore {
+        store: PreCommittedKeyValueStore,
+        child_values: InMemoryChildren,
+    },
+    Component {
+        component: Component,
+        child_values: InMemoryChildren,
+    },
+    Package(ValidatedPackage),
+}
+
+impl REValue {
+    pub fn get_children_store(&self) -> Option<&InMemoryChildren> {
+        match self {
+            REValue::KeyValueStore { store: _,  child_values } |
+            REValue::Component { component: _, child_values } => Some(child_values),
+            _ => None,
+        }
+    }
+
+    pub fn get_children_store_mut(&mut self) -> Option<&mut InMemoryChildren> {
+        match self {
+            REValue::KeyValueStore { store: _,  child_values } |
+            REValue::Component { component: _, child_values } => Some(child_values),
+            _ => None,
+        }
+    }
+
+    pub fn try_drop(self) -> Result<(), DropFailure> {
+        match self {
+            REValue::Package(..) => Err(DropFailure::Package),
+            REValue::Vault(..) => Err(DropFailure::Vault),
+            REValue::KeyValueStore { .. } => Err(DropFailure::KeyValueStore),
+            REValue::Component { .. } => Err(DropFailure::Component),
+            REValue::Bucket(..) => Err(DropFailure::Bucket),
+            REValue::Proof(proof) => {
+                proof.drop();
+                Ok(())
+            }
+        }
+    }
+}
+
+impl Into<Bucket> for REValue {
+    fn into(self) -> Bucket {
+        match self {
+            REValue::Bucket(bucket) => bucket,
+            _ => panic!("Expected to be a bucket"),
+        }
+    }
+}
+
+impl Into<Proof> for REValue {
+    fn into(self) -> Proof {
+        match self {
+            REValue::Proof(proof) => proof,
+            _ => panic!("Expected to be a proof"),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum REComplexValue {
     Component(Component)
 }

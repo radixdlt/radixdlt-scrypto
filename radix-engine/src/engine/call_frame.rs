@@ -57,13 +57,14 @@ pub struct CallFrame<
     worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
 
-    /// Referenced values
-    refed_values: HashMap<StoredValueId, REValueLocation>,
+    /// Borrowed Values from parent call frames
+    borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
+
+    /// Logical Id to Value mapping
+    refed_values: HashMap<StoredValueId, REValueInfo>,
     // TODO: Merge with refed_values
     /// Readable values
     readable_values: HashMap<ValueId, REValueLocation>,
-
-    borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
 
     /// Caller's auth zone
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
@@ -77,71 +78,6 @@ pub struct CallFrame<
     phantom: PhantomData<I>,
 }
 
-#[derive(Debug)]
-pub enum REValue {
-    Bucket(Bucket),
-    Proof(Proof),
-    Vault(Vault),
-    KeyValueStore {
-        store: PreCommittedKeyValueStore,
-        child_values: InMemoryChildren,
-    },
-    Component {
-        component: Component,
-        child_values: InMemoryChildren,
-    },
-    Package(ValidatedPackage),
-}
-
-impl REValue {
-    fn get_children_store(&self) -> Option<&InMemoryChildren> {
-        match self {
-            REValue::KeyValueStore { store: _,  child_values } |
-            REValue::Component { component: _, child_values } => Some(child_values),
-            _ => None,
-        }
-    }
-
-    fn get_children_store_mut(&mut self) -> Option<&mut InMemoryChildren> {
-        match self {
-            REValue::KeyValueStore { store: _,  child_values } |
-            REValue::Component { component: _, child_values } => Some(child_values),
-            _ => None,
-        }
-    }
-
-    fn try_drop(self) -> Result<(), DropFailure> {
-        match self {
-            REValue::Package(..) => Err(DropFailure::Package),
-            REValue::Vault(..) => Err(DropFailure::Vault),
-            REValue::KeyValueStore { .. } => Err(DropFailure::KeyValueStore),
-            REValue::Component { .. } => Err(DropFailure::Component),
-            REValue::Bucket(..) => Err(DropFailure::Bucket),
-            REValue::Proof(proof) => {
-                proof.drop();
-                Ok(())
-            }
-        }
-    }
-}
-
-impl Into<Bucket> for REValue {
-    fn into(self) -> Bucket {
-        match self {
-            REValue::Bucket(bucket) => bucket,
-            _ => panic!("Expected to be a bucket"),
-        }
-    }
-}
-
-impl Into<Proof> for REValue {
-    fn into(self) -> Proof {
-        match self {
-            REValue::Proof(proof) => proof,
-            _ => panic!("Expected to be a proof"),
-        }
-    }
-}
 
 #[macro_export]
 macro_rules! trace {
@@ -198,6 +134,12 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
         return Err(RuntimeError::KeyValueStoreNotAllowed);
     }
     Ok(())
+}
+
+#[derive(Debug, Clone)]
+pub struct REValueInfo {
+    visible: bool,
+    location: REValueLocation,
 }
 
 #[derive(Debug, Clone)]
@@ -1316,7 +1258,7 @@ where
                     let value_id = ValueId::Stored(stored_value_id.clone());
                     let cur_location = if self.owned_values.contains_key(&value_id) {
                         &REValueLocation::OwnedRoot
-                    } else if let Some(location) = self.refed_values.get(&stored_value_id) {
+                    } else if let Some(REValueInfo { location, .. }) = self.refed_values.get(&stored_value_id) {
                         location
                     } else {
                         let address: Address = component_address.into();
@@ -1474,6 +1416,7 @@ where
                     let stored_value_id = StoredValueId::VaultId(*vault_id);
                     let maybe_value_ref = self.refed_values.get(&stored_value_id);
                     maybe_value_ref
+                        .map(|info| &info.location)
                         .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?
                 };
 
@@ -1859,8 +1802,12 @@ where
                 let parent_location = location.clone();
                 for stored_value_id in cur_children {
                     let child_location = parent_location.child(value_id.clone());
+                    let child_info = REValueInfo {
+                        location: child_location.clone(),
+                        visible: false
+                    };
                     self.refed_values
-                        .insert(stored_value_id, child_location.clone());
+                        .insert(stored_value_id, child_info);
 
                     // Extend current readable space when kv stores are found
                     if let StoredValueId::KeyValueStoreId(..) = stored_value_id {
