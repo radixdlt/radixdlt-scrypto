@@ -75,7 +75,6 @@ pub struct CallFrame<
     phantom: PhantomData<I>,
 }
 
-
 #[macro_export]
 macro_rules! trace {
     ( $self: expr, $level: expr, $msg: expr $( , $arg:expr )* ) => {
@@ -245,7 +244,9 @@ impl REValueLocation {
                 ref ancestors,
             } => {
                 let root_value = owned_values.get_mut(&root).unwrap().get_mut();
-                let children = root_value.get_children_store_mut().expect("Should have children");
+                let children = root_value
+                    .get_children_store_mut()
+                    .expect("Should have children");
                 let stored_value_id = match value_id {
                     ValueId::Stored(stored_value_id) => stored_value_id,
                     _ => panic!("Unexpected value id"),
@@ -272,7 +273,7 @@ impl REValueLocation {
         value_id: &ValueId,
         owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
         borrowed_values: &'a mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
-        track: &'c mut Track<'s, S>
+        track: &'c mut Track<'s, S>,
     ) -> REValueRef<'a, 'borrowed, 'c, 's, S> {
         match self {
             REValueLocation::OwnedRoot
@@ -316,24 +317,20 @@ pub enum RENativeValueRef<'borrowed> {
 impl<'borrowed> RENativeValueRef<'borrowed> {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            RENativeValueRef::OwnedRef(root) => {
-                match root.deref_mut() {
-                    REValue::Bucket(bucket) => bucket,
-                    _ => panic!("Expecting to be a bucket"),
-                }
-            }
+            RENativeValueRef::OwnedRef(root) => match root.deref_mut() {
+                REValue::Bucket(bucket) => bucket,
+                _ => panic!("Expecting to be a bucket"),
+            },
             _ => panic!("Expecting to be a bucket"),
         }
     }
 
     pub fn proof(&mut self) -> &mut Proof {
         match self {
-            RENativeValueRef::OwnedRef(ref mut root) => {
-                match root.deref_mut() {
-                    REValue::Proof(proof) => proof,
-                    _ => panic!("Expecting to be a proof"),
-                }
-            }
+            RENativeValueRef::OwnedRef(ref mut root) => match root.deref_mut() {
+                REValue::Proof(proof) => proof,
+                _ => panic!("Expecting to be a proof"),
+            },
             _ => panic!("Expecting to be a proof"),
         }
     }
@@ -399,7 +396,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
         &mut self,
         key: Vec<u8>,
         value: ScryptoValue,
-        to_store: HashMap<StoredValueId, REValue>
+        to_store: HashMap<StoredValueId, REValue>,
     ) {
         match self {
             REValueRef::Owned(owned) => {
@@ -428,10 +425,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
         }
     }
 
-    fn kv_store_get(
-        &mut self,
-        key: &[u8],
-    ) -> ScryptoValue {
+    fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
         let maybe_value = match self {
             REValueRef::Owned(owned) => {
                 let store = owned.kv_store_mut();
@@ -476,11 +470,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
         }
     }
 
-    fn component_put(
-        &mut self,
-        value: ScryptoValue,
-        to_store: HashMap<StoredValueId, REValue>,
-    ) {
+    fn component_put(&mut self, value: ScryptoValue, to_store: HashMap<StoredValueId, REValue>) {
         match self {
             REValueRef::Track(track, address) => {
                 track
@@ -505,9 +495,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
         }
     }
 
-    fn component_info(
-        &mut self,
-    ) -> (PackageAddress, String) {
+    fn component_info(&mut self) -> (PackageAddress, String) {
         match self {
             REValueRef::Owned(owned) => {
                 let component = &owned.component_mut();
@@ -891,7 +879,8 @@ where
                 let maybe = self.owned_values.remove(&id);
                 if let Some(celled_value) = maybe {
                     // TODO: Clean this conversion up
-                    let persisted_value: REPersistedChildValue = celled_value.into_inner().try_into()?;
+                    let persisted_value: REPersistedChildValue =
+                        celled_value.into_inner().try_into()?;
                     let value: REValue = persisted_value.into();
                     let stored_id: StoredValueId = id.into();
                     taken_values.insert(stored_id, value);
@@ -1060,12 +1049,12 @@ where
                             REValueInfo {
                                 location: REValueLocation::Track { parent: None },
                                 visible: true,
-                            }
+                            },
                         );
                         vec![method_auth.clone()]
                     }
                     REValue::Proof(_) => vec![],
-                    REValue::Component {..} => vec![],
+                    REValue::Component { .. } => vec![],
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
@@ -1110,7 +1099,7 @@ where
                     REValueInfo {
                         location: REValueLocation::Track { parent: None },
                         visible: true,
-                    }
+                    },
                 );
 
                 Ok((SNodeExecution::ValueRef(value_id), vec![method_auth]))
@@ -1128,7 +1117,7 @@ where
                     REValueInfo {
                         location: REValueLocation::BorrowedRoot,
                         visible: true,
-                    }
+                    },
                 );
 
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
@@ -1146,7 +1135,7 @@ where
                     REValueInfo {
                         location: REValueLocation::BorrowedRoot,
                         visible: true,
-                    }
+                    },
                 );
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
@@ -1199,7 +1188,9 @@ where
                     let value_id = ValueId::Stored(stored_value_id.clone());
                     let cur_location = if self.owned_values.contains_key(&value_id) {
                         &REValueLocation::OwnedRoot
-                    } else if let Some(REValueInfo { location, .. }) = self.value_refs.get(&value_id) {
+                    } else if let Some(REValueInfo { location, .. }) =
+                        self.value_refs.get(&value_id)
+                    {
                         location
                     } else {
                         let address: Address = component_address.into();
@@ -1223,8 +1214,7 @@ where
                             &mut self.frame_borrowed_values,
                             &mut self.track,
                         );
-                        let (package_address, blueprint_name) =
-                            value_ref.component_info();
+                        let (package_address, blueprint_name) = value_ref.component_info();
                         ScryptoActorInfo::component(
                             package_address,
                             blueprint_name,
@@ -1268,10 +1258,7 @@ where
                                 &mut self.frame_borrowed_values,
                                 &mut self.track,
                             );
-                            value_ref.component_authorization(
-                                &abi.structure,
-                                &fn_ident,
-                            )
+                            value_ref.component_authorization(&abi.structure, &fn_ident)
                         };
 
                         (method_auths, package)
@@ -1293,7 +1280,9 @@ where
                                 }
                             })?;
                             locked_values.insert(address.clone());
-                            REValueLocation::Track { parent: parent.clone() }
+                            REValueLocation::Track {
+                                parent: parent.clone(),
+                            }
                         }
                         REValueLocation::OwnedRoot | REValueLocation::Borrowed { .. } => {
                             let owned_ref = cur_location.to_owned_ref(
@@ -1312,9 +1301,8 @@ where
                         REValueInfo {
                             location: next_frame_location,
                             visible: true,
-                        }
+                        },
                     );
-
 
                     Ok((SNodeExecution::Scrypto(actor_info, package), method_auths))
                 }
@@ -1346,14 +1334,14 @@ where
                             REValueInfo {
                                 location: REValueLocation::BorrowedRoot,
                                 visible: true,
-                            }
+                            },
                         );
                         readable_values.insert(
                             ValueId::Package(package_address),
                             REValueInfo {
                                 location: REValueLocation::Track { parent: None },
                                 visible: true,
-                            }
+                            },
                         );
                     }
                     _ => panic!("Unexpected"),
@@ -1403,8 +1391,8 @@ where
                                 location: REValueLocation::Track {
                                     parent: parent.clone(),
                                 },
-                                visible: true
-                            }
+                                visible: true,
+                            },
                         );
                     }
                     REValueLocation::OwnedRoot
@@ -1421,7 +1409,7 @@ where
                             REValueInfo {
                                 location: REValueLocation::BorrowedRoot,
                                 visible: true,
-                            }
+                            },
                         );
                     }
                     _ => panic!("Unexpected vault location {:?}", cur_location),
@@ -1579,7 +1567,7 @@ where
             value_id,
             &mut self.owned_values,
             &mut self.frame_borrowed_values,
-            &mut self.track
+            &mut self.track,
         )
     }
 
@@ -1588,7 +1576,7 @@ where
             value_id,
             &mut self.owned_values,
             &mut self.frame_borrowed_values,
-            &mut self.track
+            &mut self.track,
         )
     }
 
@@ -1596,7 +1584,10 @@ where
         self.owned_values.remove(&value_id).unwrap().into_inner()
     }
 
-    fn native_create<V: Into<REValueByComplexity>>(&mut self, v: V) -> Result<ValueId, RuntimeError> {
+    fn native_create<V: Into<REValueByComplexity>>(
+        &mut self,
+        v: V,
+    ) -> Result<ValueId, RuntimeError> {
         let value_by_complexity = v.into();
         let id = match value_by_complexity {
             REValueByComplexity::Primitive(REPrimitiveValue::Bucket(..)) => {
@@ -1682,17 +1673,15 @@ where
             REValue::Component {
                 component,
                 child_values,
-            } => {
-                (SubstateValue::Component(component), Some(child_values))
-            },
-            REValue::Package(package) => {
-                (SubstateValue::Package(package), None)
-            },
+            } => (SubstateValue::Component(component), Some(child_values)),
+            REValue::Package(package) => (SubstateValue::Package(package), None),
             _ => panic!("Not expected"),
         };
 
         let address = match value_id {
-            ValueId::Stored(StoredValueId::Component(component_address)) => Address::GlobalComponent(*component_address),
+            ValueId::Stored(StoredValueId::Component(component_address)) => {
+                Address::GlobalComponent(*component_address)
+            }
             ValueId::Package(package_address) => Address::Package(*package_address),
             _ => panic!("Expected to be a component address"),
         };
@@ -1772,9 +1761,7 @@ where
             let current_value = match &address {
                 SubstateAddress::Component(.., offset) => match offset {
                     ComponentOffset::State => value_ref.component_get_state(),
-                    ComponentOffset::Info => {
-                        ScryptoValue::from_typed(&value_ref.component_info())
-                    }
+                    ComponentOffset::Info => ScryptoValue::from_typed(&value_ref.component_info()),
                 },
                 SubstateAddress::KeyValueEntry(.., key) => {
                     verify_stored_key(key)?;
@@ -1818,9 +1805,7 @@ where
                 );
                 match address {
                     SubstateAddress::Component(.., offset) => match offset {
-                        ComponentOffset::State => {
-                            value_ref.component_put(value, taken_values)
-                        }
+                        ComponentOffset::State => value_ref.component_put(value, taken_values),
                         ComponentOffset::Info => {
                             return Err(RuntimeError::InvalidDataWrite);
                         }

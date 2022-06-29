@@ -128,7 +128,12 @@ impl Component {
         Ok(rtn)
     }
 
-    pub fn main_consume<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main_consume<
+        'borrowed,
+        S: SystemApi<'borrowed, W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    >(
         value_id: ValueId,
         fn_ident: &str,
         arg: ScryptoValue,

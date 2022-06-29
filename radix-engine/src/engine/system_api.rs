@@ -6,11 +6,11 @@ use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
 use crate::engine::call_frame::{DataInstruction, SubstateAddress};
+use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
 use crate::wasm::*;
-use crate::engine::values::*;
 
 pub trait SystemApi<'borrowed, W, I>
 where
@@ -43,7 +43,10 @@ where
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
 
-    fn native_create<V: Into<REValueByComplexity>>(&mut self, v: V) -> Result<ValueId, RuntimeError>;
+    fn native_create<V: Into<REValueByComplexity>>(
+        &mut self,
+        v: V,
+    ) -> Result<ValueId, RuntimeError>;
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
     fn data(

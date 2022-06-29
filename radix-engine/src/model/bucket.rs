@@ -175,7 +175,10 @@ impl Bucket {
                 let container = bucket0
                     .take(input.amount)
                     .map_err(BucketError::ResourceContainerError)?;
-                let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
+                let bucket_id = system_api
+                    .native_create(Bucket::new(container))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -186,7 +189,10 @@ impl Bucket {
                 let container = bucket0
                     .take_non_fungibles(&input.ids)
                     .map_err(BucketError::ResourceContainerError)?;
-                let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
+                let bucket_id = system_api
+                    .native_create(Bucket::new(container))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))

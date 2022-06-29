@@ -10,8 +10,8 @@ use crate::abi::*;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
-use crate::engine::{api::*, call_engine};
 use crate::engine::types::ValueId;
+use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
 

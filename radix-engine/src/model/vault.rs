@@ -189,7 +189,10 @@ impl Vault {
                 let input: VaultTakeInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take(input.amount)?;
-                let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
+                let bucket_id = system_api
+                    .native_create(Bucket::new(container))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -198,7 +201,10 @@ impl Vault {
                 let input: VaultTakeNonFungiblesInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let container = vault.take_non_fungibles(&input.non_fungible_ids)?;
-                let bucket_id = system_api.native_create(Bucket::new(container)).unwrap().into();
+                let bucket_id = system_api
+                    .native_create(Bucket::new(container))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))

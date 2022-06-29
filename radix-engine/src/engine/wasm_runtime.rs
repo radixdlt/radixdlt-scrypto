@@ -10,8 +10,8 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::engine::SystemApi;
+use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
 use crate::model::Component;
 use crate::wasm::*;
@@ -83,7 +83,9 @@ where
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let value_id = self.system_api.native_create(PreCommittedKeyValueStore::new())?;
+        let value_id = self
+            .system_api
+            .native_create(PreCommittedKeyValueStore::new())?;
         match value_id {
             ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => Ok(kv_store_id),
             _ => panic!("Expected to be a kv store"),
