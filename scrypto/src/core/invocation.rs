@@ -12,7 +12,6 @@ pub enum SNodeRef {
     SystemStatic,
     PackageStatic,
     AuthZoneRef,
-    WorktopRef,
     Scrypto(ScryptoActor),
     ResourceStatic,
     ResourceRef(ResourceAddress),

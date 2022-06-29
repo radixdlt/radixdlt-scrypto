@@ -53,7 +53,6 @@ pub struct CallFrame<
 
     /// Owned Values
     owned_values: HashMap<ValueId, RefCell<REValue>>,
-    worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Referenced values
@@ -255,7 +254,6 @@ impl<'a> REValueRef<'a> {
 
 pub enum BorrowedSNodeState<'a> {
     AuthZone(RefMut<'a, AuthZone>),
-    Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId, RefMut<'a, REValue>),
     Vault(VaultId, REValueRef<'a>),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
@@ -283,7 +281,6 @@ pub enum SNodeExecution<'a> {
     Static(StaticSNodeState),
     Consumed(TransientValue),
     AuthZone(RefMut<'a, AuthZone>),
-    Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId, RefMut<'a, REValue>),
     Vault(VaultId, &'a mut Vault),
     Blueprint(ScryptoActorInfo, ValidatedPackage),
@@ -346,9 +343,6 @@ impl<'a> SNodeExecution<'a> {
             SNodeExecution::AuthZone(mut auth_zone) => auth_zone
                 .main(fn_ident, input, system)
                 .map_err(RuntimeError::AuthZoneError),
-            SNodeExecution::Worktop(mut worktop) => worktop
-                .main(fn_ident, input, system)
-                .map_err(RuntimeError::WorktopError),
             SNodeExecution::Blueprint(info, package) => {
                 package.invoke(&info, fn_ident, input, system)
             }
@@ -417,7 +411,6 @@ where
             Some(RefCell::new(AuthZone::new_with_proofs(
                 initial_auth_zone_proofs,
             ))),
-            Some(RefCell::new(Worktop::new())),
             HashMap::new(),
             None,
             cost_unit_counter,
@@ -433,7 +426,6 @@ where
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         auth_zone: Option<RefCell<AuthZone>>,
-        worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
@@ -454,7 +446,6 @@ where
             owned_values: celled_owned_values,
             refed_values: HashMap::new(),
             refed_components: HashMap::new(),
-            worktop,
             auth_zone,
             caller_auth_zone,
             cost_unit_counter: Some(cost_unit_counter),
@@ -492,15 +483,6 @@ where
             };
             if let Some(resource_failure) = some_resource_failure {
                 resource = resource_failure;
-                success = false;
-            }
-        }
-
-        if let Some(ref_worktop) = &self.worktop {
-            let worktop = ref_worktop.borrow();
-            if !worktop.is_empty() {
-                trace!(self, Level::Warn, "Resource worktop is not empty");
-                resource = ResourceFailure::Resources(worktop.resource_addresses());
                 success = false;
             }
         }
@@ -572,7 +554,6 @@ where
             SNodeState::Consumed(consumed) => SNodeExecution::Consumed(consumed),
             SNodeState::Borrowed(borrowed) => match borrowed {
                 BorrowedSNodeState::AuthZone(auth_zone) => SNodeExecution::AuthZone(auth_zone),
-                BorrowedSNodeState::Worktop(worktop) => SNodeExecution::Worktop(worktop),
                 BorrowedSNodeState::Blueprint(info, package) => {
                     SNodeExecution::Blueprint(info, package)
                 }
@@ -812,14 +793,6 @@ where
                     Ok((Borrowed(BorrowedSNodeState::AuthZone(borrowed)), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
-                }
-            }
-            SNodeRef::WorktopRef => {
-                if let Some(worktop_ref) = &self.worktop {
-                    let worktop = worktop_ref.borrow_mut();
-                    Ok((Borrowed(BorrowedSNodeState::Worktop(worktop)), vec![]))
-                } else {
-                    Err(RuntimeError::WorktopDoesNotExist)
                 }
             }
             SNodeRef::ResourceRef(resource_address) => {
@@ -1111,12 +1084,6 @@ where
                 | Tracked(..)
                 | Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
-                }
-                _ => None,
-            },
-            match loaded_snode {
-                Static(StaticSNodeState::TransactionProcessor) => {
-                    Some(RefCell::new(Worktop::new()))
                 }
                 _ => None,
             },
