@@ -2,6 +2,7 @@ use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use scrypto::core::SNodeRef;
 use scrypto::engine::types::*;
+use scrypto::prelude::AccessRules;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
@@ -58,6 +59,9 @@ where
         resource_manager: ResourceManager,
     );
 
+    fn borrow_global_mut_value(&mut self, address: Address) -> SubstateValue;
+    fn return_global_mut_value(&mut self, address: Address, value: SubstateValue);
+
     fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
 
     fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError>;
@@ -72,7 +76,16 @@ where
 
     fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress;
 
-    fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
+    fn globalize(
+        &mut self,
+        component_address: ComponentAddress,
+        access_rules_list: Vec<AccessRules>,
+    ) -> Result<(), RuntimeError>;
+
+    fn create_local_component(
+        &mut self,
+        component: Component,
+    ) -> Result<ComponentAddress, RuntimeError>;
 
     fn create_kv_store(&mut self) -> KeyValueStoreId;
 

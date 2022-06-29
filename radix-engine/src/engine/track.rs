@@ -1,5 +1,5 @@
 use indexmap::{IndexMap, IndexSet};
-use sbor::rust::cell::RefCell;
+use sbor::rust::cell::{Ref, RefCell};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
@@ -24,6 +24,7 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     new_addresses: Vec<Address>,
     borrowed_substates: RefCell<HashSet<Address>>,
+    borrowed_substates_2: HashMap<Address, RefCell<SubstateValue>>,
     read_substates: IndexMap<Address, SubstateValue>,
 
     downed_substates: Vec<PhysicalSubstateId>,
@@ -182,7 +183,7 @@ impl Into<(ComponentAddress, VaultId)> for Address {
         if let Address::Vault(component_address, id) = self {
             return (component_address, id);
         } else {
-            panic!("Address is not a resource address");
+            panic!("Address is not a vault address");
         }
     }
 }
@@ -232,6 +233,14 @@ impl SubstateValue {
     }
 
     pub fn component(&self) -> &Component {
+        if let SubstateValue::Component(component) = self {
+            component
+        } else {
+            panic!("Not a component");
+        }
+    }
+
+    pub fn component_mut(&mut self) -> &mut Component {
         if let SubstateValue::Component(component) = self {
             component
         } else {
@@ -332,6 +341,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
             new_addresses: Vec::new(),
             borrowed_substates: RefCell::new(HashSet::new()),
+            borrowed_substates_2: HashMap::new(),
             read_substates: IndexMap::new(),
 
             downed_substates: Vec::new(),
@@ -390,7 +400,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         addr: A,
         value: V,
     ) {
-        self.up_substates.insert(addr.into().encode(), value.into());
+        let address = addr.into();
+        self.new_addresses.push(address.clone());
+        self.up_substates.insert(address.encode(), value.into());
     }
 
     pub fn create_key_space(
@@ -442,6 +454,95 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         } else {
             Err(TrackError::NotFound)
         }
+    }
+
+    pub fn take_lock<A: Into<Address>>(&mut self, addr: A) -> Result<(), TrackError> {
+        let address = addr.into();
+        let maybe_value = self.up_substates.remove(&address.encode());
+        if let Some(value) = maybe_value {
+            self.borrowed_substates_2
+                .insert(address, RefCell::new(value));
+            return Ok(());
+        }
+
+        if self.borrowed_substates_2.contains_key(&address) {
+            return Err(TrackError::Reentrancy);
+        }
+
+        if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
+            self.downed_substates.push(substate.phys_id);
+            let value = match address {
+                Address::Component(_) => {
+                    let component = scrypto_decode(&substate.value).unwrap();
+                    SubstateValue::Component(component)
+                }
+                Address::Resource(_) => {
+                    let resource_manager = scrypto_decode(&substate.value).unwrap();
+                    SubstateValue::Resource(resource_manager)
+                }
+                Address::Vault(..) => {
+                    let vault = scrypto_decode(&substate.value).unwrap();
+                    SubstateValue::Vault(vault)
+                }
+                _ => panic!("Attempting to borrow unsupported value"),
+            };
+
+            self.borrowed_substates_2
+                .insert(address.clone(), RefCell::new(value));
+            Ok(())
+        } else {
+            Err(TrackError::NotFound)
+        }
+    }
+
+    pub fn read_value<A: Into<Address>>(&self, addr: A) -> Ref<SubstateValue> {
+        let address: Address = addr.into();
+        self.borrowed_substates_2.get(&address).unwrap().borrow()
+    }
+
+    pub fn write_value<A: Into<Address>, V: Into<SubstateValue>>(
+        &mut self,
+        addr: A,
+        value: V,
+    ) -> Result<(), TrackError> {
+        let address: Address = addr.into();
+
+        if !self.borrowed_substates_2.contains_key(&address) {
+            return Err(TrackError::NotFound);
+        }
+        self.borrowed_substates_2
+            .insert(address, RefCell::new(value.into()));
+        Ok(())
+    }
+
+    // TODO: Replace with more generic write_value once Component is split into more substates
+    pub fn write_component_value(
+        &mut self,
+        addr: ComponentAddress,
+        value: Vec<u8>,
+    ) -> Result<(), TrackError> {
+        let address: Address = addr.into();
+
+        if !self.borrowed_substates_2.contains_key(&address) {
+            return Err(TrackError::NotFound);
+        }
+        let mut component_val = self
+            .borrowed_substates_2
+            .get_mut(&address)
+            .unwrap()
+            .borrow_mut();
+        component_val.component_mut().set_state(value);
+        Ok(())
+    }
+
+    pub fn release_lock<A: Into<Address>>(&mut self, addr: A) {
+        let address = addr.into();
+        let cell = self
+            .borrowed_substates_2
+            .remove(&address)
+            .expect("Value was never borrowed");
+        self.up_substates
+            .insert(address.encode(), cell.into_inner());
     }
 
     // TODO: Add checks to see verify that immutable values aren't being borrowed
@@ -527,7 +628,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                     SubstateValue::KeyValueStoreEntry(kv_store_entry)
                 })
                 .unwrap_or(SubstateValue::KeyValueStoreEntry(None)),
-            _ => panic!("Invalid keyed value address"),
+            _ => panic!("Invalid keyed value address {:?}", parent_address),
         }
     }
 
@@ -575,7 +676,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new component address.
-    fn new_component_address(&mut self) -> ComponentAddress {
+    pub fn new_component_address(&mut self) -> ComponentAddress {
         let component_address = self
             .id_allocator
             .new_component_address(self.transaction_hash())

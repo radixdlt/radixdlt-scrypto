@@ -6,7 +6,6 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::buffer::*;
 use crate::component::*;
 use crate::core::*;
 use crate::engine::{api::*, call_engine};
@@ -14,16 +13,14 @@ use crate::misc::*;
 use crate::resource::AccessRules;
 
 pub struct LocalComponent {
-    blueprint_name: String,
-    state: Vec<u8>,
+    component_address: ComponentAddress,
     access_rules_list: Vec<AccessRules>,
 }
 
 impl LocalComponent {
-    pub fn new(blueprint_name: String, state: Vec<u8>) -> Self {
+    pub fn new(component_address: ComponentAddress) -> Self {
         Self {
-            blueprint_name,
-            state,
+            component_address,
             access_rules_list: Vec::new(),
         }
     }
@@ -34,13 +31,10 @@ impl LocalComponent {
     }
 
     pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::CreateComponent(
-            self.blueprint_name,
-            self.state,
-            self.access_rules_list,
-        );
-        let output: ComponentAddress = call_engine(input);
-        output
+        let addr = self.component_address.clone();
+        let input = RadixEngineInput::Globalize(self.component_address, self.access_rules_list);
+        let _: () = call_engine(input);
+        addr
     }
 }
 
@@ -66,23 +60,9 @@ impl Component {
         Runtime::call_method(self.0, method, args)
     }
 
-    /// Returns the state of this component.
-    pub fn get_state<T: ComponentState>(&self) -> T {
-        let address = DataAddress::Component(self.0);
-        let input = RadixEngineInput::ReadData(address);
-        call_engine(input)
-    }
-
-    /// Updates the state of this component.
-    pub fn put_state<T: ComponentState>(&self, state: T) {
-        let address = DataAddress::Component(self.0);
-        let input = RadixEngineInput::WriteData(address, scrypto_encode(&state));
-        call_engine(input)
-    }
-
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let address = DataAddress::ComponentInfo(self.0);
+        let address = DataAddress::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.0
@@ -90,7 +70,7 @@ impl Component {
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let address = DataAddress::ComponentInfo(self.0);
+        let address = DataAddress::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.1

@@ -8,12 +8,6 @@ blueprint! {
     }
 
     impl KeyValueStoreTest {
-        pub fn dangling_key_value_store() -> Option<String> {
-            let map = KeyValueStore::new();
-            map.insert("hello".to_owned(), "world".to_owned());
-            map.get(&"hello".to_owned())
-        }
-
         pub fn new_key_value_store_into_vector() -> ComponentAddress {
             let map = KeyValueStore::new();
             map.get(&"hello".to_owned());

@@ -1,7 +1,6 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 use sbor::{DecodeError, Value};
 use scrypto::engine::types::*;
 use transaction::errors::*;
@@ -59,6 +58,7 @@ pub enum RuntimeError {
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
+    InvalidDataAccess,
     InvalidDataWrite,
     ValueNotFound(ValueId),
 
@@ -103,7 +103,7 @@ pub enum RuntimeError {
     KeyValueStoreNotAllowed,
 
     /// Resource check failure.
-    ResourceCheckFailure(ResourceFailure),
+    DropFailure(DropFailure),
 
     /// AuthZone error
     AuthZoneError(AuthZoneError),
@@ -127,11 +127,12 @@ pub enum RuntimeError {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ResourceFailure {
-    Resource(ResourceAddress),
-    Resources(Vec<ResourceAddress>),
-    UnclaimedKeyValueStore,
-    Unknown,
+pub enum DropFailure {
+    Component,
+    Bucket,
+    Vault,
+    Worktop,
+    KeyValueStore,
 }
 
 impl fmt::Display for RuntimeError {
