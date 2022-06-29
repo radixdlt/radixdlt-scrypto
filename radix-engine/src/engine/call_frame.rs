@@ -535,9 +535,12 @@ where
         trace!(
             self,
             Level::Debug,
-            "Run started! Remainging cost units: {}",
+            "Run started! Remaining cost units: {}",
             remaining_cost_units
         );
+        self.cost_unit_counter
+            .consume(self.fee_table.engine_run_cost())
+            .map_err(RuntimeError::CostingError)?;
 
         let mut to_return = HashMap::new();
 
