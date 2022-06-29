@@ -1,5 +1,5 @@
 use indexmap::{IndexMap, IndexSet};
-use sbor::rust::cell::{Ref, RefCell};
+use sbor::rust::cell::{RefCell};
 use sbor::rust::collections::*;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
@@ -12,8 +12,14 @@ use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
 use crate::engine::{REPersistedChildValue, REValue, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::track::BorrowedSubstate::TAKEN;
 use crate::ledger::*;
 use crate::model::*;
+
+enum BorrowedSubstate {
+    LOADED(SubstateValue),
+    TAKEN,
+}
 
 /// Facilitates transactional state updates.
 pub struct Track<'s, S: ReadableSubstateStore> {
@@ -24,7 +30,7 @@ pub struct Track<'s, S: ReadableSubstateStore> {
 
     new_addresses: Vec<Address>,
     borrowed_substates: RefCell<HashSet<Address>>,
-    borrowed_substates_2: HashMap<Address, RefCell<SubstateValue>>,
+    borrowed_substates_2: HashMap<Address, BorrowedSubstate>,
     read_substates: IndexMap<Address, SubstateValue>,
 
     downed_substates: Vec<PhysicalSubstateId>,
@@ -474,7 +480,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let maybe_value = self.up_substates.remove(&address.encode());
         if let Some(value) = maybe_value {
             self.borrowed_substates_2
-                .insert(address, RefCell::new(value));
+                .insert(address, BorrowedSubstate::LOADED(value));
             return Ok(());
         }
 
@@ -501,16 +507,27 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             };
 
             self.borrowed_substates_2
-                .insert(address.clone(), RefCell::new(value));
+                .insert(address.clone(), BorrowedSubstate::LOADED(value));
             Ok(())
         } else {
             Err(TrackError::NotFound)
         }
     }
 
-    pub fn read_value<A: Into<Address>>(&self, addr: A) -> Ref<SubstateValue> {
+    pub fn read_value<A: Into<Address>>(&self, addr: A) -> &SubstateValue {
         let address: Address = addr.into();
-        self.borrowed_substates_2.get(&address).unwrap().borrow()
+        match self.borrowed_substates_2.get(&address).expect("value was never locked") {
+            BorrowedSubstate::LOADED(value) => value,
+            BorrowedSubstate::TAKEN => panic!("Value was already taken"),
+        }
+    }
+
+    pub fn take_value<A: Into<Address>>(&mut self, addr: A) -> SubstateValue {
+        let address: Address = addr.into();
+        match self.borrowed_substates_2.insert(address, TAKEN).expect("value was never locked") {
+            BorrowedSubstate::LOADED(value) => value,
+            BorrowedSubstate::TAKEN => panic!("Value was already taken"),
+        }
     }
 
     pub fn write_value<A: Into<Address>, V: Into<SubstateValue>>(
@@ -520,11 +537,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     ) -> Result<(), TrackError> {
         let address: Address = addr.into();
 
-        if !self.borrowed_substates_2.contains_key(&address) {
-            return Err(TrackError::NotFound);
-        }
+        self.borrowed_substates_2.get(&address).expect("value was never locked");
         self.borrowed_substates_2
-            .insert(address, RefCell::new(value.into()));
+            .insert(address, BorrowedSubstate::LOADED(value.into()));
         Ok(())
     }
 
@@ -542,23 +557,31 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         if !self.borrowed_substates_2.contains_key(&address) {
             return Err(TrackError::NotFound);
         }
-        let mut component_val = self
+        let borrowed = self
             .borrowed_substates_2
             .get_mut(&address)
-            .unwrap()
-            .borrow_mut();
-        component_val.component_mut().set_state(value);
+            .unwrap();
+        match borrowed {
+            BorrowedSubstate::TAKEN => panic!("Value was taken"),
+            BorrowedSubstate::LOADED(component_val) => {
+                component_val.component_mut().set_state(value);
+            }
+        }
         Ok(())
     }
 
     pub fn release_lock<A: Into<Address>>(&mut self, addr: A) {
         let address = addr.into();
-        let cell = self
+        let borrowed = self
             .borrowed_substates_2
             .remove(&address)
             .expect("Value was never borrowed");
-        self.up_substates
-            .insert(address.encode(), cell.into_inner());
+        match borrowed {
+            BorrowedSubstate::TAKEN => panic!("Value was never returned"),
+            BorrowedSubstate::LOADED(value) => {
+                self.up_substates.insert(address.encode(), value);
+            }
+        }
     }
 
     pub fn borrow_global_mut_value<A: Into<Address>>(
