@@ -344,14 +344,8 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
         match self {
             RENativeValueRef::Owned(..) => panic!("Unexpected"),
             RENativeValueRef::OwnedRef(owned) => match owned {
-                REOwnedValueRef::Root(root) => match root.deref_mut() {
-                    REValue::Vault(vault) => vault,
-                    _ => panic!("Expecting to be a vault"),
-                },
-                REOwnedValueRef::Child(stored_value) => match stored_value.deref_mut() {
-                    REPersistedChildValue::Vault(vault) => vault,
-                    _ => panic!("Expecting to be a vault"),
-                },
+                REOwnedValueRef::Root(root) => root.vault_mut(),
+                REOwnedValueRef::Child(vault) => vault.vault_mut(),
             },
             RENativeValueRef::Track(_address, value) => value.vault_mut(),
         }
@@ -407,7 +401,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
 
 pub enum REOwnedValueRef<'a> {
     Root(RefMut<'a, REValue>),
-    Child(RefMut<'a, REPersistedChildValue>),
+    Child(RefMut<'a, REValue>),
 }
 
 impl<'a> REOwnedValueRef<'a> {
@@ -443,9 +437,11 @@ impl<'a> REOwnedValueRef<'a> {
 
     fn get_children_store_mut(&mut self) -> &mut InMemoryChildren {
         match self {
-            REOwnedValueRef::Root(root) => root.get_children_store_mut().unwrap(),
+            REOwnedValueRef::Root(root) => {
+                root.get_children_store_mut().unwrap()
+            },
             REOwnedValueRef::Child(stored_value) => {
-                stored_value.get_children()
+                stored_value.get_children_store_mut().unwrap()
             },
         }
     }
@@ -462,7 +458,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
         &mut self,
         key: Vec<u8>,
         value: ScryptoValue,
-        to_store: HashMap<StoredValueId, REPersistedChildValue>
+        to_store: HashMap<StoredValueId, REValue>
     ) {
         match self {
             REValueRef::Owned(owned) => {
@@ -542,7 +538,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
     fn component_put(
         &mut self,
         value: ScryptoValue,
-        to_store: HashMap<StoredValueId, REPersistedChildValue>,
+        to_store: HashMap<StoredValueId, REValue>,
     ) {
         match self {
             REValueRef::Track(track, address) => {
@@ -948,7 +944,7 @@ where
     fn take_persistent_child_values(
         &mut self,
         value_ids: HashSet<ValueId>,
-    ) -> Result<(HashMap<StoredValueId, REPersistedChildValue>, HashSet<ValueId>), RuntimeError> {
+    ) -> Result<(HashMap<StoredValueId, REValue>, HashSet<ValueId>), RuntimeError> {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
             let mut missing_values = HashSet::new();
@@ -956,9 +952,11 @@ where
             for id in value_ids {
                 let maybe = self.owned_values.remove(&id);
                 if let Some(celled_value) = maybe {
+                    // TODO: Clean this conversion up
                     let persisted_value: REPersistedChildValue = celled_value.into_inner().try_into()?;
+                    let value: REValue = persisted_value.into();
                     let stored_id: StoredValueId = id.into();
-                    taken_values.insert(stored_id, persisted_value);
+                    taken_values.insert(stored_id, value);
                 } else {
                     missing_values.insert(id);
                 }
@@ -970,8 +968,10 @@ where
         // Moved values must have their references removed
         for (id, value) in taken.iter() {
             self.value_refs.remove(&ValueId::Stored(id.clone()));
-            for id in value.all_descendants() {
-                self.value_refs.remove(&ValueId::Stored(id));
+            if let Some(children_store) = value.get_children_store() {
+                for id in children_store.all_descendants() {
+                    self.value_refs.remove(&ValueId::Stored(id));
+                }
             }
         }
 

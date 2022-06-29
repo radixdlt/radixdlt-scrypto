@@ -25,6 +25,48 @@ pub enum REValue {
 }
 
 impl REValue {
+    pub fn component(&self) -> &Component {
+        match self {
+            REValue::Component { component, .. } => component,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
+    pub fn component_mut(&mut self) -> &mut Component {
+        match self {
+            REValue::Component { component, .. } => component,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
+    pub fn kv_store(&self) -> &PreCommittedKeyValueStore {
+        match self {
+            REValue::KeyValueStore { store, .. } => store,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
+    pub fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
+        match self {
+            REValue::KeyValueStore { store, .. } => store,
+            _ => panic!("Expected to be a store"),
+        }
+    }
+
+    pub fn vault(&self) -> &Vault {
+        match self {
+            REValue::Vault(vault) => vault,
+            _ => panic!("Expected to be a vault"),
+        }
+    }
+
+    pub fn vault_mut(&mut self) -> &mut Vault {
+        match self {
+            REValue::Vault(vault) => vault,
+            _ => panic!("Expected to be a vault"),
+        }
+    }
+
     pub fn get_children_store(&self) -> Option<&InMemoryChildren> {
         match self {
             REValue::KeyValueStore { store: _,  child_values } |
@@ -90,7 +132,7 @@ impl REComplexValue {
         }
     }
 
-    pub fn into_re_value(self, children: HashMap<StoredValueId, REPersistedChildValue>) -> REValue {
+    pub fn into_re_value(self, children: HashMap<StoredValueId, REValue>) -> REValue {
         match self {
             REComplexValue::Component(component) => {
                 REValue::Component {
@@ -173,7 +215,7 @@ impl Into<REValueByComplexity> for Component {
 
 #[derive(Debug)]
 pub struct InMemoryChildren {
-    child_values: HashMap<StoredValueId, RefCell<REPersistedChildValue>>,
+    child_values: HashMap<StoredValueId, RefCell<REValue>>,
 }
 
 impl InMemoryChildren {
@@ -183,7 +225,7 @@ impl InMemoryChildren {
         }
     }
 
-    pub fn with_values(values: HashMap<StoredValueId, REPersistedChildValue>) -> Self {
+    pub fn with_values(values: HashMap<StoredValueId, REValue>) -> Self {
         let mut child_values = HashMap::new();
         for (id, value) in values.into_iter() {
             child_values.insert(id, RefCell::new(value));
@@ -191,7 +233,7 @@ impl InMemoryChildren {
         InMemoryChildren { child_values }
     }
 
-    pub fn into_iter(self) -> IntoIter<StoredValueId, RefCell<REPersistedChildValue>> {
+    pub fn into_iter(self) -> IntoIter<StoredValueId, RefCell<REValue>> {
         self.child_values.into_iter()
     }
 
@@ -200,7 +242,9 @@ impl InMemoryChildren {
         for (id, value) in self.child_values.iter() {
             descendents.push(*id);
             let value = value.borrow();
-            descendents.extend(value.all_descendants());
+            if let Some(children_store) = value.get_children_store() {
+                descendents.extend(children_store.all_descendants());
+            }
         }
         descendents
     }
@@ -209,7 +253,7 @@ impl InMemoryChildren {
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
-    ) -> RefMut<REPersistedChildValue> {
+    ) -> RefMut<REValue> {
         if ancestors.is_empty() {
             let value = self
                 .child_values
@@ -223,14 +267,15 @@ impl InMemoryChildren {
             .child_values
             .get_mut(&StoredValueId::KeyValueStoreId(*first))
             .unwrap();
-        value.get_mut().get_child(rest, id)
+        let children_store = value.get_mut().get_children_store_mut().unwrap();
+        children_store.get_child(rest, id)
     }
 
     pub fn get_child_mut(
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
-    ) -> &mut REPersistedChildValue {
+    ) -> &mut REValue {
         if ancestors.is_empty() {
             let value = self
                 .child_values
@@ -244,10 +289,11 @@ impl InMemoryChildren {
             .child_values
             .get_mut(&StoredValueId::KeyValueStoreId(*first))
             .unwrap();
-        value.get_mut().get_child_mut(rest, id)
+        let children_store = value.get_mut().get_children_store_mut().unwrap();
+        children_store.get_child_mut(rest, id)
     }
 
-    pub fn insert_children(&mut self, values: HashMap<StoredValueId, REPersistedChildValue>) {
+    pub fn insert_children(&mut self, values: HashMap<StoredValueId, REValue>) {
         for (id, value) in values {
             self.child_values.insert(id, RefCell::new(value));
         }
@@ -265,6 +311,22 @@ pub enum REPersistedChildValue {
         child_values: InMemoryChildren,
     },
     Vault(Vault),
+}
+
+impl Into<REValue> for REPersistedChildValue {
+    fn into(self) -> REValue {
+        match self {
+            REPersistedChildValue::KeyValueStore { store, child_values} => {
+                REValue::KeyValueStore { store, child_values }
+            }
+            REPersistedChildValue::Component { component, child_values} => {
+                REValue::Component { component, child_values }
+            }
+            REPersistedChildValue::Vault(vault) => {
+                REValue::Vault(vault)
+            }
+        }
+    }
 }
 
 impl TryInto<REPersistedChildValue> for REValue {
@@ -340,7 +402,7 @@ impl REPersistedChildValue {
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
-    ) -> RefMut<REPersistedChildValue> {
+    ) -> RefMut<REValue> {
         match self {
             REPersistedChildValue::KeyValueStore { child_values, .. }
             | REPersistedChildValue::Component { child_values, .. } => child_values.get_child(ancestors, id),
@@ -352,7 +414,7 @@ impl REPersistedChildValue {
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
-    ) -> &mut REPersistedChildValue {
+    ) -> &mut REValue {
         match self {
             REPersistedChildValue::KeyValueStore { child_values, .. }
             | REPersistedChildValue::Component { child_values, .. } => {
@@ -362,7 +424,7 @@ impl REPersistedChildValue {
         }
     }
 
-    pub fn insert_children(&mut self, values: HashMap<StoredValueId, REPersistedChildValue>) {
+    pub fn insert_children(&mut self, values: HashMap<StoredValueId, REValue>) {
         match self {
             REPersistedChildValue::KeyValueStore { child_values, .. }
             | REPersistedChildValue::Component { child_values, .. } => child_values.insert_children(values),
