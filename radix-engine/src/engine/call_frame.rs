@@ -63,7 +63,7 @@ pub struct CallFrame<
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Borrowed Values from call frames up the stack
-    frame_borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
+    frame_borrowed_values: HashMap<ValueId, RefMut<'borrowed, REValue>>,
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
     /// There is a single cost unit counter and a single fee table per transaction execution.
@@ -195,7 +195,7 @@ impl REValueLocation {
         &self,
         value_id: &ValueId,
         owned_values: &mut HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
+        borrowed_values: &mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
         track: &mut Track<S>,
     ) -> RENativeValueRef<'borrowed> {
         match self {
@@ -233,13 +233,12 @@ impl REValueLocation {
         &self,
         value_id: &ValueId,
         owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &'a mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
-    ) -> REOwnedValueRef<'a> {
+        borrowed_values: &'a mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
+    ) -> RefMut<'a, REValue> {
         match self {
             REValueLocation::OwnedRoot => {
                 let cell = owned_values.get_mut(value_id).unwrap();
-                let ref_mut = cell.borrow_mut();
-                REOwnedValueRef::Root(ref_mut)
+                cell.borrow_mut()
             }
             REValueLocation::Owned {
                 root,
@@ -251,8 +250,7 @@ impl REValueLocation {
                     ValueId::Stored(stored_value_id) => stored_value_id,
                     _ => panic!("Unexpected value id"),
                 };
-                let value = children.get_child(ancestors, stored_value_id);
-                REOwnedValueRef::Child(value)
+                children.get_child(ancestors, stored_value_id)
             }
             REValueLocation::Borrowed { root, ancestors } => {
                 let borrowed = borrowed_values.get_mut(root).unwrap();
@@ -260,10 +258,10 @@ impl REValueLocation {
                     ValueId::Stored(stored_value_id) => stored_value_id,
                     _ => panic!("Unexpected value id"),
                 };
-                let value = borrowed
+                borrowed
                     .get_children_store_mut()
-                    .get_child(ancestors, stored_value_id);
-                REOwnedValueRef::Child(value)
+                    .unwrap()
+                    .get_child(ancestors, stored_value_id)
             }
             _ => panic!("Not an owned ref"),
         }
@@ -273,7 +271,7 @@ impl REValueLocation {
         &self,
         value_id: &ValueId,
         owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &'a mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
+        borrowed_values: &'a mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
         track: &'c mut Track<'s, S>
     ) -> REValueRef<'a, 'borrowed, 'c, 's, S> {
         match self {
@@ -311,14 +309,14 @@ impl REValueLocation {
 
 pub enum RENativeValueRef<'borrowed> {
     Owned(REValue),
-    OwnedRef(REOwnedValueRef<'borrowed>),
+    OwnedRef(RefMut<'borrowed, REValue>),
     Track(Address, SubstateValue),
 }
 
 impl<'borrowed> RENativeValueRef<'borrowed> {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            RENativeValueRef::OwnedRef(REOwnedValueRef::Root(ref mut root)) => {
+            RENativeValueRef::OwnedRef(root) => {
                 match root.deref_mut() {
                     REValue::Bucket(bucket) => bucket,
                     _ => panic!("Expecting to be a bucket"),
@@ -330,7 +328,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
 
     pub fn proof(&mut self) -> &mut Proof {
         match self {
-            RENativeValueRef::OwnedRef(REOwnedValueRef::Root(ref mut root)) => {
+            RENativeValueRef::OwnedRef(ref mut root) => {
                 match root.deref_mut() {
                     REValue::Proof(proof) => proof,
                     _ => panic!("Expecting to be a proof"),
@@ -343,23 +341,14 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
     pub fn vault(&mut self) -> &mut Vault {
         match self {
             RENativeValueRef::Owned(..) => panic!("Unexpected"),
-            RENativeValueRef::OwnedRef(owned) => match owned {
-                REOwnedValueRef::Root(root) => root.vault_mut(),
-                REOwnedValueRef::Child(vault) => vault.vault_mut(),
-            },
+            RENativeValueRef::OwnedRef(owned) => owned.vault_mut(),
             RENativeValueRef::Track(_address, value) => value.vault_mut(),
         }
     }
 
     pub fn component(&mut self) -> &mut Component {
         match self {
-            RENativeValueRef::OwnedRef(owned) => match owned {
-                REOwnedValueRef::Root(root) => match root.deref_mut() {
-                    REValue::Component { component, .. } => component,
-                    _ => panic!("Expecting to be a component"),
-                },
-                _ => panic!("Expecting to be a component"),
-            },
+            RENativeValueRef::OwnedRef(owned) => owned.component_mut(),
             _ => panic!("Expecting to be a component"),
         }
     }
@@ -382,7 +371,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
         self,
         value_id: ValueId,
         owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &mut HashMap<ValueId, REOwnedValueRef<'borrowed>>,
+        borrowed_values: &mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
         track: &mut Track<S>,
     ) {
         match self {
@@ -399,57 +388,9 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
     }
 }
 
-pub enum REOwnedValueRef<'a> {
-    Root(RefMut<'a, REValue>),
-    Child(RefMut<'a, REValue>),
-}
-
-impl<'a> REOwnedValueRef<'a> {
-    fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
-        match self {
-            REOwnedValueRef::Root(root) => match root.deref_mut() {
-                REValue::KeyValueStore { store, .. } => store,
-                _ => panic!("Expected a store"),
-            },
-            REOwnedValueRef::Child(value) => value.kv_store_mut(),
-        }
-    }
-
-    fn component_mut(&mut self) -> &mut Component {
-        match self {
-            REOwnedValueRef::Root(root) => match root.deref_mut() {
-                REValue::Component { component, .. } => component,
-                _ => panic!("Expected a component"),
-            },
-            REOwnedValueRef::Child(stored_value) => stored_value.component_mut(),
-        }
-    }
-
-    fn component(&self) -> &Component {
-        match self {
-            REOwnedValueRef::Root(root) => match root.deref() {
-                REValue::Component { component, .. } => component,
-                _ => panic!("Expected a component"),
-            },
-            REOwnedValueRef::Child(stored_value) => stored_value.component(),
-        }
-    }
-
-    fn get_children_store_mut(&mut self) -> &mut InMemoryChildren {
-        match self {
-            REOwnedValueRef::Root(root) => {
-                root.get_children_store_mut().unwrap()
-            },
-            REOwnedValueRef::Child(stored_value) => {
-                stored_value.get_children_store_mut().unwrap()
-            },
-        }
-    }
-}
-
 pub enum REValueRef<'a, 'b, 'c, 's, S: ReadableSubstateStore> {
-    Owned(REOwnedValueRef<'a>),
-    Borrowed(&'a mut REOwnedValueRef<'b>),
+    Owned(RefMut<'a, REValue>),
+    Borrowed(&'a mut RefMut<'b, REValue>),
     Track(&'c mut Track<'s, S>, Address),
 }
 
@@ -463,7 +404,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
         match self {
             REValueRef::Owned(owned) => {
                 let children = owned.get_children_store_mut();
-                children.insert_children(to_store);
+                children.unwrap().insert_children(to_store);
                 owned.kv_store_mut().put(key, value);
             }
             REValueRef::Borrowed(..) => {
@@ -558,7 +499,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
                 let component = owned.component_mut();
                 component.set_state(value.raw);
                 let children = owned.get_children_store_mut();
-                children.insert_children(to_store);
+                children.unwrap().insert_children(to_store);
             }
             _ => panic!("Unexpected component ref"),
         }
@@ -608,13 +549,10 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
 
     fn vault_address(&mut self) -> ResourceAddress {
         match self {
-            REValueRef::Owned(REOwnedValueRef::Root(re_value)) => match re_value.deref_mut() {
+            REValueRef::Owned(re_value) => match re_value.deref_mut() {
                 REValue::Vault(vault) => vault.resource_address(),
                 _ => panic!("Unexpected value"),
             },
-            REValueRef::Owned(REOwnedValueRef::Child(stored_value)) => {
-                stored_value.vault().resource_address()
-            }
             REValueRef::Borrowed(..) => {
                 panic!("Not supported");
             }
@@ -717,7 +655,7 @@ where
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
         readable_values: HashMap<ValueId, REValueInfo>,
-        borrowed_values: HashMap<ValueId, REOwnedValueRef<'borrowed>>,
+        frame_borrowed_values: HashMap<ValueId, RefMut<'borrowed, REValue>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
@@ -736,7 +674,7 @@ where
             wasm_instrumenter,
             owned_values: celled_owned_values,
             value_refs: readable_values,
-            frame_borrowed_values: borrowed_values,
+            frame_borrowed_values,
             worktop,
             auth_zone,
             caller_auth_zone,
@@ -1184,8 +1122,7 @@ where
                     .get(&value_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
                 let ref_mut = bucket_cell.borrow_mut();
-                let value_ref = REOwnedValueRef::Root(ref_mut);
-                borrowed_values.insert(value_id.clone(), value_ref);
+                borrowed_values.insert(value_id.clone(), ref_mut);
                 readable_values.insert(
                     value_id.clone(),
                     REValueInfo {
@@ -1203,8 +1140,7 @@ where
                     .get(&value_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
                 let ref_mut = proof_cell.borrow_mut();
-                let value_ref = REOwnedValueRef::Root(ref_mut);
-                borrowed_values.insert(value_id.clone(), value_ref);
+                borrowed_values.insert(value_id.clone(), ref_mut);
                 readable_values.insert(
                     value_id.clone(),
                     REValueInfo {

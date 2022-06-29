@@ -10,7 +10,7 @@ mod values;
 mod wasm_runtime;
 
 pub use call_frame::{
-    CallFrame, RENativeValueRef, REOwnedValueRef, REValueRef,
+    CallFrame, RENativeValueRef, REValueRef,
 };
 pub use errors::*;
 pub use precommitted_kv_store::*;
