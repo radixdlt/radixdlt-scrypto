@@ -516,15 +516,6 @@ impl TransactionProcessor {
                     outputs.push(result);
                 }
 
-                // check resource
-                if !worktop.is_empty() {
-                    return Err(TransactionProcessorError::RuntimeError(
-                        RuntimeError::ResourceCheckFailure(ResourceFailure::Resources(
-                            worktop.resource_addresses(),
-                        )),
-                    ));
-                }
-
                 Ok(ScryptoValue::from_typed(
                     &outputs
                         .into_iter()
