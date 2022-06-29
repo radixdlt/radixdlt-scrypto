@@ -17,6 +17,7 @@ use scrypto::values::*;
 use transaction::model::*;
 use transaction::validation::*;
 
+use crate::engine::ResourceFailure;
 use crate::engine::{RuntimeError, RuntimeError::ProofNotFound, SystemApi};
 use crate::model::worktop::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
@@ -513,6 +514,15 @@ impl TransactionProcessor {
                     }
                     .map_err(TransactionProcessorError::RuntimeError)?;
                     outputs.push(result);
+                }
+
+                // check resource
+                if !worktop.is_empty() {
+                    return Err(TransactionProcessorError::RuntimeError(
+                        RuntimeError::ResourceCheckFailure(ResourceFailure::Resources(
+                            worktop.resource_addresses(),
+                        )),
+                    ));
                 }
 
                 Ok(ScryptoValue::from_typed(
