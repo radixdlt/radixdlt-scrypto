@@ -215,8 +215,7 @@ impl REValueLocation {
                     _ => panic!("Unexpected"),
                 };
 
-                let value = track
-                    .take_value(address.clone());
+                let value = track.take_value(address.clone());
 
                 RENativeValueRef::Track(address, value)
             }
@@ -379,9 +378,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
             RENativeValueRef::OwnedRef(owned) => {
                 borrowed_values.insert(value_id.clone(), owned);
             }
-            RENativeValueRef::Track(address, value) => {
-                track.write_value(address, value)
-            }
+            RENativeValueRef::Track(address, value) => track.write_value(address, value),
         }
     }
 }
@@ -474,8 +471,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
     fn component_put(&mut self, value: ScryptoValue, to_store: HashMap<StoredValueId, REValue>) {
         match self {
             REValueRef::Track(track, address) => {
-                track
-                    .write_component_value(address.clone(), value.raw);
+                track.write_component_value(address.clone(), value.raw);
 
                 let parent_address = match address {
                     Address::GlobalComponent(address) => *address,
@@ -1316,21 +1312,6 @@ where
                 // Setup next frame
                 match cur_location {
                     REValueLocation::OwnedRoot => {
-                        /*
-                        let address = if let Some(parent) = parent {
-                            Address::LocalComponent(*parent, component_address)
-                        } else {
-                            Address::GlobalComponent(component_address)
-                        };
-                        self.track.take_lock(address.clone()).map_err(|e| match e {
-                            TrackError::NotFound => panic!("Should exist"),
-                            TrackError::Reentrancy => {
-                                RuntimeError::ComponentReentrancy(component_address)
-                            }
-                        })?;
-                        locked_values.insert(address.clone());
-                         */
-
                         let owned_ref = cur_location.to_owned_ref(
                             &value_id,
                             &mut self.owned_values,
@@ -1360,7 +1341,6 @@ where
                                 visible: true,
                             },
                         );
-
                     }
                     _ => panic!("Unexpected"),
                 }
@@ -1386,7 +1366,9 @@ where
                     let next_location = match cur_location {
                         REValueLocation::Track { parent } => {
                             let vault_address = (parent.unwrap().clone(), *vault_id);
-                            self.track.take_lock(vault_address).expect("Should never fail.");
+                            self.track
+                                .take_lock(vault_address)
+                                .expect("Should never fail.");
                             locked_values.insert(vault_address.into());
                             REValueLocation::Track {
                                 parent: parent.clone(),
@@ -1411,10 +1393,12 @@ where
                         &value_id,
                         &mut next_owned_values,
                         &mut next_borrowed_values,
-                        &mut self.track
+                        &mut self.track,
                     );
                     let resource_address = value_ref.vault_resource_address();
-                    self.track.take_lock(resource_address).expect("Should never fail.");
+                    self.track
+                        .take_lock(resource_address)
+                        .expect("Should never fail.");
                     locked_values.insert(resource_address.into());
 
                     next_location
@@ -1426,10 +1410,11 @@ where
                         &value_id,
                         &mut next_owned_values,
                         &mut next_borrowed_values,
-                        &mut self.track
+                        &mut self.track,
                     );
                     let resource_address = value_ref.vault_resource_address();
-                    let resource_manager = self.track.read_value(resource_address).resource_manager();
+                    let resource_manager =
+                        self.track.read_value(resource_address).resource_manager();
                     resource_manager.get_vault_auth(&fn_ident).clone()
                 };
 
@@ -1683,7 +1668,9 @@ where
                 visible: true,
             },
         );
-        self.track.take_lock(resource_address).expect("Should never fail since it was just created.");
+        self.track
+            .take_lock(resource_address)
+            .expect("Should never fail since it was just created.");
         self.locked_resmans.insert(resource_address.into());
 
         resource_address

@@ -1,10 +1,10 @@
 use indexmap::{IndexMap, IndexSet};
-use sbor::rust::cell::{RefCell};
+use sbor::rust::cell::RefCell;
 use sbor::rust::collections::*;
+use sbor::rust::format;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use sbor::rust::format;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
 use scrypto::buffer::scrypto_encode;
@@ -12,8 +12,8 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
-use crate::engine::{REPersistedChildValue, REValue, SubstateOperation, SubstateOperationsReceipt};
 use crate::engine::track::BorrowedSubstate::TAKEN;
+use crate::engine::{REPersistedChildValue, REValue, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -521,7 +521,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     pub fn read_value<A: Into<Address>>(&self, addr: A) -> &SubstateValue {
         let address: Address = addr.into();
-        match self.borrowed_substates_2.get(&address).expect("value was never locked") {
+        match self
+            .borrowed_substates_2
+            .get(&address)
+            .expect("value was never locked")
+        {
             BorrowedSubstate::LOADED(value) => value,
             BorrowedSubstate::TAKEN => panic!("Value was already taken"),
         }
@@ -529,30 +533,28 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     pub fn take_value<A: Into<Address>>(&mut self, addr: A) -> SubstateValue {
         let address: Address = addr.into();
-        match self.borrowed_substates_2.insert(address.clone(), TAKEN).expect(&format!("{:?} was never locked", address)) {
+        match self
+            .borrowed_substates_2
+            .insert(address.clone(), TAKEN)
+            .expect(&format!("{:?} was never locked", address))
+        {
             BorrowedSubstate::LOADED(value) => value,
             BorrowedSubstate::TAKEN => panic!("Value was already taken"),
         }
     }
 
-    pub fn write_value<A: Into<Address>, V: Into<SubstateValue>>(
-        &mut self,
-        addr: A,
-        value: V,
-    ) {
+    pub fn write_value<A: Into<Address>, V: Into<SubstateValue>>(&mut self, addr: A, value: V) {
         let address: Address = addr.into();
 
-        self.borrowed_substates_2.get(&address).expect("value was never locked");
+        self.borrowed_substates_2
+            .get(&address)
+            .expect("value was never locked");
         self.borrowed_substates_2
             .insert(address, BorrowedSubstate::LOADED(value.into()));
     }
 
     // TODO: Replace with more generic write_value once Component is split into more substates
-    pub fn write_component_value(
-        &mut self,
-        address: Address,
-        value: Vec<u8>,
-    ) {
+    pub fn write_component_value(&mut self, address: Address, value: Vec<u8>) {
         match address {
             Address::GlobalComponent(..) | Address::LocalComponent(..) => {}
             _ => panic!("Unexpected address"),
