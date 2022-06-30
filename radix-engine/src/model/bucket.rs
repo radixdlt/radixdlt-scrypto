@@ -13,6 +13,7 @@ use scrypto::prelude::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -158,11 +159,19 @@ impl Bucket {
         self.container.borrow_mut()
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: ReadableSubstateStore,
+    >(
         bucket_id: BucketId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
         let value_id = ValueId::Transient(TransientValueId::Bucket(bucket_id));
         let mut value_ref = system_api.borrow_native_value(&value_id);
@@ -248,15 +257,18 @@ impl Bucket {
     }
 
     pub fn consuming_main<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     >(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
         match method_name {
             "burn" => {

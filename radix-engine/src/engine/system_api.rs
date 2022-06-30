@@ -5,17 +5,19 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::{DataInstruction, SubstateAddress};
+use crate::engine::call_frame::{DataInstruction, REValueRef, SubstateAddress};
 use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::*;
 use crate::wasm::*;
 
-pub trait SystemApi<'borrowed, W, I>
+pub trait SystemApi<'p, 't, 's, W, I, S>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
+    S: ReadableSubstateStore,
 {
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
 
@@ -35,8 +37,9 @@ where
         resource_address: ResourceAddress,
     ) -> Result<&ResourceManager, RuntimeError>;
 
-    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed>;
-    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
+    fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S>;
+    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'p>;
+    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>);
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
 
     fn native_create<V: Into<REValueByComplexity>>(

@@ -8,6 +8,7 @@ use scrypto::prelude::{PackageAddress, PackagePublishInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::PackageError::MethodNotFound;
 use crate::wasm::*;
 
@@ -44,15 +45,16 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn static_main<'borrowed, 's, S, W, I>(
+    pub fn static_main<'p, 't, 's, Y, W, I, S>(
         method_name: &str,
         call_data: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, PackageError>
     where
-        S: SystemApi<'borrowed, W, I>,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     {
         match method_name {
             "publish" => {

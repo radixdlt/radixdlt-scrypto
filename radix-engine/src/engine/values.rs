@@ -1,4 +1,4 @@
-use sbor::rust::cell::{RefCell, RefMut};
+use sbor::rust::cell::{Ref, RefCell, RefMut};
 use sbor::rust::collections::hash_map::IntoIter;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
@@ -25,6 +25,13 @@ pub enum REValue {
 }
 
 impl REValue {
+    pub fn package(&self) -> &ValidatedPackage {
+        match self {
+            REValue::Package(package) => package,
+            _ => panic!("Expected to be a package"),
+        }
+    }
+
     pub fn component(&self) -> &Component {
         match self {
             REValue::Component { component, .. } => component,
@@ -267,7 +274,26 @@ impl InMemoryChildren {
         descendents
     }
 
-    pub fn get_child(
+    pub unsafe fn get_child(
+        &self,
+        ancestors: &[KeyValueStoreId],
+        id: &StoredValueId,
+    ) -> Ref<REValue> {
+        if ancestors.is_empty() {
+            let value = self.child_values.get(id).expect("Value expected to exist");
+            return value.borrow();
+        }
+
+        let (first, rest) = ancestors.split_first().unwrap();
+        let value = self
+            .child_values
+            .get(&StoredValueId::KeyValueStoreId(*first))
+            .unwrap();
+        let value = value.try_borrow_unguarded().unwrap();
+        value.get_children_store().unwrap().get_child(rest, id)
+    }
+
+    pub fn get_child_mut(
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
@@ -278,28 +304,6 @@ impl InMemoryChildren {
                 .get_mut(id)
                 .expect("Value expected to exist");
             return value.borrow_mut();
-        }
-
-        let (first, rest) = ancestors.split_first().unwrap();
-        let value = self
-            .child_values
-            .get_mut(&StoredValueId::KeyValueStoreId(*first))
-            .unwrap();
-        let children_store = value.get_mut().get_children_store_mut().unwrap();
-        children_store.get_child(rest, id)
-    }
-
-    pub fn get_child_mut(
-        &mut self,
-        ancestors: &[KeyValueStoreId],
-        id: &StoredValueId,
-    ) -> &mut REValue {
-        if ancestors.is_empty() {
-            let value = self
-                .child_values
-                .get_mut(id)
-                .expect("Value expected to exist");
-            return value.get_mut();
         }
 
         let (first, rest) = ancestors.split_first().unwrap();

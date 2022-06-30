@@ -10,6 +10,7 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::AuthZoneError::InvalidMethod;
 use crate::model::{Proof, ProofError};
 use crate::wasm::*;
@@ -92,11 +93,19 @@ impl AuthZone {
             .map_err(AuthZoneError::ProofError)
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: ReadableSubstateStore,
+    >(
         &mut self,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, AuthZoneError> {
         match method_name {
             "pop" => {

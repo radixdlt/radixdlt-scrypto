@@ -48,6 +48,7 @@ pub enum RuntimeError {
     BlueprintNotFound(PackageAddress, String),
 
     ComponentReentrancy(ComponentAddress),
+    PackageReentrancy,
 
     /// Component does not exist.
     ComponentNotFound(ComponentAddress),

@@ -14,6 +14,7 @@ use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -332,11 +333,19 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: ReadableSubstateStore,
+    >(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
         let mut value_ref = system_api.borrow_native_value(&value_id);
         let proof = value_ref.proof();
@@ -375,15 +384,18 @@ impl Proof {
     }
 
     pub fn main_consume<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     >(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
         let proof: Proof = system_api.take_native_value(&value_id).into();
         match method_name {

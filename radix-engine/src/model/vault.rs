@@ -15,6 +15,7 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::VaultError::MethodNotFound;
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -161,11 +162,19 @@ impl Vault {
         self.container.borrow_mut()
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: ReadableSubstateStore,
+    >(
         vault_id: VaultId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, VaultError> {
         let value_id = ValueId::vault_id(vault_id.clone());
         let mut ref_mut = system_api.borrow_native_value(&value_id);

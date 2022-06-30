@@ -10,6 +10,7 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::WorktopError::InvalidMethod;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
 use crate::wasm::*;
@@ -204,11 +205,19 @@ impl Worktop {
             .insert(resource_address, Rc::new(RefCell::new(container)));
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: ReadableSubstateStore,
+    >(
         &mut self,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, WorktopError> {
         match method_name {
             "put" => {

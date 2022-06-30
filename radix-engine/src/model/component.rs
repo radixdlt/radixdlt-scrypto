@@ -1,4 +1,5 @@
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -80,37 +81,45 @@ impl Component {
         self.state = new_state;
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: 's + ReadableSubstateStore,
+    >(
         value_id: ValueId,
         fn_ident: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, ComponentError> {
         let rtn = match fn_ident {
             "add_access_check" => {
                 let input: ComponentAddAccessCheckInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
-                let mut ref_mut = system_api.borrow_native_value(&value_id);
-                let component = ref_mut.component();
-
-                let package_id = ValueId::Package(component.package_address.clone());
-                let mut package_ref = system_api.borrow_native_value(&package_id);
-                let package = package_ref.package();
-
                 // Abi checks
-                let blueprint_abi = package.blueprint_abi(component.blueprint_name()).unwrap();
-                for (func_name, _) in input.access_rules.iter() {
-                    if !blueprint_abi.contains_fn(func_name.as_str()) {
-                        return Err(ComponentError::BlueprintFunctionDoesNotExist(
-                            func_name.to_string(),
-                        ));
+                {
+                    let component_ref = system_api.borrow_value(&value_id);
+                    let component = component_ref.component();
+                    let package_id = ValueId::Package(component.package_address.clone());
+                    let package_ref = system_api.borrow_value(&package_id);
+                    let package = package_ref.package();
+                    let blueprint_abi = package.blueprint_abi(component.blueprint_name()).unwrap();
+                    for (func_name, _) in input.access_rules.iter() {
+                        if !blueprint_abi.contains_fn(func_name.as_str()) {
+                            return Err(ComponentError::BlueprintFunctionDoesNotExist(
+                                func_name.to_string(),
+                            ));
+                        }
                     }
                 }
 
+                let mut ref_mut = system_api.borrow_native_value(&value_id);
+                let component = ref_mut.component();
                 component.access_rules.push(input.access_rules);
-
-                system_api.return_native_value(package_id, package_ref);
                 system_api.return_native_value(value_id, ref_mut);
 
                 Ok(ScryptoValue::from_typed(&()))
@@ -129,15 +138,18 @@ impl Component {
     }
 
     pub fn main_consume<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     >(
         value_id: ValueId,
         fn_ident: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, ComponentError> {
         let rtn = match fn_ident {
             "globalize" => {

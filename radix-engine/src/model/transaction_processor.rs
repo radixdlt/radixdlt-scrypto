@@ -18,6 +18,7 @@ use transaction::model::*;
 use transaction::validation::*;
 
 use crate::engine::{RuntimeError, RuntimeError::ProofNotFound, SystemApi};
+use crate::ledger::ReadableSubstateStore;
 use crate::model::worktop::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
     WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
@@ -60,14 +61,17 @@ impl TransactionProcessor {
     }
 
     pub fn static_main<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     >(
         function_name: &str,
         call_data: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, TransactionProcessorError> {
         match function_name {
             "run" => {

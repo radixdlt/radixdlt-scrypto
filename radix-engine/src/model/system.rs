@@ -4,6 +4,7 @@ use scrypto::core::{SystemGetCurrentEpochInput, SystemGetTransactionHashInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::SystemError::InvalidMethod;
 use crate::wasm::*;
 
@@ -17,14 +18,17 @@ pub struct System {}
 
 impl System {
     pub fn static_main<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+        'p,
+        't,
+        's,
+        Y: SystemApi<'p, 't, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     >(
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, SystemError> {
         match method_name {
             "current_epoch" => {

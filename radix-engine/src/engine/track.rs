@@ -12,14 +12,25 @@ use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
-use crate::engine::track::BorrowedSubstate::TAKEN;
+use crate::engine::track::BorrowedSubstate::Taken;
 use crate::engine::{REValue, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
 enum BorrowedSubstate {
-    LOADED(SubstateValue),
-    TAKEN,
+    Loaded(SubstateValue, u32),
+    LoadedMut(SubstateValue),
+    Taken,
+}
+
+impl BorrowedSubstate {
+    fn loaded(value: SubstateValue, mutable: bool) -> Self {
+        if mutable {
+            BorrowedSubstate::LoadedMut(value)
+        } else {
+            BorrowedSubstate::Loaded(value, 1)
+        }
+    }
 }
 
 /// Facilitates transactional state updates.
@@ -476,17 +487,31 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn take_lock<A: Into<Address>>(&mut self, addr: A) -> Result<(), TrackError> {
+    pub fn take_lock<A: Into<Address>>(
+        &mut self,
+        addr: A,
+        mutable: bool,
+    ) -> Result<(), TrackError> {
         let address = addr.into();
         let maybe_value = self.up_substates.remove(&address.encode());
         if let Some(value) = maybe_value {
             self.borrowed_substates_2
-                .insert(address, BorrowedSubstate::LOADED(value));
+                .insert(address, BorrowedSubstate::loaded(value, mutable));
             return Ok(());
         }
 
-        if self.borrowed_substates_2.contains_key(&address) {
-            return Err(TrackError::Reentrancy);
+        if let Some(current) = self.borrowed_substates_2.get_mut(&address) {
+            if mutable {
+                return Err(TrackError::Reentrancy);
+            } else {
+                match current {
+                    BorrowedSubstate::Taken | BorrowedSubstate::LoadedMut(..) => {
+                        panic!("Should never get here")
+                    }
+                    BorrowedSubstate::Loaded(_, ref mut count) => *count = *count + 1,
+                }
+                return Ok(());
+            }
         }
 
         if let Some(substate) = self.substate_store.get_substate(&address.encode()) {
@@ -512,7 +537,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             };
 
             self.borrowed_substates_2
-                .insert(address.clone(), BorrowedSubstate::LOADED(value));
+                .insert(address.clone(), BorrowedSubstate::loaded(value, mutable));
             Ok(())
         } else {
             Err(TrackError::NotFound)
@@ -524,10 +549,11 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         match self
             .borrowed_substates_2
             .get(&address)
-            .expect("value was never locked")
+            .expect(&format!("{:?} was never locked", address))
         {
-            BorrowedSubstate::LOADED(value) => value,
-            BorrowedSubstate::TAKEN => panic!("Value was already taken"),
+            BorrowedSubstate::LoadedMut(value) => value,
+            BorrowedSubstate::Loaded(value, ..) => value,
+            BorrowedSubstate::Taken => panic!("Value was already taken"),
         }
     }
 
@@ -535,22 +561,29 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let address: Address = addr.into();
         match self
             .borrowed_substates_2
-            .insert(address.clone(), TAKEN)
+            .insert(address.clone(), Taken)
             .expect(&format!("{:?} was never locked", address))
         {
-            BorrowedSubstate::LOADED(value) => value,
-            BorrowedSubstate::TAKEN => panic!("Value was already taken"),
+            BorrowedSubstate::LoadedMut(value) => value,
+            BorrowedSubstate::Loaded(..) => panic!("Cannot take value on immutable: {:?}", address),
+            BorrowedSubstate::Taken => panic!("Value was already taken"),
         }
     }
 
     pub fn write_value<A: Into<Address>, V: Into<SubstateValue>>(&mut self, addr: A, value: V) {
         let address: Address = addr.into();
 
-        self.borrowed_substates_2
+        let cur_value = self
+            .borrowed_substates_2
             .get(&address)
             .expect("value was never locked");
+        match cur_value {
+            BorrowedSubstate::Loaded(..) => panic!("Cannot write to immutable"),
+            BorrowedSubstate::LoadedMut(..) | BorrowedSubstate::Taken => {}
+        }
+
         self.borrowed_substates_2
-            .insert(address, BorrowedSubstate::LOADED(value.into()));
+            .insert(address, BorrowedSubstate::LoadedMut(value.into()));
     }
 
     // TODO: Replace with more generic write_value once Component is split into more substates
@@ -565,8 +598,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             .get_mut(&address)
             .expect("Value was never locked");
         match borrowed {
-            BorrowedSubstate::TAKEN => panic!("Value was taken"),
-            BorrowedSubstate::LOADED(component_val) => {
+            BorrowedSubstate::Taken => panic!("Value was taken"),
+            BorrowedSubstate::Loaded(..) => panic!("Cannot write to immutable"),
+            BorrowedSubstate::LoadedMut(component_val) => {
                 component_val.component_mut().set_state(value);
             }
         }
@@ -579,9 +613,18 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             .remove(&address)
             .expect("Value was never borrowed");
         match borrowed {
-            BorrowedSubstate::TAKEN => panic!("Value was never returned"),
-            BorrowedSubstate::LOADED(value) => {
+            BorrowedSubstate::Taken => panic!("Value was never returned"),
+            BorrowedSubstate::LoadedMut(value) => {
                 self.up_substates.insert(address.encode(), value);
+            }
+            BorrowedSubstate::Loaded(value, mut count) => {
+                count = count - 1;
+                if count == 0 {
+                    self.up_substates.insert(address.encode(), value);
+                } else {
+                    self.borrowed_substates_2
+                        .insert(address, BorrowedSubstate::Loaded(value, count));
+                }
             }
         }
     }
