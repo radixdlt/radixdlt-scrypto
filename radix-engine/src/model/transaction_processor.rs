@@ -515,6 +515,20 @@ impl TransactionProcessor {
                     outputs.push(result);
                 }
 
+                // This creates frame-owned buckets for all non-zero balances, which triggers a
+                // value drop failure when the frame exits.
+                //
+                // TODO: refactor worktop to be `HashMap<ResourceAddress, BucketId>`
+                // TODO: remove this drain invocation by enforcing no non-empty bucket in worktop
+                worktop
+                    .main(
+                        "drain",
+                        ScryptoValue::from_typed(&WorktopDrainInput {}),
+                        system_api,
+                    )
+                    .map_err(RuntimeError::WorktopError)
+                    .map_err(TransactionProcessorError::RuntimeError)?;
+
                 Ok(ScryptoValue::from_typed(
                     &outputs
                         .into_iter()
