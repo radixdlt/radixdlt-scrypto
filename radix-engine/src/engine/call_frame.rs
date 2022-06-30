@@ -25,10 +25,9 @@ use crate::wasm::*;
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
 pub struct CallFrame<
-    'borrowed,
-    'p, // Parent frame lifetime
-    's, // Substate store lifetime
+    'p, // parent lifetime
     't, // Track lifetime
+    's, // Substate store lifetime
     'w, // WASM engine lifetime
     S,  // Substore store type
     W,  // WASM engine type
@@ -63,7 +62,7 @@ pub struct CallFrame<
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Borrowed Values from call frames up the stack
-    frame_borrowed_values: HashMap<ValueId, RefMut<'borrowed, REValue>>,
+    frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
     /// There is a single cost unit counter and a single fee table per transaction execution.
@@ -268,7 +267,7 @@ impl REValueLocation {
         }
     }
 
-    fn to_ref<'a, 'borrowed: 'a, 'c, 's, S: ReadableSubstateStore>(
+    fn to_ref<'a, 'borrowed, 'c, 's, S: ReadableSubstateStore>(
         &self,
         value_id: &ValueId,
         owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
@@ -579,7 +578,7 @@ pub enum SubstateAddress {
     Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'borrowed, 'p, 's, 't, 'w, S, W, I> CallFrame<'borrowed, 'p, 's, 't, 'w, S, W, I>
+impl<'p, 't, 's, 'w, S, W, I> CallFrame<'p, 't, 's, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -643,7 +642,7 @@ where
         worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
         readable_values: HashMap<ValueId, REValueInfo>,
-        frame_borrowed_values: HashMap<ValueId, RefMut<'borrowed, REValue>>,
+        frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
@@ -954,8 +953,8 @@ where
     }
 }
 
-impl<'borrowed, 'p, 's, 't, 'w, S, W, I> SystemApi<'borrowed, W, I>
-    for CallFrame<'borrowed, 'p, 's, 't, 'w, S, W, I>
+impl<'borrowed, 's, 't, 'w, S, W, I> SystemApi<'borrowed, W, I>
+    for CallFrame<'borrowed, 's, 't, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
