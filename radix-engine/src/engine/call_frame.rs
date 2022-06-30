@@ -792,7 +792,33 @@ where
                     _ => panic!("Unexpected"),
                 },
                 SNodeExecution::Scrypto(ref actor, ref package) => {
-                    package.invoke(&actor, fn_ident, input, self)
+                    let wasm_metering_params = Self::fee_table_helper(&self.fee_table).wasm_metering_params();
+                    let instrumented_code = self.wasm_instrumenter.instrument(package.code(), &wasm_metering_params);
+                    let mut instance = self.wasm_engine.instantiate(instrumented_code);
+                    let blueprint_abi = package
+                        .blueprint_abi(actor.blueprint_name())
+                        .expect("Blueprint should exist");
+
+                    let export_name = &blueprint_abi.get_fn_abi(fn_ident).unwrap().export_name;
+                    let mut runtime: Box<dyn WasmRuntime> =
+                        Box::new(RadixEngineWasmRuntime::new(actor.clone(), self));
+                    let output = instance
+                        .invoke_export(export_name, &input, &mut runtime)
+                        .map_err(|e| match e {
+                            // Flatten error code for more readable transaction receipt
+                            InvokeError::RuntimeError(e) => e,
+                            e @ _ => RuntimeError::InvokeError(e.into()),
+                        })?;
+
+                    let fn_abi = blueprint_abi.get_fn_abi(fn_ident).unwrap();
+                    if !fn_abi.output.matches(&output.dom) {
+                        Err(RuntimeError::InvalidFnOutput {
+                            fn_ident: fn_ident.to_string(),
+                            output: output.dom,
+                        })
+                    } else {
+                        Ok(output)
+                    }
                 }
             }?;
 
@@ -951,14 +977,6 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    fn wasm_engine(&mut self) -> &mut W {
-        self.wasm_engine
-    }
-
-    fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter {
-        self.wasm_instrumenter
-    }
-
     fn invoke_snode(
         &mut self,
         snode_ref: SNodeRef,

@@ -17,10 +17,6 @@ where
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    fn wasm_engine(&mut self) -> &mut W;
-
-    fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter;
-
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
 
     fn fee_table(&self) -> &FeeTable;
