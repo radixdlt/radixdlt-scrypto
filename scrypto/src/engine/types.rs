@@ -46,6 +46,8 @@ impl Into<(Hash, u32)> for StoredValueId {
 pub enum ValueId {
     Transient(TransientValueId),
     Stored(StoredValueId),
+    Resource(ResourceAddress),
+    Component(ComponentAddress),
 }
 
 impl ValueId {

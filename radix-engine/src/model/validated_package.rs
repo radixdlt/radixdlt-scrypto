@@ -90,11 +90,8 @@ impl ValidatedPackage {
             .blueprint_abi(actor.blueprint_name())
             .expect("Blueprint should exist");
         let export_name = &blueprint_abi.get_fn_abi(fn_ident).unwrap().export_name;
-        let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(
-            actor.clone(),
-            blueprint_abi,
-            system_api,
-        ));
+        let mut runtime: Box<dyn WasmRuntime> =
+            Box::new(RadixEngineWasmRuntime::new(actor.clone(), system_api));
         let output = instance
             .invoke_export(export_name, &input, &mut runtime)
             .map_err(|e| match e {

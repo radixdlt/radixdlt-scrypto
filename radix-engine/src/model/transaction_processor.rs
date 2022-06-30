@@ -17,7 +17,6 @@ use scrypto::values::*;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::ResourceFailure;
 use crate::engine::{RuntimeError, RuntimeError::ProofNotFound, SystemApi};
 use crate::model::worktop::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,

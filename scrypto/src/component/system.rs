@@ -1,14 +1,11 @@
-use sbor::rust::borrow::ToOwned;
-use sbor::rust::collections::*;
-use sbor::rust::string::ToString;
-use sbor::rust::vec::Vec;
-
 use crate::buffer::*;
 use crate::component::package::Package;
 use crate::component::*;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
-use crate::resource::AccessRules;
+use sbor::rust::borrow::ToOwned;
+use sbor::rust::collections::*;
+use sbor::rust::string::ToString;
 
 /// Represents the Radix Engine component subsystem.
 ///
@@ -57,29 +54,18 @@ impl ComponentSystem {
     }
 
     /// Instantiates a component.
-    pub fn instantiate_component<T: ComponentState>(
-        &mut self,
-        blueprint_name: &str,
-        authorization: Vec<AccessRules>,
-        state: T,
-    ) -> ComponentAddress {
-        let input = RadixEngineInput::CreateComponent(
-            blueprint_name.to_owned(),
-            scrypto_encode(&state),
-            authorization,
-        );
-        let output: ComponentAddress = call_engine(input);
-
-        output
-    }
-
-    /// Instantiates a component.
     pub fn to_component_state_with_auth<T: ComponentState>(
         &self,
         blueprint_name: &str,
         state: T,
     ) -> LocalComponent {
-        LocalComponent::new(blueprint_name.to_owned(), scrypto_encode(&state))
+        let input = RadixEngineInput::CreateLocalComponent(
+            blueprint_name.to_owned(),
+            scrypto_encode(&state),
+        );
+        let component_address: ComponentAddress = call_engine(input);
+
+        LocalComponent::new(component_address)
     }
 }
 
