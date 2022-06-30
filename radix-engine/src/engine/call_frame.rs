@@ -868,10 +868,10 @@ where
             for id in value_ids {
                 let maybe = self.owned_values.remove(&id);
                 if let Some(celled_value) = maybe {
-                    // TODO: Clean this conversion up
-                    let persisted_value: REPersistedChildValue =
-                        celled_value.into_inner().try_into()?;
-                    let value: REValue = persisted_value.into();
+                    let value = celled_value.into_inner();
+                    if !value.is_persistable_child() {
+                        return Err(RuntimeError::ValueNotAllowed);
+                    }
                     let stored_id: StoredValueId = id.into();
                     taken_values.insert(stored_id, value);
                 } else {

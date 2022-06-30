@@ -95,6 +95,17 @@ impl REValue {
         }
     }
 
+    pub fn is_persistable_child(&self) -> bool {
+        match self {
+            REValue::KeyValueStore { .. } => true,
+            REValue::Component { .. } => true,
+            REValue::Vault(..) => true,
+            REValue::Package(..) => false,
+            REValue::Bucket(..) => false,
+            REValue::Proof(..) => false,
+        }
+    }
+
     pub fn try_drop(self) -> Result<(), DropFailure> {
         match self {
             REValue::Package(..) => Err(DropFailure::Package),
@@ -303,159 +314,6 @@ impl InMemoryChildren {
     pub fn insert_children(&mut self, values: HashMap<StoredValueId, REValue>) {
         for (id, value) in values {
             self.child_values.insert(id, RefCell::new(value));
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum REPersistedChildValue {
-    KeyValueStore {
-        store: PreCommittedKeyValueStore,
-        child_values: InMemoryChildren,
-    },
-    Component {
-        component: Component,
-        child_values: InMemoryChildren,
-    },
-    Vault(Vault),
-}
-
-impl Into<REValue> for REPersistedChildValue {
-    fn into(self) -> REValue {
-        match self {
-            REPersistedChildValue::KeyValueStore {
-                store,
-                child_values,
-            } => REValue::KeyValueStore {
-                store,
-                child_values,
-            },
-            REPersistedChildValue::Component {
-                component,
-                child_values,
-            } => REValue::Component {
-                component,
-                child_values,
-            },
-            REPersistedChildValue::Vault(vault) => REValue::Vault(vault),
-        }
-    }
-}
-
-impl TryInto<REPersistedChildValue> for REValue {
-    type Error = RuntimeError;
-
-    fn try_into(self) -> Result<REPersistedChildValue, Self::Error> {
-        match self {
-            REValue::KeyValueStore {
-                store,
-                child_values,
-            } => Ok(REPersistedChildValue::KeyValueStore {
-                store,
-                child_values,
-            }),
-            REValue::Component {
-                component,
-                child_values,
-            } => Ok(REPersistedChildValue::Component {
-                component,
-                child_values,
-            }),
-            REValue::Vault(vault) => Ok(REPersistedChildValue::Vault(vault)),
-            _ => Err(RuntimeError::ValueNotAllowed),
-        }
-    }
-}
-
-impl REPersistedChildValue {
-    pub fn component(&self) -> &Component {
-        match self {
-            REPersistedChildValue::Component { component, .. } => component,
-            _ => panic!("Expected to be a store"),
-        }
-    }
-
-    pub fn component_mut(&mut self) -> &mut Component {
-        match self {
-            REPersistedChildValue::Component { component, .. } => component,
-            _ => panic!("Expected to be a store"),
-        }
-    }
-
-    pub fn kv_store(&self) -> &PreCommittedKeyValueStore {
-        match self {
-            REPersistedChildValue::KeyValueStore { store, .. } => store,
-            _ => panic!("Expected to be a store"),
-        }
-    }
-
-    pub fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
-        match self {
-            REPersistedChildValue::KeyValueStore { store, .. } => store,
-            _ => panic!("Expected to be a store"),
-        }
-    }
-
-    pub fn vault(&self) -> &Vault {
-        match self {
-            REPersistedChildValue::Vault(vault) => vault,
-            _ => panic!("Expected to be a vault"),
-        }
-    }
-
-    pub fn all_descendants(&self) -> Vec<StoredValueId> {
-        match self {
-            REPersistedChildValue::KeyValueStore { child_values, .. }
-            | REPersistedChildValue::Component { child_values, .. } => {
-                child_values.all_descendants()
-            }
-            REPersistedChildValue::Vault(..) => Vec::new(),
-        }
-    }
-
-    pub fn get_children(&mut self) -> &mut InMemoryChildren {
-        match self {
-            REPersistedChildValue::KeyValueStore { child_values, .. }
-            | REPersistedChildValue::Component { child_values, .. } => child_values,
-            REPersistedChildValue::Vault(..) => panic!("Expected to be store"),
-        }
-    }
-
-    pub fn get_child(
-        &mut self,
-        ancestors: &[KeyValueStoreId],
-        id: &StoredValueId,
-    ) -> RefMut<REValue> {
-        match self {
-            REPersistedChildValue::KeyValueStore { child_values, .. }
-            | REPersistedChildValue::Component { child_values, .. } => {
-                child_values.get_child(ancestors, id)
-            }
-            REPersistedChildValue::Vault(..) => panic!("Expected to be store"),
-        }
-    }
-
-    pub fn get_child_mut(
-        &mut self,
-        ancestors: &[KeyValueStoreId],
-        id: &StoredValueId,
-    ) -> &mut REValue {
-        match self {
-            REPersistedChildValue::KeyValueStore { child_values, .. }
-            | REPersistedChildValue::Component { child_values, .. } => {
-                child_values.get_child_mut(ancestors, id)
-            }
-            REPersistedChildValue::Vault(..) => panic!("Expected to be store"),
-        }
-    }
-
-    pub fn insert_children(&mut self, values: HashMap<StoredValueId, REValue>) {
-        match self {
-            REPersistedChildValue::KeyValueStore { child_values, .. }
-            | REPersistedChildValue::Component { child_values, .. } => {
-                child_values.insert_children(values)
-            }
-            REPersistedChildValue::Vault(..) => panic!("Expected to be store"),
         }
     }
 }

@@ -13,7 +13,7 @@ use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
 use crate::engine::track::BorrowedSubstate::TAKEN;
-use crate::engine::{REPersistedChildValue, REValue, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::{REValue, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -747,13 +747,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         component_address: ComponentAddress,
     ) {
         for (id, value) in values {
-            let persisted: REPersistedChildValue = value.try_into().unwrap();
-            match persisted {
-                REPersistedChildValue::Vault(vault) => {
+            match value {
+                REValue::Vault(vault) => {
                     let addr: (ComponentAddress, VaultId) = (component_address, id.into());
                     self.create_uuid_value_2(addr, vault);
                 }
-                REPersistedChildValue::Component {
+                REValue::Component {
                     component,
                     child_values,
                 } => {
@@ -765,7 +764,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                         .collect();
                     self.insert_objects_into_component(child_values, component_address);
                 }
-                REPersistedChildValue::KeyValueStore {
+                REValue::KeyValueStore {
                     store,
                     child_values,
                 } => {
@@ -781,6 +780,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                         .collect();
                     self.insert_objects_into_component(child_values, component_address);
                 }
+                _ => panic!("Invalid value being persisted: {:?}", value),
             }
         }
     }
