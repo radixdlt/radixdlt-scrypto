@@ -1028,14 +1028,12 @@ where
                 let method_auths = match &value {
                     REValue::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
-                        let substate_value = self
-                            .track
-                            .borrow_global_value(resource_address.clone())
-                            .expect("There should be no problem retrieving resource manager");
-                        let resource_manager = match substate_value {
-                            SubstateValue::Resource(resource_manager) => resource_manager,
-                            _ => panic!("Value is not a resource manager"),
-                        };
+                        self.track
+                            .take_lock(resource_address)
+                            .expect("Should not fail.");
+                        locked_values.insert(resource_address.clone().into());
+                        let resource_manager =
+                            self.track.read_value(resource_address).resource_manager();
                         let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
                         value_refs.insert(
                             ValueId::Resource(resource_address),
