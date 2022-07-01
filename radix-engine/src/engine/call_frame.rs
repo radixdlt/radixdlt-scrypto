@@ -252,22 +252,14 @@ impl REValueLocation {
                 let children = root_value
                     .get_children_store()
                     .expect("Should have children");
-                let stored_value_id = match value_id {
-                    ValueId::Stored(stored_value_id) => stored_value_id,
-                    _ => panic!("Unexpected value id"),
-                };
-                children.get_child(ancestors, stored_value_id)
+                children.get_child(ancestors, value_id)
             },
             REValueLocation::Borrowed { root, ancestors } => unsafe {
                 let borrowed = borrowed_values.get(root).unwrap();
-                let stored_value_id = match value_id {
-                    ValueId::Stored(stored_value_id) => stored_value_id,
-                    _ => panic!("Unexpected value id"),
-                };
                 borrowed
                     .get_children_store()
                     .unwrap()
-                    .get_child(ancestors, stored_value_id)
+                    .get_child(ancestors, value_id)
             },
             _ => panic!("Not an owned ref"),
         }
@@ -333,22 +325,14 @@ impl REValueLocation {
                 let children = root_value
                     .get_children_store_mut()
                     .expect("Should have children");
-                let stored_value_id = match value_id {
-                    ValueId::Stored(stored_value_id) => stored_value_id,
-                    _ => panic!("Unexpected value id"),
-                };
-                children.get_child_mut(ancestors, stored_value_id)
+                children.get_child_mut(ancestors, value_id)
             }
             REValueLocation::Borrowed { root, ancestors } => {
                 let borrowed = borrowed_values.get_mut(root).unwrap();
-                let stored_value_id = match value_id {
-                    ValueId::Stored(stored_value_id) => stored_value_id,
-                    _ => panic!("Unexpected value id"),
-                };
                 borrowed
                     .get_children_store_mut()
                     .unwrap()
-                    .get_child_mut(ancestors, stored_value_id)
+                    .get_child_mut(ancestors, value_id)
             }
             _ => panic!("Not an owned ref"),
         }
@@ -514,7 +498,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         &mut self,
         key: Vec<u8>,
         value: ScryptoValue,
-        to_store: HashMap<StoredValueId, REValue>,
+        to_store: HashMap<ValueId, REValue>,
     ) {
         match self {
             REValueRefMut::Owned(owned) => {
@@ -588,7 +572,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         }
     }
 
-    fn component_put(&mut self, value: ScryptoValue, to_store: HashMap<StoredValueId, REValue>) {
+    fn component_put(&mut self, value: ScryptoValue, to_store: HashMap<ValueId, REValue>) {
         match self {
             REValueRefMut::Track(track, address) => {
                 track.write_component_value(address.clone(), value.raw);
@@ -1006,7 +990,7 @@ where
     fn take_persistent_child_values(
         &mut self,
         value_ids: HashSet<ValueId>,
-    ) -> Result<(HashMap<StoredValueId, REValue>, HashSet<ValueId>), RuntimeError> {
+    ) -> Result<(HashMap<ValueId, REValue>, HashSet<ValueId>), RuntimeError> {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
             let mut missing_values = HashSet::new();
@@ -1018,8 +1002,7 @@ where
                     if !value.is_persistable_child() {
                         return Err(RuntimeError::ValueNotAllowed);
                     }
-                    let stored_id: StoredValueId = id.into();
-                    taken_values.insert(stored_id, value);
+                    taken_values.insert(id, value);
                 } else {
                     missing_values.insert(id);
                 }
@@ -1030,10 +1013,10 @@ where
 
         // Moved values must have their references removed
         for (id, value) in taken.iter() {
-            self.value_refs.remove(&ValueId::Stored(id.clone()));
+            self.value_refs.remove(&id);
             if let Some(children_store) = value.get_children_store() {
                 for id in children_store.all_descendants() {
-                    self.value_refs.remove(&ValueId::Stored(id));
+                    self.value_refs.remove(&id);
                 }
             }
         }
@@ -1081,7 +1064,7 @@ where
             self.value_refs.remove(id);
             if let Some(children) = value.get_children_store() {
                 for id in children.all_descendants() {
-                    self.value_refs.remove(&ValueId::Stored(id.clone()));
+                    self.value_refs.remove(&id);
                 }
             }
         }
@@ -1907,7 +1890,7 @@ where
         let (taken_values, missing) = match &instruction {
             DataInstruction::Write(value) => {
                 let value_ids = value.value_ids();
-                self.take_persistent_child_values(value_ids)?
+                self.take_available_values(value_ids)?
             }
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };

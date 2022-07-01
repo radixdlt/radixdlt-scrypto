@@ -735,7 +735,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     pub fn insert_objects_into_component(
         &mut self,
-        values: HashMap<StoredValueId, REValue>,
+        values: HashMap<ValueId, REValue>,
         component_address: ComponentAddress,
     ) {
         for (id, value) in values {

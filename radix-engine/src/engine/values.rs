@@ -172,7 +172,7 @@ impl REComplexValue {
         }
     }
 
-    pub fn into_re_value(self, children: HashMap<StoredValueId, REValue>) -> REValue {
+    pub fn into_re_value(self, children: HashMap<ValueId, REValue>) -> REValue {
         match self {
             REComplexValue::Component(component) => REValue::Component {
                 component,
@@ -250,7 +250,7 @@ impl Into<REValueByComplexity> for Component {
 
 #[derive(Debug)]
 pub struct InMemoryChildren {
-    child_values: HashMap<StoredValueId, RefCell<REValue>>,
+    child_values: HashMap<ValueId, RefCell<REValue>>,
 }
 
 impl InMemoryChildren {
@@ -260,7 +260,7 @@ impl InMemoryChildren {
         }
     }
 
-    pub fn with_values(values: HashMap<StoredValueId, REValue>) -> Self {
+    pub fn with_values(values: HashMap<ValueId, REValue>) -> Self {
         let mut child_values = HashMap::new();
         for (id, value) in values.into_iter() {
             child_values.insert(id, RefCell::new(value));
@@ -268,11 +268,11 @@ impl InMemoryChildren {
         InMemoryChildren { child_values }
     }
 
-    pub fn into_iter(self) -> IntoIter<StoredValueId, RefCell<REValue>> {
+    pub fn into_iter(self) -> IntoIter<ValueId, RefCell<REValue>> {
         self.child_values.into_iter()
     }
 
-    pub fn all_descendants(&self) -> Vec<StoredValueId> {
+    pub fn all_descendants(&self) -> Vec<ValueId> {
         let mut descendents = Vec::new();
         for (id, value) in self.child_values.iter() {
             descendents.push(*id);
@@ -287,7 +287,7 @@ impl InMemoryChildren {
     pub unsafe fn get_child(
         &self,
         ancestors: &[KeyValueStoreId],
-        id: &StoredValueId,
+        id: &ValueId,
     ) -> Ref<REValue> {
         if ancestors.is_empty() {
             let value = self.child_values.get(id).expect("Value expected to exist");
@@ -297,7 +297,7 @@ impl InMemoryChildren {
         let (first, rest) = ancestors.split_first().unwrap();
         let value = self
             .child_values
-            .get(&StoredValueId::KeyValueStoreId(*first))
+            .get(&ValueId::Stored(StoredValueId::KeyValueStoreId(*first)))
             .unwrap();
         let value = value.try_borrow_unguarded().unwrap();
         value.get_children_store().unwrap().get_child(rest, id)
@@ -306,7 +306,7 @@ impl InMemoryChildren {
     pub fn get_child_mut(
         &mut self,
         ancestors: &[KeyValueStoreId],
-        id: &StoredValueId,
+        id: &ValueId,
     ) -> RefMut<REValue> {
         if ancestors.is_empty() {
             let value = self
@@ -319,13 +319,13 @@ impl InMemoryChildren {
         let (first, rest) = ancestors.split_first().unwrap();
         let value = self
             .child_values
-            .get_mut(&StoredValueId::KeyValueStoreId(*first))
+            .get_mut(&ValueId::Stored(StoredValueId::KeyValueStoreId(*first)))
             .unwrap();
         let children_store = value.get_mut().get_children_store_mut().unwrap();
         children_store.get_child_mut(rest, id)
     }
 
-    pub fn insert_children(&mut self, values: HashMap<StoredValueId, REValue>) {
+    pub fn insert_children(&mut self, values: HashMap<ValueId, REValue>) {
         for (id, value) in values {
             self.child_values.insert(id, RefCell::new(value));
         }
