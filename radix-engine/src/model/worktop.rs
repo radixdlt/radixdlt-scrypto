@@ -212,7 +212,7 @@ impl Worktop {
         Y: SystemApi<'p, 't, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: ReadableSubstateStore,
+        S: 's + ReadableSubstateStore,
     >(
         &mut self,
         method_name: &str,
@@ -241,10 +241,12 @@ impl Worktop {
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
-                    let resource_manager = system_api
-                        .borrow_global_resource_manager(input.resource_address)
-                        .map_err(|_| WorktopError::ResourceDoesNotExist(input.resource_address))?;
-                    let resource_type = resource_manager.resource_type();
+                    let resource_type = {
+                        let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                        let resource_manager = value.resource_manager();
+                        resource_manager.resource_type()
+                    };
+
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
                 let bucket_id = system_api
@@ -264,10 +266,12 @@ impl Worktop {
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
-                    let resource_manager = system_api
-                        .borrow_global_resource_manager(input.resource_address)
-                        .map_err(|_| WorktopError::ResourceDoesNotExist(input.resource_address))?;
-                    let resource_type = resource_manager.resource_type();
+                    let resource_type = {
+                        let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                        let resource_manager = value.resource_manager();
+                        resource_manager.resource_type()
+                    };
+
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
@@ -288,10 +292,12 @@ impl Worktop {
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
-                    let resource_manager = system_api
-                        .borrow_global_resource_manager(input.resource_address)
-                        .map_err(|_| WorktopError::ResourceDoesNotExist(input.resource_address))?;
-                    let resource_type = resource_manager.resource_type();
+                    let resource_type = {
+                        let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                        let resource_manager = value.resource_manager();
+                        resource_manager.resource_type()
+                    };
+
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 

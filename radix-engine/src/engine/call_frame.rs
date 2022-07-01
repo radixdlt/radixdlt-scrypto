@@ -9,6 +9,7 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
+use sbor::rust::format;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
@@ -1229,6 +1230,24 @@ where
             }
             SNodeRef::WorktopRef => {
                 if let Some(worktop_ref) = &self.worktop {
+                    for resource_address in &input.resource_addresses {
+                        self.track
+                            .take_lock(resource_address.clone(), false)
+                            .map_err(|e| match e {
+                                TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+                                TrackError::Reentrancy => {
+                                    panic!("Package reentrancy error should never occur.")
+                                }
+                            })?;
+                        locked_values.insert(resource_address.clone().into());
+                        value_refs.insert(
+                            ValueId::Resource(resource_address.clone()),
+                            REValueInfo {
+                                location: REValueLocation::Track { parent: None },
+                                visible: true,
+                            },
+                        );
+                    }
                     let worktop = worktop_ref.borrow_mut();
                     Ok((SNodeExecution::Worktop(worktop), vec![]))
                 } else {
@@ -1711,21 +1730,8 @@ where
         self.track.set_key_value(parent_address, key, non_fungible)
     }
 
-    fn borrow_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<&ResourceManager, RuntimeError> {
-        self.track
-            .borrow_global_value(resource_address.clone())
-            .map(SubstateValue::resource_manager)
-            .map_err(|e| match e {
-                TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address),
-                TrackError::Reentrancy => panic!("Resman reentrancy should not occur."),
-            })
-    }
-
     fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S> {
-        let info = self.value_refs.get(value_id).unwrap();
+        let info = self.value_refs.get(value_id).expect(&format!("{:?} is unknown.", value_id));
         if !info.visible {
             panic!("Trying to read value which is not visible.")
         }

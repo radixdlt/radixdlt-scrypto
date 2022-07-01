@@ -32,11 +32,6 @@ where
 
     fn native_globalize(&mut self, value_id: &ValueId);
 
-    fn borrow_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<&ResourceManager, RuntimeError>;
-
     fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S>;
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'p>;
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>);
