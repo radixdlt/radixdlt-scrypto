@@ -1,5 +1,5 @@
 mod decimal;
-mod integers;
+mod integer;
 
 pub use decimal::*;
-pub use integers::*;
+pub use integer::*;
