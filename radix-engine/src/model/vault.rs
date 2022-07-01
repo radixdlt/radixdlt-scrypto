@@ -164,9 +164,8 @@ impl Vault {
 
     pub fn main<
         'p,
-        't,
         's,
-        Y: SystemApi<'p, 't, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,

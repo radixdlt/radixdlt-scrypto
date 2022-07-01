@@ -2,6 +2,7 @@ use sbor::rust::boxed::Box;
 use sbor::rust::cell::Ref;
 use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
+use sbor::rust::format;
 use sbor::rust::marker::*;
 use sbor::rust::ops::Deref;
 use sbor::rust::ops::DerefMut;
@@ -9,7 +10,6 @@ use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
-use sbor::rust::format;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
@@ -479,7 +479,9 @@ impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
             REValueRef::Owned(owned) => owned.resource_manager(),
-            REValueRef::Track(track, address) => track.read_value(address.clone()).resource_manager(),
+            REValueRef::Track(track, address) => {
+                track.read_value(address.clone()).resource_manager()
+            }
             REValueRef::Borrowed(borrowed) => borrowed.resource_manager(),
         }
     }
@@ -1088,7 +1090,7 @@ where
     }
 }
 
-impl<'p, 't, 's, 'w, S, W, I> SystemApi<'p, 't, 's, W, I, S> for CallFrame<'p, 't, 's, 'w, S, W, I>
+impl<'p, 't, 's, 'w, S, W, I> SystemApi<'p, 's, W, I, S> for CallFrame<'p, 't, 's, 'w, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -1208,7 +1210,9 @@ where
                         self.track
                             .take_lock(resource_address.clone(), false)
                             .map_err(|e| match e {
-                                TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+                                TrackError::NotFound => {
+                                    RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                                }
                                 TrackError::Reentrancy => {
                                     panic!("Package reentrancy error should never occur.")
                                 }
@@ -1234,7 +1238,9 @@ where
                         self.track
                             .take_lock(resource_address.clone(), false)
                             .map_err(|e| match e {
-                                TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+                                TrackError::NotFound => {
+                                    RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                                }
                                 TrackError::Reentrancy => {
                                     panic!("Package reentrancy error should never occur.")
                                 }
@@ -1731,7 +1737,10 @@ where
     }
 
     fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S> {
-        let info = self.value_refs.get(value_id).expect(&format!("{:?} is unknown.", value_id));
+        let info = self
+            .value_refs
+            .get(value_id)
+            .expect(&format!("{:?} is unknown.", value_id));
         if !info.visible {
             panic!("Trying to read value which is not visible.")
         }

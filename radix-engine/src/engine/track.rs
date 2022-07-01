@@ -723,7 +723,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
             substate_operations: store_instructions,
         };
         let borrowed = BorrowedSNodes {
-            borrowed_substates: self.borrowed_substates.into_keys().collect()
+            borrowed_substates: self.borrowed_substates.into_keys().collect(),
         };
         TrackReceipt {
             new_addresses: self.new_addresses,

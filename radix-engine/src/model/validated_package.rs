@@ -45,13 +45,13 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn static_main<'p, 't, 's, Y, W, I, S>(
+    pub fn static_main<'p, 's, Y, W, I, S>(
         method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, PackageError>
     where
-        Y: SystemApi<'p, 't, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,

@@ -13,7 +13,7 @@ use crate::ledger::ReadableSubstateStore;
 use crate::model::*;
 use crate::wasm::*;
 
-pub trait SystemApi<'p, 't, 's, W, I, S>
+pub trait SystemApi<'p, 's, W, I, S>
 where
     W: WasmEngine<I>,
     I: WasmInstance,

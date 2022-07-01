@@ -255,9 +255,8 @@ impl ResourceManager {
 
     pub fn mint<
         'p,
-        't,
         's,
-        Y: SystemApi<'p, 't, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,
@@ -322,9 +321,8 @@ impl ResourceManager {
 
     pub fn mint_non_fungibles<
         'p,
-        't,
         's,
-        Y: SystemApi<'p, 't, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,
@@ -397,9 +395,8 @@ impl ResourceManager {
 
     pub fn static_main<
         'p,
-        't,
         's,
-        Y: SystemApi<'p, 't, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,
@@ -440,9 +437,8 @@ impl ResourceManager {
 
     pub fn main<
         'p,
-        't,
         's,
-        Y: SystemApi<'p, 't, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: ReadableSubstateStore,

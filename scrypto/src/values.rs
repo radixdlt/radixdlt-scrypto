@@ -72,7 +72,11 @@ impl ScryptoValue {
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
             kv_store_ids: checker.kv_stores.iter().map(|e| e.id).collect(),
             component_addresses: checker.components.iter().map(|e| e.0).collect(),
-            resource_addresses: checker.resource_addresses.iter().map(|e| e.clone()).collect()
+            resource_addresses: checker
+                .resource_addresses
+                .iter()
+                .map(|e| e.clone())
+                .collect(),
         })
     }
 

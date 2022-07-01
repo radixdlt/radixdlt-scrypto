@@ -17,9 +17,9 @@ use crate::ledger::ReadableSubstateStore;
 use crate::model::Component;
 use crate::wasm::*;
 
-pub struct RadixEngineWasmRuntime<'y, 'p, 't, 's, Y, W, I, S>
+pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 where
-    Y: SystemApi<'p, 't, 's, W, I, S>,
+    Y: SystemApi<'p, 's, W, I, S>,
     W: WasmEngine<I>,
     I: WasmInstance,
     S: ReadableSubstateStore,
@@ -30,13 +30,12 @@ where
     phantom2: PhantomData<I>,
     phantom3: PhantomData<S>,
     phantom4: PhantomData<&'p ()>,
-    phantom5: PhantomData<&'t ()>,
-    phantom6: PhantomData<&'s ()>,
+    phantom5: PhantomData<&'s ()>,
 }
 
-impl<'y, 'p, 't, 's, Y, W, I, S> RadixEngineWasmRuntime<'y, 'p, 't, 's, Y, W, I, S>
+impl<'y, 'p, 's, Y, W, I, S> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 where
-    Y: SystemApi<'p, 't, 's, W, I, S>,
+    Y: SystemApi<'p, 's, W, I, S>,
     W: WasmEngine<I>,
     I: WasmInstance,
     S: ReadableSubstateStore,
@@ -50,7 +49,6 @@ where
             phantom3: PhantomData,
             phantom4: PhantomData,
             phantom5: PhantomData,
-            phantom6: PhantomData,
         }
     }
 
@@ -166,13 +164,12 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
 impl<
         'y,
         'p,
-        't,
         's,
         S: ReadableSubstateStore,
-        Y: SystemApi<'p, 't, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
-    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 't, 's, Y, W, I, S>
+    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let cost = self.fee_table().wasm_engine_call_cost();

@@ -207,9 +207,8 @@ impl Worktop {
 
     pub fn main<
         'p,
-        't,
         's,
-        Y: SystemApi<'p, 't, 's, W, I, S>,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
         S: 's + ReadableSubstateStore,
@@ -242,7 +241,8 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                        let value =
+                            system_api.borrow_value(&ValueId::Resource(input.resource_address));
                         let resource_manager = value.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -267,7 +267,8 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                        let value =
+                            system_api.borrow_value(&ValueId::Resource(input.resource_address));
                         let resource_manager = value.resource_manager();
                         resource_manager.resource_type()
                     };
@@ -293,7 +294,8 @@ impl Worktop {
                     container
                 } else {
                     let resource_type = {
-                        let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                        let value =
+                            system_api.borrow_value(&ValueId::Resource(input.resource_address));
                         let resource_manager = value.resource_manager();
                         resource_manager.resource_type()
                     };
