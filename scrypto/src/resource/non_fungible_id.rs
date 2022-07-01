@@ -10,7 +10,7 @@ use crate::abi::*;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct NonFungibleId(Vec<u8>);
+pub struct NonFungibleId(pub Vec<u8>);
 
 impl NonFungibleId {
     /// Creates a non-fungible ID from some uuid.

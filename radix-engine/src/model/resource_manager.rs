@@ -18,7 +18,7 @@ use scrypto::resource::ResourceManagerGetMetadataInput;
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
+use crate::engine::{DataInstruction, SubstateAddress, SystemApi};
 use crate::ledger::ReadableSubstateStore;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::ResourceManagerError::InvalidMethod;
@@ -561,8 +561,14 @@ impl ResourceManager {
                 let input: ResourceManagerGetNonFungibleInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let non_fungible_address =
-                    NonFungibleAddress::new(resource_address.clone(), input.id);
-                let non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
+                    NonFungibleAddress::new(resource_address.clone(), input.id.clone());
+                let key = ScryptoValue::from_slice(&input.id.0).map_err(ResourceManagerError::InvalidRequestData)?;
+                let value = system_api.data(
+                    SubstateAddress::NonFungible(resource_address.clone(), key),
+                    DataInstruction::Read
+                ).expect("Should never fail");
+                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
+                let non_fungible = maybe_non_fungible.ok_or(
                     ResourceManagerError::NonFungibleNotFound(non_fungible_address),
                 )?;
                 Ok(ScryptoValue::from_typed(&[
