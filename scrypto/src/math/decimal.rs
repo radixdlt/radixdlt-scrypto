@@ -185,7 +185,7 @@ impl Decimal {
     }
 
     pub fn powi(&self, exp: i32) -> Self {
-        let mut self_pow = BigInt::from(self.0);
+        let mut prod = BigInt::from(self.0);
         let sign: i128 = if self.0.is_negative() && exp % 2 == 1 {
             -1
         } else {
@@ -196,30 +196,30 @@ impl Decimal {
         let one = BigInt::from(10u128.checked_pow(s).unwrap());
         let mut exponent = BigInt::from(exp.abs());
         let mut res: BigInt;
-        if self_pow == Zero::zero() {
+        if prod == Zero::zero() {
             if exponent == Zero::zero() {
                 res = one.clone();
             } else {
                 res = Zero::zero();
             }
-        } else if self_pow == one {
+        } else if prod == one {
             res = one.clone();
         } else {
             if exponent.clone() % 2 == Zero::zero() {
                 res = one.clone();
             } else {
-                res = self_pow.clone();
+                res = prod.clone();
             }
             let round_up = one.clone() / 2i8;
             let smallest_bit = 2u8;
             exponent /= 2;
             while exponent > Zero::zero() {
-                self_pow = (self_pow.pow(2) + round_up.clone()) / one.clone();
-                if self_pow.to_signed_bytes_le().len() > bytes_times_2 {
+                prod = (prod.pow(2) + round_up.clone()) / one.clone();
+                if prod.to_signed_bytes_le().len() > bytes_times_2 {
                     panic!("overflow");
                 }
                 if exponent.clone() % smallest_bit != Zero::zero() {
-                    res = (res.clone() * self_pow.clone() + round_up.clone()) / one.clone();
+                    res = (res.clone() * prod.clone() + round_up.clone()) / one.clone();
                     if res.to_signed_bytes_le().len() > bytes_times_2 {
                         panic!("overflow");
                     }
