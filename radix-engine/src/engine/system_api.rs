@@ -30,17 +30,13 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn native_globalize(&mut self, value_id: &ValueId);
-
+    fn globalize_value(&mut self, value_id: &ValueId);
     fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S>;
-    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'p>;
-    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>);
-    fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
-
-    fn native_create<V: Into<REValueByComplexity>>(
-        &mut self,
-        v: V,
-    ) -> Result<ValueId, RuntimeError>;
+    fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef<'p>;
+    fn return_value_mut(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>);
+    fn drop_value(&mut self, value_id: &ValueId) -> REValue;
+    fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
+        -> Result<ValueId, RuntimeError>;
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
     fn data(

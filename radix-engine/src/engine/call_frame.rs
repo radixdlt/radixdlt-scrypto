@@ -1753,7 +1753,7 @@ where
         )
     }
 
-    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'p> {
+    fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef<'p> {
         let info = self.value_refs.get(value_id).unwrap();
         if !info.visible {
             panic!("Trying to read value which is not visible.")
@@ -1767,7 +1767,7 @@ where
         )
     }
 
-    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>) {
+    fn return_value_mut(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>) {
         val_ref.return_to_location(
             value_id,
             &mut self.owned_values,
@@ -1776,11 +1776,11 @@ where
         )
     }
 
-    fn take_native_value(&mut self, value_id: &ValueId) -> REValue {
+    fn drop_value(&mut self, value_id: &ValueId) -> REValue {
         self.owned_values.remove(&value_id).unwrap().into_inner()
     }
 
-    fn native_create<V: Into<REValueByComplexity>>(
+    fn create_value<V: Into<REValueByComplexity>>(
         &mut self,
         v: V,
     ) -> Result<ValueId, RuntimeError> {
@@ -1861,7 +1861,7 @@ where
         resource_address
     }
 
-    fn native_globalize(&mut self, value_id: &ValueId) {
+    fn globalize_value(&mut self, value_id: &ValueId) {
         let mut values = HashSet::new();
         values.insert(value_id.clone());
         let (taken_values, missing) = self.take_available_values(values).unwrap();

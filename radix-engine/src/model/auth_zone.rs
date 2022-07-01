@@ -111,7 +111,7 @@ impl AuthZone {
                 let _: AuthZonePopInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let proof = self.pop()?;
-                let proof_id = system_api.native_create(proof).unwrap().into();
+                let proof_id = system_api.create_value(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -120,7 +120,7 @@ impl AuthZone {
                 let input: AuthZonePushInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let mut proof: Proof = system_api
-                    .take_native_value(&ValueId::Transient(TransientValueId::Proof(input.proof.0)))
+                    .drop_value(&ValueId::Transient(TransientValueId::Proof(input.proof.0)))
                     .into();
                 // FIXME: this is a hack for now until we can get snode_state into process
                 // FIXME: and be able to determine which snode the proof is going into
@@ -138,7 +138,7 @@ impl AuthZone {
                     resource_manager.resource_type()
                 };
                 let proof = self.create_proof(input.resource_address, resource_type)?;
-                let proof_id = system_api.native_create(proof).unwrap().into();
+                let proof_id = system_api.create_value(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -156,7 +156,7 @@ impl AuthZone {
                     input.resource_address,
                     resource_type,
                 )?;
-                let proof_id = system_api.native_create(proof).unwrap().into();
+                let proof_id = system_api.create_value(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -171,7 +171,7 @@ impl AuthZone {
                 };
                 let proof =
                     self.create_proof_by_ids(&input.ids, input.resource_address, resource_type)?;
-                let proof_id = system_api.native_create(proof).unwrap().into();
+                let proof_id = system_api.create_value(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

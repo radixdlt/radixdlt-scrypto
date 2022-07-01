@@ -116,10 +116,10 @@ impl Component {
                     }
                 }
 
-                let mut ref_mut = system_api.borrow_native_value(&value_id);
+                let mut ref_mut = system_api.borrow_value_mut(&value_id);
                 let component = ref_mut.component();
                 component.access_rules.push(input.access_rules);
-                system_api.return_native_value(value_id, ref_mut);
+                system_api.return_value_mut(value_id, ref_mut);
 
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -127,7 +127,7 @@ impl Component {
                 let _: ComponentGlobalizeInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
-                system_api.native_globalize(&value_id);
+                system_api.globalize_value(&value_id);
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(ComponentError::MethodNotFound),
@@ -154,7 +154,7 @@ impl Component {
                 let _: ComponentGlobalizeInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
-                system_api.native_globalize(&value_id);
+                system_api.globalize_value(&value_id);
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(ComponentError::MethodNotFound),

@@ -223,7 +223,7 @@ impl Worktop {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .take_native_value(&ValueId::Transient(TransientValueId::Bucket(
+                    .drop_value(&ValueId::Transient(TransientValueId::Bucket(
                         input.bucket.0,
                     )))
                     .into();
@@ -250,7 +250,7 @@ impl Worktop {
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
                 let bucket_id = system_api
-                    .native_create(Bucket::new(resource_container))
+                    .create_value(Bucket::new(resource_container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -277,7 +277,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .native_create(Bucket::new(resource_container))
+                    .create_value(Bucket::new(resource_container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -304,7 +304,7 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .native_create(Bucket::new(resource_container))
+                    .create_value(Bucket::new(resource_container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -353,7 +353,7 @@ impl Worktop {
                         .map_err(WorktopError::ResourceContainerError)?;
                     if !container.is_empty() {
                         let bucket_id = system_api
-                            .native_create(Bucket::new(container))
+                            .create_value(Bucket::new(container))
                             .unwrap()
                             .into();
                         buckets.push(scrypto::resource::Bucket(bucket_id));
