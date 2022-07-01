@@ -283,6 +283,14 @@ impl SubstateValue {
         }
     }
 
+    pub fn non_fungible(&self) -> &Option<NonFungible> {
+        if let SubstateValue::NonFungible(non_fungible) = self {
+            non_fungible
+        } else {
+            panic!("Not a NonFungible");
+        }
+    }
+
     pub fn kv_entry(&self) -> &Option<Vec<u8>> {
         if let SubstateValue::KeyValueStoreEntry(kv_entry) = self {
             kv_entry
