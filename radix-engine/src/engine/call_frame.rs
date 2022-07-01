@@ -460,6 +460,16 @@ pub enum REValueRef<'f, 'p, 's, S: ReadableSubstateStore> {
 }
 
 impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
+    pub fn vault(&self) -> &Vault {
+        match self {
+            REValueRef::Owned(owned) => owned.vault(),
+            REValueRef::Track(track, address) => {
+                track.read_value(address.clone()).vault()
+            }
+            REValueRef::Borrowed(borrowed) => borrowed.vault(),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
             REValueRef::Owned(owned) => owned.resource_manager(),
@@ -618,16 +628,6 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
                     component.package_address().clone(),
                     component.blueprint_name().to_string(),
                 )
-            }
-        }
-    }
-
-    fn vault_resource_address(&mut self) -> ResourceAddress {
-        match self {
-            REValueRefMut::Owned(re_value) => re_value.vault().resource_address(),
-            REValueRefMut::Borrowed(re_value) => re_value.vault().resource_address(),
-            REValueRefMut::Track(track, address) => {
-                track.read_value(address.clone()).vault().resource_address()
             }
         }
     }
@@ -1507,13 +1507,15 @@ where
                     };
 
                     // Lock Resource
-                    let mut value_ref = next_location.to_ref_mut(
-                        &value_id,
-                        &mut next_owned_values,
-                        &mut next_borrowed_values,
-                        &mut self.track,
-                    );
-                    let resource_address = value_ref.vault_resource_address();
+                    let resource_address = {
+                        let value_ref = next_location.to_ref(
+                            &value_id,
+                            &mut next_owned_values,
+                            &mut next_borrowed_values,
+                            &mut self.track,
+                        );
+                        value_ref.vault().resource_address()
+                    };
                     self.track
                         .take_lock(resource_address, true)
                         .expect("Should never fail.");
@@ -1524,13 +1526,15 @@ where
 
                 // Retrieve Method Authorization
                 let method_auth = {
-                    let mut value_ref = next_location.to_ref_mut(
-                        &value_id,
-                        &mut next_owned_values,
-                        &mut next_borrowed_values,
-                        &mut self.track,
-                    );
-                    let resource_address = value_ref.vault_resource_address();
+                    let resource_address = {
+                        let value_ref = next_location.to_ref(
+                            &value_id,
+                            &mut next_owned_values,
+                            &mut next_borrowed_values,
+                            &mut self.track,
+                        );
+                        value_ref.vault().resource_address()
+                    };
                     let resource_manager =
                         self.track.read_value(resource_address).resource_manager();
                     resource_manager.get_vault_auth(&fn_ident).clone()
