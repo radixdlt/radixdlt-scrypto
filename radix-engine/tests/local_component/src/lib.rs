@@ -14,7 +14,7 @@ blueprint! {
             self.secret = next;
         }
 
-        pub fn new(secret: u32) -> Component {
+        pub fn new(secret: u32) -> crate::LocalComponent {
             Self { secret }.instantiate()
         }
 
@@ -25,7 +25,7 @@ blueprint! {
             local_component
                 .add_access_check(AccessRules::new().default(rule!(require(some_non_fungible))));
 
-            let rtn: u32 = local_component.call("get_secret", vec![]);
+            let rtn = local_component.get_secret();
             assert_eq!(12345, rtn);
 
             local_component.globalize()
@@ -34,7 +34,7 @@ blueprint! {
         pub fn read_local_component() -> ComponentAddress {
             let local_component = Self::new(12345);
 
-            let rtn: u32 = local_component.call("get_secret", vec![]);
+            let rtn = local_component.get_secret();
             assert_eq!(12345, rtn);
 
             local_component.globalize()
@@ -42,9 +42,8 @@ blueprint! {
 
         pub fn write_local_component() -> ComponentAddress {
             let local_component = Self::new(12345);
-
-            let _: () = local_component.call("set_secret", vec![scrypto_encode(&99999u32)]);
-            let rtn: u32 = local_component.call("get_secret", vec![]);
+            local_component.set_secret(99999u32);
+            let rtn = local_component.get_secret();
             assert_eq!(99999, rtn);
 
             local_component.globalize()
@@ -63,3 +62,8 @@ blueprint! {
         }
     }
 }
+
+pub mod local_recursion;
+pub mod local_recursion_2;
+pub mod stored_kv_local_component;
+pub mod stored_local_component;

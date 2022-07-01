@@ -42,8 +42,11 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
         ));
     }
 
+    let module_ident = format_ident!("{}_impl", bp_ident);
+
     let output_mod = quote! {
-        pub mod blueprint {
+        #[allow(non_snake_case)]
+        pub mod #module_ident {
             use super::*;
 
             #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
@@ -53,12 +56,15 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
                 #(#bp_items)*
             }
 
-            impl ::scrypto::component::ComponentState for #bp_ident {
-                fn instantiate(self) -> ::scrypto::component::Component {
-                    ::scrypto::component::component_system().create_component(
+            impl ::scrypto::component::ComponentState<super::#bp_ident> for #bp_ident {
+                fn instantiate(self) -> super::#bp_ident {
+                    let component = ::scrypto::component::component_system().create_component(
                         #bp_name,
                         self
-                    )
+                    );
+                    super::#bp_ident {
+                        component
+                    }
                 }
             }
         }
@@ -66,7 +72,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
     trace!("Generated mod: \n{}", quote! { #output_mod });
     let method_input_structs = generate_method_input_structs(bp_ident, bp_items);
 
-    let functions = generate_dispatcher(bp_ident, bp_items)?;
+    let functions = generate_dispatcher(&module_ident, bp_ident, bp_items)?;
     let output_dispatcher = quote! {
         #(#method_input_structs)*
         #(#functions)*
@@ -86,7 +92,7 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             use ::sbor::rust::vec::Vec;
 
             let fns: Vec<Fn> = vec![ #(#abi_functions),* ];
-            let structure: Type = blueprint::#bp_ident::describe();
+            let structure: Type = #module_ident::#bp_ident::describe();
             let output = BlueprintAbi {
                 structure,
                 fns,
@@ -164,7 +170,11 @@ fn generate_method_input_structs(bp_ident: &Ident, items: &[ImplItem]) -> Vec<It
 
 // Parses function items in an `Impl` and returns the arm guards and bodies
 // used for call matching.
-fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<TokenStream>> {
+fn generate_dispatcher(
+    module_ident: &Ident,
+    bp_ident: &Ident,
+    items: &[ImplItem],
+) -> Result<Vec<TokenStream>> {
     let mut functions = Vec::new();
 
     for item in items {
@@ -194,7 +204,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can't have more than 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = {
+                                let #mutability state: #module_ident::#bp_ident = {
                                     let address = DataAddress::Component(component_address, ComponentOffset::State);
                                     let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
                                     ::scrypto::engine::call_engine(input)
@@ -240,7 +250,7 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                 // call the function
                 let stmt: Stmt = parse_quote! {
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(
-                        &blueprint::#bp_ident::#ident(#(#dispatch_args),*)
+                        &#module_ident::#bp_ident::#ident(#(#dispatch_args),*)
                     );
                 };
                 trace!("Generated stmt: {}", quote! { #stmt });
@@ -426,11 +436,11 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
                     } else {
                         methods.push(parse_quote! {
                             pub fn #ident(&self #(, #input_args: #input_types)*) -> #output {
-                                ::scrypto::core::Runtime::call_method(
-                                    self.component_address,
-                                    #name,
-                                    ::scrypto::args!(#(#input_args),*)
-                                )
+                                self.component.call(#name, vec![
+                                    #(
+                                        scrypto_encode(&#input_args)
+                                    ),*
+                                ])
                             }
                         });
                     }
@@ -448,27 +458,29 @@ fn generate_stubs(bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
     let output = quote! {
         #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
         pub struct #bp_ident {
-            component_address: ::scrypto::component::ComponentAddress,
+            pub component: ::scrypto::component::Component,
+        }
+
+        impl ::scrypto::component::LComponent for #bp_ident {
+            fn package_address(&self) -> PackageAddress {
+                self.component.package_address()
+            }
+            fn blueprint_name(&self) -> String {
+                self.component.blueprint_name()
+            }
+            fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                self.component.add_access_check(access_rules);
+                self
+            }
+            fn globalize(self) -> ComponentAddress {
+                self.component.globalize()
+            }
         }
 
         impl #bp_ident {
             #(#functions)*
 
             #(#methods)*
-        }
-
-        impl From<::scrypto::component::ComponentAddress> for #bp_ident {
-            fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                Self {
-                    component_address
-                }
-            }
-        }
-
-        impl From<#bp_ident> for ::scrypto::component::ComponentAddress {
-            fn from(a: #bp_ident) -> ::scrypto::component::ComponentAddress {
-                a.component_address
-            }
         }
     };
 
@@ -519,7 +531,8 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                pub mod blueprint {
+                #[allow(non_snake_case)]
+                pub mod Test_impl {
                     use super::*;
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
@@ -537,12 +550,15 @@ mod tests {
                         }
                     }
 
-                    impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> ::scrypto::component::Component {
-                            ::scrypto::component::component_system().create_component(
+                    impl ::scrypto::component::ComponentState<super::Test> for Test {
+                        fn instantiate(self) -> super::Test {
+                            let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
-                            )
+                            );
+                            super::Test {
+                                component
+                            }
                         }
                     }
                 }
@@ -566,12 +582,12 @@ mod tests {
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                     let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                    let state: blueprint::Test = {
+                    let state: Test_impl::Test = {
                         let address = DataAddress::Component(component_address, ComponentOffset::State);
                         let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
                         ::scrypto::engine::call_engine(input)
                     };
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, input.arg0));
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::x(&state, input.arg0));
                     rtn
                 }
 
@@ -585,7 +601,7 @@ mod tests {
                     ::scrypto::resource::init_resource_system(::scrypto::resource::ResourceSystem::new());
 
                     let input: Test_y_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
-                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::y(input.arg0));
+                    let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&Test_impl::Test::y(input.arg0));
                     rtn
                 }
 
@@ -612,33 +628,41 @@ mod tests {
                             export_name: "Test_y".to_string(),
                         }
                     ];
-                    let structure: Type = blueprint::Test::describe();
+                    let structure: Type = Test_impl::Test::describe();
                     let output = BlueprintAbi {
                         structure,
                         fns,
                     };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
+
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Test {
-                    component_address: ::scrypto::component::ComponentAddress,
+                    pub component: ::scrypto::component::Component,
                 }
+
+                impl ::scrypto::component::LComponent for Test {
+                    fn package_address(&self) -> PackageAddress {
+                        self.component.package_address()
+                    }
+                    fn blueprint_name(&self) -> String {
+                        self.component.blueprint_name()
+                    }
+                    fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                        self.component.add_access_check(access_rules);
+                        self
+                    }
+                    fn globalize(self) -> ComponentAddress {
+                        self.component.globalize()
+                    }
+                }
+
                 impl Test {
                     pub fn y(arg0: u32) -> u32 {
                         ::scrypto::core::Runtime::call_function(::scrypto::core::Runtime::package_address(), "Test", "y", ::scrypto::args!(arg0))
                     }
                     pub fn x(&self, arg0: u32) -> u32 {
-                        ::scrypto::core::Runtime::call_method(self.component_address, "x", ::scrypto::args!(arg0))
-                    }
-                }
-                impl From<::scrypto::component::ComponentAddress> for Test {
-                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                        Self { component_address }
-                    }
-                }
-                impl From<Test> for ::scrypto::component::ComponentAddress {
-                    fn from(a: Test) -> ::scrypto::component::ComponentAddress {
-                        a.component_address
+                        self.component.call("x", vec![scrypto_encode(&arg0)])
                     }
                 }
             },
@@ -653,7 +677,8 @@ mod tests {
         assert_code_eq(
             output,
             quote! {
-                pub mod blueprint {
+                #[allow(non_snake_case)]
+                pub mod Test_impl {
                     use super::*;
 
                     #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
@@ -663,12 +688,15 @@ mod tests {
                     impl Test {
                     }
 
-                    impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> ::scrypto::component::Component {
-                            ::scrypto::component::component_system().create_component(
+                    impl ::scrypto::component::ComponentState<super::Test> for Test {
+                        fn instantiate(self) -> super::Test {
+                            let component = ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
-                            )
+                            );
+                            super::Test {
+                                component
+                            }
                         }
                     }
                 }
@@ -681,7 +709,7 @@ mod tests {
                     use ::sbor::rust::vec;
                     use ::sbor::rust::vec::Vec;
                     let fns: Vec<Fn> = vec![];
-                    let structure: Type = blueprint::Test::describe();
+                    let structure: Type = Test_impl::Test::describe();
                     let output = BlueprintAbi {
                         structure,
                         fns,
@@ -691,19 +719,26 @@ mod tests {
 
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Test {
-                    component_address: ::scrypto::component::ComponentAddress,
+                    pub component: ::scrypto::component::Component,
                 }
+
+                impl ::scrypto::component::LComponent for Test {
+                    fn package_address(&self) -> PackageAddress {
+                        self.component.package_address()
+                    }
+                    fn blueprint_name(&self) -> String {
+                        self.component.blueprint_name()
+                    }
+                    fn add_access_check(&mut self, access_rules: ::scrypto::resource::AccessRules) -> &mut Self {
+                        self.component.add_access_check(access_rules);
+                        self
+                    }
+                    fn globalize(self) -> ComponentAddress {
+                        self.component.globalize()
+                    }
+                }
+
                 impl Test {
-                }
-                impl From<::scrypto::component::ComponentAddress> for Test {
-                    fn from(component_address: ::scrypto::component::ComponentAddress) -> Self {
-                        Self { component_address }
-                    }
-                }
-                impl From<Test> for ::scrypto::component::ComponentAddress {
-                    fn from(a: Test) -> ::scrypto::component::ComponentAddress {
-                        a.component_address
-                    }
                 }
             },
         );
