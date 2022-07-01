@@ -261,3 +261,35 @@ macro_rules! test_otput_type_all_simple {
 }
 
 test_otput_type_all_simple! { pow }
+
+macro_rules! test_add {
+    ($i:ident, $t:ident) => {
+        paste! {
+            #[test]
+            fn test_add_2_and_2_ $i:lower _ $t:lower() {
+                let a_bytes: usize = <$i>::BITS / 8;
+                let b_bytes: usize = <$t>::BITS / 8;
+                let a: $i = BigInt::from_bytes_le(Sign::Plus, vec![2u8; a_bytes].into()).into();
+                let b: $t = BigInt::from_bytes_le(Sign::Plus, vec![2u8; b_bytes].into());
+                let expect: = BigInt::from_bytes_le(Sign::Plus, vec![4u8; a_bytes.max(b_bytes)].into());
+                assert_eq!(a.add(b), expect.into());
+            }
+        }
+    };
+}
+
+macro_rules! test_add_all {
+    ($i:literal, ($($t:literal),*)) => {
+        $(
+            test_add!($i, $t);
+        )*
+    };
+}
+
+macro_rules! test_add_all_all {
+    ($($i:literal),*) => {
+        $(
+            test_add_all!($i, ($i,));
+        )*
+    };
+}
