@@ -1,6 +1,5 @@
 use core::ops::*;
 use num_bigint::BigInt;
-use num_traits::{Signed, Zero};
 use sbor::rust::convert::TryFrom;
 use sbor::rust::fmt;
 use sbor::rust::iter;
@@ -8,6 +7,7 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use num_traits::{ToPrimitive, Zero};
 use sbor::*;
 
 use crate::abi::*;
@@ -182,66 +182,56 @@ impl Decimal {
                 }
             }
         }
-
     }
 
     pub fn powi(&self, exp: i32) -> Self {
-        let mut x: BigInt = self.0.clone().into();
-        let sign = if self.0.is_negative() && exp % 2 == 0 {
-            -1i128
+        let mut self_pow = BigInt::from(self.0);
+        let sign: i128 = if self.0.is_negative() && exp % 2 == 1 {
+            -1
         } else {
-            1i128
+            1
         };
         let s = Self::SCALE;
-        let bytes2 = Self::BITS / 4;
-        let b: BigInt = 10i128.checked_pow(s).unwrap().into();
-        let mut n: BigInt = exp.abs().into();
-        let mut z: BigInt;
-        if x.clone() == BigInt::from(0i8) {
-            if n.clone() == Zero::zero() {
-                z = b.clone();
+        let bytes_times_2 = Self::BITS / 4;
+        let one = BigInt::from(10u128.checked_pow(s).unwrap());
+        let mut exponent = BigInt::from(exp.abs());
+        let mut res: BigInt;
+        if self_pow == Zero::zero() {
+            if exponent == Zero::zero() {
+                res = one.clone();
             } else {
-                z = Zero::zero();
+                res = Zero::zero();
             }
-        } else if x.clone() == b.clone() {
-            z = b.clone();
+        } else if self_pow == one {
+            res = one.clone();
         } else {
-            if n.clone() % 2i8 == Zero::zero() {
-                z = b.clone();
+            if exponent.clone() % 2 == Zero::zero() {
+                res = one.clone();
             } else {
-                z = x.clone();
+                res = self_pow.clone();
             }
-            let half = b.clone() / 2i8;
-            n /= 2i8;
-            while n.clone() > Zero::zero() {
-                let xx = x.clone() * x.clone();
-                if xx.to_signed_bytes_le().len() > bytes2 {
-                    panic!("pow overflow: square of {} too large", x);
+            let round_up = one.clone() / 2i8;
+            let smallest_bit = 2u8;
+            exponent /= 2;
+            while exponent > Zero::zero() {
+                self_pow = (self_pow.pow(2) + round_up.clone()) / one.clone();
+                if self_pow.to_signed_bytes_le().len() > bytes_times_2 {
+                    panic!("overflow");
                 }
-                let xx_round = xx.clone() + half.clone();
-                if xx_round.to_signed_bytes_le().len() > bytes2 {
-                    panic!("pow overflow: sum of {} and {} too large", xx, half);
-                }
-                x = xx_round.clone() / b.clone();
-                if n.clone() % 2i8 != Zero::zero() {
-                    let zx = z.clone() * x.clone();
-                    if zx.to_signed_bytes_le().len() > bytes2 {
-                        panic!("pow overflow: product of {} and {} too large", z, x);
+                if exponent.clone() % smallest_bit != Zero::zero() {
+                    res = (res.clone() * self_pow.clone() + round_up.clone()) / one.clone();
+                    if res.to_signed_bytes_le().len() > bytes_times_2 {
+                        panic!("overflow");
                     }
-                    let zx_round = zx.clone() + half.clone();
-                    if zx_round < zx.clone() {
-                        panic!("pow overflow: sum of {} and {} too large", zx, half);
-                    }
-                    z = zx_round.clone() / b.clone();
                 }
-                n /= 2i8;
+                exponent /= 2;
             }
-        }   
+        }
 
         if exp.is_negative() {
-            Self(sign * big_int_to_i128(b.clone() * b / z))
+            Self(sign * (one.pow(2) / res).to_i128().expect("overflow"))
         } else {
-            Self(sign * big_int_to_i128(z))
+            Self(sign * res.to_i128().expect("overflow"))
         }
     }
 }
@@ -325,7 +315,7 @@ impl<T: Into<Decimal>> Add<T> for Decimal {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
         let c = a + b;
-        big_int_to_decimal(c)
+        Self(c.to_i128().expect("overflow"))
     }
 }
 
@@ -336,31 +326,8 @@ impl<T: Into<Decimal>> Sub<T> for Decimal {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
         let c = a - b;
-        big_int_to_decimal(c)
+        Self(c.to_i128().expect("overflow"))
     }
-}
-
-fn big_int_to_i128(v: BigInt) -> i128 {
-    i128::from_le_bytes(calc_le_bytes(v))
-}
-
-fn calc_le_bytes (v: BigInt) -> [u8; 16] {
-    let bytes = v.to_signed_bytes_le();
-    if bytes.len() > 16 {
-        panic!("Overflow");
-    } else {
-        let mut buf = if v.is_negative() {
-            [255u8; 16]
-        } else {
-            [0u8; 16]
-        };
-        buf[..bytes.len()].copy_from_slice(&bytes);
-        buf
-    }
-}
-
-fn big_int_to_decimal(v: BigInt) -> Decimal {
-    Decimal(i128::from_le_bytes(calc_le_bytes(v)))
 }
 
 impl<T: Into<Decimal>> Mul<T> for Decimal {
@@ -370,7 +337,7 @@ impl<T: Into<Decimal>> Mul<T> for Decimal {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
         let c = a * b / Self::ONE.0;
-        big_int_to_decimal(c)
+        Self(c.to_i128().expect("overflow"))
     }
 }
 
@@ -381,7 +348,7 @@ impl<T: Into<Decimal>> Div<T> for Decimal {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
         let c = a * Self::ONE.0 / b;
-        big_int_to_decimal(c)
+        Self(c.to_i128().expect("overflow"))
     }
 }
 
@@ -639,7 +606,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
+    #[should_panic(expected = "overflow")]
     fn test_add_oveflow() {
         let _ = Decimal::MAX + 1;
     }
@@ -653,7 +620,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
+    #[should_panic(expected = "overflow")]
     fn test_sub_overflow() {
         let _ = Decimal::MIN - 1;
     }
@@ -676,19 +643,19 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
+    #[should_panic(expected = "overflow")]
     fn test_mul_overflow_by_small() {
         let _ = Decimal::MAX * dec!("1.000000000000000001");
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
+    #[should_panic(expected = "overflow")]
     fn test_mul_overflow_by_a_lot() {
         let _ = Decimal::MAX * dec!("1.1");
     }
 
     #[test]
-    #[should_panic(expected = "Overflow")]
+    #[should_panic(expected = "overflow")]
     fn test_mul_neg_overflow() {
         let _ = (-Decimal::MAX) * dec!("-1.000000000000000001");
     }
@@ -751,25 +718,25 @@ mod tests {
         let a = dec!("1");
         assert_eq!((a.powi(10)).to_string(), "1");
     }
-    
+
     #[test]
     fn test_2_powi_0() {
         let a = dec!("2");
         assert_eq!((a.powi(0)).to_string(), "1");
     }
-    
+
     #[test]
     fn test_2_powi_1() {
         let a = dec!("1.000234891009084238");
         assert_eq!((a.powi(3724)).to_string(), "2.397991232254676688");
     }
-    
+
     #[test]
     fn test_2_powi_2() {
         let a = dec!("2");
         assert_eq!((a.powi(2)).to_string(), "4");
     }
-    
+
     #[test]
     fn test_2_powi_3() {
         let a = dec!("2");
@@ -798,6 +765,29 @@ mod tests {
     fn test_10_powi_minus3() {
         let a = dec!("10");
         assert_eq!((a.powi(-3)).to_string(), "0.001");
+    }
+
+    #[test]
+    fn test_minus10_powi_minus3() {
+        let a = dec!("-10");
+        assert_eq!((a.powi(-3)).to_string(), "-0.001");
+    }
+
+    #[test]
+    fn test_minus10_powi_minus2() {
+        let a = dec!("-10");
+        assert_eq!((a.powi(-2)).to_string(), "0.01");
+    }
+
+    #[test]
+    fn test_minus05_powi_minus2() {
+        let a = dec!("-0.5");
+        assert_eq!((a.powi(-2)).to_string(), "4");
+    }
+    #[test]
+    fn test_minus05_powi_minus3() {
+        let a = dec!("-0.5");
+        assert_eq!((a.powi(-3)).to_string(), "-8.000000000000000064");
     }
 
     #[test]
