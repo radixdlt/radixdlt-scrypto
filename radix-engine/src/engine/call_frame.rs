@@ -304,6 +304,7 @@ impl REValueLocation {
                         }
                     }
                     ValueId::Package(package_address) => Address::Package(*package_address),
+                    ValueId::Resource(resource_address) => Address::Resource(*resource_address),
                     _ => panic!("Unexpected value id"),
                 };
 
@@ -474,6 +475,14 @@ pub enum REValueRef<'f, 'p, 's, S: ReadableSubstateStore> {
 }
 
 impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
+    pub fn resource_manager(&self) -> &ResourceManager {
+        match self {
+            REValueRef::Owned(owned) => owned.resource_manager(),
+            REValueRef::Track(track, address) => track.read_value(address.clone()).resource_manager(),
+            REValueRef::Borrowed(borrowed) => borrowed.resource_manager(),
+        }
+    }
+
     pub fn component(&self) -> &Component {
         match self {
             REValueRef::Owned(owned) => owned.component(),
@@ -1194,6 +1203,24 @@ where
             }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
+                    for resource_address in &input.resource_addresses {
+                        self.track
+                            .take_lock(resource_address.clone(), false)
+                            .map_err(|e| match e {
+                                TrackError::NotFound => RuntimeError::ResourceManagerNotFound(resource_address.clone()),
+                                TrackError::Reentrancy => {
+                                    panic!("Package reentrancy error should never occur.")
+                                }
+                            })?;
+                        locked_values.insert(resource_address.clone().into());
+                        value_refs.insert(
+                            ValueId::Resource(resource_address.clone()),
+                            REValueInfo {
+                                location: REValueLocation::Track { parent: None },
+                                visible: true,
+                            },
+                        );
+                    }
                     let borrowed = auth_zone.borrow_mut();
                     Ok((SNodeExecution::AuthZone(borrowed), vec![]))
                 } else {

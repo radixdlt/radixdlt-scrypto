@@ -100,7 +100,7 @@ impl AuthZone {
         Y: SystemApi<'p, 't, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: ReadableSubstateStore,
+        S: 's + ReadableSubstateStore,
     >(
         &mut self,
         method_name: &str,
@@ -133,10 +133,11 @@ impl AuthZone {
             "create_proof" => {
                 let input: AuthZoneCreateProofInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let resource_manager = system_api
-                    .borrow_global_resource_manager(input.resource_address)
-                    .map_err(|_| AuthZoneError::CouldNotGetResource)?;
-                let resource_type = resource_manager.resource_type();
+                let resource_type = {
+                    let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                    let resource_manager = value.resource_manager();
+                    resource_manager.resource_type()
+                };
                 let proof = self.create_proof(input.resource_address, resource_type)?;
                 let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
@@ -146,10 +147,11 @@ impl AuthZone {
             "create_proof_by_amount" => {
                 let input: AuthZoneCreateProofByAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let resource_manager = system_api
-                    .borrow_global_resource_manager(input.resource_address)
-                    .map_err(|_| AuthZoneError::CouldNotGetResource)?;
-                let resource_type = resource_manager.resource_type();
+                let resource_type = {
+                    let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                    let resource_manager = value.resource_manager();
+                    resource_manager.resource_type()
+                };
                 let proof = self.create_proof_by_amount(
                     input.amount,
                     input.resource_address,
@@ -163,10 +165,11 @@ impl AuthZone {
             "create_proof_by_ids" => {
                 let input: AuthZoneCreateProofByIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let resource_manager = system_api
-                    .borrow_global_resource_manager(input.resource_address)
-                    .map_err(|_| AuthZoneError::CouldNotGetResource)?;
-                let resource_type = resource_manager.resource_type();
+                let resource_type = {
+                    let value = system_api.borrow_value(&ValueId::Resource(input.resource_address));
+                    let resource_manager = value.resource_manager();
+                    resource_manager.resource_type()
+                };
                 let proof =
                     self.create_proof_by_ids(&input.ids, input.resource_address, resource_type)?;
                 let proof_id = system_api.native_create(proof).unwrap().into();

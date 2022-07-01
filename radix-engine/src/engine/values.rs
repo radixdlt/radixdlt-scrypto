@@ -22,9 +22,17 @@ pub enum REValue {
         child_values: InMemoryChildren,
     },
     Package(ValidatedPackage),
+    Resource(ResourceManager),
 }
 
 impl REValue {
+    pub fn resource_manager(&self) -> &ResourceManager {
+        match self {
+            REValue::Resource(resource_manager) => resource_manager,
+            _ => panic!("Expected to be a resource manager"),
+        }
+    }
+
     pub fn package(&self) -> &ValidatedPackage {
         match self {
             REValue::Package(package) => package,
@@ -107,6 +115,7 @@ impl REValue {
             REValue::KeyValueStore { .. } => true,
             REValue::Component { .. } => true,
             REValue::Vault(..) => true,
+            REValue::Resource(..) => false,
             REValue::Package(..) => false,
             REValue::Bucket(..) => false,
             REValue::Proof(..) => false,
@@ -120,6 +129,7 @@ impl REValue {
             REValue::KeyValueStore { .. } => Err(DropFailure::KeyValueStore),
             REValue::Component { .. } => Err(DropFailure::Component),
             REValue::Bucket(..) => Err(DropFailure::Bucket),
+            REValue::Resource(..) => Err(DropFailure::Resource),
             REValue::Proof(proof) => {
                 proof.drop();
                 Ok(())

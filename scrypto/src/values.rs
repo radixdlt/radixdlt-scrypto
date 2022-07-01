@@ -33,6 +33,7 @@ pub struct ScryptoValue {
     pub vault_ids: HashSet<VaultId>,
     pub kv_store_ids: HashSet<KeyValueStoreId>,
     pub component_addresses: HashSet<ComponentAddress>,
+    pub resource_addresses: HashSet<ResourceAddress>,
 }
 
 impl ScryptoValue {
@@ -71,6 +72,7 @@ impl ScryptoValue {
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
             kv_store_ids: checker.kv_stores.iter().map(|e| e.id).collect(),
             component_addresses: checker.components.iter().map(|e| e.0).collect(),
+            resource_addresses: checker.resource_addresses.iter().map(|e| e.clone()).collect()
         })
     }
 
@@ -194,6 +196,7 @@ pub struct ScryptoCustomValueChecker {
     pub vaults: HashSet<Vault>,
     pub kv_stores: HashSet<KeyValueStore<(), ()>>,
     pub components: HashSet<Component>,
+    pub resource_addresses: HashSet<ResourceAddress>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -226,6 +229,7 @@ impl ScryptoCustomValueChecker {
             vaults: HashSet::new(),
             kv_stores: HashSet::new(),
             components: HashSet::new(),
+            resource_addresses: HashSet::new(),
         }
     }
 }
@@ -314,8 +318,9 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
                     .map_err(ScryptoCustomValueCheckError::InvalidNonFungibleAddress)?;
             }
             ScryptoType::ResourceAddress => {
-                ResourceAddress::try_from(data)
+                let resource_address = ResourceAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidResourceAddress)?;
+                self.resource_addresses.insert(resource_address);
             }
         }
         Ok(())

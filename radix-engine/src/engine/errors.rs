@@ -128,6 +128,7 @@ pub enum RuntimeError {
 
 #[derive(Debug, PartialEq)]
 pub enum DropFailure {
+    Resource,
     Component,
     Bucket,
     Vault,
