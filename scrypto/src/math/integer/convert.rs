@@ -1,9 +1,9 @@
+use super::*;
 use num_bigint::{BigInt, ParseBigIntError, Sign};
-use num_traits::{FromPrimitive, ToPrimitive, Signed};
+use num_traits::{FromPrimitive, Signed, ToPrimitive};
 use paste::paste;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::str::FromStr;
-use super::*;
 
 #[derive(Debug)]
 pub enum ParseIntError {
@@ -85,7 +85,6 @@ macro_rules! try_from_small_all {
 
 try_from_large_all! { U8, U16, U32, U64, U128, I8, I16, I32, I64, I128 }
 try_from_small_all! { U256, U384, U512, I256, I384, I512 }
-
 
 try_from! {u8, (U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
 try_from! {u16, (U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
@@ -219,7 +218,6 @@ macro_rules! impl_bigint_to_small_unsigned {
 
 impl_bigint_to_small_unsigned! { U8, U16, U32, U64, U128 }
 
-
 macro_rules! impl_bigint_to_small_signed {
     ($($t:ty),*) => {
         $(
@@ -318,7 +316,6 @@ from_int! {i64, (U8, U16, U32)}
 from_int! {i128, (I8, I16, I32, I64, I128)}
 from_int! {i128, (U8, U16, U32, U64)}
 
-
 from_int! {u8, (U8)}
 
 from_int! {u16, (U8, U16)}
@@ -401,71 +398,71 @@ from_string! { U8, U16, U32, U64, U128, U256, U384, U512 }
 
 macro_rules! big_int_from {
     (U256) => {
-        to_big_int_from_large_unsigned!{U256}
+        to_big_int_from_large_unsigned! {U256}
     };
     (I256) => {
-        to_big_int_from_large_signed!{I256}
+        to_big_int_from_large_signed! {I256}
     };
     (U384) => {
-        to_big_int_from_large_unsigned!{U384}
+        to_big_int_from_large_unsigned! {U384}
     };
     (I384) => {
-        to_big_int_from_large_signed!{I384}
+        to_big_int_from_large_signed! {I384}
     };
     (U512) => {
-        to_big_int_from_large_unsigned!{U512}
+        to_big_int_from_large_unsigned! {U512}
     };
     (I512) => {
-        to_big_int_from_large_signed!{I512}
+        to_big_int_from_large_signed! {I512}
     };
     ($t:ident) => {
-        to_big_int_from_small!{$t}
+        to_big_int_from_small! {$t}
     };
 }
 
 macro_rules! to_big_int_from_large_unsigned {
     ($t:ident) => {
-            impl From<$t> for BigInt {
-                fn from(val: $t) -> BigInt {
-                    BigInt::from_bytes_le(Sign::Plus, &val.0)
-                }
+        impl From<$t> for BigInt {
+            fn from(val: $t) -> BigInt {
+                BigInt::from_bytes_le(Sign::Plus, &val.0)
             }
+        }
     };
 }
 
 macro_rules! to_big_int_from_large_signed {
     ($t:ident) => {
-            impl From<$t> for BigInt {
-                fn from(val: $t) -> BigInt {
-                    BigInt::from_signed_bytes_le(&val.0)
-                }
+        impl From<$t> for BigInt {
+            fn from(val: $t) -> BigInt {
+                BigInt::from_signed_bytes_le(&val.0)
             }
+        }
     };
 }
 
 macro_rules! to_big_int_from_small {
     ($t:ident) => {
-            impl From<$t> for BigInt {
-                fn from(val: $t) -> BigInt{
-                    BigInt::from(val.0)
-                }
+        impl From<$t> for BigInt {
+            fn from(val: $t) -> BigInt {
+                BigInt::from(val.0)
             }
+        }
     };
 }
 
-big_int_from!{I8}
-big_int_from!{I16}
-big_int_from!{I32}
-big_int_from!{I64}
-big_int_from!{I128}
-big_int_from!{I256}
-big_int_from!{I384}
-big_int_from!{I512}
-big_int_from!{U8}
-big_int_from!{U16}
-big_int_from!{U32}
-big_int_from!{U64}
-big_int_from!{U128}
-big_int_from!{U256}
-big_int_from!{U384}
-big_int_from!{U512}
+big_int_from! {I8}
+big_int_from! {I16}
+big_int_from! {I32}
+big_int_from! {I64}
+big_int_from! {I128}
+big_int_from! {I256}
+big_int_from! {I384}
+big_int_from! {I512}
+big_int_from! {U8}
+big_int_from! {U16}
+big_int_from! {U32}
+big_int_from! {U64}
+big_int_from! {U128}
+big_int_from! {U256}
+big_int_from! {U384}
+big_int_from! {U512}

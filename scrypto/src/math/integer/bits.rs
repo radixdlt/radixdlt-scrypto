@@ -1,5 +1,5 @@
-use paste::paste;
 use super::*;
+use paste::paste;
 
 macro_rules! checked_int_impl_large {
     ($($t:ident),*) => {

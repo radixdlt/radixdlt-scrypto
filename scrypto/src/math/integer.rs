@@ -6,12 +6,11 @@ use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use forward_ref::*;
 use num_bigint::{BigInt, BigUint, Sign};
-use num_traits::{Pow, Signed, ToPrimitive, Zero, One};
+use num_traits::{One, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
-
 
 mod basic;
 mod bits;
@@ -684,7 +683,6 @@ macro_rules! checked_int_impl_unsigned_small {
 
 checked_int_impl_unsigned_large! { U256, U384, U512 }
 checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
-
 
 // TODO: test write
 // TODO: documentationpart update

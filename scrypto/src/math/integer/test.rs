@@ -1,6 +1,6 @@
+use super::*;
 use num_traits::FromPrimitive;
 use sbor::rust::str::FromStr;
-use super::*;
 
 macro_rules! test_from_builtin {
     ($i:ident, ($($t:ident),*)) => {
@@ -140,17 +140,7 @@ macro_rules! test_ops_output_type_builtin {
             $(
                 #[test]
                 fn [<test_ $ops _output_type_ $i:lower $i_bits _ $t:lower $t_bits>]() {
-                    let my_bits: usize = $i_bits;
-                    let other_bits: usize = $t_bits;
-                    let out_bits: usize = my_bits.max(other_bits);
-                    let out_type_name = if $i == 'I' || $t == 'I' || $t == 'i' {
-                        'I'
-                    } else {
-                        'U'
-                    };
-                    let a: [<$i $i_bits>] = [<$i $i_bits>]::from_str("2").unwrap();
-                    let b: [<$t $t_bits>] = [<$t $t_bits>]::from_str("1").unwrap();
-                    assert_eq!(core::any::type_name_of_val(&a.$ops(b)), format!("scrypto::math::integer::{}{}", out_type_name, out_bits));
+                    test_ops_output_type_fn!($i, $i_bits, $ops, $t, $t_bits);
                 }
             )*
         }
@@ -163,6 +153,17 @@ macro_rules! test_ops_output_type {
             $(
                 #[test]
                 fn [<test_ $ops _output_type_ $i:lower $i_bits _ $t:lower$t:lower $t_bits>]() {
+                    test_ops_output_type_fn!($i, $i_bits, $ops, $t, $t_bits);
+                }
+            )*
+        }
+    };
+}
+
+macro_rules! test_ops_output_type_fn {
+    ($i:literal, $i_bits:literal, $ops:ident, $t:literal, $t_bits:literal) => {
+        paste! {
+                {
                     let my_bits: usize = $i_bits;
                     let other_bits: usize = $t_bits;
                     let out_bits: usize = my_bits.max(other_bits);
@@ -175,13 +176,11 @@ macro_rules! test_ops_output_type {
                     let b: [<$t $t_bits>] = [<$t $t_bits>]::from_str("1").unwrap();
                     assert_eq!(core::any::type_name_of_val(&a.$ops(b)), format!("scrypto::math::integer::{}{}", out_type_name, out_bits));
                 }
-
-            )*
         }
     };
 }
 
-macro_rules! test_impl_basic_math {
+macro_rules! test_otput_type {
     ($i:literal, $ops:ident, ($($i_bits:literal),*)) => {
         $(
 
@@ -191,16 +190,16 @@ macro_rules! test_impl_basic_math {
     };
 }
 
-macro_rules! test_impl_basic_math_all {
+macro_rules! test_otput_type_all {
     ($($ops:ident),*) => {
         $(
-            test_impl_basic_math! { 'I', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
-            test_impl_basic_math! { 'U', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
+            test_otput_type! { 'I', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
+            test_otput_type! { 'U', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
         )*
     };
 }
 
-test_impl_basic_math_all! { add, sub, mul, div, rem }
+test_otput_type_all! { add, sub, mul, div, rem }
 
 macro_rules! test_ops_output_type_builtin_simple {
     ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
@@ -208,12 +207,7 @@ macro_rules! test_ops_output_type_builtin_simple {
             $(
                 #[test]
                 fn [<test_simple_ $ops _output_type_ $i:lower $i_bits _ $t:lower $t_bits>]() {
-                    let my_bits: usize = $i_bits;
-                    let out_bits: usize = my_bits;
-                    let out_type_name = $i;
-                    let a: [<$i $i_bits>] = [<$i $i_bits>]::from_str("2").unwrap();
-                    let b: [<$t $t_bits>] = [<$t $t_bits>]::from_str("1").unwrap();
-                    assert_eq!(core::any::type_name_of_val(&a.$ops(b)), format!("scrypto::math::integer::{}{}", out_type_name, out_bits));
+                    test_ops_output_type_fn!($i, $i_bits, $ops, $t, $t_bits);
                 }
             )*
         }
@@ -226,12 +220,7 @@ macro_rules! test_ops_output_type_simple {
             $(
                 #[test]
                 fn [<test_simple_ $ops _output_type_ $i:lower $i_bits _ $t:lower$t:lower $t_bits>]() {
-                    let my_bits: usize = $i_bits;
-                    let out_bits: usize = my_bits;
-                    let out_type_name = $i;
-                    let a: [<$i $i_bits>] = [<$i $i_bits>]::from_str("2").unwrap();
-                    let b: [<$t $t_bits>] = [<$t $t_bits>]::from_str("1").unwrap();
-                    assert_eq!(core::any::type_name_of_val(&a.$ops(b)), format!("scrypto::math::integer::{}{}", out_type_name, out_bits));
+                    test_ops_output_type_simple_fn!($i, $i_bits, $ops, $t, $t_bits);
                 }
 
             )*
@@ -239,7 +228,20 @@ macro_rules! test_ops_output_type_simple {
     };
 }
 
-macro_rules! test_impl_basic_math_simple {
+macro_rules! test_ops_output_type_simple_fn {
+    ($i:literal, $i_bits:literal, $ops:ident, $t:literal, $t_bits:literal) => {
+        paste! {
+            let my_bits: usize = $i_bits;
+            let out_bits: usize = my_bits;
+            let out_type_name = $i;
+            let a: [<$i $i_bits>] = [<$i $i_bits>]::from_str("2").unwrap();
+            let b: [<$t $t_bits>] = [<$t $t_bits>]::from_str("1").unwrap();
+            assert_eq!(core::any::type_name_of_val(&a.$ops(b)), format!("scrypto::math::integer::{}{}", out_type_name, out_bits));
+        }
+    };
+}
+
+macro_rules! test_otput_type_simple {
     ($i:literal, $ops:ident, ($($i_bits:literal),*)) => {
         $(
 
@@ -249,13 +251,13 @@ macro_rules! test_impl_basic_math_simple {
     };
 }
 
-macro_rules! test_impl_basic_math_all_simple {
+macro_rules! test_otput_type_all_simple {
     ($($ops:ident),*) => {
         $(
-            test_impl_basic_math_simple! { 'I', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
-            test_impl_basic_math_simple! { 'U', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
+            test_otput_type_simple! { 'I', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
+            test_otput_type_simple! { 'U', $ops, (8, 16, 32, 64, 128, 256, 384, 512) }
         )*
     };
 }
 
-test_impl_basic_math_all_simple! { pow }
+test_otput_type_all_simple! { pow }
