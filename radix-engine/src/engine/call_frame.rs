@@ -934,7 +934,7 @@ where
 
         // Take values to return
         let values_to_take = output.value_ids();
-        let (taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -987,44 +987,10 @@ where
         Self::fee_table_helper(&self.fee_table)
     }
 
-    fn take_persistent_child_values(
-        &mut self,
-        value_ids: HashSet<ValueId>,
-    ) -> Result<(HashMap<ValueId, REValue>, HashSet<ValueId>), RuntimeError> {
-        let (taken, missing) = {
-            let mut taken_values = HashMap::new();
-            let mut missing_values = HashSet::new();
-
-            for id in value_ids {
-                let maybe = self.owned_values.remove(&id);
-                if let Some(celled_value) = maybe {
-                    let value = celled_value.into_inner();
-                    value.verify_can_persist()?;
-                    taken_values.insert(id, value);
-                } else {
-                    missing_values.insert(id);
-                }
-            }
-
-            (taken_values, missing_values)
-        };
-
-        // Moved values must have their references removed
-        for (id, value) in taken.iter() {
-            self.value_refs.remove(&id);
-            if let Some(children_store) = value.get_children_store() {
-                for id in children_store.all_descendants() {
-                    self.value_refs.remove(&id);
-                }
-            }
-        }
-
-        Ok((taken, missing))
-    }
-
     fn take_available_values(
         &mut self,
         value_ids: HashSet<ValueId>,
+        persist_only: bool,
     ) -> Result<(HashMap<ValueId, REValue>, HashSet<ValueId>), RuntimeError> {
         let (taken, missing) = {
             let mut taken_values = HashMap::new();
@@ -1034,20 +1000,10 @@ where
                 let maybe = self.owned_values.remove(&id);
                 if let Some(celled_value) = maybe {
                     let value = celled_value.into_inner();
-                    match &value {
-                        REValue::Bucket(bucket) => {
-                            if bucket.is_locked() {
-                                return Err(RuntimeError::CantMoveLockedBucket);
-                            }
-                        }
-                        REValue::Proof(proof) => {
-                            if proof.is_restricted() {
-                                return Err(RuntimeError::CantMoveRestrictedProof(id));
-                            }
-                        }
-                        _ => {}
+                    value.verify_can_move()?;
+                    if persist_only {
+                        value.verify_can_persist()?;
                     }
-
                     taken_values.insert(id, value);
                 } else {
                     missing_values.insert(id);
@@ -1096,7 +1052,7 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.value_ids();
-        let (taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let (taken_values, mut missing) = self.take_available_values(values_to_take, false)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1797,7 +1753,7 @@ where
             REValueByComplexity::Primitive(primitive) => primitive.into(),
             REValueByComplexity::Complex(complex) => {
                 let children = complex.get_children()?;
-                let (child_values, mut missing) = self.take_persistent_child_values(children)?;
+                let (child_values, mut missing) = self.take_available_values(children, true)?;
                 let first_missing_value = missing.drain().nth(0);
                 if let Some(missing_value) = first_missing_value {
                     return Err(RuntimeError::ValueNotFound(missing_value));
@@ -1845,7 +1801,7 @@ where
     fn globalize_value(&mut self, value_id: &ValueId) {
         let mut values = HashSet::new();
         values.insert(value_id.clone());
-        let (taken_values, missing) = self.take_available_values(values).unwrap();
+        let (taken_values, missing) = self.take_available_values(values, false).unwrap();
         assert!(missing.is_empty());
         assert!(taken_values.len() == 1);
         let value = taken_values.into_values().nth(0).unwrap();
@@ -1888,7 +1844,7 @@ where
         let (taken_values, missing) = match &instruction {
             DataInstruction::Write(value) => {
                 let value_ids = value.value_ids();
-                self.take_persistent_child_values(value_ids)?
+                self.take_available_values(value_ids, true)?
             }
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };

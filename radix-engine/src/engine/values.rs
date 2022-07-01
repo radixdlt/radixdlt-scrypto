@@ -110,6 +110,30 @@ impl REValue {
         }
     }
 
+    pub fn verify_can_move(&self) -> Result<(), RuntimeError> {
+        match self {
+            REValue::Bucket(bucket) => {
+                if bucket.is_locked() {
+                    Err(RuntimeError::CantMoveLockedBucket)
+                } else {
+                    Ok(())
+                }
+            }
+            REValue::Proof(proof) => {
+                if proof.is_restricted() {
+                    Err(RuntimeError::CantMoveRestrictedProof)
+                } else {
+                    Ok(())
+                }
+            }
+            REValue::KeyValueStore { .. } => Ok(()),
+            REValue::Component { .. } => Ok(()),
+            REValue::Vault(..) => Ok(()),
+            REValue::Resource(..) => Ok(()),
+            REValue::Package(..) => Ok(()),
+        }
+    }
+
     pub fn verify_can_persist(&self) -> Result<(), RuntimeError> {
         match self {
             REValue::KeyValueStore { .. } => Ok(()),
