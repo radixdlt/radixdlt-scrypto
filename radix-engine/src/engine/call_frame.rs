@@ -999,9 +999,7 @@ where
                 let maybe = self.owned_values.remove(&id);
                 if let Some(celled_value) = maybe {
                     let value = celled_value.into_inner();
-                    if !value.is_persistable_child() {
-                        return Err(RuntimeError::ValueNotAllowed);
-                    }
+                    value.verify_can_persist()?;
                     taken_values.insert(id, value);
                 } else {
                     missing_values.insert(id);
@@ -1890,7 +1888,7 @@ where
         let (taken_values, missing) = match &instruction {
             DataInstruction::Write(value) => {
                 let value_ids = value.value_ids();
-                self.take_available_values(value_ids)?
+                self.take_persistent_child_values(value_ids)?
             }
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };

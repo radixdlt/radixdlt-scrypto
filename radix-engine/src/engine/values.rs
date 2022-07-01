@@ -110,15 +110,15 @@ impl REValue {
         }
     }
 
-    pub fn is_persistable_child(&self) -> bool {
+    pub fn verify_can_persist(&self) -> Result<(), RuntimeError> {
         match self {
-            REValue::KeyValueStore { .. } => true,
-            REValue::Component { .. } => true,
-            REValue::Vault(..) => true,
-            REValue::Resource(..) => false,
-            REValue::Package(..) => false,
-            REValue::Bucket(..) => false,
-            REValue::Proof(..) => false,
+            REValue::KeyValueStore { .. } => Ok(()),
+            REValue::Component { .. } => Ok(()),
+            REValue::Vault(..) => Ok(()),
+            REValue::Resource(..) => Err(RuntimeError::ValueNotAllowed),
+            REValue::Package(..) => Err(RuntimeError::ValueNotAllowed),
+            REValue::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
+            REValue::Proof(..) => Err(RuntimeError::ValueNotAllowed),
         }
     }
 
