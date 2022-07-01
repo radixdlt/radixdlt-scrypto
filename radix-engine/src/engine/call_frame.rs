@@ -1320,17 +1320,6 @@ where
                     {
                         location
                     } else {
-                        let address: Address = component_address.into();
-                        self.track
-                            .borrow_global_value(address.clone())
-                            .map_err(|e| match e {
-                                TrackError::NotFound => {
-                                    RuntimeError::ComponentNotFound(component_address)
-                                }
-                                TrackError::Reentrancy => {
-                                    RuntimeError::ComponentReentrancy(component_address)
-                                }
-                            })?;
                         &REValueLocation::Track { parent: None }
                     };
 
@@ -1346,7 +1335,9 @@ where
                             self.track
                                 .take_lock(address.clone(), true)
                                 .map_err(|e| match e {
-                                    TrackError::NotFound => panic!("Should exist"),
+                                    TrackError::NotFound => {
+                                        RuntimeError::ComponentNotFound(component_address)
+                                    }
                                     TrackError::Reentrancy => {
                                         RuntimeError::ComponentReentrancy(component_address)
                                     }
