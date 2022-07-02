@@ -143,10 +143,7 @@ pub enum REValueLocation {
         ancestors: Vec<KeyValueStoreId>,
         id: ValueId,
     },
-    Track {
-        parent: Option<ComponentAddress>,
-        id: ValueId
-    },
+    Track(Address),
 }
 
 impl REValueLocation {
@@ -180,9 +177,20 @@ impl REValueLocation {
                     id: child_id
                 }
             }
-            REValueLocation::Track { parent, id } => REValueLocation::Track {
-                parent: Some(parent.unwrap_or_else(|| id.clone().into())),
-                id: child_id
+            REValueLocation::Track(address) => {
+                let component_address = match address {
+                    Address::GlobalComponent(component_address) => component_address.clone(),
+                    Address::LocalComponent(parent, ..)
+                    | Address::KeyValueStore(parent, .. ) => parent.clone(),
+                    _ => panic!("Unexpected: {:?}", address)
+                };
+                let child_address = match child_id {
+                    ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStore(component_address, kv_store_id),
+                    ValueId::Vault(vault_id) => Address::Vault(component_address, vault_id),
+                    ValueId::Component(component_id) => Address::LocalComponent(component_address, component_id),
+                    _ => panic!("Unexpected")
+                };
+                REValueLocation::Track(child_address)
             },
         }
     }
@@ -198,17 +206,9 @@ impl REValueLocation {
                 let owned = borrowed_values.remove(id).expect("Should exist");
                 RENativeValueRef::OwnedRef(owned)
             }
-            REValueLocation::Track { parent, id } => {
-                let address = match id {
-                    ValueId::Vault(vault_id) => Address::Vault(parent.unwrap(), *vault_id),
-                    ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
-                    ValueId::Package(package_address) => Address::Package(*package_address),
-                    _ => panic!("Unexpected"),
-                };
-
+            REValueLocation::Track(address) => {
                 let value = track.take_value(address.clone());
-
-                RENativeValueRef::Track(address, value)
+                RENativeValueRef::Track(address.clone(), value)
             }
             REValueLocation::OwnedRoot(id) => {
                 let cell = owned_values.remove(id).unwrap();
@@ -270,25 +270,8 @@ impl REValueLocation {
             REValueLocation::BorrowedRoot(id) => {
                 REValueRef::Borrowed(borrowed_values.get(id).unwrap())
             }
-            REValueLocation::Track { parent, id } => {
-                let address = match id {
-                    ValueId::Vault(vault_id) => Address::Vault(parent.unwrap(), *vault_id),
-                    ValueId::KeyValueStore(kv_store_id) => {
-                        Address::KeyValueStore(parent.unwrap(), *kv_store_id)
-                    }
-                    ValueId::Component(component_address) => {
-                        if let Some(parent) = parent {
-                            Address::LocalComponent(*parent, *component_address)
-                        } else {
-                            Address::GlobalComponent(*component_address)
-                        }
-                    }
-                    ValueId::Package(package_address) => Address::Package(*package_address),
-                    ValueId::Resource(resource_address) => Address::Resource(*resource_address),
-                    _ => panic!("Unexpected value id"),
-                };
-
-                REValueRef::Track(track, address)
+            REValueLocation::Track(address) => {
+                REValueRef::Track(track, address.clone())
             }
         }
     }
@@ -340,27 +323,8 @@ impl REValueLocation {
             REValueLocation::BorrowedRoot(id) => {
                 REValueRefMut::Borrowed(borrowed_values.get_mut(id).unwrap())
             }
-            REValueLocation::Track { parent, id } => {
-                let address = match id {
-                    ValueId::Vault(vault_id) => Address::Vault(parent.unwrap(), *vault_id),
-                    ValueId::KeyValueStore(kv_store_id) => {
-                        Address::KeyValueStore(parent.unwrap(), *kv_store_id)
-                    }
-                    ValueId::Component(component_address) => {
-                        if let Some(parent) = parent {
-                            Address::LocalComponent(*parent, *component_address)
-                        } else {
-                            Address::GlobalComponent(*component_address)
-                        }
-                    }
-                    ValueId::Resource(resource_address) => Address::Resource(*resource_address),
-                    ValueId::NonFungibles(resource_address) => {
-                        Address::NonFungibleSet(*resource_address)
-                    }
-                    _ => panic!("Unexpected value id {:?}", id),
-                };
-
-                REValueRefMut::Track(track, address)
+            REValueLocation::Track(address) => {
+                REValueRefMut::Track(track, address.clone())
             }
         }
     }
@@ -1052,7 +1016,7 @@ where
                     } else if self.track.take_lock(*component_address, false).is_ok() {
                         return Some((
                             REValueInfo {
-                                location: REValueLocation::Track { parent: None, id: ValueId::Component(*component_address) },
+                                location: REValueLocation::Track(Address::GlobalComponent(*component_address)),
                                 visible: true,
                             },
                             Some(component_address),
@@ -1187,14 +1151,14 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address),
                             REValueInfo {
-                                location: REValueLocation::Track { parent: None, id: ValueId::Resource(resource_address) },
+                                location: REValueLocation::Track(Address::Resource(resource_address)),
                                 visible: true,
                             },
                         );
                         value_refs.insert(
                             ValueId::NonFungibles(resource_address),
                             REValueInfo {
-                                location: REValueLocation::Track { parent: None, id: ValueId::NonFungibles(resource_address) },
+                                location: REValueLocation::Track(Address::NonFungibleSet(resource_address)),
                                 visible: true,
                             },
                         );
@@ -1210,7 +1174,7 @@ where
                         value_refs.insert(
                             ValueId::Package(package_address),
                             REValueInfo {
-                                location: REValueLocation::Track { parent: None, id: ValueId::Package(package_address) },
+                                location: REValueLocation::Track(Address::Package(package_address)),
                                 visible: true,
                             },
                         );
@@ -1240,7 +1204,7 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValueLocation::Track { parent: None, id: ValueId::Resource(resource_address.clone()) },
+                                location: REValueLocation::Track(Address::Resource(resource_address.clone())),
                                 visible: true,
                             },
                         );
@@ -1268,7 +1232,7 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValueLocation::Track { parent: None, id: ValueId::Resource(resource_address.clone()) },
+                                location: REValueLocation::Track(Address::Resource(resource_address.clone())),
                                 visible: true,
                             },
                         );
@@ -1298,14 +1262,14 @@ where
                 value_refs.insert(
                     value_id.clone(),
                     REValueInfo {
-                        location: REValueLocation::Track { parent: None, id: value_id.clone() },
+                        location: REValueLocation::Track(Address::Resource(*resource_address)),
                         visible: true,
                     },
                 );
                 value_refs.insert(
                     ValueId::NonFungibles(*resource_address),
                     REValueInfo {
-                        location: REValueLocation::Track { parent: None, id: ValueId::NonFungibles(*resource_address) },
+                        location: REValueLocation::Track(Address::NonFungibleSet(*resource_address)),
                         visible: true,
                     },
                 );
@@ -1397,18 +1361,12 @@ where
                     {
                         location.clone()
                     } else {
-                        REValueLocation::Track { parent: None, id: value_id.clone() }
+                        REValueLocation::Track(Address::GlobalComponent(component_address))
                     };
 
                     // Lock values and setup next frame
                     let next_frame_location = match cur_location {
-                        REValueLocation::Track { parent, id } => {
-                            let address = if let Some(parent) = parent {
-                                Address::LocalComponent(parent, component_address)
-                            } else {
-                                Address::GlobalComponent(component_address)
-                            };
-
+                        REValueLocation::Track(address) => {
                             self.track
                                 .take_lock(address.clone(), true)
                                 .map_err(|e| match e {
@@ -1420,10 +1378,7 @@ where
                                     }
                                 })?;
                             locked_values.insert(address.clone());
-                            REValueLocation::Track {
-                                parent: parent.clone(),
-                                id: id.clone(),
-                            }
+                            REValueLocation::Track(address)
                         }
                         REValueLocation::OwnedRoot(_) | REValueLocation::Borrowed { .. } => {
                             let owned_ref = cur_location.to_owned_ref_mut(
@@ -1531,7 +1486,7 @@ where
                         value_refs.insert(
                             ValueId::Package(package_address),
                             REValueInfo {
-                                location: REValueLocation::Track { parent: None, id: ValueId::Package(package_address) },
+                                location: REValueLocation::Track(Address::Package(package_address)),
                                 visible: true,
                             },
                         );
@@ -1568,16 +1523,12 @@ where
                 let next_location = {
                     // Lock Vault
                     let next_location = match cur_location {
-                        REValueLocation::Track { parent, id } => {
-                            let vault_address = (parent.unwrap().clone(), *vault_id);
+                        REValueLocation::Track(address) => {
                             self.track
-                                .take_lock(vault_address, true)
+                                .take_lock(address.clone(), true)
                                 .expect("Should never fail.");
-                            locked_values.insert(vault_address.into());
-                            REValueLocation::Track {
-                                parent: parent.clone(),
-                                id: id.clone(),
-                            }
+                            locked_values.insert(address.clone().into());
+                            REValueLocation::Track(address)
                         }
                         REValueLocation::OwnedRoot(_)
                         | REValueLocation::Owned { .. }
