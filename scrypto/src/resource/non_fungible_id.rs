@@ -7,6 +7,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::buffer::scrypto_encode;
+use crate::values::ScryptoValue;
 
 /// Represents a key for a non-fungible resource
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -15,22 +17,23 @@ pub struct NonFungibleId(pub Vec<u8>);
 impl NonFungibleId {
     /// Creates a non-fungible ID from some uuid.
     pub fn random() -> Self {
-        Self(crate::core::Runtime::generate_uuid().to_be_bytes().to_vec())
+        let bytes = crate::core::Runtime::generate_uuid().to_be_bytes().to_vec();
+        Self::from_bytes(bytes)
     }
 
     /// Creates a non-fungible ID from an arbitrary byte array.
     pub fn from_bytes(v: Vec<u8>) -> Self {
-        Self(v)
+        Self(scrypto_encode(&v))
     }
 
     /// Creates a non-fungible ID from a `u32` number.
     pub fn from_u32(u: u32) -> Self {
-        Self(u.to_be_bytes().to_vec())
+        Self(scrypto_encode(&u))
     }
 
     /// Creates a non-fungible ID from a `u64` number.
     pub fn from_u64(u: u64) -> Self {
-        Self(u.to_be_bytes().to_vec())
+        Self(scrypto_encode(&u))
     }
 }
 
@@ -42,6 +45,7 @@ impl NonFungibleId {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ParseNonFungibleIdError {
     InvalidHex(String),
+    InvalidValue,
 }
 
 #[cfg(not(feature = "alloc"))]
@@ -62,7 +66,9 @@ impl TryFrom<&[u8]> for NonFungibleId {
     type Error = ParseNonFungibleIdError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
-        Ok(Self(slice.to_vec()))
+        let value = ScryptoValue::from_slice_no_custom_values(slice)
+            .map_err(|_| ParseNonFungibleIdError::InvalidValue)?;
+        Ok(Self(value.raw))
     }
 }
 
@@ -108,15 +114,15 @@ mod tests {
     #[test]
     fn test_non_fungible_id_string_rep() {
         assert_eq!(
-            NonFungibleId::from_str("3575").unwrap(),
-            NonFungibleId::from_bytes(vec![53u8, 117u8])
+            NonFungibleId::from_str("3007020000003575").unwrap(),
+            NonFungibleId::from_bytes(vec![53u8, 117u8]),
         );
         assert_eq!(
-            NonFungibleId::from_str("00000005").unwrap(),
+            NonFungibleId::from_str("0905000000").unwrap(),
             NonFungibleId::from_u32(5)
         );
         assert_eq!(
-            NonFungibleId::from_str("0000000000000005").unwrap(),
+            NonFungibleId::from_str("0a0500000000000000").unwrap(),
             NonFungibleId::from_u64(5)
         );
     }
