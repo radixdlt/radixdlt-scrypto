@@ -370,7 +370,10 @@ impl REValueLocation {
                             Address::GlobalComponent(*component_address)
                         }
                     }
-                    _ => panic!("Unexpected value id"),
+                    ValueId::Resource(resource_address) => {
+                        Address::Resource(*resource_address)
+                    }
+                    _ => panic!("Unexpected value id {:?}", value_id),
                 };
 
                 REValueRefMut::Track(track, address)
