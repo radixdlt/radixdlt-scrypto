@@ -44,10 +44,6 @@ where
         address: SubstateAddress,
         instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError>;
-    fn get_non_fungible(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<NonFungible>;
     fn set_non_fungible(
         &mut self,
         non_fungible_address: NonFungibleAddress,

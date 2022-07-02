@@ -352,8 +352,14 @@ impl ResourceManager {
         // Allocate non-fungibles
         let mut ids = BTreeSet::new();
         for (id, data) in entries {
+            let key = ScryptoValue::from_slice(&id.0).expect("NonFungibleId should have been checked at decode.");
+            let value = system_api.data(
+                SubstateAddress::NonFungible(self_address, key),
+                DataInstruction::Read
+            ).expect("Should never fail");
+            let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
             let non_fungible_address = NonFungibleAddress::new(self_address, id.clone());
-            if system_api.get_non_fungible(&non_fungible_address).is_some() {
+            if maybe_non_fungible.is_some() {
                 return Err(ResourceManagerError::NonFungibleAlreadyExists(
                     non_fungible_address,
                 ));

@@ -1700,21 +1700,6 @@ where
         Ok(result)
     }
 
-    fn get_non_fungible(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<NonFungible> {
-        let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
-        let key = non_fungible_address.non_fungible_id().to_vec();
-        if let SubstateValue::NonFungible(non_fungible) =
-            self.track.read_key_value(parent_address, key)
-        {
-            non_fungible
-        } else {
-            panic!("Value is not a non fungible");
-        }
-    }
-
     fn set_non_fungible(
         &mut self,
         non_fungible_address: NonFungibleAddress,
