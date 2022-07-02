@@ -175,7 +175,7 @@ impl Vault {
         arg: ScryptoValue,
         system_api: &mut Y,
     ) -> Result<ScryptoValue, VaultError> {
-        let value_id = ValueId::vault_id(vault_id.clone());
+        let value_id = ValueId::Vault(vault_id.clone());
         let mut ref_mut = system_api.borrow_value_mut(&value_id);
         let vault = ref_mut.vault();
 

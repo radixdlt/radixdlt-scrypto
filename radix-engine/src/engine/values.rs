@@ -369,7 +369,7 @@ impl InMemoryChildren {
         let (first, rest) = ancestors.split_first().unwrap();
         let value = self
             .child_values
-            .get(&ValueId::Stored(StoredValueId::KeyValueStoreId(*first)))
+            .get(&ValueId::KeyValueStore(*first))
             .unwrap();
         let value = value.try_borrow_unguarded().unwrap();
         value.get_children_store().unwrap().get_child(rest, id)
@@ -391,7 +391,7 @@ impl InMemoryChildren {
         let (first, rest) = ancestors.split_first().unwrap();
         let value = self
             .child_values
-            .get_mut(&ValueId::Stored(StoredValueId::KeyValueStoreId(*first)))
+            .get_mut(&ValueId::KeyValueStore(*first))
             .unwrap();
         let children_store = value.get_mut().get_children_store_mut().unwrap();
         children_store.get_child_mut(rest, id)

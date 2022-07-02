@@ -22,65 +22,22 @@ pub type BucketId = u32;
 pub type ProofId = u32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub enum StoredValueId {
-    KeyValueStoreId(KeyValueStoreId),
-    Component(ComponentAddress),
-    VaultId(VaultId),
-}
-
-impl Into<ComponentAddress> for StoredValueId {
-    fn into(self) -> ComponentAddress {
-        match self {
-            StoredValueId::Component(component_address) => component_address,
-            _ => panic!("Expected to be a component"),
-        }
-    }
-}
-
-impl Into<(Hash, u32)> for StoredValueId {
-    fn into(self) -> KeyValueStoreId {
-        match self {
-            StoredValueId::KeyValueStoreId(id) => id,
-            StoredValueId::VaultId(id) => id,
-            StoredValueId::Component(..) => panic!("ComponentAddress not expected"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum ValueId {
     Bucket(BucketId),
     Proof(ProofId),
-    Stored(StoredValueId),
+    KeyValueStore(KeyValueStoreId),
+    Component(ComponentAddress),
+    Vault(VaultId),
     Resource(ResourceAddress),
     NonFungibles(ResourceAddress),
     Package(PackageAddress),
 }
 
-impl ValueId {
-    pub fn kv_store_id(id: KeyValueStoreId) -> Self {
-        ValueId::Stored(StoredValueId::KeyValueStoreId(id))
-    }
-
-    pub fn vault_id(id: VaultId) -> Self {
-        ValueId::Stored(StoredValueId::VaultId(id))
-    }
-}
-
-impl Into<StoredValueId> for ValueId {
-    fn into(self) -> StoredValueId {
-        match self {
-            ValueId::Stored(id) => id,
-            _ => panic!("Not a stored id"),
-        }
-    }
-}
-
 impl Into<(Hash, u32)> for ValueId {
     fn into(self) -> KeyValueStoreId {
         match self {
-            ValueId::Stored(StoredValueId::KeyValueStoreId(id)) => id,
-            ValueId::Stored(StoredValueId::VaultId(id)) => id,
+            ValueId::KeyValueStore(id) => id,
+            ValueId::Vault(id) => id,
             _ => panic!("Not a stored id"),
         }
     }
@@ -99,7 +56,7 @@ impl Into<u32> for ValueId {
 impl Into<ComponentAddress> for ValueId {
     fn into(self) -> ComponentAddress {
         match self {
-            ValueId::Stored(StoredValueId::Component(component_address)) => component_address,
+            ValueId::Component(component_address) => component_address,
             _ => panic!("Not a component address"),
         }
     }

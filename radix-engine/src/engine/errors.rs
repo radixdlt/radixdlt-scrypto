@@ -63,7 +63,7 @@ pub enum RuntimeError {
     ValueNotFound(ValueId),
 
     MovingInvalidType,
-    StoredValueRemoved(StoredValueId),
+    StoredValueRemoved(ValueId),
     StoredValueChangedChildren,
 
     /// Bucket does not exist.

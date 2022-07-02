@@ -91,8 +91,8 @@ macro_rules! trace {
 }
 
 fn verify_stored_value_update(
-    old: &HashSet<StoredValueId>,
-    missing: &HashSet<StoredValueId>,
+    old: &HashSet<ValueId>,
+    missing: &HashSet<ValueId>,
 ) -> Result<(), RuntimeError> {
     // TODO: optimize intersection search
     for old_id in old.iter() {
@@ -103,22 +103,11 @@ fn verify_stored_value_update(
 
     for missing_id in missing.iter() {
         if !old.contains(missing_id) {
-            return Err(RuntimeError::ValueNotFound(ValueId::Stored(*missing_id)));
+            return Err(RuntimeError::ValueNotFound(*missing_id));
         }
     }
 
     Ok(())
-}
-
-fn to_stored_ids(ids: HashSet<ValueId>) -> Result<HashSet<StoredValueId>, RuntimeError> {
-    let mut stored_ids = HashSet::new();
-    for id in ids {
-        match id {
-            ValueId::Stored(stored_id) => stored_ids.insert(stored_id),
-            _ => return Err(RuntimeError::MovingInvalidType),
-        };
-    }
-    Ok(stored_ids)
 }
 
 fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -209,9 +198,7 @@ impl REValueLocation {
             }
             REValueLocation::Track { parent } => {
                 let address = match value_id {
-                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
-                        Address::Vault(parent.unwrap(), *vault_id)
-                    }
+                    ValueId::Vault(vault_id) => Address::Vault(parent.unwrap(), *vault_id),
                     ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
                     ValueId::Package(package_address) => Address::Package(*package_address),
                     _ => panic!("Unexpected"),
@@ -284,13 +271,11 @@ impl REValueLocation {
             }
             REValueLocation::Track { parent } => {
                 let address = match value_id {
-                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
-                        Address::Vault(parent.unwrap(), *vault_id)
-                    }
-                    ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => {
+                    ValueId::Vault(vault_id) => Address::Vault(parent.unwrap(), *vault_id),
+                    ValueId::KeyValueStore(kv_store_id) => {
                         Address::KeyValueStore(parent.unwrap(), *kv_store_id)
                     }
-                    ValueId::Stored(StoredValueId::Component(component_address)) => {
+                    ValueId::Component(component_address) => {
                         if let Some(parent) = parent {
                             Address::LocalComponent(*parent, *component_address)
                         } else {
@@ -357,13 +342,11 @@ impl REValueLocation {
             }
             REValueLocation::Track { parent } => {
                 let address = match value_id {
-                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
-                        Address::Vault(parent.unwrap(), *vault_id)
-                    }
-                    ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => {
+                    ValueId::Vault(vault_id) => Address::Vault(parent.unwrap(), *vault_id),
+                    ValueId::KeyValueStore(kv_store_id) => {
                         Address::KeyValueStore(parent.unwrap(), *kv_store_id)
                     }
-                    ValueId::Stored(StoredValueId::Component(component_address)) => {
+                    ValueId::Component(component_address) => {
                         if let Some(parent) = parent {
                             Address::LocalComponent(*parent, *component_address)
                         } else {
@@ -867,7 +850,7 @@ where
                         .map_err(RuntimeError::BucketError),
                     ValueId::Proof(..) => Proof::main_consume(value_id, fn_ident, input, self)
                         .map_err(RuntimeError::ProofError),
-                    ValueId::Stored(StoredValueId::Component(..)) => {
+                    ValueId::Component(..) => {
                         Component::main_consume(value_id, fn_ident, input, self)
                             .map_err(RuntimeError::ComponentError)
                     }
@@ -884,14 +867,10 @@ where
                         .map_err(RuntimeError::BucketError),
                     ValueId::Proof(..) => Proof::main(value_id, fn_ident, input, self)
                         .map_err(RuntimeError::ProofError),
-                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
-                        Vault::main(vault_id, fn_ident, input, self)
-                            .map_err(RuntimeError::VaultError)
-                    }
-                    ValueId::Stored(StoredValueId::Component(..)) => {
-                        Component::main(value_id, fn_ident, input, self)
-                            .map_err(RuntimeError::ComponentError)
-                    }
+                    ValueId::Vault(vault_id) => Vault::main(vault_id, fn_ident, input, self)
+                        .map_err(RuntimeError::VaultError),
+                    ValueId::Component(..) => Component::main(value_id, fn_ident, input, self)
+                        .map_err(RuntimeError::ComponentError),
                     ValueId::Resource(resource_address) => {
                         ResourceManager::main(resource_address, fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
@@ -1045,23 +1024,17 @@ where
     fn read_value_internal(
         &mut self,
         address: &SubstateAddress,
-    ) -> Result<
-        (
-            ValueId,
-            REValueLocation,
-            ScryptoValue,
-            HashSet<StoredValueId>,
-        ),
-        RuntimeError,
-    > {
+    ) -> Result<(ValueId, REValueLocation, ScryptoValue, HashSet<ValueId>), RuntimeError> {
         let value_id = match address {
             SubstateAddress::Component(component_address, ..) => {
-                ValueId::Stored(StoredValueId::Component(*component_address))
+                ValueId::Component(*component_address)
             }
             SubstateAddress::NonFungible(resource_address, ..) => {
                 ValueId::NonFungibles(*resource_address)
             }
-            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(*kv_store_id),
+            SubstateAddress::KeyValueEntry(kv_store_id, ..) => {
+                ValueId::KeyValueStore(*kv_store_id)
+            }
         };
 
         // Get location
@@ -1126,7 +1099,7 @@ where
                 }
                 SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_get(id),
             };
-            let cur_children = to_stored_ids(current_value.value_ids())?;
+            let cur_children = current_value.value_ids();
             (current_value, cur_children)
         };
 
@@ -1426,8 +1399,7 @@ where
                     let component_address = *component_address;
 
                     // Find value
-                    let stored_value_id = StoredValueId::Component(component_address);
-                    let value_id = ValueId::Stored(stored_value_id.clone());
+                    let value_id = ValueId::Component(component_address);
                     let cur_location = if self.owned_values.contains_key(&value_id) {
                         &REValueLocation::OwnedRoot
                     } else if let Some(REValueInfo { location, .. }) =
@@ -1544,7 +1516,7 @@ where
                 let component_address = *component_address;
 
                 // Find value
-                let value_id = ValueId::Stored(StoredValueId::Component(component_address));
+                let value_id = ValueId::Component(component_address);
                 let cur_location = if self.owned_values.contains_key(&value_id) {
                     REValueLocation::OwnedRoot
                 } else {
@@ -1594,14 +1566,14 @@ where
 
             SNodeRef::VaultRef(vault_id) => {
                 // Find value
-                let value_id = ValueId::vault_id(*vault_id);
+                let value_id = ValueId::Vault(*vault_id);
                 let cur_location = if self.owned_values.contains_key(&value_id) {
                     &REValueLocation::OwnedRoot
                 } else {
                     let maybe_value_ref = self.value_refs.get(&value_id);
                     maybe_value_ref
                         .map(|info| &info.location)
-                        .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?
+                        .ok_or(RuntimeError::ValueNotFound(ValueId::Vault(*vault_id)))?
                 };
 
                 // Lock values and setup next frame
@@ -1689,7 +1661,7 @@ where
                 // Resource auth check includes caller
                 SNodeExecution::Scrypto(..)
                 | SNodeExecution::ValueRef(ValueId::Resource(..), ..)
-                | SNodeExecution::ValueRef(ValueId::Stored(StoredValueId::VaultId(..)), ..)
+                | SNodeExecution::ValueRef(ValueId::Vault(..), ..)
                 | SNodeExecution::Consumed(ValueId::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
@@ -1841,11 +1813,11 @@ where
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Vault(..)) => {
                 let vault_id = self.track.new_vault_id();
-                ValueId::Stored(StoredValueId::VaultId(vault_id))
+                ValueId::Vault(vault_id)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::KeyValue(..)) => {
                 let kv_store_id = self.track.new_kv_store_id();
-                ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id))
+                ValueId::KeyValueStore(kv_store_id)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Package(..)) => {
                 let package_address = self.track.new_package_address();
@@ -1861,7 +1833,7 @@ where
             )) => ValueId::NonFungibles(resource_address),
             REValueByComplexity::Complex(REComplexValue::Component(..)) => {
                 let component_address = self.track.new_component_address();
-                ValueId::Stored(StoredValueId::Component(component_address))
+                ValueId::Component(component_address)
             }
         };
 
@@ -1880,9 +1852,7 @@ where
         self.owned_values.insert(id, RefCell::new(re_value));
 
         match id {
-            ValueId::Stored(StoredValueId::KeyValueStoreId(..))
-            | ValueId::Resource(..)
-            | ValueId::NonFungibles(..) => {
+            ValueId::KeyValueStore(..) | ValueId::Resource(..) | ValueId::NonFungibles(..) => {
                 self.value_refs.insert(
                     id.clone(),
                     REValueInfo {
@@ -1939,9 +1909,7 @@ where
         };
 
         let address = match value_id {
-            ValueId::Stored(StoredValueId::Component(component_address)) => {
-                Address::GlobalComponent(*component_address)
-            }
+            ValueId::Component(component_address) => Address::GlobalComponent(*component_address),
             ValueId::Package(package_address) => Address::Package(*package_address),
             ValueId::Resource(resource_address) => Address::Resource(*resource_address),
             _ => panic!("Expected to be a component address"),
@@ -2010,13 +1978,12 @@ where
             let child_location = parent_location.child(value_id.clone());
 
             // Extend current readable space when kv stores are found
-            let visible = matches!(stored_value_id, StoredValueId::KeyValueStoreId(..));
+            let visible = matches!(stored_value_id, ValueId::KeyValueStore(..));
             let child_info = REValueInfo {
                 location: child_location,
                 visible,
             };
-            self.value_refs
-                .insert(ValueId::Stored(stored_value_id), child_info);
+            self.value_refs.insert(stored_value_id, child_info);
         }
         Ok(current_value)
     }
@@ -2050,7 +2017,6 @@ where
             self.read_value_internal(&address)?;
 
         // Fulfill method
-        let missing = to_stored_ids(missing)?;
         verify_stored_value_update(&cur_children, &missing)?;
 
         // TODO: verify against some schema
