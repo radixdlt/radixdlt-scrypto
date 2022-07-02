@@ -614,21 +614,6 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         }
     }
 
-    fn component_get_state(&self) -> ScryptoValue {
-        match self {
-            REValueRefMut::Track(track, address) => {
-                let component_val = track.read_value(address.clone());
-                let component = component_val.component();
-                return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
-            }
-            REValueRefMut::Borrowed(owned) => {
-                let component = owned.component();
-                return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
-            }
-            _ => panic!("Unexpected component ref"),
-        }
-    }
-
     fn component_put(&mut self, value: ScryptoValue, to_store: HashMap<ValueId, REValue>) {
         match self {
             REValueRefMut::Track(track, address) => {
@@ -652,29 +637,13 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         }
     }
 
-    fn component_info(&mut self) -> (PackageAddress, String) {
+    fn component(&mut self) -> &Component {
         match self {
-            REValueRefMut::Owned(owned) => {
-                let component = &owned.component_mut();
-                (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                )
-            }
-            REValueRefMut::Borrowed(borrowed) => {
-                let component = &borrowed.component();
-                (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                )
-            }
+            REValueRefMut::Owned(owned) => owned.component(),
+            REValueRefMut::Borrowed(borrowed) => borrowed.component(),
             REValueRefMut::Track(track, address) => {
                 let component_val = track.read_value(address.clone());
-                let component = component_val.component();
-                (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                )
+                component_val.component()
             }
         }
     }
@@ -1397,16 +1366,16 @@ where
                     };
 
                     let actor_info = {
-                        let mut value_ref = next_frame_location.to_ref_mut(
+                        let value_ref = next_frame_location.to_ref(
                             &value_id,
                             &mut next_owned_values,
                             &mut next_borrowed_values,
                             &mut self.track,
                         );
-                        let (package_address, blueprint_name) = value_ref.component_info();
+                        let component = value_ref.component();
                         ScryptoActorInfo::component(
-                            package_address,
-                            blueprint_name,
+                            component.package_address(),
+                            component.blueprint_name().to_string(),
                             component_address,
                         )
                     };
@@ -1954,8 +1923,8 @@ where
             );
             let current_value = match &address {
                 SubstateAddress::Component(.., offset) => match offset {
-                    ComponentOffset::State => value_ref.component_get_state(),
-                    ComponentOffset::Info => ScryptoValue::from_typed(&value_ref.component_info()),
+                    ComponentOffset::State => ScryptoValue::from_slice(value_ref.component().state()).expect("Expected to decode"),
+                    ComponentOffset::Info => ScryptoValue::from_typed(&value_ref.component().info()),
                 },
                 SubstateAddress::KeyValueEntry(.., key) => {
                     verify_stored_key(key)?;
