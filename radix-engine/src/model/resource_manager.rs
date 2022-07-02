@@ -538,14 +538,28 @@ impl ResourceManager {
             "update_non_fungible_data" => {
                 let input: ResourceManagerUpdateNonFungibleDataInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
-                let non_fungible_address =
-                    NonFungibleAddress::new(resource_address.clone(), input.id);
-                let data = Self::process_non_fungible_data(&input.data)?;
-                let mut non_fungible = system_api.get_non_fungible(&non_fungible_address).ok_or(
-                    ResourceManagerError::NonFungibleNotFound(non_fungible_address.clone()),
-                )?;
-                non_fungible.set_mutable_data(data.raw);
-                system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
+
+                // Read current value
+                let key = ScryptoValue::from_slice(&input.id.0).expect("NonFungibleId should have been checked at decode.");
+                let value = system_api.data(
+                    SubstateAddress::NonFungible(resource_address.clone(), key),
+                    DataInstruction::Read
+                ).expect("Should never fail");
+                let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
+
+                // Write new value
+                if let Some(mut non_fungible) = maybe_non_fungible {
+                    let key = ScryptoValue::from_slice(&input.id.0).expect("NonFungibleId should have been checked at decode.");
+                    non_fungible.set_mutable_data(input.data);
+                    system_api.data(
+                        SubstateAddress::NonFungible(resource_address.clone(), key),
+                        DataInstruction::Write(ScryptoValue::from_typed(&non_fungible))
+                    ).expect("Should never fail");
+                } else {
+                    let non_fungible_address =
+                        NonFungibleAddress::new(resource_address.clone(), input.id);
+                    return Err(ResourceManagerError::NonFungibleNotFound(non_fungible_address.clone()));
+                }
 
                 Ok(ScryptoValue::from_typed(&()))
             }
