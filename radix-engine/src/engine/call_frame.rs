@@ -863,14 +863,10 @@ where
                     }
                 },
                 SNodeExecution::Consumed(value_id) => match value_id {
-                    ValueId::Transient(TransientValueId::Bucket(..)) => {
-                        Bucket::consuming_main(value_id, fn_ident, input, self)
-                            .map_err(RuntimeError::BucketError)
-                    }
-                    ValueId::Transient(TransientValueId::Proof(..)) => {
-                        Proof::main_consume(value_id, fn_ident, input, self)
-                            .map_err(RuntimeError::ProofError)
-                    }
+                    ValueId::Bucket(..) => Bucket::consuming_main(value_id, fn_ident, input, self)
+                        .map_err(RuntimeError::BucketError),
+                    ValueId::Proof(..) => Proof::main_consume(value_id, fn_ident, input, self)
+                        .map_err(RuntimeError::ProofError),
                     ValueId::Stored(StoredValueId::Component(..)) => {
                         Component::main_consume(value_id, fn_ident, input, self)
                             .map_err(RuntimeError::ComponentError)
@@ -884,14 +880,10 @@ where
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::WorktopError),
                 SNodeExecution::ValueRef(value_id) => match value_id {
-                    ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
-                        Bucket::main(bucket_id, fn_ident, input, self)
-                            .map_err(RuntimeError::BucketError)
-                    }
-                    ValueId::Transient(TransientValueId::Proof(..)) => {
-                        Proof::main(value_id, fn_ident, input, self)
-                            .map_err(RuntimeError::ProofError)
-                    }
+                    ValueId::Bucket(bucket_id) => Bucket::main(bucket_id, fn_ident, input, self)
+                        .map_err(RuntimeError::BucketError),
+                    ValueId::Proof(..) => Proof::main(value_id, fn_ident, input, self)
+                        .map_err(RuntimeError::ProofError),
                     ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
                         Vault::main(vault_id, fn_ident, input, self)
                             .map_err(RuntimeError::VaultError)
@@ -1358,7 +1350,7 @@ where
                 Ok((SNodeExecution::ValueRef(value_id), vec![method_auth]))
             }
             SNodeRef::BucketRef(bucket_id) => {
-                let value_id = ValueId::Transient(TransientValueId::Bucket(*bucket_id));
+                let value_id = ValueId::Bucket(*bucket_id);
                 let bucket_cell = self
                     .owned_values
                     .get(&value_id)
@@ -1376,7 +1368,7 @@ where
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
-                let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
+                let value_id = ValueId::Proof(*proof_id);
                 let proof_cell = self
                     .owned_values
                     .get(&value_id)
@@ -1698,7 +1690,7 @@ where
                 SNodeExecution::Scrypto(..)
                 | SNodeExecution::ValueRef(ValueId::Resource(..), ..)
                 | SNodeExecution::ValueRef(ValueId::Stored(StoredValueId::VaultId(..)), ..)
-                | SNodeExecution::Consumed(ValueId::Transient(TransientValueId::Bucket(..))) => {
+                | SNodeExecution::Consumed(ValueId::Bucket(..)) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
@@ -1841,11 +1833,11 @@ where
         let id = match value_by_complexity {
             REValueByComplexity::Primitive(REPrimitiveValue::Bucket(..)) => {
                 let bucket_id = self.track.new_bucket_id();
-                ValueId::Transient(TransientValueId::Bucket(bucket_id))
+                ValueId::Bucket(bucket_id)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Proof(..)) => {
                 let proof_id = self.track.new_proof_id();
-                ValueId::Transient(TransientValueId::Proof(proof_id))
+                ValueId::Proof(proof_id)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Vault(..)) => {
                 let vault_id = self.track.new_vault_id();
@@ -2111,7 +2103,7 @@ where
             .iter()
             .map(|proof_id| {
                 self.owned_values
-                    .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
+                    .get(&ValueId::Proof(*proof_id))
                     .map(|p| match p.borrow().deref() {
                         REValue::Proof(proof) => proof.clone(),
                         _ => panic!("Expected proof"),

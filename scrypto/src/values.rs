@@ -111,10 +111,10 @@ impl ScryptoValue {
             )));
         }
         for (bucket_id, _) in &self.bucket_ids {
-            value_ids.insert(ValueId::Transient(TransientValueId::Bucket(*bucket_id)));
+            value_ids.insert(ValueId::Bucket(*bucket_id));
         }
         for (proof_id, _) in &self.proof_ids {
-            value_ids.insert(ValueId::Transient(TransientValueId::Proof(*proof_id)));
+            value_ids.insert(ValueId::Proof(*proof_id));
         }
         value_ids
     }

@@ -184,9 +184,7 @@ impl Vault {
                 let input: VaultPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| VaultError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .drop_value(&ValueId::Transient(TransientValueId::Bucket(
-                        input.bucket.0,
-                    )))
+                    .drop_value(&ValueId::Bucket(input.bucket.0))
                     .into();
                 vault
                     .put(bucket)

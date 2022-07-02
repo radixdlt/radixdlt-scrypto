@@ -22,12 +22,6 @@ pub type BucketId = u32;
 pub type ProofId = u32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
-pub enum TransientValueId {
-    Bucket(BucketId),
-    Proof(ProofId),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum StoredValueId {
     KeyValueStoreId(KeyValueStoreId),
     Component(ComponentAddress),
@@ -55,7 +49,8 @@ impl Into<(Hash, u32)> for StoredValueId {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum ValueId {
-    Transient(TransientValueId),
+    Bucket(BucketId),
+    Proof(ProofId),
     Stored(StoredValueId),
     Resource(ResourceAddress),
     NonFungibles(ResourceAddress),
@@ -94,8 +89,8 @@ impl Into<(Hash, u32)> for ValueId {
 impl Into<u32> for ValueId {
     fn into(self) -> u32 {
         match self {
-            ValueId::Transient(TransientValueId::Bucket(id)) => id,
-            ValueId::Transient(TransientValueId::Proof(id)) => id,
+            ValueId::Bucket(id) => id,
+            ValueId::Proof(id) => id,
             _ => panic!("Not a transient id"),
         }
     }
