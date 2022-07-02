@@ -424,7 +424,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         address
     }
 
-
     pub fn create_uuid_value_2<A: Into<Address>, V: Into<SubstateValue>>(
         &mut self,
         addr: A,

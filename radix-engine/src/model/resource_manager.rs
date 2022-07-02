@@ -398,16 +398,18 @@ impl ResourceManager {
                 let input: ResourceManagerCreateInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
-
-
                 let resource_manager =
                     ResourceManager::new(input.resource_type, input.metadata, input.access_rules)?;
-                let resource_value_id = system_api.create_value(resource_manager).expect("Should never fail");
+                let resource_value_id = system_api
+                    .create_value(resource_manager)
+                    .expect("Should never fail");
                 let resource_address = resource_value_id.clone().into();
 
                 if matches!(input.resource_type, ResourceType::NonFungible) {
                     let non_fungibles: HashMap<NonFungibleId, NonFungible> = HashMap::new();
-                    system_api.create_value((resource_address, non_fungibles)).expect("Should never fail");
+                    system_api
+                        .create_value((resource_address, non_fungibles))
+                        .expect("Should never fail");
                 }
 
                 let bucket_id = if let Some(mint_params) = input.mint_params {

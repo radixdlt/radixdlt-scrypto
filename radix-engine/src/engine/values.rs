@@ -261,7 +261,9 @@ impl Into<REValue> for REPrimitiveValue {
     fn into(self) -> REValue {
         match self {
             REPrimitiveValue::Resource(resource_manager) => REValue::Resource(resource_manager),
-            REPrimitiveValue::NonFungibles(_resource_address, non_fungibles) => REValue::NonFungibles(non_fungibles),
+            REPrimitiveValue::NonFungibles(_resource_address, non_fungibles) => {
+                REValue::NonFungibles(non_fungibles)
+            }
             REPrimitiveValue::Package(package) => REValue::Package(package),
             REPrimitiveValue::Bucket(bucket) => REValue::Bucket(bucket),
             REPrimitiveValue::Proof(proof) => REValue::Proof(proof),

@@ -371,7 +371,9 @@ impl REValueLocation {
                         }
                     }
                     ValueId::Resource(resource_address) => Address::Resource(*resource_address),
-                    ValueId::NonFungibles(resource_address) => Address::NonFungibleSet(*resource_address),
+                    ValueId::NonFungibles(resource_address) => {
+                        Address::NonFungibleSet(*resource_address)
+                    }
                     _ => panic!("Unexpected value id {:?}", value_id),
                 };
 
@@ -1802,7 +1804,10 @@ where
     }
 
     fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef<'p> {
-        let info = self.value_refs.get(value_id).expect(&format!("Value should exist {:?}", value_id));
+        let info = self
+            .value_refs
+            .get(value_id)
+            .expect(&format!("Value should exist {:?}", value_id));
         if !info.visible {
             panic!("Trying to read value which is not visible.")
         }
@@ -1858,9 +1863,10 @@ where
                 let resource_address = self.track.new_resource_address();
                 ValueId::Resource(resource_address)
             }
-            REValueByComplexity::Primitive(REPrimitiveValue::NonFungibles(resource_address, ..)) => {
-                ValueId::NonFungibles(resource_address)
-            }
+            REValueByComplexity::Primitive(REPrimitiveValue::NonFungibles(
+                resource_address,
+                ..,
+            )) => ValueId::NonFungibles(resource_address),
             REValueByComplexity::Complex(REComplexValue::Component(..)) => {
                 let component_address = self.track.new_component_address();
                 ValueId::Stored(StoredValueId::Component(component_address))
@@ -1930,19 +1936,32 @@ where
             REValue::Component {
                 component,
                 child_values,
-            } => (SubstateValue::Component(component), Some(child_values), None),
+            } => (
+                SubstateValue::Component(component),
+                Some(child_values),
+                None,
+            ),
             REValue::Package(package) => (SubstateValue::Package(package), None, None),
             REValue::Resource(resource_manager) => {
-                let non_fungibles = if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
-                    let resource_address: ResourceAddress = value_id.clone().into();
-                    let re_value = self.owned_values.remove(&ValueId::NonFungibles(resource_address)).unwrap().into_inner();
-                    let non_fungibles: HashMap<NonFungibleId, NonFungible> = re_value.into();
-                    Some(non_fungibles)
-                } else {
-                    None
-                };
-                (SubstateValue::Resource(resource_manager), None, non_fungibles)
-            },
+                let non_fungibles =
+                    if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
+                        let resource_address: ResourceAddress = value_id.clone().into();
+                        let re_value = self
+                            .owned_values
+                            .remove(&ValueId::NonFungibles(resource_address))
+                            .unwrap()
+                            .into_inner();
+                        let non_fungibles: HashMap<NonFungibleId, NonFungible> = re_value.into();
+                        Some(non_fungibles)
+                    } else {
+                        None
+                    };
+                (
+                    SubstateValue::Resource(resource_manager),
+                    None,
+                    non_fungibles,
+                )
+            }
             _ => panic!("Not expected"),
         };
 
@@ -1968,7 +1987,8 @@ where
 
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = address.clone().into();
-            self.track.create_non_fungible_space(resource_address.clone());
+            self.track
+                .create_non_fungible_space(resource_address.clone());
             let parent_address = Address::NonFungibleSet(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(
