@@ -665,11 +665,6 @@ pub enum SNodeExecution<'a> {
     Scrypto(ScryptoActorInfo, PackageAddress),
 }
 
-pub enum DataInstruction {
-    Read,
-    Write(ScryptoValue),
-}
-
 pub enum SubstateAddress {
     KeyValueEntry(KeyValueStoreId, ScryptoValue),
     NonFungible(ResourceAddress, ScryptoValue),
@@ -1041,6 +1036,91 @@ where
         }
 
         Ok((taken, missing))
+    }
+
+    fn read_value_internal(
+        &mut self,
+        address: &SubstateAddress,
+    ) -> Result<(ValueId, REValueLocation, ScryptoValue, HashSet<StoredValueId>), RuntimeError> {
+
+        let value_id = match address {
+            SubstateAddress::Component(component_address, ..) => {
+                ValueId::Stored(StoredValueId::Component(*component_address))
+            }
+            SubstateAddress::NonFungible(resource_address, ..) => {
+                ValueId::Resource(*resource_address)
+            }
+            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(*kv_store_id),
+        };
+
+        // Get location
+        // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
+        let (value_info, address_borrowed) = self
+            .value_refs
+            .get(&value_id)
+            .map(|v| (v, None))
+            .or_else(|| {
+                // Allow global read access to any component info
+                if let SubstateAddress::Component(component_address, ComponentOffset::Info) = address {
+                    if self.owned_values.contains_key(&value_id) {
+                        return Some((
+                            &REValueInfo {
+                                location: REValueLocation::OwnedRoot,
+                                visible: true,
+                            },
+                            None,
+                        ));
+                    } else if self.track.take_lock(*component_address, false).is_ok() {
+                        return Some((
+                            &REValueInfo {
+                                location: REValueLocation::Track { parent: None },
+                                visible: true,
+                            },
+                            Some(component_address),
+                        ));
+                    }
+                }
+
+                None
+            })
+            .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
+        if !value_info.visible {
+            return Err(RuntimeError::InvalidDataAccess(value_id));
+        }
+        let location = &value_info.location;
+
+        // Read current value
+        let (current_value, cur_children) = {
+            let mut value_ref = location.to_ref_mut(
+                &value_id,
+                &mut self.owned_values,
+                &mut self.frame_borrowed_values,
+                &mut self.track,
+            );
+            let current_value = match &address {
+                SubstateAddress::Component(.., offset) => match offset {
+                    ComponentOffset::State => ScryptoValue::from_slice(value_ref.component().state()).expect("Expected to decode"),
+                    ComponentOffset::Info => ScryptoValue::from_typed(&value_ref.component().info()),
+                },
+                SubstateAddress::KeyValueEntry(.., key) => {
+                    verify_stored_key(key)?;
+                    value_ref.kv_store_get(&key.raw)
+                }
+                SubstateAddress::NonFungible(.., key) => {
+                    verify_stored_key(key)?;
+                    value_ref.non_fungible_get(&key.raw)
+                }
+            };
+            let cur_children = to_stored_ids(current_value.value_ids())?;
+            (current_value, cur_children)
+        };
+
+        // TODO: Remove, currently a hack to allow for global component info retrieval
+        if let Some(component_address) = address_borrowed {
+            self.track.release_lock(*component_address);
+        }
+
+        Ok((value_id, location.clone(), current_value, cur_children))
     }
 }
 
@@ -1841,158 +1921,78 @@ where
         }
     }
 
-    fn data(
+    fn read_value_data(
         &mut self,
         address: SubstateAddress,
-        instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError> {
-        // If write, take values from current frame
-        let (taken_values, missing) = match &instruction {
-            DataInstruction::Write(value) => {
-                let value_ids = value.value_ids();
-                match address {
-                    SubstateAddress::KeyValueEntry(..)
-                    | SubstateAddress::Component(_, ComponentOffset::State) => self.take_available_values(value_ids, true)?,
-                    SubstateAddress::Component(_, ComponentOffset::Info) => return Err(RuntimeError::InvalidDataWrite),
-                    SubstateAddress::NonFungible(..) => {
-                        if !value_ids.is_empty() {
-                            return Err(RuntimeError::ValueNotAllowed);
-                        }
-                        (HashMap::new(), HashSet::new())
-                    }
-                }
-            }
-            DataInstruction::Read => (HashMap::new(), HashSet::new()),
-        };
+        let (value_id, parent_location, current_value, cur_children) = self.read_value_internal(&address)?;
+        for stored_value_id in cur_children {
+            let child_location = parent_location.child(value_id.clone());
 
-        let value_id = match address {
-            SubstateAddress::Component(component_address, ..) => {
-                ValueId::Stored(StoredValueId::Component(component_address))
-            }
-            SubstateAddress::NonFungible(resource_address, ..) => {
-                ValueId::Resource(resource_address)
-            }
-            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(kv_store_id),
-        };
-
-        // Get location
-        // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
-        let (value_info, address_borrowed) = self
-            .value_refs
-            .get(&value_id)
-            .map(|v| (v, None))
-            .or_else(|| {
-                // Allow global read access to any component info
-                if let SubstateAddress::Component(component_address, ComponentOffset::Info) =
-                    address
-                {
-                    if self.owned_values.contains_key(&value_id) {
-                        return Some((
-                            &REValueInfo {
-                                location: REValueLocation::OwnedRoot,
-                                visible: true,
-                            },
-                            None,
-                        ));
-                    } else if self.track.take_lock(component_address, false).is_ok() {
-                        return Some((
-                            &REValueInfo {
-                                location: REValueLocation::Track { parent: None },
-                                visible: true,
-                            },
-                            Some(component_address),
-                        ));
-                    }
-                }
-
-                None
-            })
-            .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
-        if !value_info.visible {
-            return Err(RuntimeError::InvalidDataAccess(value_id));
-        }
-        let location = &value_info.location;
-
-        // Read current value
-        let (current_value, cur_children) = {
-            let mut value_ref = location.to_ref_mut(
-                &value_id,
-                &mut self.owned_values,
-                &mut self.frame_borrowed_values,
-                &mut self.track,
-            );
-            let current_value = match &address {
-                SubstateAddress::Component(.., offset) => match offset {
-                    ComponentOffset::State => ScryptoValue::from_slice(value_ref.component().state()).expect("Expected to decode"),
-                    ComponentOffset::Info => ScryptoValue::from_typed(&value_ref.component().info()),
-                },
-                SubstateAddress::KeyValueEntry(.., key) => {
-                    verify_stored_key(key)?;
-                    value_ref.kv_store_get(&key.raw)
-                }
-                SubstateAddress::NonFungible(.., key) => {
-                    verify_stored_key(key)?;
-                    value_ref.non_fungible_get(&key.raw)
-                }
+            // Extend current readable space when kv stores are found
+            let visible = matches!(stored_value_id, StoredValueId::KeyValueStoreId(..));
+            let child_info = REValueInfo {
+                location: child_location,
+                visible,
             };
-            let cur_children = to_stored_ids(current_value.value_ids())?;
-            (current_value, cur_children)
+            self.value_refs
+                .insert(ValueId::Stored(stored_value_id), child_info);
+        }
+        Ok(current_value)
+    }
+
+    fn write_value_data(
+        &mut self,
+        address: SubstateAddress,
+        value: ScryptoValue,
+    ) -> Result<(), RuntimeError> {
+        // If write, take values from current frame
+        let (taken_values, missing) = {
+            let value_ids = value.value_ids();
+            match address {
+                SubstateAddress::KeyValueEntry(..)
+                | SubstateAddress::Component(_, ComponentOffset::State) => self.take_available_values(value_ids, true)?,
+                SubstateAddress::Component(_, ComponentOffset::Info) => return Err(RuntimeError::InvalidDataWrite),
+                SubstateAddress::NonFungible(..) => {
+                    if !value_ids.is_empty() {
+                        return Err(RuntimeError::ValueNotAllowed);
+                    }
+                    (HashMap::new(), HashSet::new())
+                }
+            }
         };
 
-        // TODO: Remove, currently a hack to allow for global component info retrieval
-        if let Some(component_address) = address_borrowed {
-            self.track.release_lock(component_address);
-        }
+        let (value_id, location, _current_value, cur_children) = self.read_value_internal(&address)?;
 
         // Fulfill method
-        match instruction {
-            DataInstruction::Read => {
-                let parent_location = location.clone();
-                for stored_value_id in cur_children {
-                    let child_location = parent_location.child(value_id.clone());
+        let missing = to_stored_ids(missing)?;
+        verify_stored_value_update(&cur_children, &missing)?;
 
-                    // Extend current readable space when kv stores are found
-                    let visible = matches!(stored_value_id, StoredValueId::KeyValueStoreId(..));
-                    let child_info = REValueInfo {
-                        location: child_location,
-                        visible,
-                    };
-                    self.value_refs
-                        .insert(ValueId::Stored(stored_value_id), child_info);
+        // TODO: verify against some schema
+
+        // Write values
+        let mut value_ref = location.to_ref_mut(
+            &value_id,
+            &mut self.owned_values,
+            &mut self.frame_borrowed_values,
+            &mut self.track,
+        );
+        match address {
+            SubstateAddress::Component(.., offset) => match offset {
+                ComponentOffset::State => value_ref.component_put(value, taken_values),
+                ComponentOffset::Info => {
+                    return Err(RuntimeError::InvalidDataWrite);
                 }
-                Ok(current_value)
+            },
+            SubstateAddress::KeyValueEntry(.., key) => {
+                value_ref.kv_store_put(key.raw, value, taken_values);
             }
-            DataInstruction::Write(value) => {
-                let missing = to_stored_ids(missing)?;
-                verify_stored_value_update(&cur_children, &missing)?;
-
-                // TODO: verify against some schema
-
-                // Write values
-                let mut value_ref = location.to_ref_mut(
-                    &value_id,
-                    &mut self.owned_values,
-                    &mut self.frame_borrowed_values,
-                    &mut self.track,
-                );
-                match address {
-                    SubstateAddress::Component(.., offset) => match offset {
-                        ComponentOffset::State => value_ref.component_put(value, taken_values),
-                        ComponentOffset::Info => {
-                            return Err(RuntimeError::InvalidDataWrite);
-                        }
-                    },
-                    SubstateAddress::KeyValueEntry(.., key) => {
-                        value_ref.kv_store_put(key.raw, value, taken_values);
-                    }
-                    SubstateAddress::NonFungible(.., key) => {
-                        value_ref.non_fungible_put(key.raw, value)
-                    }
-                }
-
-                Ok(ScryptoValue::from_typed(&()))
+            SubstateAddress::NonFungible(.., key) => {
+                value_ref.non_fungible_put(key.raw, value)
             }
         }
+
+        Ok(())
     }
 
     fn get_epoch(&mut self) -> u64 {

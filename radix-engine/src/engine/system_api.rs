@@ -5,7 +5,7 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::{DataInstruction, REValueRef, SubstateAddress};
+use crate::engine::call_frame::{REValueRef, SubstateAddress};
 use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
@@ -39,11 +39,15 @@ where
         -> Result<ValueId, RuntimeError>;
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
-    fn data(
+    fn read_value_data(
         &mut self,
         address: SubstateAddress,
-        instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError>;
+    fn write_value_data(
+        &mut self,
+        address: SubstateAddress,
+        value: ScryptoValue,
+    ) -> Result<(), RuntimeError>;
     fn set_non_fungible(
         &mut self,
         non_fungible_address: NonFungibleAddress,

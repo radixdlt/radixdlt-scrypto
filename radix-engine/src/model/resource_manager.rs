@@ -18,7 +18,7 @@ use scrypto::resource::ResourceManagerGetMetadataInput;
 use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
-use crate::engine::{DataInstruction, SubstateAddress, SystemApi};
+use crate::engine::{SubstateAddress, SystemApi};
 use crate::ledger::ReadableSubstateStore;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::ResourceManagerError::InvalidMethod;
@@ -335,9 +335,8 @@ impl ResourceManager {
         let mut ids = BTreeSet::new();
         for (id, data) in entries {
             let key = ScryptoValue::from_slice(&id.0).expect("NonFungibleId should have been checked at decode.");
-            let value = system_api.data(
+            let value = system_api.read_value_data(
                 SubstateAddress::NonFungible(self_address, key),
-                DataInstruction::Read
             ).expect("Should never fail");
             let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
             let non_fungible_address = NonFungibleAddress::new(self_address, id.clone());
@@ -349,9 +348,9 @@ impl ResourceManager {
 
             let key = ScryptoValue::from_slice(&id.0).expect("NonFungibleId should have been checked at decode.");
             let non_fungible = NonFungible::new(data.0, data.1);
-            system_api.data(
+            system_api.write_value_data(
                 SubstateAddress::NonFungible(self_address, key),
-                DataInstruction::Write(ScryptoValue::from_typed(&non_fungible))
+                ScryptoValue::from_typed(&non_fungible)
             ).expect("Should never fail");
             ids.insert(id);
         }
@@ -530,9 +529,8 @@ impl ResourceManager {
 
                 // Read current value
                 let key = ScryptoValue::from_slice(&input.id.0).expect("NonFungibleId should have been checked at decode.");
-                let value = system_api.data(
+                let value = system_api.read_value_data(
                     SubstateAddress::NonFungible(resource_address.clone(), key),
-                    DataInstruction::Read
                 ).expect("Should never fail");
                 let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
 
@@ -540,9 +538,9 @@ impl ResourceManager {
                 if let Some(mut non_fungible) = maybe_non_fungible {
                     let key = ScryptoValue::from_slice(&input.id.0).expect("NonFungibleId should have been checked at decode.");
                     non_fungible.set_mutable_data(input.data);
-                    system_api.data(
+                    system_api.write_value_data(
                         SubstateAddress::NonFungible(resource_address.clone(), key),
-                        DataInstruction::Write(ScryptoValue::from_typed(&non_fungible))
+                        ScryptoValue::from_typed(&non_fungible)
                     ).expect("Should never fail");
                 } else {
                     let non_fungible_address =
@@ -557,9 +555,8 @@ impl ResourceManager {
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
                 let key = ScryptoValue::from_slice(&input.id.0).expect("NonFungibleId should have been checked at decode.");
-                let value = system_api.data(
+                let value = system_api.read_value_data(
                     SubstateAddress::NonFungible(resource_address.clone(), key),
-                    DataInstruction::Read
                 ).expect("Should never fail");
                 let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
                 Ok(ScryptoValue::from_typed(&maybe_non_fungible.is_some()))
@@ -570,9 +567,8 @@ impl ResourceManager {
                 let non_fungible_address =
                     NonFungibleAddress::new(resource_address.clone(), input.id.clone());
                 let key = ScryptoValue::from_slice(&input.id.0).expect("NonFungibleId should have been checked at decode.");
-                let value = system_api.data(
+                let value = system_api.read_value_data(
                     SubstateAddress::NonFungible(resource_address.clone(), key),
-                    DataInstruction::Read
                 ).expect("Should never fail");
                 let maybe_non_fungible: Option<NonFungible> = scrypto_decode(&value.raw).unwrap();
                 let non_fungible = maybe_non_fungible.ok_or(
