@@ -1024,7 +1024,7 @@ where
     fn read_value_internal(
         &mut self,
         address: &SubstateAddress,
-    ) -> Result<(ValueId, REValueLocation, ScryptoValue, HashSet<ValueId>), RuntimeError> {
+    ) -> Result<(ValueId, REValueLocation, ScryptoValue), RuntimeError> {
         let value_id = match address {
             SubstateAddress::Component(component_address, ..) => {
                 ValueId::Component(*component_address)
@@ -1032,9 +1032,7 @@ where
             SubstateAddress::NonFungible(resource_address, ..) => {
                 ValueId::NonFungibles(*resource_address)
             }
-            SubstateAddress::KeyValueEntry(kv_store_id, ..) => {
-                ValueId::KeyValueStore(*kv_store_id)
-            }
+            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::KeyValueStore(*kv_store_id),
         };
 
         // Get location
@@ -1076,14 +1074,14 @@ where
         let location = &value_info.location;
 
         // Read current value
-        let (current_value, cur_children) = {
+        let current_value = {
             let mut value_ref = location.to_ref_mut(
                 &value_id,
                 &mut self.owned_values,
                 &mut self.frame_borrowed_values,
                 &mut self.track,
             );
-            let current_value = match &address {
+            match &address {
                 SubstateAddress::Component(.., offset) => match offset {
                     ComponentOffset::State => {
                         ScryptoValue::from_slice(value_ref.component().state())
@@ -1098,9 +1096,7 @@ where
                     value_ref.kv_store_get(&key.raw)
                 }
                 SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_get(id),
-            };
-            let cur_children = current_value.value_ids();
-            (current_value, cur_children)
+            }
         };
 
         // TODO: Remove, currently a hack to allow for global component info retrieval
@@ -1108,7 +1104,7 @@ where
             self.track.release_lock(*component_address);
         }
 
-        Ok((value_id, location.clone(), current_value, cur_children))
+        Ok((value_id, location.clone(), current_value))
     }
 }
 
@@ -1945,8 +1941,8 @@ where
         &mut self,
         address: SubstateAddress,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let (value_id, location, current_value, cur_children) =
-            self.read_value_internal(&address)?;
+        let (value_id, location, current_value) = self.read_value_internal(&address)?;
+        let cur_children = current_value.value_ids();
         if !cur_children.is_empty() {
             return Err(RuntimeError::ValueNotAllowed);
         }
@@ -1972,8 +1968,8 @@ where
     }
 
     fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError> {
-        let (value_id, parent_location, current_value, cur_children) =
-            self.read_value_internal(&address)?;
+        let (value_id, parent_location, current_value) = self.read_value_internal(&address)?;
+        let cur_children = current_value.value_ids();
         for stored_value_id in cur_children {
             let child_location = parent_location.child(value_id.clone());
 
@@ -2013,8 +2009,8 @@ where
             }
         };
 
-        let (value_id, location, _current_value, cur_children) =
-            self.read_value_internal(&address)?;
+        let (value_id, location, current_value) = self.read_value_internal(&address)?;
+        let cur_children = current_value.value_ids();
 
         // Fulfill method
         verify_stored_value_update(&cur_children, &missing)?;
