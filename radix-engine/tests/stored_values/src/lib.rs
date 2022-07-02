@@ -2,7 +2,7 @@ use scrypto::prelude::*;
 
 blueprint! {
     struct InvalidInitStoredBucket {
-        bucket: Bucket
+        bucket: Bucket,
     }
 
     impl InvalidInitStoredBucket {
@@ -12,9 +12,7 @@ blueprint! {
                 .restrict_withdraw(rule!(allow_all), LOCKED)
                 .initial_supply(Decimal::from(5));
 
-            let component = InvalidInitStoredBucket {
-                bucket
-            }.instantiate();
+            let component = InvalidInitStoredBucket { bucket }.instantiate();
             component.globalize()
         }
     }
@@ -22,7 +20,7 @@ blueprint! {
 
 blueprint! {
     struct InvalidStoredBucketInOwnedComponent {
-        bucket: Option<Bucket>
+        bucket: Option<Bucket>,
     }
 
     impl InvalidStoredBucketInOwnedComponent {
@@ -38,7 +36,8 @@ blueprint! {
 
             let component = InvalidStoredBucketInOwnedComponent {
                 bucket: Option::None,
-            }.instantiate();
+            }
+            .instantiate();
             component.put_bucket(bucket);
             component.globalize()
         }

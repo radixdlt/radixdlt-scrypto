@@ -37,23 +37,16 @@ where
     fn drop_value(&mut self, value_id: &ValueId) -> REValue;
     fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
         -> Result<ValueId, RuntimeError>;
-    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
-
-    fn read_value_data(
-        &mut self,
-        address: SubstateAddress,
-    ) -> Result<ScryptoValue, RuntimeError>;
+    fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError>;
     fn write_value_data(
         &mut self,
         address: SubstateAddress,
         value: ScryptoValue,
     ) -> Result<(), RuntimeError>;
-    fn set_non_fungible(
-        &mut self,
-        non_fungible_address: NonFungibleAddress,
-        non_fungible: Option<NonFungible>,
-    );
+    fn remove_value_data(&mut self, address: SubstateAddress)
+        -> Result<ScryptoValue, RuntimeError>;
 
+    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
     fn get_epoch(&mut self) -> u64;
 
     fn get_transaction_hash(&mut self) -> Hash;

@@ -62,10 +62,7 @@ impl Component {
     }
 
     pub fn info(&self) -> (PackageAddress, String) {
-        (
-            self.package_address.clone(),
-            self.blueprint_name.clone(),
-        )
+        (self.package_address.clone(), self.blueprint_name.clone())
     }
 
     pub fn authorization(&self) -> &[AccessRules] {

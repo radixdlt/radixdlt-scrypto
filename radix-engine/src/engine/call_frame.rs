@@ -370,9 +370,7 @@ impl REValueLocation {
                             Address::GlobalComponent(*component_address)
                         }
                     }
-                    ValueId::Resource(resource_address) => {
-                        Address::Resource(*resource_address)
-                    }
+                    ValueId::Resource(resource_address) => Address::Resource(*resource_address),
                     _ => panic!("Unexpected value id {:?}", value_id),
                 };
 
@@ -467,9 +465,7 @@ impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
     pub fn vault(&self) -> &Vault {
         match self {
             REValueRef::Owned(owned) => owned.vault(),
-            REValueRef::Track(track, address) => {
-                track.read_value(address.clone()).vault()
-            }
+            REValueRef::Track(track, address) => track.read_value(address.clone()).vault(),
             REValueRef::Borrowed(borrowed) => borrowed.vault(),
         }
     }
@@ -571,7 +567,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         ScryptoValue::from_value(value).unwrap()
     }
 
-    fn non_fungible_get(&mut self, key: &[u8]) -> ScryptoValue {
+    fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
         match self {
             REValueRefMut::Owned(..) => {
                 panic!("Not supported");
@@ -582,18 +578,13 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
             REValueRefMut::Track(track, parent_address) => {
                 let resource_address: ResourceAddress = parent_address.clone().into();
                 let parent_address = Address::NonFungibleSet(resource_address);
-                let key = key.to_vec();
-                let value = track.read_key_value(parent_address, key);
+                let value = track.read_key_value(parent_address, id.to_vec());
                 ScryptoValue::from_typed(value.non_fungible())
             }
         }
     }
 
-    fn non_fungible_put(
-        &mut self,
-        key: Vec<u8>,
-        value: ScryptoValue,
-    ) {
+    fn non_fungible_remove(&mut self, id: &NonFungibleId) {
         match self {
             REValueRefMut::Owned(..) => {
                 panic!("Not supported");
@@ -604,10 +595,31 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
             REValueRefMut::Track(track, parent_address) => {
                 let resource_address: ResourceAddress = parent_address.clone().into();
                 let parent_address = Address::NonFungibleSet(resource_address);
-                let non_fungible: NonFungible = scrypto_decode(&value.raw).expect("Should not fail.");
                 track.set_key_value(
                     parent_address,
-                    key,
+                    id.to_vec(),
+                    SubstateValue::NonFungible(None),
+                );
+            }
+        }
+    }
+
+    fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
+        match self {
+            REValueRefMut::Owned(..) => {
+                panic!("Not supported");
+            }
+            REValueRefMut::Borrowed(..) => {
+                panic!("Not supported");
+            }
+            REValueRefMut::Track(track, parent_address) => {
+                let resource_address: ResourceAddress = parent_address.clone().into();
+                let parent_address = Address::NonFungibleSet(resource_address);
+                let non_fungible: NonFungible =
+                    scrypto_decode(&value.raw).expect("Should not fail.");
+                track.set_key_value(
+                    parent_address,
+                    id.to_vec(),
                     SubstateValue::NonFungible(Some(non_fungible)),
                 );
             }
@@ -667,7 +679,7 @@ pub enum SNodeExecution<'a> {
 
 pub enum SubstateAddress {
     KeyValueEntry(KeyValueStoreId, ScryptoValue),
-    NonFungible(ResourceAddress, ScryptoValue),
+    NonFungible(ResourceAddress, NonFungibleId),
     Component(ComponentAddress, ComponentOffset),
 }
 
@@ -1041,8 +1053,15 @@ where
     fn read_value_internal(
         &mut self,
         address: &SubstateAddress,
-    ) -> Result<(ValueId, REValueLocation, ScryptoValue, HashSet<StoredValueId>), RuntimeError> {
-
+    ) -> Result<
+        (
+            ValueId,
+            REValueLocation,
+            ScryptoValue,
+            HashSet<StoredValueId>,
+        ),
+        RuntimeError,
+    > {
         let value_id = match address {
             SubstateAddress::Component(component_address, ..) => {
                 ValueId::Stored(StoredValueId::Component(*component_address))
@@ -1061,7 +1080,9 @@ where
             .map(|v| (v, None))
             .or_else(|| {
                 // Allow global read access to any component info
-                if let SubstateAddress::Component(component_address, ComponentOffset::Info) = address {
+                if let SubstateAddress::Component(component_address, ComponentOffset::Info) =
+                    address
+                {
                     if self.owned_values.contains_key(&value_id) {
                         return Some((
                             &REValueInfo {
@@ -1099,17 +1120,19 @@ where
             );
             let current_value = match &address {
                 SubstateAddress::Component(.., offset) => match offset {
-                    ComponentOffset::State => ScryptoValue::from_slice(value_ref.component().state()).expect("Expected to decode"),
-                    ComponentOffset::Info => ScryptoValue::from_typed(&value_ref.component().info()),
+                    ComponentOffset::State => {
+                        ScryptoValue::from_slice(value_ref.component().state())
+                            .expect("Expected to decode")
+                    }
+                    ComponentOffset::Info => {
+                        ScryptoValue::from_typed(&value_ref.component().info())
+                    }
                 },
                 SubstateAddress::KeyValueEntry(.., key) => {
                     verify_stored_key(key)?;
                     value_ref.kv_store_get(&key.raw)
                 }
-                SubstateAddress::NonFungible(.., key) => {
-                    verify_stored_key(key)?;
-                    value_ref.non_fungible_get(&key.raw)
-                }
+                SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_get(id),
             };
             let cur_children = to_stored_ids(current_value.value_ids())?;
             (current_value, cur_children)
@@ -1749,16 +1772,6 @@ where
         Ok(result)
     }
 
-    fn set_non_fungible(
-        &mut self,
-        non_fungible_address: NonFungibleAddress,
-        non_fungible: Option<NonFungible>,
-    ) {
-        let parent_address = Address::NonFungibleSet(non_fungible_address.resource_address());
-        let key = non_fungible_address.non_fungible_id().to_vec();
-        self.track.set_key_value(parent_address, key, non_fungible)
-    }
-
     fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S> {
         let info = self
             .value_refs
@@ -1921,11 +1934,39 @@ where
         }
     }
 
-    fn read_value_data(
+    fn remove_value_data(
         &mut self,
         address: SubstateAddress,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let (value_id, parent_location, current_value, cur_children) = self.read_value_internal(&address)?;
+        let (value_id, location, current_value, cur_children) =
+            self.read_value_internal(&address)?;
+        if !cur_children.is_empty() {
+            return Err(RuntimeError::ValueNotAllowed);
+        }
+
+        // Write values
+        let mut value_ref = location.to_ref_mut(
+            &value_id,
+            &mut self.owned_values,
+            &mut self.frame_borrowed_values,
+            &mut self.track,
+        );
+        match address {
+            SubstateAddress::Component(..) => {
+                panic!("Should not get here");
+            }
+            SubstateAddress::KeyValueEntry(..) => {
+                panic!("Should not get here");
+            }
+            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_remove(&id),
+        }
+
+        Ok(current_value)
+    }
+
+    fn read_value_data(&mut self, address: SubstateAddress) -> Result<ScryptoValue, RuntimeError> {
+        let (value_id, parent_location, current_value, cur_children) =
+            self.read_value_internal(&address)?;
         for stored_value_id in cur_children {
             let child_location = parent_location.child(value_id.clone());
 
@@ -1951,8 +1992,12 @@ where
             let value_ids = value.value_ids();
             match address {
                 SubstateAddress::KeyValueEntry(..)
-                | SubstateAddress::Component(_, ComponentOffset::State) => self.take_available_values(value_ids, true)?,
-                SubstateAddress::Component(_, ComponentOffset::Info) => return Err(RuntimeError::InvalidDataWrite),
+                | SubstateAddress::Component(_, ComponentOffset::State) => {
+                    self.take_available_values(value_ids, true)?
+                }
+                SubstateAddress::Component(_, ComponentOffset::Info) => {
+                    return Err(RuntimeError::InvalidDataWrite)
+                }
                 SubstateAddress::NonFungible(..) => {
                     if !value_ids.is_empty() {
                         return Err(RuntimeError::ValueNotAllowed);
@@ -1962,7 +2007,8 @@ where
             }
         };
 
-        let (value_id, location, _current_value, cur_children) = self.read_value_internal(&address)?;
+        let (value_id, location, _current_value, cur_children) =
+            self.read_value_internal(&address)?;
 
         // Fulfill method
         let missing = to_stored_ids(missing)?;
@@ -1987,9 +2033,7 @@ where
             SubstateAddress::KeyValueEntry(.., key) => {
                 value_ref.kv_store_put(key.raw, value, taken_values);
             }
-            SubstateAddress::NonFungible(.., key) => {
-                value_ref.non_fungible_put(key.raw, value)
-            }
+            SubstateAddress::NonFungible(.., id) => value_ref.non_fungible_put(id, value),
         }
 
         Ok(())

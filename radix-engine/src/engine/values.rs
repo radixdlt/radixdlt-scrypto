@@ -308,11 +308,7 @@ impl InMemoryChildren {
         descendents
     }
 
-    pub unsafe fn get_child(
-        &self,
-        ancestors: &[KeyValueStoreId],
-        id: &ValueId,
-    ) -> Ref<REValue> {
+    pub unsafe fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> Ref<REValue> {
         if ancestors.is_empty() {
             let value = self.child_values.get(id).expect("Value expected to exist");
             return value.borrow();
