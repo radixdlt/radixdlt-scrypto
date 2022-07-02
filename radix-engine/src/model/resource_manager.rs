@@ -301,24 +301,6 @@ impl ResourceManager {
         }
     }
 
-    fn process_non_fungible_data(data: &[u8]) -> Result<ScryptoValue, ResourceManagerError> {
-        let validated = ScryptoValue::from_slice(data)
-            .map_err(|_| ResourceManagerError::InvalidNonFungibleData)?;
-        if !validated.bucket_ids.is_empty() {
-            return Err(ResourceManagerError::InvalidNonFungibleData);
-        }
-        if !validated.proof_ids.is_empty() {
-            return Err(ResourceManagerError::InvalidNonFungibleData);
-        }
-        if !validated.kv_store_ids.is_empty() {
-            return Err(ResourceManagerError::InvalidNonFungibleData);
-        }
-        if !validated.vault_ids.is_empty() {
-            return Err(ResourceManagerError::InvalidNonFungibleData);
-        }
-        Ok(validated)
-    }
-
     pub fn mint_non_fungibles<
         'p,
         's,
@@ -365,11 +347,12 @@ impl ResourceManager {
                 ));
             }
 
-            let immutable_data = Self::process_non_fungible_data(&data.0)?;
-            let mutable_data = Self::process_non_fungible_data(&data.1)?;
-            let non_fungible = NonFungible::new(immutable_data.raw, mutable_data.raw);
-
-            system_api.set_non_fungible(non_fungible_address, Some(non_fungible));
+            let key = ScryptoValue::from_slice(&id.0).expect("NonFungibleId should have been checked at decode.");
+            let non_fungible = NonFungible::new(data.0, data.1);
+            system_api.data(
+                SubstateAddress::NonFungible(self_address, key),
+                DataInstruction::Write(ScryptoValue::from_typed(&non_fungible))
+            ).expect("Should never fail");
             ids.insert(id);
         }
 
