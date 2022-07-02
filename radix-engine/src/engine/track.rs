@@ -424,6 +424,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         address
     }
 
+
     pub fn create_uuid_value_2<A: Into<Address>, V: Into<SubstateValue>>(
         &mut self,
         addr: A,
@@ -432,6 +433,12 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         let address = addr.into();
         self.new_addresses.push(address.clone());
         self.up_substates.insert(address.encode(), value.into());
+    }
+
+    // TODO: Make more generic
+    pub fn create_non_fungible_space(&mut self, resource_address: ResourceAddress) {
+        let space_address = resource_to_non_fungible_space!(resource_address);
+        self.up_virtual_substate_space.insert(space_address);
     }
 
     pub fn create_key_space(
@@ -673,7 +680,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new resource address.
-    fn new_resource_address(&mut self) -> ResourceAddress {
+    pub fn new_resource_address(&mut self) -> ResourceAddress {
         let resource_address = self
             .id_allocator
             .new_resource_address(self.transaction_hash())

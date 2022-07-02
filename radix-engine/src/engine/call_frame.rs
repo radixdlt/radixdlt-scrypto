@@ -371,6 +371,7 @@ impl REValueLocation {
                         }
                     }
                     ValueId::Resource(resource_address) => Address::Resource(*resource_address),
+                    ValueId::NonFungibles(resource_address) => Address::NonFungibleSet(*resource_address),
                     _ => panic!("Unexpected value id {:?}", value_id),
                 };
 
@@ -431,6 +432,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
 
     pub fn resource_manager(&mut self) -> &mut ResourceManager {
         match self {
+            RENativeValueRef::Owned(owned) => owned.resource_manager_mut(),
             RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
             _ => panic!("Unexpected"),
         }
@@ -569,16 +571,14 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
 
     fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
         match self {
-            REValueRefMut::Owned(..) => {
-                panic!("Not supported");
+            REValueRefMut::Owned(owned) => {
+                ScryptoValue::from_typed(&owned.non_fungibles().get(id).cloned())
             }
             REValueRefMut::Borrowed(..) => {
                 panic!("Not supported");
             }
-            REValueRefMut::Track(track, parent_address) => {
-                let resource_address: ResourceAddress = parent_address.clone().into();
-                let parent_address = Address::NonFungibleSet(resource_address);
-                let value = track.read_key_value(parent_address, id.to_vec());
+            REValueRefMut::Track(track, address) => {
+                let value = track.read_key_value(address.clone(), id.to_vec());
                 ScryptoValue::from_typed(value.non_fungible())
             }
         }
@@ -592,11 +592,9 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
             REValueRefMut::Borrowed(..) => {
                 panic!("Not supported");
             }
-            REValueRefMut::Track(track, parent_address) => {
-                let resource_address: ResourceAddress = parent_address.clone().into();
-                let parent_address = Address::NonFungibleSet(resource_address);
+            REValueRefMut::Track(track, address) => {
                 track.set_key_value(
-                    parent_address,
+                    address.clone(),
                     id.to_vec(),
                     SubstateValue::NonFungible(None),
                 );
@@ -606,19 +604,19 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
 
     fn non_fungible_put(&mut self, id: NonFungibleId, value: ScryptoValue) {
         match self {
-            REValueRefMut::Owned(..) => {
-                panic!("Not supported");
+            REValueRefMut::Owned(owned) => {
+                let non_fungible: NonFungible =
+                    scrypto_decode(&value.raw).expect("Should not fail.");
+                owned.non_fungibles_mut().insert(id, non_fungible);
             }
             REValueRefMut::Borrowed(..) => {
                 panic!("Not supported");
             }
-            REValueRefMut::Track(track, parent_address) => {
-                let resource_address: ResourceAddress = parent_address.clone().into();
-                let parent_address = Address::NonFungibleSet(resource_address);
+            REValueRefMut::Track(track, address) => {
                 let non_fungible: NonFungible =
                     scrypto_decode(&value.raw).expect("Should not fail.");
                 track.set_key_value(
-                    parent_address,
+                    address.clone(),
                     id.to_vec(),
                     SubstateValue::NonFungible(Some(non_fungible)),
                 );
@@ -1067,7 +1065,7 @@ where
                 ValueId::Stored(StoredValueId::Component(*component_address))
             }
             SubstateAddress::NonFungible(resource_address, ..) => {
-                ValueId::Resource(*resource_address)
+                ValueId::NonFungibles(*resource_address)
             }
             SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(*kv_store_id),
         };
@@ -1236,6 +1234,13 @@ where
                                 visible: true,
                             },
                         );
+                        value_refs.insert(
+                            ValueId::NonFungibles(resource_address),
+                            REValueInfo {
+                                location: REValueLocation::Track { parent: None },
+                                visible: true,
+                            },
+                        );
                         vec![method_auth.clone()]
                     }
                     REValue::Proof(_) => vec![],
@@ -1335,6 +1340,13 @@ where
                 let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
                 value_refs.insert(
                     value_id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::Track { parent: None },
+                        visible: true,
+                    },
+                );
+                value_refs.insert(
+                    ValueId::NonFungibles(*resource_address),
                     REValueInfo {
                         location: REValueLocation::Track { parent: None },
                         visible: true,
@@ -1790,7 +1802,7 @@ where
     }
 
     fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef<'p> {
-        let info = self.value_refs.get(value_id).unwrap();
+        let info = self.value_refs.get(value_id).expect(&format!("Value should exist {:?}", value_id));
         if !info.visible {
             panic!("Trying to read value which is not visible.")
         }
@@ -1842,6 +1854,13 @@ where
                 let package_address = self.track.new_package_address();
                 ValueId::Package(package_address)
             }
+            REValueByComplexity::Primitive(REPrimitiveValue::Resource(..)) => {
+                let resource_address = self.track.new_resource_address();
+                ValueId::Resource(resource_address)
+            }
+            REValueByComplexity::Primitive(REPrimitiveValue::NonFungibles(resource_address, ..)) => {
+                ValueId::NonFungibles(resource_address)
+            }
             REValueByComplexity::Complex(REComplexValue::Component(..)) => {
                 let component_address = self.track.new_component_address();
                 ValueId::Stored(StoredValueId::Component(component_address))
@@ -1863,7 +1882,9 @@ where
         self.owned_values.insert(id, RefCell::new(re_value));
 
         match id {
-            ValueId::Stored(StoredValueId::KeyValueStoreId(..)) => {
+            ValueId::Stored(StoredValueId::KeyValueStoreId(..))
+            | ValueId::Resource(..)
+            | ValueId::NonFungibles(..) => {
                 self.value_refs.insert(
                     id.clone(),
                     REValueInfo {
@@ -1905,12 +1926,23 @@ where
         assert!(taken_values.len() == 1);
         let value = taken_values.into_values().nth(0).unwrap();
 
-        let (substate, maybe_child_values) = match value {
+        let (substate, maybe_child_values, maybe_non_fungibles) = match value {
             REValue::Component {
                 component,
                 child_values,
-            } => (SubstateValue::Component(component), Some(child_values)),
-            REValue::Package(package) => (SubstateValue::Package(package), None),
+            } => (SubstateValue::Component(component), Some(child_values), None),
+            REValue::Package(package) => (SubstateValue::Package(package), None, None),
+            REValue::Resource(resource_manager) => {
+                let non_fungibles = if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
+                    let resource_address: ResourceAddress = value_id.clone().into();
+                    let re_value = self.owned_values.remove(&ValueId::NonFungibles(resource_address)).unwrap().into_inner();
+                    let non_fungibles: HashMap<NonFungibleId, NonFungible> = re_value.into();
+                    Some(non_fungibles)
+                } else {
+                    None
+                };
+                (SubstateValue::Resource(resource_manager), None, non_fungibles)
+            },
             _ => panic!("Not expected"),
         };
 
@@ -1919,6 +1951,7 @@ where
                 Address::GlobalComponent(*component_address)
             }
             ValueId::Package(package_address) => Address::Package(*package_address),
+            ValueId::Resource(resource_address) => Address::Resource(*resource_address),
             _ => panic!("Expected to be a component address"),
         };
 
@@ -1930,7 +1963,20 @@ where
                 to_store_values.insert(id, cell.into_inner());
             }
             self.track
-                .insert_objects_into_component(to_store_values, address.into());
+                .insert_objects_into_component(to_store_values, address.clone().into());
+        }
+
+        if let Some(non_fungibles) = maybe_non_fungibles {
+            let resource_address: ResourceAddress = address.clone().into();
+            self.track.create_non_fungible_space(resource_address.clone());
+            let parent_address = Address::NonFungibleSet(resource_address.clone());
+            for (id, non_fungible) in non_fungibles {
+                self.track.set_key_value(
+                    parent_address.clone(),
+                    id.to_vec(),
+                    SubstateValue::NonFungible(Some(non_fungible)),
+                );
+            }
         }
     }
 

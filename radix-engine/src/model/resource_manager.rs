@@ -398,16 +398,24 @@ impl ResourceManager {
                 let input: ResourceManagerCreateInput = scrypto_decode(&arg.raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
 
+
+
                 let resource_manager =
                     ResourceManager::new(input.resource_type, input.metadata, input.access_rules)?;
-                let resource_address = system_api.create_resource(resource_manager);
+                let resource_value_id = system_api.create_value(resource_manager).expect("Should never fail");
+                let resource_address = resource_value_id.clone().into();
+
+                if matches!(input.resource_type, ResourceType::NonFungible) {
+                    let non_fungibles: HashMap<NonFungibleId, NonFungible> = HashMap::new();
+                    system_api.create_value((resource_address, non_fungibles)).expect("Should never fail");
+                }
+
                 let bucket_id = if let Some(mint_params) = input.mint_params {
-                    let resource_id = ValueId::Resource(resource_address);
-                    let mut value = system_api.borrow_value_mut(&resource_id);
-                    let resource_manager = value.resource_manager();
+                    let mut resource_manager_ref = system_api.borrow_value_mut(&resource_value_id);
+                    let resource_manager = resource_manager_ref.resource_manager();
                     let container =
                         resource_manager.mint(mint_params, resource_address, system_api)?;
-                    system_api.return_value_mut(resource_id, value);
+                    system_api.return_value_mut(resource_value_id, resource_manager_ref);
                     let bucket_id = system_api
                         .create_value(Bucket::new(container))
                         .unwrap()
@@ -416,6 +424,8 @@ impl ResourceManager {
                 } else {
                     None
                 };
+
+                system_api.globalize_value(&resource_value_id);
 
                 Ok(ScryptoValue::from_typed(&(resource_address, bucket_id)))
             }
