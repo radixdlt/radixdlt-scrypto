@@ -68,9 +68,6 @@ pub struct CallFrame<
     frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
-    // TODO: Remove, currently required here due to the awkwardness of the current create_resource
-    locked_resmans: HashSet<Address>,
-
     /// There is a single cost unit counter and a single fee table per transaction execution.
     /// When a call ocurrs, they're passed from the parent to the child, and returned
     /// after the invocation.
@@ -765,7 +762,6 @@ where
             worktop,
             auth_zone,
             caller_auth_zone,
-            locked_resmans: HashSet::new(),
             cost_unit_counter: Some(cost_unit_counter),
             fee_table: Some(fee_table),
             phantom: PhantomData,
@@ -973,11 +969,6 @@ where
             )?;
         }
         self.drop_owned_values()?;
-
-        // TODO: Remove
-        for unlock in &self.locked_resmans {
-            self.track.release_lock(unlock.clone());
-        }
 
         trace!(
             self,
