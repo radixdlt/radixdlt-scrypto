@@ -10,7 +10,6 @@ use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::ReadableSubstateStore;
-use crate::model::*;
 use crate::wasm::*;
 
 pub trait SystemApi<'p, 's, W, I, S>
@@ -46,7 +45,6 @@ where
     fn remove_value_data(&mut self, address: SubstateAddress)
         -> Result<ScryptoValue, RuntimeError>;
 
-    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
     fn get_epoch(&mut self) -> u64;
 
     fn get_transaction_hash(&mut self) -> Hash;

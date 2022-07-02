@@ -1905,25 +1905,6 @@ where
         Ok(id)
     }
 
-    fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
-        let resource_address = self.track.create_uuid_value(resource_manager).into();
-
-        // TODO: Remove
-        self.value_refs.insert(
-            ValueId::Resource(resource_address),
-            REValueInfo {
-                location: REValueLocation::Track { parent: None },
-                visible: true,
-            },
-        );
-        self.track
-            .take_lock(resource_address, true)
-            .expect("Should never fail since it was just created.");
-        self.locked_resmans.insert(resource_address.into());
-
-        resource_address
-    }
-
     fn globalize_value(&mut self, value_id: &ValueId) {
         let mut values = HashSet::new();
         values.insert(value_id.clone());
@@ -1974,7 +1955,7 @@ where
             _ => panic!("Expected to be a component address"),
         };
 
-        self.track.create_uuid_value_2(address.clone(), substate);
+        self.track.create_uuid_value(address.clone(), substate);
 
         if let Some(child_values) = maybe_child_values {
             let mut to_store_values = HashMap::new();
