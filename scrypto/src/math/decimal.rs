@@ -186,36 +186,21 @@ impl Decimal {
 
     /// Calculates power using exponentiation by squaring.
     pub fn powi(&self, exp: i32) -> Self {
-        let prod = BigInt::from(self.0);
         let one = BigInt::from(Self::ONE.0);
-        let exponent = exp.abs() as u32;
-        let get = |a: BigInt, ex: u32| if ex == 0 { one.clone() } else { a };
-        let fix_rounding = one.clone() / 2i8;
-        let fix_product = |product: BigInt| {
-            let fixed = (product + &fix_rounding) / &one;
-            if fixed.to_signed_bytes_be().len() > i128::BITS as usize {
-                panic!("overflow");
-            } else {
-                fixed
-            }
-        };
-        let nth_bit = |a: u32, n: u32| (a >> n) & 1;
-        let (_, res) = (1..i32::BITS - exponent.leading_zeros())
-            .map(|n| nth_bit(exponent, n))
-            .fold(
-                (fix_product(&prod * &prod), get(prod, nth_bit(exponent, 0))),
-                |acc, bit| {
-                    (
-                        fix_product(&acc.0 * &acc.0),
-                        fix_product(get(acc.0, bit) * acc.1),
-                    )
-                },
-            );
-
-        if exp.is_negative() {
-            Self((&one * &one / res).to_i128().expect("overflow"))
+        let base = BigInt::from(self.0);
+        let to_dec = |x: BigInt| Decimal(x.to_i128().expect("overflow"));
+        if exp < 0 {
+            return to_dec(&one * &one / base).powi(-exp);
+        }
+        if exp == 0 {
+            return Self::ONE;
+        }
+        if exp % 2 == 0 {
+            return to_dec(&base * &base / &one).powi(exp / 2);
         } else {
-            Self(res.to_i128().expect("overflow"))
+            return to_dec(
+                &base * BigInt::from(to_dec(&base * &base / &one).powi((exp - 1) / 2).0) / &one,
+            );
         }
     }
 }
@@ -320,7 +305,7 @@ impl<T: Into<Decimal>> Mul<T> for Decimal {
     fn mul(self, other: T) -> Self::Output {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
-        let c = (a * b + Self::ONE.0 / 2) / Self::ONE.0;
+        let c = a * b / Self::ONE.0;
         Self(c.to_i128().expect("overflow"))
     }
 }
@@ -331,7 +316,7 @@ impl<T: Into<Decimal>> Div<T> for Decimal {
     fn div(self, other: T) -> Self::Output {
         let a = BigInt::from(self.0);
         let b = BigInt::from(other.into().0);
-        let c: BigInt = (a * Self::ONE.0 + &b / 2) / b;
+        let c = a * Self::ONE.0 / b;
         Self(c.to_i128().expect("overflow"))
     }
 }
@@ -656,7 +641,7 @@ mod tests {
     fn test_div() {
         let a = Decimal::from(5u32);
         let b = Decimal::from(7u32);
-        assert_eq!((a / b).to_string(), "0.714285714285714286");
+        assert_eq!((a / b).to_string(), "0.714285714285714285");
         assert_eq!((b / a).to_string(), "1.4");
     }
 
@@ -664,7 +649,7 @@ mod tests {
     fn test_div_negative() {
         let a = Decimal::from(-42);
         let b = Decimal::from(2);
-        assert_eq!((a / b).to_string(), "-20.999999999999999999");
+        assert_eq!((a / b).to_string(), "-21");
     }
 
     #[test]
@@ -712,7 +697,7 @@ mod tests {
     #[test]
     fn test_2_powi_3724() {
         let a = dec!("1.000234891009084238");
-        assert_eq!((a.powi(3724)).to_string(), "2.397991232254676688");
+        assert_eq!((a.powi(3724)).to_string(), "2.397991232254669619");
     }
 
     #[test]
@@ -771,13 +756,13 @@ mod tests {
     #[test]
     fn test_minus05_powi_minus3() {
         let a = dec!("-0.5");
-        assert_eq!((a.powi(-3)).to_string(), "-8.000000000000000064");
+        assert_eq!((a.powi(-3)).to_string(), "-8");
     }
 
     #[test]
     fn test_10_powi_20() {
         let a = dec!(10i128);
-        assert_eq!(a.powi(20).to_string(), "100000000000000000000");
+        assert_eq!(a.powi(15).to_string(), "1000000000000000");
     }
 
     #[test]
