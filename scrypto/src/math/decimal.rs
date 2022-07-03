@@ -184,7 +184,7 @@ impl Decimal {
         }
     }
 
-    /// Calculates power using exponentiation by squaring.
+    /// Calculates power using "exponentiation by squaring".
     pub fn powi(&self, exp: i32) -> Self {
         let one = BigInt::from(Self::ONE.0);
         let base = BigInt::from(self.0);
@@ -760,16 +760,16 @@ mod tests {
     }
 
     #[test]
-    fn test_10_powi_20() {
+    fn test_10_powi_15() {
         let a = dec!(10i128);
         assert_eq!(a.powi(15).to_string(), "1000000000000000");
     }
 
     #[test]
     #[should_panic]
-    fn test_10_powi_21() {
+    fn test_10_powi_16() {
         let a = Decimal(10i128);
-        assert_eq!(a.powi(21).to_string(), "1000000000000000000000");
+        assert_eq!(a.powi(16).to_string(), "1000000000000000000000");
     }
 
     #[test]
