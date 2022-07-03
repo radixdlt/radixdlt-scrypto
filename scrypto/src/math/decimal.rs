@@ -199,7 +199,7 @@ impl Decimal {
             return to_dec(&base * &base / &one).powi(exp / 2);
         } else {
             return to_dec(
-                &base * BigInt::from(to_dec(&base * &base / &one).powi((exp - 1) / 2).0) / &one,
+                &base * to_dec(&base * &base / &one).powi((exp - 1) / 2).0 / &one
             );
         }
     }
