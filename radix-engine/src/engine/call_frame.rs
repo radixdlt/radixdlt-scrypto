@@ -531,17 +531,13 @@ where
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<ValueId, REValue>), RuntimeError> {
-        let remaining_cost_units = self.cost_unit_counter().remaining();
         trace!(
             self,
             Level::Debug,
             "Run started! Depth: {}, Remaining cost units: {}",
             self.depth,
-            remaining_cost_units
+            self.cost_unit_counter.remaining()
         );
-        self.cost_unit_counter
-            .consume(self.fee_table.engine_run_cost())
-            .map_err(RuntimeError::CostingError)?;
 
         let mut to_return = HashMap::new();
 

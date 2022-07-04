@@ -1,7 +1,5 @@
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
-pub const WASM_METERING_V1: u8 = 1;
-
 pub struct FeeTable {
     tx_decoding_per_byte: u32,
     tx_verification_per_byte: u32,
@@ -23,11 +21,7 @@ impl FeeTable {
             fixed_low: 1000,
             fixed_medium: 5_000,
             fixed_high: 10_000,
-            wasm_metering_params: WasmMeteringParams::new(
-                WASM_METERING_V1,
-                InstructionCostRules::tiered(50000),
-                512,
-            ),
+            wasm_metering_params: WasmMeteringParams::new(InstructionCostRules::tiered(50000), 512),
         }
     }
 

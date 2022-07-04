@@ -10,10 +10,7 @@ pub struct WasmMeteringParams {
 }
 
 impl WasmMeteringParams {
-    pub fn new(
-        instruction_cost_rules: InstructionCostRules,
-        max_stack_size: u32,
-    ) -> Self {
+    pub fn new(instruction_cost_rules: InstructionCostRules, max_stack_size: u32) -> Self {
         Self {
             instruction_cost_rules,
             max_stack_size,

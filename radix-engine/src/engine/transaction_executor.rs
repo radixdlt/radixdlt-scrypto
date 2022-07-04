@@ -74,13 +74,11 @@ where
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
         let fee_table = FeeTable::new();
 
-        // Charge transaction size
+        // Charge transaction decoding and stateless verification
         cost_unit_counter
             .consume(
-                fee_table
-                    .tx_validation_cost_per_byte()
-                    .checked_mul(transaction.transaction_payload_size())
-                    .expect("No overflow should ocurr with transaction size checked"),
+                (fee_table.tx_decoding_per_byte() + fee_table.tx_verification_per_byte())
+                    * transaction.transaction_payload_size(),
             )
             .expect("System loan should cover transaction validation cost");
 
