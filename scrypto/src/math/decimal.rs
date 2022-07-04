@@ -189,16 +189,20 @@ impl Decimal {
         let one = BigInt::from(Self::ONE.0);
         let base = BigInt::from(self.0);
         let to_dec = |x: BigInt| Decimal(x.to_i128().expect("overflow"));
+        let div = |x: i32, y: i32| x.checked_div(y).expect("overflow");
+        let sub = |x: i32, y: i32| x.checked_sub(y).expect("overflow");
+        let mul = |x: i32, y: i32| x.checked_mul(y).expect("overflow");
+
         if exp < 0 {
-            return to_dec(&one * &one / base).powi(-exp);
+            return to_dec(&one * &one / base).powi(mul(exp, -1));
         }
         if exp == 0 {
             return Self::ONE;
         }
         if exp % 2 == 0 {
-            return to_dec(&base * &base / &one).powi(exp / 2);
+            return to_dec(&base * &base / &one).powi(div(exp, 2));
         } else {
-            return to_dec(&base * to_dec(&base * &base / &one).powi((exp - 1) / 2).0 / &one);
+            return to_dec(&base * to_dec(&base * &base / &one).powi(div(sub(exp, 1), 2)).0 / &one);
         }
     }
 }
@@ -633,6 +637,28 @@ mod tests {
         let a = Decimal::from(5u32);
         let b = Decimal::from(0u32);
         assert_eq!((a / b).to_string(), "0");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_powi_exp_overflow() {
+        let a = Decimal::from(5u32);
+        let b = i32::MIN;
+        assert_eq!(a.powi(b).to_string(), "0");
+    }
+
+    #[test]
+    fn test_1_powi_max() {
+        let a = Decimal::from(1u32);
+        let b = i32::MAX;
+        assert_eq!(a.powi(b).to_string(), "1");
+    }
+
+    #[test]
+    fn test_1_powi_min() {
+        let a = Decimal::from(1u32);
+        let b = i32::MAX - 1;
+        assert_eq!(a.powi(b).to_string(), "1");
     }
 
     #[test]
