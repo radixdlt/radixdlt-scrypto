@@ -198,9 +198,7 @@ impl Decimal {
         if exp % 2 == 0 {
             return to_dec(&base * &base / &one).powi(exp / 2);
         } else {
-            return to_dec(
-                &base * to_dec(&base * &base / &one).powi((exp - 1) / 2).0 / &one
-            );
+            return to_dec(&base * to_dec(&base * &base / &one).powi((exp - 1) / 2).0 / &one);
         }
     }
 }
