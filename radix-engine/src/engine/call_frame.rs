@@ -58,7 +58,6 @@ pub struct CallFrame<
 
     /// Owned Values
     owned_values: HashMap<ValueId, RefCell<REValue>>,
-    worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Borrowed Values from call frames up the stack
@@ -563,7 +562,6 @@ pub enum SNodeExecution<'a> {
     Static(StaticSNodeState),
     Consumed(ValueId),
     AuthZone(RefMut<'a, AuthZone>),
-    Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId),
     Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
@@ -621,7 +619,6 @@ where
             Some(RefCell::new(AuthZone::new_with_proofs(
                 initial_auth_zone_proofs,
             ))),
-            Some(RefCell::new(Worktop::new())),
             HashMap::new(),
             HashMap::new(),
             HashMap::new(),
@@ -639,7 +636,6 @@ where
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         auth_zone: Option<RefCell<AuthZone>>,
-        worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, REValue>,
         readable_values: HashMap<ValueId, REValueInfo>,
         frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
@@ -662,7 +658,6 @@ where
             owned_values: celled_owned_values,
             value_refs: readable_values,
             frame_borrowed_values,
-            worktop,
             auth_zone,
             caller_auth_zone,
             cost_unit_counter: Some(cost_unit_counter),
@@ -678,14 +673,6 @@ where
                 .into_inner()
                 .try_drop()
                 .map_err(|e| RuntimeError::DropFailure(e))?;
-        }
-
-        if let Some(ref_worktop) = &self.worktop {
-            let worktop = ref_worktop.borrow();
-            if !worktop.is_empty() {
-                trace!(self, Level::Warn, "Resource worktop is not empty");
-                return Err(RuntimeError::DropFailure(DropFailure::Worktop));
-            }
         }
 
         Ok(())
@@ -779,9 +766,6 @@ where
                 SNodeExecution::AuthZone(mut auth_zone) => auth_zone
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::AuthZoneError),
-                SNodeExecution::Worktop(mut worktop) => worktop
-                    .main(fn_ident, input, self)
-                    .map_err(RuntimeError::WorktopError),
                 SNodeExecution::ValueRef(value_id) => match value_id {
                     ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
                         Bucket::main(bucket_id, fn_ident, input, self)
@@ -1067,14 +1051,6 @@ where
                     Ok((SNodeExecution::AuthZone(borrowed), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
-                }
-            }
-            SNodeRef::WorktopRef => {
-                if let Some(worktop_ref) = &self.worktop {
-                    let worktop = worktop_ref.borrow_mut();
-                    Ok((SNodeExecution::Worktop(worktop), vec![]))
-                } else {
-                    Err(RuntimeError::WorktopDoesNotExist)
                 }
             }
             SNodeRef::ResourceRef(resource_address) => {
@@ -1476,12 +1452,6 @@ where
                 SNodeExecution::Scrypto(..)
                 | SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
-                }
-                _ => None,
-            },
-            match loaded_snode {
-                SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
-                    Some(RefCell::new(Worktop::new()))
                 }
                 _ => None,
             },
