@@ -104,7 +104,7 @@ impl REValue {
         }
     }
 
-    pub fn get_children_store(&self) -> Option<&InMemoryChildren> {
+    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, REValue>) {
         match self {
             REValue::KeyValueStore {
                 store: _,
@@ -113,12 +113,30 @@ impl REValue {
             | REValue::Component {
                 component: _,
                 child_values,
-            } => Some(child_values),
-            _ => None,
+            } => child_values.insert_children(values),
+            _ => panic!("Unexpected"),
         }
     }
 
-    pub fn get_children_store_mut(&mut self) -> Option<&mut InMemoryChildren> {
+    pub fn get_child_mut(
+        &mut self,
+        ancestors: &[KeyValueStoreId],
+        id: &ValueId,
+    ) -> RefMut<REValue> {
+        match self {
+            REValue::KeyValueStore {
+                store: _,
+                child_values,
+            }
+            | REValue::Component {
+                component: _,
+                child_values,
+            } => child_values.get_child_mut(ancestors, id),
+            _ => panic!("Unexpected"),
+        }
+    }
+
+    pub fn get_children_store(&self) -> Option<&InMemoryChildren> {
         match self {
             REValue::KeyValueStore {
                 store: _,
@@ -393,8 +411,7 @@ impl InMemoryChildren {
             .child_values
             .get_mut(&ValueId::KeyValueStore(*first))
             .unwrap();
-        let children_store = value.get_mut().get_children_store_mut().unwrap();
-        children_store.get_child_mut(rest, id)
+        value.get_mut().get_child_mut(rest, id)
     }
 
     pub fn insert_children(&mut self, values: HashMap<ValueId, REValue>) {

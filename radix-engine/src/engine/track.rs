@@ -688,7 +688,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn insert_non_root_objects(&mut self, values: HashMap<ValueId, REValue>) {
+    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, REValue>) {
         for (id, value) in values {
             match value {
                 REValue::Vault(vault) => {
@@ -705,7 +705,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                         .into_iter()
                         .map(|(id, v)| (id, v.into_inner()))
                         .collect();
-                    self.insert_non_root_objects(child_values);
+                    self.insert_non_root_nodes(child_values);
                 }
                 REValue::KeyValueStore {
                     store,
@@ -721,7 +721,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                         .into_iter()
                         .map(|(id, v)| (id, v.into_inner()))
                         .collect();
-                    self.insert_non_root_objects(child_values);
+                    self.insert_non_root_nodes(child_values);
                 }
                 _ => panic!("Invalid value being persisted: {:?}", value),
             }

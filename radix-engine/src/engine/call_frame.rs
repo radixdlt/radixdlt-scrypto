@@ -296,10 +296,7 @@ impl REValueLocation {
                 id,
             } => {
                 let root_value = owned_values.get_mut(&root).unwrap().get_mut();
-                let children = root_value
-                    .get_children_store_mut()
-                    .expect("Should have children");
-                children.get_child_mut(ancestors, id)
+                root_value.get_child_mut(ancestors, id)
             }
             REValueLocation::Borrowed {
                 root,
@@ -307,10 +304,7 @@ impl REValueLocation {
                 id,
             } => {
                 let borrowed = borrowed_values.get_mut(root).unwrap();
-                borrowed
-                    .get_children_store_mut()
-                    .unwrap()
-                    .get_child_mut(ancestors, id)
+                borrowed.get_child_mut(ancestors, id)
             }
             _ => panic!("Not an owned ref"),
         }
@@ -470,8 +464,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         match self {
             REValueRefMut::Owned(owned) => {
                 owned.kv_store_mut().put(key, value);
-                let children = owned.get_children_store_mut();
-                children.unwrap().insert_children(to_store);
+                owned.insert_non_root_nodes(to_store);
             }
             REValueRefMut::Track(track, address) => {
                 track.set_key_value(
@@ -479,7 +472,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
                     key,
                     SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                 );
-                track.insert_non_root_objects(to_store);
+                track.insert_non_root_nodes(to_store);
             }
             REValueRefMut::Borrowed(..) => {
                 panic!("Not supported");
@@ -576,13 +569,12 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         match self {
             REValueRefMut::Track(track, address) => {
                 track.write_component_value(address.clone(), value.raw);
-                track.insert_non_root_objects(to_store);
+                track.insert_non_root_nodes(to_store);
             }
             REValueRefMut::Borrowed(owned) => {
                 let component = owned.component_mut();
                 component.set_state(value.raw);
-                let children = owned.get_children_store_mut();
-                children.unwrap().insert_children(to_store);
+                owned.insert_non_root_nodes(to_store);
             }
             _ => panic!("Unexpected component ref"),
         }
@@ -1863,7 +1855,7 @@ where
             for (id, cell) in child_values.into_iter() {
                 to_store_values.insert(id, cell.into_inner());
             }
-            self.track.insert_non_root_objects(to_store_values);
+            self.track.insert_non_root_nodes(to_store_values);
         }
 
         if let Some(non_fungibles) = maybe_non_fungibles {
