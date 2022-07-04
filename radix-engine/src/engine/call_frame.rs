@@ -241,10 +241,7 @@ impl REValueLocation {
                     .unwrap()
                     .try_borrow_unguarded()
                     .unwrap();
-                let children = root_value
-                    .get_children_store()
-                    .expect("Should have children");
-                children.get_child(ancestors, id)
+                root_value.get_child(ancestors, id)
             },
             REValueLocation::Borrowed {
                 root,
@@ -252,10 +249,7 @@ impl REValueLocation {
                 id,
             } => unsafe {
                 let borrowed = borrowed_values.get(root).unwrap();
-                borrowed
-                    .get_children_store()
-                    .unwrap()
-                    .get_child(ancestors, id)
+                borrowed.get_child(ancestors, id)
             },
             _ => panic!("Not an owned ref"),
         }
@@ -953,10 +947,9 @@ where
         // Moved values must have their references removed
         for (id, value) in &taken {
             self.value_refs.remove(id);
-            if let Some(children) = value.get_children_store() {
-                for id in children.all_descendants() {
-                    self.value_refs.remove(&id);
-                }
+            for id in value.all_descendants() {
+                self.value_refs.remove(&id);
+
             }
         }
 

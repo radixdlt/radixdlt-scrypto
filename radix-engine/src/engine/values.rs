@@ -136,7 +136,11 @@ impl REValue {
         }
     }
 
-    pub fn get_children_store(&self) -> Option<&InMemoryChildren> {
+    pub unsafe fn get_child(
+        &self,
+        ancestors: &[KeyValueStoreId],
+        id: &ValueId,
+    ) -> Ref<REValue> {
         match self {
             REValue::KeyValueStore {
                 store: _,
@@ -145,8 +149,22 @@ impl REValue {
             | REValue::Component {
                 component: _,
                 child_values,
-            } => Some(child_values),
-            _ => None,
+            } => child_values.get_child(ancestors, id),
+            _ => panic!("Unexpected"),
+        }
+    }
+
+    pub fn all_descendants(&self) -> Vec<ValueId> {
+        match self {
+            REValue::KeyValueStore {
+                store: _,
+                child_values,
+            }
+            | REValue::Component {
+                component: _,
+                child_values,
+            } => child_values.all_descendants(),
+            _ => Vec::new(),
         }
     }
 
@@ -371,9 +389,7 @@ impl InMemoryChildren {
         for (id, value) in self.child_values.iter() {
             descendents.push(*id);
             let value = value.borrow();
-            if let Some(children_store) = value.get_children_store() {
-                descendents.extend(children_store.all_descendants());
-            }
+            descendents.extend(value.all_descendants());
         }
         descendents
     }
@@ -390,7 +406,7 @@ impl InMemoryChildren {
             .get(&ValueId::KeyValueStore(*first))
             .unwrap();
         let value = value.try_borrow_unguarded().unwrap();
-        value.get_children_store().unwrap().get_child(rest, id)
+        value.get_child(rest, id)
     }
 
     pub fn get_child_mut(
