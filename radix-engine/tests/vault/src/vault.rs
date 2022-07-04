@@ -11,14 +11,6 @@ blueprint! {
     }
 
     impl VaultTest {
-        pub fn dangling_vault() -> () {
-            let bucket = ResourceBuilder::new_fungible()
-                .divisibility(DIVISIBILITY_MAXIMUM)
-                .metadata("name", "TestToken")
-                .initial_supply(1);
-            let _vault = Vault::with_bucket(bucket);
-        }
-
         fn new_fungible() -> Bucket {
             ResourceBuilder::new_fungible()
                 .divisibility(DIVISIBILITY_MAXIMUM)

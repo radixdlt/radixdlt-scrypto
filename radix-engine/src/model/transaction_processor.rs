@@ -17,7 +17,6 @@ use scrypto::values::*;
 use transaction::model::*;
 use transaction::validation::*;
 
-use crate::engine::ResourceFailure;
 use crate::engine::{RuntimeError, RuntimeError::ProofNotFound, SystemApi};
 use crate::model::worktop::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
@@ -62,7 +61,12 @@ impl TransactionProcessor {
         Ok(value)
     }
 
-    pub fn static_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn static_main<
+        'borrowed,
+        S: SystemApi<'borrowed, W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    >(
         function_name: &str,
         call_data: ScryptoValue,
         system_api: &mut S,
@@ -516,14 +520,19 @@ impl TransactionProcessor {
                     outputs.push(result);
                 }
 
-                // check resource
-                if !worktop.is_empty() {
-                    return Err(TransactionProcessorError::RuntimeError(
-                        RuntimeError::ResourceCheckFailure(ResourceFailure::Resources(
-                            worktop.resource_addresses(),
-                        )),
-                    ));
-                }
+                // This creates frame-owned buckets for all non-zero balances, which triggers a
+                // value drop failure when the frame exits.
+                //
+                // TODO: refactor worktop to be `HashMap<ResourceAddress, BucketId>`
+                // TODO: remove this drain invocation by enforcing no non-empty bucket in worktop
+                worktop
+                    .main(
+                        "drain",
+                        ScryptoValue::from_typed(&WorktopDrainInput {}),
+                        system_api,
+                    )
+                    .map_err(RuntimeError::WorktopError)
+                    .map_err(TransactionProcessorError::RuntimeError)?;
 
                 Ok(ScryptoValue::from_typed(
                     &outputs

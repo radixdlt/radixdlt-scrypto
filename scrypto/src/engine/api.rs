@@ -1,7 +1,7 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::prelude::{AccessRule, AccessRules};
+use scrypto::prelude::AccessRule;
 
 use crate::core::{DataAddress, SNodeRef};
 use crate::engine::types::*;
@@ -31,7 +31,7 @@ macro_rules! sfunctions {
 #[derive(Debug, TypeId, Encode, Decode)]
 pub enum RadixEngineInput {
     InvokeSNode(SNodeRef, String, Vec<u8>),
-    CreateComponent(String, Vec<u8>, Vec<AccessRules>),
+    CreateComponent(String, Vec<u8>),
     CreateKeyValueStore(),
     GetActor(),
     ReadData(DataAddress),

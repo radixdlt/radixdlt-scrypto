@@ -13,6 +13,7 @@ pub enum SNodeRef {
     PackageStatic,
     AuthZoneRef,
     Scrypto(ScryptoActor),
+    Component(ComponentAddress),
     ResourceStatic,
     ResourceRef(ResourceAddress),
     Consumed(ValueId),
@@ -23,8 +24,13 @@ pub enum SNodeRef {
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
+pub enum ComponentOffset {
+    Info,
+    State,
+}
+
+#[derive(Debug, Clone, TypeId, Encode, Decode)]
 pub enum DataAddress {
     KeyValueEntry(KeyValueStoreId, Vec<u8>),
-    Component(ComponentAddress),
-    ComponentInfo(ComponentAddress),
+    Component(ComponentAddress, ComponentOffset),
 }

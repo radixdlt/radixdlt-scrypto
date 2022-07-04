@@ -1,7 +1,6 @@
 use sbor::rust::boxed::Box;
 use sbor::rust::fmt;
 use sbor::rust::string::String;
-use sbor::rust::vec::Vec;
 use sbor::{DecodeError, Value};
 use scrypto::engine::types::*;
 use transaction::errors::*;
@@ -53,17 +52,14 @@ pub enum RuntimeError {
     /// Component does not exist.
     ComponentNotFound(ComponentAddress),
 
-    BlueprintFunctionDoesNotExist(String),
     ComponentDecodeError(DecodeError),
 
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
+    InvalidDataAccess(ValueId),
     InvalidDataWrite,
     ValueNotFound(ValueId),
-
-    /// Key Value Store does not exist.
-    KeyValueStoreNotFound(KeyValueStoreId),
 
     MovingInvalidType,
     StoredValueRemoved(StoredValueId),
@@ -77,6 +73,7 @@ pub enum RuntimeError {
 
     /// Resource manager access error.
     ResourceManagerError(ResourceManagerError),
+    ComponentError(ComponentError),
 
     /// Bucket access error.
     BucketError(BucketError),
@@ -89,6 +86,8 @@ pub enum RuntimeError {
 
     /// Error when generating or accessing proof.
     ProofError(ProofError),
+
+    ValueNotAllowed,
 
     /// Bucket is not allowed.
     BucketNotAllowed,
@@ -103,7 +102,7 @@ pub enum RuntimeError {
     KeyValueStoreNotAllowed,
 
     /// Resource check failure.
-    ResourceCheckFailure(ResourceFailure),
+    DropFailure(DropFailure),
 
     /// AuthZone error
     AuthZoneError(AuthZoneError),
@@ -121,17 +120,18 @@ pub enum RuntimeError {
     /// Can't move restricted proof.
     CantMoveRestrictedProof(ValueId),
 
-    InvalidInvocation,
+    NotSupported,
 
     CostingError(CostUnitCounterError),
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ResourceFailure {
-    Resource(ResourceAddress),
-    Resources(Vec<ResourceAddress>),
-    UnclaimedKeyValueStore,
-    Unknown,
+pub enum DropFailure {
+    Component,
+    Bucket,
+    Vault,
+    Package,
+    KeyValueStore,
 }
 
 impl fmt::Display for RuntimeError {

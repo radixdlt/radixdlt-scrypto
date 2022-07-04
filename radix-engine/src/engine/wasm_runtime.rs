@@ -2,53 +2,46 @@ use crate::engine::call_frame::{DataInstruction, SubstateAddress};
 use sbor::rust::marker::PhantomData;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActorInfo;
 use scrypto::core::{DataAddress, SNodeRef};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
-use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::RuntimeError;
-use crate::engine::RuntimeError::BlueprintFunctionDoesNotExist;
 use crate::engine::SystemApi;
+use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
 use crate::model::Component;
 use crate::wasm::*;
 
-pub struct RadixEngineWasmRuntime<'s, 'b, S, W, I>
+pub struct RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
 where
-    S: SystemApi<W, I>,
+    S: SystemApi<'borrowed, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
     this: ScryptoActorInfo,
-    blueprint_abi: &'b BlueprintAbi,
     system_api: &'s mut S,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
+    phantom3: PhantomData<&'borrowed ()>,
 }
 
-impl<'s, 'b, S, W, I> RadixEngineWasmRuntime<'s, 'b, S, W, I>
+impl<'borrowed, 's, S, W, I> RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
 where
-    S: SystemApi<W, I>,
+    S: SystemApi<'borrowed, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
-    pub fn new(
-        this: ScryptoActorInfo,
-        blueprint_abi: &'b BlueprintAbi,
-        system_api: &'s mut S,
-    ) -> Self {
+    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S) -> Self {
         RadixEngineWasmRuntime {
             this,
-            blueprint_abi,
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
+            phantom3: PhantomData,
         }
     }
 
@@ -72,36 +65,31 @@ where
         self.system_api.invoke_snode(snode_ref, fn_ident, call_data)
     }
 
-    fn handle_create_component(
+    fn handle_create_local_component(
         &mut self,
         blueprint_name: String,
         state: Vec<u8>,
-        access_rules_list: Vec<AccessRules>,
     ) -> Result<ComponentAddress, RuntimeError> {
-        // Abi checks
-        // TODO: Move this to a more appropriate place
-        for access_rules in &access_rules_list {
-            for (func_name, _) in access_rules.iter() {
-                if !self.blueprint_abi.contains_fn(func_name.as_str()) {
-                    return Err(BlueprintFunctionDoesNotExist(func_name.to_string()));
-                }
-            }
-        }
-
         // Create component
         let component = Component::new(
             self.this.package_address().clone(),
             blueprint_name,
-            access_rules_list,
+            Vec::new(),
             state,
         );
-        let component_address = self.system_api.create_component(component)?;
-        Ok(component_address)
+
+        let id = self.system_api.native_create(component)?;
+        Ok(id.into())
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let kv_store_id = self.system_api.create_kv_store();
-        Ok(kv_store_id)
+        let value_id = self
+            .system_api
+            .native_create(PreCommittedKeyValueStore::new())?;
+        match value_id {
+            ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => Ok(kv_store_id),
+            _ => panic!("Expected to be a kv store"),
+        }
     }
 
     fn handle_read_data(&mut self, address: DataAddress) -> Result<ScryptoValue, RuntimeError> {
@@ -111,11 +99,8 @@ where
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
             }
-            DataAddress::Component(component_address) => {
-                SubstateAddress::Component(component_address)
-            }
-            DataAddress::ComponentInfo(component_address) => {
-                SubstateAddress::ComponentInfo(component_address)
+            DataAddress::Component(component_address, offset) => {
+                SubstateAddress::Component(component_address, offset)
             }
         };
 
@@ -133,11 +118,8 @@ where
                     ScryptoValue::from_slice(&key_bytes).map_err(RuntimeError::DecodeError)?;
                 SubstateAddress::KeyValueEntry(kv_store_id, scrypto_key)
             }
-            DataAddress::Component(component_address) => {
-                SubstateAddress::Component(component_address)
-            }
-            DataAddress::ComponentInfo(component_address) => {
-                SubstateAddress::ComponentInfo(component_address)
+            DataAddress::Component(component_address, offset) => {
+                SubstateAddress::Component(component_address, offset)
             }
         };
         let scrypto_value = ScryptoValue::from_slice(&value).map_err(RuntimeError::DecodeError)?;
@@ -172,8 +154,8 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'s, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'s, 'b, S, W, I>
+impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let cost = self.fee_table().wasm_engine_call_cost();
@@ -185,8 +167,8 @@ impl<'s, 'b, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
             RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => {
                 self.handle_invoke_snode(snode_ref, fn_ident, input_bytes)
             }
-            RadixEngineInput::CreateComponent(blueprint_name, state, access_rules_list) => self
-                .handle_create_component(blueprint_name, state, access_rules_list)
+            RadixEngineInput::CreateComponent(blueprint_name, state) => self
+                .handle_create_local_component(blueprint_name, state)
                 .map(encode),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),
             RadixEngineInput::GetActor() => self.handle_get_actor().map(encode),
