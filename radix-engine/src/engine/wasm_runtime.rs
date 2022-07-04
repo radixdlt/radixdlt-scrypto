@@ -8,18 +8,17 @@ use scrypto::core::{DataAddress, SNodeRef};
 use scrypto::engine::api::RadixEngineInput;
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
-use scrypto::resource::AccessRules;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::RuntimeError;
 use crate::engine::SystemApi;
+use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
 use crate::model::Component;
 use crate::wasm::*;
 
-pub struct RadixEngineWasmRuntime<'s, S, W, I>
+pub struct RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
 where
-    S: SystemApi<W, I>,
+    S: SystemApi<'borrowed, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
@@ -27,11 +26,12 @@ where
     system_api: &'s mut S,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
+    phantom3: PhantomData<&'borrowed ()>,
 }
 
-impl<'s, S, W, I> RadixEngineWasmRuntime<'s, S, W, I>
+impl<'borrowed, 's, S, W, I> RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
 where
-    S: SystemApi<W, I>,
+    S: SystemApi<'borrowed, W, I>,
     W: WasmEngine<I>,
     I: WasmInstance,
 {
@@ -41,6 +41,7 @@ where
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
+            phantom3: PhantomData,
         }
     }
 
@@ -64,16 +65,6 @@ where
         self.system_api.invoke_snode(snode_ref, fn_ident, call_data)
     }
 
-    fn handle_globalize(
-        &mut self,
-        component_address: ComponentAddress,
-        access_rules_list: Vec<AccessRules>,
-    ) -> Result<(), RuntimeError> {
-        // Abi checks
-        self.system_api
-            .globalize(component_address, access_rules_list)
-    }
-
     fn handle_create_local_component(
         &mut self,
         blueprint_name: String,
@@ -87,12 +78,18 @@ where
             state,
         );
 
-        self.system_api.create_local_component(component)
+        let id = self.system_api.native_create(component)?;
+        Ok(id.into())
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let kv_store_id = self.system_api.create_kv_store();
-        Ok(kv_store_id)
+        let value_id = self
+            .system_api
+            .native_create(PreCommittedKeyValueStore::new())?;
+        match value_id {
+            ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => Ok(kv_store_id),
+            _ => panic!("Expected to be a kv store"),
+        }
     }
 
     fn handle_read_data(&mut self, address: DataAddress) -> Result<ScryptoValue, RuntimeError> {
@@ -157,8 +154,8 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'s, S, W, I>
+impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
+    for RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let cost = self.fee_table().wasm_engine_call_cost();
@@ -170,10 +167,7 @@ impl<'s, S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
             RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => {
                 self.handle_invoke_snode(snode_ref, fn_ident, input_bytes)
             }
-            RadixEngineInput::Globalize(component_address, access_rules_list) => self
-                .handle_globalize(component_address, access_rules_list)
-                .map(encode),
-            RadixEngineInput::CreateLocalComponent(blueprint_name, state) => self
+            RadixEngineInput::CreateComponent(blueprint_name, state) => self
                 .handle_create_local_component(blueprint_name, state)
                 .map(encode),
             RadixEngineInput::CreateKeyValueStore() => self.handle_create_kv_store().map(encode),

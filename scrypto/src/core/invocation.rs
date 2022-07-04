@@ -14,6 +14,7 @@ pub enum SNodeRef {
     AuthZoneRef,
     WorktopRef,
     Scrypto(ScryptoActor),
+    Component(ComponentAddress),
     ResourceStatic,
     ResourceRef(ResourceAddress),
     Consumed(ValueId),

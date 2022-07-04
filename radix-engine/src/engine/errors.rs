@@ -52,18 +52,14 @@ pub enum RuntimeError {
     /// Component does not exist.
     ComponentNotFound(ComponentAddress),
 
-    BlueprintFunctionDoesNotExist(String),
     ComponentDecodeError(DecodeError),
 
     /// Resource manager does not exist.
     ResourceManagerNotFound(ResourceAddress),
 
-    InvalidDataAccess,
+    InvalidDataAccess(ValueId),
     InvalidDataWrite,
     ValueNotFound(ValueId),
-
-    /// Key Value Store does not exist.
-    KeyValueStoreNotFound(KeyValueStoreId),
 
     MovingInvalidType,
     StoredValueRemoved(StoredValueId),
@@ -77,6 +73,7 @@ pub enum RuntimeError {
 
     /// Resource manager access error.
     ResourceManagerError(ResourceManagerError),
+    ComponentError(ComponentError),
 
     /// Bucket access error.
     BucketError(BucketError),
@@ -89,6 +86,8 @@ pub enum RuntimeError {
 
     /// Error when generating or accessing proof.
     ProofError(ProofError),
+
+    ValueNotAllowed,
 
     /// Bucket is not allowed.
     BucketNotAllowed,
@@ -121,7 +120,7 @@ pub enum RuntimeError {
     /// Can't move restricted proof.
     CantMoveRestrictedProof(ValueId),
 
-    InvalidInvocation,
+    NotSupported,
 
     CostingError(CostUnitCounterError),
 }
@@ -131,6 +130,7 @@ pub enum DropFailure {
     Component,
     Bucket,
     Vault,
+    Package,
     Worktop,
     KeyValueStore,
 }

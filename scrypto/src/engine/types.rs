@@ -30,7 +30,17 @@ pub enum TransientValueId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Encode, Decode)]
 pub enum StoredValueId {
     KeyValueStoreId(KeyValueStoreId),
+    Component(ComponentAddress),
     VaultId(VaultId),
+}
+
+impl Into<ComponentAddress> for StoredValueId {
+    fn into(self) -> ComponentAddress {
+        match self {
+            StoredValueId::Component(component_address) => component_address,
+            _ => panic!("Expected to be a component"),
+        }
+    }
 }
 
 impl Into<(Hash, u32)> for StoredValueId {
@@ -38,6 +48,7 @@ impl Into<(Hash, u32)> for StoredValueId {
         match self {
             StoredValueId::KeyValueStoreId(id) => id,
             StoredValueId::VaultId(id) => id,
+            StoredValueId::Component(..) => panic!("ComponentAddress not expected"),
         }
     }
 }
@@ -47,7 +58,7 @@ pub enum ValueId {
     Transient(TransientValueId),
     Stored(StoredValueId),
     Resource(ResourceAddress),
-    Component(ComponentAddress),
+    Package(PackageAddress),
 }
 
 impl ValueId {
@@ -57,6 +68,15 @@ impl ValueId {
 
     pub fn vault_id(id: VaultId) -> Self {
         ValueId::Stored(StoredValueId::VaultId(id))
+    }
+}
+
+impl Into<StoredValueId> for ValueId {
+    fn into(self) -> StoredValueId {
+        match self {
+            ValueId::Stored(id) => id,
+            _ => panic!("Not a stored id"),
+        }
     }
 }
 
@@ -76,6 +96,24 @@ impl Into<u32> for ValueId {
             ValueId::Transient(TransientValueId::Bucket(id)) => id,
             ValueId::Transient(TransientValueId::Proof(id)) => id,
             _ => panic!("Not a transient id"),
+        }
+    }
+}
+
+impl Into<ComponentAddress> for ValueId {
+    fn into(self) -> ComponentAddress {
+        match self {
+            ValueId::Stored(StoredValueId::Component(component_address)) => component_address,
+            _ => panic!("Not a component address"),
+        }
+    }
+}
+
+impl Into<PackageAddress> for ValueId {
+    fn into(self) -> PackageAddress {
+        match self {
+            ValueId::Package(package_address) => package_address,
+            _ => panic!("Not a package address"),
         }
     }
 }
