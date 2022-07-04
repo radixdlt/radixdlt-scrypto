@@ -623,7 +623,7 @@ where
         trace!(
             self,
             Level::Debug,
-            "Run finished! Remainging cost units: {}",
+            "Run finished! Remaining cost units: {}",
             remaining_cost_units
         );
 

@@ -4,12 +4,12 @@ blueprint! {
     struct Caller;
 
     impl Caller {
-        pub fn call(n: u32) {
+        pub fn recursive(n: u32) {
             if n > 1 {
                 let _: () = Runtime::call_function(
                     Runtime::package_address(),
                     "Caller",
-                    "call",
+                    "recursive",
                     args!(n - 1),
                 );
             }
