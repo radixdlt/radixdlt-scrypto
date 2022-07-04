@@ -128,7 +128,7 @@ where
         let mut new_package_addresses = Vec::new();
         for address in track_receipt.new_addresses {
             match address {
-                Address::Component(component_address) => {
+                Address::GlobalComponent(component_address) => {
                     new_component_addresses.push(component_address)
                 }
                 Address::Resource(resource_address) => {

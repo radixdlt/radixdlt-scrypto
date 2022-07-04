@@ -8,18 +8,18 @@ blueprint! {
 
     impl AbiComponent {
         pub fn create_component() -> ComponentAddress {
-            Self {}.instantiate().globalize()
+            let component = Self {}.instantiate();
+            component.globalize()
         }
 
         pub fn create_invalid_abi_component() -> ComponentAddress {
-            Self {}
-                .instantiate()
-                .add_access_check(
-                    AccessRules::new()
-                        .method("no_method", rule!(require("something")))
-                        .default(rule!(allow_all)),
-                )
-                .globalize()
+            let mut component = Self {}.instantiate();
+            component.add_access_check(
+                AccessRules::new()
+                    .method("no_method", rule!(require("something")))
+                    .default(rule!(allow_all)),
+            );
+            component.globalize()
         }
     }
 }

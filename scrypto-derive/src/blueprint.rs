@@ -54,8 +54,8 @@ pub fn handle_blueprint(input: TokenStream) -> Result<TokenStream> {
             }
 
             impl ::scrypto::component::ComponentState for #bp_ident {
-                fn instantiate(self) -> ::scrypto::component::LocalComponent {
-                    ::scrypto::component::component_system().to_component_state_with_auth(
+                fn instantiate(self) -> ::scrypto::component::Component {
+                    ::scrypto::component::component_system().create_component(
                         #bp_name,
                         self
                     )
@@ -194,13 +194,21 @@ fn generate_dispatcher(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Token
                             // Generate a `Stmt` for loading the component state
                             assert!(get_state.is_none(), "Can't have more than 1 self reference");
                             get_state = Some(parse_quote! {
-                                let #mutability state: blueprint::#bp_ident = borrow_component!(component_address).get_state();
+                                let #mutability state: blueprint::#bp_ident = {
+                                    let address = DataAddress::Component(component_address, ComponentOffset::State);
+                                    let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
+                                    ::scrypto::engine::call_engine(input)
+                                };
                             });
 
                             // Generate a `Stmt` for writing back component state
                             if mutability.is_some() {
                                 put_state = Some(parse_quote! {
-                                    ::scrypto::borrow_component!(component_address).put_state(state);
+                                    {
+                                        let address = DataAddress::Component(component_address, ComponentOffset::State);
+                                        let input = ::scrypto::engine::api::RadixEngineInput::WriteData(address, scrypto_encode(&state));
+                                        let _: () = ::scrypto::engine::call_engine(input);
+                                    }
                                 });
                             }
                         }
@@ -530,8 +538,8 @@ mod tests {
                     }
 
                     impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> ::scrypto::component::LocalComponent {
-                            ::scrypto::component::component_system().to_component_state_with_auth(
+                        fn instantiate(self) -> ::scrypto::component::Component {
+                            ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             )
@@ -558,7 +566,11 @@ mod tests {
 
                     let input: Test_x_Input = ::scrypto::buffer::scrypto_decode_from_buffer(method_arg).unwrap();
                     let component_address = ::scrypto::core::Runtime::actor().component_address().unwrap();
-                    let state: blueprint::Test = borrow_component!(component_address).get_state();
+                    let state: blueprint::Test = {
+                        let address = DataAddress::Component(component_address, ComponentOffset::State);
+                        let input = ::scrypto::engine::api::RadixEngineInput::ReadData(address);
+                        ::scrypto::engine::call_engine(input)
+                    };
                     let rtn = ::scrypto::buffer::scrypto_encode_to_buffer(&blueprint::Test::x(&state, input.arg0));
                     rtn
                 }
@@ -652,8 +664,8 @@ mod tests {
                     }
 
                     impl ::scrypto::component::ComponentState for Test {
-                        fn instantiate(self) -> ::scrypto::component::LocalComponent {
-                            ::scrypto::component::component_system().to_component_state_with_auth(
+                        fn instantiate(self) -> ::scrypto::component::Component {
+                            ::scrypto::component::component_system().create_component(
                                 "Test",
                                 self
                             )
@@ -676,6 +688,7 @@ mod tests {
                     };
                     ::scrypto::buffer::scrypto_encode_to_buffer(&output)
                 }
+
                 #[derive(::sbor::TypeId, ::sbor::Encode, ::sbor::Decode, ::sbor::Describe)]
                 pub struct Test {
                     component_address: ::scrypto::component::ComponentAddress,

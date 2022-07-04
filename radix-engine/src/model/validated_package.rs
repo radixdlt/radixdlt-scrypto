@@ -6,7 +6,7 @@ use sbor::*;
 use scrypto::abi::BlueprintAbi;
 use scrypto::buffer::scrypto_decode;
 use scrypto::core::ScryptoActorInfo;
-use scrypto::prelude::PackagePublishInput;
+use scrypto::prelude::{PackageAddress, PackagePublishInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
@@ -46,13 +46,13 @@ impl ValidatedPackage {
         self.blueprint_abis.get(blueprint_name)
     }
 
-    pub fn static_main<'s, S, W, I>(
+    pub fn static_main<'borrowed, 's, S, W, I>(
         method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, PackageError>
     where
-        S: SystemApi<W, I>,
+        S: SystemApi<'borrowed, W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
     {
@@ -62,14 +62,16 @@ impl ValidatedPackage {
                     .map_err(|e| PackageError::InvalidRequestData(e))?;
                 let package =
                     ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
-                let package_address = system_api.create_package(package);
+                let value_id = system_api.native_create(package).unwrap();
+                system_api.native_globalize(&value_id);
+                let package_address: PackageAddress = value_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
             _ => Err(MethodNotFound(method_name.to_string())),
         }
     }
 
-    pub fn invoke<'s, S, W, I>(
+    pub fn invoke<'borrowed, 's, S, W, I>(
         &self,
         actor: &ScryptoActorInfo,
         fn_ident: &str,
@@ -77,7 +79,7 @@ impl ValidatedPackage {
         system_api: &mut S,
     ) -> Result<ScryptoValue, RuntimeError>
     where
-        S: SystemApi<W, I>,
+        S: SystemApi<'borrowed, W, I>,
         W: WasmEngine<I>,
         I: WasmInstance,
     {
@@ -90,11 +92,8 @@ impl ValidatedPackage {
             .blueprint_abi(actor.blueprint_name())
             .expect("Blueprint should exist");
         let export_name = &blueprint_abi.get_fn_abi(fn_ident).unwrap().export_name;
-        let mut runtime: Box<dyn WasmRuntime> = Box::new(RadixEngineWasmRuntime::new(
-            actor.clone(),
-            blueprint_abi,
-            system_api,
-        ));
+        let mut runtime: Box<dyn WasmRuntime> =
+            Box::new(RadixEngineWasmRuntime::new(actor.clone(), system_api));
         let output = instance
             .invoke_export(export_name, &input, &mut runtime)
             .map_err(|e| match e {

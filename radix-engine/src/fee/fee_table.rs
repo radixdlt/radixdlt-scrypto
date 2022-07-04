@@ -53,6 +53,7 @@ impl FeeTable {
             SNodeRef::PackageStatic => todo!(),
             SNodeRef::AuthZoneRef => todo!(),
             SNodeRef::Scrypto(_) => 0,
+            SNodeRef::Component(_) => todo!(),
             SNodeRef::ResourceStatic => todo!(),
             SNodeRef::ResourceRef(_) => todo!(),
             SNodeRef::Consumed(_) => todo!(),
