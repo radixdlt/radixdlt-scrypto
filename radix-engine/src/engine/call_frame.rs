@@ -506,7 +506,7 @@ where
 
     fn process_return_data(
         &mut self,
-        from: Option<SNodeRef>,
+        from: SNodeRef,
         validated: &ScryptoValue,
     ) -> Result<(), RuntimeError> {
         if !validated.kv_store_ids.is_empty() {
@@ -515,7 +515,7 @@ where
 
         // Allow vaults to be returned from ResourceStatic
         // TODO: Should we allow vaults to be returned by any component?
-        if !matches!(from, Some(SNodeRef::ResourceRef(_))) {
+        if !matches!(from, SNodeRef::ResourceRef(_)) {
             if !validated.vault_ids.is_empty() {
                 return Err(RuntimeError::VaultNotAllowed);
             }
@@ -526,7 +526,7 @@ where
 
     pub fn run(
         &mut self,
-        snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
+        snode_ref: SNodeRef, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
         snode: SNodeState<'p>,
         fn_ident: &str,
         input: ScryptoValue,
@@ -536,8 +536,12 @@ where
             Level::Debug,
             "Run started! Depth: {}, Remaining cost units: {}",
             self.depth,
-            self.cost_unit_counter.remaining()
+            self.cost_unit_counter.balance()
         );
+
+        self.cost_unit_counter
+            .consume(self.fee_table.function_cost(&snode_ref, fn_ident, &input))
+            .map_err(RuntimeError::CostingError)?;
 
         let mut to_return = HashMap::new();
 
@@ -615,7 +619,7 @@ where
         }
         self.check_resource()?;
 
-        let remaining_cost_units = self.cost_unit_counter().remaining();
+        let remaining_cost_units = self.cost_unit_counter().balance();
         trace!(
             self,
             Level::Debug,
@@ -1062,8 +1066,7 @@ where
         );
 
         // invoke the main function
-        let (result, received_values) =
-            frame.run(Some(snode_ref), loaded_snode, &fn_ident, input)?;
+        let (result, received_values) = frame.run(snode_ref, loaded_snode, &fn_ident, input)?;
 
         // move buckets and proofs to this process.
         for (id, value) in received_values {

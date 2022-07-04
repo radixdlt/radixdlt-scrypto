@@ -1,3 +1,5 @@
+use scrypto::{core::SNodeRef, values::ScryptoValue};
+
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
 pub struct FeeTable {
@@ -45,13 +47,19 @@ impl FeeTable {
         self.wasm_metering_params.clone()
     }
 
-    pub fn native_function_cost(&self, ty: &str, func: &str, parameters: &[u32]) -> u32 {
-        match ty {
-            "TransactionProcessor" => match func {
-                "run" => self.fixed_high,
-                _ => panic!("Make sure all functions are included!"),
-            },
-            _ => panic!("TODO: complete this table"),
+    pub fn function_cost(&self, receiver: &SNodeRef, fn_ident: &str, input: &ScryptoValue) -> u32 {
+        match receiver {
+            SNodeRef::SystemStatic => todo!(),
+            SNodeRef::PackageStatic => todo!(),
+            SNodeRef::AuthZoneRef => todo!(),
+            SNodeRef::Scrypto(_) => todo!(),
+            SNodeRef::ResourceStatic => todo!(),
+            SNodeRef::ResourceRef(_) => todo!(),
+            SNodeRef::Consumed(_) => todo!(),
+            SNodeRef::BucketRef(_) => todo!(),
+            SNodeRef::ProofRef(_) => todo!(),
+            SNodeRef::VaultRef(_) => todo!(),
+            SNodeRef::TransactionProcessor => todo!(),
         }
     }
 }
