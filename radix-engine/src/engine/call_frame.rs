@@ -152,29 +152,37 @@ impl REValueLocation {
             REValueLocation::OwnedRoot(root) => REValueLocation::Owned {
                 root: root.clone(),
                 ancestors: vec![],
-                id: child_id
+                id: child_id,
             },
-            REValueLocation::Owned { root, ancestors, id } => {
+            REValueLocation::Owned {
+                root,
+                ancestors,
+                id,
+            } => {
                 let mut next_ancestors = ancestors.clone();
                 next_ancestors.push(id.clone().into());
                 REValueLocation::Owned {
                     root: root.clone(),
                     ancestors: next_ancestors,
-                    id: child_id
+                    id: child_id,
                 }
             }
             REValueLocation::BorrowedRoot(root) => REValueLocation::Borrowed {
                 root: root.clone(),
                 ancestors: vec![],
-                id: child_id
+                id: child_id,
             },
-            REValueLocation::Borrowed { root, ancestors, id } => {
+            REValueLocation::Borrowed {
+                root,
+                ancestors,
+                id,
+            } => {
                 let mut next_ancestors = ancestors.clone();
                 next_ancestors.push(id.clone().into());
                 REValueLocation::Borrowed {
                     root: root.clone(),
                     ancestors: next_ancestors,
-                    id: child_id
+                    id: child_id,
                 }
             }
             REValueLocation::Track(..) => {
@@ -182,10 +190,10 @@ impl REValueLocation {
                     ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStore(kv_store_id),
                     ValueId::Vault(vault_id) => Address::Vault(vault_id),
                     ValueId::Component(component_id) => Address::LocalComponent(component_id),
-                    _ => panic!("Unexpected")
+                    _ => panic!("Unexpected"),
                 };
                 REValueLocation::Track(child_address)
-            },
+            }
         }
     }
 
@@ -238,7 +246,11 @@ impl REValueLocation {
                     .expect("Should have children");
                 children.get_child(ancestors, id)
             },
-            REValueLocation::Borrowed { root, ancestors, id } => unsafe {
+            REValueLocation::Borrowed {
+                root,
+                ancestors,
+                id,
+            } => unsafe {
                 let borrowed = borrowed_values.get(root).unwrap();
                 borrowed
                     .get_children_store()
@@ -264,9 +276,7 @@ impl REValueLocation {
             REValueLocation::BorrowedRoot(id) => {
                 REValueRef::Borrowed(borrowed_values.get(id).unwrap())
             }
-            REValueLocation::Track(address) => {
-                REValueRef::Track(track, address.clone())
-            }
+            REValueLocation::Track(address) => REValueRef::Track(track, address.clone()),
         }
     }
 
@@ -291,7 +301,11 @@ impl REValueLocation {
                     .expect("Should have children");
                 children.get_child_mut(ancestors, id)
             }
-            REValueLocation::Borrowed { root, ancestors, id } => {
+            REValueLocation::Borrowed {
+                root,
+                ancestors,
+                id,
+            } => {
                 let borrowed = borrowed_values.get_mut(root).unwrap();
                 borrowed
                     .get_children_store_mut()
@@ -317,9 +331,7 @@ impl REValueLocation {
             REValueLocation::BorrowedRoot(id) => {
                 REValueRefMut::Borrowed(borrowed_values.get_mut(id).unwrap())
             }
-            REValueLocation::Track(address) => {
-                REValueRefMut::Track(track, address.clone())
-            }
+            REValueLocation::Track(address) => REValueRefMut::Track(track, address.clone()),
         }
     }
 }
@@ -457,12 +469,9 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
     ) {
         match self {
             REValueRefMut::Owned(owned) => {
+                owned.kv_store_mut().put(key, value);
                 let children = owned.get_children_store_mut();
                 children.unwrap().insert_children(to_store);
-                owned.kv_store_mut().put(key, value);
-            }
-            REValueRefMut::Borrowed(..) => {
-                panic!("Not supported");
             }
             REValueRefMut::Track(track, address) => {
                 track.set_key_value(
@@ -471,6 +480,9 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
                     SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                 );
                 track.insert_non_root_objects(to_store);
+            }
+            REValueRefMut::Borrowed(..) => {
+                panic!("Not supported");
             }
         }
     }
@@ -481,15 +493,15 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
                 let store = owned.kv_store_mut();
                 store.get(key).map(|v| v.dom)
             }
-            REValueRefMut::Borrowed(..) => {
-                panic!("Not supported");
-            }
             REValueRefMut::Track(track, address) => {
                 let substate_value = track.read_key_value(address.clone(), key.to_vec());
                 substate_value
                     .kv_entry()
                     .as_ref()
                     .map(|bytes| decode_any(bytes).unwrap())
+            }
+            REValueRefMut::Borrowed(..) => {
+                panic!("Not supported");
             }
         };
 
@@ -993,10 +1005,16 @@ where
                             },
                             None,
                         ));
-                    } else if self.track.take_lock(Address::GlobalComponent(*component_address), false).is_ok() {
+                    } else if self
+                        .track
+                        .take_lock(Address::GlobalComponent(*component_address), false)
+                        .is_ok()
+                    {
                         return Some((
                             REValueInfo {
-                                location: REValueLocation::Track(Address::GlobalComponent(*component_address)),
+                                location: REValueLocation::Track(Address::GlobalComponent(
+                                    *component_address,
+                                )),
                                 visible: true,
                             },
                             Some(component_address),
@@ -1039,7 +1057,8 @@ where
 
         // TODO: Remove, currently a hack to allow for global component info retrieval
         if let Some(component_address) = address_borrowed {
-            self.track.release_lock(Address::GlobalComponent(*component_address));
+            self.track
+                .release_lock(Address::GlobalComponent(*component_address));
         }
 
         Ok((location.clone(), current_value))
@@ -1131,14 +1150,18 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Resource(resource_address)),
+                                location: REValueLocation::Track(Address::Resource(
+                                    resource_address,
+                                )),
                                 visible: true,
                             },
                         );
                         value_refs.insert(
                             ValueId::NonFungibles(resource_address),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::NonFungibleSet(resource_address)),
+                                location: REValueLocation::Track(Address::NonFungibleSet(
+                                    resource_address,
+                                )),
                                 visible: true,
                             },
                         );
@@ -1184,7 +1207,9 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Resource(resource_address.clone())),
+                                location: REValueLocation::Track(Address::Resource(
+                                    resource_address.clone(),
+                                )),
                                 visible: true,
                             },
                         );
@@ -1212,7 +1237,9 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Resource(resource_address.clone())),
+                                location: REValueLocation::Track(Address::Resource(
+                                    resource_address.clone(),
+                                )),
                                 visible: true,
                             },
                         );
@@ -1249,7 +1276,9 @@ where
                 value_refs.insert(
                     ValueId::NonFungibles(*resource_address),
                     REValueInfo {
-                        location: REValueLocation::Track(Address::NonFungibleSet(*resource_address)),
+                        location: REValueLocation::Track(Address::NonFungibleSet(
+                            *resource_address,
+                        )),
                         visible: true,
                     },
                 );
@@ -1676,11 +1705,8 @@ where
             panic!("Trying to read value which is not visible.")
         }
 
-        info.location.to_ref(
-            &self.owned_values,
-            &self.frame_borrowed_values,
-            &self.track,
-        )
+        info.location
+            .to_ref(&self.owned_values, &self.frame_borrowed_values, &self.track)
     }
 
     fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef<'p> {
@@ -1837,14 +1863,13 @@ where
             for (id, cell) in child_values.into_iter() {
                 to_store_values.insert(id, cell.into_inner());
             }
-            self.track
-                .insert_non_root_objects(to_store_values);
+            self.track.insert_non_root_objects(to_store_values);
         }
 
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = address.clone().into();
             self.track
-                .create_non_fungible_space(resource_address.clone());
+                .create_key_space(Address::NonFungibleSet(resource_address));
             let parent_address = Address::NonFungibleSet(resource_address.clone());
             for (id, non_fungible) in non_fungibles {
                 self.track.set_key_value(
