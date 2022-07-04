@@ -19,6 +19,10 @@ use crate::fee::*;
 use crate::model::Component;
 use crate::wasm::*;
 
+/// A glue between system api (call frame and track abstraction) and WASM.
+/// 
+/// Execution is free from a cost perspective, as we assume
+/// the system api will charge properly.
 pub struct RadixEngineWasmRuntime<'s, 'b, S, W, I>
 where
     S: SystemApi<W, I>,
@@ -54,10 +58,6 @@ where
 
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
         self.system_api.cost_unit_counter()
-    }
-
-    fn fee_table(&self) -> &FeeTable {
-        self.system_api.fee_table()
     }
 
     // FIXME: limit access to the API
