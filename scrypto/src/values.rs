@@ -74,6 +74,22 @@ impl ScryptoValue {
         })
     }
 
+    pub fn from_slice_no_custom_values(slice: &[u8]) -> Result<Self, DecodeError> {
+        let value = decode_any(slice)?;
+        let mut checker = ScryptoNoCustomValuesChecker {};
+        traverse_any(&mut MutableSborPath::new(), &value, &mut checker)
+            .map_err(|e| DecodeError::CustomError(format!("{:?}", e)))?;
+        Ok(Self {
+            raw: encode_any(&value),
+            dom: value,
+            bucket_ids: HashMap::new(),
+            proof_ids: HashMap::new(),
+            vault_ids: HashSet::new(),
+            kv_store_ids: HashSet::new(),
+            component_addresses: HashSet::new(),
+        })
+    }
+
     pub fn value_ids(&self) -> HashSet<ValueId> {
         let mut value_ids = HashSet::new();
         for vault_id in &self.vault_ids {
@@ -184,6 +200,30 @@ impl fmt::Debug for ScryptoValue {
 impl fmt::Display for ScryptoValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.to_string())
+    }
+}
+
+/// Represents an error when validating a Scrypto-specific value.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScryptoNoCustomValuesCheckError {
+    CustomValueNotAllowed(u8),
+}
+
+/// A checker the check a Scrypto-specific value.
+struct ScryptoNoCustomValuesChecker {}
+
+impl CustomValueVisitor for ScryptoNoCustomValuesChecker {
+    type Err = ScryptoNoCustomValuesCheckError;
+
+    fn visit(
+        &mut self,
+        _path: &mut MutableSborPath,
+        type_id: u8,
+        _data: &[u8],
+    ) -> Result<(), Self::Err> {
+        return Err(ScryptoNoCustomValuesCheckError::CustomValueNotAllowed(
+            type_id,
+        ));
     }
 }
 
