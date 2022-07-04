@@ -52,7 +52,7 @@ impl FeeTable {
             SNodeRef::SystemStatic => todo!(),
             SNodeRef::PackageStatic => todo!(),
             SNodeRef::AuthZoneRef => todo!(),
-            SNodeRef::Scrypto(_) => todo!(),
+            SNodeRef::Scrypto(_) => 0,
             SNodeRef::ResourceStatic => todo!(),
             SNodeRef::ResourceRef(_) => todo!(),
             SNodeRef::Consumed(_) => todo!(),
@@ -61,5 +61,9 @@ impl FeeTable {
             SNodeRef::VaultRef(_) => todo!(),
             SNodeRef::TransactionProcessor => todo!(),
         }
+    }
+
+    pub fn system_api_cost(&self, fn_ident: &str, parameters: &[u32]) -> u32 {
+        todo!()
     }
 }
