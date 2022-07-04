@@ -1,4 +1,3 @@
-use sbor::rust::cell::{Ref, RefCell, RefMut};
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
@@ -155,7 +154,7 @@ impl RENode {
 #[derive(Debug)]
 pub struct REValue {
     pub root: RENode,
-    pub non_root_nodes: HashMap<ValueId, RefCell<REValue>>,
+    pub non_root_nodes: HashMap<ValueId, REValue>,
 }
 
 impl REValue {
@@ -169,7 +168,7 @@ impl REValue {
 
     pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, REValue>) {
         for (id, value) in values {
-            self.non_root_nodes.insert(id, RefCell::new(value));
+            self.non_root_nodes.insert(id, value);
         }
     }
 
@@ -181,19 +180,18 @@ impl REValue {
         let mut descendents = Vec::new();
         for (id, value) in self.non_root_nodes.iter() {
             descendents.push(*id);
-            let value = value.borrow();
             descendents.extend(value.all_descendants());
         }
         descendents
     }
 
-    pub unsafe fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> Ref<REValue> {
+    pub fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> &REValue {
         if ancestors.is_empty() {
             let value = self
                 .non_root_nodes
                 .get(id)
                 .expect("Value expected to exist");
-            return value.borrow();
+            return value;
         }
 
         let (first, rest) = ancestors.split_first().unwrap();
@@ -201,7 +199,6 @@ impl REValue {
             .non_root_nodes
             .get(&ValueId::KeyValueStore(*first))
             .unwrap();
-        let value = value.try_borrow_unguarded().unwrap();
         value.get_child(rest, id)
     }
 
@@ -209,13 +206,13 @@ impl REValue {
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &ValueId,
-    ) -> RefMut<REValue> {
+    ) -> &mut REValue {
         if ancestors.is_empty() {
             let value = self
                 .non_root_nodes
                 .get_mut(id)
                 .expect("Value expected to exist");
-            return value.borrow_mut();
+            return value;
         }
 
         let (first, rest) = ancestors.split_first().unwrap();
@@ -223,7 +220,7 @@ impl REValue {
             .non_root_nodes
             .get_mut(&ValueId::KeyValueStore(*first))
             .unwrap();
-        value.get_mut().get_child_mut(rest, id)
+        value.get_child_mut(rest, id)
     }
 }
 
@@ -270,11 +267,7 @@ impl REComplexValue {
         }
     }
 
-    pub fn into_re_value(self, children: HashMap<ValueId, REValue>) -> REValue {
-        let mut non_root_nodes = HashMap::new();
-        for (id, value) in children.into_iter() {
-            non_root_nodes.insert(id, RefCell::new(value));
-        }
+    pub fn into_re_value(self, non_root_nodes: HashMap<ValueId, REValue>) -> REValue {
         match self {
             REComplexValue::Component(component) => REValue {
                 root: RENode::Component(component),

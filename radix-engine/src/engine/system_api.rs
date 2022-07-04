@@ -30,7 +30,7 @@ where
     ) -> Result<ScryptoValue, RuntimeError>;
 
     fn globalize_value(&mut self, value_id: &ValueId);
-    fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S>;
+    fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 's, S>;
     fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef<'p>;
     fn return_value_mut(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>);
     fn drop_value(&mut self, value_id: &ValueId) -> REValue;

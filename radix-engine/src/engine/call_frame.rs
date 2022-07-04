@@ -1,5 +1,4 @@
 use sbor::rust::boxed::Box;
-use sbor::rust::cell::Ref;
 use sbor::rust::cell::{RefCell, RefMut};
 use sbor::rust::collections::*;
 use sbor::rust::format;
@@ -59,12 +58,12 @@ pub struct CallFrame<
     value_refs: HashMap<ValueId, REValueInfo>,
 
     /// Owned Values
-    owned_values: HashMap<ValueId, RefCell<REValue>>,
+    owned_values: HashMap<ValueId, REValue>,
     worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Borrowed Values from call frames up the stack
-    frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
+    frame_borrowed_values: HashMap<ValueId, &'p mut REValue>,
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
     /// There is a single cost unit counter and a single fee table per transaction execution.
@@ -198,8 +197,8 @@ impl REValueLocation {
 
     fn borrow_native_ref<'borrowed, S: ReadableSubstateStore>(
         &self,
-        owned_values: &mut HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
+        owned_values: &mut HashMap<ValueId, REValue>,
+        borrowed_values: &mut HashMap<ValueId, &'borrowed mut REValue>,
         track: &mut Track<S>,
     ) -> RENativeValueRef<'borrowed> {
         match self {
@@ -212,8 +211,7 @@ impl REValueLocation {
                 RENativeValueRef::Track(address.clone(), value)
             }
             REValueLocation::OwnedRoot(id) => {
-                let cell = owned_values.remove(id).unwrap();
-                let value = cell.into_inner();
+                let value = owned_values.remove(id).unwrap();
                 RENativeValueRef::Owned(value)
             }
             _ => panic!("Unexpected {:?}", self),
@@ -222,23 +220,20 @@ impl REValueLocation {
 
     fn to_owned_ref<'a, 'borrowed>(
         &self,
-        owned_values: &'a HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &'a HashMap<ValueId, RefMut<'borrowed, REValue>>,
-    ) -> Ref<'a, REValue> {
+        owned_values: &'a HashMap<ValueId, REValue>,
+        borrowed_values: &'a HashMap<ValueId, &'borrowed mut REValue>,
+    ) -> &'a REValue {
         match self {
             REValueLocation::OwnedRoot(root) => {
-                let cell = owned_values.get(root).unwrap();
-                cell.borrow()
+                owned_values.get(root).unwrap()
             }
             REValueLocation::Owned {
                 root,
                 ref ancestors,
                 id,
-            } => unsafe {
+            } => {
                 let root_value = owned_values
                     .get(&root)
-                    .unwrap()
-                    .try_borrow_unguarded()
                     .unwrap();
                 root_value.get_child(ancestors, id)
             },
@@ -246,7 +241,7 @@ impl REValueLocation {
                 root,
                 ancestors,
                 id,
-            } => unsafe {
+            } => {
                 let borrowed = borrowed_values.get(root).unwrap();
                 borrowed.get_child(ancestors, id)
             },
@@ -256,10 +251,10 @@ impl REValueLocation {
 
     fn to_ref<'a, 'p, 's, S: ReadableSubstateStore>(
         &self,
-        owned_values: &'a HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &'a HashMap<ValueId, RefMut<'p, REValue>>,
+        owned_values: &'a HashMap<ValueId, REValue>,
+        borrowed_values: &'a HashMap<ValueId, &'p mut REValue>,
         track: &'a Track<'s, S>,
-    ) -> REValueRef<'a, 'p, 's, S> {
+    ) -> REValueRef<'a, 's, S> {
         match self {
             REValueLocation::OwnedRoot(_)
             | REValueLocation::Owned { .. }
@@ -275,20 +270,19 @@ impl REValueLocation {
 
     fn to_owned_ref_mut<'a, 'borrowed>(
         &self,
-        owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &'a mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
-    ) -> RefMut<'a, REValue> {
+        owned_values: &'a mut HashMap<ValueId, REValue>,
+        borrowed_values: &'a mut HashMap<ValueId, &'borrowed mut REValue>,
+    ) -> &'a mut REValue {
         match self {
             REValueLocation::OwnedRoot(id) => {
-                let cell = owned_values.get_mut(id).unwrap();
-                cell.borrow_mut()
+                owned_values.get_mut(id).unwrap()
             }
             REValueLocation::Owned {
                 root,
                 ref ancestors,
                 id,
             } => {
-                let root_value = owned_values.get_mut(&root).unwrap().get_mut();
+                let root_value = owned_values.get_mut(&root).unwrap();
                 root_value.get_child_mut(ancestors, id)
             }
             REValueLocation::Borrowed {
@@ -305,10 +299,10 @@ impl REValueLocation {
 
     fn to_ref_mut<'a, 'borrowed, 'c, 's, S: ReadableSubstateStore>(
         &self,
-        owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &'a mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
+        owned_values: &'a mut HashMap<ValueId, REValue>,
+        borrowed_values: &'a mut HashMap<ValueId, &'borrowed mut REValue>,
         track: &'c mut Track<'s, S>,
-    ) -> REValueRefMut<'a, 'borrowed, 'c, 's, S> {
+    ) -> REValueRefMut<'a, 'c, 's, S> {
         match self {
             REValueLocation::OwnedRoot(_)
             | REValueLocation::Owned { .. }
@@ -325,7 +319,7 @@ impl REValueLocation {
 
 pub enum RENativeValueRef<'borrowed> {
     Owned(REValue),
-    OwnedRef(RefMut<'borrowed, REValue>),
+    OwnedRef(&'borrowed mut REValue),
     Track(Address, SubstateValue),
 }
 
@@ -383,13 +377,13 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
     pub fn return_to_location<'a, S: ReadableSubstateStore>(
         self,
         value_id: ValueId,
-        owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
-        borrowed_values: &mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
+        owned_values: &'a mut HashMap<ValueId, REValue>,
+        borrowed_values: &mut HashMap<ValueId, &'borrowed mut REValue>,
         track: &mut Track<S>,
     ) {
         match self {
             RENativeValueRef::Owned(value) => {
-                owned_values.insert(value_id, RefCell::new(value));
+                owned_values.insert(value_id, value);
             }
             RENativeValueRef::OwnedRef(owned) => {
                 borrowed_values.insert(value_id.clone(), owned);
@@ -399,13 +393,13 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
     }
 }
 
-pub enum REValueRef<'f, 'p, 's, S: ReadableSubstateStore> {
-    Owned(Ref<'f, REValue>),
-    Borrowed(&'f RefMut<'p, REValue>),
+pub enum REValueRef<'f, 's, S: ReadableSubstateStore> {
+    Owned(&'f REValue),
+    Borrowed(&'f REValue),
     Track(&'f Track<'s, S>, Address),
 }
 
-impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
+impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 's, S> {
     pub fn vault(&self) -> &Vault {
         match self {
             REValueRef::Owned(owned) => owned.root.vault(),
@@ -441,13 +435,13 @@ impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
     }
 }
 
-pub enum REValueRefMut<'a, 'b, 'c, 's, S: ReadableSubstateStore> {
-    Owned(RefMut<'a, REValue>),
-    Borrowed(&'a mut RefMut<'b, REValue>),
+pub enum REValueRefMut<'a, 'c, 's, S: ReadableSubstateStore> {
+    Owned(&'a mut REValue),
+    Borrowed(&'a mut REValue),
     Track(&'c mut Track<'s, S>, Address),
 }
 
-impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> {
+impl<'a, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'c, 's, S> {
     fn kv_store_put(
         &mut self,
         key: Vec<u8>,
@@ -673,9 +667,9 @@ where
         wasm_instrumenter: &'w mut WasmInstrumenter,
         auth_zone: Option<RefCell<AuthZone>>,
         worktop: Option<RefCell<Worktop>>,
-        owned_values: HashMap<ValueId, RefCell<REValue>>,
+        owned_values: HashMap<ValueId, REValue>,
         value_refs: HashMap<ValueId, REValueInfo>,
-        frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
+        frame_borrowed_values: HashMap<ValueId, &'p mut REValue>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
         cost_unit_counter: CostUnitCounter,
         fee_table: FeeTable,
@@ -703,7 +697,6 @@ where
         for (_, value) in self.owned_values.drain() {
             trace!(self, Level::Warn, "Dangling value: {:?}", value);
             value
-                .into_inner()
                 .try_drop()
                 .map_err(|e| RuntimeError::DropFailure(e))?;
         }
@@ -932,8 +925,7 @@ where
 
             for id in value_ids {
                 let maybe = self.owned_values.remove(&id);
-                if let Some(celled_value) = maybe {
-                    let value = celled_value.into_inner();
+                if let Some(value) = maybe {
                     value.root().verify_can_move()?;
                     if persist_only {
                         value.root().verify_can_persist()?;
@@ -1092,7 +1084,7 @@ where
                 RENode::Proof(proof) => proof.change_to_restricted(),
                 _ => {}
             }
-            next_owned_values.insert(id, RefCell::new(value));
+            next_owned_values.insert(id, value);
         }
 
         let mut locked_values = HashSet::new();
@@ -1121,8 +1113,7 @@ where
                 let value = self
                     .owned_values
                     .remove(value_id)
-                    .ok_or(RuntimeError::ValueNotFound(*value_id))?
-                    .into_inner();
+                    .ok_or(RuntimeError::ValueNotFound(*value_id))?;
 
                 let method_auths = match &value.root() {
                     RENode::Bucket(bucket) => {
@@ -1173,7 +1164,7 @@ where
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                next_owned_values.insert(*value_id, RefCell::new(value));
+                next_owned_values.insert(*value_id, value);
 
                 Ok((SNodeExecution::Consumed(*value_id), method_auths))
             }
@@ -1274,12 +1265,11 @@ where
             }
             SNodeRef::BucketRef(bucket_id) => {
                 let value_id = ValueId::Bucket(*bucket_id);
-                let bucket_cell = self
+                let bucket = self
                     .owned_values
-                    .get(&value_id)
+                    .get_mut(&value_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
-                let ref_mut = bucket_cell.borrow_mut();
-                next_borrowed_values.insert(value_id.clone(), ref_mut);
+                next_borrowed_values.insert(value_id.clone(), bucket);
                 value_refs.insert(
                     value_id.clone(),
                     REValueInfo {
@@ -1292,12 +1282,11 @@ where
             }
             SNodeRef::ProofRef(proof_id) => {
                 let value_id = ValueId::Proof(*proof_id);
-                let proof_cell = self
+                let proof = self
                     .owned_values
-                    .get(&value_id)
+                    .get_mut(&value_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                let ref_mut = proof_cell.borrow_mut();
-                next_borrowed_values.insert(value_id.clone(), ref_mut);
+                next_borrowed_values.insert(value_id.clone(), proof);
                 value_refs.insert(
                     value_id.clone(),
                     REValueInfo {
@@ -1389,8 +1378,8 @@ where
 
                     let actor_info = {
                         let value_ref = next_frame_location.to_ref(
-                            &mut next_owned_values,
-                            &mut next_borrowed_values,
+                            &next_owned_values,
+                            &next_borrowed_values,
                             &mut self.track,
                         );
                         let component = value_ref.component();
@@ -1677,13 +1666,13 @@ where
         // move buckets and proofs to this process.
         for (id, value) in received_values {
             trace!(self, Level::Debug, "Received value: {:?}", value);
-            self.owned_values.insert(id, RefCell::new(value));
+            self.owned_values.insert(id, value);
         }
 
         Ok(result)
     }
 
-    fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S> {
+    fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 's, S> {
         let info = self
             .value_refs
             .get(value_id)
@@ -1722,7 +1711,7 @@ where
     }
 
     fn drop_value(&mut self, value_id: &ValueId) -> REValue {
-        self.owned_values.remove(&value_id).unwrap().into_inner()
+        self.owned_values.remove(&value_id).unwrap()
     }
 
     fn create_value<V: Into<REValueByComplexity>>(
@@ -1777,7 +1766,7 @@ where
                 complex.into_re_value(child_values)
             }
         };
-        self.owned_values.insert(id, RefCell::new(re_value));
+        self.owned_values.insert(id, re_value);
 
         match id {
             ValueId::KeyValueStore(..) | ValueId::Resource(..) | ValueId::NonFungibles(..) => {
@@ -1813,8 +1802,7 @@ where
                         let re_value = self
                             .owned_values
                             .remove(&ValueId::NonFungibles(resource_address))
-                            .unwrap()
-                            .into_inner();
+                            .unwrap();
                         let non_fungibles: HashMap<NonFungibleId, NonFungible> = re_value.into();
                         Some(non_fungibles)
                     } else {
@@ -1835,8 +1823,8 @@ where
         self.track.create_uuid_value(address.clone(), substate);
 
         let mut to_store_values = HashMap::new();
-        for (id, cell) in value.non_root_nodes.into_iter() {
-            to_store_values.insert(id, cell.into_inner());
+        for (id, value) in value.non_root_nodes.into_iter() {
+            to_store_values.insert(id, value);
         }
         self.track.insert_non_root_nodes(to_store_values);
 
@@ -1982,7 +1970,7 @@ where
             .map(|proof_id| {
                 self.owned_values
                     .get(&ValueId::Proof(*proof_id))
-                    .map(|p| match p.borrow().root() {
+                    .map(|p| match p.root() {
                         RENode::Proof(proof) => proof.clone(),
                         _ => panic!("Expected proof"),
                     })

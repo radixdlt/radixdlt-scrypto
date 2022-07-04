@@ -710,12 +710,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 _ => panic!("Invalid value being persisted: {:?}", value),
             }
 
-            let child_values = value
-                .non_root_nodes
-                .into_iter()
-                .map(|(id, v)| (id, v.into_inner()))
-                .collect();
-            self.insert_non_root_nodes(child_values);
+            self.insert_non_root_nodes(value.non_root_nodes);
         }
     }
 }
