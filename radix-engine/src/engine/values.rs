@@ -1,5 +1,4 @@
 use sbor::rust::cell::{Ref, RefCell, RefMut};
-use sbor::rust::collections::hash_map::IntoIter;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
@@ -156,7 +155,7 @@ impl RENode {
 #[derive(Debug)]
 pub struct REValue {
     pub root: RENode,
-    pub non_root_nodes: InMemoryChildren,
+    pub non_root_nodes: HashMap<ValueId, RefCell<REValue>>,
 }
 
 impl REValue {
@@ -169,7 +168,41 @@ impl REValue {
     }
 
     pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, REValue>) {
-        self.non_root_nodes.insert_children(values)
+        for (id, value) in values {
+            self.non_root_nodes.insert(id, RefCell::new(value));
+        }
+    }
+
+    pub fn try_drop(self) -> Result<(), DropFailure> {
+        self.root.try_drop()
+    }
+
+    pub fn all_descendants(&self) -> Vec<ValueId> {
+        let mut descendents = Vec::new();
+        for (id, value) in self.non_root_nodes.iter() {
+            descendents.push(*id);
+            let value = value.borrow();
+            descendents.extend(value.all_descendants());
+        }
+        descendents
+    }
+
+    pub unsafe fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> Ref<REValue> {
+        if ancestors.is_empty() {
+            let value = self
+                .non_root_nodes
+                .get(id)
+                .expect("Value expected to exist");
+            return value.borrow();
+        }
+
+        let (first, rest) = ancestors.split_first().unwrap();
+        let value = self
+            .non_root_nodes
+            .get(&ValueId::KeyValueStore(*first))
+            .unwrap();
+        let value = value.try_borrow_unguarded().unwrap();
+        value.get_child(rest, id)
     }
 
     pub fn get_child_mut(
@@ -177,19 +210,20 @@ impl REValue {
         ancestors: &[KeyValueStoreId],
         id: &ValueId,
     ) -> RefMut<REValue> {
-        self.non_root_nodes.get_child_mut(ancestors, id)
-    }
+        if ancestors.is_empty() {
+            let value = self
+                .non_root_nodes
+                .get_mut(id)
+                .expect("Value expected to exist");
+            return value.borrow_mut();
+        }
 
-    pub unsafe fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> Ref<REValue> {
-        self.non_root_nodes.get_child(ancestors, id)
-    }
-
-    pub fn all_descendants(&self) -> Vec<ValueId> {
-        self.non_root_nodes.all_descendants()
-    }
-
-    pub fn try_drop(self) -> Result<(), DropFailure> {
-        self.root.try_drop()
+        let (first, rest) = ancestors.split_first().unwrap();
+        let value = self
+            .non_root_nodes
+            .get_mut(&ValueId::KeyValueStore(*first))
+            .unwrap();
+        value.get_mut().get_child_mut(rest, id)
     }
 }
 
@@ -237,10 +271,14 @@ impl REComplexValue {
     }
 
     pub fn into_re_value(self, children: HashMap<ValueId, REValue>) -> REValue {
+        let mut non_root_nodes = HashMap::new();
+        for (id, value) in children.into_iter() {
+            non_root_nodes.insert(id, RefCell::new(value));
+        }
         match self {
             REComplexValue::Component(component) => REValue {
                 root: RENode::Component(component),
-                non_root_nodes: InMemoryChildren::with_values(children),
+                non_root_nodes,
             },
         }
     }
@@ -278,7 +316,7 @@ impl Into<REValue> for REPrimitiveValue {
         };
         REValue {
             root,
-            non_root_nodes: InMemoryChildren::new(),
+            non_root_nodes: HashMap::new(),
         }
     }
 }
@@ -328,82 +366,5 @@ impl Into<REValueByComplexity> for ValidatedPackage {
 impl Into<REValueByComplexity> for Component {
     fn into(self) -> REValueByComplexity {
         REValueByComplexity::Complex(REComplexValue::Component(self))
-    }
-}
-
-#[derive(Debug)]
-pub struct InMemoryChildren {
-    child_values: HashMap<ValueId, RefCell<REValue>>,
-}
-
-impl InMemoryChildren {
-    pub fn new() -> Self {
-        InMemoryChildren {
-            child_values: HashMap::new(),
-        }
-    }
-
-    pub fn with_values(values: HashMap<ValueId, REValue>) -> Self {
-        let mut child_values = HashMap::new();
-        for (id, value) in values.into_iter() {
-            child_values.insert(id, RefCell::new(value));
-        }
-        InMemoryChildren { child_values }
-    }
-
-    pub fn into_iter(self) -> IntoIter<ValueId, RefCell<REValue>> {
-        self.child_values.into_iter()
-    }
-
-    pub fn all_descendants(&self) -> Vec<ValueId> {
-        let mut descendents = Vec::new();
-        for (id, value) in self.child_values.iter() {
-            descendents.push(*id);
-            let value = value.borrow();
-            descendents.extend(value.all_descendants());
-        }
-        descendents
-    }
-
-    pub unsafe fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> Ref<REValue> {
-        if ancestors.is_empty() {
-            let value = self.child_values.get(id).expect("Value expected to exist");
-            return value.borrow();
-        }
-
-        let (first, rest) = ancestors.split_first().unwrap();
-        let value = self
-            .child_values
-            .get(&ValueId::KeyValueStore(*first))
-            .unwrap();
-        let value = value.try_borrow_unguarded().unwrap();
-        value.get_child(rest, id)
-    }
-
-    pub fn get_child_mut(
-        &mut self,
-        ancestors: &[KeyValueStoreId],
-        id: &ValueId,
-    ) -> RefMut<REValue> {
-        if ancestors.is_empty() {
-            let value = self
-                .child_values
-                .get_mut(id)
-                .expect("Value expected to exist");
-            return value.borrow_mut();
-        }
-
-        let (first, rest) = ancestors.split_first().unwrap();
-        let value = self
-            .child_values
-            .get_mut(&ValueId::KeyValueStore(*first))
-            .unwrap();
-        value.get_mut().get_child_mut(rest, id)
-    }
-
-    pub fn insert_children(&mut self, values: HashMap<ValueId, REValue>) {
-        for (id, value) in values {
-            self.child_values.insert(id, RefCell::new(value));
-        }
     }
 }
