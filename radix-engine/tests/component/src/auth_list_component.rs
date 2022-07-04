@@ -12,10 +12,9 @@ blueprint! {
             auth: Vec<NonFungibleAddress>,
             access_rules: AccessRules,
         ) -> ComponentAddress {
-            Self { count, auth }
-                .instantiate()
-                .add_access_check(access_rules)
-                .globalize()
+            let mut component = Self { count, auth }.instantiate();
+            component.add_access_check(access_rules);
+            component.globalize()
         }
 
         pub fn update_count(&mut self, count: u8) {

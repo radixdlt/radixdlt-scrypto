@@ -332,54 +332,65 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
-        &mut self,
+    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+        value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
-        match method_name {
+        let mut value_ref = system_api.borrow_native_value(&value_id);
+        let proof = value_ref.proof();
+
+        let rtn = match method_name {
             "amount" => {
                 let _: ProofGetAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-                Ok(ScryptoValue::from_typed(&self.total_amount()))
+                Ok(ScryptoValue::from_typed(&proof.total_amount()))
             }
             "non_fungible_ids" => {
                 let _: ProofGetNonFungibleIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-                let ids = self.total_ids()?;
+                let ids = proof.total_ids()?;
                 return Ok(ScryptoValue::from_typed(&ids));
             }
             "resource_address" => {
                 let _: ProofGetResourceAddressInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-                Ok(ScryptoValue::from_typed(&self.resource_address()))
+                Ok(ScryptoValue::from_typed(&proof.resource_address()))
             }
             "clone" => {
                 let _: ProofCloneInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-                let cloned_proof = self.clone();
-                let proof_id = system_api
-                    .create_proof(cloned_proof)
-                    .map_err(|_| ProofError::CouldNotCreateProof)?;
+                let cloned_proof = proof.clone();
+                let proof_id = system_api.native_create(cloned_proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
             }
             _ => Err(UnknownMethod),
-        }
+        }?;
+
+        system_api.return_native_value(value_id, value_ref);
+        Ok(rtn)
     }
 
-    pub fn main_consume(
-        self,
+    pub fn main_consume<
+        'borrowed,
+        S: SystemApi<'borrowed, W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    >(
+        value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
+        system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
+        let proof: Proof = system_api.take_native_value(&value_id).into();
         match method_name {
             "drop" => {
                 let _: ConsumingProofDropInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
-                self.drop();
+                proof.drop();
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(UnknownMethod),

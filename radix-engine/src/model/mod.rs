@@ -19,7 +19,7 @@ pub use abi_extractor::*;
 pub use auth_converter::convert;
 pub use auth_zone::{AuthZone, AuthZoneError};
 pub use bucket::{Bucket, BucketError};
-pub use component::Component;
+pub use component::{Component, ComponentError};
 pub use method_authorization::{
     HardProofRule, HardResourceOrNonFungible, MethodAuthorization, MethodAuthorizationError,
 };

@@ -204,7 +204,7 @@ impl Worktop {
             .insert(resource_address, Rc::new(RefCell::new(container)));
     }
 
-    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         method_name: &str,
         arg: ScryptoValue,
@@ -215,8 +215,10 @@ impl Worktop {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .take_bucket(input.bucket.0)
-                    .map_err(|_| WorktopError::CouldNotTakeBucket)?;
+                    .take_native_value(&ValueId::Transient(TransientValueId::Bucket(
+                        input.bucket.0,
+                    )))
+                    .into();
                 self.put(bucket)
                     .map_err(WorktopError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_typed(&()))
@@ -236,10 +238,10 @@ impl Worktop {
                     let resource_type = resource_manager.resource_type();
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
-
                 let bucket_id = system_api
-                    .create_bucket(resource_container)
-                    .map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                    .native_create(Bucket::new(resource_container))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -261,8 +263,9 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .create_bucket(resource_container)
-                    .map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                    .native_create(Bucket::new(resource_container))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -284,8 +287,9 @@ impl Worktop {
                 };
 
                 let bucket_id = system_api
-                    .create_bucket(resource_container)
-                    .map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                    .native_create(Bucket::new(resource_container))
+                    .unwrap()
+                    .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
                     bucket_id,
                 )))
@@ -332,8 +336,9 @@ impl Worktop {
                         .map_err(WorktopError::ResourceContainerError)?;
                     if !container.is_empty() {
                         let bucket_id = system_api
-                            .create_bucket(container)
-                            .map_err(|_| WorktopError::CouldNotCreateBucket)?;
+                            .native_create(Bucket::new(container))
+                            .unwrap()
+                            .into();
                         buckets.push(scrypto::resource::Bucket(bucket_id));
                     }
                 }

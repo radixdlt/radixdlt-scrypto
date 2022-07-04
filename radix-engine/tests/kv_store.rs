@@ -58,7 +58,7 @@ fn cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::KeyValueStoreNotFound(_)));
+    receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess(_)));
 }
 
 #[test]
@@ -79,7 +79,7 @@ fn self_cyclic_map_fails_execution() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::KeyValueStoreNotFound(_)));
+    receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess(..)));
 }
 
 #[test]
