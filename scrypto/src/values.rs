@@ -32,6 +32,7 @@ pub struct ScryptoValue {
     pub proof_ids: HashMap<ProofId, SborPath>,
     pub vault_ids: HashSet<VaultId>,
     pub kv_store_ids: HashSet<KeyValueStoreId>,
+    pub component_addresses: HashSet<ComponentAddress>,
 }
 
 impl ScryptoValue {
@@ -69,6 +70,23 @@ impl ScryptoValue {
                 .collect(),
             vault_ids: checker.vaults.iter().map(|e| e.0).collect(),
             kv_store_ids: checker.kv_stores.iter().map(|e| e.id).collect(),
+            component_addresses: checker.components.iter().map(|e| e.0).collect(),
+        })
+    }
+
+    pub fn from_slice_no_custom_values(slice: &[u8]) -> Result<Self, DecodeError> {
+        let value = decode_any(slice)?;
+        let mut checker = ScryptoNoCustomValuesChecker {};
+        traverse_any(&mut MutableSborPath::new(), &value, &mut checker)
+            .map_err(|e| DecodeError::CustomError(format!("{:?}", e)))?;
+        Ok(Self {
+            raw: encode_any(&value),
+            dom: value,
+            bucket_ids: HashMap::new(),
+            proof_ids: HashMap::new(),
+            vault_ids: HashSet::new(),
+            kv_store_ids: HashSet::new(),
+            component_addresses: HashSet::new(),
         })
     }
 
@@ -79,6 +97,11 @@ impl ScryptoValue {
         }
         for kv_store_id in &self.kv_store_ids {
             value_ids.insert(ValueId::kv_store_id(*kv_store_id));
+        }
+        for component_address in &self.component_addresses {
+            value_ids.insert(ValueId::Stored(StoredValueId::Component(
+                *component_address,
+            )));
         }
         for (bucket_id, _) in &self.bucket_ids {
             value_ids.insert(ValueId::Transient(TransientValueId::Bucket(*bucket_id)));
@@ -96,6 +119,11 @@ impl ScryptoValue {
         }
         for kv_store_id in &self.kv_store_ids {
             value_ids.insert(ValueId::kv_store_id(*kv_store_id));
+        }
+        for component_address in &self.component_addresses {
+            value_ids.insert(ValueId::Stored(StoredValueId::Component(
+                *component_address,
+            )));
         }
         value_ids
     }
@@ -175,12 +203,37 @@ impl fmt::Display for ScryptoValue {
     }
 }
 
+/// Represents an error when validating a Scrypto-specific value.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ScryptoNoCustomValuesCheckError {
+    CustomValueNotAllowed(u8),
+}
+
+/// A checker the check a Scrypto-specific value.
+struct ScryptoNoCustomValuesChecker {}
+
+impl CustomValueVisitor for ScryptoNoCustomValuesChecker {
+    type Err = ScryptoNoCustomValuesCheckError;
+
+    fn visit(
+        &mut self,
+        _path: &mut MutableSborPath,
+        type_id: u8,
+        _data: &[u8],
+    ) -> Result<(), Self::Err> {
+        return Err(ScryptoNoCustomValuesCheckError::CustomValueNotAllowed(
+            type_id,
+        ));
+    }
+}
+
 /// A checker the check a Scrypto-specific value.
 pub struct ScryptoCustomValueChecker {
     pub buckets: HashMap<Bucket, SborPath>,
     pub proofs: HashMap<Proof, SborPath>,
     pub vaults: HashSet<Vault>,
     pub kv_stores: HashSet<KeyValueStore<(), ()>>,
+    pub components: HashSet<Component>,
 }
 
 /// Represents an error when validating a Scrypto-specific value.
@@ -212,6 +265,7 @@ impl ScryptoCustomValueChecker {
             proofs: HashMap::new(),
             vaults: HashSet::new(),
             kv_stores: HashSet::new(),
+            components: HashSet::new(),
         }
     }
 }
@@ -233,6 +287,13 @@ impl CustomValueVisitor for ScryptoCustomValueChecker {
             ScryptoType::ComponentAddress => {
                 ComponentAddress::try_from(data)
                     .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
+            }
+            ScryptoType::Component => {
+                let component = Component::try_from(data)
+                    .map_err(ScryptoCustomValueCheckError::InvalidComponentAddress)?;
+                if !self.components.insert(component) {
+                    return Err(ScryptoCustomValueCheckError::DuplicateIds);
+                }
             }
             ScryptoType::KeyValueStore => {
                 let map = KeyValueStore::try_from(data)
@@ -498,6 +559,9 @@ impl ScryptoValueFormatter {
                     "ComponentAddress(\"{}\")",
                     ComponentAddress::try_from(data).unwrap()
                 )
+            }
+            ScryptoType::Component => {
+                format!("Component(\"{}\")", Component::try_from(data).unwrap())
             }
             ScryptoType::KeyValueStore => format!(
                 "KeyValueStore(\"{}\")",

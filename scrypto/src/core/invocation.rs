@@ -13,6 +13,7 @@ pub enum SNodeRef {
     PackageStatic,
     AuthZoneRef,
     Scrypto(ScryptoActor),
+    Component(ComponentAddress),
     ResourceStatic,
     ResourceRef(ResourceAddress),
     Consumed(ValueId),

@@ -92,7 +92,7 @@ impl AuthZone {
             .map_err(AuthZoneError::ProofError)
     }
 
-    pub fn main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
         &mut self,
         method_name: &str,
         arg: ScryptoValue,
@@ -103,9 +103,7 @@ impl AuthZone {
                 let _: AuthZonePopInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let proof = self.pop()?;
-                let proof_id = system_api
-                    .create_proof(proof)
-                    .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -113,9 +111,9 @@ impl AuthZone {
             "push" => {
                 let input: AuthZonePushInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let mut proof = system_api
-                    .take_proof(input.proof.0)
-                    .map_err(|_| AuthZoneError::CouldNotGetProof)?;
+                let mut proof: Proof = system_api
+                    .take_native_value(&ValueId::Transient(TransientValueId::Proof(input.proof.0)))
+                    .into();
                 // FIXME: this is a hack for now until we can get snode_state into process
                 // FIXME: and be able to determine which snode the proof is going into
                 proof.change_to_unrestricted();
@@ -131,9 +129,7 @@ impl AuthZone {
                     .map_err(|_| AuthZoneError::CouldNotGetResource)?;
                 let resource_type = resource_manager.resource_type();
                 let proof = self.create_proof(input.resource_address, resource_type)?;
-                let proof_id = system_api
-                    .create_proof(proof)
-                    .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -150,9 +146,7 @@ impl AuthZone {
                     input.resource_address,
                     resource_type,
                 )?;
-                let proof_id = system_api
-                    .create_proof(proof)
-                    .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -166,9 +160,7 @@ impl AuthZone {
                 let resource_type = resource_manager.resource_type();
                 let proof =
                     self.create_proof_by_ids(&input.ids, input.resource_address, resource_type)?;
-                let proof_id = system_api
-                    .create_proof(proof)
-                    .map_err(|_| AuthZoneError::CouldNotCreateProof)?;
+                let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

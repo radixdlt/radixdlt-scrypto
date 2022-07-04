@@ -6,9 +6,10 @@ mod system_api;
 mod track;
 mod transaction_executor;
 mod transaction_receipt;
+mod values;
 mod wasm_runtime;
 
-pub use call_frame::CallFrame;
+pub use call_frame::{CallFrame, RENativeValueRef, REValueRef};
 pub use errors::*;
 pub use precommitted_kv_store::*;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
@@ -19,4 +20,5 @@ pub use track::{
 };
 pub use transaction_executor::TransactionExecutor;
 pub use transaction_receipt::*;
+pub use values::*;
 pub use wasm_runtime::*;

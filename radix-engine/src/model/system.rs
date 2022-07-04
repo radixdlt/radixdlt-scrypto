@@ -16,7 +16,12 @@ pub enum SystemError {
 pub struct System {}
 
 impl System {
-    pub fn static_main<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn static_main<
+        'borrowed,
+        S: SystemApi<'borrowed, W, I>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    >(
         method_name: &str,
         arg: ScryptoValue,
         system_api: &mut S,
