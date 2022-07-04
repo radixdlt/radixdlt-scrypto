@@ -11,11 +11,11 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::core::{SNodeRef, ScryptoActor};
 use scrypto::engine::types::*;
+use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
 use scrypto::values::*;
 use transaction::validation::*;
 
-use crate::engine::SNodeState::{Borrowed, Consumed, Static, Tracked};
 use crate::engine::*;
 use crate::fee::*;
 use crate::ledger::*;
@@ -25,12 +25,12 @@ use crate::wasm::*;
 /// A call frame is the basic unit that forms a transaction call stack, which keeps track of the
 /// owned objects by this function.
 pub struct CallFrame<
-    'p, // Parent frame lifetime
-    's, // Substate store lifetime
+    'p, // parent lifetime
     't, // Track lifetime
-    'w, // WASM engine & instrumenter lifetime
-    'c, // Costing
-    S,  // Substate store type
+    's, // Substate store lifetime
+    'w, // WASM engine lifetime
+    'c, // Costing lifetime
+    S,  // Substore store type
     W,  // WASM engine type
     I,  // WASM instance type
 > where
@@ -57,69 +57,20 @@ pub struct CallFrame<
     /// Fee table
     fee_table: &'c FeeTable,
 
+    /// All ref values accessible by this call frame. The value may be located in one of the following:
+    /// 1. borrowed values
+    /// 2. track
+    value_refs: HashMap<ValueId, REValueInfo>,
+
     /// Owned Values
     owned_values: HashMap<ValueId, RefCell<REValue>>,
     auth_zone: Option<RefCell<AuthZone>>,
 
-    /// Referenced values
-    refed_values: HashMap<StoredValueId, ValueRefType>,
-    // TODO: Remove
-    refed_components: HashMap<ComponentAddress, Component>,
-
-    /// Caller's auth zone
+    /// Borrowed Values from call frames up the stack
+    frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
 
     phantom: PhantomData<I>,
-}
-
-#[derive(Debug)]
-pub enum TransientValue {
-    Bucket(Bucket),
-    Proof(Proof),
-}
-
-#[derive(Debug)]
-pub enum REValue {
-    Stored(StoredValue),
-    Transient(TransientValue),
-}
-
-impl REValue {
-    fn to_stored(&mut self) -> &mut StoredValue {
-        match self {
-            REValue::Stored(stored_value) => stored_value,
-            _ => panic!("Expected a stored value"),
-        }
-    }
-}
-
-impl Into<StoredValue> for REValue {
-    fn into(self) -> StoredValue {
-        match self {
-            REValue::Stored(stored_value) => stored_value,
-            _ => panic!("Expected a stored value"),
-        }
-    }
-}
-
-impl Into<TransientValue> for REValue {
-    fn into(self) -> TransientValue {
-        match self {
-            REValue::Transient(transient_value) => transient_value,
-            _ => panic!("Expected a stored value"),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ValueRefType {
-    Uncommitted {
-        root: KeyValueStoreId,
-        ancestors: Vec<KeyValueStoreId>,
-    },
-    Committed {
-        component_address: ComponentAddress,
-    },
 }
 
 #[macro_export]
@@ -163,29 +114,6 @@ fn to_stored_ids(ids: HashSet<ValueId>) -> Result<HashSet<StoredValueId>, Runtim
     Ok(stored_ids)
 }
 
-fn to_stored_values(
-    values: HashMap<ValueId, REValue>,
-) -> Result<HashMap<StoredValueId, StoredValue>, RuntimeError> {
-    let mut stored_values = HashMap::new();
-    for (id, value) in values {
-        match id {
-            ValueId::Stored(stored_id) => stored_values.insert(stored_id, value.into()),
-            _ => return Err(RuntimeError::MovingInvalidType),
-        };
-    }
-    Ok(stored_values)
-}
-
-fn verify_stored_value(value: &ScryptoValue) -> Result<(), RuntimeError> {
-    if !value.bucket_ids.is_empty() {
-        return Err(RuntimeError::BucketNotAllowed);
-    }
-    if !value.proof_ids.is_empty() {
-        return Err(RuntimeError::ProofNotAllowed);
-    }
-    Ok(())
-}
-
 fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     if !value.bucket_ids.is_empty() {
         return Err(RuntimeError::BucketNotAllowed);
@@ -202,61 +130,425 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
     Ok(())
 }
 
-pub enum REValueRef<'a> {
+#[derive(Debug, Clone)]
+pub struct REValueInfo {
+    visible: bool,
+    location: REValueLocation,
+}
+
+#[derive(Debug, Clone)]
+pub enum REValueLocation {
+    OwnedRoot,
+    Owned {
+        root: ValueId,
+        ancestors: Vec<KeyValueStoreId>,
+    },
+    BorrowedRoot,
+    Borrowed {
+        root: ValueId,
+        ancestors: Vec<KeyValueStoreId>,
+    },
+    Track {
+        parent: Option<ComponentAddress>,
+    },
+}
+
+impl REValueLocation {
+    fn child(&self, value_id: ValueId) -> REValueLocation {
+        match self {
+            REValueLocation::OwnedRoot => REValueLocation::Owned {
+                root: value_id,
+                ancestors: vec![],
+            },
+            REValueLocation::Owned { root, ancestors } => {
+                let mut next_ancestors = ancestors.clone();
+                let kv_store_id = value_id.into();
+                next_ancestors.push(kv_store_id);
+                REValueLocation::Owned {
+                    root: root.clone(),
+                    ancestors: next_ancestors,
+                }
+            }
+            REValueLocation::BorrowedRoot => REValueLocation::Borrowed {
+                root: value_id,
+                ancestors: vec![],
+            },
+            REValueLocation::Borrowed { root, ancestors } => {
+                let mut next_ancestors = ancestors.clone();
+                let kv_store_id = value_id.into();
+                next_ancestors.push(kv_store_id);
+                REValueLocation::Borrowed {
+                    root: root.clone(),
+                    ancestors: next_ancestors,
+                }
+            }
+            REValueLocation::Track { parent } => REValueLocation::Track {
+                parent: Some(parent.unwrap_or_else(|| value_id.into())),
+            },
+        }
+    }
+
+    fn borrow_native_ref<'borrowed, S: ReadableSubstateStore>(
+        &self,
+        value_id: &ValueId,
+        owned_values: &mut HashMap<ValueId, RefCell<REValue>>,
+        borrowed_values: &mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
+        track: &mut Track<S>,
+    ) -> RENativeValueRef<'borrowed> {
+        match self {
+            REValueLocation::BorrowedRoot => {
+                let owned = borrowed_values.remove(value_id).expect("Should exist");
+                RENativeValueRef::OwnedRef(owned)
+            }
+            REValueLocation::Track { parent } => {
+                let address = match value_id {
+                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
+                        Address::Vault(parent.unwrap(), *vault_id)
+                    }
+                    ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
+                    ValueId::Package(package_address) => Address::Package(*package_address),
+                    _ => panic!("Unexpected"),
+                };
+
+                let value = track
+                    .borrow_global_mut_value(address.clone())
+                    .map(|v| v.into())
+                    .unwrap();
+
+                RENativeValueRef::Track(address, value)
+            }
+            REValueLocation::OwnedRoot => {
+                let cell = owned_values.remove(value_id).unwrap();
+                let value = cell.into_inner();
+                RENativeValueRef::Owned(value)
+            }
+            _ => panic!("Unexpected {:?} {:?}", self, value_id),
+        }
+    }
+
+    fn to_owned_ref<'a, 'borrowed>(
+        &self,
+        value_id: &ValueId,
+        owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
+        borrowed_values: &'a mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
+    ) -> RefMut<'a, REValue> {
+        match self {
+            REValueLocation::OwnedRoot => {
+                let cell = owned_values.get_mut(value_id).unwrap();
+                cell.borrow_mut()
+            }
+            REValueLocation::Owned {
+                root,
+                ref ancestors,
+            } => {
+                let root_value = owned_values.get_mut(&root).unwrap().get_mut();
+                let children = root_value
+                    .get_children_store_mut()
+                    .expect("Should have children");
+                let stored_value_id = match value_id {
+                    ValueId::Stored(stored_value_id) => stored_value_id,
+                    _ => panic!("Unexpected value id"),
+                };
+                children.get_child(ancestors, stored_value_id)
+            }
+            REValueLocation::Borrowed { root, ancestors } => {
+                let borrowed = borrowed_values.get_mut(root).unwrap();
+                let stored_value_id = match value_id {
+                    ValueId::Stored(stored_value_id) => stored_value_id,
+                    _ => panic!("Unexpected value id"),
+                };
+                borrowed
+                    .get_children_store_mut()
+                    .unwrap()
+                    .get_child(ancestors, stored_value_id)
+            }
+            _ => panic!("Not an owned ref"),
+        }
+    }
+
+    fn to_ref<'a, 'borrowed, 'c, 's, S: ReadableSubstateStore>(
+        &self,
+        value_id: &ValueId,
+        owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
+        borrowed_values: &'a mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
+        track: &'c mut Track<'s, S>,
+    ) -> REValueRef<'a, 'borrowed, 'c, 's, S> {
+        match self {
+            REValueLocation::OwnedRoot
+            | REValueLocation::Owned { .. }
+            | REValueLocation::Borrowed { .. } => {
+                REValueRef::Owned(self.to_owned_ref(value_id, owned_values, borrowed_values))
+            }
+            REValueLocation::BorrowedRoot => {
+                REValueRef::Borrowed(borrowed_values.get_mut(value_id).unwrap())
+            }
+            REValueLocation::Track { parent } => {
+                let address = match value_id {
+                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
+                        Address::Vault(parent.unwrap(), *vault_id)
+                    }
+                    ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => {
+                        Address::KeyValueStore(parent.unwrap(), *kv_store_id)
+                    }
+                    ValueId::Stored(StoredValueId::Component(component_address)) => {
+                        if let Some(parent) = parent {
+                            Address::LocalComponent(*parent, *component_address)
+                        } else {
+                            Address::GlobalComponent(*component_address)
+                        }
+                    }
+                    _ => panic!("Unexpected value id"),
+                };
+
+                REValueRef::Track(track, address)
+            }
+        }
+    }
+}
+
+pub enum RENativeValueRef<'borrowed> {
+    Owned(REValue),
+    OwnedRef(RefMut<'borrowed, REValue>),
+    Track(Address, SubstateValue),
+}
+
+impl<'borrowed> RENativeValueRef<'borrowed> {
+    pub fn bucket(&mut self) -> &mut Bucket {
+        match self {
+            RENativeValueRef::OwnedRef(root) => match root.deref_mut() {
+                REValue::Bucket(bucket) => bucket,
+                _ => panic!("Expecting to be a bucket"),
+            },
+            _ => panic!("Expecting to be a bucket"),
+        }
+    }
+
+    pub fn proof(&mut self) -> &mut Proof {
+        match self {
+            RENativeValueRef::OwnedRef(ref mut root) => match root.deref_mut() {
+                REValue::Proof(proof) => proof,
+                _ => panic!("Expecting to be a proof"),
+            },
+            _ => panic!("Expecting to be a proof"),
+        }
+    }
+
+    pub fn vault(&mut self) -> &mut Vault {
+        match self {
+            RENativeValueRef::Owned(..) => panic!("Unexpected"),
+            RENativeValueRef::OwnedRef(owned) => owned.vault_mut(),
+            RENativeValueRef::Track(_address, value) => value.vault_mut(),
+        }
+    }
+
+    pub fn component(&mut self) -> &mut Component {
+        match self {
+            RENativeValueRef::OwnedRef(owned) => owned.component_mut(),
+            _ => panic!("Expecting to be a component"),
+        }
+    }
+
+    pub fn package(&mut self) -> &ValidatedPackage {
+        match self {
+            RENativeValueRef::Track(_address, value) => value.package(),
+            _ => panic!("Expecting to be tracked"),
+        }
+    }
+
+    pub fn resource_manager(&mut self) -> &mut ResourceManager {
+        match self {
+            RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
+            _ => panic!("Unexpected"),
+        }
+    }
+
+    pub fn return_to_location<'a, S: ReadableSubstateStore>(
+        self,
+        value_id: ValueId,
+        owned_values: &'a mut HashMap<ValueId, RefCell<REValue>>,
+        borrowed_values: &mut HashMap<ValueId, RefMut<'borrowed, REValue>>,
+        track: &mut Track<S>,
+    ) {
+        match self {
+            RENativeValueRef::Owned(value) => {
+                owned_values.insert(value_id, RefCell::new(value));
+            }
+            RENativeValueRef::OwnedRef(owned) => {
+                borrowed_values.insert(value_id.clone(), owned);
+            }
+            RENativeValueRef::Track(address, value) => {
+                track.return_borrowed_global_mut_value(address, value)
+            }
+        }
+    }
+}
+
+pub enum REValueRef<'a, 'b, 'c, 's, S: ReadableSubstateStore> {
     Owned(RefMut<'a, REValue>),
-    Ref(RefMut<'a, StoredValue>),
+    Borrowed(&'a mut RefMut<'b, REValue>),
+    Track(&'c mut Track<'s, S>, Address),
 }
 
-impl<'a> REValueRef<'a> {
-    fn to_stored_mut(&mut self) -> &mut StoredValue {
+impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRef<'a, 'b, 'c, 's, S> {
+    fn kv_store_put(
+        &mut self,
+        key: Vec<u8>,
+        value: ScryptoValue,
+        to_store: HashMap<StoredValueId, REValue>,
+    ) {
         match self {
-            REValueRef::Owned(value) => match value.deref_mut() {
-                REValue::Stored(stored_value) => stored_value,
-                _ => panic!("Expecting to be stored value"),
-            },
-            REValueRef::Ref(stored_value) => stored_value,
+            REValueRef::Owned(owned) => {
+                let children = owned.get_children_store_mut();
+                children.unwrap().insert_children(to_store);
+                owned.kv_store_mut().put(key, value);
+            }
+            REValueRef::Borrowed(..) => {
+                panic!("Not supported");
+            }
+            REValueRef::Track(track, address) => {
+                let component_address =
+                    if let Address::KeyValueStore(component_address, _) = &address {
+                        component_address
+                    } else {
+                        panic!("Expected KV Store address");
+                    };
+
+                track.set_key_value(
+                    address.clone(),
+                    key,
+                    SubstateValue::KeyValueStoreEntry(Some(value.raw)),
+                );
+                track.insert_objects_into_component(to_store, *component_address);
+            }
         }
     }
 
-    fn to_mut_vault(&mut self) -> &mut Vault {
+    fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
+        let maybe_value = match self {
+            REValueRef::Owned(owned) => {
+                let store = owned.kv_store_mut();
+                store.get(key).map(|v| v.dom)
+            }
+            REValueRef::Borrowed(..) => {
+                panic!("Not supported");
+            }
+            REValueRef::Track(track, address) => {
+                let substate_value = track.read_key_value(address.clone(), key.to_vec());
+                substate_value
+                    .kv_entry()
+                    .as_ref()
+                    .map(|bytes| decode_any(bytes).unwrap())
+            }
+        };
+
+        // TODO: Cleanup
+        let value = maybe_value.map_or(
+            Value::Option {
+                value: Box::new(Option::None),
+            },
+            |v| Value::Option {
+                value: Box::new(Some(v)),
+            },
+        );
+        ScryptoValue::from_value(value).unwrap()
+    }
+
+    fn component_get_state(&self) -> ScryptoValue {
         match self {
-            REValueRef::Owned(value) => match value.deref_mut() {
-                REValue::Stored(StoredValue::Vault(vault)) => vault,
-                _ => panic!("Expecting to be a vault"),
-            },
-            REValueRef::Ref(stored_value) => match stored_value.deref_mut() {
-                StoredValue::Vault(vault) => vault,
-                _ => panic!("Expecting to be a vault"),
-            },
+            REValueRef::Track(track, address) => {
+                let component_val = track.read_value(address.clone());
+                let component = component_val.component();
+                return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
+            }
+            REValueRef::Borrowed(owned) => {
+                let component = owned.component();
+                return ScryptoValue::from_slice(component.state()).expect("Expected to decode");
+            }
+            _ => panic!("Unexpected component ref"),
         }
     }
 
-    fn kv_store(&self) -> &PreCommittedKeyValueStore {
+    fn component_put(&mut self, value: ScryptoValue, to_store: HashMap<StoredValueId, REValue>) {
         match self {
-            REValueRef::Owned(value) => match value.deref() {
-                REValue::Stored(stored_value) => stored_value.kv_store(),
-                _ => panic!("Expecting to be a vault"),
-            },
-            REValueRef::Ref(stored_value) => stored_value.kv_store(),
+            REValueRef::Track(track, address) => {
+                track
+                    .write_component_value(address.clone(), value.raw)
+                    .unwrap();
+
+                let parent_address = match address {
+                    Address::GlobalComponent(address) => *address,
+                    Address::LocalComponent(parent, ..) => *parent,
+                    _ => panic!("Expected component address"),
+                };
+
+                track.insert_objects_into_component(to_store, parent_address);
+            }
+            REValueRef::Borrowed(owned) => {
+                let component = owned.component_mut();
+                component.set_state(value.raw);
+                let children = owned.get_children_store_mut();
+                children.unwrap().insert_children(to_store);
+            }
+            _ => panic!("Unexpected component ref"),
         }
     }
 
-    fn kv_store_mut(&mut self) -> &mut PreCommittedKeyValueStore {
+    fn component_info(&mut self) -> (PackageAddress, String) {
         match self {
-            REValueRef::Owned(value) => match value.deref_mut() {
-                REValue::Stored(stored_value) => stored_value.kv_store_mut(),
-                _ => panic!("Expecting to be a vault"),
-            },
-            REValueRef::Ref(stored_value) => stored_value.kv_store_mut(),
+            REValueRef::Owned(owned) => {
+                let component = &owned.component_mut();
+                (
+                    component.package_address().clone(),
+                    component.blueprint_name().to_string(),
+                )
+            }
+            REValueRef::Track(track, address) => {
+                let component_val = track.borrow_global_value(address.clone()).unwrap();
+                let component = component_val.component();
+                (
+                    component.package_address().clone(),
+                    component.blueprint_name().to_string(),
+                )
+            }
+            _ => panic!("Unexpected component ref"),
         }
     }
-}
 
-pub enum BorrowedSNodeState<'a> {
-    AuthZone(RefMut<'a, AuthZone>),
-    ValueRef(ValueId, RefMut<'a, REValue>),
-    Vault(VaultId, REValueRef<'a>),
-    Blueprint(ScryptoActorInfo, ValidatedPackage),
+    fn component_authorization(
+        &mut self,
+        schema: &Type,
+        fn_ident: &str,
+    ) -> Vec<MethodAuthorization> {
+        match self {
+            REValueRef::Owned(owned) => {
+                let component = owned.component_mut();
+                component.method_authorization(schema, fn_ident)
+            }
+            REValueRef::Track(track, address) => {
+                let component_val = track.borrow_global_value(address.clone()).unwrap();
+                let component = component_val.component();
+                component.method_authorization(schema, fn_ident)
+            }
+            _ => panic!("Unexpected component ref"),
+        }
+    }
+
+    fn vault_address(&mut self) -> ResourceAddress {
+        match self {
+            REValueRef::Owned(re_value) => match re_value.deref_mut() {
+                REValue::Vault(vault) => vault.resource_address(),
+                _ => panic!("Unexpected value"),
+            },
+            REValueRef::Borrowed(..) => {
+                panic!("Not supported");
+            }
+            REValueRef::Track(track, address) => {
+                let vault_val = track.borrow_global_value(address.clone()).unwrap();
+                let vault = vault_val.vault();
+                vault.resource_address()
+            }
+        }
+    }
 }
 
 pub enum StaticSNodeState {
@@ -266,34 +558,12 @@ pub enum StaticSNodeState {
     TransactionProcessor,
 }
 
-pub enum SNodeState<'a> {
-    Static(StaticSNodeState),
-    Consumed(TransientValue),
-    Borrowed(BorrowedSNodeState<'a>),
-    Tracked(
-        Address,
-        SubstateValue,
-        Option<(ScryptoActorInfo, ValidatedPackage)>,
-    ),
-}
-
 pub enum SNodeExecution<'a> {
     Static(StaticSNodeState),
-    Consumed(TransientValue),
+    Consumed(ValueId),
     AuthZone(RefMut<'a, AuthZone>),
-    ValueRef(ValueId, RefMut<'a, REValue>),
-    Vault(VaultId, &'a mut Vault),
-    Blueprint(ScryptoActorInfo, ValidatedPackage),
-    Resource(Address, &'a mut ResourceManager),
-    Component(ScryptoActorInfo, ValidatedPackage),
-}
-
-enum SubstateEntry<'a> {
-    KeyValueStoreRef(REValueRef<'a>, ScryptoValue),
-    KeyValueStoreTracked(ComponentAddress, KeyValueStoreId, ScryptoValue),
-    Component(ComponentAddress, &'a mut Component),
-    ComponentInfo(ComponentAddress, &'a Component),
-    ComponentInfoTracked(ComponentAddress),
+    ValueRef(ValueId),
+    Scrypto(ScryptoActorInfo, ValidatedPackage),
 }
 
 pub enum DataInstruction {
@@ -303,72 +573,10 @@ pub enum DataInstruction {
 
 pub enum SubstateAddress {
     KeyValueEntry(KeyValueStoreId, ScryptoValue),
-    Component(ComponentAddress),
-    ComponentInfo(ComponentAddress),
+    Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'a> SNodeExecution<'a> {
-    fn execute<S: SystemApi<W, I>, W: WasmEngine<I>, I: WasmInstance>(
-        self,
-        fn_ident: &str,
-        input: ScryptoValue,
-        system: &mut S,
-    ) -> Result<ScryptoValue, RuntimeError> {
-        match self {
-            SNodeExecution::Static(state) => match state {
-                StaticSNodeState::System => {
-                    System::static_main(fn_ident, input, system).map_err(RuntimeError::SystemError)
-                }
-                StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
-                    fn_ident, input, system,
-                )
-                .map_err(|e| match e {
-                    TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
-                    TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
-                    TransactionProcessorError::RuntimeError(e) => e,
-                }),
-                StaticSNodeState::Package => ValidatedPackage::static_main(fn_ident, input, system)
-                    .map_err(RuntimeError::PackageError),
-                StaticSNodeState::Resource => ResourceManager::static_main(fn_ident, input, system)
-                    .map_err(RuntimeError::ResourceManagerError),
-            },
-            SNodeExecution::Consumed(state) => match state {
-                TransientValue::Bucket(bucket) => bucket
-                    .consuming_main(fn_ident, input, system)
-                    .map_err(RuntimeError::BucketError),
-                TransientValue::Proof(proof) => proof
-                    .main_consume(fn_ident, input)
-                    .map_err(RuntimeError::ProofError),
-            },
-            SNodeExecution::AuthZone(mut auth_zone) => auth_zone
-                .main(fn_ident, input, system)
-                .map_err(RuntimeError::AuthZoneError),
-            SNodeExecution::Blueprint(info, package) => {
-                package.invoke(&info, fn_ident, input, system)
-            }
-            SNodeExecution::ValueRef(value_id, mut value) => match value.deref_mut() {
-                REValue::Transient(TransientValue::Bucket(bucket)) => bucket
-                    .main(value_id.into(), fn_ident, input, system)
-                    .map_err(RuntimeError::BucketError),
-                REValue::Transient(TransientValue::Proof(proof)) => proof
-                    .main(fn_ident, input, system)
-                    .map_err(RuntimeError::ProofError),
-                _ => panic!("Unexpected value to execute"),
-            },
-            SNodeExecution::Vault(vault_id, vault) => vault
-                .main(vault_id, fn_ident, input, system)
-                .map_err(RuntimeError::VaultError),
-            SNodeExecution::Resource(address, resource_manager) => resource_manager
-                .main(address.clone().into(), fn_ident, input, system)
-                .map_err(RuntimeError::ResourceManagerError),
-            SNodeExecution::Component(ref actor, ref package) => {
-                package.invoke(&actor, fn_ident, input, system)
-            }
-        }
-    }
-}
-
-impl<'p, 's, 't, 'w, 'c, S, W, I> CallFrame<'p, 's, 't, 'w, 'c, S, W, I>
+impl<'p, 't, 's, 'w, 'c, S, W, I> CallFrame<'p, 't, 's, 'w, 'c, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -414,6 +622,8 @@ where
                 initial_auth_zone_proofs,
             ))),
             HashMap::new(),
+            HashMap::new(),
+            HashMap::new(),
             None,
         )
     }
@@ -429,6 +639,8 @@ where
         fee_table: &'c FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
         owned_values: HashMap<ValueId, REValue>,
+        readable_values: HashMap<ValueId, REValueInfo>,
+        frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
     ) -> Self {
         let mut celled_owned_values = HashMap::new();
@@ -446,52 +658,24 @@ where
             cost_unit_counter,
             fee_table,
             owned_values: celled_owned_values,
-            refed_values: HashMap::new(),
-            refed_components: HashMap::new(),
+            value_refs: readable_values,
+            frame_borrowed_values,
             auth_zone,
             caller_auth_zone,
             phantom: PhantomData,
         }
     }
 
-    /// Checks resource leak.
-    fn check_resource(&mut self) -> Result<(), RuntimeError> {
-        let mut success = true;
-        let mut resource = ResourceFailure::Unknown;
-
-        let values: HashMap<ValueId, REValue> = self
-            .owned_values
-            .drain()
-            .map(|(id, c)| (id, c.into_inner()))
-            .collect();
-        for (_, value) in values {
+    fn drop_owned_values(&mut self) -> Result<(), RuntimeError> {
+        for (_, value) in self.owned_values.drain() {
             trace!(self, Level::Warn, "Dangling value: {:?}", value);
-            let some_resource_failure = match value {
-                REValue::Stored(StoredValue::Vault(vault)) => {
-                    Some(ResourceFailure::Resource(vault.resource_address()))
-                }
-                REValue::Stored(StoredValue::KeyValueStore { .. }) => {
-                    Some(ResourceFailure::UnclaimedKeyValueStore)
-                }
-                REValue::Transient(TransientValue::Bucket(bucket)) => {
-                    Some(ResourceFailure::Resource(bucket.resource_address()))
-                }
-                REValue::Transient(TransientValue::Proof(proof)) => {
-                    proof.drop();
-                    None
-                }
-            };
-            if let Some(resource_failure) = some_resource_failure {
-                resource = resource_failure;
-                success = false;
-            }
+            value
+                .into_inner()
+                .try_drop()
+                .map_err(|e| RuntimeError::DropFailure(e))?;
         }
 
-        if success {
-            Ok(())
-        } else {
-            Err(RuntimeError::ResourceCheckFailure(resource))
-        }
+        Ok(())
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -527,76 +711,91 @@ where
     pub fn run(
         &mut self,
         snode_ref: Option<SNodeRef>, // TODO: Remove, abstractions between invoke_snode() and run() are a bit messy right now
-        snode: SNodeState<'p>,
+        execution: SNodeExecution<'p>,
         fn_ident: &str,
         input: ScryptoValue,
     ) -> Result<(ScryptoValue, HashMap<ValueId, REValue>), RuntimeError> {
-        let remaining_cost_units = self.cost_unit_counter().remaining();
         trace!(
             self,
             Level::Debug,
             "Run started! Depth: {}, Remaining cost units: {}",
             self.depth,
-            remaining_cost_units
+            self.cost_unit_counter.remaining()
         );
         self.cost_unit_counter
             .consume(self.fee_table.engine_run_cost())
             .map_err(RuntimeError::CostingError)?;
 
-        let mut to_return = HashMap::new();
+        let output = {
+            let rtn = match execution {
+                SNodeExecution::Static(state) => match state {
+                    StaticSNodeState::System => System::static_main(fn_ident, input, self)
+                        .map_err(RuntimeError::SystemError),
+                    StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
+                        fn_ident, input, self,
+                    )
+                    .map_err(|e| match e {
+                        TransactionProcessorError::InvalidRequestData(_) => panic!("Illegal state"),
+                        TransactionProcessorError::InvalidMethod => panic!("Illegal state"),
+                        TransactionProcessorError::RuntimeError(e) => e,
+                    }),
+                    StaticSNodeState::Package => {
+                        ValidatedPackage::static_main(fn_ident, input, self)
+                            .map_err(RuntimeError::PackageError)
+                    }
+                    StaticSNodeState::Resource => {
+                        ResourceManager::static_main(fn_ident, input, self)
+                            .map_err(RuntimeError::ResourceManagerError)
+                    }
+                },
+                SNodeExecution::Consumed(value_id) => match value_id {
+                    ValueId::Transient(TransientValueId::Bucket(..)) => {
+                        Bucket::consuming_main(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::BucketError)
+                    }
+                    ValueId::Transient(TransientValueId::Proof(..)) => {
+                        Proof::main_consume(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ProofError)
+                    }
+                    ValueId::Stored(StoredValueId::Component(..)) => {
+                        Component::main_consume(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ComponentError)
+                    }
+                    _ => panic!("Unexpected"),
+                },
+                SNodeExecution::AuthZone(mut auth_zone) => auth_zone
+                    .main(fn_ident, input, self)
+                    .map_err(RuntimeError::AuthZoneError),
+                SNodeExecution::ValueRef(value_id) => match value_id {
+                    ValueId::Transient(TransientValueId::Bucket(bucket_id)) => {
+                        Bucket::main(bucket_id, fn_ident, input, self)
+                            .map_err(RuntimeError::BucketError)
+                    }
+                    ValueId::Transient(TransientValueId::Proof(..)) => {
+                        Proof::main(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ProofError)
+                    }
+                    ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
+                        Vault::main(vault_id, fn_ident, input, self)
+                            .map_err(RuntimeError::VaultError)
+                    }
+                    ValueId::Stored(StoredValueId::Component(..)) => {
+                        Component::main(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::ComponentError)
+                    }
+                    ValueId::Resource(resource_address) => {
+                        ResourceManager::main(resource_address, fn_ident, input, self)
+                            .map_err(RuntimeError::ResourceManagerError)
+                    }
+                    _ => panic!("Unexpected"),
+                },
+                SNodeExecution::Scrypto(ref actor, ref package) => {
+                    package.invoke(&actor, fn_ident, input, self)
+                }
+            }?;
 
-        // TODO: Find a better way to get rid of borrowed value does not live long enough issue
-        #[allow(unused_assignments)]
-        let mut ref_container = Option::None;
-
-        let execution = match snode {
-            SNodeState::Static(state) => SNodeExecution::Static(state),
-            SNodeState::Consumed(consumed) => SNodeExecution::Consumed(consumed),
-            SNodeState::Borrowed(borrowed) => match borrowed {
-                BorrowedSNodeState::AuthZone(auth_zone) => SNodeExecution::AuthZone(auth_zone),
-                BorrowedSNodeState::Blueprint(info, package) => {
-                    SNodeExecution::Blueprint(info, package)
-                }
-                BorrowedSNodeState::ValueRef(value_id, value) => {
-                    SNodeExecution::ValueRef(value_id, value)
-                }
-                BorrowedSNodeState::Vault(vault_id, value) => {
-                    ref_container = Some(value);
-                    let vault = ref_container.as_mut().unwrap().to_mut_vault();
-                    SNodeExecution::Vault(vault_id, vault)
-                }
-            },
-            SNodeState::Tracked(address, value, mut meta) => match value {
-                SubstateValue::Resource(_) => {
-                    to_return.insert(address.clone(), value);
-                    let resource_manager =
-                        to_return.get_mut(&address).unwrap().resource_manager_mut();
-                    SNodeExecution::Resource(address.clone(), resource_manager)
-                }
-                SubstateValue::Vault(_) => {
-                    to_return.insert(address.clone(), value);
-                    let vault = to_return.get_mut(&address).unwrap().vault_mut();
-                    let vault_address: (ComponentAddress, VaultId) = address.clone().into();
-                    SNodeExecution::Vault(vault_address.1, vault)
-                }
-                SubstateValue::Component(component) => {
-                    self.refed_components.insert(address.into(), component);
-                    let (info, package) = meta.take().unwrap();
-                    SNodeExecution::Component(info, package)
-                }
-                _ => panic!("Unexpected tracked value"),
-            },
+            rtn
         };
-
-        let output = execution.execute(fn_ident, input, self)?;
-
-        // Update track
-        for (address, value) in to_return.drain() {
-            self.track.return_borrowed_global_mut_value(address, value);
-        }
-        for (address, value) in self.refed_components.drain() {
-            self.track.return_borrowed_global_mut_value(address, value);
-        }
 
         // Prevent vaults/kvstores from being returned
         self.process_return_data(snode_ref, &output)?;
@@ -617,17 +816,54 @@ where
                 ScryptoValue::from_typed(&AuthZoneClearInput {}),
             )?;
         }
-        self.check_resource()?;
+        self.drop_owned_values()?;
 
-        let remaining_cost_units = self.cost_unit_counter().remaining();
         trace!(
             self,
             Level::Debug,
             "Run finished! Remaining cost units: {}",
-            remaining_cost_units
+            self.cost_unit_counter().remaining()
         );
 
         Ok((output, taken_values))
+    }
+
+    fn take_persistent_child_values(
+        &mut self,
+        value_ids: HashSet<ValueId>,
+    ) -> Result<(HashMap<StoredValueId, REValue>, HashSet<ValueId>), RuntimeError> {
+        let (taken, missing) = {
+            let mut taken_values = HashMap::new();
+            let mut missing_values = HashSet::new();
+
+            for id in value_ids {
+                let maybe = self.owned_values.remove(&id);
+                if let Some(celled_value) = maybe {
+                    // TODO: Clean this conversion up
+                    let persisted_value: REPersistedChildValue =
+                        celled_value.into_inner().try_into()?;
+                    let value: REValue = persisted_value.into();
+                    let stored_id: StoredValueId = id.into();
+                    taken_values.insert(stored_id, value);
+                } else {
+                    missing_values.insert(id);
+                }
+            }
+
+            (taken_values, missing_values)
+        };
+
+        // Moved values must have their references removed
+        for (id, value) in taken.iter() {
+            self.value_refs.remove(&ValueId::Stored(id.clone()));
+            if let Some(children_store) = value.get_children_store() {
+                for id in children_store.all_descendants() {
+                    self.value_refs.remove(&ValueId::Stored(id));
+                }
+            }
+        }
+
+        Ok((taken, missing))
     }
 
     fn take_available_values(
@@ -643,12 +879,12 @@ where
                 if let Some(celled_value) = maybe {
                     let value = celled_value.into_inner();
                     match &value {
-                        REValue::Transient(TransientValue::Bucket(bucket)) => {
+                        REValue::Bucket(bucket) => {
                             if bucket.is_locked() {
                                 return Err(RuntimeError::CantMoveLockedBucket);
                             }
                         }
-                        REValue::Transient(TransientValue::Proof(proof)) => {
+                        REValue::Proof(proof) => {
                             if proof.is_restricted() {
                                 return Err(RuntimeError::CantMoveRestrictedProof(id));
                             }
@@ -666,14 +902,12 @@ where
         };
 
         // Moved values must have their references removed
-        for (_, value) in &taken {
-            match value {
-                REValue::Stored(stored_value) => {
-                    for id in stored_value.all_descendants() {
-                        self.refed_values.remove(&id);
-                    }
+        for (id, value) in &taken {
+            self.value_refs.remove(id);
+            if let Some(children) = value.get_children_store() {
+                for id in children.all_descendants() {
+                    self.value_refs.remove(&ValueId::Stored(id.clone()));
                 }
-                _ => {}
             }
         }
 
@@ -681,7 +915,8 @@ where
     }
 }
 
-impl<'p, 's, 't, 'w, 'c, S, W, I> SystemApi<W, I> for CallFrame<'p, 's, 't, 'w, 'c, S, W, I>
+impl<'borrowed, 's, 't, 'w, 'c, S, W, I> SystemApi<'borrowed, W, I>
+    for CallFrame<'borrowed, 's, 't, 'w, 'c, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -718,30 +953,43 @@ where
 
         // Figure out what buckets and proofs to move from this process
         let values_to_take = input.value_ids();
-        let (mut taken_values, mut missing) = self.take_available_values(values_to_take)?;
+        let (mut next_owned_values, mut missing) = self.take_available_values(values_to_take)?;
         let first_missing_value = missing.drain().nth(0);
         if let Some(missing_value) = first_missing_value {
             return Err(RuntimeError::ValueNotFound(missing_value));
         }
 
         // Internal state update to taken values
-        for (_, value) in &mut taken_values {
+        for (_, value) in &mut next_owned_values {
             trace!(self, Level::Debug, "Sending value: {:?}", value);
             match value {
-                REValue::Transient(TransientValue::Proof(proof)) => proof.change_to_restricted(),
+                REValue::Proof(proof) => proof.change_to_restricted(),
                 _ => {}
             }
         }
+
+        let mut locked_values = HashSet::new();
+        let mut readable_values = HashMap::new();
+        let mut borrowed_values = HashMap::new();
 
         // Authorization and state load
         let (loaded_snode, method_auths) = match &snode_ref {
             SNodeRef::TransactionProcessor => {
                 // FIXME: only TransactionExecutor can invoke this function
-                Ok((Static(StaticSNodeState::TransactionProcessor), vec![]))
+                Ok((
+                    SNodeExecution::Static(StaticSNodeState::TransactionProcessor),
+                    vec![],
+                ))
             }
-            SNodeRef::PackageStatic => Ok((Static(StaticSNodeState::Package), vec![])),
-            SNodeRef::SystemStatic => Ok((Static(StaticSNodeState::System), vec![])),
-            SNodeRef::ResourceStatic => Ok((Static(StaticSNodeState::Resource), vec![])),
+            SNodeRef::PackageStatic => {
+                Ok((SNodeExecution::Static(StaticSNodeState::Package), vec![]))
+            }
+            SNodeRef::SystemStatic => {
+                Ok((SNodeExecution::Static(StaticSNodeState::System), vec![]))
+            }
+            SNodeRef::ResourceStatic => {
+                Ok((SNodeExecution::Static(StaticSNodeState::Resource), vec![]))
+            }
             SNodeRef::Consumed(value_id) => {
                 let value = self
                     .owned_values
@@ -750,7 +998,7 @@ where
                     .into_inner();
 
                 let method_auths = match &value {
-                    REValue::Transient(TransientValue::Bucket(bucket)) => {
+                    REValue::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         let substate_value = self
                             .track
@@ -761,41 +1009,57 @@ where
                             _ => panic!("Value is not a resource manager"),
                         };
                         let method_auth = resource_manager.get_consuming_bucket_auth(&fn_ident);
+                        readable_values.insert(
+                            ValueId::Resource(resource_address),
+                            REValueInfo {
+                                location: REValueLocation::Track { parent: None },
+                                visible: true,
+                            },
+                        );
                         vec![method_auth.clone()]
                     }
-                    REValue::Transient(TransientValue::Proof(_)) => vec![],
+                    REValue::Proof(_) => vec![],
+                    REValue::Component { .. } => vec![],
                     _ => return Err(RuntimeError::MethodDoesNotExist(fn_ident.clone())),
                 };
 
-                Ok((Consumed(value.into()), method_auths))
+                next_owned_values.insert(*value_id, value);
+
+                Ok((SNodeExecution::Consumed(*value_id), method_auths))
             }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
                     let borrowed = auth_zone.borrow_mut();
-                    Ok((Borrowed(BorrowedSNodeState::AuthZone(borrowed)), vec![]))
+                    Ok((SNodeExecution::AuthZone(borrowed), vec![]))
                 } else {
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
             SNodeRef::ResourceRef(resource_address) => {
-                let resman_value = self
-                    .track
-                    .borrow_global_mut_value(resource_address.clone())
-                    .map_err(|e| match e {
-                        TrackError::NotFound => {
-                            RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                        }
-                        TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
-                    })?;
+                let value_id = ValueId::Resource(*resource_address);
+                let address: Address = Address::Resource(*resource_address);
+                let substate =
+                    self.track
+                        .borrow_global_value(address.clone())
+                        .map_err(|e| match e {
+                            TrackError::NotFound => {
+                                RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                            }
+                            TrackError::Reentrancy => {
+                                panic!("Resource call has caused reentrancy")
+                            }
+                        })?;
+                let resource_manager = substate.resource_manager();
+                let method_auth = resource_manager.get_auth(&fn_ident, &input).clone();
+                readable_values.insert(
+                    value_id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::Track { parent: None },
+                        visible: true,
+                    },
+                );
 
-                let method_auth = resman_value
-                    .resource_manager()
-                    .get_auth(&fn_ident, &input)
-                    .clone();
-                Ok((
-                    Tracked(resource_address.clone().into(), resman_value, None),
-                    vec![method_auth],
-                ))
+                Ok((SNodeExecution::ValueRef(value_id), vec![method_auth]))
             }
             SNodeRef::BucketRef(bucket_id) => {
                 let value_id = ValueId::Transient(TransientValueId::Bucket(*bucket_id));
@@ -803,11 +1067,17 @@ where
                     .owned_values
                     .get(&value_id)
                     .ok_or(RuntimeError::BucketNotFound(bucket_id.clone()))?;
-                let bucket = bucket_cell.borrow_mut();
-                Ok((
-                    Borrowed(BorrowedSNodeState::ValueRef(value_id, bucket)),
-                    vec![],
-                ))
+                let ref_mut = bucket_cell.borrow_mut();
+                borrowed_values.insert(value_id.clone(), ref_mut);
+                readable_values.insert(
+                    value_id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::BorrowedRoot,
+                        visible: true,
+                    },
+                );
+
+                Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::ProofRef(proof_id) => {
                 let value_id = ValueId::Transient(TransientValueId::Proof(*proof_id));
@@ -815,11 +1085,16 @@ where
                     .owned_values
                     .get(&value_id)
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))?;
-                let proof = proof_cell.borrow_mut();
-                Ok((
-                    Borrowed(BorrowedSNodeState::ValueRef(value_id, proof)),
-                    vec![],
-                ))
+                let ref_mut = proof_cell.borrow_mut();
+                borrowed_values.insert(value_id.clone(), ref_mut);
+                readable_values.insert(
+                    value_id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::BorrowedRoot,
+                        visible: true,
+                    },
+                );
+                Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
                 ScryptoActor::Blueprint(package_address, blueprint_name) => {
@@ -852,154 +1127,252 @@ where
                         });
                     }
                     Ok((
-                        Borrowed(BorrowedSNodeState::Blueprint(
+                        SNodeExecution::Scrypto(
                             ScryptoActorInfo::blueprint(
                                 package_address.clone(),
                                 blueprint_name.clone(),
                             ),
                             package.clone(),
-                        )),
+                        ),
                         vec![],
                     ))
                 }
                 ScryptoActor::Component(component_address) => {
                     let component_address = *component_address;
 
-                    let component_value = self
-                        .track
-                        .borrow_global_mut_value(component_address)
-                        .map_err(|e| match e {
-                            TrackError::NotFound => {
-                                RuntimeError::ComponentNotFound(component_address)
-                            }
-                            TrackError::Reentrancy => {
-                                RuntimeError::ComponentReentrancy(component_address)
-                            }
-                        })?;
-                    let component = component_value.component();
-                    let package_address = component.package_address();
-                    let blueprint_name = component.blueprint_name().to_string();
+                    // Find value
+                    let stored_value_id = StoredValueId::Component(component_address);
+                    let value_id = ValueId::Stored(stored_value_id.clone());
+                    let cur_location = if self.owned_values.contains_key(&value_id) {
+                        &REValueLocation::OwnedRoot
+                    } else if let Some(REValueInfo { location, .. }) =
+                        self.value_refs.get(&value_id)
+                    {
+                        location
+                    } else {
+                        let address: Address = component_address.into();
+                        self.track
+                            .borrow_global_value(address.clone())
+                            .map_err(|e| match e {
+                                TrackError::NotFound => {
+                                    RuntimeError::ComponentNotFound(component_address)
+                                }
+                                TrackError::Reentrancy => {
+                                    RuntimeError::ComponentReentrancy(component_address)
+                                }
+                            })?;
+                        &REValueLocation::Track { parent: None }
+                    };
 
-                    let package_value = self
-                        .track
-                        .borrow_global_value(package_address.clone())
-                        .map_err(|e| match e {
-                            TrackError::NotFound => RuntimeError::PackageNotFound(package_address),
-                            TrackError::Reentrancy => {
-                                panic!("Package reentrancy error should never occur.")
-                            }
-                        })?;
-                    let package = package_value.package();
-                    let abi = package
-                        .blueprint_abi(&blueprint_name)
-                        .expect("Blueprint not found for existing component");
-                    let fn_abi = abi
-                        .get_fn_abi(&fn_ident)
-                        .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
-                    if !fn_abi.input.matches(&input.dom) {
-                        return Err(RuntimeError::InvalidFnInput {
-                            fn_ident,
-                            input: input.dom,
-                        });
-                    }
-                    let (_, method_auths) =
-                        component.method_authorization(&abi.structure, &fn_ident);
+                    let actor_info = {
+                        let mut value_ref = cur_location.to_ref(
+                            &value_id,
+                            &mut self.owned_values,
+                            &mut self.frame_borrowed_values,
+                            &mut self.track,
+                        );
+                        let (package_address, blueprint_name) = value_ref.component_info();
+                        ScryptoActorInfo::component(
+                            package_address,
+                            blueprint_name,
+                            component_address,
+                        )
+                    };
 
-                    let actor_info = ScryptoActorInfo::component(
-                        package_address,
-                        blueprint_name,
-                        component_address,
-                    );
+                    // Retrieve Method Authorization
+                    let (method_auths, package) = {
+                        let package_address = actor_info.package_address().clone();
+                        let blueprint_name = actor_info.blueprint_name().to_string();
+                        let package_value = self
+                            .track
+                            .borrow_global_value(package_address)
+                            .map_err(|e| match e {
+                                TrackError::NotFound => {
+                                    RuntimeError::PackageNotFound(package_address)
+                                }
+                                TrackError::Reentrancy => {
+                                    panic!("Package reentrancy error should never occur.")
+                                }
+                            })?;
+                        let package = package_value.package().clone();
+                        let abi = package
+                            .blueprint_abi(&blueprint_name)
+                            .expect("Blueprint not found for existing component");
+                        let fn_abi = abi
+                            .get_fn_abi(&fn_ident)
+                            .ok_or(RuntimeError::MethodDoesNotExist(fn_ident.clone()))?;
+                        if !fn_abi.input.matches(&input.dom) {
+                            return Err(RuntimeError::InvalidFnInput {
+                                fn_ident,
+                                input: input.dom,
+                            });
+                        }
 
-                    Ok((
-                        Tracked(
-                            component_address.into(),
-                            component_value,
-                            Some((actor_info, package.clone())),
-                        ),
-                        method_auths,
-                    ))
-                }
-            },
-            SNodeRef::VaultRef(vault_id) => {
-                let (resource_address, snode_state) = {
-                    if let Some(value) = self.owned_values.get(&ValueId::vault_id(*vault_id)) {
-                        let resource_address = match value.borrow().deref() {
-                            REValue::Stored(StoredValue::Vault(vault)) => vault.resource_address(),
-                            _ => panic!("Expected vault"),
+                        let method_auths = {
+                            let mut value_ref = cur_location.to_ref(
+                                &value_id,
+                                &mut self.owned_values,
+                                &mut self.frame_borrowed_values,
+                                &mut self.track,
+                            );
+                            value_ref.component_authorization(&abi.structure, &fn_ident)
                         };
 
-                        (
-                            resource_address,
-                            Borrowed(BorrowedSNodeState::Vault(
-                                *vault_id,
-                                REValueRef::Owned(value.borrow_mut()),
-                            )),
-                        )
-                    } else {
-                        let value_id = StoredValueId::VaultId(*vault_id);
-                        let maybe_value_ref = self.refed_values.get(&value_id).cloned();
-                        let value_ref = maybe_value_ref
-                            .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?;
-                        match value_ref {
-                            ValueRefType::Uncommitted {
-                                root,
-                                ref ancestors,
-                            } => {
-                                let root_value = self
-                                    .owned_values
-                                    .get_mut(&ValueId::kv_store_id(root))
-                                    .unwrap()
-                                    .get_mut();
-                                let root_store = match root_value {
-                                    REValue::Stored(root_store) => root_store,
-                                    _ => panic!("Invalid type"),
-                                };
-                                let value = root_store.get_child(ancestors, &value_id);
-                                let resource_address = match value.deref() {
-                                    StoredValue::Vault(vault) => vault.resource_address(),
-                                    _ => panic!("Expected vault"),
-                                };
-                                (
-                                    resource_address,
-                                    Borrowed(BorrowedSNodeState::Vault(
-                                        *vault_id,
-                                        REValueRef::Ref(value),
-                                    )),
-                                )
-                            }
-                            ValueRefType::Committed { component_address } => {
-                                let vault_address = (component_address, *vault_id);
-                                let vault_value = self
-                                    .track
-                                    .borrow_global_mut_value(vault_address.clone())
-                                    .map_err(|e| match e {
-                                        TrackError::NotFound => panic!("Expected to find vault"),
-                                        TrackError::Reentrancy => {
-                                            panic!("Vault logic is causing reentrancy")
-                                        }
-                                    })?;
-                                let resource_address = vault_value.vault().resource_address();
-                                (
-                                    resource_address,
-                                    Tracked(vault_address.into(), vault_value, None),
-                                )
+                        (method_auths, package)
+                    };
+
+                    // Setup next frame
+                    let next_frame_location = match cur_location {
+                        REValueLocation::Track { parent } => {
+                            let address = if let Some(parent) = parent {
+                                Address::LocalComponent(*parent, component_address)
+                            } else {
+                                Address::GlobalComponent(component_address)
+                            };
+
+                            self.track.take_lock(address.clone()).map_err(|e| match e {
+                                TrackError::NotFound => panic!("Should exist"),
+                                TrackError::Reentrancy => {
+                                    RuntimeError::ComponentReentrancy(component_address)
+                                }
+                            })?;
+                            locked_values.insert(address.clone());
+                            REValueLocation::Track {
+                                parent: parent.clone(),
                             }
                         }
+                        REValueLocation::OwnedRoot | REValueLocation::Borrowed { .. } => {
+                            let owned_ref = cur_location.to_owned_ref(
+                                &value_id,
+                                &mut self.owned_values,
+                                &mut self.frame_borrowed_values,
+                            );
+                            borrowed_values.insert(value_id, owned_ref);
+                            REValueLocation::BorrowedRoot
+                        }
+                        _ => panic!("Unexpected"),
+                    };
+
+                    readable_values.insert(
+                        value_id,
+                        REValueInfo {
+                            location: next_frame_location,
+                            visible: true,
+                        },
+                    );
+
+                    Ok((SNodeExecution::Scrypto(actor_info, package), method_auths))
+                }
+            },
+            SNodeRef::Component(component_address) => {
+                let component_address = *component_address;
+
+                // Find value
+                let value_id = ValueId::Stored(StoredValueId::Component(component_address));
+                let cur_location = if self.owned_values.contains_key(&value_id) {
+                    REValueLocation::OwnedRoot
+                } else {
+                    return Err(RuntimeError::NotSupported);
+                };
+
+                // Setup next frame
+                match cur_location {
+                    REValueLocation::OwnedRoot => {
+                        let owned_ref = cur_location.to_owned_ref(
+                            &value_id,
+                            &mut self.owned_values,
+                            &mut self.frame_borrowed_values,
+                        );
+                        let package_address = owned_ref.component().package_address();
+
+                        borrowed_values.insert(value_id, owned_ref);
+                        readable_values.insert(
+                            value_id,
+                            REValueInfo {
+                                location: REValueLocation::BorrowedRoot,
+                                visible: true,
+                            },
+                        );
+                        readable_values.insert(
+                            ValueId::Package(package_address),
+                            REValueInfo {
+                                location: REValueLocation::Track { parent: None },
+                                visible: true,
+                            },
+                        );
                     }
+                    _ => panic!("Unexpected"),
+                }
+
+                Ok((SNodeExecution::ValueRef(value_id), vec![]))
+            }
+
+            SNodeRef::VaultRef(vault_id) => {
+                // Find value
+                let value_id = ValueId::vault_id(*vault_id);
+                let cur_location = if self.owned_values.contains_key(&value_id) {
+                    &REValueLocation::OwnedRoot
+                } else {
+                    let maybe_value_ref = self.value_refs.get(&value_id);
+                    maybe_value_ref
+                        .map(|info| &info.location)
+                        .ok_or(RuntimeError::ValueNotFound(ValueId::vault_id(*vault_id)))?
                 };
 
-                let substate_value = self
-                    .track
-                    .borrow_global_value(resource_address.clone())
-                    .unwrap();
-                let resource_manager = match substate_value {
-                    SubstateValue::Resource(resource_manager) => resource_manager,
-                    _ => panic!("Value is not a resource manager"),
+                // Retrieve Method Authorization
+                let method_auth = {
+                    let mut value_ref = cur_location.to_ref(
+                        &value_id,
+                        &mut self.owned_values,
+                        &mut self.frame_borrowed_values,
+                        &mut self.track,
+                    );
+                    let resource_address = value_ref.vault_address();
+                    let substate_value = self
+                        .track
+                        .borrow_global_value(resource_address.clone())
+                        .unwrap();
+                    let resource_manager = match substate_value {
+                        SubstateValue::Resource(resource_manager) => resource_manager,
+                        _ => panic!("Value is not a resource manager"),
+                    };
+                    resource_manager.get_vault_auth(&fn_ident).clone()
                 };
 
-                let method_auth = resource_manager.get_vault_auth(&fn_ident);
-                Ok((snode_state, vec![method_auth.clone()]))
+                // Setup next frame
+                match cur_location {
+                    REValueLocation::Track { parent } => {
+                        readable_values.insert(
+                            value_id.clone(),
+                            REValueInfo {
+                                location: REValueLocation::Track {
+                                    parent: parent.clone(),
+                                },
+                                visible: true,
+                            },
+                        );
+                    }
+                    REValueLocation::OwnedRoot
+                    | REValueLocation::Owned { .. }
+                    | REValueLocation::Borrowed { .. } => {
+                        let owned_ref = cur_location.to_owned_ref(
+                            &value_id,
+                            &mut self.owned_values,
+                            &mut self.frame_borrowed_values,
+                        );
+                        borrowed_values.insert(value_id.clone(), owned_ref);
+                        readable_values.insert(
+                            value_id,
+                            REValueInfo {
+                                location: REValueLocation::BorrowedRoot,
+                                visible: true,
+                            },
+                        );
+                    }
+                    _ => panic!("Unexpected vault location {:?}", cur_location),
+                }
+
+                Ok((SNodeExecution::ValueRef(value_id), vec![method_auth]))
             }
         }?;
 
@@ -1012,14 +1385,10 @@ where
 
             match &loaded_snode {
                 // Resource auth check includes caller
-                Tracked(..)
-                | Borrowed(BorrowedSNodeState::Vault(..))
-                | Borrowed(BorrowedSNodeState::ValueRef(
-                    ValueId::Transient(TransientValueId::Bucket(..)),
-                    ..,
-                ))
-                | Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Consumed(TransientValue::Bucket(..)) => {
+                SNodeExecution::Scrypto(..)
+                | SNodeExecution::ValueRef(ValueId::Resource(..), ..)
+                | SNodeExecution::ValueRef(ValueId::Stored(StoredValueId::VaultId(..)), ..)
+                | SNodeExecution::Consumed(ValueId::Transient(TransientValueId::Bucket(..))) => {
                     if let Some(auth_zone) = self.caller_auth_zone {
                         auth_zones.push(auth_zone.borrow());
                     }
@@ -1054,20 +1423,27 @@ where
             self.cost_unit_counter,
             self.fee_table,
             match loaded_snode {
-                Borrowed(BorrowedSNodeState::Blueprint(..))
-                | Tracked(..)
-                | Static(StaticSNodeState::TransactionProcessor) => {
+                SNodeExecution::Scrypto(..)
+                | SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
                     Some(RefCell::new(AuthZone::new()))
                 }
                 _ => None,
             },
-            taken_values,
+            next_owned_values,
+            readable_values,
+            borrowed_values,
             self.auth_zone.as_ref(),
         );
 
         // invoke the main function
         let (result, received_values) =
             frame.run(Some(snode_ref), loaded_snode, &fn_ident, input)?;
+        drop(frame);
+
+        // Release locked addresses
+        for l in locked_values {
+            self.track.release_lock(l);
+        }
 
         // move buckets and proofs to this process.
         for (id, value) in received_values {
@@ -1116,121 +1492,145 @@ where
             })
     }
 
-    fn borrow_global_mut_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ResourceManager, RuntimeError> {
-        self.track
-            .borrow_global_mut_value(resource_address.clone())
-            .map(|v| v.into())
-            .map_err(|e| match e {
-                TrackError::NotFound => {
-                    RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                }
-                TrackError::Reentrancy => panic!("Reentrancy occurred in resource manager"),
-            })
-    }
-
-    fn return_borrowed_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-        resource_manager: ResourceManager,
-    ) {
-        self.track
-            .return_borrowed_global_mut_value(resource_address, resource_manager)
-    }
-
-    fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError> {
-        let value = self
-            .owned_values
-            .remove(&ValueId::Transient(TransientValueId::Proof(
-                proof_id.clone(),
-            )))
-            .ok_or(RuntimeError::ProofNotFound(proof_id))?
-            .into_inner();
-
-        match value {
-            REValue::Transient(TransientValue::Proof(proof)) => Ok(proof),
-            _ => panic!("Expected proof"),
+    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
+        let info = self.value_refs.get(value_id).unwrap();
+        if !info.visible {
+            panic!("Trying to read value which is not visible.")
         }
+
+        info.location.borrow_native_ref(
+            value_id,
+            &mut self.owned_values,
+            &mut self.frame_borrowed_values,
+            &mut self.track,
+        )
     }
 
-    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError> {
-        self.owned_values
-            .remove(&ValueId::Transient(TransientValueId::Bucket(
-                bucket_id.clone(),
-            )))
-            .map(|value| match value.into_inner() {
-                REValue::Transient(TransientValue::Bucket(bucket)) => bucket,
-                _ => panic!("Expected bucket"),
-            })
-            .ok_or(RuntimeError::BucketNotFound(bucket_id))
+    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>) {
+        val_ref.return_to_location(
+            value_id,
+            &mut self.owned_values,
+            &mut self.frame_borrowed_values,
+            &mut self.track,
+        )
     }
 
-    fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError> {
-        let proof_id = self.track.new_proof_id();
-        self.owned_values.insert(
-            ValueId::Transient(TransientValueId::Proof(proof_id)),
-            RefCell::new(REValue::Transient(TransientValue::Proof(proof))),
-        );
-        Ok(proof_id)
+    fn take_native_value(&mut self, value_id: &ValueId) -> REValue {
+        self.owned_values.remove(&value_id).unwrap().into_inner()
     }
 
-    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError> {
-        let bucket_id = self.track.new_bucket_id();
-        self.owned_values.insert(
-            ValueId::Transient(TransientValueId::Bucket(bucket_id)),
-            RefCell::new(REValue::Transient(TransientValue::Bucket(Bucket::new(
-                container,
-            )))),
-        );
-        Ok(bucket_id)
-    }
+    fn native_create<V: Into<REValueByComplexity>>(
+        &mut self,
+        v: V,
+    ) -> Result<ValueId, RuntimeError> {
+        let value_by_complexity = v.into();
+        let id = match value_by_complexity {
+            REValueByComplexity::Primitive(REPrimitiveValue::Bucket(..)) => {
+                let bucket_id = self.track.new_bucket_id();
+                ValueId::Transient(TransientValueId::Bucket(bucket_id))
+            }
+            REValueByComplexity::Primitive(REPrimitiveValue::Proof(..)) => {
+                let proof_id = self.track.new_proof_id();
+                ValueId::Transient(TransientValueId::Proof(proof_id))
+            }
+            REValueByComplexity::Primitive(REPrimitiveValue::Vault(..)) => {
+                let vault_id = self.track.new_vault_id();
+                ValueId::Stored(StoredValueId::VaultId(vault_id))
+            }
+            REValueByComplexity::Primitive(REPrimitiveValue::KeyValue(..)) => {
+                let kv_store_id = self.track.new_kv_store_id();
+                ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id))
+            }
+            REValueByComplexity::Primitive(REPrimitiveValue::Package(..)) => {
+                let package_address = self.track.new_package_address();
+                ValueId::Package(package_address)
+            }
+            REValueByComplexity::Complex(REComplexValue::Component(..)) => {
+                let component_address = self.track.new_component_address();
+                ValueId::Stored(StoredValueId::Component(component_address))
+            }
+        };
 
-    fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError> {
-        let vault_id = self.track.new_vault_id();
-        self.owned_values.insert(
-            ValueId::vault_id(vault_id.clone()),
-            RefCell::new(REValue::Stored(StoredValue::Vault(Vault::new(container)))),
-        );
-        Ok(vault_id)
+        let re_value = match value_by_complexity {
+            REValueByComplexity::Primitive(primitive) => primitive.into(),
+            REValueByComplexity::Complex(complex) => {
+                let children = complex.get_children()?;
+                let (child_values, mut missing) = self.take_persistent_child_values(children)?;
+                let first_missing_value = missing.drain().nth(0);
+                if let Some(missing_value) = first_missing_value {
+                    return Err(RuntimeError::ValueNotFound(missing_value));
+                }
+                complex.into_re_value(child_values)
+            }
+        };
+        self.owned_values.insert(id, RefCell::new(re_value));
+
+        match id {
+            ValueId::Stored(StoredValueId::KeyValueStoreId(..)) => {
+                self.value_refs.insert(
+                    id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::OwnedRoot,
+                        visible: true,
+                    },
+                );
+            }
+            _ => {}
+        }
+
+        Ok(id)
     }
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress {
-        self.track.create_uuid_value(resource_manager).into()
-    }
+        let resource_address = self.track.create_uuid_value(resource_manager).into();
 
-    fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress {
-        self.track.create_uuid_value(package).into()
-    }
-
-    fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError> {
-        let value =
-            ScryptoValue::from_slice(component.state()).map_err(RuntimeError::DecodeError)?;
-        verify_stored_value(&value)?;
-        let value_ids = value.stored_value_ids();
-        let (taken_values, mut missing) = self.take_available_values(value_ids)?;
-        let first_missing_value = missing.drain().nth(0);
-        if let Some(missing_value) = first_missing_value {
-            return Err(RuntimeError::ValueNotFound(missing_value));
-        }
-        let to_store_values = to_stored_values(taken_values)?;
-        let address = self.track.create_uuid_value(component);
-        self.track
-            .insert_objects_into_component(to_store_values, address.clone().into());
-        Ok(address.into())
-    }
-
-    fn create_kv_store(&mut self) -> KeyValueStoreId {
-        let kv_store_id = self.track.new_kv_store_id();
-        self.owned_values.insert(
-            ValueId::kv_store_id(kv_store_id.clone()),
-            RefCell::new(REValue::Stored(StoredValue::KeyValueStore {
-                store: PreCommittedKeyValueStore::new(),
-                child_values: HashMap::new(),
-            })),
+        // TODO: Remove
+        self.value_refs.insert(
+            ValueId::Resource(resource_address),
+            REValueInfo {
+                location: REValueLocation::Track { parent: None },
+                visible: true,
+            },
         );
-        kv_store_id
+
+        resource_address
+    }
+
+    fn native_globalize(&mut self, value_id: &ValueId) {
+        let mut values = HashSet::new();
+        values.insert(value_id.clone());
+        let (taken_values, missing) = self.take_available_values(values).unwrap();
+        assert!(missing.is_empty());
+        assert!(taken_values.len() == 1);
+        let value = taken_values.into_values().nth(0).unwrap();
+
+        let (substate, maybe_child_values) = match value {
+            REValue::Component {
+                component,
+                child_values,
+            } => (SubstateValue::Component(component), Some(child_values)),
+            REValue::Package(package) => (SubstateValue::Package(package), None),
+            _ => panic!("Not expected"),
+        };
+
+        let address = match value_id {
+            ValueId::Stored(StoredValueId::Component(component_address)) => {
+                Address::GlobalComponent(*component_address)
+            }
+            ValueId::Package(package_address) => Address::Package(*package_address),
+            _ => panic!("Expected to be a component address"),
+        };
+
+        self.track.create_uuid_value_2(address.clone(), substate);
+
+        if let Some(child_values) = maybe_child_values {
+            let mut to_store_values = HashMap::new();
+            for (id, cell) in child_values.into_iter() {
+                to_store_values.insert(id, cell.into_inner());
+            }
+            self.track
+                .insert_objects_into_component(to_store_values, address.into());
+        }
     }
 
     fn data(
@@ -1241,172 +1641,87 @@ where
         // If write, take values from current frame
         let (taken_values, missing) = match &instruction {
             DataInstruction::Write(value) => {
-                verify_stored_value(value)?;
-                let value_ids = value.stored_value_ids();
-                self.take_available_values(value_ids)?
+                let value_ids = value.value_ids();
+                self.take_persistent_child_values(value_ids)?
             }
             DataInstruction::Read => (HashMap::new(), HashSet::new()),
         };
 
-        // Get reference to data address
-        let (store, ref_type) = match address {
-            SubstateAddress::Component(component_address) => {
-                let component = self
-                    .refed_components
-                    .get_mut(&component_address)
-                    .ok_or(RuntimeError::ComponentNotFound(component_address.clone()))?;
-                let store = SubstateEntry::Component(component_address.clone(), component);
-                (
-                    store,
-                    ValueRefType::Committed {
-                        component_address: component_address.clone(),
-                    },
-                )
+        let value_id = match address {
+            SubstateAddress::Component(component_address, ..) => {
+                ValueId::Stored(StoredValueId::Component(component_address))
             }
-            SubstateAddress::ComponentInfo(component_address) => {
-                let component = self.refed_components.get(&component_address);
-                let store = if let Some(component) = component {
-                    SubstateEntry::ComponentInfo(component_address.clone(), component)
-                } else {
-                    self.track
-                        .borrow_global_value(component_address.clone())
-                        .map_err(|e| match e {
-                            TrackError::NotFound => {
-                                RuntimeError::ComponentNotFound(component_address)
-                            }
-                            TrackError::Reentrancy => panic!("Should not run into reentrancy"),
-                        })?;
-                    SubstateEntry::ComponentInfoTracked(component_address.clone())
-                };
-                (
-                    store,
-                    ValueRefType::Committed {
-                        component_address: component_address.clone(),
-                    },
-                )
-            }
-            SubstateAddress::KeyValueEntry(kv_store_id, key) => {
-                verify_stored_key(&key)?;
+            SubstateAddress::KeyValueEntry(kv_store_id, ..) => ValueId::kv_store_id(kv_store_id),
+        };
 
-                if self
-                    .owned_values
-                    .contains_key(&ValueId::kv_store_id(kv_store_id.clone()))
+        // Get location
+        // Note this must be run AFTER values are taken, otherwise there would be inconsistent readable_values state
+        let value_info = self
+            .value_refs
+            .get(&value_id)
+            .or_else(|| {
+                // Allow global read access to any component info
+                if let SubstateAddress::Component(component_address, ComponentOffset::Info) =
+                    address
                 {
-                    let ref_store = self
-                        .owned_values
-                        .get_mut(&ValueId::kv_store_id(kv_store_id))
-                        .unwrap()
-                        .borrow_mut();
-                    //.get_mut();
-                    (
-                        SubstateEntry::KeyValueStoreRef(REValueRef::Owned(ref_store), key),
-                        ValueRefType::Uncommitted {
-                            root: kv_store_id.clone(),
-                            ancestors: vec![],
-                        },
-                    )
-                } else {
-                    let value_id = StoredValueId::KeyValueStoreId(kv_store_id.clone());
-                    let maybe_value_ref = self.refed_values.get(&value_id).cloned();
-                    let value_ref = maybe_value_ref
-                        .ok_or_else(|| RuntimeError::KeyValueStoreNotFound(kv_store_id.clone()))?;
-                    match &value_ref {
-                        ValueRefType::Uncommitted { root, ancestors } => {
-                            let mut next_ancestors = ancestors.clone();
-                            next_ancestors.push(kv_store_id);
-                            let value_ref_type = ValueRefType::Uncommitted {
-                                root: root.clone(),
-                                ancestors: next_ancestors,
-                            };
-                            let root_value = self
-                                .owned_values
-                                .get_mut(&ValueId::kv_store_id(*root))
-                                .unwrap();
-                            let ref_store = root_value
-                                .get_mut()
-                                .to_stored()
-                                .get_child(ancestors, &value_id);
-                            (
-                                SubstateEntry::KeyValueStoreRef(REValueRef::Ref(ref_store), key),
-                                value_ref_type,
-                            )
-                        }
-                        ValueRefType::Committed { component_address } => {
-                            let store = SubstateEntry::KeyValueStoreTracked(
-                                component_address.clone(),
-                                kv_store_id,
-                                key,
-                            );
-                            (
-                                store,
-                                ValueRefType::Committed {
-                                    component_address: *component_address,
-                                },
-                            )
-                        }
+                    if self.owned_values.contains_key(&value_id) {
+                        return Some(&REValueInfo {
+                            location: REValueLocation::OwnedRoot,
+                            visible: true,
+                        });
+                    } else if self.track.borrow_global_value(component_address).is_ok() {
+                        return Some(&REValueInfo {
+                            location: REValueLocation::Track { parent: None },
+                            visible: true,
+                        });
                     }
                 }
-            }
-        };
+
+                None
+            })
+            .ok_or_else(|| RuntimeError::InvalidDataAccess(value_id))?;
+        if !value_info.visible {
+            return Err(RuntimeError::InvalidDataAccess(value_id));
+        }
+        let location = &value_info.location;
 
         // Read current value
-        let current_value = match &store {
-            SubstateEntry::Component(_, component) => {
-                ScryptoValue::from_slice(component.state()).expect("Expected to decode")
-            }
-            SubstateEntry::ComponentInfo(_, component) => {
-                let info = (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                );
-                ScryptoValue::from_typed(&info)
-            }
-            SubstateEntry::ComponentInfoTracked(component_address) => {
-                let component = self
-                    .track
-                    .borrow_global_value(component_address.clone())
-                    .unwrap()
-                    .component();
-                let info = (
-                    component.package_address().clone(),
-                    component.blueprint_name().to_string(),
-                );
-                ScryptoValue::from_typed(&info)
-            }
-            SubstateEntry::KeyValueStoreRef(store, key) => {
-                let value = store.kv_store().get(&key.raw).map_or(
-                    Value::Option {
-                        value: Box::new(Option::None),
-                    },
-                    |v| Value::Option {
-                        value: Box::new(Some(v.dom)),
-                    },
-                );
-                ScryptoValue::from_value(value).unwrap()
-            }
-            SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
-                let substate_value = self.track.read_key_value(
-                    Address::KeyValueStore(*component_address, *kv_store_id),
-                    key.raw.to_vec(),
-                );
-                let value = substate_value.kv_entry().as_ref().map_or(
-                    Value::Option {
-                        value: Box::new(Option::None),
-                    },
-                    |bytes| Value::Option {
-                        value: Box::new(Some(decode_any(bytes).unwrap())),
-                    },
-                );
-                ScryptoValue::from_value(value).unwrap()
-            }
+        let (current_value, cur_children) = {
+            let mut value_ref = location.to_ref(
+                &value_id,
+                &mut self.owned_values,
+                &mut self.frame_borrowed_values,
+                &mut self.track,
+            );
+            let current_value = match &address {
+                SubstateAddress::Component(.., offset) => match offset {
+                    ComponentOffset::State => value_ref.component_get_state(),
+                    ComponentOffset::Info => ScryptoValue::from_typed(&value_ref.component_info()),
+                },
+                SubstateAddress::KeyValueEntry(.., key) => {
+                    verify_stored_key(key)?;
+                    value_ref.kv_store_get(&key.raw)
+                }
+            };
+            let cur_children = to_stored_ids(current_value.value_ids())?;
+            (current_value, cur_children)
         };
-        let cur_children = to_stored_ids(current_value.stored_value_ids())?;
 
         // Fulfill method
         match instruction {
             DataInstruction::Read => {
+                let parent_location = location.clone();
                 for stored_value_id in cur_children {
-                    self.refed_values.insert(stored_value_id, ref_type.clone());
+                    let child_location = parent_location.child(value_id.clone());
+
+                    // Extend current readable space when kv stores are found
+                    let visible = matches!(stored_value_id, StoredValueId::KeyValueStoreId(..));
+                    let child_info = REValueInfo {
+                        location: child_location,
+                        visible,
+                    };
+                    self.value_refs
+                        .insert(ValueId::Stored(stored_value_id), child_info);
                 }
                 Ok(current_value)
             }
@@ -1414,34 +1729,24 @@ where
                 let missing = to_stored_ids(missing)?;
                 verify_stored_value_update(&cur_children, &missing)?;
 
-                let to_store_values = to_stored_values(taken_values)?;
-
                 // TODO: verify against some schema
 
                 // Write values
-                match store {
-                    SubstateEntry::ComponentInfo(..) | SubstateEntry::ComponentInfoTracked(..) => {
-                        return Err(RuntimeError::InvalidDataWrite);
-                    }
-                    SubstateEntry::Component(component_address, component) => {
-                        component.set_state(value.raw);
-                        self.track
-                            .insert_objects_into_component(to_store_values, component_address);
-                    }
-                    SubstateEntry::KeyValueStoreRef(mut stored_value, key) => {
-                        stored_value.kv_store_mut().put(key.raw, value);
-                        stored_value
-                            .to_stored_mut()
-                            .insert_children(to_store_values);
-                    }
-                    SubstateEntry::KeyValueStoreTracked(component_address, kv_store_id, key) => {
-                        self.track.set_key_value(
-                            Address::KeyValueStore(component_address.clone(), kv_store_id),
-                            key.raw,
-                            SubstateValue::KeyValueStoreEntry(Some(value.raw)),
-                        );
-                        self.track
-                            .insert_objects_into_component(to_store_values, component_address);
+                let mut value_ref = location.to_ref(
+                    &value_id,
+                    &mut self.owned_values,
+                    &mut self.frame_borrowed_values,
+                    &mut self.track,
+                );
+                match address {
+                    SubstateAddress::Component(.., offset) => match offset {
+                        ComponentOffset::State => value_ref.component_put(value, taken_values),
+                        ComponentOffset::Info => {
+                            return Err(RuntimeError::InvalidDataWrite);
+                        }
+                    },
+                    SubstateAddress::KeyValueEntry(.., key) => {
+                        value_ref.kv_store_put(key.raw, value, taken_values);
                     }
                 }
 
@@ -1477,7 +1782,7 @@ where
                 self.owned_values
                     .get(&ValueId::Transient(TransientValueId::Proof(*proof_id)))
                     .map(|p| match p.borrow().deref() {
-                        REValue::Transient(TransientValue::Proof(proof)) => proof.clone(),
+                        REValue::Proof(proof) => proof.clone(),
                         _ => panic!("Expected proof"),
                     })
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))

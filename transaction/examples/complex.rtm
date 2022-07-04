@@ -21,7 +21,7 @@ DROP_PROOF Proof("proof3");
 
 # Return a bucket to worktop
 RETURN_TO_WORKTOP Bucket("some_xrd");
-TAKE_FROM_WORKTOP_BY_IDS TreeSet<NonFungibleId>(NonFungibleId("11"), NonFungibleId("22")) ResourceAddress("030000000000000000000000000000000000000000000000000004") Bucket("nfts");
+TAKE_FROM_WORKTOP_BY_IDS TreeSet<NonFungibleId>(NonFungibleId("0905000000"), NonFungibleId("0907000000")) ResourceAddress("030000000000000000000000000000000000000000000000000004") Bucket("nfts");
 
 # Drop all proofs, cancel all buckets and move resources to account
 CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de") "deposit_batch";

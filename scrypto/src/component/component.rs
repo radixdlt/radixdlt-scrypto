@@ -4,60 +4,33 @@ use sbor::rust::str::FromStr;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
+use scrypto::engine::types::StoredValueId;
 
 use crate::abi::*;
-use crate::buffer::*;
+use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
+use crate::engine::types::ValueId;
 use crate::engine::{api::*, call_engine};
 use crate::misc::*;
 use crate::resource::AccessRules;
 
-pub struct LocalComponent {
-    blueprint_name: String,
-    state: Vec<u8>,
-    access_rules_list: Vec<AccessRules>,
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ComponentAddAccessCheckInput {
+    pub access_rules: AccessRules,
 }
 
-impl LocalComponent {
-    pub fn new(blueprint_name: String, state: Vec<u8>) -> Self {
-        Self {
-            blueprint_name,
-            state,
-            access_rules_list: Vec::new(),
-        }
-    }
-
-    pub fn add_access_check(mut self, authorization: AccessRules) -> Self {
-        self.access_rules_list.push(authorization);
-        self
-    }
-
-    pub fn globalize(self) -> ComponentAddress {
-        let input = RadixEngineInput::CreateComponent(
-            self.blueprint_name,
-            self.state,
-            self.access_rules_list,
-        );
-        let output: ComponentAddress = call_engine(input);
-        output
-    }
-}
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct ComponentGlobalizeInput {}
 
 /// Represents the state of a component.
 pub trait ComponentState: Encode + Decode {
     /// Instantiates a component from this data structure.
-    fn instantiate(self) -> LocalComponent;
+    fn instantiate(self) -> Component;
 }
 
-/// An instance of a blueprint, which lives in the ledger state.
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ComponentAddress(pub [u8; 26]);
-
-impl ComponentAddress {}
-
 /// Represents an instantiated component.
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Hash)]
 pub struct Component(pub(crate) ComponentAddress);
 
 impl Component {
@@ -66,23 +39,9 @@ impl Component {
         Runtime::call_method(self.0, method, args)
     }
 
-    /// Returns the state of this component.
-    pub fn get_state<T: ComponentState>(&self) -> T {
-        let address = DataAddress::Component(self.0);
-        let input = RadixEngineInput::ReadData(address);
-        call_engine(input)
-    }
-
-    /// Updates the state of this component.
-    pub fn put_state<T: ComponentState>(&self, state: T) {
-        let address = DataAddress::Component(self.0);
-        let input = RadixEngineInput::WriteData(address, scrypto_encode(&state));
-        call_engine(input)
-    }
-
     /// Returns the package ID of this component.
     pub fn package_address(&self) -> PackageAddress {
-        let address = DataAddress::ComponentInfo(self.0);
+        let address = DataAddress::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.0
@@ -90,12 +49,84 @@ impl Component {
 
     /// Returns the blueprint name of this component.
     pub fn blueprint_name(&self) -> String {
-        let address = DataAddress::ComponentInfo(self.0);
+        let address = DataAddress::Component(self.0, ComponentOffset::Info);
         let input = RadixEngineInput::ReadData(address);
         let output: (PackageAddress, String) = call_engine(input);
         output.1
     }
+
+    pub fn add_access_check(&mut self, access_rules: AccessRules) -> &mut Self {
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::Component(self.0),
+            "add_access_check".to_string(),
+            scrypto_encode(&ComponentAddAccessCheckInput { access_rules }),
+        );
+        let _: () = call_engine(input);
+
+        self
+    }
+
+    pub fn globalize(self) -> ComponentAddress {
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::Consumed(ValueId::Stored(StoredValueId::Component(self.0))),
+            "globalize".to_string(),
+            scrypto_encode(&ComponentGlobalizeInput {}),
+        );
+        let _: () = call_engine(input);
+        self.0.clone()
+    }
 }
+
+//========
+// binary
+//========
+
+impl TryFrom<&[u8]> for Component {
+    type Error = ParseComponentAddressError;
+
+    fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
+        let component_address = ComponentAddress::try_from(slice)?;
+        Ok(Self(component_address))
+    }
+}
+
+impl Component {
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
+scrypto_type!(Component, ScryptoType::Component, Vec::new());
+
+//======
+// text
+//======
+
+impl FromStr for Component {
+    type Err = ParseComponentAddressError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ComponentAddress::from_str(s).map(|a| Component(a))
+    }
+}
+
+impl fmt::Display for Component {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Debug for Component {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self)
+    }
+}
+
+/// An instance of a blueprint, which lives in the ledger state.
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ComponentAddress(pub [u8; 26]);
+
+impl ComponentAddress {}
 
 //========
 // error

@@ -6,12 +6,13 @@ use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
 use crate::engine::call_frame::{DataInstruction, SubstateAddress};
+use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
 use crate::model::*;
 use crate::wasm::*;
 
-pub trait SystemApi<W, I>
+pub trait SystemApi<'borrowed, W, I>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
@@ -31,56 +32,37 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn get_non_fungible(
-        &mut self,
-        non_fungible_address: &NonFungibleAddress,
-    ) -> Option<NonFungible>;
-
-    fn set_non_fungible(
-        &mut self,
-        non_fungible_address: NonFungibleAddress,
-        non_fungible: Option<NonFungible>,
-    );
+    fn native_globalize(&mut self, value_id: &ValueId);
 
     fn borrow_global_resource_manager(
         &mut self,
         resource_address: ResourceAddress,
     ) -> Result<&ResourceManager, RuntimeError>;
 
-    fn borrow_global_mut_resource_manager(
+    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed>;
+    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
+    fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
+
+    fn native_create<V: Into<REValueByComplexity>>(
         &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<ResourceManager, RuntimeError>;
-
-    fn return_borrowed_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-        resource_manager: ResourceManager,
-    );
-
-    fn create_bucket(&mut self, container: ResourceContainer) -> Result<BucketId, RuntimeError>;
-
-    fn take_bucket(&mut self, bucket_id: BucketId) -> Result<Bucket, RuntimeError>;
-
-    fn create_vault(&mut self, container: ResourceContainer) -> Result<VaultId, RuntimeError>;
-
-    fn create_proof(&mut self, proof: Proof) -> Result<ProofId, RuntimeError>;
-
-    fn take_proof(&mut self, proof_id: ProofId) -> Result<Proof, RuntimeError>;
-
+        v: V,
+    ) -> Result<ValueId, RuntimeError>;
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
-
-    fn create_package(&mut self, package: ValidatedPackage) -> PackageAddress;
-
-    fn create_component(&mut self, component: Component) -> Result<ComponentAddress, RuntimeError>;
-
-    fn create_kv_store(&mut self) -> KeyValueStoreId;
 
     fn data(
         &mut self,
         address: SubstateAddress,
         instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError>;
+    fn get_non_fungible(
+        &mut self,
+        non_fungible_address: &NonFungibleAddress,
+    ) -> Option<NonFungible>;
+    fn set_non_fungible(
+        &mut self,
+        non_fungible_address: NonFungibleAddress,
+        non_fungible: Option<NonFungible>,
+    );
 
     fn get_epoch(&mut self) -> u64;
 

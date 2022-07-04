@@ -144,7 +144,7 @@ fn test_simple_abi() {
                             },
                             {
                                 "type": "Custom",
-                                "type_id": 130,
+                                "type_id": 131,
                                 "generics": [
                                     {
                                         "type": "String"
