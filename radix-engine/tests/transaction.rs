@@ -5,7 +5,6 @@ use radix_engine::wasm::WasmInstrumenter;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
-use transaction::model::Network;
 use transaction::model::TransactionHeader;
 use transaction::signing::EcdsaPrivateKey;
 use transaction::validation::{TestEpochManager, TestIntentHashManager, TransactionValidator};

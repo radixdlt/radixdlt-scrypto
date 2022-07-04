@@ -1,19 +1,14 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
+use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::core::Network;
 
 use crate::manifest::{compile, CompileError};
 use crate::model::Instruction;
 
 // TODO: add versioning of transaction schema
-
-// TODO: we may be able to squeeze network identifier into the other fields, like the `v` byte in signature.
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum Network {
-    InternalTestnet,
-}
 
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
 pub struct TransactionHeader {

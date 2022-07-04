@@ -325,6 +325,8 @@ impl TransactionValidator {
 
 #[cfg(test)]
 mod tests {
+    use scrypto::core::Network;
+
     use super::*;
     use crate::{builder::ManifestBuilder, builder::TransactionBuilder, signing::EcdsaPrivateKey};
 
@@ -407,7 +409,7 @@ mod tests {
         let mut builder = TransactionBuilder::new()
             .header(TransactionHeader {
                 version,
-                network: Network::InternalTestnet,
+                network: Network::LocalSimulator,
                 start_epoch_inclusive: start_epoch,
                 end_epoch_exclusive: end_epoch,
                 nonce,

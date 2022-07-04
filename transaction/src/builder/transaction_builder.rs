@@ -69,6 +69,8 @@ impl TransactionBuilder {
 
 #[cfg(test)]
 mod tests {
+    use scrypto::core::Network;
+
     use super::*;
     use crate::builder::*;
     use crate::signing::*;
@@ -80,7 +82,7 @@ mod tests {
         let transaction = TransactionBuilder::new()
             .header(TransactionHeader {
                 version: 1,
-                network: Network::InternalTestnet,
+                network: Network::LocalSimulator,
                 start_epoch_inclusive: 0,
                 end_epoch_exclusive: 100,
                 nonce: 5,
