@@ -12,7 +12,7 @@ use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
-use crate::engine::{REValue, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::{RENode, REValue, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -690,41 +690,32 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
 
     pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, REValue>) {
         for (id, value) in values {
-            match value {
-                REValue::Vault(vault) => {
+            match value.root {
+                RENode::Vault(vault) => {
                     let addr = Address::Vault(id.into());
                     self.create_uuid_value(addr, vault);
                 }
-                REValue::Component {
-                    component,
-                    child_values,
-                } => {
+                RENode::Component(component) => {
                     let addr = Address::LocalComponent(id.into());
                     self.create_uuid_value(addr, component);
-                    let child_values = child_values
-                        .into_iter()
-                        .map(|(id, v)| (id, v.into_inner()))
-                        .collect();
-                    self.insert_non_root_nodes(child_values);
                 }
-                REValue::KeyValueStore {
-                    store,
-                    child_values,
-                } => {
+                RENode::KeyValueStore(store) => {
                     let id = id.into();
                     let address = Address::KeyValueStore(id);
                     self.create_key_space(address.clone());
                     for (k, v) in store.store {
                         self.set_key_value(address.clone(), k, Some(v));
                     }
-                    let child_values = child_values
-                        .into_iter()
-                        .map(|(id, v)| (id, v.into_inner()))
-                        .collect();
-                    self.insert_non_root_nodes(child_values);
                 }
                 _ => panic!("Invalid value being persisted: {:?}", value),
             }
+
+            let child_values = value
+                .non_root_nodes
+                .into_iter()
+                .map(|(id, v)| (id, v.into_inner()))
+                .collect();
+            self.insert_non_root_nodes(child_values);
         }
     }
 }

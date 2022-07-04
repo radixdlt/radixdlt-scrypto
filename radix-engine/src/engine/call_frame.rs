@@ -5,7 +5,6 @@ use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::marker::*;
 use sbor::rust::ops::Deref;
-use sbor::rust::ops::DerefMut;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec;
@@ -333,8 +332,8 @@ pub enum RENativeValueRef<'borrowed> {
 impl<'borrowed> RENativeValueRef<'borrowed> {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            RENativeValueRef::OwnedRef(root) => match root.deref_mut() {
-                REValue::Bucket(bucket) => bucket,
+            RENativeValueRef::OwnedRef(root) => match root.root_mut() {
+                RENode::Bucket(bucket) => bucket,
                 _ => panic!("Expecting to be a bucket"),
             },
             _ => panic!("Expecting to be a bucket"),
@@ -343,8 +342,8 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
 
     pub fn proof(&mut self) -> &mut Proof {
         match self {
-            RENativeValueRef::OwnedRef(ref mut root) => match root.deref_mut() {
-                REValue::Proof(proof) => proof,
+            RENativeValueRef::OwnedRef(ref mut root) => match root.root_mut() {
+                RENode::Proof(proof) => proof,
                 _ => panic!("Expecting to be a proof"),
             },
             _ => panic!("Expecting to be a proof"),
@@ -354,14 +353,14 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
     pub fn vault(&mut self) -> &mut Vault {
         match self {
             RENativeValueRef::Owned(..) => panic!("Unexpected"),
-            RENativeValueRef::OwnedRef(owned) => owned.vault_mut(),
+            RENativeValueRef::OwnedRef(owned) => owned.root_mut().vault_mut(),
             RENativeValueRef::Track(_address, value) => value.vault_mut(),
         }
     }
 
     pub fn component(&mut self) -> &mut Component {
         match self {
-            RENativeValueRef::OwnedRef(owned) => owned.component_mut(),
+            RENativeValueRef::OwnedRef(owned) => owned.root_mut().component_mut(),
             _ => panic!("Expecting to be a component"),
         }
     }
@@ -375,7 +374,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
 
     pub fn resource_manager(&mut self) -> &mut ResourceManager {
         match self {
-            RENativeValueRef::Owned(owned) => owned.resource_manager_mut(),
+            RENativeValueRef::Owned(owned) => owned.root_mut().resource_manager_mut(),
             RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
             _ => panic!("Unexpected"),
         }
@@ -409,33 +408,33 @@ pub enum REValueRef<'f, 'p, 's, S: ReadableSubstateStore> {
 impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
     pub fn vault(&self) -> &Vault {
         match self {
-            REValueRef::Owned(owned) => owned.vault(),
+            REValueRef::Owned(owned) => owned.root.vault(),
+            REValueRef::Borrowed(borrowed) => borrowed.root.vault(),
             REValueRef::Track(track, address) => track.read_value(address.clone()).vault(),
-            REValueRef::Borrowed(borrowed) => borrowed.vault(),
         }
     }
 
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
-            REValueRef::Owned(owned) => owned.resource_manager(),
+            REValueRef::Owned(owned) => owned.root.resource_manager(),
+            REValueRef::Borrowed(borrowed) => borrowed.root.resource_manager(),
             REValueRef::Track(track, address) => {
                 track.read_value(address.clone()).resource_manager()
             }
-            REValueRef::Borrowed(borrowed) => borrowed.resource_manager(),
         }
     }
 
     pub fn component(&self) -> &Component {
         match self {
-            REValueRef::Owned(owned) => owned.component(),
+            REValueRef::Owned(owned) => owned.root().component(),
+            REValueRef::Borrowed(borrowed) => borrowed.root().component(),
             REValueRef::Track(track, address) => track.read_value(address.clone()).component(),
-            REValueRef::Borrowed(borrowed) => borrowed.component(),
         }
     }
 
     pub fn package(&self) -> &ValidatedPackage {
         match self {
-            REValueRef::Owned(owned) => owned.package(),
+            REValueRef::Owned(owned) => owned.root().package(),
             REValueRef::Track(track, address) => track.read_value(address.clone()).package(),
             _ => panic!("Unexpected component ref"),
         }
@@ -457,7 +456,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
     ) {
         match self {
             REValueRefMut::Owned(owned) => {
-                owned.kv_store_mut().put(key, value);
+                owned.root_mut().kv_store_mut().put(key, value);
                 owned.insert_non_root_nodes(to_store);
             }
             REValueRefMut::Track(track, address) => {
@@ -477,7 +476,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
     fn kv_store_get(&mut self, key: &[u8]) -> ScryptoValue {
         let maybe_value = match self {
             REValueRefMut::Owned(owned) => {
-                let store = owned.kv_store_mut();
+                let store = owned.root_mut().kv_store_mut();
                 store.get(key).map(|v| v.dom)
             }
             REValueRefMut::Track(track, address) => {
@@ -507,7 +506,8 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
     fn non_fungible_get(&mut self, id: &NonFungibleId) -> ScryptoValue {
         match self {
             REValueRefMut::Owned(owned) => {
-                ScryptoValue::from_typed(&owned.non_fungibles().get(id).cloned())
+                let non_fungible_set = owned.root().non_fungibles();
+                ScryptoValue::from_typed(&non_fungible_set.get(id).cloned())
             }
             REValueRefMut::Borrowed(..) => {
                 panic!("Not supported");
@@ -542,7 +542,10 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
             REValueRefMut::Owned(owned) => {
                 let non_fungible: NonFungible =
                     scrypto_decode(&value.raw).expect("Should not fail.");
-                owned.non_fungibles_mut().insert(id, non_fungible);
+                owned
+                    .root_mut()
+                    .non_fungibles_mut()
+                    .insert(id, non_fungible);
             }
             REValueRefMut::Borrowed(..) => {
                 panic!("Not supported");
@@ -566,7 +569,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
                 track.insert_non_root_nodes(to_store);
             }
             REValueRefMut::Borrowed(owned) => {
-                let component = owned.component_mut();
+                let component = owned.root_mut().component_mut();
                 component.set_state(value.raw);
                 owned.insert_non_root_nodes(to_store);
             }
@@ -576,8 +579,8 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
 
     fn component(&mut self) -> &Component {
         match self {
-            REValueRefMut::Owned(owned) => owned.component(),
-            REValueRefMut::Borrowed(borrowed) => borrowed.component(),
+            REValueRefMut::Owned(owned) => owned.root().component(),
+            REValueRefMut::Borrowed(borrowed) => borrowed.root().component(),
             REValueRefMut::Track(track, address) => {
                 let component_val = track.read_value(address.clone());
                 component_val.component()
@@ -931,9 +934,9 @@ where
                 let maybe = self.owned_values.remove(&id);
                 if let Some(celled_value) = maybe {
                     let value = celled_value.into_inner();
-                    value.verify_can_move()?;
+                    value.root().verify_can_move()?;
                     if persist_only {
-                        value.verify_can_persist()?;
+                        value.root().verify_can_persist()?;
                     }
                     taken_values.insert(id, value);
                 } else {
@@ -949,7 +952,6 @@ where
             self.value_refs.remove(id);
             for id in value.all_descendants() {
                 self.value_refs.remove(&id);
-
             }
         }
 
@@ -1086,8 +1088,8 @@ where
         // Internal state update to taken values
         for (id, mut value) in taken_values {
             trace!(self, Level::Debug, "Sending value: {:?}", value);
-            match &mut value {
-                REValue::Proof(proof) => proof.change_to_restricted(),
+            match &mut value.root_mut() {
+                RENode::Proof(proof) => proof.change_to_restricted(),
                 _ => {}
             }
             next_owned_values.insert(id, RefCell::new(value));
@@ -1122,8 +1124,8 @@ where
                     .ok_or(RuntimeError::ValueNotFound(*value_id))?
                     .into_inner();
 
-                let method_auths = match &value {
-                    REValue::Bucket(bucket) => {
+                let method_auths = match &value.root() {
+                    RENode::Bucket(bucket) => {
                         let resource_address = bucket.resource_address();
                         self.track
                             .take_lock(resource_address, true)
@@ -1152,8 +1154,8 @@ where
                         );
                         vec![method_auth.clone()]
                     }
-                    REValue::Proof(_) => vec![],
-                    REValue::Component { component, .. } => {
+                    RENode::Proof(_) => vec![],
+                    RENode::Component(component) => {
                         let package_address = component.package_address();
                         self.track
                             .take_lock(package_address, false)
@@ -1469,7 +1471,7 @@ where
                         );
 
                         // Lock package
-                        let package_address = owned_ref.component().package_address();
+                        let package_address = owned_ref.root().component().package_address();
                         self.track
                             .take_lock(package_address, false)
                             .map_err(|e| match e {
@@ -1801,17 +1803,10 @@ where
         assert!(taken_values.len() == 1);
         let value = taken_values.into_values().nth(0).unwrap();
 
-        let (substate, maybe_child_values, maybe_non_fungibles) = match value {
-            REValue::Component {
-                component,
-                child_values,
-            } => (
-                SubstateValue::Component(component),
-                Some(child_values),
-                None,
-            ),
-            REValue::Package(package) => (SubstateValue::Package(package), None, None),
-            REValue::Resource(resource_manager) => {
+        let (substate, maybe_non_fungibles) = match value.root {
+            RENode::Component(component) => (SubstateValue::Component(component), None),
+            RENode::Package(package) => (SubstateValue::Package(package), None),
+            RENode::Resource(resource_manager) => {
                 let non_fungibles =
                     if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
                         let resource_address: ResourceAddress = value_id.clone().into();
@@ -1825,11 +1820,7 @@ where
                     } else {
                         None
                     };
-                (
-                    SubstateValue::Resource(resource_manager),
-                    None,
-                    non_fungibles,
-                )
+                (SubstateValue::Resource(resource_manager), non_fungibles)
             }
             _ => panic!("Not expected"),
         };
@@ -1843,13 +1834,11 @@ where
 
         self.track.create_uuid_value(address.clone(), substate);
 
-        if let Some(child_values) = maybe_child_values {
-            let mut to_store_values = HashMap::new();
-            for (id, cell) in child_values.into_iter() {
-                to_store_values.insert(id, cell.into_inner());
-            }
-            self.track.insert_non_root_nodes(to_store_values);
+        let mut to_store_values = HashMap::new();
+        for (id, cell) in value.non_root_nodes.into_iter() {
+            to_store_values.insert(id, cell.into_inner());
         }
+        self.track.insert_non_root_nodes(to_store_values);
 
         if let Some(non_fungibles) = maybe_non_fungibles {
             let resource_address: ResourceAddress = address.clone().into();
@@ -1993,8 +1982,8 @@ where
             .map(|proof_id| {
                 self.owned_values
                     .get(&ValueId::Proof(*proof_id))
-                    .map(|p| match p.borrow().deref() {
-                        REValue::Proof(proof) => proof.clone(),
+                    .map(|p| match p.borrow().root() {
+                        RENode::Proof(proof) => proof.clone(),
                         _ => panic!("Expected proof"),
                     })
                     .ok_or(RuntimeError::ProofNotFound(proof_id.clone()))
