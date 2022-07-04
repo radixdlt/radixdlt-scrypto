@@ -535,7 +535,8 @@ where
         trace!(
             self,
             Level::Debug,
-            "Run started! Remaining cost units: {}",
+            "Run started! Depth: {}, Remaining cost units: {}",
+            self.depth,
             remaining_cost_units
         );
         self.cost_unit_counter
@@ -700,6 +701,10 @@ where
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        if self.depth == MAX_CALL_DEPTH {
+            return Err(RuntimeError::MaxCallDepthLimitReached);
+        }
+
         trace!(
             self,
             Level::Debug,

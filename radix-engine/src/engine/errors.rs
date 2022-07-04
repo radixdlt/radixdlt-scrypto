@@ -124,6 +124,8 @@ pub enum RuntimeError {
     InvalidInvocation,
 
     CostingError(CostUnitCounterError),
+
+    MaxCallDepthLimitReached,
 }
 
 #[derive(Debug, PartialEq)]
