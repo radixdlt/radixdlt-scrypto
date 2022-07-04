@@ -1,5 +1,4 @@
 use sbor::rust::collections::*;
-use sbor::rust::vec::Vec;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
@@ -205,54 +204,6 @@ impl REValue {
     pub fn try_drop(self) -> Result<(), DropFailure> {
         self.root.try_drop()
     }
-
-    pub fn all_descendants(&self) -> Vec<ValueId> {
-        let mut descendents = Vec::new();
-        for (id, ..) in self.non_root_nodes.iter() {
-            descendents.push(*id);
-        }
-        descendents
-    }
-
-    /*
-    pub fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> &REValue {
-        if ancestors.is_empty() {
-            let value = self
-                .non_root_nodes
-                .get(id)
-                .expect("Value expected to exist");
-            return value;
-        }
-
-        let (first, rest) = ancestors.split_first().unwrap();
-        let value = self
-            .non_root_nodes
-            .get(&ValueId::KeyValueStore(*first))
-            .unwrap();
-        value.get_child(rest, id)
-    }
-
-    pub fn get_child_mut(
-        &mut self,
-        ancestors: &[KeyValueStoreId],
-        id: &ValueId,
-    ) -> &mut REValue {
-        if ancestors.is_empty() {
-            let value = self
-                .non_root_nodes
-                .get_mut(id)
-                .expect("Value expected to exist");
-            return value;
-        }
-
-        let (first, rest) = ancestors.split_first().unwrap();
-        let value = self
-            .non_root_nodes
-            .get_mut(&ValueId::KeyValueStore(*first))
-            .unwrap();
-        value.get_child_mut(rest, id)
-    }
-     */
 }
 
 impl Into<Bucket> for REValue {
