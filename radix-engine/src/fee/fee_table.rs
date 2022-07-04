@@ -1,49 +1,63 @@
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
-pub const TX_VALIDATION_COST_PER_BYTE: u32 = 20;
-
-pub const ENGINE_RUN_COST: u32 = 20_000;
-
 pub const WASM_METERING_V1: u8 = 1;
-pub const WASM_INSTRUCTION_COST: u32 = 1;
-pub const WASM_GROW_MEMORY_COST: u32 = 100;
-pub const WASM_ENGINE_CALL_COST: u32 = 10_000;
-pub const WASM_MAX_STACK_SIZE: u32 = 512;
 
 pub struct FeeTable {
-    tx_validation_cost_per_byte: u32,
-    wasm_engine_call_cost: u32,
-    engine_run_cost: u32,
+    tx_decoding_per_byte: u32,
+    tx_verification_per_byte: u32,
+    tx_signature_validation_per_sig: u32,
+    fixed_low: u32,
+    fixed_medium: u32,
+    fixed_high: u32,
+    wasm_instantiation_per_byte: u32,
     wasm_metering_params: WasmMeteringParams,
 }
 
 impl FeeTable {
     pub fn new() -> Self {
         Self {
-            tx_validation_cost_per_byte: TX_VALIDATION_COST_PER_BYTE,
-            wasm_engine_call_cost: WASM_ENGINE_CALL_COST,
-            engine_run_cost: ENGINE_RUN_COST,
+            tx_decoding_per_byte: 4,
+            tx_verification_per_byte: 1,
+            tx_signature_validation_per_sig: 3750,
+            wasm_instantiation_per_byte: 500,
+            fixed_low: 1000,
+            fixed_medium: 5_000,
+            fixed_high: 10_000,
             wasm_metering_params: WasmMeteringParams::new(
                 WASM_METERING_V1,
-                InstructionCostRules::constant(WASM_INSTRUCTION_COST, WASM_GROW_MEMORY_COST),
-                WASM_MAX_STACK_SIZE,
+                InstructionCostRules::tiered(50000),
+                512,
             ),
         }
     }
 
-    pub fn tx_validation_cost_per_byte(&self) -> u32 {
-        self.tx_validation_cost_per_byte
+    pub fn tx_decoding_per_byte(&self) -> u32 {
+        self.tx_decoding_per_byte
     }
 
-    pub fn engine_run_cost(&self) -> u32 {
-        self.engine_run_cost
+    pub fn tx_verification_per_byte(&self) -> u32 {
+        self.tx_verification_per_byte
     }
 
-    pub fn wasm_engine_call_cost(&self) -> u32 {
-        self.wasm_engine_call_cost
+    pub fn tx_signature_validation_per_sig(&self) -> u32 {
+        self.tx_signature_validation_per_sig
+    }
+
+    pub fn wasm_instantiation_per_byte(&self) -> u32 {
+        self.wasm_instantiation_per_byte
     }
 
     pub fn wasm_metering_params(&self) -> WasmMeteringParams {
         self.wasm_metering_params.clone()
+    }
+
+    pub fn native_function_cost(&self, ty: &str, func: &str, parameters: &[u32]) -> u32 {
+        match ty {
+            "TransactionProcessor" => match func {
+                "run" => self.fixed_high,
+                _ => panic!("Make sure all functions are included!"),
+            },
+            _ => panic!("TODO: complete this table"),
+        }
     }
 }
