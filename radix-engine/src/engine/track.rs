@@ -12,7 +12,7 @@ use scrypto::values::ScryptoValue;
 use transaction::validation::*;
 
 use crate::engine::track::BorrowedSubstate::Taken;
-use crate::engine::{RENode, REValue, SubstateOperation, SubstateOperationsReceipt};
+use crate::engine::{RENode, SubstateOperation, SubstateOperationsReceipt};
 use crate::ledger::*;
 use crate::model::*;
 
@@ -688,9 +688,9 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         }
     }
 
-    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, REValue>) {
-        for (id, value) in values {
-            match value.root {
+    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
+        for (id, node) in values {
+            match node {
                 RENode::Vault(vault) => {
                     let addr = Address::Vault(id.into());
                     self.create_uuid_value(addr, vault);
@@ -707,10 +707,8 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                         self.set_key_value(address.clone(), k, Some(v));
                     }
                 }
-                _ => panic!("Invalid value being persisted: {:?}", value),
+                _ => panic!("Invalid node being persisted: {:?}", node),
             }
-
-            self.insert_non_root_nodes(value.non_root_nodes);
         }
     }
 }

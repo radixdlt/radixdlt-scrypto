@@ -154,7 +154,7 @@ impl RENode {
 #[derive(Debug)]
 pub struct REValue {
     pub root: RENode,
-    pub non_root_nodes: HashMap<ValueId, REValue>,
+    pub non_root_nodes: HashMap<ValueId, RENode>,
 }
 
 impl REValue {
@@ -166,10 +166,40 @@ impl REValue {
         &mut self.root
     }
 
-    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, REValue>) {
+    pub fn non_root(&self, id: &ValueId) -> &RENode {
+        self.non_root_nodes.get(id).unwrap()
+    }
+
+    pub fn non_root_mut(&mut self, id: &ValueId) -> &mut RENode {
+        self.non_root_nodes.get_mut(id).unwrap()
+    }
+
+    pub fn get(&self, id: Option<&ValueId>) -> &RENode {
+        if let Some(value_id) = id {
+            self.non_root_nodes.get(value_id).unwrap()
+        } else {
+            &self.root
+        }
+    }
+
+    pub fn get_mut(&mut self, id: Option<&ValueId>) -> &mut RENode {
+        if let Some(value_id) = id {
+            self.non_root_nodes.get_mut(value_id).unwrap()
+        } else {
+            &mut self.root
+        }
+    }
+
+    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
         for (id, value) in values {
             self.non_root_nodes.insert(id, value);
         }
+    }
+
+    pub fn to_nodes(self, root_id: ValueId) -> HashMap<ValueId, RENode> {
+        let mut nodes = self.non_root_nodes;
+        nodes.insert(root_id, self.root);
+        nodes
     }
 
     pub fn try_drop(self) -> Result<(), DropFailure> {
@@ -178,13 +208,13 @@ impl REValue {
 
     pub fn all_descendants(&self) -> Vec<ValueId> {
         let mut descendents = Vec::new();
-        for (id, value) in self.non_root_nodes.iter() {
+        for (id, ..) in self.non_root_nodes.iter() {
             descendents.push(*id);
-            descendents.extend(value.all_descendants());
         }
         descendents
     }
 
+    /*
     pub fn get_child(&self, ancestors: &[KeyValueStoreId], id: &ValueId) -> &REValue {
         if ancestors.is_empty() {
             let value = self
@@ -222,6 +252,7 @@ impl REValue {
             .unwrap();
         value.get_child_mut(rest, id)
     }
+     */
 }
 
 impl Into<Bucket> for REValue {
@@ -267,7 +298,11 @@ impl REComplexValue {
         }
     }
 
-    pub fn into_re_value(self, non_root_nodes: HashMap<ValueId, REValue>) -> REValue {
+    pub fn into_re_value(self, non_root_values: HashMap<ValueId, REValue>) -> REValue {
+        let mut non_root_nodes = HashMap::new();
+        for (id, val) in non_root_values {
+            non_root_nodes.extend(val.to_nodes(id));
+        }
         match self {
             REComplexValue::Component(component) => REValue {
                 root: RENode::Component(component),
