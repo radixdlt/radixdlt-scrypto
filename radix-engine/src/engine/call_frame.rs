@@ -177,17 +177,11 @@ impl REValueLocation {
                     id: child_id
                 }
             }
-            REValueLocation::Track(address) => {
-                let component_address = match address {
-                    Address::GlobalComponent(component_address) => component_address.clone(),
-                    Address::LocalComponent(parent, ..)
-                    | Address::KeyValueStore(parent, .. ) => parent.clone(),
-                    _ => panic!("Unexpected: {:?}", address)
-                };
+            REValueLocation::Track(..) => {
                 let child_address = match child_id {
-                    ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStore(component_address, kv_store_id),
-                    ValueId::Vault(vault_id) => Address::Vault(component_address, vault_id),
-                    ValueId::Component(component_id) => Address::LocalComponent(component_address, component_id),
+                    ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStore(kv_store_id),
+                    ValueId::Vault(vault_id) => Address::Vault(vault_id),
+                    ValueId::Component(component_id) => Address::LocalComponent(component_id),
                     _ => panic!("Unexpected")
                 };
                 REValueLocation::Track(child_address)
@@ -471,19 +465,12 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
                 panic!("Not supported");
             }
             REValueRefMut::Track(track, address) => {
-                let component_address =
-                    if let Address::KeyValueStore(component_address, _) = &address {
-                        component_address
-                    } else {
-                        panic!("Expected KV Store address");
-                    };
-
                 track.set_key_value(
                     address.clone(),
                     key,
                     SubstateValue::KeyValueStoreEntry(Some(value.raw)),
                 );
-                track.insert_objects_into_component(to_store, *component_address);
+                track.insert_non_root_objects(to_store);
             }
         }
     }
@@ -577,14 +564,7 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         match self {
             REValueRefMut::Track(track, address) => {
                 track.write_component_value(address.clone(), value.raw);
-
-                let parent_address = match address {
-                    Address::GlobalComponent(address) => *address,
-                    Address::LocalComponent(parent, ..) => *parent,
-                    _ => panic!("Expected component address"),
-                };
-
-                track.insert_objects_into_component(to_store, parent_address);
+                track.insert_non_root_objects(to_store);
             }
             REValueRefMut::Borrowed(owned) => {
                 let component = owned.component_mut();
@@ -1013,7 +993,7 @@ where
                             },
                             None,
                         ));
-                    } else if self.track.take_lock(*component_address, false).is_ok() {
+                    } else if self.track.take_lock(Address::GlobalComponent(*component_address), false).is_ok() {
                         return Some((
                             REValueInfo {
                                 location: REValueLocation::Track(Address::GlobalComponent(*component_address)),
@@ -1059,7 +1039,7 @@ where
 
         // TODO: Remove, currently a hack to allow for global component info retrieval
         if let Some(component_address) = address_borrowed {
-            self.track.release_lock(*component_address);
+            self.track.release_lock(Address::GlobalComponent(*component_address));
         }
 
         Ok((location.clone(), current_value))
@@ -1858,7 +1838,7 @@ where
                 to_store_values.insert(id, cell.into_inner());
             }
             self.track
-                .insert_objects_into_component(to_store_values, address.clone().into());
+                .insert_non_root_objects(to_store_values);
         }
 
         if let Some(non_fungibles) = maybe_non_fungibles {

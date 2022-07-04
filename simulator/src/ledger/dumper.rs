@@ -97,7 +97,7 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
             }
 
             // Dump resources
-            dump_resources(component_address, &vaults_found, substate_store, output)
+            dump_resources(&vaults_found, substate_store, output)
         }
         None => Err(DisplayError::ComponentNotFound),
     }
@@ -133,15 +133,13 @@ fn dump_kv_store<T: ReadableSubstateStore + QueryableSubstateStore, O: std::io::
 }
 
 fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
-    component_address: ComponentAddress,
     vaults: &HashSet<VaultId>,
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
-        let mut vault_address = scrypto_encode(&component_address);
-        vault_address.extend(scrypto_encode(vault_id));
+        let vault_address = scrypto_encode(vault_id);
         let substate = substate_store.get_substate(&vault_address).unwrap();
         let vault: Vault = scrypto_decode(&substate.value).unwrap();
         let amount = vault.total_amount();
