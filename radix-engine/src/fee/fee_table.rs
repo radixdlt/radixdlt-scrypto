@@ -6,29 +6,44 @@ use crate::{
 };
 
 pub enum SystemApiCostingEntry<'a> {
-    /// Invokes a function, native or wasm
+    /// Invokes a function, native or wasm.
     InvokeFunction {
         receiver: &'a SNodeRef,
         input: &'a ScryptoValue,
     },
 
-    /// Globalizes a RE value
+    /// Globalizes a RE value.
     Globalize { value: &'a REValue },
 
-    /// Borrows a globalized value
+    /// Borrows a globalized value.
     Borrow { value: &'a REValue, loaded: bool },
 
-    /// Returns a borrowed value
+    /// Returns a borrowed value.
     Return { value: &'a REValue },
 
-    /// Creates a RE value
+    /// Creates a RE value.
     Create { value: &'a ScryptoValue },
 
-    /// Reads the data of a RE value
-    Read { value: &'a ScryptoValue },
+    /// Reads the data of a RE value.
+    ReadValue { value: &'a ScryptoValue },
 
-    /// Updates the data of a RE Value
-    Write { value: &'a ScryptoValue },
+    /// Updates the data of a RE Value.
+    WriteValue { value: &'a ScryptoValue },
+
+    /// Reads the current epoch.
+    ReadEpoch,
+
+    /// Read the transaction hash.
+    ReadTransactionHash,
+
+    /// Generates a UUID.
+    GenerateUuid,
+    
+    /// Emits a log.
+    EmitLog,
+
+    /// Checks if an access rule can be satisfied by the given proofs.
+    CheckAccessRule,
 }
 
 pub struct FeeTable {
@@ -100,8 +115,13 @@ impl FeeTable {
             SystemApiCostingEntry::Borrow { value, loaded } => todo!(),
             SystemApiCostingEntry::Return { value } => todo!(),
             SystemApiCostingEntry::Create { value } => todo!(),
-            SystemApiCostingEntry::Read { value } => todo!(),
-            SystemApiCostingEntry::Write { value } => todo!(),
+            SystemApiCostingEntry::ReadValue { value } => todo!(),
+            SystemApiCostingEntry::WriteValue { value } => todo!(),
+            SystemApiCostingEntry::ReadEpoch => todo!(),
+            SystemApiCostingEntry::ReadTransactionHash => todo!(),
+            SystemApiCostingEntry::GenerateUuid => todo!(),
+            SystemApiCostingEntry::EmitLog => todo!(),
+            SystemApiCostingEntry::CheckAccessRule => todo!(), 
         }
     }
 }
