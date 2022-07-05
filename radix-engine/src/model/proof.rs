@@ -378,7 +378,7 @@ impl Proof {
             _ => Err(UnknownMethod),
         }?;
 
-        system_api.return_value_mut(value_id, value_ref);
+        system_api.return_value_mut(value_ref);
         Ok(rtn)
     }
 

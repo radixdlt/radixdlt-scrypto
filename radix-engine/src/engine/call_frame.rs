@@ -168,7 +168,7 @@ impl REValueLocation {
     }
 
     fn borrow_native_ref<'p, S: ReadableSubstateStore>(
-        &self,
+        &self, // TODO: Consider changing this to self
         owned_values: &mut HashMap<ValueId, REValue>,
         borrowed_values: &mut HashMap<ValueId, &'p mut REValue>,
         track: &mut Track<S>,
@@ -176,11 +176,11 @@ impl REValueLocation {
         match self {
             REValueLocation::BorrowedRoot(id) => {
                 let owned = borrowed_values.remove(id).expect("Should exist");
-                RENativeValueRef::OwnedRef(owned, Option::None)
+                RENativeValueRef::OwnedRef(owned, id.clone(), true)
             }
             REValueLocation::Borrowed { root, id } => {
                 let re_value = borrowed_values.remove(root).expect("Should exist");
-                RENativeValueRef::OwnedRef(re_value, Option::Some(id.clone()))
+                RENativeValueRef::OwnedRef(re_value, id.clone(), false)
             }
             REValueLocation::Track(address) => {
                 let value = track.take_value(address.clone());
@@ -188,7 +188,7 @@ impl REValueLocation {
             }
             REValueLocation::OwnedRoot(id) => {
                 let value = owned_values.remove(id).unwrap();
-                RENativeValueRef::Owned(value, Option::None)
+                RENativeValueRef::Owned(value, id.clone(), true)
             }
             _ => panic!("Unexpected {:?}", self),
         }
@@ -244,17 +244,24 @@ impl REValueLocation {
 }
 
 pub enum RENativeValueRef<'borrowed> {
-    Owned(REValue, Option<ValueId>),
-    OwnedRef(&'borrowed mut REValue, Option<ValueId>),
+    Owned(REValue, ValueId, bool),
+    OwnedRef(&'borrowed mut REValue, ValueId, bool),
     Track(Address, SubstateValue),
 }
 
 impl<'borrowed> RENativeValueRef<'borrowed> {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            RENativeValueRef::OwnedRef(root, id) => match root.get_mut(id.as_ref()) {
-                RENode::Bucket(bucket) => bucket,
-                _ => panic!("Expecting to be a bucket"),
+            RENativeValueRef::OwnedRef(root, id, is_root) => {
+                let node = if *is_root {
+                    root.root_mut()
+                } else {
+                    root.non_root_mut(id)
+                };
+                match node {
+                    RENode::Bucket(bucket) => bucket,
+                    _ => panic!("Expecting to be a bucket"),
+                }
             },
             _ => panic!("Expecting to be a bucket"),
         }
@@ -262,9 +269,16 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
 
     pub fn proof(&mut self) -> &mut Proof {
         match self {
-            RENativeValueRef::OwnedRef(ref mut root, id) => match root.get_mut(id.as_ref()) {
-                RENode::Proof(proof) => proof,
-                _ => panic!("Expecting to be a proof"),
+            RENativeValueRef::OwnedRef(ref mut root, id, is_root) => {
+                let node = if *is_root {
+                    root.root_mut()
+                } else {
+                    root.non_root_mut(id)
+                };
+                match node {
+                    RENode::Proof(proof) => proof,
+                    _ => panic!("Expecting to be a proof"),
+                }
             },
             _ => panic!("Expecting to be a proof"),
         }
@@ -273,14 +287,28 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
     pub fn vault(&mut self) -> &mut Vault {
         match self {
             RENativeValueRef::Owned(..) => panic!("Unexpected"),
-            RENativeValueRef::OwnedRef(owned, id) => owned.get_mut(id.as_ref()).vault_mut(),
+            RENativeValueRef::OwnedRef(root, id, is_root) => {
+                let node = if *is_root {
+                    root.root_mut()
+                } else {
+                    root.non_root_mut(id)
+                };
+                node.vault_mut()
+            },
             RENativeValueRef::Track(_address, value) => value.vault_mut(),
         }
     }
 
     pub fn component(&mut self) -> &mut Component {
         match self {
-            RENativeValueRef::OwnedRef(owned, id) => owned.get_mut(id.as_ref()).component_mut(),
+            RENativeValueRef::OwnedRef(root, id, is_root) => {
+                let node = if *is_root {
+                    root.root_mut()
+                } else {
+                    root.non_root_mut(id)
+                };
+                node.component_mut()
+            },
             _ => panic!("Expecting to be a component"),
         }
     }
@@ -294,7 +322,14 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
 
     pub fn resource_manager(&mut self) -> &mut ResourceManager {
         match self {
-            RENativeValueRef::Owned(owned, id) => owned.get_mut(id.as_ref()).resource_manager_mut(),
+            RENativeValueRef::Owned(root, id, is_root) => {
+                let node = if *is_root {
+                    root.root_mut()
+                } else {
+                    root.non_root_mut(id)
+                };
+                node.resource_manager_mut()
+            },
             RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
             _ => panic!("Unexpected"),
         }
@@ -302,17 +337,16 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
 
     pub fn return_to_location<'a, S: ReadableSubstateStore>(
         self,
-        value_id: ValueId,
         owned_values: &'a mut HashMap<ValueId, REValue>,
         borrowed_values: &mut HashMap<ValueId, &'borrowed mut REValue>,
         track: &mut Track<S>,
     ) {
         match self {
-            RENativeValueRef::Owned(value, ..) => {
+            RENativeValueRef::Owned(value, value_id, ..) => {
                 owned_values.insert(value_id, value);
             }
-            RENativeValueRef::OwnedRef(owned, ..) => {
-                borrowed_values.insert(value_id.clone(), owned);
+            RENativeValueRef::OwnedRef(owned, value_id, ..) => {
+                borrowed_values.insert(value_id, owned);
             }
             RENativeValueRef::Track(address, value) => track.write_value(address, value),
         }
@@ -1628,9 +1662,8 @@ where
         )
     }
 
-    fn return_value_mut(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>) {
+    fn return_value_mut(&mut self, val_ref: RENativeValueRef<'p>) {
         val_ref.return_to_location(
-            value_id,
             &mut self.owned_values,
             &mut self.frame_borrowed_values,
             &mut self.track,

@@ -248,7 +248,7 @@ impl Bucket {
             _ => Err(BucketError::MethodNotFound(method_name.to_string())),
         }?;
 
-        system_api.return_value_mut(value_id, value_ref);
+        system_api.return_value_mut(value_ref);
 
         Ok(rtn)
     }
@@ -287,7 +287,7 @@ impl Bucket {
                             .expect("Should not fail.");
                     }
                 }
-                system_api.return_value_mut(resource_id, value);
+                system_api.return_value_mut(value);
 
                 Ok(ScryptoValue::from_typed(&()))
             }

@@ -123,7 +123,7 @@ impl Component {
                 let mut ref_mut = system_api.borrow_value_mut(&value_id);
                 let component = ref_mut.component();
                 component.access_rules.push(input.access_rules);
-                system_api.return_value_mut(value_id, ref_mut);
+                system_api.return_value_mut(ref_mut);
 
                 Ok(ScryptoValue::from_typed(&()))
             }

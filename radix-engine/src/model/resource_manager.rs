@@ -417,7 +417,7 @@ impl ResourceManager {
                     let resource_manager = resource_manager_ref.resource_manager();
                     let container =
                         resource_manager.mint(mint_params, resource_address, system_api)?;
-                    system_api.return_value_mut(resource_value_id, resource_manager_ref);
+                    system_api.return_value_mut(resource_manager_ref);
                     let bucket_id = system_api
                         .create_value(Bucket::new(container))
                         .unwrap()
@@ -606,7 +606,7 @@ impl ResourceManager {
             _ => Err(InvalidMethod),
         }?;
 
-        system_api.return_value_mut(value_id, ref_mut);
+        system_api.return_value_mut(ref_mut);
 
         Ok(rtn)
     }

@@ -271,7 +271,7 @@ impl Vault {
             _ => Err(MethodNotFound),
         }?;
 
-        system_api.return_value_mut(value_id, ref_mut);
+        system_api.return_value_mut(ref_mut);
 
         Ok(rtn)
     }
