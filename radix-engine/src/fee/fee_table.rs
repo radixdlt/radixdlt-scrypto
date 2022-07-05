@@ -1,3 +1,4 @@
+use scrypto::engine::types::*;
 use scrypto::{core::SNodeRef, values::ScryptoValue};
 
 use crate::wasm::{InstructionCostRules, WasmMeteringParams};
@@ -94,20 +95,97 @@ impl FeeTable {
         self.wasm_metering_params.clone()
     }
 
-    pub fn function_cost(&self, receiver: &SNodeRef, fn_ident: &str, input: &ScryptoValue) -> u32 {
+    pub fn function_cost(&self, receiver: &SNodeRef, fn_ident: &str, _input: &ScryptoValue) -> u32 {
         match receiver {
-            SNodeRef::SystemStatic => todo!(),
-            SNodeRef::PackageStatic => todo!(),
-            SNodeRef::AuthZoneRef => todo!(),
-            SNodeRef::Scrypto(_) => 0,
-            SNodeRef::Component(_) => todo!(),
-            SNodeRef::ResourceStatic => todo!(),
-            SNodeRef::ResourceRef(_) => todo!(),
-            SNodeRef::Consumed(_) => todo!(),
-            SNodeRef::BucketRef(_) => todo!(),
-            SNodeRef::ProofRef(_) => todo!(),
-            SNodeRef::VaultRef(_) => todo!(),
-            SNodeRef::TransactionProcessor => todo!(),
+            SNodeRef::SystemStatic => match fn_ident {
+                "current_epoch" => self.fixed_low,
+                "transaction_hash" => self.fixed_low,
+                _ => self.fixed_high,
+            },
+            SNodeRef::PackageStatic => match fn_ident {
+                "current_epoch" => self.fixed_low,
+                "transaction_hash" => self.fixed_low,
+                _ => self.fixed_high,
+            },
+            SNodeRef::AuthZoneRef => match fn_ident {
+                "current_epoch" => self.fixed_low,
+                "transaction_hash" => self.fixed_low,
+                _ => self.fixed_high,
+            },
+            SNodeRef::Scrypto(_) => {
+                // Scrypto running cost is billed through instrumentation
+                0
+            }
+            SNodeRef::Component(_) => {
+                // Scrypto running cost is billed through instrumentation
+                0
+            }
+            SNodeRef::ResourceStatic => match fn_ident {
+                "create" => self.fixed_low,
+                _ => self.fixed_high,
+            },
+            SNodeRef::ResourceRef(_) => match fn_ident {
+                "update_auth" => self.fixed_low,
+                "lock_auth" => self.fixed_low,
+                "create_vault" => self.fixed_low,
+                "create_bucket" => self.fixed_low,
+                "mint" => self.fixed_low,
+                "metadata" => self.fixed_low,
+                "resource_type" => self.fixed_low,
+                "total_supply" => self.fixed_low,
+                "update_metadata" => self.fixed_low,
+                "update_non_fungible_data" => self.fixed_low,
+                "non_fungible_exists" => self.fixed_low,
+                "non_fungible_data" => self.fixed_low,
+                _ => self.fixed_high,
+            },
+            // TODO: I suspect there is a bug with invoke consumed within call frame. Add tests to verify
+            SNodeRef::Consumed(value_id) => match value_id {
+                ValueId::Transient(id) => match id {
+                    TransientValueId::Bucket(_) => self.fixed_medium,
+                    TransientValueId::Proof(_) => self.fixed_medium,
+                },
+                ValueId::Stored(id) => match id {
+                    StoredValueId::KeyValueStoreId(_) => self.fixed_medium,
+                    StoredValueId::Component(_) => self.fixed_medium,
+                    StoredValueId::VaultId(_) => self.fixed_medium,
+                },
+                ValueId::Resource(_) => self.fixed_medium,
+                ValueId::Package(_) => self.fixed_high,
+            },
+            SNodeRef::BucketRef(_) => match fn_ident {
+                "take" => self.fixed_low,
+                "take_non_fungibles" => self.fixed_low,
+                "non_fungible_ids" => self.fixed_low,
+                "put" => self.fixed_low,
+                "amount" => self.fixed_low,
+                "resource_address" => self.fixed_low,
+                "create_proof" => self.fixed_low,
+                _ => self.fixed_high,
+            },
+            SNodeRef::ProofRef(_) => match fn_ident {
+                "amount" => self.fixed_low,
+                "non_fungible_ids" => self.fixed_low,
+                "resource_address" => self.fixed_low,
+                "clone" => self.fixed_low,
+                _ => self.fixed_high,
+            },
+            SNodeRef::VaultRef(_) => match fn_ident {
+                "put" => self.fixed_low,
+                "take" => self.fixed_low,
+                "take_non_fungibles" => self.fixed_low,
+                "amount" => self.fixed_low,
+                "resource_address" => self.fixed_low,
+                "non_fungible_ids" => self.fixed_low,
+                "create_proof" => self.fixed_low,
+                "create_proof_by_amount" => self.fixed_low,
+                "create_proof_by_ids" => self.fixed_low,
+                _ => self.fixed_high,
+            },
+            SNodeRef::TransactionProcessor => match fn_ident {
+                "run" => self.fixed_high,
+                _ => self.fixed_high,
+            },
         }
     }
 

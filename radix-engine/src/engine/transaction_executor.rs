@@ -78,7 +78,9 @@ where
         cost_unit_counter
             .consume(
                 (fee_table.tx_decoding_per_byte() + fee_table.tx_verification_per_byte())
-                    * transaction.transaction_payload_size(),
+                    * transaction.transaction_payload_size()
+                    + fee_table.tx_signature_validation_per_sig()
+                        * transaction.signer_public_keys().len() as u32,
             )
             .expect("System loan should cover transaction validation cost");
 

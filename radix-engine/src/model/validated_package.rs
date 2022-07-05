@@ -21,7 +21,7 @@ pub struct ValidatedPackage {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ValidatedPackageError {
+pub enum PackageError {
     InvalidRequestData(DecodeError),
     InvalidWasm(PrepareError),
     BlueprintNotFound,
@@ -51,7 +51,7 @@ impl ValidatedPackage {
         method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut S,
-    ) -> Result<ScryptoValue, ValidatedPackageError>
+    ) -> Result<ScryptoValue, PackageError>
     where
         S: SystemApi<'borrowed, W, I>,
         W: WasmEngine<I>,
@@ -60,19 +60,17 @@ impl ValidatedPackage {
         match method_name {
             "publish" => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
-                    .map_err(|e| ValidatedPackageError::InvalidRequestData(e))?;
-                let package = ValidatedPackage::new(input.package)
-                    .map_err(ValidatedPackageError::InvalidWasm)?;
+                    .map_err(|e| PackageError::InvalidRequestData(e))?;
+                let package =
+                    ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
                 let value_id = system_api.native_create(package).unwrap();
                 system_api
                     .native_globalize(&value_id)
-                    .map_err(ValidatedPackageError::CostingError)?;
+                    .map_err(PackageError::CostingError)?;
                 let package_address: PackageAddress = value_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
-            _ => Err(ValidatedPackageError::MethodNotFound(
-                method_name.to_string(),
-            )),
+            _ => Err(PackageError::MethodNotFound(method_name.to_string())),
         }
     }
 

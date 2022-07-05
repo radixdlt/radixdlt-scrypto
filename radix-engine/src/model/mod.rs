@@ -32,6 +32,6 @@ pub use system::{System, SystemError};
 pub use transaction_processor::{
     TransactionProcessor, TransactionProcessorError, TransactionProcessorRunInput,
 };
-pub use validated_package::{ValidatedPackage, ValidatedPackageError};
+pub use validated_package::{PackageError, ValidatedPackage};
 pub use vault::{Vault, VaultError};
 pub use worktop::{Worktop, WorktopError};
