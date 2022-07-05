@@ -189,7 +189,7 @@ impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInst
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter()
-            .consume(n)
+            .consume(n, "wasm")
             .map_err(InvokeError::CostingError)
     }
 }
@@ -214,7 +214,7 @@ impl WasmRuntime for NopWasmRuntime {
 
     fn consume_cost_units(&mut self, n: u32) -> Result<(), InvokeError> {
         self.cost_unit_counter
-            .consume(n)
+            .consume(n, "wasm")
             .map_err(InvokeError::CostingError)
     }
 }

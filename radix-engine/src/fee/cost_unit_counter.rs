@@ -1,3 +1,7 @@
+use core::ops::AddAssign;
+
+use sbor::rust::collections::HashMap;
+
 pub struct CostUnitCounter {
     /// The balance cost units
     balance: u32,
@@ -9,6 +13,8 @@ pub struct CostUnitCounter {
     limit: u32,
     /// At which point the system loan repayment is checked
     check_point: u32,
+    /// Costing analysis
+    pub analysis: HashMap<&'static str, u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -27,10 +33,11 @@ impl CostUnitCounter {
             consumed: 0,
             limit,
             check_point: loan,
+            analysis: HashMap::new(),
         }
     }
 
-    pub fn consume(&mut self, n: u32) -> Result<(), CostUnitCounterError> {
+    pub fn consume(&mut self, n: u32, reason: &'static str) -> Result<(), CostUnitCounterError> {
         self.balance = self
             .balance
             .checked_sub(n)
@@ -39,6 +46,9 @@ impl CostUnitCounter {
             .consumed
             .checked_add(n)
             .ok_or(CostUnitCounterError::CounterOverflow)?;
+
+        self.analysis.entry(reason).or_default().add_assign(n);
+
         if self.consumed > self.limit {
             return Err(CostUnitCounterError::LimitExceeded);
         }
@@ -85,7 +95,7 @@ mod tests {
     #[test]
     fn test_consume_and_repay() {
         let mut counter = CostUnitCounter::new(100, 5);
-        counter.consume(2).unwrap();
+        counter.consume(2, "test").unwrap();
         counter.repay(3).unwrap();
         assert_eq!(3, counter.balance());
         assert_eq!(2, counter.consumed());
@@ -95,7 +105,10 @@ mod tests {
     #[test]
     fn test_out_of_cost_unit() {
         let mut counter = CostUnitCounter::new(100, 5);
-        assert_eq!(Err(CostUnitCounterError::OutOfCostUnit), counter.consume(6));
+        assert_eq!(
+            Err(CostUnitCounterError::OutOfCostUnit),
+            counter.consume(6, "test")
+        );
     }
 
     #[test]

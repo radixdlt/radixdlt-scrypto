@@ -724,7 +724,10 @@ where
         );
 
         self.cost_unit_counter
-            .consume(self.fee_table.function_cost(&snode_ref, fn_ident, &input))
+            .consume(
+                self.fee_table.function_cost(&snode_ref, fn_ident, &input),
+                "run",
+            )
             .map_err(RuntimeError::CostingError)?;
 
         let output = {
@@ -948,6 +951,7 @@ where
                         receiver: &snode_ref,
                         input: &input,
                     }),
+                "invoke_function",
             )
             .map_err(RuntimeError::CostingError)?;
 
@@ -1506,8 +1510,8 @@ where
         &mut self,
         value_id: &ValueId,
     ) -> Result<RENativeValueRef<'borrowed>, CostUnitCounterError> {
-        self.cost_unit_counter
-            .consume(self.fee_table.system_api_cost({
+        self.cost_unit_counter.consume(
+            self.fee_table.system_api_cost({
                 match value_id {
                     ValueId::Transient(_) => SystemApiCostingEntry::BorrowLocal,
                     ValueId::Stored(_) => SystemApiCostingEntry::BorrowGlobal {
@@ -1526,7 +1530,9 @@ where
                         size: 0,
                     },
                 }
-            }))?;
+            }),
+            "borrow",
+        )?;
 
         let info = self.value_refs.get(value_id).unwrap();
         if !info.visible {
@@ -1546,8 +1552,8 @@ where
         value_id: ValueId,
         val_ref: RENativeValueRef<'borrowed>,
     ) -> Result<(), CostUnitCounterError> {
-        self.cost_unit_counter
-            .consume(self.fee_table.system_api_cost({
+        self.cost_unit_counter.consume(
+            self.fee_table.system_api_cost({
                 match value_id {
                     // TODO: get size of the value
                     ValueId::Transient(_) => SystemApiCostingEntry::ReturnLocal,
@@ -1555,7 +1561,9 @@ where
                     ValueId::Resource(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                     ValueId::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
                 }
-            }))?;
+            }),
+            "return",
+        )?;
 
         val_ref.return_to_location(
             value_id,
@@ -1580,6 +1588,7 @@ where
                     .system_api_cost(SystemApiCostingEntry::Create {
                         size: 0, // TODO: get size of the value
                     }),
+                "create",
             )
             .map_err(RuntimeError::CostingError)?;
 
@@ -1657,13 +1666,13 @@ where
     }
 
     fn native_globalize(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError> {
-        self.cost_unit_counter
-            .consume(
-                self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::Globalize {
-                        size: 0, // TODO: get size of the value
-                    }),
-            )?;
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::Globalize {
+                    size: 0, // TODO: get size of the value
+                }),
+            "globalize",
+        )?;
 
         let mut values = HashSet::new();
         values.insert(value_id.clone());
@@ -1708,22 +1717,29 @@ where
         address: SubstateAddress,
         instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError> {
-        let cost = match &instruction {
+        match &instruction {
             DataInstruction::Read => {
-                self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
-                    size: 0, // TODO: get size of the value
-                })
+                self.cost_unit_counter
+                    .consume(
+                        self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
+                            size: 0, // TODO: get size of the value
+                        }),
+                        "read",
+                    )
+                    .map_err(RuntimeError::CostingError)?;
             }
             DataInstruction::Write(..) => {
-                self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::Write {
-                        size: 0, // TODO: get size of the value
-                    })
+                self.cost_unit_counter
+                    .consume(
+                        self.fee_table
+                            .system_api_cost(SystemApiCostingEntry::Write {
+                                size: 0, // TODO: get size of the value
+                            }),
+                        "write",
+                    )
+                    .map_err(RuntimeError::CostingError)?;
             }
-        };
-        self.cost_unit_counter
-            .consume(cost)
-            .map_err(RuntimeError::CostingError)?;
+        }
 
         // If write, take values from current frame
         let (taken_values, missing) = match &instruction {
@@ -1846,6 +1862,7 @@ where
         self.cost_unit_counter.consume(
             self.fee_table
                 .system_api_cost(SystemApiCostingEntry::ReadEpoch),
+            "read_epoch",
         )?;
         Ok(self.track.current_epoch())
     }
@@ -1854,6 +1871,7 @@ where
         self.cost_unit_counter.consume(
             self.fee_table
                 .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
+            "read_transaction_hash",
         )?;
         Ok(self.track.transaction_hash())
     }
@@ -1862,18 +1880,19 @@ where
         self.cost_unit_counter.consume(
             self.fee_table
                 .system_api_cost(SystemApiCostingEntry::GenerateUuid),
+            "generate_uuid",
         )?;
         Ok(self.track.new_uuid())
     }
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError> {
-        self.cost_unit_counter
-            .consume(
-                self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::EmitLog {
-                        size: message.len() as u32,
-                    }),
-            )?;
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::EmitLog {
+                    size: message.len() as u32,
+                }),
+            "emit_log",
+        )?;
         self.track.add_log(level, message);
         Ok(())
     }
