@@ -330,8 +330,6 @@ macro_rules! test_math {
             #[test]
             fn [<test_2_div_2_ $i:lower _ $t:lower>]() {
                 const A_BYTES: usize = (<$i>::BITS / 8) as usize;
-                const B_BYTES: usize = (<$t>::BITS / 8) as usize;
-                const MAX_BYTES: usize = if A_BYTES > B_BYTES { A_BYTES } else { B_BYTES };
                 let a: $i = BigInt::from_bytes_le(Sign::Plus, &[4u8; A_BYTES]).try_into().unwrap();
                 let b: $i = BigInt::from_bytes_le(Sign::Plus, &[4u8; A_BYTES]).try_into().unwrap();
                 assert_eq!(a.div(b).to_string(), "1");
@@ -392,7 +390,7 @@ macro_rules! test_math {
             }
 
             #[test]
-            fn [<test_5_pow_3_ $i:lower _ $t:lower>]() {
+            fn [<test_5_pow_3_ $i:lower _ u8>]() {
                 const A_BYTES: usize = (<$i>::BITS / 8) as usize;
                 let a: $i = BigInt::from_bytes_le(Sign::Plus, &[5u8; A_BYTES / 3]).try_into().unwrap();
                 let b = 3u8;
@@ -415,6 +413,69 @@ macro_rules! test_math {
                 assert_eq!(a.not(), expect);
             }
 
+            #[test]
+            fn [<test_bits_signed_ $i:lower >]() {
+                let expect: String = String::from(stringify!($i));
+                assert_eq!(<$i>::BITS, expect[1..].parse::<u32>().unwrap());
+            }
+
+            #[test]
+            fn [<test_0b10101010_count_ones_ $i:lower >]() {
+                let a: $i;
+                if <$i>::MIN == Zero::zero() {
+                    a = BigInt::from_bytes_le(Sign::Plus, &[0b01101010u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                } else {
+                    a = BigInt::from_signed_bytes_le(&[0b01101010u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                }
+
+                assert_eq!(a.count_ones(), (<$i>::BITS / 2) as u32);
+            }
+
+            #[test]
+            fn [<test_0_count_ones_ $i:lower >]() {
+                let a: $i = BigInt::from_bytes_le(Sign::Plus, &[0b00000000u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                assert_eq!(a.count_ones(), 0u32);
+            }
+
+            #[test]
+            fn [<test_1_count_ones_ $i:lower >]() {
+                let a: $i;
+                if <$i>::MIN == Zero::zero() {
+                a = BigInt::from_bytes_le(Sign::Plus, &[0b11111111u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                } else {
+                    a = BigInt::from_signed_bytes_le(&[0b11111111u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                }
+                assert_eq!(a.count_ones(), (<$i>::BITS) as u32);
+            }
+
+            #[test]
+            fn [<test_0b10101010_count_zeros_ $i:lower >]() {
+                let a: $i;
+                if <$i>::MIN == Zero::zero() {
+                    a = BigInt::from_bytes_le(Sign::Plus, &[0b01101010u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                } else {
+                    a = BigInt::from_signed_bytes_le(&[0b01101010u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                }
+
+                assert_eq!(a.count_zeros(), (<$i>::BITS / 2) as u32);
+            }
+
+            #[test]
+            fn [<test_0_count_zeros_ $i:lower >]() {
+                let a: $i = BigInt::from_bytes_le(Sign::Plus, &[0b00000000u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                assert_eq!(a.count_zeros(), (<$i>::BITS) as u32);
+            }
+
+            #[test]
+            fn [<test_1_count_zeros_ $i:lower >]() {
+                let a: $i;
+                if <$i>::MIN == Zero::zero() {
+                    a = BigInt::from_bytes_le(Sign::Plus, &[0b11111111u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                } else {
+                    a = BigInt::from_signed_bytes_le(&[0b11111111u8; (<$i>::BITS / 8) as usize]).try_into().unwrap();
+                }
+                assert_eq!(a.count_zeros(), 0u32);
+            }
         }
     };
 }
@@ -530,6 +591,23 @@ macro_rules! test_signed {
                     let expect = true;
                     assert_eq!(a.is_negative(), expect);
                 }
+
+                #[test]
+                fn [<test_min_signed_ $i:lower >]() {
+                    let mut bytes = [0x00u8; (<$i>::BITS / 8) as usize];
+                    bytes[bytes.len() - 1] = 0x80;
+                    let expect: $i = BigInt::from_signed_bytes_le(&bytes).try_into().unwrap();
+                    assert_eq!(<$i>::MIN, expect);
+                }
+
+                #[test]
+                fn [<test_max_signed_ $i:lower >]() {
+                    let mut bytes = [0xffu8; (<$i>::BITS / 8) as usize];
+                    bytes[bytes.len() - 1] = 0x7f;
+                    let expect: $i = BigInt::from_signed_bytes_le(&bytes).try_into().unwrap();
+                    assert_eq!(<$i>::MAX, expect);
+                }
+
             )*
         }
     };
@@ -543,39 +621,94 @@ macro_rules! test_unsigned {
             $(
                 #[test]
                 fn [<test_8_is_power_of_two_ $i:lower>]() {
-                    bytes = &[0u8; (<$i>::BITS / 8) as usize];
-                    bytes[bits.len() - 1] = 8u8;
-                    let a: $i = BigInt::from_bytes_le(Sign::Plus, bytes).try_into().unwrap();
+                    let mut bytes = [0u8; (<$i>::BITS / 8) as usize];
+                    bytes[bytes.len() - 1] = 8u8;
+                    let a: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
                     let expect = true;
-                    assert_eq!(a.is_power_of_two_(), expect);
+                    assert_eq!(a.is_power_of_two(), expect);
                 }
 
                 #[test]
                 fn [<test_3_is_power_of_two_3_ $i:lower>]() {
-                    bytes = &[0u8; (<$i>::BITS / 8) as usize];
-                    bytes[bits.len() - 1] = 3;
-                    let a: $i = BigInt::from_bytes_le(Sign::Plus, bytes).try_into().unwrap();
+                    let mut bytes = [0u8; (<$i>::BITS / 8) as usize];
+                    bytes[bytes.len() - 1] = 3;
+                    let a: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
                     let expect = false;
-                    assert_eq!(a.is_power_of_two_(), expect);
+                    assert_eq!(a.is_power_of_two(), expect);
                 }
 
                 #[test]
                 fn [<test_0xff_is_power_of_two_ $i:lower>]() {
-                    bytes = &[0xffu8; (<$i>::BITS / 8) as usize];
-                    let a: $i = BigInt::from_bytes_le(Sign::Plus, bytes).try_into().unwrap();
+                    let bytes = [0xffu8; (<$i>::BITS / 8) as usize];
+                    let a: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
                     let expect = false;
-                    assert_eq!(a.is_power_of_two_(), expect);
+                    assert_eq!(a.is_power_of_two(), expect);
                 }
 
                 #[test]
                 fn [<test_0_is_power_of_two_ $i:lower>]() {
-                    bytes = &[0u8; (<$i>::BITS / 8) as usize];
-                    let a: $i = BigInt::from_bytes_le(Sign::Plus, bytes).try_into().unwrap();
-                    let expect = true;
-                    assert_eq!(a.is_power_of_two_(), expect);
+                    let bytes = [0u8; (<$i>::BITS / 8) as usize];
+                    let a: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+                    let expect = false;
+                    assert_eq!(a.is_power_of_two(), expect);
                 }
 
+                #[test]
+                fn [<test_8_next_power_of_two_ $i:lower>]() {
+                    let mut bytes = [0u8; (<$i>::BITS / 8) as usize];
+                    bytes[bytes.len() - 1] = 0b100u8;
+                    let a: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+                    bytes[bytes.len() - 1] = 0b100u8;
+                    let expect: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+                    assert_eq!(a.next_power_of_two(), expect);
+                }
+
+                #[test]
+                fn [<test_0b01011111_next_power_of_two_ $i:lower>]() {
+                    let mut bytes = [0b01011111u8; (<$i>::BITS / 8) as usize];
+                    let a: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+                    bytes = [0u8; (<$i>::BITS / 8) as usize];
+                    bytes[bytes.len() - 1] = 0b10000000u8;
+                    let expect: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+                    assert_eq!(a.next_power_of_two(), expect);
+                }
+
+                #[test]
+                fn [<test_0_next_power_of_two_ $i:lower>]() {
+                    let bytes = [0u8; (<$i>::BITS / 8) as usize];
+                    let a: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+                    let expect = <$i>::one();
+                    assert_eq!(a.next_power_of_two(), expect);
+                }
+
+                #[test]
+                #[should_panic]
+                fn [<test_0b10000001_next_power_of_two_ $i:lower>]() {
+                    let mut bytes = [0b10000000u8; (<$i>::BITS / 8) as usize];
+                    if <$i>::BITS > 8 {
+                        bytes[0] = 0b0000000001u8;
+                    } else {
+                        bytes[0] = 0b10000001u8;
+                    }
+                    let a: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+                    let _ = a.next_power_of_two();
+                }
+
+                #[test]
+                fn [<test_min_unsigned_ $i:lower >]() {
+                    let expect = <$i>::from(0u8);
+                    assert_eq!(<$i>::MIN, expect);
+                }
+
+                #[test]
+                fn [<test_max_unsigned_ $i:lower >]() {
+                    let bytes = [0xffu8; (<$i>::BITS / 8) as usize];
+                    let expect: $i = BigInt::from_bytes_le(Sign::Plus, &bytes).try_into().unwrap();
+                    assert_eq!(<$i>::MAX, expect);
+                }
             )*
         }
     };
 }
+
+test_unsigned! { U8, U16, U32, U64, U128, U256, U384, U512 }

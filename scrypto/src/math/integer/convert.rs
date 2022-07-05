@@ -235,7 +235,7 @@ macro_rules! impl_bigint_to_small_signed {
 
 impl_bigint_to_small_signed! { I8, I16, I32, I64, I128 }
 
-macro_rules! from_array {
+macro_rules! from_array_large {
     ($($t:ident),*) => {
         $(
             paste! {
@@ -248,14 +248,31 @@ macro_rules! from_array {
         )*
     };
 }
-from_array! { I256, I384, I512, U256, U384, U512 }
+from_array_large! { I256, I384, I512, U256, U384, U512 }
+
+macro_rules! from_array_small {
+    ($($t:ident),*) => {
+        $(
+            paste! {
+                impl From<[u8; (<$t>::BITS / 8) as usize]> for $t {
+                    fn from(val: [u8; (<$t>::BITS / 8) as usize]) -> Self {
+                        let wrapped: [<$t:lower>] = [<$t:lower>]::from_le_bytes(val);
+                        $t(wrapped)
+                    }
+                }
+            }
+        )*
+    };
+}
+
+from_array_small! { U8, U16, U32, U64, U128, I8, I16, I32, I64, I128 }
 
 #[derive(Debug)]
 pub enum ParseSliceError {
     InvalidLength,
 }
 
-macro_rules! try_from_vec_and_slice {
+macro_rules! try_from_vec_and_slice_large {
     ($($t:ident),*) => {
         $(
             impl TryFrom<&[u8]> for $t {
@@ -286,7 +303,46 @@ macro_rules! try_from_vec_and_slice {
             )*
     };
 }
-try_from_vec_and_slice! { I256, I384, I512, U256, U384, U512 }
+
+try_from_vec_and_slice_large! { I256, I384, I512, U256, U384, U512 }
+
+macro_rules! try_from_vec_and_slice_small {
+    ($($t:ident),*) => {
+        paste! {
+        $(
+            impl TryFrom<&[u8]> for $t {
+                type Error = ParseSliceError;
+                fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+                    if bytes.len() > (<$t>::BITS / 8) as usize {
+                        Err(ParseSliceError::InvalidLength)
+                    } else {
+                        let mut buf = [0u8; (<$t>::BITS / 8) as usize];
+                        buf[..bytes.len()].copy_from_slice(bytes);
+                        let wrapped: [<$t:lower>] = [<$t:lower>]::from_le_bytes(buf);
+                        Ok(Self(wrapped))
+                    }
+                }
+            }
+
+            impl TryFrom<Vec<u8>> for $t {
+                type Error = ParseSliceError;
+                fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+                    if bytes.len() > (<$t>::BITS / 8) as usize {
+                        Err(ParseSliceError::InvalidLength)
+                    } else {
+                        let mut buf = [0u8; (<$t>::BITS / 8) as usize];
+                        buf[..bytes.len()].copy_from_slice(&bytes);
+                        let wrapped: [<$t:lower>] = [<$t:lower>]::from_le_bytes(buf);
+                        Ok(Self(wrapped))
+                    }
+                }
+            }
+            )*
+        }
+    };
+}
+
+try_from_vec_and_slice_small! { I8, I16, I32, I64, I128, U8, U16, U32, U64, U128 }
 
 macro_rules! from_int {
     ($t:ident, ($($o:ident),*)) => {

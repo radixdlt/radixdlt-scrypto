@@ -590,12 +590,15 @@ macro_rules! checked_impl {
                                 panic!("overflow");
                             }
                             let to_shift = BigInt::from(self);
+                            let shift = BigInt::from(other).to_i64().unwrap();
                             if <$t>::MIN == <$t>::zero() {
                                 let len: usize = to_shift
-                                    .to_bytes_le().1
+                                    .clone()
+                                    .shl(shift)
+                                    .to_bytes_le()
+                                    .1
                                     .len()
                                     .min((<$t>::BITS / 8) as usize);
-                                let shift = BigInt::from(other).to_i64().unwrap();
                                 BigInt::from_bytes_le(
                                     Sign::Plus,
                                     to_shift.shl(shift)
@@ -606,15 +609,18 @@ macro_rules! checked_impl {
                                     .unwrap()
                             } else {
                                 let len: usize = to_shift
+                                    .clone()
+                                    .shl(shift)
                                     .to_signed_bytes_le()
                                     .len()
                                     .min((<$t>::BITS / 8) as usize);
-                                let shift = BigInt::from(other).to_i64().unwrap();
                                 BigInt::from_signed_bytes_le(
                                     to_shift
                                     .shl(shift)
-                                    .to_bytes_le().1[..len]
-                                    .into())
+                                    .to_bytes_le()
+                                    .1[..len]
+                                    .into()
+                                )
                                     .try_into()
                                     .unwrap()
                             }

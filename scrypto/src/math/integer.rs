@@ -635,13 +635,23 @@ macro_rules! checked_int_impl_unsigned_large {
                 /// Returns the smallest power of two greater than or equal to `self`.
                 ///
                 /// When return value overflows (i.e., `self > (1 << (N-1))` for type
-                /// `uN`), overflows to `2^N = 0`.
+                /// `uN`), it panics. It uses the checked unsigned integer arithmetics.
                 ///
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
                 pub fn next_power_of_two(self) -> Self {
-                    (Self::BITS - self.leading_zeros()).into()
+                    let lz = self.leading_zeros();
+                    let co = self.count_ones();
+                    if lz == 0 && co > 1 {
+                        panic!("overflow");
+                    } else {
+                        if co == 1 {
+                            self
+                        } else {
+                            Self::from(1u8) << (Self::BITS - lz)
+                        }
+                    }
                 }
             }
     )*)
