@@ -129,20 +129,19 @@ pub struct REValueInfo {
 
 #[derive(Debug, Clone)]
 pub enum REValuePointer {
-    Owned { root: ValueId, id: Option<ValueId> },
-    Stack { frame_id: usize, root: ValueId, id: Option<ValueId> },
+    Stack {
+        frame_id: Option<usize>,
+        root: ValueId,
+        id: Option<ValueId>,
+    },
     Track(Address),
 }
 
 impl REValuePointer {
     fn child(&self, child_id: ValueId) -> REValuePointer {
         match self {
-            REValuePointer::Owned { root, .. } => REValuePointer::Owned {
-                root: root.clone(),
-                id: Option::Some(child_id),
-            },
-            REValuePointer::Stack { frame_id: frame, root, .. } => REValuePointer::Stack {
-                frame_id: *frame,
+            REValuePointer::Stack { frame_id, root, .. } => REValuePointer::Stack {
+                frame_id: frame_id.clone(),
                 root: root.clone(),
                 id: Option::Some(child_id),
             },
@@ -165,14 +164,14 @@ impl REValuePointer {
         track: &mut Track<S>,
     ) -> RENativeValueRef {
         match self {
-            REValuePointer::Owned { root, id } => {
-                let value = owned_values.remove(root).unwrap();
-                RENativeValueRef::Owned(value, root.clone(), id.clone())
-            }
             REValuePointer::Stack { frame_id, root, id } => {
-                let frame = borrowed_values.get_mut(*frame_id).unwrap();
+                let frame = if let Some(frame_id) = frame_id {
+                    borrowed_values.get_mut(*frame_id).unwrap()
+                } else {
+                    owned_values
+                };
                 let re_value = frame.remove(root).expect("Should exist");
-                RENativeValueRef::OwnedRef(re_value, *frame_id, root.clone(), id.clone())
+                RENativeValueRef::Stack(re_value, frame_id.clone(), root.clone(), id.clone())
             }
             REValuePointer::Track(address) => {
                 let value = track.take_value(address.clone());
@@ -188,12 +187,13 @@ impl REValuePointer {
         track: &'f Track<'s, S>,
     ) -> REValueRef<'f, 's, S> {
         match self {
-            REValuePointer::Owned { root, id } => {
-                REValueRef::Stack(owned_values.get(root).unwrap(), id.clone())
-            }
             REValuePointer::Stack { frame_id, root, id } => {
-                let frame_vals = borrowed_values.get(*frame_id).unwrap();
-                REValueRef::Stack(frame_vals.get(root).unwrap(), id.clone())
+                let frame = if let Some(frame_id) = frame_id {
+                    borrowed_values.get(*frame_id).unwrap()
+                } else {
+                    owned_values
+                };
+                REValueRef::Stack(frame.get(root).unwrap(), id.clone())
             }
             REValuePointer::Track(address) => REValueRef::Track(track, address.clone()),
         }
@@ -206,68 +206,63 @@ impl REValuePointer {
         track: &'f mut Track<'s, S>,
     ) -> REValueRefMut<'f, 's, S> {
         match self {
-            REValuePointer::Owned { root, id } => REValueRefMut::Stack(
-                owned_values.get_mut(root).unwrap(),
-                id.clone(),
-            ),
-            REValuePointer::Stack { frame_id: frame, root, id } => {
-                let frame = borrowed_values.get_mut(*frame).unwrap();
-                REValueRefMut::Stack(
-                    frame.get_mut(root).unwrap(),
-                    id.clone(),
-                )
-            },
+            REValuePointer::Stack { frame_id, root, id } => {
+                let frame = if let Some(frame_id) = frame_id {
+                    borrowed_values.get_mut(*frame_id).unwrap()
+                } else {
+                    owned_values
+                };
+                REValueRefMut::Stack(frame.get_mut(root).unwrap(), id.clone())
+            }
             REValuePointer::Track(address) => REValueRefMut::Track(track, address.clone()),
         }
     }
 }
 
 pub enum RENativeValueRef {
-    Owned(REValue, ValueId, Option<ValueId>),
-    OwnedRef(REValue, usize, ValueId, Option<ValueId>),
+    Stack(REValue, Option<usize>, ValueId, Option<ValueId>),
     Track(Address, SubstateValue),
 }
 
 impl RENativeValueRef {
     pub fn bucket(&mut self) -> &mut Bucket {
         match self {
-            RENativeValueRef::OwnedRef(root, _frame_id, _root_id, maybe_child) => {
+            RENativeValueRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
                     RENode::Bucket(bucket) => bucket,
                     _ => panic!("Expecting to be a bucket"),
                 }
-            },
+            }
             _ => panic!("Expecting to be a bucket"),
         }
     }
 
     pub fn proof(&mut self) -> &mut Proof {
         match self {
-            RENativeValueRef::OwnedRef(ref mut root, _frame_id, _root_id, maybe_child) => {
+            RENativeValueRef::Stack(ref mut root, _frame_id, _root_id, maybe_child) => {
                 match root.get_node_mut(maybe_child.as_ref()) {
                     RENode::Proof(proof) => proof,
                     _ => panic!("Expecting to be a proof"),
                 }
-            },
+            }
             _ => panic!("Expecting to be a proof"),
         }
     }
 
     pub fn vault(&mut self) -> &mut Vault {
         match self {
-            RENativeValueRef::Owned(..) => panic!("Unexpected"),
-            RENativeValueRef::OwnedRef(root, _frame_id, _root_id, maybe_child) => {
+            RENativeValueRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 root.get_node_mut(maybe_child.as_ref()).vault_mut()
-            },
+            }
             RENativeValueRef::Track(_address, value) => value.vault_mut(),
         }
     }
 
     pub fn component(&mut self) -> &mut Component {
         match self {
-            RENativeValueRef::OwnedRef(root, _frame_id, _root_id, maybe_child) => {
+            RENativeValueRef::Stack(root, _frame_id, _root_id, maybe_child) => {
                 root.get_node_mut(maybe_child.as_ref()).component_mut()
-            },
+            }
             _ => panic!("Expecting to be a component"),
         }
     }
@@ -281,11 +276,10 @@ impl RENativeValueRef {
 
     pub fn resource_manager(&mut self) -> &mut ResourceManager {
         match self {
-            RENativeValueRef::Owned(root, _root_id, maybe_child) => {
-                root.get_node_mut(maybe_child.as_ref()).resource_manager_mut()
-            },
+            RENativeValueRef::Stack(value, _frame_id, _root_id, maybe_child) => value
+                .get_node_mut(maybe_child.as_ref())
+                .resource_manager_mut(),
             RENativeValueRef::Track(_address, value) => value.resource_manager_mut(),
-            _ => panic!("Unexpected"),
         }
     }
 
@@ -296,12 +290,13 @@ impl RENativeValueRef {
         track: &mut Track<S>,
     ) {
         match self {
-            RENativeValueRef::Owned(value, value_id, ..) => {
-                owned_values.insert(value_id, value);
-            }
-            RENativeValueRef::OwnedRef(owned, frame_id, value_id, ..) => {
-                let frame_values = borrowed_values.get_mut(frame_id).unwrap();
-                frame_values.insert(value_id, owned);
+            RENativeValueRef::Stack(owned, frame_id, value_id, ..) => {
+                let frame = if let Some(frame_id) = frame_id {
+                    borrowed_values.get_mut(frame_id).unwrap()
+                } else {
+                    owned_values
+                };
+                frame.insert(value_id, owned);
             }
             RENativeValueRef::Track(address, value) => track.write_value(address, value),
         }
@@ -371,7 +366,10 @@ impl<'f, 's, S: ReadableSubstateStore> REValueRefMut<'f, 's, S> {
     ) {
         match self {
             REValueRefMut::Stack(re_value, id) => {
-                re_value.get_node_mut(id.as_ref()).kv_store_mut().put(key, value);
+                re_value
+                    .get_node_mut(id.as_ref())
+                    .kv_store_mut()
+                    .put(key, value);
                 for (id, val) in to_store {
                     re_value.insert_non_root_nodes(val.to_nodes(id));
                 }
@@ -891,7 +889,8 @@ where
                     if self.owned_values.contains_key(&value_id) {
                         return Some((
                             REValueInfo {
-                                location: REValuePointer::Owned {
+                                location: REValuePointer::Stack {
+                                    frame_id: Option::None,
                                     root: value_id.clone(),
                                     id: Option::None,
                                 },
@@ -1004,7 +1003,6 @@ where
 
         let mut locked_values = HashSet::new();
         let mut value_refs = HashMap::new();
-
 
         // Authorization and state load
         let (loaded_snode, method_auths) = match &snode_ref {
@@ -1169,9 +1167,7 @@ where
                 value_refs.insert(
                     ValueId::NonFungibles(*resource_address),
                     REValueInfo {
-                        location: REValuePointer::Track(Address::NonFungibleSet(
-                            *resource_address,
-                        )),
+                        location: REValuePointer::Track(Address::NonFungibleSet(*resource_address)),
                         visible: true,
                     },
                 );
@@ -1187,9 +1183,9 @@ where
                     value_id.clone(),
                     REValueInfo {
                         location: REValuePointer::Stack {
-                            frame_id: self.depth,
+                            frame_id: Some(self.depth),
                             root: value_id.clone(),
-                            id: Option::None,
+                            id: None,
                         },
                         visible: true,
                     },
@@ -1206,9 +1202,9 @@ where
                     value_id.clone(),
                     REValueInfo {
                         location: REValuePointer::Stack {
-                            frame_id: self.depth,
+                            frame_id: Some(self.depth),
                             root: value_id.clone(),
-                            id: Option::None,
+                            id: None,
                         },
                         visible: true,
                     },
@@ -1259,9 +1255,10 @@ where
                     // Find value
                     let value_id = ValueId::Component(component_address);
                     let cur_location = if self.owned_values.contains_key(&value_id) {
-                        REValuePointer::Owned {
+                        REValuePointer::Stack {
+                            frame_id: None,
                             root: value_id.clone(),
-                            id: Option::None,
+                            id: None,
                         }
                     } else if let Some(REValueInfo { location, .. }) =
                         self.value_refs.get(&value_id)
@@ -1287,16 +1284,11 @@ where
                             locked_values.insert(address.clone());
                             REValuePointer::Track(address)
                         }
-                        REValuePointer::Owned { root, id } => {
-                            REValuePointer::Stack {
-                                frame_id: self.depth,
-                                root,
-                                id,
-                            }
-                        }
-                        REValuePointer::Stack { root, frame_id, id } => {
-                            REValuePointer::Stack { root, frame_id, id }
-                        }
+                        REValuePointer::Stack { frame_id, root, id } => REValuePointer::Stack {
+                            frame_id: frame_id.or(Some(self.depth)),
+                            root,
+                            id,
+                        },
                     };
 
                     let actor_info = {
@@ -1369,9 +1361,10 @@ where
                 // Find value
                 let value_id = ValueId::Component(component_address);
                 let cur_location = if self.owned_values.contains_key(&value_id) {
-                    REValuePointer::Owned {
+                    REValuePointer::Stack {
+                        frame_id: None,
                         root: value_id.clone(),
-                        id: Option::None,
+                        id: None,
                     }
                 } else {
                     return Err(RuntimeError::NotSupported);
@@ -1379,7 +1372,11 @@ where
 
                 // Setup next frame
                 match cur_location {
-                    REValuePointer::Owned { root, id } => {
+                    REValuePointer::Stack {
+                        frame_id: _,
+                        root,
+                        id,
+                    } => {
                         let owned_ref = self.owned_values.get_mut(&root).unwrap();
 
                         // Lock package
@@ -1403,7 +1400,7 @@ where
                             value_id,
                             REValueInfo {
                                 location: REValuePointer::Stack {
-                                    frame_id: self.depth,
+                                    frame_id: Some(self.depth),
                                     root: root.clone(),
                                     id: id.clone(),
                                 },
@@ -1421,9 +1418,10 @@ where
                 // Find value
                 let value_id = ValueId::Vault(*vault_id);
                 let cur_location = if self.owned_values.contains_key(&value_id) {
-                    REValuePointer::Owned {
+                    REValuePointer::Stack {
+                        frame_id: None,
                         root: value_id.clone(),
-                        id: Option::None
+                        id: Option::None,
                     }
                 } else {
                     let maybe_value_ref = self.value_refs.get(&value_id);
@@ -1444,12 +1442,11 @@ where
                             locked_values.insert(address.clone().into());
                             REValuePointer::Track(address)
                         }
-                        REValuePointer::Owned { root, id } => {
-                            REValuePointer::Stack { frame_id: self.depth, root, id: id.clone() }
-                        }
-                        REValuePointer::Stack { frame_id, root, id } => {
-                            REValuePointer::Stack { frame_id, root, id }
-                        }
+                        REValuePointer::Stack { frame_id, root, id } => REValuePointer::Stack {
+                            frame_id: frame_id.or(Some(self.depth)),
+                            root,
+                            id,
+                        },
                     };
 
                     // Lock Resource
@@ -1703,7 +1700,8 @@ where
                 self.value_refs.insert(
                     id.clone(),
                     REValueInfo {
-                        location: REValuePointer::Owned {
+                        location: REValuePointer::Stack {
+                            frame_id: None,
                             root: id.clone(),
                             id: None,
                         },
