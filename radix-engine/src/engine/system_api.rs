@@ -34,6 +34,7 @@ where
 
     fn native_globalize(&mut self, value_id: &ValueId);
 
+    // TODO: remove
     fn borrow_global_resource_manager(
         &mut self,
         resource_address: ResourceAddress,
@@ -41,12 +42,16 @@ where
 
     fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed>;
     fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
+
+    // TODO: remove
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
 
     fn native_create<V: Into<REValueByComplexity>>(
         &mut self,
         v: V,
     ) -> Result<ValueId, RuntimeError>;
+
+    // TODO remove
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
     fn data(
@@ -54,10 +59,14 @@ where
         address: SubstateAddress,
         instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError>;
+
+    // TODO remove
     fn get_non_fungible(
         &mut self,
         non_fungible_address: &NonFungibleAddress,
     ) -> Option<NonFungible>;
+
+    // TODO remove
     fn set_non_fungible(
         &mut self,
         non_fungible_address: NonFungibleAddress,

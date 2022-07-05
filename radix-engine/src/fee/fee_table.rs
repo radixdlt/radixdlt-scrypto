@@ -1,6 +1,35 @@
 use scrypto::{core::SNodeRef, values::ScryptoValue};
 
-use crate::wasm::{InstructionCostRules, WasmMeteringParams};
+use crate::{
+    engine::REValue,
+    wasm::{InstructionCostRules, WasmMeteringParams},
+};
+
+pub enum SystemApiCostingEntry<'a> {
+    /// Invokes a function, native or wasm
+    InvokeFunction {
+        receiver: &'a SNodeRef,
+        input: &'a ScryptoValue,
+    },
+
+    /// Globalizes a RE value
+    Globalize { value: &'a REValue },
+
+    /// Borrows a globalized value
+    Borrow { value: &'a REValue, loaded: bool },
+
+    /// Returns a borrowed value
+    Return { value: &'a REValue },
+
+    /// Creates a RE value
+    Create { value: &'a ScryptoValue },
+
+    /// Reads the data of a RE value
+    Read { value: &'a ScryptoValue },
+
+    /// Updates the data of a RE Value
+    Write { value: &'a ScryptoValue },
+}
 
 pub struct FeeTable {
     tx_decoding_per_byte: u32,
@@ -64,7 +93,15 @@ impl FeeTable {
         }
     }
 
-    pub fn system_api_cost(&self, fn_ident: &str, parameters: &[u32]) -> u32 {
-        todo!()
+    pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
+        match entry {
+            SystemApiCostingEntry::InvokeFunction { receiver, input } => todo!(),
+            SystemApiCostingEntry::Globalize { value } => todo!(),
+            SystemApiCostingEntry::Borrow { value, loaded } => todo!(),
+            SystemApiCostingEntry::Return { value } => todo!(),
+            SystemApiCostingEntry::Create { value } => todo!(),
+            SystemApiCostingEntry::Read { value } => todo!(),
+            SystemApiCostingEntry::Write { value } => todo!(),
+        }
     }
 }

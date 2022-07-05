@@ -941,6 +941,16 @@ where
             return Err(RuntimeError::MaxCallDepthLimitReached);
         }
 
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::InvokeFunction {
+                        receiver: &snode_ref,
+                        input: &input,
+                    }),
+            )
+            .map_err(RuntimeError::CostingError)?;
+
         trace!(
             self,
             Level::Debug,
