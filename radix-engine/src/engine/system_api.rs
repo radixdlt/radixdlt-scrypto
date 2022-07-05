@@ -31,8 +31,8 @@ where
 
     fn globalize_value(&mut self, value_id: &ValueId);
     fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 's, S>;
-    fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef<'p>;
-    fn return_value_mut(&mut self, val_ref: RENativeValueRef<'p>);
+    fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef;
+    fn return_value_mut(&mut self, val_ref: RENativeValueRef);
     fn drop_value(&mut self, value_id: &ValueId) -> REValue;
     fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
         -> Result<ValueId, RuntimeError>;
