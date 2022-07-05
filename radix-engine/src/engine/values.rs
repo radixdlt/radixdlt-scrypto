@@ -204,7 +204,7 @@ impl REValue {
         self.non_root_nodes.get_mut(id).unwrap()
     }
 
-    pub fn get(&self, id: Option<&ValueId>) -> &RENode {
+    pub fn get_node(&self, id: Option<&ValueId>) -> &RENode {
         if let Some(value_id) = id {
             self.non_root_nodes.get(value_id).unwrap()
         } else {
@@ -212,7 +212,7 @@ impl REValue {
         }
     }
 
-    pub fn get_mut(&mut self, id: Option<&ValueId>) -> &mut RENode {
+    pub fn get_node_mut(&mut self, id: Option<&ValueId>) -> &mut RENode {
         if let Some(value_id) = id {
             self.non_root_nodes.get_mut(value_id).unwrap()
         } else {

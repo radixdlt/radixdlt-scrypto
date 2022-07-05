@@ -359,7 +359,7 @@ impl Proof {
                 let _: ProofGetNonFungibleIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let ids = proof.total_ids()?;
-                return Ok(ScryptoValue::from_typed(&ids));
+                Ok(ScryptoValue::from_typed(&ids))
             }
             "resource_address" => {
                 let _: ProofGetResourceAddressInput =
