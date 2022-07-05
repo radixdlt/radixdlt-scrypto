@@ -129,8 +129,7 @@ pub struct REValueInfo {
 
 #[derive(Debug, Clone)]
 pub enum REValuePointer {
-    OwnedRoot(ValueId),
-    Owned { root: ValueId, id: ValueId },
+    Owned { root: ValueId, id: Option<ValueId> },
     Stack { frame_id: usize, root: ValueId, id: Option<ValueId> },
     Track(Address),
 }
@@ -138,13 +137,9 @@ pub enum REValuePointer {
 impl REValuePointer {
     fn child(&self, child_id: ValueId) -> REValuePointer {
         match self {
-            REValuePointer::OwnedRoot(root) => REValuePointer::Owned {
-                root: root.clone(),
-                id: child_id,
-            },
             REValuePointer::Owned { root, .. } => REValuePointer::Owned {
                 root: root.clone(),
-                id: child_id,
+                id: Option::Some(child_id),
             },
             REValuePointer::Stack { frame_id: frame, root, .. } => REValuePointer::Stack {
                 frame_id: *frame,
@@ -170,6 +165,10 @@ impl REValuePointer {
         track: &mut Track<S>,
     ) -> RENativeValueRef {
         match self {
+            REValuePointer::Owned { root, id } => {
+                let value = owned_values.remove(root).unwrap();
+                RENativeValueRef::Owned(value, root.clone(), id.clone())
+            }
             REValuePointer::Stack { frame_id, root, id } => {
                 let frame = borrowed_values.get_mut(*frame_id).unwrap();
                 let re_value = frame.remove(root).expect("Should exist");
@@ -179,11 +178,6 @@ impl REValuePointer {
                 let value = track.take_value(address.clone());
                 RENativeValueRef::Track(address.clone(), value)
             }
-            REValuePointer::OwnedRoot(id) => {
-                let value = owned_values.remove(id).unwrap();
-                RENativeValueRef::Owned(value, id.clone(), Option::None)
-            }
-            _ => panic!("Unexpected {:?}", self),
         }
     }
 
@@ -194,11 +188,8 @@ impl REValuePointer {
         track: &'f Track<'s, S>,
     ) -> REValueRef<'f, 's, S> {
         match self {
-            REValuePointer::OwnedRoot(root) => {
-                REValueRef::Stack(owned_values.get(root).unwrap(), Option::None)
-            }
             REValuePointer::Owned { root, id } => {
-                REValueRef::Stack(owned_values.get(root).unwrap(), Option::Some(id.clone()))
+                REValueRef::Stack(owned_values.get(root).unwrap(), id.clone())
             }
             REValuePointer::Stack { frame_id, root, id } => {
                 let frame_vals = borrowed_values.get(*frame_id).unwrap();
@@ -215,12 +206,9 @@ impl REValuePointer {
         track: &'f mut Track<'s, S>,
     ) -> REValueRefMut<'f, 's, S> {
         match self {
-            REValuePointer::OwnedRoot(root) => {
-                REValueRefMut::Stack(owned_values.get_mut(root).unwrap(), Option::None)
-            }
             REValuePointer::Owned { root, id } => REValueRefMut::Stack(
                 owned_values.get_mut(root).unwrap(),
-                Option::Some(id.clone()),
+                id.clone(),
             ),
             REValuePointer::Stack { frame_id: frame, root, id } => {
                 let frame = borrowed_values.get_mut(*frame).unwrap();
@@ -903,7 +891,10 @@ where
                     if self.owned_values.contains_key(&value_id) {
                         return Some((
                             REValueInfo {
-                                location: REValuePointer::OwnedRoot(value_id.clone()),
+                                location: REValuePointer::Owned {
+                                    root: value_id.clone(),
+                                    id: Option::None,
+                                },
                                 visible: true,
                             },
                             None,
@@ -1268,7 +1259,10 @@ where
                     // Find value
                     let value_id = ValueId::Component(component_address);
                     let cur_location = if self.owned_values.contains_key(&value_id) {
-                        REValuePointer::OwnedRoot(value_id.clone())
+                        REValuePointer::Owned {
+                            root: value_id.clone(),
+                            id: Option::None,
+                        }
                     } else if let Some(REValueInfo { location, .. }) =
                         self.value_refs.get(&value_id)
                     {
@@ -1293,17 +1287,16 @@ where
                             locked_values.insert(address.clone());
                             REValuePointer::Track(address)
                         }
-                        REValuePointer::OwnedRoot(root) => {
+                        REValuePointer::Owned { root, id } => {
                             REValuePointer::Stack {
                                 frame_id: self.depth,
                                 root,
-                                id: Option::None,
+                                id,
                             }
                         }
                         REValuePointer::Stack { root, frame_id, id } => {
                             REValuePointer::Stack { root, frame_id, id }
                         }
-                        _ => panic!("Unexpected"),
                     };
 
                     let actor_info = {
@@ -1376,14 +1369,17 @@ where
                 // Find value
                 let value_id = ValueId::Component(component_address);
                 let cur_location = if self.owned_values.contains_key(&value_id) {
-                    REValuePointer::OwnedRoot(value_id.clone())
+                    REValuePointer::Owned {
+                        root: value_id.clone(),
+                        id: Option::None,
+                    }
                 } else {
                     return Err(RuntimeError::NotSupported);
                 };
 
                 // Setup next frame
                 match cur_location {
-                    REValuePointer::OwnedRoot(root) => {
+                    REValuePointer::Owned { root, id } => {
                         let owned_ref = self.owned_values.get_mut(&root).unwrap();
 
                         // Lock package
@@ -1408,8 +1404,8 @@ where
                             REValueInfo {
                                 location: REValuePointer::Stack {
                                     frame_id: self.depth,
-                                    root: value_id.clone(),
-                                    id: Option::None,
+                                    root: root.clone(),
+                                    id: id.clone(),
                                 },
                                 visible: true,
                             },
@@ -1425,7 +1421,10 @@ where
                 // Find value
                 let value_id = ValueId::Vault(*vault_id);
                 let cur_location = if self.owned_values.contains_key(&value_id) {
-                    REValuePointer::OwnedRoot(value_id.clone())
+                    REValuePointer::Owned {
+                        root: value_id.clone(),
+                        id: Option::None
+                    }
                 } else {
                     let maybe_value_ref = self.value_refs.get(&value_id);
                     maybe_value_ref
@@ -1445,15 +1444,8 @@ where
                             locked_values.insert(address.clone().into());
                             REValuePointer::Track(address)
                         }
-                        REValuePointer::OwnedRoot(root) => {
-                            REValuePointer::Stack {
-                                frame_id: self.depth,
-                                root,
-                                id: Option::None,
-                            }
-                        }
                         REValuePointer::Owned { root, id } => {
-                            REValuePointer::Stack { frame_id: self.depth, root, id: Some(id) }
+                            REValuePointer::Stack { frame_id: self.depth, root, id: id.clone() }
                         }
                         REValuePointer::Stack { frame_id, root, id } => {
                             REValuePointer::Stack { frame_id, root, id }
@@ -1711,7 +1703,10 @@ where
                 self.value_refs.insert(
                     id.clone(),
                     REValueInfo {
-                        location: REValuePointer::OwnedRoot(id.clone()),
+                        location: REValuePointer::Owned {
+                            root: id.clone(),
+                            id: None,
+                        },
                         visible: true,
                     },
                 );
