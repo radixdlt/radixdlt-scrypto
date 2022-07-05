@@ -1507,19 +1507,26 @@ where
         value_id: &ValueId,
     ) -> Result<RENativeValueRef<'borrowed>, CostUnitCounterError> {
         self.cost_unit_counter
-            .consume(
-                self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::Borrow {
-                        loaded: false, // TODO: if the value is loaded or not
-                        global: match value_id {
-                            ValueId::Transient(_) => false,
-                            ValueId::Stored(_) => true,
-                            ValueId::Resource(_) => true,
-                            ValueId::Package(_) => true,
-                        },
-                        size: 0, // TODO: get size of the value
-                    }),
-            )?;
+            .consume(self.fee_table.system_api_cost({
+                match value_id {
+                    ValueId::Transient(_) => SystemApiCostingEntry::BorrowLocal,
+                    ValueId::Stored(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::Resource(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                    ValueId::Package(_) => SystemApiCostingEntry::BorrowGlobal {
+                        // TODO: figure out loaded state and size
+                        loaded: false,
+                        size: 0,
+                    },
+                }
+            }))?;
 
         let info = self.value_refs.get(value_id).unwrap();
         if !info.visible {
@@ -1540,18 +1547,15 @@ where
         val_ref: RENativeValueRef<'borrowed>,
     ) -> Result<(), CostUnitCounterError> {
         self.cost_unit_counter
-            .consume(
-                self.fee_table
-                    .system_api_cost(SystemApiCostingEntry::Return {
-                        global: match value_id {
-                            ValueId::Transient(_) => false,
-                            ValueId::Stored(_) => true,
-                            ValueId::Resource(_) => true,
-                            ValueId::Package(_) => true,
-                        },
-                        size: 0, // TODO: get size of the value
-                    }),
-            )?;
+            .consume(self.fee_table.system_api_cost({
+                match value_id {
+                    // TODO: get size of the value
+                    ValueId::Transient(_) => SystemApiCostingEntry::ReturnLocal,
+                    ValueId::Stored(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                    ValueId::Resource(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                    ValueId::Package(_) => SystemApiCostingEntry::ReturnGlobal { size: 0 },
+                }
+            }))?;
 
         val_ref.return_to_location(
             value_id,

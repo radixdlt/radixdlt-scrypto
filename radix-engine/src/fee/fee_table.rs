@@ -1,9 +1,6 @@
 use scrypto::{core::SNodeRef, values::ScryptoValue};
 
-use crate::{
-    engine::REValue,
-    wasm::{InstructionCostRules, WasmMeteringParams},
-};
+use crate::wasm::{InstructionCostRules, WasmMeteringParams};
 
 pub enum SystemApiCostingEntry<'a> {
     /// Invokes a function, native or wasm.
@@ -16,14 +13,16 @@ pub enum SystemApiCostingEntry<'a> {
     Globalize { size: u32 },
 
     /// Borrows a globalized value.
-    Borrow {
-        global: bool,
-        loaded: bool,
-        size: u32,
-    },
+    BorrowGlobal { loaded: bool, size: u32 },
+
+    /// Borrows a local value.
+    BorrowLocal,
 
     /// Returns a borrowed value.
-    Return { global: bool, size: u32 },
+    ReturnGlobal { size: u32 },
+
+    /// Returns a borrowed value.
+    ReturnLocal,
 
     /// Creates a RE value.
     Create { size: u32 },
@@ -114,22 +113,28 @@ impl FeeTable {
 
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
-            SystemApiCostingEntry::InvokeFunction { receiver, input } => todo!(),
-            SystemApiCostingEntry::Globalize { size } => todo!(),
-            SystemApiCostingEntry::Borrow {
-                global,
-                loaded,
-                size,
-            } => todo!(),
-            SystemApiCostingEntry::Return { global, size } => todo!(),
-            SystemApiCostingEntry::Create { size } => todo!(),
-            SystemApiCostingEntry::Read { size } => todo!(),
-            SystemApiCostingEntry::Write { size } => todo!(),
-            SystemApiCostingEntry::ReadEpoch => todo!(),
-            SystemApiCostingEntry::ReadTransactionHash => todo!(),
-            SystemApiCostingEntry::GenerateUuid => todo!(),
-            SystemApiCostingEntry::EmitLog { size } => todo!(),
-            SystemApiCostingEntry::CheckAccessRule => todo!(),
+            SystemApiCostingEntry::InvokeFunction { input, .. } => {
+                self.fixed_low + (5 * input.raw.len() + 100 * input.value_count()) as u32
+            }
+            SystemApiCostingEntry::Globalize { size } => self.fixed_high + 200 * size,
+            SystemApiCostingEntry::BorrowGlobal { loaded, size } => {
+                if loaded {
+                    self.fixed_high
+                } else {
+                    self.fixed_low + 100 * size
+                }
+            }
+            SystemApiCostingEntry::BorrowLocal => self.fixed_medium,
+            SystemApiCostingEntry::ReturnGlobal { size } => self.fixed_low + 100 * size,
+            SystemApiCostingEntry::ReturnLocal => self.fixed_medium,
+            SystemApiCostingEntry::Create { .. } => self.fixed_high,
+            SystemApiCostingEntry::Read { .. } => self.fixed_medium,
+            SystemApiCostingEntry::Write { .. } => self.fixed_medium,
+            SystemApiCostingEntry::ReadEpoch => self.fixed_low,
+            SystemApiCostingEntry::ReadTransactionHash => self.fixed_low,
+            SystemApiCostingEntry::GenerateUuid => self.fixed_low,
+            SystemApiCostingEntry::EmitLog { size } => self.fixed_low + 10 * size,
+            SystemApiCostingEntry::CheckAccessRule => self.fixed_medium,
         }
     }
 }
