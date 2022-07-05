@@ -10,7 +10,7 @@ use scrypto::prelude::{PackageAddress, PackagePublishInput};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
-use crate::model::PackageError::MethodNotFound;
+use crate::fee::CostUnitCounterError;
 use crate::wasm::*;
 
 /// A collection of blueprints, compiled and published as a single unit.
@@ -21,11 +21,12 @@ pub struct ValidatedPackage {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum PackageError {
+pub enum ValidatedPackageError {
     InvalidRequestData(DecodeError),
     InvalidWasm(PrepareError),
     BlueprintNotFound,
     MethodNotFound(String),
+    CostingError(CostUnitCounterError),
 }
 
 impl ValidatedPackage {
@@ -50,7 +51,7 @@ impl ValidatedPackage {
         method_name: &str,
         call_data: ScryptoValue,
         system_api: &mut S,
-    ) -> Result<ScryptoValue, PackageError>
+    ) -> Result<ScryptoValue, ValidatedPackageError>
     where
         S: SystemApi<'borrowed, W, I>,
         W: WasmEngine<I>,
@@ -59,15 +60,19 @@ impl ValidatedPackage {
         match method_name {
             "publish" => {
                 let input: PackagePublishInput = scrypto_decode(&call_data.raw)
-                    .map_err(|e| PackageError::InvalidRequestData(e))?;
-                let package =
-                    ValidatedPackage::new(input.package).map_err(PackageError::InvalidWasm)?;
+                    .map_err(|e| ValidatedPackageError::InvalidRequestData(e))?;
+                let package = ValidatedPackage::new(input.package)
+                    .map_err(ValidatedPackageError::InvalidWasm)?;
                 let value_id = system_api.native_create(package).unwrap();
-                system_api.native_globalize(&value_id);
+                system_api
+                    .native_globalize(&value_id)
+                    .map_err(ValidatedPackageError::CostingError)?;
                 let package_address: PackageAddress = value_id.into();
                 Ok(ScryptoValue::from_typed(&package_address))
             }
-            _ => Err(MethodNotFound(method_name.to_string())),
+            _ => Err(ValidatedPackageError::MethodNotFound(
+                method_name.to_string(),
+            )),
         }
     }
 

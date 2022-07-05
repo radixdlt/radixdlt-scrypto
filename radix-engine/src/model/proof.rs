@@ -14,6 +14,7 @@ use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -49,6 +50,7 @@ pub enum ProofError {
     CouldNotCreateProof,
     InvalidRequestData(DecodeError),
     UnknownMethod,
+    CostingError(CostUnitCounterError),
 }
 
 impl Proof {
@@ -338,7 +340,9 @@ impl Proof {
         arg: ScryptoValue,
         system_api: &mut S,
     ) -> Result<ScryptoValue, ProofError> {
-        let mut value_ref = system_api.borrow_native_value(&value_id);
+        let mut value_ref = system_api
+            .borrow_native_value(&value_id)
+            .map_err(ProofError::CostingError)?;
         let proof = value_ref.proof();
 
         let rtn = match method_name {
@@ -370,7 +374,9 @@ impl Proof {
             _ => Err(UnknownMethod),
         }?;
 
-        system_api.return_native_value(value_id, value_ref);
+        system_api
+            .return_native_value(value_id, value_ref)
+            .map_err(ProofError::CostingError)?;
         Ok(rtn)
     }
 

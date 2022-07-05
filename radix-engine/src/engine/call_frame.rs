@@ -1502,27 +1502,35 @@ where
             })
     }
 
-    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed> {
+    fn borrow_native_value(
+        &mut self,
+        value_id: &ValueId,
+    ) -> Result<RENativeValueRef<'borrowed>, CostUnitCounterError> {
         let info = self.value_refs.get(value_id).unwrap();
         if !info.visible {
             panic!("Trying to read value which is not visible.")
         }
 
-        info.location.borrow_native_ref(
+        Ok(info.location.borrow_native_ref(
             value_id,
             &mut self.owned_values,
             &mut self.frame_borrowed_values,
             &mut self.track,
-        )
+        ))
     }
 
-    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>) {
+    fn return_native_value(
+        &mut self,
+        value_id: ValueId,
+        val_ref: RENativeValueRef<'borrowed>,
+    ) -> Result<(), CostUnitCounterError> {
         val_ref.return_to_location(
             value_id,
             &mut self.owned_values,
             &mut self.frame_borrowed_values,
             &mut self.track,
-        )
+        );
+        Ok(())
     }
 
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue {
@@ -1606,7 +1614,7 @@ where
         resource_address
     }
 
-    fn native_globalize(&mut self, value_id: &ValueId) {
+    fn native_globalize(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError> {
         let mut values = HashSet::new();
         values.insert(value_id.clone());
         let (taken_values, missing) = self.take_available_values(values).unwrap();
@@ -1641,6 +1649,8 @@ where
             self.track
                 .insert_objects_into_component(to_store_values, address.into());
         }
+
+        Ok(())
     }
 
     fn data(
@@ -1765,20 +1775,21 @@ where
         }
     }
 
-    fn get_epoch(&mut self) -> u64 {
-        self.track.current_epoch()
+    fn epoch(&mut self) -> Result<u64, CostUnitCounterError> {
+        Ok(self.track.current_epoch())
     }
 
-    fn get_transaction_hash(&mut self) -> Hash {
-        self.track.transaction_hash()
+    fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError> {
+        Ok(self.track.transaction_hash())
     }
 
-    fn generate_uuid(&mut self) -> u128 {
-        self.track.new_uuid()
+    fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {
+        Ok(self.track.new_uuid())
     }
 
-    fn user_log(&mut self, level: Level, message: String) {
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError> {
         self.track.add_log(level, message);
+        Ok(())
     }
 
     fn check_access_rule(

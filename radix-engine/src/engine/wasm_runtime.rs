@@ -132,12 +132,17 @@ where
     }
 
     fn handle_generate_uuid(&mut self) -> Result<u128, RuntimeError> {
-        let uuid = self.system_api.generate_uuid();
+        let uuid = self
+            .system_api
+            .generate_uuid()
+            .map_err(RuntimeError::CostingError)?;
         Ok(uuid)
     }
 
-    fn handle_user_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
-        self.system_api.user_log(level, message);
+    fn handle_emit_log(&mut self, level: Level, message: String) -> Result<(), RuntimeError> {
+        self.system_api
+            .emit_log(level, message)
+            .map_err(RuntimeError::CostingError)?;
         Ok(())
     }
 
@@ -173,7 +178,7 @@ impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInst
             RadixEngineInput::WriteData(address, value) => self.handle_write_data(address, value),
             RadixEngineInput::GenerateUuid() => self.handle_generate_uuid().map(encode),
             RadixEngineInput::EmitLog(level, message) => {
-                self.handle_user_log(level, message).map(encode)
+                self.handle_emit_log(level, message).map(encode)
             }
             RadixEngineInput::CheckAccessRule(rule, proof_ids) => {
                 self.handle_check_access_rule(rule, proof_ids).map(encode)

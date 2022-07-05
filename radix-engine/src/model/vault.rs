@@ -15,6 +15,7 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use crate::model::VaultError::MethodNotFound;
 use crate::model::{
     Bucket, Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -30,6 +31,7 @@ pub enum VaultError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound,
+    CostingError(CostUnitCounterError),
 }
 
 /// A persistent resource container.
@@ -168,7 +170,9 @@ impl Vault {
         system_api: &mut S,
     ) -> Result<ScryptoValue, VaultError> {
         let value_id = ValueId::vault_id(vault_id.clone());
-        let mut ref_mut = system_api.borrow_native_value(&value_id);
+        let mut ref_mut = system_api
+            .borrow_native_value(&value_id)
+            .map_err(VaultError::CostingError)?;
         let vault = ref_mut.vault();
 
         let rtn = match method_name {
@@ -265,7 +269,9 @@ impl Vault {
             _ => Err(MethodNotFound),
         }?;
 
-        system_api.return_native_value(value_id, ref_mut);
+        system_api
+            .return_native_value(value_id, ref_mut)
+            .map_err(VaultError::CostingError)?;
 
         Ok(rtn)
     }

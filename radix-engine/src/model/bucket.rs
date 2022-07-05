@@ -13,6 +13,7 @@ use scrypto::prelude::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -28,6 +29,7 @@ pub enum BucketError {
     ProofError(ProofError),
     CouldNotCreateProof,
     MethodNotFound(String),
+    CostingError(CostUnitCounterError),
 }
 
 /// A transient resource container.
@@ -165,7 +167,9 @@ impl Bucket {
         system_api: &mut S,
     ) -> Result<ScryptoValue, BucketError> {
         let value_id = ValueId::Transient(TransientValueId::Bucket(bucket_id));
-        let mut value_ref = system_api.borrow_native_value(&value_id);
+        let mut value_ref = system_api
+            .borrow_native_value(&value_id)
+            .map_err(BucketError::CostingError)?;
         let bucket0 = value_ref.bucket();
 
         let rtn = match method_name {
@@ -234,6 +238,7 @@ impl Bucket {
                 let proof = bucket0
                     .create_proof(bucket_id)
                     .map_err(BucketError::ProofError)?;
+                // FIXME: can't safely unwrap because of costing
                 let proof_id = system_api.native_create(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
@@ -242,7 +247,9 @@ impl Bucket {
             _ => Err(BucketError::MethodNotFound(method_name.to_string())),
         }?;
 
-        system_api.return_native_value(value_id, value_ref);
+        system_api
+            .return_native_value(value_id, value_ref)
+            .map_err(BucketError::CostingError)?;
 
         Ok(rtn)
     }
@@ -268,7 +275,9 @@ impl Bucket {
                 // Notify resource manager, TODO: Should not need to notify manually
                 let resource_address = bucket.resource_address();
                 let resource_id = ValueId::Resource(resource_address);
-                let mut value = system_api.borrow_native_value(&resource_id);
+                let mut value = system_api
+                    .borrow_native_value(&resource_id)
+                    .map_err(BucketError::CostingError)?;
                 let resource_manager = value.resource_manager();
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
@@ -277,7 +286,9 @@ impl Bucket {
                         system_api.set_non_fungible(non_fungible_address, Option::None);
                     }
                 }
-                system_api.return_native_value(resource_id, value);
+                system_api
+                    .return_native_value(resource_id, value)
+                    .map_err(BucketError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }

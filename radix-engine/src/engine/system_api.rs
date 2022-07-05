@@ -32,7 +32,7 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn native_globalize(&mut self, value_id: &ValueId);
+    fn native_globalize(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError>;
 
     // TODO: remove
     fn borrow_global_resource_manager(
@@ -40,8 +40,16 @@ where
         resource_address: ResourceAddress,
     ) -> Result<&ResourceManager, RuntimeError>;
 
-    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed>;
-    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
+    fn borrow_native_value(
+        &mut self,
+        value_id: &ValueId,
+    ) -> Result<RENativeValueRef<'borrowed>, CostUnitCounterError>;
+
+    fn return_native_value(
+        &mut self,
+        value_id: ValueId,
+        val_ref: RENativeValueRef<'borrowed>,
+    ) -> Result<(), CostUnitCounterError>;
 
     // TODO: remove
     fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
@@ -73,13 +81,13 @@ where
         non_fungible: Option<NonFungible>,
     );
 
-    fn get_epoch(&mut self) -> u64;
+    fn epoch(&mut self) -> Result<u64, CostUnitCounterError>;
 
-    fn get_transaction_hash(&mut self) -> Hash;
+    fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError>;
 
-    fn generate_uuid(&mut self) -> u128;
+    fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError>;
 
-    fn user_log(&mut self, level: Level, message: String);
+    fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError>;
 
     fn check_access_rule(
         &mut self,

@@ -40,7 +40,7 @@ pub enum RuntimeError {
     PackageNotFound(PackageAddress),
     InvalidPackage(DecodeError),
 
-    PackageError(PackageError),
+    PackageError(ValidatedPackageError),
 
     SystemError(SystemError),
 

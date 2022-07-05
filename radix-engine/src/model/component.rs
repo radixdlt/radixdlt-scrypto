@@ -1,4 +1,5 @@
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
@@ -17,6 +18,7 @@ pub enum ComponentError {
     InvalidRequestData(DecodeError),
     BlueprintFunctionDoesNotExist(String),
     MethodNotFound,
+    CostingError(CostUnitCounterError),
 }
 
 /// A component is an instance of blueprint.
@@ -91,11 +93,15 @@ impl Component {
                 let input: ComponentAddAccessCheckInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
-                let mut ref_mut = system_api.borrow_native_value(&value_id);
+                let mut ref_mut = system_api
+                    .borrow_native_value(&value_id)
+                    .map_err(ComponentError::CostingError)?;
                 let component = ref_mut.component();
 
                 let package_id = ValueId::Package(component.package_address.clone());
-                let mut package_ref = system_api.borrow_native_value(&package_id);
+                let mut package_ref = system_api
+                    .borrow_native_value(&package_id)
+                    .map_err(ComponentError::CostingError)?;
                 let package = package_ref.package();
 
                 // Abi checks
@@ -110,8 +116,12 @@ impl Component {
 
                 component.access_rules.push(input.access_rules);
 
-                system_api.return_native_value(package_id, package_ref);
-                system_api.return_native_value(value_id, ref_mut);
+                system_api
+                    .return_native_value(package_id, package_ref)
+                    .map_err(ComponentError::CostingError)?;
+                system_api
+                    .return_native_value(value_id, ref_mut)
+                    .map_err(ComponentError::CostingError)?;
 
                 Ok(ScryptoValue::from_typed(&()))
             }
@@ -119,7 +129,9 @@ impl Component {
                 let _: ComponentGlobalizeInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
-                system_api.native_globalize(&value_id);
+                system_api
+                    .native_globalize(&value_id)
+                    .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(ComponentError::MethodNotFound),
@@ -144,7 +156,9 @@ impl Component {
                 let _: ComponentGlobalizeInput =
                     scrypto_decode(&arg.raw).map_err(|e| ComponentError::InvalidRequestData(e))?;
 
-                system_api.native_globalize(&value_id);
+                system_api
+                    .native_globalize(&value_id)
+                    .map_err(ComponentError::CostingError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             _ => Err(ComponentError::MethodNotFound),
