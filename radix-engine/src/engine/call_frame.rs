@@ -124,47 +124,41 @@ fn verify_stored_key(value: &ScryptoValue) -> Result<(), RuntimeError> {
 #[derive(Debug, Clone)]
 pub struct REValueInfo {
     visible: bool,
-    location: REValueLocation,
+    location: REValuePointer,
 }
 
 #[derive(Debug, Clone)]
-pub enum REValueLocation {
+pub enum REValuePointer {
     OwnedRoot(ValueId),
     Owned { root: ValueId, id: ValueId },
-    BorrowedRoot(usize, ValueId),
-    Borrowed { frame_id: usize, root: ValueId, id: ValueId },
+    Stack { frame_id: usize, root: ValueId, id: Option<ValueId> },
     Track(Address),
 }
 
-impl REValueLocation {
-    fn child(&self, child_id: ValueId) -> REValueLocation {
+impl REValuePointer {
+    fn child(&self, child_id: ValueId) -> REValuePointer {
         match self {
-            REValueLocation::OwnedRoot(root) => REValueLocation::Owned {
+            REValuePointer::OwnedRoot(root) => REValuePointer::Owned {
                 root: root.clone(),
                 id: child_id,
             },
-            REValueLocation::Owned { root, .. } => REValueLocation::Owned {
+            REValuePointer::Owned { root, .. } => REValuePointer::Owned {
                 root: root.clone(),
                 id: child_id,
             },
-            REValueLocation::BorrowedRoot(frame, root) => REValueLocation::Borrowed {
+            REValuePointer::Stack { frame_id: frame, root, .. } => REValuePointer::Stack {
                 frame_id: *frame,
                 root: root.clone(),
-                id: child_id,
+                id: Option::Some(child_id),
             },
-            REValueLocation::Borrowed { frame_id: frame, root, .. } => REValueLocation::Borrowed {
-                frame_id: *frame,
-                root: root.clone(),
-                id: child_id,
-            },
-            REValueLocation::Track(..) => {
+            REValuePointer::Track(..) => {
                 let child_address = match child_id {
                     ValueId::KeyValueStore(kv_store_id) => Address::KeyValueStore(kv_store_id),
                     ValueId::Vault(vault_id) => Address::Vault(vault_id),
                     ValueId::Component(component_id) => Address::LocalComponent(component_id),
                     _ => panic!("Unexpected"),
                 };
-                REValueLocation::Track(child_address)
+                REValuePointer::Track(child_address)
             }
         }
     }
@@ -176,21 +170,16 @@ impl REValueLocation {
         track: &mut Track<S>,
     ) -> RENativeValueRef {
         match self {
-            REValueLocation::BorrowedRoot(frame, id) => {
-                let frame_values = borrowed_values.get_mut(*frame).unwrap();
-                let owned = frame_values.remove(id).expect("Should exist");
-                RENativeValueRef::OwnedRef(owned, *frame, id.clone(), Option::None)
-            }
-            REValueLocation::Borrowed { frame_id, root, id } => {
+            REValuePointer::Stack { frame_id, root, id } => {
                 let frame = borrowed_values.get_mut(*frame_id).unwrap();
                 let re_value = frame.remove(root).expect("Should exist");
-                RENativeValueRef::OwnedRef(re_value, *frame_id, root.clone(), Option::Some(id.clone()))
+                RENativeValueRef::OwnedRef(re_value, *frame_id, root.clone(), id.clone())
             }
-            REValueLocation::Track(address) => {
+            REValuePointer::Track(address) => {
                 let value = track.take_value(address.clone());
                 RENativeValueRef::Track(address.clone(), value)
             }
-            REValueLocation::OwnedRoot(id) => {
+            REValuePointer::OwnedRoot(id) => {
                 let value = owned_values.remove(id).unwrap();
                 RENativeValueRef::Owned(value, id.clone(), Option::None)
             }
@@ -205,21 +194,17 @@ impl REValueLocation {
         track: &'f Track<'s, S>,
     ) -> REValueRef<'f, 's, S> {
         match self {
-            REValueLocation::OwnedRoot(root) => {
+            REValuePointer::OwnedRoot(root) => {
                 REValueRef::Stack(owned_values.get(root).unwrap(), Option::None)
             }
-            REValueLocation::Owned { root, id } => {
+            REValuePointer::Owned { root, id } => {
                 REValueRef::Stack(owned_values.get(root).unwrap(), Option::Some(id.clone()))
             }
-            REValueLocation::Borrowed { frame_id, root, id } => {
+            REValuePointer::Stack { frame_id, root, id } => {
                 let frame_vals = borrowed_values.get(*frame_id).unwrap();
-                REValueRef::Stack(frame_vals.get(root).unwrap(), Option::Some(id.clone()))
+                REValueRef::Stack(frame_vals.get(root).unwrap(), id.clone())
             }
-            REValueLocation::BorrowedRoot(frame_id, root) => {
-                let frame_vals = borrowed_values.get(*frame_id).unwrap();
-                REValueRef::Stack(frame_vals.get(root).unwrap(), Option::None)
-            }
-            REValueLocation::Track(address) => REValueRef::Track(track, address.clone()),
+            REValuePointer::Track(address) => REValueRef::Track(track, address.clone()),
         }
     }
 
@@ -230,25 +215,21 @@ impl REValueLocation {
         track: &'f mut Track<'s, S>,
     ) -> REValueRefMut<'f, 's, S> {
         match self {
-            REValueLocation::OwnedRoot(root) => {
+            REValuePointer::OwnedRoot(root) => {
                 REValueRefMut::Stack(owned_values.get_mut(root).unwrap(), Option::None)
             }
-            REValueLocation::Owned { root, id } => REValueRefMut::Stack(
+            REValuePointer::Owned { root, id } => REValueRefMut::Stack(
                 owned_values.get_mut(root).unwrap(),
                 Option::Some(id.clone()),
             ),
-            REValueLocation::Borrowed { frame_id: frame, root, id } => {
+            REValuePointer::Stack { frame_id: frame, root, id } => {
                 let frame = borrowed_values.get_mut(*frame).unwrap();
                 REValueRefMut::Stack(
                     frame.get_mut(root).unwrap(),
-                    Option::Some(id.clone()),
+                    id.clone(),
                 )
             },
-            REValueLocation::BorrowedRoot(frame, root) => {
-                let frame_values = borrowed_values.get_mut(*frame).unwrap();
-                REValueRefMut::Stack(frame_values.get_mut(root).unwrap(), Option::None)
-            }
-            REValueLocation::Track(address) => REValueRefMut::Track(track, address.clone()),
+            REValuePointer::Track(address) => REValueRefMut::Track(track, address.clone()),
         }
     }
 }
@@ -896,7 +877,7 @@ where
     fn read_value_internal(
         &mut self,
         address: &SubstateAddress,
-    ) -> Result<(REValueLocation, ScryptoValue), RuntimeError> {
+    ) -> Result<(REValuePointer, ScryptoValue), RuntimeError> {
         let value_id = match address {
             SubstateAddress::Component(component_address, ..) => {
                 ValueId::Component(*component_address)
@@ -922,7 +903,7 @@ where
                     if self.owned_values.contains_key(&value_id) {
                         return Some((
                             REValueInfo {
-                                location: REValueLocation::OwnedRoot(value_id.clone()),
+                                location: REValuePointer::OwnedRoot(value_id.clone()),
                                 visible: true,
                             },
                             None,
@@ -934,7 +915,7 @@ where
                     {
                         return Some((
                             REValueInfo {
-                                location: REValueLocation::Track(Address::GlobalComponent(
+                                location: REValuePointer::Track(Address::GlobalComponent(
                                     *component_address,
                                 )),
                                 visible: true,
@@ -1071,7 +1052,7 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Resource(
+                                location: REValuePointer::Track(Address::Resource(
                                     resource_address,
                                 )),
                                 visible: true,
@@ -1080,7 +1061,7 @@ where
                         value_refs.insert(
                             ValueId::NonFungibles(resource_address),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::NonFungibleSet(
+                                location: REValuePointer::Track(Address::NonFungibleSet(
                                     resource_address,
                                 )),
                                 visible: true,
@@ -1098,7 +1079,7 @@ where
                         value_refs.insert(
                             ValueId::Package(package_address),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Package(package_address)),
+                                location: REValuePointer::Track(Address::Package(package_address)),
                                 visible: true,
                             },
                         );
@@ -1128,7 +1109,7 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Resource(
+                                location: REValuePointer::Track(Address::Resource(
                                     resource_address.clone(),
                                 )),
                                 visible: true,
@@ -1158,7 +1139,7 @@ where
                         value_refs.insert(
                             ValueId::Resource(resource_address.clone()),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Resource(
+                                location: REValuePointer::Track(Address::Resource(
                                     resource_address.clone(),
                                 )),
                                 visible: true,
@@ -1190,14 +1171,14 @@ where
                 value_refs.insert(
                     value_id.clone(),
                     REValueInfo {
-                        location: REValueLocation::Track(Address::Resource(*resource_address)),
+                        location: REValuePointer::Track(Address::Resource(*resource_address)),
                         visible: true,
                     },
                 );
                 value_refs.insert(
                     ValueId::NonFungibles(*resource_address),
                     REValueInfo {
-                        location: REValueLocation::Track(Address::NonFungibleSet(
+                        location: REValuePointer::Track(Address::NonFungibleSet(
                             *resource_address,
                         )),
                         visible: true,
@@ -1214,7 +1195,11 @@ where
                 value_refs.insert(
                     value_id.clone(),
                     REValueInfo {
-                        location: REValueLocation::BorrowedRoot(self.depth, value_id.clone()),
+                        location: REValuePointer::Stack {
+                            frame_id: self.depth,
+                            root: value_id.clone(),
+                            id: Option::None,
+                        },
                         visible: true,
                     },
                 );
@@ -1229,7 +1214,11 @@ where
                 value_refs.insert(
                     value_id.clone(),
                     REValueInfo {
-                        location: REValueLocation::BorrowedRoot(self.depth, value_id.clone()),
+                        location: REValuePointer::Stack {
+                            frame_id: self.depth,
+                            root: value_id.clone(),
+                            id: Option::None,
+                        },
                         visible: true,
                     },
                 );
@@ -1279,18 +1268,18 @@ where
                     // Find value
                     let value_id = ValueId::Component(component_address);
                     let cur_location = if self.owned_values.contains_key(&value_id) {
-                        REValueLocation::OwnedRoot(value_id.clone())
+                        REValuePointer::OwnedRoot(value_id.clone())
                     } else if let Some(REValueInfo { location, .. }) =
                         self.value_refs.get(&value_id)
                     {
                         location.clone()
                     } else {
-                        REValueLocation::Track(Address::GlobalComponent(component_address))
+                        REValuePointer::Track(Address::GlobalComponent(component_address))
                     };
 
                     // Lock values and setup next frame
                     let next_location = match cur_location.clone() {
-                        REValueLocation::Track(address) => {
+                        REValuePointer::Track(address) => {
                             self.track
                                 .take_lock(address.clone(), true)
                                 .map_err(|e| match e {
@@ -1302,13 +1291,17 @@ where
                                     }
                                 })?;
                             locked_values.insert(address.clone());
-                            REValueLocation::Track(address)
+                            REValuePointer::Track(address)
                         }
-                        REValueLocation::OwnedRoot(root) => {
-                            REValueLocation::BorrowedRoot(self.depth, root)
+                        REValuePointer::OwnedRoot(root) => {
+                            REValuePointer::Stack {
+                                frame_id: self.depth,
+                                root,
+                                id: Option::None,
+                            }
                         }
-                        REValueLocation::Borrowed { root, frame_id, id } => {
-                            REValueLocation::Borrowed { root, frame_id, id }
+                        REValuePointer::Stack { root, frame_id, id } => {
+                            REValuePointer::Stack { root, frame_id, id }
                         }
                         _ => panic!("Unexpected"),
                     };
@@ -1383,14 +1376,14 @@ where
                 // Find value
                 let value_id = ValueId::Component(component_address);
                 let cur_location = if self.owned_values.contains_key(&value_id) {
-                    REValueLocation::OwnedRoot(value_id.clone())
+                    REValuePointer::OwnedRoot(value_id.clone())
                 } else {
                     return Err(RuntimeError::NotSupported);
                 };
 
                 // Setup next frame
                 match cur_location {
-                    REValueLocation::OwnedRoot(root) => {
+                    REValuePointer::OwnedRoot(root) => {
                         let owned_ref = self.owned_values.get_mut(&root).unwrap();
 
                         // Lock package
@@ -1405,7 +1398,7 @@ where
                         value_refs.insert(
                             ValueId::Package(package_address),
                             REValueInfo {
-                                location: REValueLocation::Track(Address::Package(package_address)),
+                                location: REValuePointer::Track(Address::Package(package_address)),
                                 visible: true,
                             },
                         );
@@ -1413,7 +1406,11 @@ where
                         value_refs.insert(
                             value_id,
                             REValueInfo {
-                                location: REValueLocation::BorrowedRoot(self.depth, value_id.clone()),
+                                location: REValuePointer::Stack {
+                                    frame_id: self.depth,
+                                    root: value_id.clone(),
+                                    id: Option::None,
+                                },
                                 visible: true,
                             },
                         );
@@ -1428,7 +1425,7 @@ where
                 // Find value
                 let value_id = ValueId::Vault(*vault_id);
                 let cur_location = if self.owned_values.contains_key(&value_id) {
-                    REValueLocation::OwnedRoot(value_id.clone())
+                    REValuePointer::OwnedRoot(value_id.clone())
                 } else {
                     let maybe_value_ref = self.value_refs.get(&value_id);
                     maybe_value_ref
@@ -1441,23 +1438,26 @@ where
                 let next_location = {
                     // Lock Vault
                     let next_location = match cur_location.clone() {
-                        REValueLocation::Track(address) => {
+                        REValuePointer::Track(address) => {
                             self.track
                                 .take_lock(address.clone(), true)
                                 .expect("Should never fail.");
                             locked_values.insert(address.clone().into());
-                            REValueLocation::Track(address)
+                            REValuePointer::Track(address)
                         }
-                        REValueLocation::OwnedRoot(root) => {
-                            REValueLocation::BorrowedRoot(self.depth, root)
+                        REValuePointer::OwnedRoot(root) => {
+                            REValuePointer::Stack {
+                                frame_id: self.depth,
+                                root,
+                                id: Option::None,
+                            }
                         }
-                        REValueLocation::Owned { root, id } => {
-                            REValueLocation::Borrowed { frame_id: self.depth, root, id }
+                        REValuePointer::Owned { root, id } => {
+                            REValuePointer::Stack { frame_id: self.depth, root, id: Some(id) }
                         }
-                        REValueLocation::Borrowed { frame_id, root, id } => {
-                            REValueLocation::Borrowed { frame_id, root, id }
+                        REValuePointer::Stack { frame_id, root, id } => {
+                            REValuePointer::Stack { frame_id, root, id }
                         }
-                        _ => panic!("Unexpected vault location {:?}", cur_location),
                     };
 
                     // Lock Resource
@@ -1711,7 +1711,7 @@ where
                 self.value_refs.insert(
                     id.clone(),
                     REValueInfo {
-                        location: REValueLocation::OwnedRoot(id.clone()),
+                        location: REValuePointer::OwnedRoot(id.clone()),
                         visible: true,
                     },
                 );

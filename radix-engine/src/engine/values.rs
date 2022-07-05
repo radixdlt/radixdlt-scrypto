@@ -150,37 +150,6 @@ impl RENode {
     }
 }
 
-/*
-#[derive(Debug)]
-pub struct RENodes {
-    pub non_root_nodes: HashMap<ValueId, RENode>,
-}
-
-impl RENodes {
-    pub fn non_root_mut(&mut self, id: &ValueId) -> &mut RENode {
-        self.non_root_nodes.get_mut(id).unwrap()
-    }
-
-    pub fn get(&self, id: Option<&ValueId>) -> &RENode {
-        if let Some(value_id) = id {
-            self.non_root_nodes.get(value_id).unwrap()
-        } else {
-            &self.root
-        }
-    }
-
-    pub fn get_mut(&mut self, id: &ValueId) -> &mut RENode {
-        self.non_root_nodes.get_mut(value_id).unwrap()
-    }
-
-    pub fn insert_non_root_nodes(&mut self, values: HashMap<ValueId, RENode>) {
-        for (id, value) in values {
-            self.non_root_nodes.insert(id, value);
-        }
-    }
-}
- */
-
 #[derive(Debug)]
 pub struct REValue {
     pub root: RENode,
