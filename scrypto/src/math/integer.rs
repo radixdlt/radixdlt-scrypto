@@ -496,26 +496,19 @@ macro_rules! checked_impl_not_small {
 checked_impl_not_large! {I256, I384, I512, U256, U384, U512}
 checked_impl_not_small! {I8, I16, I32, I64, I128, U8, U16, U32, U64, U128}
 
-macro_rules! checked_impl_neg_signed {
-    ($($i:ident),*) => {
-        $(
-            impl Neg for $i {
-                type Output = Self;
-                #[inline]
-                fn neg(self) -> Self {
-                    Self::zero() - self
-                }
-            }
-            forward_ref_unop! { impl Neg, neg for $i }
-        )*
-    }
-}
-
-checked_impl_neg_signed! {I8, I16, I32, I64, I128, I256, I384, I512}
-
 macro_rules! checked_int_impl_signed {
     ($($t:ident, $self:ident, $base:expr),*) => ($(
             paste! {
+
+                impl Neg for $t {
+                    type Output = Self;
+                    #[inline]
+                    fn neg(self) -> Self {
+                        Self::zero() - self
+                    }
+                }
+                forward_ref_unop! { impl Neg, neg for $t }
+
                 impl $t {
 
                     /// Computes the absolute value of `self`, with overflow causing panic.
@@ -592,7 +585,7 @@ macro_rules! checked_int_impl_signed {
                     #[inline]
                     pub fn is_negative($self) -> bool {
                         $base.is_negative().try_into().unwrap()
-                            // large: self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 == 1
+                            // large: self.0.to_vec().into_iter().nth(self.0.len() - 1).unwrap() & 0x80 > 0
                     }
                 }
             }
