@@ -95,7 +95,7 @@ impl FeeTable {
         self.wasm_metering_params.clone()
     }
 
-    pub fn function_cost(&self, receiver: &SNodeRef, fn_ident: &str, _input: &ScryptoValue) -> u32 {
+    pub fn function_cost(&self, receiver: &SNodeRef, fn_ident: &str, input: &ScryptoValue) -> u32 {
         match receiver {
             SNodeRef::SystemStatic => match fn_ident {
                 "current_epoch" => self.fixed_low,
@@ -103,43 +103,44 @@ impl FeeTable {
                 _ => self.fixed_high,
             },
             SNodeRef::PackageStatic => match fn_ident {
-                "current_epoch" => self.fixed_low,
-                "transaction_hash" => self.fixed_low,
+                "publish" => self.fixed_low + input.raw.len() as u32 * 2,
                 _ => self.fixed_high,
             },
             SNodeRef::AuthZoneRef => match fn_ident {
-                "current_epoch" => self.fixed_low,
-                "transaction_hash" => self.fixed_low,
+                "pop" => self.fixed_low,
+                "push" => self.fixed_low,
+                "create_proof" => self.fixed_high, // TODO: charge differently based on auth zone size and fungibility
+                "create_proof_by_amount" => self.fixed_high,
+                "create_proof_by_ids" => self.fixed_high,
+                "clear" => self.fixed_high,
                 _ => self.fixed_high,
             },
             SNodeRef::Scrypto(_) => {
-                // Scrypto running cost is billed through instrumentation
-                0
+                0 // Costing is through instrumentation
             }
             SNodeRef::Component(_) => {
-                // Scrypto running cost is billed through instrumentation
-                0
+                0 // Costing is through instrumentation
             }
             SNodeRef::ResourceStatic => match fn_ident {
-                "create" => self.fixed_low,
+                "create" => self.fixed_high, // TODO: more investigation about fungibility
                 _ => self.fixed_high,
             },
             SNodeRef::ResourceRef(_) => match fn_ident {
-                "update_auth" => self.fixed_low,
-                "lock_auth" => self.fixed_low,
-                "create_vault" => self.fixed_low,
-                "create_bucket" => self.fixed_low,
-                "mint" => self.fixed_low,
+                "update_auth" => self.fixed_medium,
+                "lock_auth" => self.fixed_medium,
+                "create_vault" => self.fixed_medium,
+                "create_bucket" => self.fixed_medium,
+                "mint" => self.fixed_high,
                 "metadata" => self.fixed_low,
                 "resource_type" => self.fixed_low,
-                "total_supply" => self.fixed_low,
-                "update_metadata" => self.fixed_low,
-                "update_non_fungible_data" => self.fixed_low,
+                "total_supply" => self.fixed_low, // TODO: revisit this after substate refactoring
+                "update_metadata" => self.fixed_medium,
+                "update_non_fungible_data" => self.fixed_medium,
                 "non_fungible_exists" => self.fixed_low,
-                "non_fungible_data" => self.fixed_low,
+                "non_fungible_data" => self.fixed_medium,
                 _ => self.fixed_high,
             },
-            // TODO: I suspect there is a bug with invoke consumed within call frame. Add tests to verify
+            // TODO: I suspect there is a bug with invoking consumed within call frame. Add tests to verify
             SNodeRef::Consumed(value_id) => match value_id {
                 ValueId::Transient(id) => match id {
                     TransientValueId::Bucket(_) => self.fixed_medium,
@@ -154,10 +155,10 @@ impl FeeTable {
                 ValueId::Package(_) => self.fixed_high,
             },
             SNodeRef::BucketRef(_) => match fn_ident {
-                "take" => self.fixed_low,
-                "take_non_fungibles" => self.fixed_low,
-                "non_fungible_ids" => self.fixed_low,
-                "put" => self.fixed_low,
+                "take" => self.fixed_medium,
+                "take_non_fungibles" => self.fixed_medium,
+                "non_fungible_ids" => self.fixed_medium,
+                "put" => self.fixed_medium,
                 "amount" => self.fixed_low,
                 "resource_address" => self.fixed_low,
                 "create_proof" => self.fixed_low,
@@ -167,23 +168,23 @@ impl FeeTable {
                 "amount" => self.fixed_low,
                 "non_fungible_ids" => self.fixed_low,
                 "resource_address" => self.fixed_low,
-                "clone" => self.fixed_low,
+                "clone" => self.fixed_high,
                 _ => self.fixed_high,
             },
             SNodeRef::VaultRef(_) => match fn_ident {
-                "put" => self.fixed_low,
-                "take" => self.fixed_low,
-                "take_non_fungibles" => self.fixed_low,
+                "put" => self.fixed_medium,
+                "take" => self.fixed_medium, // TODO: revisit this if vault is not loaded in full
+                "take_non_fungibles" => self.fixed_medium,
                 "amount" => self.fixed_low,
                 "resource_address" => self.fixed_low,
-                "non_fungible_ids" => self.fixed_low,
-                "create_proof" => self.fixed_low,
-                "create_proof_by_amount" => self.fixed_low,
-                "create_proof_by_ids" => self.fixed_low,
+                "non_fungible_ids" => self.fixed_medium,
+                "create_proof" => self.fixed_high, // TODO: fungibility
+                "create_proof_by_amount" => self.fixed_high,
+                "create_proof_by_ids" => self.fixed_high,
                 _ => self.fixed_high,
             },
             SNodeRef::TransactionProcessor => match fn_ident {
-                "run" => self.fixed_high,
+                "run" => self.fixed_high, // TODO: per manifest instruction
                 _ => self.fixed_high,
             },
         }
@@ -192,7 +193,7 @@ impl FeeTable {
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
             SystemApiCostingEntry::InvokeFunction { input, .. } => {
-                self.fixed_low + (5 * input.raw.len() + 100 * input.value_count()) as u32
+                self.fixed_low + (5 * input.raw.len() + 10 * input.value_count()) as u32
             }
             SystemApiCostingEntry::Globalize { size } => self.fixed_high + 200 * size,
             SystemApiCostingEntry::BorrowGlobal { loaded, size } => {
