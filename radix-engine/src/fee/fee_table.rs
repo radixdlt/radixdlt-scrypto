@@ -13,22 +13,26 @@ pub enum SystemApiCostingEntry<'a> {
     },
 
     /// Globalizes a RE value.
-    Globalize { value: &'a REValue },
+    Globalize { size: u32 },
 
     /// Borrows a globalized value.
-    Borrow { value: &'a REValue, loaded: bool },
+    Borrow {
+        global: bool,
+        loaded: bool,
+        size: u32,
+    },
 
     /// Returns a borrowed value.
-    Return { value: &'a REValue },
+    Return { global: bool, size: u32 },
 
     /// Creates a RE value.
-    Create { value: &'a ScryptoValue },
+    Create { size: u32 },
 
     /// Reads the data of a RE value.
-    ReadValue { value: &'a ScryptoValue },
+    Read { size: u32 },
 
     /// Updates the data of a RE Value.
-    WriteValue { value: &'a ScryptoValue },
+    Write { size: u32 },
 
     /// Reads the current epoch.
     ReadEpoch,
@@ -38,9 +42,9 @@ pub enum SystemApiCostingEntry<'a> {
 
     /// Generates a UUID.
     GenerateUuid,
-    
+
     /// Emits a log.
-    EmitLog,
+    EmitLog { size: u32 },
 
     /// Checks if an access rule can be satisfied by the given proofs.
     CheckAccessRule,
@@ -111,17 +115,21 @@ impl FeeTable {
     pub fn system_api_cost(&self, entry: SystemApiCostingEntry) -> u32 {
         match entry {
             SystemApiCostingEntry::InvokeFunction { receiver, input } => todo!(),
-            SystemApiCostingEntry::Globalize { value } => todo!(),
-            SystemApiCostingEntry::Borrow { value, loaded } => todo!(),
-            SystemApiCostingEntry::Return { value } => todo!(),
-            SystemApiCostingEntry::Create { value } => todo!(),
-            SystemApiCostingEntry::ReadValue { value } => todo!(),
-            SystemApiCostingEntry::WriteValue { value } => todo!(),
+            SystemApiCostingEntry::Globalize { size } => todo!(),
+            SystemApiCostingEntry::Borrow {
+                global,
+                loaded,
+                size,
+            } => todo!(),
+            SystemApiCostingEntry::Return { global, size } => todo!(),
+            SystemApiCostingEntry::Create { size } => todo!(),
+            SystemApiCostingEntry::Read { size } => todo!(),
+            SystemApiCostingEntry::Write { size } => todo!(),
             SystemApiCostingEntry::ReadEpoch => todo!(),
             SystemApiCostingEntry::ReadTransactionHash => todo!(),
             SystemApiCostingEntry::GenerateUuid => todo!(),
-            SystemApiCostingEntry::EmitLog => todo!(),
-            SystemApiCostingEntry::CheckAccessRule => todo!(), 
+            SystemApiCostingEntry::EmitLog { size } => todo!(),
+            SystemApiCostingEntry::CheckAccessRule => todo!(),
         }
     }
 }

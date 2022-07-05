@@ -1506,6 +1506,21 @@ where
         &mut self,
         value_id: &ValueId,
     ) -> Result<RENativeValueRef<'borrowed>, CostUnitCounterError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::Borrow {
+                        loaded: false, // TODO: if the value is loaded or not
+                        global: match value_id {
+                            ValueId::Transient(_) => false,
+                            ValueId::Stored(_) => true,
+                            ValueId::Resource(_) => true,
+                            ValueId::Package(_) => true,
+                        },
+                        size: 0, // TODO: get size of the value
+                    }),
+            )?;
+
         let info = self.value_refs.get(value_id).unwrap();
         if !info.visible {
             panic!("Trying to read value which is not visible.")
@@ -1524,6 +1539,20 @@ where
         value_id: ValueId,
         val_ref: RENativeValueRef<'borrowed>,
     ) -> Result<(), CostUnitCounterError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::Return {
+                        global: match value_id {
+                            ValueId::Transient(_) => false,
+                            ValueId::Stored(_) => true,
+                            ValueId::Resource(_) => true,
+                            ValueId::Package(_) => true,
+                        },
+                        size: 0, // TODO: get size of the value
+                    }),
+            )?;
+
         val_ref.return_to_location(
             value_id,
             &mut self.owned_values,
@@ -1541,6 +1570,15 @@ where
         &mut self,
         v: V,
     ) -> Result<ValueId, RuntimeError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::Create {
+                        size: 0, // TODO: get size of the value
+                    }),
+            )
+            .map_err(RuntimeError::CostingError)?;
+
         let value_by_complexity = v.into();
         let id = match value_by_complexity {
             REValueByComplexity::Primitive(REPrimitiveValue::Bucket(..)) => {
@@ -1615,6 +1653,14 @@ where
     }
 
     fn native_globalize(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::Globalize {
+                        size: 0, // TODO: get size of the value
+                    }),
+            )?;
+
         let mut values = HashSet::new();
         values.insert(value_id.clone());
         let (taken_values, missing) = self.take_available_values(values).unwrap();
@@ -1658,6 +1704,23 @@ where
         address: SubstateAddress,
         instruction: DataInstruction,
     ) -> Result<ScryptoValue, RuntimeError> {
+        let cost = match &instruction {
+            DataInstruction::Read => {
+                self.fee_table.system_api_cost(SystemApiCostingEntry::Read {
+                    size: 0, // TODO: get size of the value
+                })
+            }
+            DataInstruction::Write(..) => {
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::Write {
+                        size: 0, // TODO: get size of the value
+                    })
+            }
+        };
+        self.cost_unit_counter
+            .consume(cost)
+            .map_err(RuntimeError::CostingError)?;
+
         // If write, take values from current frame
         let (taken_values, missing) = match &instruction {
             DataInstruction::Write(value) => {
@@ -1776,18 +1839,37 @@ where
     }
 
     fn epoch(&mut self) -> Result<u64, CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::ReadEpoch),
+        )?;
         Ok(self.track.current_epoch())
     }
 
     fn transaction_hash(&mut self) -> Result<Hash, CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::ReadTransactionHash),
+        )?;
         Ok(self.track.transaction_hash())
     }
 
     fn generate_uuid(&mut self) -> Result<u128, CostUnitCounterError> {
+        self.cost_unit_counter.consume(
+            self.fee_table
+                .system_api_cost(SystemApiCostingEntry::GenerateUuid),
+        )?;
         Ok(self.track.new_uuid())
     }
 
     fn emit_log(&mut self, level: Level, message: String) -> Result<(), CostUnitCounterError> {
+        self.cost_unit_counter
+            .consume(
+                self.fee_table
+                    .system_api_cost(SystemApiCostingEntry::EmitLog {
+                        size: message.len() as u32,
+                    }),
+            )?;
         self.track.add_log(level, message);
         Ok(())
     }
