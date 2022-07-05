@@ -266,6 +266,8 @@ impl TransactionValidator {
             return Err(HeaderValidationError::OutOfEpochRange);
         }
 
+        // TODO: Validate transaction network matches engine network
+
         Ok(())
     }
 

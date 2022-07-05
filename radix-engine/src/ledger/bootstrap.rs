@@ -4,6 +4,7 @@ use sbor::rust::vec;
 use sbor::*;
 use scrypto::buffer::*;
 use scrypto::constants::*;
+use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::resource::ResourceMethodAuthKey::Withdraw;
@@ -91,13 +92,13 @@ where
     track.to_receipt()
 }
 
-pub fn bootstrap<'s, S>(substate_store: &'s mut S)
+pub fn bootstrap<'s, S>(substate_store: &'s mut S, network: Network)
 where
     S: ReadableSubstateStore + WriteableSubstateStore,
 {
     let system_substate = substate_store.get_substate(&scrypto_encode(&SYSTEM_PACKAGE));
     if system_substate.is_none() {
-        let track = Track::new(substate_store, Hash([0u8; 32]));
+        let track = Track::new(substate_store, Hash([0u8; 32]), network);
         let receipt = create_genesis(track);
         receipt.substates.commit(substate_store);
     }

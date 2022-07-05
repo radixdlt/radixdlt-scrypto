@@ -9,7 +9,7 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::core::{SNodeRef, ScryptoActor};
+use scrypto::core::{SNodeRef, ScryptoActor, Network};
 use scrypto::engine::types::*;
 use scrypto::prelude::ComponentOffset;
 use scrypto::resource::AuthZoneClearInput;
@@ -1756,6 +1756,10 @@ where
 
     fn get_transaction_hash(&mut self) -> Hash {
         self.track.transaction_hash()
+    }
+
+    fn get_transaction_network(&mut self) -> Network {
+        self.track.transaction_network()
     }
 
     fn generate_uuid(&mut self) -> u128 {

@@ -1,6 +1,6 @@
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
-use scrypto::core::SNodeRef;
+use scrypto::core::{SNodeRef, Network};
 use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
@@ -67,6 +67,8 @@ where
     fn get_epoch(&mut self) -> u64;
 
     fn get_transaction_hash(&mut self) -> Hash;
+    
+    fn get_transaction_network(&mut self) -> Network;
 
     fn generate_uuid(&mut self) -> u128;
 

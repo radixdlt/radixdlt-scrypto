@@ -15,6 +15,9 @@ pub struct SystemGetCurrentEpochInput {}
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct SystemGetTransactionHashInput {}
 
+#[derive(Debug, TypeId, Encode, Decode)]
+pub struct SystemGetTransactionNetworkInput {}
+
 /// The transaction runtime.
 #[derive(Debug)]
 pub struct Runtime {}
@@ -81,6 +84,16 @@ impl Runtime {
             SNodeRef::SystemStatic,
             "transaction_hash".to_string(),
             scrypto_encode(&SystemGetTransactionHashInput {}),
+        );
+        call_engine(input)
+    }
+    
+    /// Returns the transaction network.
+    pub fn transaction_network() -> Network {
+        let input = RadixEngineInput::InvokeSNode(
+            SNodeRef::SystemStatic,
+            "transaction_network".to_string(),
+            scrypto_encode(&SystemGetTransactionNetworkInput {}),
         );
         call_engine(input)
     }
