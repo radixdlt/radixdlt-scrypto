@@ -1,4 +1,4 @@
-use sbor::{TypeId, Encode, Decode};
+use sbor::{Decode, Encode, TypeId};
 
 // TODO: we may be able to squeeze network identifier into the other fields, like the `v` byte in signature.
 #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]

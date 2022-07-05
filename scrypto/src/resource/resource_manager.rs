@@ -8,7 +8,10 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
+use crate::address::ParseAddressError;
+use crate::address::Bech32Addressable;
 use crate::buffer::scrypto_encode;
+use crate::core::Runtime;
 use crate::core::SNodeRef;
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
@@ -336,38 +339,16 @@ impl ResourceManager {
 }
 
 //========
-// error
-//========
-
-/// Represents an error when decoding resource address.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseResourceAddressError {
-    InvalidHex(String),
-    InvalidLength(usize),
-    InvalidPrefix,
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseResourceAddressError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseResourceAddressError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-//========
 // binary
 //========
 
 impl TryFrom<&[u8]> for ResourceAddress {
-    type Error = ParseResourceAddressError;
+    type Error = ParseAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseResourceAddressError::InvalidLength(slice.len())),
+            _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -384,24 +365,23 @@ scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
 // text
 //======
 
-// Before Bech32, we use a fixed prefix for text representation.
+impl Bech32Addressable for ResourceAddress {
+    fn data(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 impl FromStr for ResourceAddress {
-    type Err = ParseResourceAddressError;
+    type Err = ParseAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseResourceAddressError::InvalidHex(s.to_owned()))?;
-        if bytes.get(0) != Some(&3u8) {
-            return Err(ParseResourceAddressError::InvalidPrefix);
-        }
-        Self::try_from(&bytes[1..])
+        Self::from_bech32_string(s, &Runtime::transaction_network())
     }
 }
 
 impl fmt::Display for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(combine(3, &self.0)))
+        write!(f, "{}", self.to_bech32_string(&Runtime::transaction_network()).unwrap())
     }
 }
 

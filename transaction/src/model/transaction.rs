@@ -1,9 +1,8 @@
-use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
-use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::Network;
+use scrypto::crypto::{hash, EcdsaPublicKey, EcdsaSignature, Hash};
 
 use crate::manifest::{compile, CompileError};
 use crate::model::Instruction;

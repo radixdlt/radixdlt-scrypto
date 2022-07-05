@@ -11,6 +11,7 @@ use sbor::type_id::*;
 use sbor::{any::*, *};
 
 use crate::abi::*;
+use crate::address::ParseAddressError;
 use crate::buffer::*;
 use crate::component::*;
 use crate::crypto::*;
@@ -241,9 +242,9 @@ pub struct ScryptoCustomValueChecker {
 pub enum ScryptoCustomValueCheckError {
     UnknownTypeId(u8),
     InvalidDecimal(ParseDecimalError),
-    InvalidPackageAddress(ParsePackageAddressError),
-    InvalidComponentAddress(ParseComponentAddressError),
-    InvalidResourceAddress(ParseResourceAddressError),
+    InvalidPackageAddress(ParseAddressError),
+    InvalidComponentAddress(ParseAddressError),
+    InvalidResourceAddress(ParseAddressError),
     InvalidHash(ParseHashError),
     InvalidEcdsaPublicKey(ParseEcdsaPublicKeyError),
     InvalidEcdsaSignature(ParseEcdsaSignatureError),
@@ -254,7 +255,7 @@ pub enum ScryptoCustomValueCheckError {
     InvalidKeyValueStore(ParseKeyValueStoreError),
     InvalidVault(ParseVaultError),
     InvalidNonFungibleId(ParseNonFungibleIdError),
-    InvalidNonFungibleAddress(ParseNonFungibleAddressError),
+    InvalidNonFungibleAddress(ParseNonFungibleParseAddressError),
     DuplicateIds,
 }
 

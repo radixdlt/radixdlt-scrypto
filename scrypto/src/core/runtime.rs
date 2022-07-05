@@ -87,7 +87,7 @@ impl Runtime {
         );
         call_engine(input)
     }
-    
+
     /// Returns the transaction network.
     pub fn transaction_network() -> Network {
         let input = RadixEngineInput::InvokeSNode(

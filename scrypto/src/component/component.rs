@@ -7,6 +7,8 @@ use sbor::*;
 use scrypto::engine::types::StoredValueId;
 
 use crate::abi::*;
+use crate::address::Bech32Addressable;
+use crate::address::ParseAddressError;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
@@ -82,7 +84,7 @@ impl Component {
 //========
 
 impl TryFrom<&[u8]> for Component {
-    type Error = ParseComponentAddressError;
+    type Error = ParseAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         let component_address = ComponentAddress::try_from(slice)?;
@@ -103,7 +105,7 @@ scrypto_type!(Component, ScryptoType::Component, Vec::new());
 //======
 
 impl FromStr for Component {
-    type Err = ParseComponentAddressError;
+    type Err = ParseAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         ComponentAddress::from_str(s).map(|a| Component(a))
@@ -129,38 +131,16 @@ pub struct ComponentAddress(pub [u8; 26]);
 impl ComponentAddress {}
 
 //========
-// error
-//========
-
-/// Represents an error when decoding component address.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseComponentAddressError {
-    InvalidHex(String),
-    InvalidLength(usize),
-    InvalidPrefix,
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseComponentAddressError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseComponentAddressError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-//========
 // binary
 //========
 
 impl TryFrom<&[u8]> for ComponentAddress {
-    type Error = ParseComponentAddressError;
+    type Error = ParseAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseComponentAddressError::InvalidLength(slice.len())),
+            _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -177,24 +157,23 @@ scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 // text
 //======
 
-// Before Bech32, we use a fixed prefix for text representation.
+impl Bech32Addressable for ComponentAddress {
+    fn data(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 impl FromStr for ComponentAddress {
-    type Err = ParseComponentAddressError;
+    type Err = ParseAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseComponentAddressError::InvalidHex(s.to_owned()))?;
-        if bytes.get(0) != Some(&2u8) {
-            return Err(ParseComponentAddressError::InvalidPrefix);
-        }
-        Self::try_from(&bytes[1..])
+        Self::from_bech32_string(s, &Runtime::transaction_network())
     }
 }
 
 impl fmt::Display for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(combine(2, &self.0)))
+        write!(f, "{}", self.to_bech32_string(&Runtime::transaction_network()).unwrap())
     }
 }
 

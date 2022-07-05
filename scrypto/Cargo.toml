@@ -9,6 +9,7 @@ sha3 = { version = "0.10.1", default-features = false }
 hex = { version = "0.4.3", default-features = false }
 num-traits = { version = "0.2.15", default-features = false }
 num-bigint = { version = "0.4.3", default-features = false }
+bech32 = { version = "0.9.0" }
 sbor = { path = "../sbor", default-features = false }
 scrypto-abi = { path = "../scrypto-abi", default-features = false }
 scrypto-derive = { path = "../scrypto-derive", default-features = false }

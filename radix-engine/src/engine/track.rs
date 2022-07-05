@@ -346,7 +346,11 @@ impl Into<Vault> for SubstateValue {
 }
 
 impl<'s, S: ReadableSubstateStore> Track<'s, S> {
-    pub fn new(substate_store: &'s mut S, transaction_hash: Hash, transaction_network: Network) -> Self {
+    pub fn new(
+        substate_store: &'s mut S,
+        transaction_hash: Hash,
+        transaction_network: Network,
+    ) -> Self {
         Self {
             substate_store,
             transaction_hash,
@@ -370,7 +374,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     pub fn transaction_hash(&self) -> Hash {
         self.transaction_hash
     }
-    
+
     /// Returns the transaction network.
     pub fn transaction_network(&self) -> Network {
         self.transaction_network.clone()

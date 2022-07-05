@@ -8,6 +8,8 @@ use sbor::*;
 use scrypto_abi::BlueprintAbi;
 
 use crate::abi::*;
+use crate::address::Bech32Addressable;
+use crate::address::ParseAddressError;
 use crate::core::*;
 use crate::misc::*;
 
@@ -40,38 +42,16 @@ impl BorrowedPackage {
 }
 
 //========
-// error
-//========
-
-/// Represents an error when decoding package address.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParsePackageAddressError {
-    InvalidHex(String),
-    InvalidLength(usize),
-    InvalidPrefix,
-}
-
-#[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParsePackageAddressError {}
-
-#[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParsePackageAddressError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-//========
 // binary
 //========
 
 impl TryFrom<&[u8]> for PackageAddress {
-    type Error = ParsePackageAddressError;
+    type Error = ParseAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             26 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParsePackageAddressError::InvalidLength(slice.len())),
+            _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -88,24 +68,23 @@ scrypto_type!(PackageAddress, ScryptoType::PackageAddress, Vec::new());
 // text
 //======
 
-// Before Bech32, we use a fixed prefix for text representation.
+impl Bech32Addressable for PackageAddress {
+    fn data(&self) -> &[u8] {
+        &self.0
+    }
+}
 
 impl FromStr for PackageAddress {
-    type Err = ParsePackageAddressError;
+    type Err = ParseAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParsePackageAddressError::InvalidHex(s.to_owned()))?;
-        if bytes.get(0) != Some(&1u8) {
-            return Err(ParsePackageAddressError::InvalidPrefix);
-        }
-        Self::try_from(&bytes[1..])
+        Self::from_bech32_string(s, &Runtime::transaction_network())
     }
 }
 
 impl fmt::Display for PackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", hex::encode(combine(1, &self.0)))
+        write!(f, "{}", self.to_bech32_string(&Runtime::transaction_network()).unwrap())
     }
 }
 
