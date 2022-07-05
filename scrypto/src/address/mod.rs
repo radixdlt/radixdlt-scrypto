@@ -1,9 +1,9 @@
 mod entity;
+mod errors;
 mod hrpset;
 mod traits;
-mod errors;
 
-pub use entity::{EntityType, EntityTypeError};
+pub use entity::*;
 pub use errors::ParseAddressError;
-pub use traits::{Bech32Addressable};
-pub use hrpset::{HrpSet};
+pub use hrpset::HrpSet;
+pub use traits::Bech32Addressable;

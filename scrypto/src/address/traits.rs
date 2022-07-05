@@ -1,6 +1,6 @@
-use bech32::{self, FromBase32, ToBase32, Variant};
-use crate::core::Network;
 use super::ParseAddressError;
+use crate::core::Network;
+use bech32::{self, FromBase32, ToBase32, Variant};
 
 use super::{entity::EntityType, hrpset::get_network_hrp_set};
 
@@ -10,7 +10,7 @@ where
 {
     /// Returns the data to be Bech32 encoded.
     fn data(&self) -> &[u8];
-    
+
     /// Returns the encoded Bech32 encoded data.
     fn to_bech32_string(&self, network: &Network) -> Result<String, ParseAddressError> {
         let hrp = match self.data().get(0) {
@@ -19,20 +19,16 @@ where
                     .map_err(|_| ParseAddressError::InvalidEntityTypeId(*entity_type_id))?;
                 get_network_hrp_set(network).get_entity_hrp(&entity_type)
             }
-            None => {
-                return Err(ParseAddressError::DataSectionTooShort)
-            }
+            None => return Err(ParseAddressError::DataSectionTooShort),
         };
-        
-        Ok(bech32::encode(
-            hrp,
-            self.data().to_base32(),
-            Variant::Bech32m,
+
+        Ok(
+            bech32::encode(hrp, self.data().to_base32(), Variant::Bech32m)
+                .map_err(|err| ParseAddressError::EncodingError(err))?,
         )
-        .map_err(|err| ParseAddressError::EncodingError(err))?)
     }
 
-    /// Returns an object instantiated from the Bec32 string. 
+    /// Returns an object instantiated from the Bec32 string.
     fn from_bech32_string(address: &str, network: &Network) -> Result<Self, ParseAddressError> {
         let (hrp, data, variant) =
             bech32::decode(address).map_err(|err| ParseAddressError::DecodingError(err))?;
@@ -44,8 +40,9 @@ where
         };
 
         // Convert the data to u8 from u5.
-        let data = Vec::<u8>::from_base32(&data).map_err(|err| ParseAddressError::DecodingError(err))?;
-        
+        let data =
+            Vec::<u8>::from_base32(&data).map_err(|err| ParseAddressError::DecodingError(err))?;
+
         // Validating the actual HRP with the expected HRP
         match data.get(0) {
             Some(entity_type_id) => {
@@ -60,9 +57,7 @@ where
                     Err(ParseAddressError::InvalidHrp)
                 }
             }
-            None => {
-                Err(ParseAddressError::DataSectionTooShort)
-            }
+            None => Err(ParseAddressError::DataSectionTooShort),
         }
     }
 }

@@ -126,7 +126,7 @@ impl fmt::Debug for Component {
 
 /// An instance of a blueprint, which lives in the ledger state.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ComponentAddress(pub [u8; 26]);
+pub struct ComponentAddress(pub [u8; 27]);
 
 impl ComponentAddress {}
 
@@ -139,7 +139,7 @@ impl TryFrom<&[u8]> for ComponentAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            26 => Ok(Self(copy_u8_array(slice))),
+            27 => Ok(Self(copy_u8_array(slice))),
             _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
@@ -173,7 +173,12 @@ impl FromStr for ComponentAddress {
 
 impl fmt::Display for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_bech32_string(&Runtime::transaction_network()).unwrap())
+        write!(
+            f,
+            "{}",
+            self.to_bech32_string(&Runtime::transaction_network())
+                .unwrap()
+        )
     }
 }
 

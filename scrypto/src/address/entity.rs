@@ -1,17 +1,17 @@
 /// A unique identifier used in the addressing of Resource Addresses.
-const RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x00;
+pub const RESOURCE_ADDRESS_ENTITY_ID: u8 = 0x00;
 
 /// A unique identifier used in the addressing of Package Addresses.
-const PACKAGE_ADDRESS_ENTITY_ID: u8 = 0x01;
+pub const PACKAGE_ADDRESS_ENTITY_ID: u8 = 0x01;
 
 /// A unique identifier used in the addressing of Generic Component Addresses.
-const COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x02;
+pub const COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x02;
 
-/// A unique identifier used in the addressing of Account Addresses.
-const ACCOUNT_ADDRESS_ENTITY_ID: u8 = 0x03;
+/// A unique identifier used in the addressing of Account Component Addresses.
+pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
 
-/// A unique identifier used in the addressing of Account Addresses.
-const SYSTEM_ADDRESS_ENTITY_ID: u8 = 0x04;
+/// A unique identifier used in the addressing of System Component Addresses.
+pub const SYSTEM_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x04;
 
 /// An enum which represents the different addressable entities.
 pub enum EntityType {
@@ -28,8 +28,8 @@ impl EntityType {
             Self::Resource => RESOURCE_ADDRESS_ENTITY_ID,
             Self::Package => PACKAGE_ADDRESS_ENTITY_ID,
             Self::Component => COMPONENT_ADDRESS_ENTITY_ID,
-            Self::AccountComponent => ACCOUNT_ADDRESS_ENTITY_ID,
-            Self::SystemComponent => SYSTEM_ADDRESS_ENTITY_ID,
+            Self::AccountComponent => ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
+            Self::SystemComponent => SYSTEM_COMPONENT_ADDRESS_ENTITY_ID,
         }
     }
 }
@@ -42,8 +42,8 @@ impl TryFrom<u8> for EntityType {
             RESOURCE_ADDRESS_ENTITY_ID => Ok(Self::Resource),
             PACKAGE_ADDRESS_ENTITY_ID => Ok(Self::Package),
             COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::Component),
-            ACCOUNT_ADDRESS_ENTITY_ID => Ok(Self::AccountComponent),
-            SYSTEM_ADDRESS_ENTITY_ID => Ok(Self::SystemComponent),
+            ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::AccountComponent),
+            SYSTEM_COMPONENT_ADDRESS_ENTITY_ID => Ok(Self::SystemComponent),
             _ => Err(EntityTypeError::InvalidEntityTypeId(value)),
         }
     }

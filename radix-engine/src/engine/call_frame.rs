@@ -1540,8 +1540,8 @@ where
                 let package_address = self.track.new_package_address();
                 ValueId::Package(package_address)
             }
-            REValueByComplexity::Complex(REComplexValue::Component(..)) => {
-                let component_address = self.track.new_component_address();
+            REValueByComplexity::Complex(REComplexValue::Component(ref component)) => {
+                let component_address = self.track.new_component_address(component);
                 ValueId::Stored(StoredValueId::Component(component_address))
             }
         };

@@ -26,7 +26,7 @@ pub struct Package {
 
 /// A collection of blueprints, compiled and published as a single unit.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct PackageAddress(pub [u8; 26]);
+pub struct PackageAddress(pub [u8; 27]);
 
 impl PackageAddress {}
 
@@ -50,7 +50,7 @@ impl TryFrom<&[u8]> for PackageAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            26 => Ok(Self(copy_u8_array(slice))),
+            27 => Ok(Self(copy_u8_array(slice))),
             _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
@@ -84,7 +84,12 @@ impl FromStr for PackageAddress {
 
 impl fmt::Display for PackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_bech32_string(&Runtime::transaction_network()).unwrap())
+        write!(
+            f,
+            "{}",
+            self.to_bech32_string(&Runtime::transaction_network())
+                .unwrap()
+        )
     }
 }
 

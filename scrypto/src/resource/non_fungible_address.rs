@@ -60,7 +60,9 @@ impl TryFrom<&[u8]> for NonFungibleAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() < 26 {
-            return Err(ParseNonFungibleParseAddressError::InvalidLength(slice.len()));
+            return Err(ParseNonFungibleParseAddressError::InvalidLength(
+                slice.len(),
+            ));
         }
 
         let (resource_address_slice, non_fungible_id_slice) = slice.split_at(26);
@@ -98,8 +100,8 @@ impl FromStr for NonFungibleAddress {
     type Err = ParseNonFungibleParseAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes =
-            hex::decode(s).map_err(|_| ParseNonFungibleParseAddressError::InvalidHex(s.to_owned()))?;
+        let bytes = hex::decode(s)
+            .map_err(|_| ParseNonFungibleParseAddressError::InvalidHex(s.to_owned()))?;
         if bytes.get(0) != Some(&3u8) {
             return Err(ParseNonFungibleParseAddressError::InvalidPrefix);
         }

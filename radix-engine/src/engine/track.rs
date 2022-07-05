@@ -707,10 +707,14 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
     }
 
     /// Creates a new component address.
-    pub fn new_component_address(&mut self) -> ComponentAddress {
+    pub fn new_component_address(&mut self, component: &Component) -> ComponentAddress {
         let component_address = self
             .id_allocator
-            .new_component_address(self.transaction_hash())
+            .new_component_address(
+                self.transaction_hash(),
+                &component.package_address(),
+                component.blueprint_name(),
+            )
             .unwrap();
         component_address
     }

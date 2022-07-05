@@ -1,6 +1,8 @@
 use sbor::rust::ops::Range;
+use scrypto::address::EntityType;
 use scrypto::crypto::hash;
 use scrypto::engine::types::*;
+use scrypto::misc::{combine, copy_u8_array};
 
 use crate::errors::*;
 
@@ -46,19 +48,33 @@ impl IdAllocator {
         &mut self,
         transaction_hash: Hash,
     ) -> Result<PackageAddress, IdAllocationError> {
+        let entity_type = EntityType::Package;
+        let entity_type_id = entity_type.id();
+
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(PackageAddress(hash(data).lower_26_bytes()))
+
+        Ok(PackageAddress(copy_u8_array(&combine(entity_type_id, &hash(data).lower_26_bytes()))))
     }
 
     /// Creates a new component address.
     pub fn new_component_address(
         &mut self,
         transaction_hash: Hash,
+        package_address: &PackageAddress,
+        blueprint_name: &str,
     ) -> Result<ComponentAddress, IdAllocationError> {
+        let entity_type = match (*package_address, blueprint_name) {
+            (ACCOUNT_PACKAGE, "Account") => EntityType::AccountComponent,
+            (SYSTEM_PACKAGE, "System") => EntityType::SystemComponent,
+            _ => EntityType::Component,
+        };
+        let entity_type_id = entity_type.id();
+
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(ComponentAddress(hash(data).lower_26_bytes()))
+
+        Ok(ComponentAddress(copy_u8_array(&combine(entity_type_id, &hash(data).lower_26_bytes()))))
     }
 
     /// Creates a new resource address.
@@ -66,9 +82,13 @@ impl IdAllocator {
         &mut self,
         transaction_hash: Hash,
     ) -> Result<ResourceAddress, IdAllocationError> {
+        let entity_type = EntityType::Resource;
+        let entity_type_id = entity_type.id();
+
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
-        Ok(ResourceAddress(hash(data).lower_26_bytes()))
+
+        Ok(ResourceAddress(copy_u8_array(&combine(entity_type_id, &hash(data).lower_26_bytes()))))
     }
 
     /// Creates a new UUID.

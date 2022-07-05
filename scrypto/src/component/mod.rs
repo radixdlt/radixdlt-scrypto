@@ -5,10 +5,8 @@ mod system;
 
 pub use component::{
     Component, ComponentAddAccessCheckInput, ComponentAddress, ComponentGlobalizeInput,
-    ComponentState
+    ComponentState,
 };
 pub use kv_store::{KeyValueStore, ParseKeyValueStoreError};
-pub use package::{
-    BorrowedPackage, Package, PackageAddress, PackagePublishInput,
-};
+pub use package::{BorrowedPackage, Package, PackageAddress, PackagePublishInput};
 pub use system::{component_system, init_component_system, ComponentSystem};

@@ -8,8 +8,8 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::ParseAddressError;
 use crate::address::Bech32Addressable;
+use crate::address::ParseAddressError;
 use crate::buffer::scrypto_encode;
 use crate::core::Runtime;
 use crate::core::SNodeRef;
@@ -99,7 +99,7 @@ pub struct ResourceManagerGetNonFungibleInput {
 
 /// Represents a resource address.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ResourceAddress(pub [u8; 26]);
+pub struct ResourceAddress(pub [u8; 27]);
 
 impl ResourceAddress {}
 
@@ -347,7 +347,7 @@ impl TryFrom<&[u8]> for ResourceAddress {
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
-            26 => Ok(Self(copy_u8_array(slice))),
+            27 => Ok(Self(copy_u8_array(slice))),
             _ => Err(ParseAddressError::InvalidLength(slice.len())),
         }
     }
@@ -381,7 +381,12 @@ impl FromStr for ResourceAddress {
 
 impl fmt::Display for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_bech32_string(&Runtime::transaction_network()).unwrap())
+        write!(
+            f,
+            "{}",
+            self.to_bech32_string(&Runtime::transaction_network())
+                .unwrap()
+        )
     }
 }
 
