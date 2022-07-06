@@ -1133,8 +1133,8 @@ mod tests {
                 Instruction::ReturnToWorktop { bucket_id: 513 },
                 Instruction::TakeFromWorktopByIds {
                     ids: BTreeSet::from([
-                        NonFungibleId::from_str("11").unwrap(),
-                        NonFungibleId::from_str("22").unwrap(),
+                        NonFungibleId::from_str("0905000000").unwrap(),
+                        NonFungibleId::from_str("0907000000").unwrap(),
                     ]),
                     resource_address: ResourceAddress::from_str(
                         "030000000000000000000000000000000000000000000000000004"

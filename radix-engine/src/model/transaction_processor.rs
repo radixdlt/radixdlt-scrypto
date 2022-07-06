@@ -27,6 +27,8 @@ use crate::model::worktop::{
 use crate::model::TransactionProcessorError::InvalidMethod;
 use crate::wasm::*;
 
+use super::Worktop;
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {
     pub instructions: Vec<ExecutableInstruction>,
@@ -66,7 +68,7 @@ impl TransactionProcessor {
         Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: ReadableSubstateStore,
+        S: 's + ReadableSubstateStore,
     >(
         function_name: &str,
         call_data: ScryptoValue,
@@ -80,6 +82,7 @@ impl TransactionProcessor {
                 let mut bucket_id_mapping = HashMap::new();
                 let mut outputs = Vec::new();
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
+                let mut worktop = Worktop::new();
 
                 for inst in &input.instructions.clone() {
                     let result = match inst {
@@ -87,14 +90,15 @@ impl TransactionProcessor {
                             .new_bucket_id()
                             .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
-                                system_api
-                                    .invoke_snode(
-                                        SNodeRef::WorktopRef,
-                                        "take_all".to_string(),
+                                worktop
+                                    .main(
+                                        "take_all",
                                         ScryptoValue::from_typed(&WorktopTakeAllInput {
                                             resource_address: *resource_address,
                                         }),
+                                        system_api,
                                     )
+                                    .map_err(RuntimeError::WorktopError)
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
                                         bucket_id_mapping.insert(new_id, bucket_id);
@@ -108,15 +112,16 @@ impl TransactionProcessor {
                             .new_bucket_id()
                             .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
-                                system_api
-                                    .invoke_snode(
-                                        SNodeRef::WorktopRef,
-                                        "take_amount".to_string(),
+                                worktop
+                                    .main(
+                                        "take_amount",
                                         ScryptoValue::from_typed(&WorktopTakeAmountInput {
                                             amount: *amount,
                                             resource_address: *resource_address,
                                         }),
+                                        system_api,
                                     )
+                                    .map_err(RuntimeError::WorktopError)
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
                                         bucket_id_mapping.insert(new_id, bucket_id);
@@ -130,15 +135,16 @@ impl TransactionProcessor {
                             .new_bucket_id()
                             .map_err(RuntimeError::IdAllocationError)
                             .and_then(|new_id| {
-                                system_api
-                                    .invoke_snode(
-                                        SNodeRef::WorktopRef,
-                                        "take_non_fungibles".to_string(),
+                                worktop
+                                    .main(
+                                        "take_non_fungibles",
                                         ScryptoValue::from_typed(&WorktopTakeNonFungiblesInput {
                                             ids: ids.clone(),
                                             resource_address: *resource_address,
                                         }),
+                                        system_api,
                                     )
+                                    .map_err(RuntimeError::WorktopError)
                                     .map(|rtn| {
                                         let bucket_id = *rtn.bucket_ids.iter().next().unwrap().0;
                                         bucket_id_mapping.insert(new_id, bucket_id);
@@ -148,46 +154,55 @@ impl TransactionProcessor {
                         ExecutableInstruction::ReturnToWorktop { bucket_id } => bucket_id_mapping
                             .remove(bucket_id)
                             .map(|real_id| {
-                                system_api.invoke_snode(
-                                    SNodeRef::WorktopRef,
-                                    "put".to_string(),
-                                    ScryptoValue::from_typed(&WorktopPutInput {
-                                        bucket: scrypto::resource::Bucket(real_id),
-                                    }),
-                                )
+                                worktop
+                                    .main(
+                                        "put",
+                                        ScryptoValue::from_typed(&WorktopPutInput {
+                                            bucket: scrypto::resource::Bucket(real_id),
+                                        }),
+                                        system_api,
+                                    )
+                                    .map_err(RuntimeError::WorktopError)
                             })
                             .unwrap_or(Err(RuntimeError::BucketNotFound(*bucket_id))),
                         ExecutableInstruction::AssertWorktopContains { resource_address } => {
-                            system_api.invoke_snode(
-                                SNodeRef::WorktopRef,
-                                "assert_contains".to_string(),
-                                ScryptoValue::from_typed(&WorktopAssertContainsInput {
-                                    resource_address: *resource_address,
-                                }),
-                            )
+                            worktop
+                                .main(
+                                    "assert_contains",
+                                    ScryptoValue::from_typed(&WorktopAssertContainsInput {
+                                        resource_address: *resource_address,
+                                    }),
+                                    system_api,
+                                )
+                                .map_err(RuntimeError::WorktopError)
                         }
                         ExecutableInstruction::AssertWorktopContainsByAmount {
                             amount,
                             resource_address,
-                        } => system_api.invoke_snode(
-                            SNodeRef::WorktopRef,
-                            "assert_contains_amount".to_string(),
-                            ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
-                                amount: *amount,
-                                resource_address: *resource_address,
-                            }),
-                        ),
+                        } => worktop
+                            .main(
+                                "assert_contains_amount",
+                                ScryptoValue::from_typed(&WorktopAssertContainsAmountInput {
+                                    amount: *amount,
+                                    resource_address: *resource_address,
+                                }),
+                                system_api,
+                            )
+                            .map_err(RuntimeError::WorktopError),
                         ExecutableInstruction::AssertWorktopContainsByIds {
                             ids,
                             resource_address,
-                        } => system_api.invoke_snode(
-                            SNodeRef::WorktopRef,
-                            "assert_contains_non_fungibles".to_string(),
-                            ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
-                                ids: ids.clone(),
-                                resource_address: *resource_address,
-                            }),
-                        ),
+                        } => worktop
+                            .main(
+                                "assert_contains_non_fungibles",
+                                ScryptoValue::from_typed(&WorktopAssertContainsNonFungiblesInput {
+                                    ids: ids.clone(),
+                                    resource_address: *resource_address,
+                                }),
+                                system_api,
+                            )
+                            .map_err(RuntimeError::WorktopError),
+
                         ExecutableInstruction::PopFromAuthZone {} => id_allocator
                             .new_proof_id()
                             .map_err(RuntimeError::IdAllocationError)
@@ -388,14 +403,15 @@ impl TransactionProcessor {
                                 }
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
-                                    system_api
-                                        .invoke_snode(
-                                            SNodeRef::WorktopRef,
-                                            "put".to_string(),
+                                    worktop
+                                        .main(
+                                            "put",
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
+                                            system_api,
                                         )
+                                        .map_err(RuntimeError::WorktopError)
                                         .unwrap(); // TODO: Remove unwrap
                                 }
                                 Ok(result)
@@ -433,14 +449,15 @@ impl TransactionProcessor {
                                 }
                                 // Auto move into worktop
                                 for (bucket_id, _) in &result.bucket_ids {
-                                    system_api
-                                        .invoke_snode(
-                                            SNodeRef::WorktopRef,
-                                            "put".to_string(),
+                                    worktop
+                                        .main(
+                                            "put",
                                             ScryptoValue::from_typed(&WorktopPutInput {
                                                 bucket: scrypto::resource::Bucket(*bucket_id),
                                             }),
+                                            system_api,
                                         )
+                                        .map_err(RuntimeError::WorktopError)
                                         .unwrap(); // TODO: Remove unwrap
                                 }
                                 Ok(result)
@@ -467,11 +484,13 @@ impl TransactionProcessor {
                                         )
                                         .unwrap();
                                 }
-                                system_api.invoke_snode(
-                                    SNodeRef::WorktopRef,
-                                    "drain".to_string(),
-                                    ScryptoValue::from_typed(&WorktopDrainInput {}),
-                                )
+                                worktop
+                                    .main(
+                                        "drain",
+                                        ScryptoValue::from_typed(&WorktopDrainInput {}),
+                                        system_api,
+                                    )
+                                    .map_err(RuntimeError::WorktopError)
                             })
                             .and_then(|result| {
                                 let mut buckets = Vec::new();
@@ -503,6 +522,20 @@ impl TransactionProcessor {
                     .map_err(TransactionProcessorError::RuntimeError)?;
                     outputs.push(result);
                 }
+
+                // This creates frame-owned buckets for all non-zero balances, which triggers a
+                // value drop failure when the frame exits.
+                //
+                // TODO: refactor worktop to be `HashMap<ResourceAddress, BucketId>`
+                // TODO: remove this drain invocation by enforcing no non-empty bucket in worktop
+                worktop
+                    .main(
+                        "drain",
+                        ScryptoValue::from_typed(&WorktopDrainInput {}),
+                        system_api,
+                    )
+                    .map_err(RuntimeError::WorktopError)
+                    .map_err(TransactionProcessorError::RuntimeError)?;
 
                 Ok(ScryptoValue::from_typed(
                     &outputs

@@ -152,9 +152,6 @@ jobs:
     - name: Run tests
       run: cargo test
       working-directory: radix-engine
-    - name: Run bench
-      run: cargo bench
-      working-directory: radix-engine
   radix-engine-wasmer:
     name: Run Radix Engine tests with Wasmer
     runs-on: ${{ matrix.os }}
@@ -175,8 +172,25 @@ jobs:
     - name: Run tests
       run: cargo test --features wasmer
       working-directory: radix-engine
+  radix-engine-bench:
+    name: Run Radix Engine benchmarks
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: bmwill/rust-cache@v1
+      with:
+        path: tests/**/target
+        working-directory: radix-engine
+    - name: Add wasm target
+      run: rustup target add wasm32-unknown-unknown
     - name: Run bench
-      run: cargo bench --features wasmer
+      run: cargo bench
       working-directory: radix-engine
   transaction:
     name: Run transaction tests

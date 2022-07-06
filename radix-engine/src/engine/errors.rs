@@ -124,6 +124,8 @@ pub enum RuntimeError {
     NotSupported,
 
     CostingError(CostUnitCounterError),
+
+    MaxCallDepthLimitReached,
 }
 
 #[derive(Debug, PartialEq)]
@@ -133,7 +135,6 @@ pub enum DropFailure {
     Bucket,
     Vault,
     Package,
-    Worktop,
     KeyValueStore,
 }
 
