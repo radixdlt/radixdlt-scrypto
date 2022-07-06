@@ -16,6 +16,7 @@
         "Instrumenter",
         "Scrypto",
         "Substate",
+        "substates",
         "Wasmer",
         "Wasmi"
     ]

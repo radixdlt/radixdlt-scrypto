@@ -12,6 +12,7 @@ pub enum RENode {
     Vault(Vault),
     KeyValueStore(PreCommittedKeyValueStore),
     Component(Component),
+    Worktop(Worktop),
     Package(ValidatedPackage),
     Resource(ResourceManager),
     NonFungibles(HashMap<NonFungibleId, NonFungible>),
@@ -117,6 +118,7 @@ impl RENode {
             RENode::Resource(..) => Ok(()),
             RENode::NonFungibles(..) => Ok(()),
             RENode::Package(..) => Ok(()),
+            RENode::Worktop(..) => Ok(()),
         }
     }
 
@@ -130,6 +132,7 @@ impl RENode {
             RENode::Package(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
         }
     }
 
@@ -146,7 +149,24 @@ impl RENode {
                 proof.drop();
                 Ok(())
             }
+            RENode::Worktop(worktop) => worktop.drop(),
         }
+    }
+
+    pub fn drop_values(values: Vec<REValue>) -> Result<(), DropFailure> {
+        let mut worktops = Vec::new();
+        for value in values {
+            if let RENode::Worktop(worktop) = value.root {
+                worktops.push(worktop);
+            } else {
+                value.try_drop()?;
+            }
+        }
+        for worktop in worktops {
+            worktop.drop()?;
+        }
+
+        Ok(())
     }
 }
 
@@ -272,6 +292,7 @@ pub enum REPrimitiveValue {
     Resource(ResourceManager),
     NonFungibles(ResourceAddress, HashMap<NonFungibleId, NonFungible>),
     Vault(Vault),
+    Worktop(Worktop),
 }
 
 #[derive(Debug)]
@@ -292,6 +313,8 @@ impl Into<REValue> for REPrimitiveValue {
             REPrimitiveValue::Proof(proof) => RENode::Proof(proof),
             REPrimitiveValue::KeyValue(store) => RENode::KeyValueStore(store),
             REPrimitiveValue::Vault(vault) => RENode::Vault(vault),
+
+            REPrimitiveValue::Worktop(worktop) => RENode::Worktop(worktop),
         };
         REValue {
             root,
@@ -327,6 +350,12 @@ impl Into<REValueByComplexity> for Proof {
 impl Into<REValueByComplexity> for Vault {
     fn into(self) -> REValueByComplexity {
         REValueByComplexity::Primitive(REPrimitiveValue::Vault(self))
+    }
+}
+
+impl Into<REValueByComplexity> for Worktop {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Primitive(REPrimitiveValue::Worktop(self))
     }
 }
 
