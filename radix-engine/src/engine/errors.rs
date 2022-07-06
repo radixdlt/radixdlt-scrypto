@@ -123,6 +123,8 @@ pub enum RuntimeError {
     NotSupported,
 
     CostingError(CostUnitCounterError),
+
+    MaxCallDepthLimitReached,
 }
 
 #[derive(Debug, PartialEq)]
