@@ -27,6 +27,8 @@ use crate::model::worktop::{
 use crate::model::TransactionProcessorError::InvalidMethod;
 use crate::wasm::*;
 
+use super::Worktop;
+
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {
     pub instructions: Vec<ExecutableInstruction>,
@@ -66,7 +68,7 @@ impl TransactionProcessor {
         Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
-        S: ReadableSubstateStore,
+        S: 's + ReadableSubstateStore,
     >(
         function_name: &str,
         call_data: ScryptoValue,
@@ -80,6 +82,10 @@ impl TransactionProcessor {
                 let mut bucket_id_mapping = HashMap::new();
                 let mut outputs = Vec::new();
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
+
+                let _worktop_id = system_api
+                    .create_value(Worktop::new())
+                    .expect("Should never fail.");
 
                 for inst in &input.instructions.clone() {
                     let result = match inst {
@@ -188,6 +194,7 @@ impl TransactionProcessor {
                                 resource_address: *resource_address,
                             }),
                         ),
+
                         ExecutableInstruction::PopFromAuthZone {} => id_allocator
                             .new_proof_id()
                             .map_err(RuntimeError::IdAllocationError)
