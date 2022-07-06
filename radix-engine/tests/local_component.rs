@@ -154,6 +154,32 @@ fn recursion_bomb() {
 }
 
 #[test]
+fn recursion_bomb_to_failure() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_account();
+    let package_address = test_runner.extract_and_publish_package("component");
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .withdraw_from_account_by_amount(Decimal::from(100), RADIX_TOKEN, account)
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            builder.call_function(
+                package_address,
+                "LocalRecursionBomb",
+                "recursion_bomb",
+                to_struct!(scrypto::resource::Bucket(bucket_id)),
+            )
+        })
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
+}
+
+#[test]
 fn recursion_bomb_2() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
@@ -178,4 +204,30 @@ fn recursion_bomb_2() {
 
     // Assert
     receipt.expect_success();
+}
+
+#[test]
+fn recursion_bomb_2_to_failure() {
+    // Arrange
+    let mut test_runner = TestRunner::new(true);
+    let (public_key, _, account) = test_runner.new_account();
+    let package_address = test_runner.extract_and_publish_package("component");
+
+    // Act
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
+        .withdraw_from_account_by_amount(Decimal::from(100), RADIX_TOKEN, account)
+        .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
+            builder.call_function(
+                package_address,
+                "LocalRecursionBomb2",
+                "recursion_bomb",
+                to_struct!(scrypto::resource::Bucket(bucket_id)),
+            )
+        })
+        .call_method_with_all_resources(account, "deposit_batch")
+        .build();
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+
+    // Assert
+    receipt.expect_err(|e| matches!(e, RuntimeError::MaxCallDepthLimitReached));
 }
