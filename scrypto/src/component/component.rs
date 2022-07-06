@@ -7,6 +7,7 @@ use scrypto::engine::types::StoredValueId;
 
 use crate::abi::*;
 use crate::address::Bech32Addressable;
+use crate::address::EntityType;
 use crate::address::ParseAddressError;
 use crate::buffer::scrypto_encode;
 use crate::component::*;
@@ -160,24 +161,23 @@ impl Bech32Addressable for ComponentAddress {
     fn data(&self) -> &[u8] {
         &self.0
     }
+
+    fn allowed_entity_types() -> &'static [EntityType] {
+        &[EntityType::Component, EntityType::AccountComponent, EntityType::SystemComponent]
+    }
 }
 
 impl FromStr for ComponentAddress {
     type Err = ParseAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_bech32_string(s, &Runtime::transaction_network())
+        Self::from_bech32_string(s, &CURRENT_NETWORK)
     }
 }
 
 impl fmt::Display for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "{}",
-            self.to_bech32_string(&Runtime::transaction_network())
-                .unwrap()
-        )
+        write!(f, "{}", self.to_bech32_string(&CURRENT_NETWORK).unwrap())
     }
 }
 

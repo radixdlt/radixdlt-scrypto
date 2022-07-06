@@ -1,4 +1,5 @@
 use clap::Parser;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use transaction::builder::ManifestBuilder;
 
@@ -36,7 +37,7 @@ impl CallFunction {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let default_account = get_default_account()?;
 
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_function_with_abi(
                 self.package_address,
                 &self.blueprint_name,

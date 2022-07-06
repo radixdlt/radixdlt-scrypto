@@ -14,6 +14,7 @@ pub const ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x03;
 pub const SYSTEM_COMPONENT_ADDRESS_ENTITY_ID: u8 = 0x04;
 
 /// An enum which represents the different addressable entities.
+#[derive(PartialEq, Eq)]
 pub enum EntityType {
     Resource,
     Package,

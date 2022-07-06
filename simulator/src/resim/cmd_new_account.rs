@@ -2,9 +2,9 @@ use clap::Parser;
 use colored::*;
 use rand::Rng;
 use scrypto::address::Bech32Addressable;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
-use scrypto::core::Network;
 
 use crate::resim::*;
 
@@ -27,7 +27,7 @@ impl NewAccount {
         let public_key = private_key.public_key();
         let auth_address = NonFungibleAddress::from_public_key(&public_key);
         let withdraw_auth = rule!(require(auth_address));
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .call_method(SYSTEM_COMPONENT, "free_xrd", to_struct!())
             .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
                 builder.new_account_with_resource(&withdraw_auth, bucket_id)
@@ -49,7 +49,11 @@ impl NewAccount {
             writeln!(
                 out,
                 "Account component address: {}",
-                account.to_bech32_string(&Network::LocalSimulator).unwrap().to_string().green()
+                account
+                    .to_bech32_string(&Network::LocalSimulator)
+                    .unwrap()
+                    .to_string()
+                    .green()
             )
             .map_err(Error::IOError)?;
             writeln!(out, "Public key: {}", public_key.to_string().green())

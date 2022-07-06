@@ -5,6 +5,8 @@ use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
+use scrypto::address::Bech32Addressable;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 use transaction::model::*;
@@ -14,6 +16,7 @@ use crate::engine::RuntimeError;
 
 /// Represents a transaction receipt.
 pub struct Receipt {
+    pub transaction_network: Network,
     pub commit_receipt: Option<CommitReceipt>,
     pub instructions: Vec<ExecutableInstruction>,
     pub result: Result<(), RuntimeError>,
@@ -100,7 +103,7 @@ impl fmt::Debug for Receipt {
                         arg,
                     } => format!(
                         "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, arg: {:?} }}",
-                        package_address,
+                        package_address.to_bech32_string(&self.transaction_network).unwrap(),
                         blueprint_name,
                         method_name,
                         ScryptoValue::from_slice(&arg).expect("Invalid call data")
@@ -111,7 +114,7 @@ impl fmt::Debug for Receipt {
                         arg,
                     } => format!(
                         "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
-                        component_address,
+                        component_address.to_bech32_string(&self.transaction_network).unwrap(),
                         method_name,
                         ScryptoValue::from_slice(&arg).expect("Invalid call data")
                     ),
@@ -158,6 +161,8 @@ impl fmt::Debug for Receipt {
                 "\n{} Package: {}",
                 prefix!(i, self.new_package_addresses),
                 package_address
+                    .to_bech32_string(&self.transaction_network)
+                    .unwrap()
             )?;
         }
         for (i, component_address) in self.new_component_addresses.iter().enumerate() {
@@ -166,6 +171,8 @@ impl fmt::Debug for Receipt {
                 "\n{} Component: {}",
                 prefix!(i, self.new_component_addresses),
                 component_address
+                    .to_bech32_string(&self.transaction_network)
+                    .unwrap()
             )?;
         }
         for (i, resource_address) in self.new_resource_addresses.iter().enumerate() {
@@ -174,6 +181,8 @@ impl fmt::Debug for Receipt {
                 "\n{} Resource: {}",
                 prefix!(i, self.new_resource_addresses),
                 resource_address
+                    .to_bech32_string(&self.transaction_network)
+                    .unwrap()
             )?;
         }
 

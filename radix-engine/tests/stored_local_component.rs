@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -13,7 +14,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
     let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "StoredLocalComponent",
@@ -34,7 +35,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
     let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "StoredLocalComponent",
@@ -53,7 +54,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("component");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "StoredLocalComponent",
@@ -66,7 +67,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "parent_get_secret", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -82,7 +83,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("component");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "StoredLocalComponent",
@@ -95,7 +96,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "parent_set_secret", to_struct!(8888u32))
         .call_method(component_address, "parent_get_secret", to_struct!())
         .build();
@@ -114,7 +115,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
     let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "StoredKVLocalComponent",
@@ -135,7 +136,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
     let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "StoredKVLocalComponent",
@@ -154,7 +155,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("component");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "StoredKVLocalComponent",
@@ -167,7 +168,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "parent_get_secret", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -183,7 +184,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let package_address = test_runner.extract_and_publish_package("component");
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "StoredKVLocalComponent",
@@ -196,7 +197,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let component_address = receipt.new_component_addresses[0];
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(component_address, "parent_set_secret", to_struct!(8888u32))
         .call_method(component_address, "parent_get_secret", to_struct!())
         .build();

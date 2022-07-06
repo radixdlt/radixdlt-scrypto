@@ -9,7 +9,9 @@ use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::abi::*;
+use scrypto::address::Bech32Addressable;
 use scrypto::buffer::*;
+use scrypto::core::Network;
 use scrypto::crypto::*;
 use scrypto::engine::types::*;
 use scrypto::prelude::Package;
@@ -24,6 +26,8 @@ use crate::validation::*;
 
 /// Utility for building transaction manifest.
 pub struct ManifestBuilder {
+    /// The network the manifest is built for
+    network: Network,
     /// ID validator for calculating transaction object id
     id_validator: IdValidator,
     /// Instructions generated.
@@ -32,8 +36,9 @@ pub struct ManifestBuilder {
 
 impl ManifestBuilder {
     /// Starts a new transaction builder.
-    pub fn new() -> Self {
+    pub fn new(network: Network) -> Self {
         Self {
+            network,
             id_validator: IdValidator::new(),
             instructions: Vec::new(),
         }
@@ -780,20 +785,17 @@ impl ManifestBuilder {
                 Ok(scrypto_encode(&value))
             }
             ScryptoType::PackageAddress => {
-                let value = arg
-                    .parse::<PackageAddress>()
+                let value = PackageAddress::from_bech32_string(arg, &self.network)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
             ScryptoType::ComponentAddress => {
-                let value = arg
-                    .parse::<ComponentAddress>()
+                let value = ComponentAddress::from_bech32_string(arg, &self.network)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
             ScryptoType::ResourceAddress => {
-                let value = arg
-                    .parse::<ResourceAddress>()
+                let value = ResourceAddress::from_bech32_string(arg, &self.network)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 Ok(scrypto_encode(&value))
             }
@@ -810,7 +812,7 @@ impl ManifestBuilder {
                 Ok(scrypto_encode(&value))
             }
             ScryptoType::Bucket => {
-                let resource_specifier = parse_resource_specifier(arg)
+                let resource_specifier = parse_resource_specifier(arg, &self.network)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let bucket_id = match resource_specifier {
                     ResourceSpecifier::Amount(amount, resource_address) => {
@@ -839,7 +841,7 @@ impl ManifestBuilder {
                 Ok(scrypto_encode(&scrypto::resource::Bucket(bucket_id)))
             }
             ScryptoType::Proof => {
-                let resource_specifier = parse_resource_specifier(arg)
+                let resource_specifier = parse_resource_specifier(arg, &self.network)
                     .map_err(|_| BuildArgsError::FailedToParse(i, ty.clone(), arg.to_owned()))?;
                 let proof_id = match resource_specifier {
                     ResourceSpecifier::Amount(amount, resource_address) => {
@@ -887,7 +889,10 @@ enum ParseResourceSpecifierError {
     MoreThanOneAmountSpecified,
 }
 
-fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResourceSpecifierError> {
+fn parse_resource_specifier(
+    input: &str,
+    network: &Network,
+) -> Result<ResourceSpecifier, ParseResourceSpecifierError> {
     let tokens: Vec<&str> = input.trim().split(',').map(|s| s.trim()).collect();
 
     // check length
@@ -897,8 +902,7 @@ fn parse_resource_specifier(input: &str) -> Result<ResourceSpecifier, ParseResou
 
     // parse resource address
     let token = tokens[tokens.len() - 1];
-    let resource_address = token
-        .parse::<ResourceAddress>()
+    let resource_address = ResourceAddress::from_bech32_string(token, network)
         .map_err(|_| ParseResourceSpecifierError::InvalidResourceAddress(token.to_owned()))?;
 
     // parse non-fungible ids or amount

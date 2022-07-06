@@ -5,6 +5,7 @@ use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::*;
 use radix_engine::model::extract_package;
 use radix_engine::wasm::*;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -29,7 +30,7 @@ fn test_say_hello() {
     let public_key = private_key.public_key();
 
     // Publish package
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .publish_package(extract_package(include_package!("no_std").to_vec()).unwrap())
         .build();
     let package_address = executor
@@ -37,7 +38,7 @@ fn test_say_hello() {
         .new_package_addresses[0];
 
     // Test the `say_hello` function.
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "NoStd", "say_hello", to_struct!())
         .build();
     let receipt = executor.execute(&TestTransaction::new(manifest, 2, vec![]));

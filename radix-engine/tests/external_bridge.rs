@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use scrypto::core::Network;
 use scrypto::{prelude::*, to_struct};
 use transaction::builder::ManifestBuilder;
 
@@ -23,7 +24,7 @@ fn test_external_bridges() {
         test_runner.extract_and_publish_package("external_blueprint_caller");
 
     // Part 2 - Get a target component address
-    let manifest1 = ManifestBuilder::new()
+    let manifest1 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             target_package_address,
             "ExternalBlueprintTarget",
@@ -37,7 +38,7 @@ fn test_external_bridges() {
     let target_component_address = receipt1.new_component_addresses[0];
 
     // Part 3 - Get the caller component address
-    let manifest2 = ManifestBuilder::new()
+    let manifest2 = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             caller_package_address,
             "ExternalBlueprintCaller",
@@ -51,7 +52,7 @@ fn test_external_bridges() {
     let caller_component_address = receipt2.new_component_addresses[0];
 
     // ACT
-    let manifest3 = ManifestBuilder::new()
+    let manifest3 = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(
             caller_component_address,
             "run_tests_with_external_blueprint",

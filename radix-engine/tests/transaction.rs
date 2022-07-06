@@ -2,6 +2,7 @@ use radix_engine::engine::TransactionExecutor;
 use radix_engine::ledger::InMemorySubstateStore;
 use radix_engine::wasm::DefaultWasmEngine;
 use radix_engine::wasm::WasmInstrumenter;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -52,7 +53,11 @@ fn create_transaction() -> Vec<u8> {
             notary_public_key: sk_notary.public_key(),
             notary_as_signatory: false,
         })
-        .manifest(ManifestBuilder::new().clear_auth_zone().build())
+        .manifest(
+            ManifestBuilder::new(Network::LocalSimulator)
+                .clear_auth_zone()
+                .build(),
+        )
         .sign(&sk1)
         .sign(&sk2)
         .notarize(&sk_notary)

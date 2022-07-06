@@ -8,6 +8,9 @@ pub trait Bech32Addressable
 where
     Self: for<'a> TryFrom<&'a [u8], Error = ParseAddressError> + Sized,
 {
+    // Returns an array slice of the allowed entity bytes for this type
+    fn allowed_entity_types() -> &'static [EntityType];
+    
     /// Returns the data to be Bech32 encoded.
     fn data(&self) -> &[u8];
 
@@ -48,6 +51,11 @@ where
             Some(entity_type_id) => {
                 let entity_type = EntityType::try_from(*entity_type_id)
                     .map_err(|_| ParseAddressError::InvalidEntityTypeId(*entity_type_id))?;
+                
+                if !Self::allowed_entity_types().contains(&entity_type) {
+                    return Err(ParseAddressError::InvalidEntityTypeId(*entity_type_id))
+                }
+                
                 let expected_hrp: &'static str =
                     get_network_hrp_set(network).get_entity_hrp(&entity_type);
 

@@ -89,7 +89,11 @@ mod tests {
                 notary_public_key: private_key.public_key(),
                 notary_as_signatory: true,
             })
-            .manifest(ManifestBuilder::new().clear_auth_zone().build())
+            .manifest(
+                ManifestBuilder::new(Network::LocalSimulator)
+                    .clear_auth_zone()
+                    .build(),
+            )
             .notarize(&private_key)
             .build();
 

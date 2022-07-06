@@ -8,6 +8,7 @@ use scrypto_abi::BlueprintAbi;
 
 use crate::abi::*;
 use crate::address::Bech32Addressable;
+use crate::address::EntityType;
 use crate::address::ParseAddressError;
 use crate::core::*;
 use crate::misc::*;
@@ -71,24 +72,23 @@ impl Bech32Addressable for PackageAddress {
     fn data(&self) -> &[u8] {
         &self.0
     }
+
+    fn allowed_entity_types() -> &'static [EntityType] {
+        &[EntityType::Package]
+    }
 }
 
 impl FromStr for PackageAddress {
     type Err = ParseAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_bech32_string(s, &Runtime::transaction_network())
+        Self::from_bech32_string(s, &CURRENT_NETWORK)
     }
 }
 
 impl fmt::Display for PackageAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(
-            f,
-            "{}",
-            self.to_bech32_string(&Runtime::transaction_network())
-                .unwrap()
-        )
+        write!(f, "{}", self.to_bech32_string(&CURRENT_NETWORK).unwrap())
     }
 }
 

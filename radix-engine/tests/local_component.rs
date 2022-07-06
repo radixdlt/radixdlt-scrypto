@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use crate::test_runner::TestRunner;
 use radix_engine::engine::RuntimeError;
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
@@ -14,7 +15,7 @@ fn local_component_should_return_correct_info() {
     let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "LocalComponent",
@@ -35,7 +36,7 @@ fn local_component_should_be_callable_read_only() {
     let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "LocalComponent",
@@ -56,7 +57,7 @@ fn local_component_should_be_callable_with_write() {
     let package_address = test_runner.extract_and_publish_package("component");
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "LocalComponent",
@@ -81,7 +82,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
     let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id);
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(
             package_address,
             "LocalComponent",
@@ -106,7 +107,7 @@ fn local_component_with_access_rules_should_be_callable() {
     let auth_address = NonFungibleAddress::new(auth_resource_address, auth_id.clone());
 
     // Act
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_method(
             account,
             "create_proof_by_ids",
@@ -134,7 +135,7 @@ fn recursion_bomb() {
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .withdraw_from_account_by_amount(Decimal::from(10), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(
@@ -161,7 +162,7 @@ fn recursion_bomb_2() {
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .withdraw_from_account_by_amount(Decimal::from(10), RADIX_TOKEN, account)
         .take_from_worktop(RADIX_TOKEN, |builder, bucket_id| {
             builder.call_function(

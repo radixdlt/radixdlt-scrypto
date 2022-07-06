@@ -1,4 +1,5 @@
 use criterion::{criterion_group, criterion_main, Criterion};
+use scrypto::core::Network;
 use scrypto::prelude::*;
 use transaction::builder::ManifestBuilder;
 use transaction::builder::TransactionBuilder;
@@ -57,7 +58,7 @@ fn bench_transaction_validation(c: &mut Criterion) {
             notary_as_signatory: true,
         })
         .manifest(
-            ManifestBuilder::new()
+            ManifestBuilder::new(Network::LocalSimulator)
                 .withdraw_from_account_by_amount(1u32.into(), RADIX_TOKEN, account1)
                 .call_method_with_all_resources(account2, "deposit_batch")
                 .build(),

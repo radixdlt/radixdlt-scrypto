@@ -1,4 +1,5 @@
 use clap::Parser;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use transaction::builder::ManifestBuilder;
 
@@ -33,7 +34,7 @@ impl Mint {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
         let default_account = get_default_account()?;
 
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .create_proof_from_account(self.minter_resource_address, default_account)
             .mint(self.amount, self.resource_address)
             .call_method_with_all_resources(default_account, "deposit_batch")

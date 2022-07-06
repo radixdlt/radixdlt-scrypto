@@ -66,7 +66,7 @@ pub const SYSTEM_COMPONENT: ComponentAddress = ComponentAddress([
 
 /// The package of the account blueprint.
 pub const ACCOUNT_PACKAGE: PackageAddress = PackageAddress([
-    ACCOUNT_COMPONENT_ADDRESS_ENTITY_ID,
+    PACKAGE_ADDRESS_ENTITY_ID,
     0,
     0,
     0,

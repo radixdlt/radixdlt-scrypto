@@ -1,4 +1,5 @@
 use core::str::FromStr;
+use once_cell::sync::Lazy;
 
 use sbor::{Decode, Encode, TypeId};
 
@@ -26,3 +27,12 @@ impl FromStr for Network {
 pub enum NetworkError {
     InvalidNetworkString,
 }
+
+#[cfg(target_arch = "wasm32")]
+pub const CURRENT_NETWORK: Lazy<Network> = Lazy::new(|| {
+    use super::Runtime;
+    Runtime::transaction_network()
+});
+
+#[cfg(not(target_arch = "wasm32"))]
+pub const CURRENT_NETWORK: Lazy<Network> = Lazy::new(|| Network::LocalSimulator);

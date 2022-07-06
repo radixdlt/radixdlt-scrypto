@@ -1,4 +1,5 @@
 use clap::Parser;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use transaction::builder::ManifestBuilder;
 
@@ -31,7 +32,7 @@ pub struct Transfer {
 
 impl Transfer {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let manifest = ManifestBuilder::new()
+        let manifest = ManifestBuilder::new(Network::LocalSimulator)
             .withdraw_from_account_by_amount(
                 self.amount,
                 self.resource_address,

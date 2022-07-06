@@ -3,6 +3,7 @@ pub mod test_runner;
 
 use radix_engine::fee::{ENGINE_RUN_COST, TX_VALIDATION_COST_PER_BYTE, WASM_ENGINE_CALL_COST};
 use radix_engine::wasm::InvokeError;
+use scrypto::core::Network;
 use scrypto::prelude::Package;
 use scrypto::to_struct;
 use test_runner::{abi_single_fn_any_input_void_output, wat2wasm, TestRunner};
@@ -20,7 +21,7 @@ fn test_loop() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -41,7 +42,7 @@ fn test_loop_out_of_cost_unit() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -63,7 +64,7 @@ fn test_recursion() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -84,7 +85,7 @@ fn test_recursion_stack_overflow() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -105,7 +106,7 @@ fn test_grow_memory() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -126,7 +127,7 @@ fn test_grow_memory_out_of_cost_unit() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -147,7 +148,7 @@ fn test_total_cost_units_consumed() {
         blueprints: abi_single_fn_any_input_void_output("Test", "f"),
     };
     let package_address = test_runner.publish_package(package);
-    let manifest = ManifestBuilder::new()
+    let manifest = ManifestBuilder::new(Network::LocalSimulator)
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

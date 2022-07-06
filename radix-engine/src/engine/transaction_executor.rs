@@ -69,7 +69,11 @@ where
         let instructions = transaction.instructions().to_vec();
 
         // Start state track
-        let mut track = Track::new(self.substate_store, transaction_hash, transaction_network);
+        let mut track = Track::new(
+            self.substate_store,
+            transaction_hash,
+            transaction_network.clone(),
+        );
 
         // Metering
         let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
@@ -148,6 +152,7 @@ where
         let execution_time = Some(now.elapsed().as_millis());
 
         Receipt {
+            transaction_network,
             commit_receipt,
             instructions,
             result: match error {
