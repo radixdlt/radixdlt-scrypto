@@ -133,6 +133,7 @@ pub enum DropFailure {
     Resource,
     Component,
     Bucket,
+    Worktop,
     Vault,
     Package,
     KeyValueStore,

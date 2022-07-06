@@ -420,6 +420,16 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
         }
     }
 
+    pub fn worktop(&mut self) -> &mut Worktop {
+        match self {
+            RENativeValueRef::OwnedRef(ref mut root) => match root.deref_mut() {
+                REValue::Worktop(worktop) => worktop,
+                _ => panic!("Expecting to be a worktop"),
+            },
+            _ => panic!("Expecting to be a worktop"),
+        }
+    }
+
     pub fn vault(&mut self) -> &mut Vault {
         match self {
             RENativeValueRef::Owned(..) => panic!("Unexpected"),
@@ -760,15 +770,12 @@ where
     }
 
     fn drop_owned_values(&mut self) -> Result<(), RuntimeError> {
-        for (_, value) in self.owned_values.drain() {
-            trace!(self, Level::Warn, "Dangling value: {:?}", value);
-            value
-                .into_inner()
-                .try_drop()
-                .map_err(|e| RuntimeError::DropFailure(e))?;
-        }
-
-        Ok(())
+        let values = self
+            .owned_values
+            .drain()
+            .map(|(_, cell)| cell.into_inner())
+            .collect();
+        REValue::drop_values(values).map_err(|e| RuntimeError::DropFailure(e))
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -867,6 +874,10 @@ where
                     ValueId::Transient(TransientValueId::Proof(..)) => {
                         Proof::main(value_id, fn_ident, input, self)
                             .map_err(RuntimeError::ProofError)
+                    }
+                    ValueId::Transient(TransientValueId::Worktop) => {
+                        Worktop::main(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::WorktopError)
                     }
                     ValueId::Stored(StoredValueId::VaultId(vault_id)) => {
                         Vault::main(vault_id, fn_ident, input, self)
@@ -1257,6 +1268,46 @@ where
                         visible: true,
                     },
                 );
+                Ok((SNodeExecution::ValueRef(value_id), vec![]))
+            }
+            SNodeRef::WorktopRef => {
+                let value_id = ValueId::Transient(TransientValueId::Worktop);
+                let worktop_cell = self
+                    .owned_values
+                    .get(&value_id)
+                    .ok_or(RuntimeError::ValueNotFound(value_id))?;
+
+                let ref_mut = worktop_cell.borrow_mut();
+                next_borrowed_values.insert(value_id.clone(), ref_mut);
+                value_refs.insert(
+                    value_id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::BorrowedRoot,
+                        visible: true,
+                    },
+                );
+
+                for resource_address in &input.resource_addresses {
+                    self.track
+                        .take_lock(resource_address.clone(), false)
+                        .map_err(|e| match e {
+                            TrackError::NotFound => {
+                                RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                            }
+                            TrackError::Reentrancy => {
+                                panic!("Package reentrancy error should never occur.")
+                            }
+                        })?;
+                    locked_values.insert(resource_address.clone().into());
+                    value_refs.insert(
+                        ValueId::Resource(resource_address.clone()),
+                        REValueInfo {
+                            location: REValueLocation::Track { parent: None },
+                            visible: true,
+                        },
+                    );
+                }
+
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
@@ -1709,6 +1760,9 @@ where
             REValueByComplexity::Primitive(REPrimitiveValue::Proof(..)) => {
                 let proof_id = self.track.new_proof_id();
                 ValueId::Transient(TransientValueId::Proof(proof_id))
+            }
+            REValueByComplexity::Primitive(REPrimitiveValue::Worktop(..)) => {
+                ValueId::Transient(TransientValueId::Worktop)
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Vault(..)) => {
                 let vault_id = self.track.new_vault_id();
