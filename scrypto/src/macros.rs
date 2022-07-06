@@ -326,7 +326,7 @@ external_component! {
 }
 
 fn bridge_to_existing_account() {
-    let existing_account = AccountInterface::from(ComponentAddress::from_str("02d43f479e9b2beb9df98bc3888344fc25eda181e8f710ce1bf1de").unwrap());
+    let existing_account = AccountInterface::from(ComponentAddress::from_str("acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk").unwrap());
     let balance = existing_account.read_balance();
     // ...
 }

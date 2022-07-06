@@ -2,6 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use scrypto::address::Bech32Addressable;
 use scrypto::core::Network;
 use scrypto::{prelude::*, to_struct};
 use transaction::builder::ManifestBuilder;
@@ -79,13 +80,13 @@ fn fill_in_package_name_template(
     use std::io::{Read, Write};
     use std::path::Path;
 
-    let package_address_hex = hex::encode(combine(1, &package_address.0));
+    let package_address_string = package_address.to_bech32_string(&Network::LocalSimulator).unwrap();
 
     println!(
         "Copying template from {:?} to {:?} whilst updating package address to {}",
         Path::new(&template_file_path),
         Path::new(&code_file_path),
-        package_address_hex
+        package_address_string
     );
 
     let mut template_file = File::open(&template_file_path)?;
@@ -94,7 +95,7 @@ fn fill_in_package_name_template(
     drop(template_file);
 
     let code_file_contents =
-        template_file_contents.replace("%%PACKAGE_ADDRESS%%", &package_address_hex);
+        template_file_contents.replace("%%PACKAGE_ADDRESS%%", &package_address_string);
 
     // Recreate the file and dump the processed contents to it
     let mut code_file = File::create(&code_file_path)?;

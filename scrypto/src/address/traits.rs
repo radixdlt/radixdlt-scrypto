@@ -1,3 +1,5 @@
+use sbor::rust::string::String;
+use sbor::rust::vec::Vec;
 use super::ParseAddressError;
 use crate::core::Network;
 use bech32::{self, FromBase32, ToBase32, Variant};

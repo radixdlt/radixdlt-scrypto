@@ -58,16 +58,16 @@ mod tests {
             vec![
                 (
                     "system",
-                    Some("020000000000000000000000000000000000000000000000000002"),
+                    Some("sys_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqwk37ww"),
                 ),
                 (
                     "xrd",
-                    Some("030000000000000000000000000000000000000000000000000004"),
+                    Some("asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44"),
                 ),
             ],
             || {
                 let manifest = r#"CALL_METHOD ComponentAddress("${  system  }") "free_xrd";\nTAKE_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("bucket1");\n"#;
-                let after = r#"CALL_METHOD ComponentAddress("020000000000000000000000000000000000000000000000000002") "free_xrd";\nTAKE_FROM_WORKTOP ResourceAddress("030000000000000000000000000000000000000000000000000004") Bucket("bucket1");\n"#;
+                let after = r#"CALL_METHOD ComponentAddress("020000000000000000000000000000000000000000000000000002") "free_xrd";\nTAKE_FROM_WORKTOP ResourceAddress("asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44") Bucket("bucket1");\n"#;
                 assert_eq!(Run::pre_process_manifest(manifest), after);
             },
         );

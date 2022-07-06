@@ -40,10 +40,10 @@ fn bench_ed25519_validation(c: &mut Criterion) {
 
 fn bench_transaction_validation(c: &mut Criterion) {
     let account1 =
-        ComponentAddress::from_str("02684fabeec72caa03cfa436547b0cccf492d88b940eb5198c4204")
+        ComponentAddress::from_str("acct_sim1qd5yl2lwcuk25q705sm9g7cven6f9kytjs8t2xvvggzq8g4dx6")
             .unwrap();
     let account2 =
-        ComponentAddress::from_str("027889a17c391f9a544ecd254aedae645d3b433a3f0a7abeaff09d")
+        ComponentAddress::from_str("acct_sim1qdugngtu8y0e54zwe5j54mdwv3wnkse68u9840407zwsfvah9a")
             .unwrap();
     let signer = EcdsaPrivateKey::from_u64(1).unwrap();
 

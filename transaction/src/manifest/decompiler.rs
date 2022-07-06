@@ -316,13 +316,13 @@ mod tests {
     fn test_decompile() {
         let tx = compile(
             include_str!("../../examples/complex.rtm"),
-            &Network::InternalTestnet,
+            &Network::LocalSimulator,
         )
         .unwrap();
 
         let manifest = &decompile(&tx, &Network::LocalSimulator).unwrap();
         println!("{}", manifest);
 
-        assert_eq!(compile(manifest, &Network::InternalTestnet).unwrap(), tx);
+        assert_eq!(compile(manifest, &Network::LocalSimulator).unwrap(), tx);
     }
 }
