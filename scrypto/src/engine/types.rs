@@ -26,6 +26,7 @@ pub enum ValueId {
     Bucket(BucketId),
     Proof(ProofId),
     KeyValueStore(KeyValueStoreId),
+    Worktop,
     Component(ComponentAddress),
     Vault(VaultId),
     Resource(ResourceAddress),

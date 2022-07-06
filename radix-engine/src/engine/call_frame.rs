@@ -32,6 +32,7 @@ pub struct CallFrame<
     't, // Track lifetime
     's, // Substate store lifetime
     'w, // WASM engine lifetime
+    'c, // Costing lifetime
     S,  // Substore store type
     W,  // WASM engine type
     I,  // WASM instance type
@@ -54,6 +55,11 @@ pub struct CallFrame<
     /// Wasm Instrumenter
     wasm_instrumenter: &'w mut WasmInstrumenter,
 
+    /// Remaining cost unit counter
+    cost_unit_counter: &'c mut CostUnitCounter,
+    /// Fee table
+    fee_table: &'c FeeTable,
+
     /// All ref values accessible by this call frame. The value may be located in one of the following:
     /// 1. borrowed values
     /// 2. track
@@ -61,18 +67,11 @@ pub struct CallFrame<
 
     /// Owned Values
     owned_values: HashMap<ValueId, RefCell<REValue>>,
-    worktop: Option<RefCell<Worktop>>,
     auth_zone: Option<RefCell<AuthZone>>,
 
     /// Borrowed Values from call frames up the stack
     frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
     caller_auth_zone: Option<&'p RefCell<AuthZone>>,
-
-    /// There is a single cost unit counter and a single fee table per transaction execution.
-    /// When a call ocurrs, they're passed from the parent to the child, and returned
-    /// after the invocation.
-    cost_unit_counter: Option<CostUnitCounter>,
-    fee_table: Option<FeeTable>,
 
     phantom: PhantomData<I>,
 }
@@ -357,6 +356,16 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
         }
     }
 
+    pub fn worktop(&mut self) -> &mut Worktop {
+        match self {
+            RENativeValueRef::OwnedRef(ref mut root) => match root.deref_mut() {
+                REValue::Worktop(worktop) => worktop,
+                _ => panic!("Expecting to be a worktop"),
+            },
+            _ => panic!("Expecting to be a worktop"),
+        }
+    }
+
     pub fn vault(&mut self) -> &mut Vault {
         match self {
             RENativeValueRef::Owned(..) => panic!("Unexpected"),
@@ -619,7 +628,6 @@ pub enum SNodeExecution<'a> {
     Static(StaticSNodeState),
     Consumed(ValueId),
     AuthZone(RefMut<'a, AuthZone>),
-    Worktop(RefMut<'a, Worktop>),
     ValueRef(ValueId),
     Scrypto(ScryptoActorInfo, PackageAddress),
 }
@@ -630,7 +638,7 @@ pub enum SubstateAddress {
     Component(ComponentAddress, ComponentOffset),
 }
 
-impl<'p, 't, 's, 'w, S, W, I> CallFrame<'p, 't, 's, 'w, S, W, I>
+impl<'p, 't, 's, 'w, 'c, S, W, I> CallFrame<'p, 't, 's, 'w, 'c, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -643,8 +651,8 @@ where
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
-        cost_unit_counter: CostUnitCounter,
-        fee_table: FeeTable,
+        cost_unit_counter: &'c mut CostUnitCounter,
+        fee_table: &'c FeeTable,
     ) -> Self {
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
@@ -670,16 +678,15 @@ where
             track,
             wasm_engine,
             wasm_instrumenter,
+            cost_unit_counter,
+            fee_table,
             Some(RefCell::new(AuthZone::new_with_proofs(
                 initial_auth_zone_proofs,
             ))),
-            Some(RefCell::new(Worktop::new())),
             HashMap::new(),
             HashMap::new(),
             HashMap::new(),
             None,
-            cost_unit_counter,
-            fee_table,
         )
     }
 
@@ -690,14 +697,13 @@ where
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
+        cost_unit_counter: &'c mut CostUnitCounter,
+        fee_table: &'c FeeTable,
         auth_zone: Option<RefCell<AuthZone>>,
-        worktop: Option<RefCell<Worktop>>,
         owned_values: HashMap<ValueId, RefCell<REValue>>,
         value_refs: HashMap<ValueId, REValueInfo>,
         frame_borrowed_values: HashMap<ValueId, RefMut<'p, REValue>>,
         caller_auth_zone: Option<&'p RefCell<AuthZone>>,
-        cost_unit_counter: CostUnitCounter,
-        fee_table: FeeTable,
     ) -> Self {
         Self {
             transaction_hash,
@@ -706,36 +712,24 @@ where
             track,
             wasm_engine,
             wasm_instrumenter,
+            cost_unit_counter,
+            fee_table,
             owned_values,
             value_refs,
             frame_borrowed_values,
-            worktop,
             auth_zone,
             caller_auth_zone,
-            cost_unit_counter: Some(cost_unit_counter),
-            fee_table: Some(fee_table),
             phantom: PhantomData,
         }
     }
 
     fn drop_owned_values(&mut self) -> Result<(), RuntimeError> {
-        for (_, value) in self.owned_values.drain() {
-            trace!(self, Level::Warn, "Dangling value: {:?}", value);
-            value
-                .into_inner()
-                .try_drop()
-                .map_err(|e| RuntimeError::DropFailure(e))?;
-        }
-
-        if let Some(ref_worktop) = &self.worktop {
-            let worktop = ref_worktop.borrow();
-            if !worktop.is_empty() {
-                trace!(self, Level::Warn, "Resource worktop is not empty");
-                return Err(RuntimeError::DropFailure(DropFailure::Worktop));
-            }
-        }
-
-        Ok(())
+        let values = self
+            .owned_values
+            .drain()
+            .map(|(_, cell)| cell.into_inner())
+            .collect();
+        REValue::drop_values(values).map_err(|e| RuntimeError::DropFailure(e))
     }
 
     fn process_call_data(validated: &ScryptoValue) -> Result<(), RuntimeError> {
@@ -778,12 +772,12 @@ where
         trace!(
             self,
             Level::Debug,
-            "Run started! Remainging cost units: {}",
-            self.cost_unit_counter().remaining()
+            "Run started! Depth: {}, Remaining cost units: {}",
+            self.depth,
+            self.cost_unit_counter.remaining()
         );
-
-        Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
-            .consume(Self::fee_table_helper(&mut self.fee_table).engine_run_cost())
+        self.cost_unit_counter
+            .consume(self.fee_table.engine_run_cost())
             .map_err(RuntimeError::CostingError)?;
 
         let output = {
@@ -822,14 +816,15 @@ where
                 SNodeExecution::AuthZone(mut auth_zone) => auth_zone
                     .main(fn_ident, input, self)
                     .map_err(RuntimeError::AuthZoneError),
-                SNodeExecution::Worktop(mut worktop) => worktop
-                    .main(fn_ident, input, self)
-                    .map_err(RuntimeError::WorktopError),
                 SNodeExecution::ValueRef(value_id) => match value_id {
                     ValueId::Bucket(bucket_id) => Bucket::main(bucket_id, fn_ident, input, self)
                         .map_err(RuntimeError::BucketError),
                     ValueId::Proof(..) => Proof::main(value_id, fn_ident, input, self)
                         .map_err(RuntimeError::ProofError),
+                    ValueId::Worktop => {
+                        Worktop::main(value_id, fn_ident, input, self)
+                            .map_err(RuntimeError::WorktopError)
+                    }
                     ValueId::Vault(vault_id) => Vault::main(vault_id, fn_ident, input, self)
                         .map_err(RuntimeError::VaultError),
                     ValueId::Component(..) => Component::main(value_id, fn_ident, input, self)
@@ -843,8 +838,7 @@ where
                 SNodeExecution::Scrypto(ref actor, package_address) => {
                     let output = {
                         let package = self.track.read_value(package_address).package();
-                        let wasm_metering_params =
-                            Self::fee_table_helper(&self.fee_table).wasm_metering_params();
+                        let wasm_metering_params = self.fee_table.wasm_metering_params();
                         let instrumented_code = self
                             .wasm_instrumenter
                             .instrument(package.code(), &wasm_metering_params);
@@ -911,33 +905,11 @@ where
         trace!(
             self,
             Level::Debug,
-            "Run finished! Remainging cost units: {}",
+            "Run finished! Remaining cost units: {}",
             self.cost_unit_counter().remaining()
         );
 
         Ok((output, taken_values))
-    }
-
-    fn cost_unit_counter_helper(counter: &mut Option<CostUnitCounter>) -> &mut CostUnitCounter {
-        counter
-            .as_mut()
-            .expect("Frame doens't own a cost unit counter")
-    }
-
-    pub fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
-        // Use helper method to support paritial borrow of self
-        // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
-        Self::cost_unit_counter_helper(&mut self.cost_unit_counter)
-    }
-
-    fn fee_table_helper(fee_table: &Option<FeeTable>) -> &FeeTable {
-        fee_table.as_ref().expect("Frame doens't own a fee table")
-    }
-
-    pub fn fee_table(&self) -> &FeeTable {
-        // Use helper method to support paritial borrow of self
-        // See https://users.rust-lang.org/t/how-to-partially-borrow-from-struct/32221
-        Self::fee_table_helper(&self.fee_table)
     }
 
     fn take_available_values(
@@ -1066,7 +1038,8 @@ where
     }
 }
 
-impl<'p, 't, 's, 'w, S, W, I> SystemApi<'p, 's, W, I, S> for CallFrame<'p, 't, 's, 'w, S, W, I>
+impl<'p, 't, 's, 'w, 'c, S, W, I> SystemApi<'p, 's, W, I, S>
+    for CallFrame<'p, 't, 's, 'w, 'c, S, W, I>
 where
     S: ReadableSubstateStore,
     W: WasmEngine<I>,
@@ -1078,6 +1051,10 @@ where
         fn_ident: String,
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError> {
+        if self.depth == MAX_CALL_DEPTH {
+            return Err(RuntimeError::MaxCallDepthLimitReached);
+        }
+
         trace!(
             self,
             Level::Debug,
@@ -1215,34 +1192,6 @@ where
                     Err(RuntimeError::AuthZoneDoesNotExist)
                 }
             }
-            SNodeRef::WorktopRef => {
-                if let Some(worktop_ref) = &self.worktop {
-                    for resource_address in &input.resource_addresses {
-                        self.track
-                            .take_lock(resource_address.clone(), false)
-                            .map_err(|e| match e {
-                                TrackError::NotFound => {
-                                    RuntimeError::ResourceManagerNotFound(resource_address.clone())
-                                }
-                                TrackError::Reentrancy => {
-                                    panic!("Package reentrancy error should never occur.")
-                                }
-                            })?;
-                        locked_values.insert(resource_address.clone().into());
-                        value_refs.insert(
-                            ValueId::Resource(resource_address.clone()),
-                            REValueInfo {
-                                location: REValueLocation::Track(Address::Resource(resource_address.clone())),
-                                visible: true,
-                            },
-                        );
-                    }
-                    let worktop = worktop_ref.borrow_mut();
-                    Ok((SNodeExecution::Worktop(worktop), vec![]))
-                } else {
-                    Err(RuntimeError::WorktopDoesNotExist)
-                }
-            }
             SNodeRef::ResourceRef(resource_address) => {
                 let value_id = ValueId::Resource(*resource_address);
                 let address: Address = Address::Resource(*resource_address);
@@ -1309,6 +1258,46 @@ where
                         visible: true,
                     },
                 );
+                Ok((SNodeExecution::ValueRef(value_id), vec![]))
+            }
+            SNodeRef::WorktopRef => {
+                let value_id = ValueId::Worktop;
+                let worktop_cell = self
+                    .owned_values
+                    .get(&value_id)
+                    .ok_or(RuntimeError::ValueNotFound(value_id))?;
+
+                let ref_mut = worktop_cell.borrow_mut();
+                next_borrowed_values.insert(value_id.clone(), ref_mut);
+                value_refs.insert(
+                    value_id.clone(),
+                    REValueInfo {
+                        location: REValueLocation::BorrowedRoot(value_id),
+                        visible: true,
+                    },
+                );
+
+                for resource_address in &input.resource_addresses {
+                    self.track
+                        .take_lock(resource_address.clone(), false)
+                        .map_err(|e| match e {
+                            TrackError::NotFound => {
+                                RuntimeError::ResourceManagerNotFound(resource_address.clone())
+                            }
+                            TrackError::Reentrancy => {
+                                panic!("Package reentrancy error should never occur.")
+                            }
+                        })?;
+                    locked_values.insert(resource_address.clone().into());
+                    value_refs.insert(
+                        ValueId::Resource(resource_address.clone()),
+                        REValueInfo {
+                            location: REValueLocation::Track(Address::Resource(resource_address.clone())),
+                            visible: true,
+                        },
+                    );
+                }
+
                 Ok((SNodeExecution::ValueRef(value_id), vec![]))
             }
             SNodeRef::Scrypto(actor) => match actor {
@@ -1623,16 +1612,6 @@ where
             }
         }
 
-        // Prepare moving cost unit counter and fee table
-        let cost_unit_counter = self
-            .cost_unit_counter
-            .take()
-            .expect("Frame doesn't own a cost unit counter");
-        let fee_table = self
-            .fee_table
-            .take()
-            .expect("Frame doesn't own a fee table");
-
         // start a new frame
         let mut frame = CallFrame::new(
             self.transaction_hash,
@@ -1641,6 +1620,8 @@ where
             self.track,
             self.wasm_engine,
             self.wasm_instrumenter,
+            self.cost_unit_counter,
+            self.fee_table,
             match loaded_snode {
                 SNodeExecution::Scrypto(..)
                 | SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
@@ -1648,30 +1629,16 @@ where
                 }
                 _ => None,
             },
-            match loaded_snode {
-                SNodeExecution::Static(StaticSNodeState::TransactionProcessor) => {
-                    Some(RefCell::new(Worktop::new()))
-                }
-                _ => None,
-            },
             next_owned_values,
             value_refs,
             next_borrowed_values,
             self.auth_zone.as_ref(),
-            cost_unit_counter,
-            fee_table,
         );
 
         // invoke the main function
-        let run_result = frame.run(Some(snode_ref), loaded_snode, &fn_ident, input);
-
-        // re-gain ownership of the cost unit counter and fee table
-        self.cost_unit_counter = frame.cost_unit_counter.take();
-        self.fee_table = frame.fee_table.take();
+        let (result, received_values) =
+            frame.run(Some(snode_ref), loaded_snode, &fn_ident, input)?;
         drop(frame);
-
-        // unwrap and continue
-        let (result, received_values) = run_result?;
 
         // Release locked addresses
         for l in locked_values {
@@ -1745,6 +1712,9 @@ where
             REValueByComplexity::Primitive(REPrimitiveValue::Proof(..)) => {
                 let proof_id = self.track.new_proof_id();
                 ValueId::Proof(proof_id)
+            }
+            REValueByComplexity::Primitive(REPrimitiveValue::Worktop(..)) => {
+                ValueId::Worktop
             }
             REValueByComplexity::Primitive(REPrimitiveValue::Vault(..)) => {
                 let vault_id = self.track.new_vault_id();
@@ -2026,10 +1996,10 @@ where
     }
 
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter {
-        self.cost_unit_counter()
+        self.cost_unit_counter
     }
 
     fn fee_table(&self) -> &FeeTable {
-        self.fee_table()
+        self.fee_table
     }
 }
