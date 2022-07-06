@@ -17,8 +17,8 @@ impl Hash {
     pub const LENGTH: usize = 32;
 
     /// Returns the lower 26 bytes.
-    pub fn lower_26_bytes(&self) -> [u8; 27] {
-        let mut result = [0u8; 27];
+    pub fn lower_26_bytes(&self) -> [u8; 26] {
+        let mut result = [0u8; 26];
         result.copy_from_slice(&self.0[6..32]);
         result
     }

@@ -1,8 +1,10 @@
 use clap::Parser;
 use colored::*;
 use rand::Rng;
+use scrypto::address::Bech32Addressable;
 use scrypto::prelude::*;
 use scrypto::to_struct;
+use scrypto::core::Network;
 
 use crate::resim::*;
 
@@ -47,7 +49,7 @@ impl NewAccount {
             writeln!(
                 out,
                 "Account component address: {}",
-                account.to_string().green()
+                account.to_bech32_string(&Network::LocalSimulator).unwrap().to_string().green()
             )
             .map_err(Error::IOError)?;
             writeln!(out, "Public key: {}", public_key.to_string().green())

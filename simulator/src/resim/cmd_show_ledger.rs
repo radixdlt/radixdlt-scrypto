@@ -1,5 +1,6 @@
 use clap::Parser;
 use colored::*;
+use scrypto::address::Bech32Addressable;
 
 use crate::ledger::*;
 use crate::resim::*;
@@ -15,20 +16,41 @@ impl ShowLedger {
 
         writeln!(out, "{}:", "Packages".green().bold()).map_err(Error::IOError)?;
         for (last, package_address) in ledger.list_packages().iter().identify_last() {
-            writeln!(out, "{} {}", list_item_prefix(last), package_address)
-                .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "{} {}",
+                list_item_prefix(last),
+                package_address
+                    .to_bech32_string(&Network::LocalSimulator)
+                    .unwrap()
+            )
+            .map_err(Error::IOError)?;
         }
 
         writeln!(out, "{}:", "Components".green().bold()).map_err(Error::IOError)?;
         for (last, component_address) in ledger.list_components().iter().identify_last() {
-            writeln!(out, "{} {}", list_item_prefix(last), component_address)
-                .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "{} {}",
+                list_item_prefix(last),
+                component_address
+                    .to_bech32_string(&Network::LocalSimulator)
+                    .unwrap()
+            )
+            .map_err(Error::IOError)?;
         }
 
         writeln!(out, "{}:", "Resource Managers".green().bold()).map_err(Error::IOError)?;
         for (last, resource_address) in ledger.list_resource_managers().iter().identify_last() {
-            writeln!(out, "{} {}", list_item_prefix(last), resource_address)
-                .map_err(Error::IOError)?;
+            writeln!(
+                out,
+                "{} {}",
+                list_item_prefix(last),
+                resource_address
+                    .to_bech32_string(&Network::LocalSimulator)
+                    .unwrap()
+            )
+            .map_err(Error::IOError)?;
         }
 
         Ok(())

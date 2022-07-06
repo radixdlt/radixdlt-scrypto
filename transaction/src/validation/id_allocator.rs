@@ -54,7 +54,10 @@ impl IdAllocator {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        Ok(PackageAddress(copy_u8_array(&combine(entity_type_id, &hash(data).lower_26_bytes()))))
+        Ok(PackageAddress(copy_u8_array(&combine(
+            entity_type_id,
+            &hash(data).lower_26_bytes(),
+        ))))
     }
 
     /// Creates a new component address.
@@ -74,7 +77,10 @@ impl IdAllocator {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        Ok(ComponentAddress(copy_u8_array(&combine(entity_type_id, &hash(data).lower_26_bytes()))))
+        Ok(ComponentAddress(copy_u8_array(&combine(
+            entity_type_id,
+            &hash(data).lower_26_bytes(),
+        ))))
     }
 
     /// Creates a new resource address.
@@ -88,7 +94,10 @@ impl IdAllocator {
         let mut data = transaction_hash.to_vec();
         data.extend(self.next()?.to_le_bytes());
 
-        Ok(ResourceAddress(copy_u8_array(&combine(entity_type_id, &hash(data).lower_26_bytes()))))
+        Ok(ResourceAddress(copy_u8_array(&combine(
+            entity_type_id,
+            &hash(data).lower_26_bytes(),
+        ))))
     }
 
     /// Creates a new UUID.

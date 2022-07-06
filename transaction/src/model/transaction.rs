@@ -45,9 +45,10 @@ pub struct NotarizedTransaction {
 
 impl TransactionIntent {
     pub fn new(header: TransactionHeader, manifest: &str) -> Result<Self, CompileError> {
+        let network: Network = header.network.clone();
         Ok(Self {
             header,
-            manifest: compile(manifest)?,
+            manifest: compile(manifest, &network)?,
         })
     }
 

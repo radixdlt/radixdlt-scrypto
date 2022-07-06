@@ -1,5 +1,6 @@
 use clap::Parser;
 use regex::{Captures, Regex};
+use scrypto::core::Network;
 use std::env;
 use std::path::PathBuf;
 
@@ -33,7 +34,8 @@ impl Run {
         let manifest = std::fs::read_to_string(&self.path).map_err(Error::IOError)?;
         let pre_processed_manifest = Self::pre_process_manifest(&manifest);
         let compiled_manifest =
-            transaction::manifest::compile(&pre_processed_manifest).map_err(Error::CompileError)?;
+            transaction::manifest::compile(&pre_processed_manifest, &Network::LocalSimulator)
+                .map_err(Error::CompileError)?;
         handle_manifest(
             compiled_manifest,
             &self.signing_keys,

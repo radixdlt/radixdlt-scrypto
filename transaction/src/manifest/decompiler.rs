@@ -1,5 +1,7 @@
 use sbor::rust::collections::*;
 use sbor::{encode_any, DecodeError, Value};
+use scrypto::address::Bech32Addressable;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -13,7 +15,10 @@ pub enum DecompileError {
     DecodeError(DecodeError),
 }
 
-pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileError> {
+pub fn decompile(
+    manifest: &TransactionManifest,
+    network: &Network,
+) -> Result<String, DecompileError> {
     let mut buf = String::new();
     let mut id_validator = IdValidator::new();
     let mut buckets = HashMap::<BucketId, String>::new();
@@ -28,7 +33,8 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
                     "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    resource_address, name
+                    resource_address.to_bech32_string(network).unwrap(),
+                    name
                 ));
             }
             Instruction::TakeFromWorktopByAmount {
@@ -42,7 +48,7 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
                     "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    amount, resource_address, name
+                    amount, resource_address.to_bech32_string(network).unwrap(), name
                 ));
             }
             Instruction::TakeFromWorktopByIds {
@@ -60,7 +66,7 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    resource_address, name
+                    resource_address.to_bech32_string(network).unwrap(), name
                 ));
             }
             Instruction::ReturnToWorktop { bucket_id } => {
@@ -78,7 +84,7 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
             Instruction::AssertWorktopContains { resource_address } => {
                 buf.push_str(&format!(
                     "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");\n",
-                    resource_address
+                    resource_address.to_bech32_string(network).unwrap()
                 ));
             }
             Instruction::AssertWorktopContainsByAmount {
@@ -87,7 +93,8 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
             } => {
                 buf.push_str(&format!(
                     "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");\n",
-                    amount, resource_address
+                    amount,
+                    resource_address.to_bech32_string(network).unwrap()
                 ));
             }
             Instruction::AssertWorktopContainsByIds {
@@ -100,7 +107,7 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                         .map(|k| format!("NonFungibleId(\"{}\")", k))
                         .collect::<Vec<String>>()
                         .join(", "),
-                    resource_address
+                    resource_address.to_bech32_string(network).unwrap()
                 ));
             }
             Instruction::PopFromAuthZone => {
@@ -134,7 +141,8 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
                     "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");\n",
-                    resource_address, name
+                    resource_address.to_bech32_string(network).unwrap(),
+                    name
                 ));
             }
             Instruction::CreateProofFromAuthZoneByAmount {
@@ -149,7 +157,7 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                 buf.push_str(&format!(
                     "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");\n",
                     amount,
-                    resource_address, name
+                    resource_address.to_bech32_string(network).unwrap(), name
                 ));
             }
             Instruction::CreateProofFromAuthZoneByIds {
@@ -166,7 +174,7 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    resource_address, name
+                    resource_address.to_bech32_string(network).unwrap(), name
                 ));
             }
             Instruction::CreateProofFromBucket { bucket_id } => {
@@ -219,7 +227,9 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
             } => {
                 buf.push_str(&format!(
                     "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                    package_address, blueprint_name, method_name
+                    package_address.to_bech32_string(network).unwrap(),
+                    blueprint_name,
+                    method_name
                 ));
                 let validated_arg =
                     ScryptoValue::from_slice(&arg).map_err(DecompileError::DecodeError)?;
@@ -247,7 +257,8 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
             } => {
                 buf.push_str(&format!(
                     "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                    component_address, method_name
+                    component_address.to_bech32_string(network).unwrap(),
+                    method_name
                 ));
 
                 let validated_arg =
@@ -279,7 +290,8 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
                     .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress(\"{}\") \"{}\";\n",
-                    component_address, method
+                    component_address.to_bech32_string(network).unwrap(),
+                    method
                 ));
             }
             Instruction::PublishPackage { package } => {
@@ -298,14 +310,19 @@ pub fn decompile(manifest: &TransactionManifest) -> Result<String, DecompileErro
 mod tests {
     use super::*;
     use crate::manifest::compile;
+    use scrypto::core::Network;
 
     #[test]
     fn test_decompile() {
-        let tx = compile(include_str!("../../examples/complex.rtm")).unwrap();
+        let tx = compile(
+            include_str!("../../examples/complex.rtm"),
+            &Network::InternalTestnet,
+        )
+        .unwrap();
 
-        let manifest = &decompile(&tx).unwrap();
+        let manifest = &decompile(&tx, &Network::LocalSimulator).unwrap();
         println!("{}", manifest);
 
-        assert_eq!(compile(manifest).unwrap(), tx);
+        assert_eq!(compile(manifest, &Network::InternalTestnet).unwrap(), tx);
     }
 }

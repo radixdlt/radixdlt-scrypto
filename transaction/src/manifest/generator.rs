@@ -4,6 +4,8 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
+use scrypto::address::Bech32Addressable;
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 use scrypto::vec_to_struct;
@@ -100,6 +102,7 @@ impl NameResolver {
 
 pub fn generate_manifest(
     instructions: &[ast::Instruction],
+    network: &Network,
 ) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
@@ -110,6 +113,7 @@ pub fn generate_manifest(
             instruction,
             &mut id_validator,
             &mut name_resolver,
+            network,
         )?);
     }
 
@@ -122,6 +126,7 @@ pub fn generate_instruction(
     instruction: &ast::Instruction,
     id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
+    network: &Network,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
@@ -134,7 +139,7 @@ pub fn generate_instruction(
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeFromWorktop {
-                resource_address: generate_resource_address(resource_address)?,
+                resource_address: generate_resource_address(resource_address, network)?,
             }
         }
         ast::Instruction::TakeFromWorktopByAmount {
@@ -149,7 +154,7 @@ pub fn generate_instruction(
 
             Instruction::TakeFromWorktopByAmount {
                 amount: generate_decimal(amount)?,
-                resource_address: generate_resource_address(resource_address)?,
+                resource_address: generate_resource_address(resource_address, network)?,
             }
         }
         ast::Instruction::TakeFromWorktopByIds {
@@ -164,7 +169,7 @@ pub fn generate_instruction(
 
             Instruction::TakeFromWorktopByIds {
                 ids: generate_non_fungible_ids(ids)?,
-                resource_address: generate_resource_address(resource_address)?,
+                resource_address: generate_resource_address(resource_address, network)?,
             }
         }
         ast::Instruction::ReturnToWorktop { bucket } => {
@@ -176,7 +181,7 @@ pub fn generate_instruction(
         }
         ast::Instruction::AssertWorktopContains { resource_address } => {
             Instruction::AssertWorktopContains {
-                resource_address: generate_resource_address(resource_address)?,
+                resource_address: generate_resource_address(resource_address, network)?,
             }
         }
         ast::Instruction::AssertWorktopContainsByAmount {
@@ -184,14 +189,14 @@ pub fn generate_instruction(
             resource_address,
         } => Instruction::AssertWorktopContainsByAmount {
             amount: generate_decimal(amount)?,
-            resource_address: generate_resource_address(resource_address)?,
+            resource_address: generate_resource_address(resource_address, network)?,
         },
         ast::Instruction::AssertWorktopContainsByIds {
             ids,
             resource_address,
         } => Instruction::AssertWorktopContainsByIds {
             ids: generate_non_fungible_ids(ids)?,
-            resource_address: generate_resource_address(resource_address)?,
+            resource_address: generate_resource_address(resource_address, network)?,
         },
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
@@ -214,7 +219,7 @@ pub fn generate_instruction(
             resource_address,
             new_proof,
         } => {
-            let resource_address = generate_resource_address(resource_address)?;
+            let resource_address = generate_resource_address(resource_address, network)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -228,7 +233,7 @@ pub fn generate_instruction(
             new_proof,
         } => {
             let amount = generate_decimal(amount)?;
-            let resource_address = generate_resource_address(resource_address)?;
+            let resource_address = generate_resource_address(resource_address, network)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -245,7 +250,7 @@ pub fn generate_instruction(
             new_proof,
         } => {
             let ids = generate_non_fungible_ids(ids)?;
-            let resource_address = generate_resource_address(resource_address)?;
+            let resource_address = generate_resource_address(resource_address, network)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -287,7 +292,7 @@ pub fn generate_instruction(
             function,
             args,
         } => {
-            let args = generate_args(args, resolver)?;
+            let args = generate_args(args, resolver, network)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -298,7 +303,7 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                package_address: generate_package_address(package_address)?,
+                package_address: generate_package_address(package_address, network)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 method_name: generate_string(function)?,
                 arg: vec_to_struct!(fields),
@@ -309,7 +314,7 @@ pub fn generate_instruction(
             method,
             args,
         } => {
-            let args = generate_args(args, resolver)?;
+            let args = generate_args(args, resolver, network)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -320,7 +325,7 @@ pub fn generate_instruction(
             }
 
             Instruction::CallMethod {
-                component_address: generate_component_address(component_address)?,
+                component_address: generate_component_address(component_address, network)?,
                 method_name: generate_string(method)?,
                 arg: vec_to_struct!(fields),
             }
@@ -333,7 +338,7 @@ pub fn generate_instruction(
                 .move_all_resources()
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::CallMethodWithAllResources {
-                component_address: generate_component_address(component_address)?,
+                component_address: generate_component_address(component_address, network)?,
                 method: generate_string(method)?,
             }
         }
@@ -356,10 +361,11 @@ macro_rules! invalid_type {
 fn generate_args(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
+    network: &Network,
 ) -> Result<Vec<Vec<u8>>, GeneratorError> {
     let mut result = Vec::new();
     for v in values {
-        let value = generate_value(v, None, resolver)?;
+        let value = generate_value(v, None, resolver, network)?;
 
         result.push(encode_any(&value));
     }
@@ -416,10 +422,13 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
     }
 }
 
-fn generate_package_address(value: &ast::Value) -> Result<PackageAddress, GeneratorError> {
+fn generate_package_address(
+    value: &ast::Value,
+    network: &Network,
+) -> Result<PackageAddress, GeneratorError> {
     match value {
         ast::Value::PackageAddress(inner) => match &**inner {
-            ast::Value::String(s) => PackageAddress::from_str(s)
+            ast::Value::String(s) => PackageAddress::from_bech32_string(s, network)
                 .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -427,10 +436,13 @@ fn generate_package_address(value: &ast::Value) -> Result<PackageAddress, Genera
     }
 }
 
-fn generate_component_address(value: &ast::Value) -> Result<ComponentAddress, GeneratorError> {
+fn generate_component_address(
+    value: &ast::Value,
+    network: &Network,
+) -> Result<ComponentAddress, GeneratorError> {
     match value {
         ast::Value::ComponentAddress(inner) => match &**inner {
-            ast::Value::String(s) => ComponentAddress::from_str(s)
+            ast::Value::String(s) => ComponentAddress::from_bech32_string(s, network)
                 .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -438,10 +450,13 @@ fn generate_component_address(value: &ast::Value) -> Result<ComponentAddress, Ge
     }
 }
 
-fn generate_resource_address(value: &ast::Value) -> Result<ResourceAddress, GeneratorError> {
+fn generate_resource_address(
+    value: &ast::Value,
+    network: &Network,
+) -> Result<ResourceAddress, GeneratorError> {
     match value {
         ast::Value::ResourceAddress(inner) => match &**inner {
-            ast::Value::String(s) => ResourceAddress::from_str(s)
+            ast::Value::String(s) => ResourceAddress::from_bech32_string(s, network)
                 .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -569,6 +584,7 @@ fn generate_value(
     value: &ast::Value,
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
+    network: &Network,
 ) -> Result<Value, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
@@ -596,73 +612,77 @@ fn generate_value(
             value: value.clone(),
         }),
         ast::Value::Struct(fields) => Ok(Value::Struct {
-            fields: generate_singletons(fields, None, resolver)?,
+            fields: generate_singletons(fields, None, resolver, network)?,
         }),
         ast::Value::Enum(name, fields) => Ok(Value::Enum {
             name: name.clone(),
-            fields: generate_singletons(fields, None, resolver)?,
+            fields: generate_singletons(fields, None, resolver, network)?,
         }),
         ast::Value::Option(value) => match &**value {
             Some(inner) => Ok(Value::Option {
-                value: Some(generate_value(inner, None, resolver)?).into(),
+                value: Some(generate_value(inner, None, resolver, network)?).into(),
             }),
             None => Ok(Value::Option { value: None.into() }),
         },
         ast::Value::Array(element_type, elements) => Ok(Value::Array {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, network)?,
         }),
         ast::Value::Tuple(elements) => Ok(Value::Tuple {
-            elements: generate_singletons(elements, None, resolver)?,
+            elements: generate_singletons(elements, None, resolver, network)?,
         }),
         ast::Value::Result(value) => match &**value {
             Ok(inner) => Ok(Value::Result {
-                value: Ok(generate_value(inner, None, resolver)?).into(),
+                value: Ok(generate_value(inner, None, resolver, network)?).into(),
             }),
             Err(inner) => Ok(Value::Result {
-                value: Err(generate_value(inner, None, resolver)?).into(),
+                value: Err(generate_value(inner, None, resolver, network)?).into(),
             }),
         },
         ast::Value::Vec(element_type, elements) => Ok(Value::Vec {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, network)?,
         }),
         ast::Value::TreeSet(element_type, elements) => Ok(Value::TreeSet {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, network)?,
         }),
         ast::Value::TreeMap(key_type, value_type, elements) => Ok(Value::TreeMap {
             key_type_id: generate_type_id(key_type),
             value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(elements, *key_type, *value_type, resolver)?,
+            elements: generate_pairs(elements, *key_type, *value_type, resolver, network)?,
         }),
         ast::Value::HashSet(element_type, elements) => Ok(Value::HashSet {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, network)?,
         }),
         ast::Value::HashMap(key_type, value_type, elements) => Ok(Value::HashMap {
             key_type_id: generate_type_id(key_type),
             value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(elements, *key_type, *value_type, resolver)?,
+            elements: generate_pairs(elements, *key_type, *value_type, resolver, network)?,
         }),
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
             type_id: ScryptoType::Decimal.id(),
             bytes: v.to_vec(),
         }),
-        ast::Value::PackageAddress(_) => generate_package_address(value).map(|v| Value::Custom {
-            type_id: ScryptoType::PackageAddress.id(),
-            bytes: v.to_vec(),
-        }),
+        ast::Value::PackageAddress(_) => {
+            generate_package_address(value, network).map(|v| Value::Custom {
+                type_id: ScryptoType::PackageAddress.id(),
+                bytes: v.to_vec(),
+            })
+        }
         ast::Value::ComponentAddress(_) => {
-            generate_component_address(value).map(|v| Value::Custom {
+            generate_component_address(value, network).map(|v| Value::Custom {
                 type_id: ScryptoType::ComponentAddress.id(),
                 bytes: v.to_vec(),
             })
         }
-        ast::Value::ResourceAddress(_) => generate_resource_address(value).map(|v| Value::Custom {
-            type_id: ScryptoType::ResourceAddress.id(),
-            bytes: v.to_vec(),
-        }),
+        ast::Value::ResourceAddress(_) => {
+            generate_resource_address(value, network).map(|v| Value::Custom {
+                type_id: ScryptoType::ResourceAddress.id(),
+                bytes: v.to_vec(),
+            })
+        }
         ast::Value::Hash(_) => generate_hash(value).map(|v| Value::Custom {
             type_id: ScryptoType::Hash.id(),
             bytes: v.to_vec(),
@@ -705,10 +725,11 @@ fn generate_singletons(
     elements: &Vec<ast::Value>,
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
+    network: &Network,
 ) -> Result<Vec<Value>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
-        result.push(generate_value(element, ty, resolver)?);
+        result.push(generate_value(element, ty, resolver, network)?);
     }
     Ok(result)
 }
@@ -718,17 +739,24 @@ fn generate_pairs(
     key_type: ast::Type,
     value_type: ast::Type,
     resolver: &mut NameResolver,
+    network: &Network,
 ) -> Result<Vec<Value>, GeneratorError> {
     if elements.len() % 2 != 0 {
         return Err(GeneratorError::OddNumberOfElements(elements.len()));
     }
     let mut result = vec![];
     for i in 0..elements.len() / 2 {
-        result.push(generate_value(&elements[2 * i], Some(key_type), resolver)?);
+        result.push(generate_value(
+            &elements[2 * i],
+            Some(key_type),
+            resolver,
+            network,
+        )?);
         result.push(generate_value(
             &elements[2 * i + 1],
             Some(value_type),
             resolver,
+            network,
         )?);
     }
     Ok(result)
@@ -779,6 +807,7 @@ mod tests {
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
     use scrypto::buffer::scrypto_encode;
+    use scrypto::core::Network;
     use scrypto::prelude::Package;
     use scrypto::to_struct;
 
@@ -787,7 +816,10 @@ mod tests {
         ( $s:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
             let mut resolver = NameResolver::new();
-            assert_eq!(generate_value(&value, None, &mut resolver), Ok($expected));
+            assert_eq!(
+                generate_value(&value, None, &mut resolver, &Network::LocalSimulator),
+                Ok($expected)
+            );
         }};
     }
 
@@ -800,7 +832,12 @@ mod tests {
             let mut id_validator = IdValidator::new();
             let mut resolver = NameResolver::new();
             assert_eq!(
-                generate_instruction(&instruction, &mut id_validator, &mut resolver),
+                generate_instruction(
+                    &instruction,
+                    &mut id_validator,
+                    &mut resolver,
+                    &Network::LocalSimulator
+                ),
                 Ok($expected)
             );
         }};
@@ -810,7 +847,12 @@ mod tests {
     macro_rules! generate_value_error {
         ( $s:expr, $expected:expr ) => {{
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
-            match generate_value(&value, None, &mut NameResolver::new()) {
+            match generate_value(
+                &value,
+                None,
+                &mut NameResolver::new(),
+                &Network::LocalSimulator,
+            ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);
                 }
@@ -1060,7 +1102,9 @@ mod tests {
         let encoded_package = scrypto_encode(&package);
 
         assert_eq!(
-            crate::manifest::compile(tx).unwrap().instructions,
+            crate::manifest::compile(tx, &Network::LocalSimulator)
+                .unwrap()
+                .instructions,
             vec![
                 Instruction::CallMethod {
                     component_address: ComponentAddress::from_str(

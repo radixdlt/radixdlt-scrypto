@@ -3,7 +3,9 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;
+use scrypto::address::Bech32Addressable;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
+use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 use std::collections::VecDeque;
@@ -33,7 +35,9 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
                 output,
                 "{}: {}",
                 "Package".green().bold(),
-                package_address.to_string()
+                package_address
+                    .to_bech32_string(&Network::LocalSimulator)
+                    .unwrap()
             );
             writeln!(
                 output,
@@ -62,7 +66,9 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 output,
                 "{}: {}",
                 "Component".green().bold(),
-                component_address.to_string()
+                component_address
+                    .to_bech32_string(&Network::LocalSimulator)
+                    .unwrap()
             );
 
             writeln!(

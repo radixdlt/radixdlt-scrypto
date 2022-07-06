@@ -1,4 +1,3 @@
-use sbor::rust::borrow::ToOwned;
 use sbor::rust::collections::HashMap;
 use sbor::rust::fmt;
 use sbor::rust::str::FromStr;

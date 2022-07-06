@@ -1,6 +1,8 @@
 use clap::Parser;
 use scrypto::buffer::scrypto_encode;
+use scrypto::core::{Network, NetworkError};
 use std::path::PathBuf;
+use std::str::FromStr;
 use transaction::manifest::compile;
 
 /// Radix transaction manifest compiler
@@ -14,19 +16,25 @@ pub struct Args {
     /// Input file
     #[clap(required = true)]
     input: PathBuf,
+
+    /// Network to Use [LocalSimulator | InternalTestNetwork]
+    #[clap(required = true)]
+    network: String,
 }
 
 #[derive(Debug)]
 pub enum Error {
     IoError(std::io::Error),
     CompileError(transaction::manifest::CompileError),
+    NetworkError(NetworkError),
 }
 
 pub fn run() -> Result<(), Error> {
     let args = Args::parse();
 
     let content = std::fs::read_to_string(args.input).map_err(Error::IoError)?;
-    let transaction = compile(&content).map_err(Error::CompileError)?;
+    let network = Network::from_str(&args.network).map_err(Error::NetworkError)?;
+    let transaction = compile(&content, &network).map_err(Error::CompileError)?;
     std::fs::write(args.output, scrypto_encode(&transaction)).map_err(Error::IoError)?;
 
     Ok(())
