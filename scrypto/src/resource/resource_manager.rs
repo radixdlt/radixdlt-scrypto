@@ -369,7 +369,7 @@ impl Bech32Addressable for ResourceAddress {
     fn data(&self) -> &[u8] {
         &self.0
     }
-    
+
     fn allowed_entity_types() -> &'static [EntityType] {
         &[EntityType::Resource]
     }

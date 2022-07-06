@@ -749,8 +749,10 @@ mod tests {
             r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
                 component_address: Value::ComponentAddress(
-                    Value::String("acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk".into())
-                        .into()
+                    Value::String(
+                        "acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk".into()
+                    )
+                    .into()
                 ),
                 method: Value::String("deposit_batch".into()),
             }

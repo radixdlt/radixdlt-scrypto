@@ -80,7 +80,9 @@ fn fill_in_package_name_template(
     use std::io::{Read, Write};
     use std::path::Path;
 
-    let package_address_string = package_address.to_bech32_string(&Network::LocalSimulator).unwrap();
+    let package_address_string = package_address
+        .to_bech32_string(&Network::LocalSimulator)
+        .unwrap();
 
     println!(
         "Copying template from {:?} to {:?} whilst updating package address to {}",

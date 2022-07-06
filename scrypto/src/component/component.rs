@@ -163,7 +163,11 @@ impl Bech32Addressable for ComponentAddress {
     }
 
     fn allowed_entity_types() -> &'static [EntityType] {
-        &[EntityType::Component, EntityType::AccountComponent, EntityType::SystemComponent]
+        &[
+            EntityType::Component,
+            EntityType::AccountComponent,
+            EntityType::SystemComponent,
+        ]
     }
 }
 
