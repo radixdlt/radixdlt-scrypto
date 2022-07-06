@@ -244,6 +244,12 @@ macro_rules! from_array_large {
                         Self(val)
                     }
                 }
+
+                impl $t {
+                    pub fn from_le_bytes(val: [u8; (<$t>::BITS / 8) as usize]) -> Self {
+                        Self::from(val)
+                    }
+                }
             }
         )*
     };
@@ -260,6 +266,13 @@ macro_rules! from_array_small {
                         $t(wrapped)
                     }
                 }
+
+                impl $t {
+                    pub fn from_le_bytes(val: [u8; (<$t>::BITS / 8) as usize]) -> Self {
+                        Self::from(val)
+                    }
+                }
+
             }
         )*
     };
