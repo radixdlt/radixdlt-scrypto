@@ -267,6 +267,39 @@ macro_rules! test_otput_type_all_simple {
 
 test_otput_type_all_simple! { pow }
 
+macro_rules! from_builtin {
+        ($a:expr, $i:ty, ($($t:ident),*)) => {
+            paste!{
+                $(
+                    $a = <$i>::[<from_$t>]( 8 as $t ).unwrap();
+                    assert_eq!($a.to_string(), "8");
+                )*
+            }
+        }
+}
+
+macro_rules! try_from_safe {
+        ($a:expr, $i:ty, ($($t:ident),*)) => {
+            paste!{
+                $(
+                    $a = <$i>::try_from(<$t>::try_from(19).unwrap()).unwrap();
+                    assert_eq!($a.to_string(), "19");
+                )*
+            }
+        }
+}
+
+macro_rules! to_builtin {
+        ($a:expr, $i:ty, ($($t:ident),*)) => {
+            paste!{
+                $(
+                    let builtin: $t = $a.[<to_$t>]().unwrap();
+                    assert_eq!(builtin.to_string(), "11");
+                )*
+            }
+        }
+}
+
 macro_rules! test_math {
     ($i:ident, $t:ident) => {
         paste! {
@@ -825,6 +858,106 @@ macro_rules! test_math {
                 }
             }
 
+            #[test]
+            fn [<test_try_from_builtin_ $i:lower>]() {
+               let mut a: $i;
+               from_builtin!{a, $i, (i8, u8, i16, u16, i32, u32, i64, u64, i128, u128)}
+            }
+
+            #[test]
+            fn [<test_try_to_builtin_ $i:lower>]() {
+               let a: $i = <$i>::try_from(11u8).unwrap();
+               to_builtin!{a, $i, (i8, u8, i16, u16, i32, u32, i64, u64, i128, u128)}
+            }
+
+            #[test]
+            fn [<test_try_from_safe_ $i:lower>]() {
+               let mut a: $i;
+               try_from_safe!{a, $i, (U8, U16, U32, U64, U128, U256, U384, U512, I8, I16, I32, I64, I128, I256, I384, I512)}
+            }
+
+            #[test]
+            #[should_panic]
+            fn [<test_try_from_panic_ $i:lower>]() {
+                let mut expect: BigInt = 1.into();
+                expect = expect.shl(<$i>::BITS as u32);
+                let _:$i = expect.try_into().unwrap();
+            }
+
+            #[test]
+            fn [<test_try_from_bigint_ $i:lower>]() {
+                let mut a: $i;
+                const LEN: usize = (<$i>::BITS / 8) as usize;
+                let mut expect: BigInt = BigInt::from_signed_bytes_le(&[78u8; LEN]);
+                println!("LEN:{LEN}\nexpect:{:b}", expect);
+                let bits: u32 = <$i>::BITS as u32;
+                for _ in 0..bits {
+                    println!("expect:{}", expect);
+                    a = expect.clone().try_into().unwrap();
+                    assert_eq!(a.to_string(), expect.clone().to_string());
+                    expect >>= 1;
+                }
+            }
+
+            #[test]
+            fn [<test_try_from_bigint_negative_ $i:lower>]() {
+                let mut a: $i;
+                const LEN: usize = (<$i>::BITS / 8) as usize;
+                let mut expect: BigInt = BigInt::from_signed_bytes_le(&[157u8; LEN]);
+                let bits: u32 = <$i>::BITS as u32;
+                for _ in 0..bits {
+                    a = expect.clone().to_signed_bytes_le().try_into().unwrap();
+                    assert_eq!(a.to_string(), expect.clone().to_string());
+                    expect >>= 1;
+                }
+            }
+
+            #[test]
+            fn [<test_try_from_vector_ $i:lower>]() {
+                let mut a: $i;
+                let mut expect: BigInt;
+                let bits: usize = <$i>::BITS as usize;
+                for bytes in 0..bits/8 {
+                    expect = BigInt::from_signed_bytes_le(&vec![78u8; bytes]);
+                    a = <$i>::try_from(vec![78u8; bytes]).unwrap();
+                    assert_eq!(a.to_string(), expect.clone().to_string());
+                }
+            }
+
+            #[test]
+            fn [<test_try_from_slice $i:lower>]() {
+                let mut a: $i;
+                let mut expect: BigInt;
+                let bits: usize = <$i>::BITS as usize;
+                let mut slice: &[u8];
+                let mut vec: Vec<u8>;
+                for bytes in 0..bits/8 {
+                    vec = vec![78u8; bytes];
+                    slice = &vec[..];
+                    expect = BigInt::from_signed_bytes_le(&slice);
+                    a = <$i>::try_from(slice.clone()).unwrap();
+                    assert_eq!(a.to_string(), expect.clone().to_string());
+                }
+            }
+            
+            #[test]
+            fn [<test_from_string_ $i:lower>]() {
+                let mut a: $i = <$i>::from_str("118").unwrap();
+                assert_eq!(a.to_string(), "118");
+                let b: String = a.to_string();
+                a = <$i>::from(b);
+                assert_eq!(a.to_string(), "118");
+                let c: &str = &a.to_string();
+                a = <$i>::from(c);
+                assert_eq!(a.to_string(), "118");
+            }
+
+            #[test]
+            fn [<test_bigint_from_ $i:lower>]() {
+                let a: $i = 119u8.try_into().unwrap();
+                let expect: BigInt = BigInt::from(a);
+                assert_eq!(a.to_string(), expect.to_string());
+            }
         }
     };
 }
@@ -1061,3 +1194,146 @@ macro_rules! test_unsigned {
 }
 
 test_unsigned! { U8, U16, U32, U64, U128, U256, U384, U512 }
+
+macro_rules! test_from_all_types_builtin_safe {
+    ($i:ty, ($($from:ty),*)) => {
+        paste!{
+        $(
+            #[test]
+            fn [<test_from_builtin_ $i:lower _from_ _safe_ $from:lower>]() {
+                let a: $i = <$i>::from(<$from>::try_from(112u8).unwrap());
+                let expect: $i = <$i>::try_from(112u8).unwrap();
+                assert_eq!(a, expect);
+            }
+        )*
+        }
+    };
+}
+
+macro_rules! test_from_all_types_safe_builtin {
+    ($i:ty, ($($from:ty),*)) => {
+        paste!{
+        $(
+            #[test]
+            fn [<test_from_safe_ $i:lower _from _builtin_ $from:lower>]() {
+                let a: $i = <$i>::from(<$from>::try_from(112u8).unwrap());
+                let expect: $i = <$i>::try_from(112u8).unwrap();
+                assert_eq!(a, expect);
+            }
+        )*
+        }
+    };
+}
+
+macro_rules! test_from_all_types_safe_safe {
+    ($i:ty, ($($from:ty),*)) => {
+        paste!{
+        $(
+            #[test]
+            fn [<test_from_safe_ $i:lower from_ _safe_ $from:lower>]() {
+                let a: $i = <$i>::from(<$from>::try_from(112u8).unwrap());
+                let expect: $i = <$i>::try_from(112u8).unwrap();
+                assert_eq!(a, expect);
+            }
+        )*
+        }
+    };
+}
+
+test_from_all_types_builtin_safe! {i8, (I8)}
+
+test_from_all_types_builtin_safe! {i16, (I8, I16)}
+test_from_all_types_builtin_safe! {i16, (U8)}
+
+test_from_all_types_builtin_safe! {i32, (I8, I16, I32)}
+test_from_all_types_builtin_safe! {i32, (U8, U16)}
+
+test_from_all_types_builtin_safe! {i64, (I8, I16, I32, I64)}
+test_from_all_types_builtin_safe! {i64, (U8, U16, U32)}
+
+test_from_all_types_builtin_safe! {i128, (I8, I16, I32, I64, I128)}
+test_from_all_types_builtin_safe! {i128, (U8, U16, U32, U64)}
+
+test_from_all_types_builtin_safe! {u8, (U8)}
+
+test_from_all_types_builtin_safe! {u16, (U8, U16)}
+
+test_from_all_types_builtin_safe! {u32, (U8, U16, U32)}
+
+test_from_all_types_builtin_safe! {u64, (U8, U16, U32, U64)}
+
+test_from_all_types_builtin_safe! {u128, (U8, U16, U32, U64, U128)}
+
+test_from_all_types_safe_builtin! {I8, (i8)}
+
+test_from_all_types_safe_builtin! {I16, (i8, i16)}
+test_from_all_types_safe_builtin! {I16, (u8)}
+
+test_from_all_types_safe_builtin! {I32, (i8, i16, i32)}
+test_from_all_types_safe_builtin! {I32, (u8, u16)}
+
+test_from_all_types_safe_builtin! {I64, (i8, i16, i32, i64)}
+test_from_all_types_safe_builtin! {I64, (u8, u16, u32)}
+
+test_from_all_types_safe_builtin! {I128, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I128, (u8, u16, u32, u64)}
+
+test_from_all_types_safe_builtin! {I256, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I256, (u8, u16, u32, u64, u128)}
+
+test_from_all_types_safe_builtin! {I384, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I384, (u8, u16, u32, u64, u128)}
+
+test_from_all_types_safe_builtin! {I512, (i8, i16, i32, i64, i128)}
+test_from_all_types_safe_builtin! {I512, (u8, u16, u32, u64, u128)}
+
+test_from_all_types_safe_builtin! {U8, (u8)}
+
+test_from_all_types_safe_builtin! {U16, (u8, u16)}
+
+test_from_all_types_safe_builtin! {U32, (u8, u16, u32)}
+
+test_from_all_types_safe_builtin! {U64, (u8, u16, u32, u64)}
+
+test_from_all_types_safe_builtin! {U128, (u8, u16, u32, u64, u128)}
+
+test_from_all_types_safe_builtin! {U256, (u8, u16, u32, u64, u128)}
+
+test_from_all_types_safe_builtin! {U384, (u8, u16, u32, u64, u128)}
+
+test_from_all_types_safe_builtin! {U512, (u8, u16, u32, u64, u128)}
+
+test_from_all_types_safe_safe! {I16, (I8)}
+test_from_all_types_safe_safe! {I16, (U8)}
+
+test_from_all_types_safe_safe! {I32, (I8, I16)}
+test_from_all_types_safe_safe! {I32, (U8, U16)}
+
+test_from_all_types_safe_safe! {I64, (I8, I16, I32)}
+test_from_all_types_safe_safe! {I64, (U8, U16, U32)}
+
+test_from_all_types_safe_safe! {I128, (I8, I16, I32, I64)}
+test_from_all_types_safe_safe! {I128, (U8, U16, U32, U64)}
+
+test_from_all_types_safe_safe! {I256, (I8, I16, I32, I64, I128)}
+test_from_all_types_safe_safe! {I256, (U8, U16, U32, U64, U128)}
+
+test_from_all_types_safe_safe! {I384, (I8, I16, I32, I64, I128, I256)}
+test_from_all_types_safe_safe! {I384, (U8, U16, U32, U64, U128, U256)}
+
+test_from_all_types_safe_safe! {I512, (I8, I16, I32, I64, I128, I256, I384)}
+test_from_all_types_safe_safe! {I512, (U8, U16, U32, U64, U128, U256, U384)}
+
+test_from_all_types_safe_safe! {U16, (U8)}
+
+test_from_all_types_safe_safe! {U32, (U8, U16)}
+
+test_from_all_types_safe_safe! {U64, (U8, U16, U32)}
+
+test_from_all_types_safe_safe! {U128, (U8, U16, U32, U64)}
+
+test_from_all_types_safe_safe! {U256, (U8, U16, U32, U64, U128)}
+
+test_from_all_types_safe_safe! {U384, (U8, U16, U32, U64, U128, U256)}
+
+test_from_all_types_safe_safe! {U512, (U8, U16, U32, U64, U128, U256, U384)}
