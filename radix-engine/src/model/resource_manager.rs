@@ -39,6 +39,7 @@ pub enum ResourceManagerError {
     InvalidRequestData(DecodeError),
     MethodNotFound(String),
     CouldNotCreateBucket,
+    CannotAccessShroudedData,
 }
 
 #[derive(Debug, Clone, TypeId, Encode, Decode)]
@@ -108,6 +109,7 @@ pub struct ResourceManager {
     method_table: HashMap<String, Option<ResourceMethod>>,
     authorization: HashMap<ResourceMethod, MethodEntry>,
     total_supply: Decimal,
+    shrouded: bool,
 }
 
 impl ResourceManager {
@@ -124,6 +126,8 @@ impl ResourceManager {
         method_table.insert("update_metadata".to_string(), Some(UpdateMetadata));
         if let ResourceType::NonFungible = resource_type {
             method_table.insert("take_non_fungibles_from_vault".to_string(), Some(Withdraw));
+            method_table.insert("is_shrouded".to_string(), None);
+            method_table.insert("shroud".to_string(), None);
         }
 
         for pub_method in [
@@ -181,6 +185,7 @@ impl ResourceManager {
             method_table,
             authorization,
             total_supply: 0.into(),
+            shrouded: false,
         };
 
         Ok(resource_manager)
@@ -328,6 +333,18 @@ impl ResourceManager {
         self.total_supply -= amount;
     }
 
+    pub fn is_shrouded(&self) -> bool {
+        self.shrouded
+    }
+
+    pub fn shroud(&mut self) {
+        self.shrouded = true
+    }
+
+    pub fn unshroud(&mut self) {
+        self.shrouded = false
+    }
+
     fn update_metadata(
         &mut self,
         new_metadata: HashMap<String, String>,
@@ -362,11 +379,11 @@ impl ResourceManager {
                     .map_err(ResourceManagerError::InvalidRequestData)?;
                 let mint_params_maybe: Option<MintParams> = scrypto_decode(&args[3].raw)
                     .map_err(ResourceManagerError::InvalidRequestData)?;
-                let resource_manager = ResourceManager::new(resource_type, metadata, auth)?;
+                let mut resource_manager = ResourceManager::new(resource_type, metadata, auth)?;
                 let resource_address = system_api.create_resource(resource_manager);
 
                 let bucket_id = if let Some(mint_params) = mint_params_maybe {
-                    let mut resource_manager = system_api
+                    resource_manager = system_api
                         .borrow_global_mut_resource_manager(resource_address)
                         .unwrap();
                     let container =
@@ -398,6 +415,11 @@ impl ResourceManager {
         system_api: &mut S,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match function {
+            "is_shrouded" => Ok(ScryptoValue::from_value(&self.is_shrouded())),
+            "shroud" => { 
+                self.shroud();
+                Ok(ScryptoValue::from_value(&self.is_shrouded()))
+            }
             "method_auth" => {
                 let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
@@ -466,6 +488,9 @@ impl ResourceManager {
                 Ok(ScryptoValue::from_value(&non_fungible.is_some()))
             }
             "get_non_fungible" => {
+                if self.shrouded {
+                    return Err(ResourceManagerError::CannotAccessShroudedData)
+                }
                 let non_fungible_id: NonFungibleId = scrypto_decode(&args[0].raw)
                     .map_err(|e| ResourceManagerError::InvalidRequestData(e))?;
                 let non_fungible_address =

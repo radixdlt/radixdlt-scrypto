@@ -43,6 +43,28 @@ impl ResourceAddress {}
 pub struct ResourceManager(pub(crate) ResourceAddress);
 
 impl ResourceManager {
+    /// Returns whether the resource is shrouded or not
+    pub fn is_shrouded(&self) -> bool {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ResourceRef(self.0),
+            function: "is_shrouded".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
+    /// Shrouds resource
+    pub fn shroud(&self) -> () {
+        let input = InvokeSNodeInput {
+            snode_ref: SNodeRef::ResourceRef(self.0),
+            function: "shroud".to_string(),
+            args: args![],
+        };
+        let output: InvokeSNodeOutput = call_engine(INVOKE_SNODE, input);
+        scrypto_decode(&output.rtn).unwrap()
+    }
+
     /// Mints fungible resources
     pub fn mint<T: Into<Decimal>>(&self, amount: T) -> Bucket {
         let input = InvokeSNodeInput {

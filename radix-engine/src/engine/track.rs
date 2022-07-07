@@ -671,7 +671,13 @@ impl<'s, S: SubstateStore> Track<'s, S> {
             self.resource_managers.keys().cloned().collect();
         for resource_address in resource_addresses {
             let resource_manager = self.resource_managers.remove(&resource_address).unwrap();
-
+            
+            // Unshrouds shrouded resources
+            let mut resource_info = resource_manager.value;
+            if resource_info.is_shrouded() {
+                resource_info.unshroud();
+            }
+        
             if let Some(prev_id) = resource_manager.prev_id {
                 receipt.down(prev_id);
             }
@@ -680,7 +686,7 @@ impl<'s, S: SubstateStore> Track<'s, S> {
 
             self.substate_store.put_encoded_substate(
                 &resource_address,
-                &resource_manager.value,
+                &resource_info,
                 phys_id,
             );
         }

@@ -12,7 +12,7 @@ pub struct NonFungible<T: NonFungibleData> {
 impl<T: NonFungibleData> From<NonFungibleAddress> for NonFungible<T> {
     fn from(address: NonFungibleAddress) -> Self {
         Self {
-            address,
+            address: address.clone(),
             data: PhantomData,
         }
     }
