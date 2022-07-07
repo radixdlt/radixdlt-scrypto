@@ -418,7 +418,7 @@ impl ResourceManager {
             "is_shrouded" => Ok(ScryptoValue::from_value(&self.is_shrouded())),
             "shroud" => { 
                 self.shroud();
-                Ok(ScryptoValue::from_value(&self.is_shrouded()))
+                Ok(ScryptoValue::from_value(&()))
             }
             "method_auth" => {
                 let method: ResourceMethod = scrypto_decode(&args.remove(0).raw)
