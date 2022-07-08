@@ -14,6 +14,7 @@ use scrypto::resource::ConsumingProofDropInput;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::ProofError::UnknownMethod;
 use crate::model::{
     LockedAmountOrIds, ResourceContainer, ResourceContainerError, ResourceContainerId,
@@ -332,13 +333,20 @@ impl Proof {
         self.restricted
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: ReadableSubstateStore,
+    >(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
-        let mut value_ref = system_api.borrow_native_value(&value_id);
+        let mut value_ref = system_api.borrow_value_mut(&value_id);
         let proof = value_ref.proof();
 
         let rtn = match method_name {
@@ -362,7 +370,7 @@ impl Proof {
                 let _: ProofCloneInput =
                     scrypto_decode(&arg.raw).map_err(|e| ProofError::InvalidRequestData(e))?;
                 let cloned_proof = proof.clone();
-                let proof_id = system_api.native_create(cloned_proof).unwrap().into();
+                let proof_id = system_api.create_value(cloned_proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -370,22 +378,24 @@ impl Proof {
             _ => Err(UnknownMethod),
         }?;
 
-        system_api.return_native_value(value_id, value_ref);
+        system_api.return_value_mut(value_id, value_ref);
         Ok(rtn)
     }
 
     pub fn main_consume<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     >(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, ProofError> {
-        let proof: Proof = system_api.take_native_value(&value_id).into();
+        let proof: Proof = system_api.drop_value(&value_id).into();
         match method_name {
             "drop" => {
                 let _: ConsumingProofDropInput =

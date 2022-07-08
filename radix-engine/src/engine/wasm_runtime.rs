@@ -13,35 +13,42 @@ use scrypto::values::ScryptoValue;
 use crate::engine::SystemApi;
 use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::Component;
 use crate::wasm::*;
 
-pub struct RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
+pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 where
-    S: SystemApi<'borrowed, W, I>,
+    Y: SystemApi<'p, 's, W, I, S>,
     W: WasmEngine<I>,
     I: WasmInstance,
+    S: ReadableSubstateStore,
 {
     this: ScryptoActorInfo,
-    system_api: &'s mut S,
+    system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
-    phantom3: PhantomData<&'borrowed ()>,
+    phantom3: PhantomData<S>,
+    phantom4: PhantomData<&'p ()>,
+    phantom5: PhantomData<&'s ()>,
 }
 
-impl<'borrowed, 's, S, W, I> RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
+impl<'y, 'p, 's, Y, W, I, S> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 where
-    S: SystemApi<'borrowed, W, I>,
+    Y: SystemApi<'p, 's, W, I, S>,
     W: WasmEngine<I>,
     I: WasmInstance,
+    S: ReadableSubstateStore,
 {
-    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S) -> Self {
+    pub fn new(this: ScryptoActorInfo, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
             this,
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
             phantom3: PhantomData,
+            phantom4: PhantomData,
+            phantom5: PhantomData,
         }
     }
 
@@ -78,14 +85,14 @@ where
             state,
         );
 
-        let id = self.system_api.native_create(component)?;
+        let id = self.system_api.create_value(component)?;
         Ok(id.into())
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
         let value_id = self
             .system_api
-            .native_create(PreCommittedKeyValueStore::new())?;
+            .create_value(PreCommittedKeyValueStore::new())?;
         match value_id {
             ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => Ok(kv_store_id),
             _ => panic!("Expected to be a kv store"),
@@ -154,8 +161,15 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
+impl<
+        'y,
+        'p,
+        's,
+        S: ReadableSubstateStore,
+        Y: SystemApi<'p, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let cost = self.fee_table().wasm_engine_call_cost();

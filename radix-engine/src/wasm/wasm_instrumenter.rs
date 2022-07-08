@@ -16,11 +16,7 @@ impl WasmInstrumenter {
         }
     }
 
-    pub fn instrument(
-        &mut self,
-        code: &[u8],
-        wasm_metering_params: &WasmMeteringParams,
-    ) -> Vec<u8> {
+    pub fn instrument(&mut self, code: &[u8], wasm_metering_params: &WasmMeteringParams) -> &[u8] {
         let code_hash = hash(code);
         self.cache
             .entry((code_hash, wasm_metering_params.identifier()))
@@ -34,6 +30,5 @@ impl WasmInstrumenter {
                     .expect("Failed to instrument code")
                     .0
             })
-            .clone()
     }
 }
