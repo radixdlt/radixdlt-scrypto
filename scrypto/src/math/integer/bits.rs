@@ -15,7 +15,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    #[doc = "let n = $t::from(0b01001100" $t ");"]
+                    #[doc = "let n = " $t "::from(0b01001100" $t ");"]
                     ///
                     /// assert_eq!(n.count_ones(), 3);
                     /// ```
@@ -55,7 +55,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    #[doc = "let n = $t(0b0101000" $t ");"]
+                    #[doc = "let n = " $t "(0b0101000" $t ");"]
                     ///
                     /// assert_eq!(n.trailing_zeros(), 3);
                     /// ```
@@ -83,13 +83,13 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    /// let n: $t = $t(0b0000000_01010101);
-                    /// assert_eq!(n, $t(85));
+                    #[doc = "let n: " $t " = " $t "(0b0000000_01010101);"]
+                    #[doc = "assert_eq!(n, " $t "(85));"]
                     ///
                     /// let m = n.swap_bytes();
                     ///
-                    /// assert_eq!(m, $t(0b01010101_00000000));
-                    /// assert_eq!(m, $t(21760));
+                    #[doc = "assert_eq!(m, " $t "(0b01010101_00000000));"]
+                    #[doc = "assert_eq!(m, " $t "(21760));"]
                     /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
@@ -110,13 +110,13 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    /// let n = $t(0b0000000_01010101i16);
-                    /// assert_eq!(n, $t(85));
+                    #[doc = "let n = " $t "(0b0000000_01010101i16);"]
+                    #[doc = "assert_eq!(n, " $t "(85));"]
                     ///
                     /// let m = n.reverse_bits();
                     ///
                     /// assert_eq!(m.0 as u16, 0b10101010_00000000);
-                    /// assert_eq!(m, $t(-22016));
+                    #[doc = "assert_eq!(m, " $t "(-22016));"]
                     /// ```
                     #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
@@ -137,7 +137,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    #[doc = "let n = $t(0x1A" $t ");"]
+                    #[doc = "let n = " $t "(0x1A" $t ");"]
                     ///
                     /// if cfg!(target_endian = "big") {
                     #[doc = "    assert_eq!(<$t>::from_be(n), n)"]
@@ -167,7 +167,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    #[doc = "let n = $t(0x1A" $t ");"]
+                    #[doc = "let n = " $t "(0x1A" $t ");"]
                     ///
                     /// if cfg!(target_endian = "little") {
                     #[doc = "    assert_eq!(<$t>::from_le(n), n)"]
@@ -197,7 +197,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    #[doc = "let n = $t(0x1A" $t ");"]
+                    #[doc = "let n = " $t "(0x1A" $t ");"]
                     ///
                     /// if cfg!(target_endian = "big") {
                     ///     assert_eq!(n.to_be(), n)
@@ -228,7 +228,7 @@ macro_rules! checked_int_impl_large {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    #[doc = "let n = $t(0x1A" $t ");"]
+                    #[doc = "let n = " $t "(0x1A" $t ");"]
                     ///
                     /// if cfg!(target_endian = "little") {
                     ///     assert_eq!(n.to_le(), n)
@@ -284,7 +284,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::math::" $t ";"]
                 ///
-                #[doc = "let n = $t(0b01001100" $t ");"]
+                #[doc = "let n = " $t "(0b01001100" $t ");"]
                 ///
                 /// assert_eq!(n.count_ones(), 3);
                 /// ```
@@ -324,7 +324,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::math::" $t ";"]
                 ///
-                #[doc = "let n = $t(0b0101000" $t:lower ");"]
+                #[doc = "let n = " $t "(0b0101000" $t:lower ");"]
                 ///
                 /// assert_eq!(n.trailing_zeros(), 3);
                 /// ```
@@ -343,13 +343,13 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::math::" $t ";"]
                 ///
-                /// let n: $t = $t(0b0000000_01010101);
-                /// assert_eq!(n, $t(85));
+                #[doc = "let n: " $t " = " $t "(0b0000000_01010101);"]
+                #[doc = "assert_eq!(n, " $t "(85));"]
                 ///
                 /// let m = n.swap_bytes();
                 ///
-                /// assert_eq!(m, $t(0b01010101_00000000));
-                /// assert_eq!(m, $t(21760));
+                #[doc = "assert_eq!(m, " $t "(0b01010101_00000000));"]
+                #[doc = "assert_eq!(m, " $t "(21760));"]
                 /// ```
                 #[inline]
                 #[must_use = "this returns the result of the operation, \
@@ -370,13 +370,13 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::math::" $t ";"]
                 ///
-                /// let n = $t(0b0000000_01010101i16);
-                /// assert_eq!(n, $t(85));
+                #[doc = "let n = " $t "(0b0000000_01010101i16);"]
+                #[doc = "assert_eq!(n, " $t "(85));"]
                 ///
                 /// let m = n.reverse_bits();
                 ///
                 /// assert_eq!(m.0 as u16, 0b10101010_00000000);
-                /// assert_eq!(m, $t(-22016));
+                #[doc = "assert_eq!(m, " $t "(-22016));"]
                 /// ```
                 #[must_use = "this returns the result of the operation, \
                           without modifying the original"]
@@ -397,7 +397,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::math::" $t ";"]
                 ///
-                #[doc = "let n = $t(0x1A" $t:lower ");"]
+                #[doc = "let n = " $t "(0x1A" $t:lower ");"]
                 ///
                 /// if cfg!(target_endian = "big") {
                 #[doc = "    assert_eq!(<$t>::from_be(n), n)"]
@@ -427,7 +427,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::math::" $t ";"]
                 ///
-                #[doc = "let n = $t(0x1A" $t:lower ");"]
+                #[doc = "let n = " $t "(0x1A" $t:lower ");"]
                 ///
                 /// if cfg!(target_endian = "little") {
                 #[doc = "    assert_eq!(<$t>::from_le(n), n)"]
@@ -457,7 +457,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::math::" $t ";"]
                 ///
-                #[doc = "let n = $t(0x1A" $t:lower ");"]
+                #[doc = "let n = " $t "(0x1A" $t:lower ");"]
                 ///
                 /// if cfg!(target_endian = "big") {
                 ///     assert_eq!(n.to_be(), n)
@@ -488,7 +488,7 @@ macro_rules! checked_int_impl_small {
                 /// ```
                 #[doc = "use scrypto::math::" $t ";"]
                 ///
-                #[doc = "let n = $t(0x1A" $t:lower ");"]
+                #[doc = "let n = " $t "(0x1A" $t:lower ");"]
                 ///
                 /// if cfg!(target_endian = "little") {
                 ///     assert_eq!(n.to_le(), n)
@@ -677,8 +677,8 @@ macro_rules! checked_impl {
                         /// ```
                         #[doc = "use scrypto::math::" $t ";"]
                         ///
-                        /// let n: $t = $t(0x0123456789ABCDEF);
-                        /// let m: $t = $t(-0x76543210FEDCBA99);
+                        #[doc = "let n: " $t " = " $t "(0x0123456789ABCDEF);"]
+                        #[doc = "let m: " $t " = " $t "(-0x76543210FEDCBA99);"]
                         ///
                         /// assert_eq!(n.rotate_left(32), m);
                         /// ```
@@ -706,8 +706,8 @@ macro_rules! checked_impl {
                         /// ```
                         #[doc = "use scrypto::math::" $t ";"]
                         ///
-                        /// let n: $t = $t(0x0123456789ABCDEF);
-                        /// let m: $t = $t(-0xFEDCBA987654322);
+                        #[doc = "let n: " $t " = " $t "(0x0123456789ABCDEF);"]
+                        #[doc = "let m: " $t " = " $t "(-0xFEDCBA987654322);"]
                         ///
                         /// assert_eq!(n.rotate_right(4), m);
                         /// ```

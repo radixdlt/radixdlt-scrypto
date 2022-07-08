@@ -282,7 +282,7 @@ macro_rules! try_from_safe {
         ($a:expr, $i:ty, ($($t:ident),*)) => {
             paste!{
                 $(
-                    $a = <$i>::try_from(<$t>::try_from(19).unwrap()).unwrap();
+                    $a = <$i>::try_from(<$t>::try_from(19u8).unwrap()).unwrap();
                     assert_eq!($a.to_string(), "19");
                 )*
             }
@@ -903,10 +903,19 @@ macro_rules! test_math {
             fn [<test_try_from_bigint_negative_ $i:lower>]() {
                 let mut a: $i;
                 const LEN: usize = (<$i>::BITS / 8) as usize;
-                let mut expect: BigInt = BigInt::from_signed_bytes_le(&[157u8; LEN]);
+                let mut expect: BigInt;
+                if <$i>::MIN < Zero::zero() {
+                    expect = BigInt::from_signed_bytes_le(&[0x81u8; LEN]);
+                } else {
+                    // we do not thest negative numbers on unsigned types
+                    expect = BigInt::from_bytes_le(Sign::Plus, &[0x81u8; LEN]);
+                }
                 let bits: u32 = <$i>::BITS as u32;
                 for _ in 0..bits {
-                    a = expect.clone().to_signed_bytes_le().try_into().unwrap();
+                    if expect.clone().to_signed_bytes_le().len() > LEN {
+                        expect = expect.clone().shr((expect.clone().to_signed_bytes_le().len() - LEN) * 8);
+                    }
+                    a = <$i>::try_from(expect.clone()).unwrap();
                     assert_eq!(a.to_string(), expect.clone().to_string());
                     expect >>= 1;
                 }
@@ -939,7 +948,7 @@ macro_rules! test_math {
                     assert_eq!(a.to_string(), expect.clone().to_string());
                 }
             }
-            
+
             #[test]
             fn [<test_from_string_ $i:lower>]() {
                 let mut a: $i = <$i>::from_str("118").unwrap();
@@ -1200,7 +1209,7 @@ macro_rules! test_from_all_types_builtin_safe {
         paste!{
         $(
             #[test]
-            fn [<test_from_builtin_ $i:lower _from_ _safe_ $from:lower>]() {
+            fn [<test_from_builtin_ $i:lower _from_safe_ $from:lower>]() {
                 let a: $i = <$i>::from(<$from>::try_from(112u8).unwrap());
                 let expect: $i = <$i>::try_from(112u8).unwrap();
                 assert_eq!(a, expect);
@@ -1230,7 +1239,7 @@ macro_rules! test_from_all_types_safe_safe {
         paste!{
         $(
             #[test]
-            fn [<test_from_safe_ $i:lower from_ _safe_ $from:lower>]() {
+            fn [<test_from_safe_ $i:lower _from_safe_ $from:lower>]() {
                 let a: $i = <$i>::from(<$from>::try_from(112u8).unwrap());
                 let expect: $i = <$i>::try_from(112u8).unwrap();
                 assert_eq!(a, expect);

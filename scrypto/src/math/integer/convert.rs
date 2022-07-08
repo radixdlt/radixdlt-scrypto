@@ -101,9 +101,9 @@ try_from! {I32, (i64, i128, u32, u64, u128)}
 try_from! {I64, (i128, u64, u128)}
 try_from! {I128, (u128)}
 
-try_from! {U256, (I256, I384, I512)}
-try_from! {U384, (I256, I384, I512)}
-try_from! {U512, (I256, I384, I512)}
+try_from! {U256, (I8, I16, I32, I64, I128, I256, I384, I512)}
+try_from! {U384, (I8, I16, I32, I64, I128, I256, I384, I512)}
+try_from! {U512, (I8, I16, I32, I64, I128, I256, I384, I512)}
 try_from! {U256, (U384, U512)}
 try_from! {U384, (U512)}
 try_from! {I256, (U256, U384, U512)}

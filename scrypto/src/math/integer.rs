@@ -537,9 +537,9 @@ macro_rules! checked_int_impl_signed {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    #[doc = "assert_eq!($t(10" $t:lower ").signum(), $t(1));"]
-                    #[doc = "assert_eq!($t(0" $t:lower ").signum(), $t(0));"]
-                    #[doc = "assert_eq!($t(-10" $t:lower ").signum(), $t(-1));"]
+                    #[doc = "assert_eq!(" $t "(10" $t:lower ").signum(), $t(1));"]
+                    #[doc = "assert_eq!(" $t "(0" $t:lower ").signum(), $t(0));"]
+                    #[doc = "assert_eq!(" $t "(-10" $t:lower ").signum(), $t(-1));"]
                     /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
@@ -558,8 +558,8 @@ macro_rules! checked_int_impl_signed {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    #[doc = "assert!($t(10" $t:lower ").is_positive());"]
-                    #[doc = "assert!(!$t(-10" $t:lower ").is_positive());"]
+                    #[doc = "assert!(" $t "(10" $t:lower ").is_positive());"]
+                    #[doc = "assert!(!" $t "(-10" $t:lower ").is_positive());"]
                     /// ```
                     #[must_use]
                     #[inline]
@@ -578,8 +578,8 @@ macro_rules! checked_int_impl_signed {
                     /// ```
                     #[doc = "use scrypto::math::" $t ";"]
                     ///
-                    #[doc = "assert!($t(-10" $t:lower ").is_negative());"]
-                    #[doc = "assert!(!$t(10" $t:lower ").is_negative());"]
+                    #[doc = "assert!(" $t "(-10" $t:lower ").is_negative());"]
+                    #[doc = "assert!(!" $t "(10" $t:lower ").is_negative());"]
                     /// ```
                     #[must_use]
                     #[inline]
