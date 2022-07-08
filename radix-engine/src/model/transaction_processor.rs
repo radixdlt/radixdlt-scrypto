@@ -18,6 +18,7 @@ use transaction::model::*;
 use transaction::validation::*;
 
 use crate::engine::{RuntimeError, RuntimeError::ProofNotFound, SystemApi};
+use crate::ledger::ReadableSubstateStore;
 use crate::model::worktop::{
     WorktopAssertContainsAmountInput, WorktopAssertContainsInput,
     WorktopAssertContainsNonFungiblesInput, WorktopDrainInput, WorktopPutInput,
@@ -25,6 +26,8 @@ use crate::model::worktop::{
 };
 use crate::model::TransactionProcessorError::InvalidMethod;
 use crate::wasm::*;
+
+use super::Worktop;
 
 #[derive(Debug, TypeId, Encode, Decode)]
 pub struct TransactionProcessorRunInput {
@@ -60,14 +63,16 @@ impl TransactionProcessor {
     }
 
     pub fn static_main<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: 's + ReadableSubstateStore,
     >(
         function_name: &str,
         call_data: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, TransactionProcessorError> {
         match function_name {
             "run" => {
@@ -77,6 +82,10 @@ impl TransactionProcessor {
                 let mut bucket_id_mapping = HashMap::new();
                 let mut outputs = Vec::new();
                 let mut id_allocator = IdAllocator::new(IdSpace::Transaction);
+
+                let _worktop_id = system_api
+                    .create_value(Worktop::new())
+                    .expect("Should never fail.");
 
                 for inst in &input.instructions.clone() {
                     let result = match inst {
@@ -185,6 +194,7 @@ impl TransactionProcessor {
                                 resource_address: *resource_address,
                             }),
                         ),
+
                         ExecutableInstruction::PopFromAuthZone {} => id_allocator
                             .new_proof_id()
                             .map_err(RuntimeError::IdAllocationError)

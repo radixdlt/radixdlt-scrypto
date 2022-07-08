@@ -11,5 +11,4 @@ pub const MAX_TRANSACTION_COST: u32 = 10_000_000;
 pub const MAX_EXTRACT_ABI_COST: u32 = 10_000_000;
 
 /// The maximum number of recursive function/method calls.
-/// TODO: track call depth
-pub const MAX_CALL_DEPTH: u32 = 16;
+pub const MAX_CALL_DEPTH: usize = 16;

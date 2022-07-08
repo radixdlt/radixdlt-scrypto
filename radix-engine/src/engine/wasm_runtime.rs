@@ -10,38 +10,45 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::RuntimeError;
 use crate::engine::SystemApi;
+use crate::engine::{PreCommittedKeyValueStore, RuntimeError};
 use crate::fee::*;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::Component;
 use crate::wasm::*;
 
-pub struct RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
+pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 where
-    S: SystemApi<'borrowed, W, I>,
+    Y: SystemApi<'p, 's, W, I, S>,
     W: WasmEngine<I>,
     I: WasmInstance,
+    S: ReadableSubstateStore,
 {
     this: ScryptoActorInfo,
-    system_api: &'s mut S,
+    system_api: &'y mut Y,
     phantom1: PhantomData<W>,
     phantom2: PhantomData<I>,
-    phantom3: PhantomData<&'borrowed ()>,
+    phantom3: PhantomData<S>,
+    phantom4: PhantomData<&'p ()>,
+    phantom5: PhantomData<&'s ()>,
 }
 
-impl<'borrowed, 's, S, W, I> RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
+impl<'y, 'p, 's, Y, W, I, S> RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 where
-    S: SystemApi<'borrowed, W, I>,
+    Y: SystemApi<'p, 's, W, I, S>,
     W: WasmEngine<I>,
     I: WasmInstance,
+    S: ReadableSubstateStore,
 {
-    pub fn new(this: ScryptoActorInfo, system_api: &'s mut S) -> Self {
+    pub fn new(this: ScryptoActorInfo, system_api: &'y mut Y) -> Self {
         RadixEngineWasmRuntime {
             this,
             system_api,
             phantom1: PhantomData,
             phantom2: PhantomData,
             phantom3: PhantomData,
+            phantom4: PhantomData,
+            phantom5: PhantomData,
         }
     }
 
@@ -65,14 +72,6 @@ where
         self.system_api.invoke_snode(snode_ref, fn_ident, call_data)
     }
 
-    fn handle_globalize(
-        &mut self,
-        component_address: ComponentAddress,
-    ) -> Result<(), RuntimeError> {
-        // Abi checks
-        self.system_api.globalize(component_address)
-    }
-
     fn handle_create_local_component(
         &mut self,
         blueprint_name: String,
@@ -86,12 +85,18 @@ where
             state,
         );
 
-        self.system_api.create_local_component(component)
+        let id = self.system_api.create_value(component)?;
+        Ok(id.into())
     }
 
     fn handle_create_kv_store(&mut self) -> Result<KeyValueStoreId, RuntimeError> {
-        let kv_store_id = self.system_api.create_kv_store();
-        Ok(kv_store_id)
+        let value_id = self
+            .system_api
+            .create_value(PreCommittedKeyValueStore::new())?;
+        match value_id {
+            ValueId::Stored(StoredValueId::KeyValueStoreId(kv_store_id)) => Ok(kv_store_id),
+            _ => panic!("Expected to be a kv store"),
+        }
     }
 
     fn handle_read_data(&mut self, address: DataAddress) -> Result<ScryptoValue, RuntimeError> {
@@ -156,8 +161,15 @@ fn encode<T: Encode>(output: T) -> ScryptoValue {
     ScryptoValue::from_typed(&output)
 }
 
-impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance> WasmRuntime
-    for RadixEngineWasmRuntime<'borrowed, 's, S, W, I>
+impl<
+        'y,
+        'p,
+        's,
+        S: ReadableSubstateStore,
+        Y: SystemApi<'p, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+    > WasmRuntime for RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 {
     fn main(&mut self, input: ScryptoValue) -> Result<ScryptoValue, InvokeError> {
         let cost = self.fee_table().wasm_engine_call_cost();
@@ -168,9 +180,6 @@ impl<'borrowed, 's, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInst
         match input {
             RadixEngineInput::InvokeSNode(snode_ref, fn_ident, input_bytes) => {
                 self.handle_invoke_snode(snode_ref, fn_ident, input_bytes)
-            }
-            RadixEngineInput::Globalize(component_address) => {
-                self.handle_globalize(component_address).map(encode)
             }
             RadixEngineInput::CreateComponent(blueprint_name, state) => self
                 .handle_create_local_component(blueprint_name, state)

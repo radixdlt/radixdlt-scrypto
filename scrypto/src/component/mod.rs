@@ -4,8 +4,8 @@ mod package;
 mod system;
 
 pub use component::{
-    Component, ComponentAddAccessCheckInput, ComponentAddress, ComponentState, LComponent,
-    ParseComponentAddressError,
+    Component, ComponentAddAccessCheckInput, ComponentAddress, ComponentGlobalizeInput,
+    ComponentState, LComponent, ParseComponentAddressError,
 };
 pub use kv_store::{KeyValueStore, ParseKeyValueStoreError};
 pub use package::{
