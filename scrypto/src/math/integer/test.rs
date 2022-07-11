@@ -147,6 +147,7 @@ macro_rules! test_ops_output_type_builtin {
         paste! {
             $(
                 #[test]
+                #![cfg(type_name_of_val_enable)]
                 fn [<test_ $ops _output_type_ $i:lower $i_bits _ $t:lower $t_bits>]() {
                     test_ops_output_type_fn!($i, $i_bits, $ops, $t, $t_bits);
                 }
@@ -160,6 +161,7 @@ macro_rules! test_ops_output_type {
         paste! {
             $(
                 #[test]
+                #![cfg(type_name_of_val_enable)]
                 fn [<test_ $ops _output_type_ $i:lower $i_bits _ $t:lower$t:lower $t_bits>]() {
                     test_ops_output_type_fn!($i, $i_bits, $ops, $t, $t_bits);
                 }
@@ -209,6 +211,7 @@ macro_rules! test_otput_type_all {
 
 test_otput_type_all! { add, sub, mul, div, rem }
 
+
 macro_rules! test_ops_output_type_builtin_simple {
     ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
         paste! {
@@ -245,6 +248,7 @@ macro_rules! test_ops_output_type_simple_fn {
         }
     };
 }
+
 
 macro_rules! test_otput_type_simple {
     ($i:literal, $ops:ident, ($($i_bits:literal),*)) => {
