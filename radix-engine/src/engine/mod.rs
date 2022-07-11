@@ -15,8 +15,7 @@ pub use precommitted_kv_store::*;
 pub use substate_receipt::{CommitReceipt, SubstateOperation, SubstateOperationsReceipt};
 pub use system_api::SystemApi;
 pub use track::{
-    BorrowedSNodes, SubstateParentId, SubstateUpdate, SubstateValue, Track, TrackError,
-    TrackReceipt,
+    BorrowedSNodes, SubstateParentId, SubstateUpdate, Track, TrackError, TrackReceipt,
 };
 pub use transaction_executor::TransactionExecutor;
 pub use transaction_receipt::*;
