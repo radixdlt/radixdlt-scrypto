@@ -942,7 +942,7 @@ macro_rules! test_math {
                 let bits: usize = <$i>::BITS as usize;
                 let mut slice: &[u8];
                 let mut vec: Vec<u8>;
-                for bytes in 1..bits/8 {
+                for bytes in 0..bits/8 {
                     vec = vec![78u8; bytes];
                     slice = &vec[..];
                     expect = BigInt::from_signed_bytes_le(&slice);
