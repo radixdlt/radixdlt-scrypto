@@ -39,12 +39,14 @@ fn bench_ed25519_validation(c: &mut Criterion) {
 }
 
 fn bench_transaction_validation(c: &mut Criterion) {
-    let account1 =
-        ComponentAddress::from_str("account_sim1qd5yl2lwcuk25q705sm9g7cven6f9kytjs8t2xvvggzq5d2mse")
-            .unwrap();
-    let account2 =
-        ComponentAddress::from_str("account_sim1qdugngtu8y0e54zwe5j54mdwv3wnkse68u9840407zws6fzpn7")
-            .unwrap();
+    let account1 = ComponentAddress::from_str(
+        "account_sim1qd5yl2lwcuk25q705sm9g7cven6f9kytjs8t2xvvggzq5d2mse",
+    )
+    .unwrap();
+    let account2 = ComponentAddress::from_str(
+        "account_sim1qdugngtu8y0e54zwe5j54mdwv3wnkse68u9840407zws6fzpn7",
+    )
+    .unwrap();
     let signer = EcdsaPrivateKey::from_u64(1).unwrap();
 
     let transaction = TransactionBuilder::new()

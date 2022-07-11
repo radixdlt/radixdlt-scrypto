@@ -112,9 +112,10 @@ fn missing_component_address_should_cause_error() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let _ = test_runner.extract_and_publish_package("component");
-    let component_address =
-        ComponentAddress::from_str("component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03")
-            .unwrap();
+    let component_address = ComponentAddress::from_str(
+        "component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03",
+    )
+    .unwrap();
 
     // Act
     let manifest = ManifestBuilder::new(Network::LocalSimulator)

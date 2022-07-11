@@ -82,7 +82,8 @@ fn fill_in_package_name_template(
 
     let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
 
-    let package_address_string = bech32_encoder.encode_package_address(&package_address)
+    let package_address_string = bech32_encoder
+        .encode_package_address(&package_address)
         .unwrap();
 
     println!(
