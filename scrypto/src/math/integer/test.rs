@@ -186,7 +186,7 @@ macro_rules! test_ops_output_type_fn {
                     };
                     let a: [<$i $i_bits>] = [<$i $i_bits>]::from_str("2").unwrap();
                     let b: [<$t $t_bits>] = [<$t $t_bits>]::from_str("1").unwrap();
-                    assert_eq!(core::any::type_name_of_val(&a.$ops(b)), format!("scrypto::math::integer::{}{}", out_type_name, out_bits));
+                    assert_eq!(a.$ops(b).type_name(), format!("{}{}", out_type_name, out_bits));
                 }
         }
     };
@@ -248,7 +248,7 @@ macro_rules! test_ops_output_type_simple_fn {
         paste! {
             let a: [<$i $i_bits>] = [<$i $i_bits>]::from_str("2").unwrap();
             let b: [<$t $t_bits>] = [<$t $t_bits>]::from_str("1").unwrap();
-            assert_eq!(core::any::type_name_of_val(&a.$ops(b)), format!("scrypto::math::integer::{}{}", $i, $i_bits));
+            assert_eq!(a.$ops(b).type_name(), format!("{}{}", $i, $i_bits));
         }
     };
 }

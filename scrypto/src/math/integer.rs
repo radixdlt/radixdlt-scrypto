@@ -113,6 +113,13 @@ macro_rules! types {
                 }
             }
 
+            #[cfg(test)]
+            impl $t {
+                pub fn type_name(self) -> &'static str {
+                    stringify!($t)
+                }
+            }
+
             )*
         }
     }
