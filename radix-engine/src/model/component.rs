@@ -1,6 +1,7 @@
 use crate::engine::SystemApi;
 use crate::fee::CostUnitCounterError;
 use crate::ledger::ReadableSubstateStore;
+use sbor::rust::borrow::ToOwned;
 use sbor::rust::string::String;
 use sbor::rust::vec::Vec;
 use sbor::*;
