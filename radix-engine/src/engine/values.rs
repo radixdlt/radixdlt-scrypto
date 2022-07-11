@@ -1,9 +1,107 @@
 use sbor::rust::collections::*;
+use scrypto::buffer::scrypto_encode;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
 use crate::engine::*;
 use crate::model::*;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Address {
+    Resource(ResourceAddress),
+    GlobalComponent(ComponentAddress),
+    Package(PackageAddress),
+    NonFungibleSet(ResourceAddress),
+    KeyValueStore(KeyValueStoreId),
+    Vault(VaultId),
+    LocalComponent(ComponentAddress),
+}
+
+
+// TODO: Replace NonFungible with real re address
+// TODO: Move this logic into application layer
+macro_rules! resource_to_non_fungible_space {
+    ($resource_address:expr) => {{
+        let mut addr = scrypto_encode(&$resource_address);
+        addr.push(0u8);
+        addr
+    }};
+}
+
+impl Address {
+    pub fn encode(&self) -> Vec<u8> {
+        match self {
+            Address::Resource(resource_address) => scrypto_encode(resource_address),
+            Address::GlobalComponent(component_address) => scrypto_encode(component_address),
+            Address::Package(package_address) => scrypto_encode(package_address),
+            Address::Vault(vault_id) => scrypto_encode(vault_id),
+            Address::LocalComponent(component_address) => scrypto_encode(component_address),
+            Address::NonFungibleSet(resource_address) => {
+                resource_to_non_fungible_space!(resource_address.clone())
+            }
+            Address::KeyValueStore(kv_store_id) => scrypto_encode(kv_store_id),
+        }
+    }
+}
+
+impl Into<Address> for PackageAddress {
+    fn into(self) -> Address {
+        Address::Package(self)
+    }
+}
+
+impl Into<Address> for ResourceAddress {
+    fn into(self) -> Address {
+        Address::Resource(self)
+    }
+}
+
+impl Into<Address> for VaultId {
+    fn into(self) -> Address {
+        Address::Vault(self)
+    }
+}
+
+impl Into<PackageAddress> for Address {
+    fn into(self) -> PackageAddress {
+        if let Address::Package(package_address) = self {
+            return package_address;
+        } else {
+            panic!("Address is not a package address");
+        }
+    }
+}
+
+impl Into<ComponentAddress> for Address {
+    fn into(self) -> ComponentAddress {
+        if let Address::GlobalComponent(component_address) = self {
+            return component_address;
+        } else {
+            panic!("Address is not a component address");
+        }
+    }
+}
+
+impl Into<ResourceAddress> for Address {
+    fn into(self) -> ResourceAddress {
+        if let Address::Resource(resource_address) = self {
+            return resource_address;
+        } else {
+            panic!("Address is not a resource address");
+        }
+    }
+}
+
+impl Into<VaultId> for Address {
+    fn into(self) -> VaultId {
+        if let Address::Vault(id) = self {
+            return id;
+        } else {
+            panic!("Address is not a vault address");
+        }
+    }
+}
+
 
 #[derive(Debug)]
 pub enum RENode {
