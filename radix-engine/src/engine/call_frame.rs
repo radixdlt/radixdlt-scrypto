@@ -661,7 +661,6 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
 pub enum StaticSNodeState {
     Package,
     Resource,
-    System,
     TransactionProcessor,
 }
 
@@ -829,8 +828,6 @@ where
         let output = {
             let rtn = match execution {
                 SNodeExecution::Static(state) => match state {
-                    StaticSNodeState::System => System::static_main(fn_ident, input, self)
-                        .map_err(RuntimeError::SystemError),
                     StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
                         fn_ident, input, self,
                     )
@@ -890,6 +887,10 @@ where
                     ValueId::Resource(resource_address) => {
                         ResourceManager::main(resource_address, fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
+                    }
+                    ValueId::System => {
+                        System::main(fn_ident, input, self)
+                            .map_err(RuntimeError::SystemError)
                     }
                     _ => panic!("Unexpected"),
                 },
@@ -1126,9 +1127,6 @@ where
             SNodeRef::PackageStatic => {
                 Ok((SNodeExecution::Static(StaticSNodeState::Package), vec![]))
             }
-            SNodeRef::SystemStatic => {
-                Ok((SNodeExecution::Static(StaticSNodeState::System), vec![]))
-            }
             SNodeRef::ResourceStatic => {
                 Ok((SNodeExecution::Static(StaticSNodeState::Resource), vec![]))
             }
@@ -1180,6 +1178,9 @@ where
                 next_owned_values.insert(*value_id, RefCell::new(value));
 
                 Ok((SNodeExecution::Consumed(*value_id), method_auths))
+            }
+            SNodeRef::SystemRef => {
+                Ok((SNodeExecution::ValueRef(ValueId::System), vec![]))
             }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {

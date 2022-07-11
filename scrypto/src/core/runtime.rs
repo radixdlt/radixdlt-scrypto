@@ -78,7 +78,7 @@ impl Runtime {
     /// Returns the transaction hash.
     pub fn transaction_hash() -> Hash {
         let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::SystemStatic,
+            SNodeRef::SystemRef,
             "transaction_hash".to_string(),
             scrypto_encode(&SystemGetTransactionHashInput {}),
         );
@@ -88,7 +88,7 @@ impl Runtime {
     /// Returns the current epoch number.
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeSNode(
-            SNodeRef::SystemStatic,
+            SNodeRef::SystemRef,
             "current_epoch".to_string(),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );

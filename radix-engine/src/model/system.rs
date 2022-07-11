@@ -17,7 +17,7 @@ pub enum SystemError {
 pub struct System {}
 
 impl System {
-    pub fn static_main<
+    pub fn main<
         'p,
         's,
         Y: SystemApi<'p, 's, W, I, S>,
