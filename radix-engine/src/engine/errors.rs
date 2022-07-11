@@ -130,6 +130,7 @@ pub enum RuntimeError {
 
 #[derive(Debug, PartialEq)]
 pub enum DropFailure {
+    System,
     Resource,
     Component,
     Bucket,

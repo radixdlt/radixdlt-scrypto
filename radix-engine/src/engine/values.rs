@@ -24,9 +24,17 @@ pub enum REValue {
     },
     Package(ValidatedPackage),
     Resource(ResourceManager),
+    System(System),
 }
 
 impl REValue {
+    pub fn system(&self) -> &System {
+        match self {
+            REValue::System(system) => system,
+            _ => panic!("Expected to be system"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
             REValue::Resource(resource_manager) => resource_manager,
@@ -121,6 +129,7 @@ impl REValue {
             REValue::Bucket(..) => false,
             REValue::Proof(..) => false,
             REValue::Worktop(..) => false,
+            REValue::System(..) => false,
         }
     }
 
@@ -132,6 +141,7 @@ impl REValue {
             REValue::Component { .. } => Err(DropFailure::Component),
             REValue::Bucket(..) => Err(DropFailure::Bucket),
             REValue::Resource(..) => Err(DropFailure::Resource),
+            REValue::System(..) => Err(DropFailure::System),
             REValue::Proof(proof) => {
                 proof.drop();
                 Ok(())

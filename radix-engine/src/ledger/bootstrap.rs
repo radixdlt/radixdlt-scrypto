@@ -10,7 +10,7 @@ use scrypto::resource::ResourceMethodAuthKey::Withdraw;
 use scrypto::resource::LOCKED;
 use scrypto::rule;
 
-use crate::engine::{Track, TrackReceipt};
+use crate::engine::{Address, Track, TrackReceipt};
 use crate::ledger::{ReadableSubstateStore, WriteableSubstateStore};
 use crate::model::ValidatedPackage;
 
@@ -87,6 +87,7 @@ where
     );
 
     track.create_uuid_value_2(SYSTEM_COMPONENT, system_component);
+    track.create_uuid_value_2(Address::System, System { epoch: 0 });
 
     track.to_receipt()
 }

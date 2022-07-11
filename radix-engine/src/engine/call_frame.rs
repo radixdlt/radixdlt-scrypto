@@ -305,6 +305,7 @@ impl REValueLocation {
                     }
                     ValueId::Package(package_address) => Address::Package(*package_address),
                     ValueId::Resource(resource_address) => Address::Resource(*resource_address),
+                    ValueId::System => Address::System,
                     _ => panic!("Unexpected value id"),
                 };
 
@@ -485,6 +486,14 @@ pub enum REValueRef<'f, 'p, 's, S: ReadableSubstateStore> {
 }
 
 impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
+    pub fn system(&self) -> &System {
+        match self {
+            REValueRef::Owned(owned) => owned.system(),
+            REValueRef::Track(track, address) => track.read_value(address.clone()).system(),
+            _ => panic!("Unexpected system ref"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
             REValueRef::Owned(owned) => owned.resource_manager(),
@@ -1180,6 +1189,17 @@ where
                 Ok((SNodeExecution::Consumed(*value_id), method_auths))
             }
             SNodeRef::SystemRef => {
+                self.track
+                    .take_lock(Address::System, true)
+                    .expect("System access should never fail");
+                locked_values.insert(Address::System);
+                value_refs.insert(
+                    ValueId::System,
+                    REValueInfo {
+                        location: REValueLocation::Track { parent: None },
+                        visible: true,
+                    },
+                );
                 Ok((SNodeExecution::ValueRef(ValueId::System), vec![]))
             }
             SNodeRef::AuthZoneRef => {
