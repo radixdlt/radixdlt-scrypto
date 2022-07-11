@@ -145,6 +145,7 @@ impl FeeTable {
                 ValueId::Transient(id) => match id {
                     TransientValueId::Bucket(_) => self.fixed_medium,
                     TransientValueId::Proof(_) => self.fixed_medium,
+                    TransientValueId::Worktop => self.fixed_medium,
                 },
                 ValueId::Stored(id) => match id {
                     StoredValueId::KeyValueStoreId(_) => self.fixed_medium,
@@ -185,6 +186,17 @@ impl FeeTable {
             },
             SNodeRef::TransactionProcessor => match fn_ident {
                 "run" => self.fixed_high, // TODO: per manifest instruction
+                _ => self.fixed_high,
+            },
+            SNodeRef::WorktopRef => match fn_ident {
+                "put" => self.fixed_medium,
+                "take_amount" => self.fixed_medium,
+                "take_all" => self.fixed_medium,
+                "take_non_fungibles" => self.fixed_medium,
+                "assert_contains" => self.fixed_low,
+                "assert_contains_amount" => self.fixed_low,
+                "assert_contains_non_fungibles" => self.fixed_low,
+                "drain" => self.fixed_medium,
                 _ => self.fixed_high,
             },
         }

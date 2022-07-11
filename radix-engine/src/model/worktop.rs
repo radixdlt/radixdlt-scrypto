@@ -9,7 +9,9 @@ use scrypto::buffer::scrypto_decode;
 use scrypto::engine::types::*;
 use scrypto::values::ScryptoValue;
 
-use crate::engine::SystemApi;
+use crate::engine::{DropFailure, SystemApi};
+use crate::fee::CostUnitCounterError;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::WorktopError::InvalidMethod;
 use crate::model::{Bucket, ResourceContainer, ResourceContainerError};
 use crate::wasm::*;
@@ -59,6 +61,7 @@ pub struct WorktopDrainInput {}
 /// Worktop collects resources from function or method returns.
 #[derive(Debug)]
 pub struct Worktop {
+    // TODO: refactor worktop to be `HashMap<ResourceAddress, BucketId>`
     containers: HashMap<ResourceAddress, Rc<RefCell<ResourceContainer>>>,
 }
 
@@ -72,6 +75,7 @@ pub enum WorktopError {
     CouldNotTakeBucket,
     AssertionFailed,
     InvalidMethod,
+    CostingError(CostUnitCounterError),
 }
 
 impl Worktop {
@@ -79,6 +83,16 @@ impl Worktop {
         Self {
             containers: HashMap::new(),
         }
+    }
+
+    pub fn drop(self) -> Result<(), DropFailure> {
+        for (_address, container) in self.containers {
+            if !container.borrow().is_empty() {
+                return Err(DropFailure::Worktop);
+            }
+        }
+
+        Ok(())
     }
 
     pub fn put(&mut self, other: Bucket) -> Result<(), ResourceContainerError> {
@@ -204,42 +218,60 @@ impl Worktop {
             .insert(resource_address, Rc::new(RefCell::new(container)));
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
-        &mut self,
+    pub fn main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: 's + ReadableSubstateStore,
+    >(
+        value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, WorktopError> {
+        let mut value_ref = system_api
+            .borrow_value_mut(&value_id)
+            .map_err(WorktopError::CostingError)?;
+        let worktop = value_ref.worktop();
+
         match method_name {
             "put" => {
                 let input: WorktopPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let bucket = system_api
-                    .take_native_value(&ValueId::Transient(TransientValueId::Bucket(
+                    .drop_value(&ValueId::Transient(TransientValueId::Bucket(
                         input.bucket.0,
                     )))
+                    .map_err(WorktopError::CostingError)?
                     .into();
-                self.put(bucket)
+                worktop
+                    .put(bucket)
                     .map_err(WorktopError::ResourceContainerError)?;
                 Ok(ScryptoValue::from_typed(&()))
             }
             "take_amount" => {
                 let input: WorktopTakeAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
-                let maybe_container = self
+                let maybe_container = worktop
                     .take(input.amount, input.resource_address)
                     .map_err(WorktopError::ResourceContainerError)?;
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
-                    let resource_manager = system_api
-                        .borrow_global_resource_manager(input.resource_address)
-                        .map_err(|_| WorktopError::ResourceDoesNotExist(input.resource_address))?;
-                    let resource_type = resource_manager.resource_type();
+                    let resource_type = {
+                        let value = system_api
+                            .borrow_value(&ValueId::Resource(input.resource_address))
+                            .map_err(WorktopError::CostingError)?;
+                        let resource_manager = value.resource_manager();
+                        resource_manager.resource_type()
+                    };
+
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
                 let bucket_id = system_api
-                    .native_create(Bucket::new(resource_container))
+                    .create_value(Bucket::new(resource_container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -249,21 +281,25 @@ impl Worktop {
             "take_all" => {
                 let input: WorktopTakeAllInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
-                let maybe_container = self
+                let maybe_container = worktop
                     .take_all(input.resource_address)
                     .map_err(WorktopError::ResourceContainerError)?;
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
-                    let resource_manager = system_api
-                        .borrow_global_resource_manager(input.resource_address)
-                        .map_err(|_| WorktopError::ResourceDoesNotExist(input.resource_address))?;
-                    let resource_type = resource_manager.resource_type();
+                    let resource_type = {
+                        let value = system_api
+                            .borrow_value(&ValueId::Resource(input.resource_address))
+                            .map_err(WorktopError::CostingError)?;
+                        let resource_manager = value.resource_manager();
+                        resource_manager.resource_type()
+                    };
+
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
                 let bucket_id = system_api
-                    .native_create(Bucket::new(resource_container))
+                    .create_value(Bucket::new(resource_container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -273,21 +309,25 @@ impl Worktop {
             "take_non_fungibles" => {
                 let input: WorktopTakeNonFungiblesInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
-                let maybe_container = self
+                let maybe_container = worktop
                     .take_non_fungibles(&input.ids, input.resource_address)
                     .map_err(WorktopError::ResourceContainerError)?;
                 let resource_container = if let Some(container) = maybe_container {
                     container
                 } else {
-                    let resource_manager = system_api
-                        .borrow_global_resource_manager(input.resource_address)
-                        .map_err(|_| WorktopError::ResourceDoesNotExist(input.resource_address))?;
-                    let resource_type = resource_manager.resource_type();
+                    let resource_type = {
+                        let value = system_api
+                            .borrow_value(&ValueId::Resource(input.resource_address))
+                            .map_err(WorktopError::CostingError)?;
+                        let resource_manager = value.resource_manager();
+                        resource_manager.resource_type()
+                    };
+
                     ResourceContainer::new_empty(input.resource_address, resource_type)
                 };
 
                 let bucket_id = system_api
-                    .native_create(Bucket::new(resource_container))
+                    .create_value(Bucket::new(resource_container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -297,7 +337,7 @@ impl Worktop {
             "assert_contains" => {
                 let input: WorktopAssertContainsInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
-                if self.total_amount(input.resource_address).is_zero() {
+                if worktop.total_amount(input.resource_address).is_zero() {
                     Err(WorktopError::AssertionFailed)
                 } else {
                     Ok(ScryptoValue::from_typed(&()))
@@ -306,7 +346,7 @@ impl Worktop {
             "assert_contains_amount" => {
                 let input: WorktopAssertContainsAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
-                if self.total_amount(input.resource_address) < input.amount {
+                if worktop.total_amount(input.resource_address) < input.amount {
                     Err(WorktopError::AssertionFailed)
                 } else {
                     Ok(ScryptoValue::from_typed(&()))
@@ -315,7 +355,7 @@ impl Worktop {
             "assert_contains_non_fungibles" => {
                 let input: WorktopAssertContainsNonFungiblesInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
-                if !self
+                if !worktop
                     .total_ids(input.resource_address)
                     .map_err(WorktopError::ResourceContainerError)?
                     .is_superset(&input.ids)
@@ -329,14 +369,14 @@ impl Worktop {
                 let _: WorktopDrainInput =
                     scrypto_decode(&arg.raw).map_err(|e| WorktopError::InvalidRequestData(e))?;
                 let mut buckets = Vec::new();
-                for (_, container) in self.containers.drain() {
+                for (_, container) in worktop.containers.drain() {
                     let container = container
                         .borrow_mut()
                         .take_all_liquid()
                         .map_err(WorktopError::ResourceContainerError)?;
                     if !container.is_empty() {
                         let bucket_id = system_api
-                            .native_create(Bucket::new(container))
+                            .create_value(Bucket::new(container))
                             .unwrap()
                             .into();
                         buckets.push(scrypto::resource::Bucket(bucket_id));

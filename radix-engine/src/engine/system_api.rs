@@ -5,22 +5,20 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::{DataInstruction, SubstateAddress};
+use crate::engine::call_frame::{DataInstruction, REValueRef, SubstateAddress};
 use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::*;
 use crate::wasm::*;
 
-pub trait SystemApi<'borrowed, W, I>
+pub trait SystemApi<'p, 's, W, I, S>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
+    S: ReadableSubstateStore,
 {
-    fn wasm_engine(&mut self) -> &mut W;
-
-    fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter;
-
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
 
     fn fee_table(&self) -> &FeeTable;
@@ -32,32 +30,28 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn native_globalize(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError>;
+    fn globalize_value(&mut self, value_id: &ValueId) -> Result<(), CostUnitCounterError>;
 
-    // TODO: remove
-    fn borrow_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<&ResourceManager, RuntimeError>;
-
-    fn borrow_native_value(
+    fn borrow_value(
         &mut self,
         value_id: &ValueId,
-    ) -> Result<RENativeValueRef<'borrowed>, CostUnitCounterError>;
+    ) -> Result<REValueRef<'_, 'p, 's, S>, CostUnitCounterError>;
 
-    fn return_native_value(
+    fn borrow_value_mut(
+        &mut self,
+        value_id: &ValueId,
+    ) -> Result<RENativeValueRef<'p>, CostUnitCounterError>;
+
+    fn return_value_mut(
         &mut self,
         value_id: ValueId,
-        val_ref: RENativeValueRef<'borrowed>,
+        val_ref: RENativeValueRef<'p>,
     ) -> Result<(), CostUnitCounterError>;
 
-    // TODO: remove
-    fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
+    fn drop_value(&mut self, value_id: &ValueId) -> Result<REValue, CostUnitCounterError>;
 
-    fn native_create<V: Into<REValueByComplexity>>(
-        &mut self,
-        v: V,
-    ) -> Result<ValueId, RuntimeError>;
+    fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
+        -> Result<ValueId, RuntimeError>;
 
     // TODO remove
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;

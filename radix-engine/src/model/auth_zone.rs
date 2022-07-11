@@ -10,6 +10,8 @@ use scrypto::resource::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::fee::CostUnitCounterError;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::AuthZoneError::InvalidMethod;
 use crate::model::{Proof, ProofError};
 use crate::wasm::*;
@@ -24,6 +26,7 @@ pub enum AuthZoneError {
     CouldNotGetResource,
     NoMethodSpecified,
     InvalidMethod,
+    CostingError(CostUnitCounterError),
 }
 
 /// A transient resource container.
@@ -92,18 +95,25 @@ impl AuthZone {
             .map_err(AuthZoneError::ProofError)
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: 's + ReadableSubstateStore,
+    >(
         &mut self,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, AuthZoneError> {
         match method_name {
             "pop" => {
                 let _: AuthZonePopInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let proof = self.pop()?;
-                let proof_id = system_api.native_create(proof).unwrap().into();
+                let proof_id = system_api.create_value(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -112,7 +122,8 @@ impl AuthZone {
                 let input: AuthZonePushInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
                 let mut proof: Proof = system_api
-                    .take_native_value(&ValueId::Transient(TransientValueId::Proof(input.proof.0)))
+                    .drop_value(&ValueId::Transient(TransientValueId::Proof(input.proof.0)))
+                    .map_err(AuthZoneError::CostingError)?
                     .into();
                 // FIXME: this is a hack for now until we can get snode_state into process
                 // FIXME: and be able to determine which snode the proof is going into
@@ -124,12 +135,15 @@ impl AuthZone {
             "create_proof" => {
                 let input: AuthZoneCreateProofInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let resource_manager = system_api
-                    .borrow_global_resource_manager(input.resource_address)
-                    .map_err(|_| AuthZoneError::CouldNotGetResource)?;
-                let resource_type = resource_manager.resource_type();
+                let resource_type = {
+                    let value = system_api
+                        .borrow_value(&ValueId::Resource(input.resource_address))
+                        .map_err(AuthZoneError::CostingError)?;
+                    let resource_manager = value.resource_manager();
+                    resource_manager.resource_type()
+                };
                 let proof = self.create_proof(input.resource_address, resource_type)?;
-                let proof_id = system_api.native_create(proof).unwrap().into();
+                let proof_id = system_api.create_value(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -137,16 +151,19 @@ impl AuthZone {
             "create_proof_by_amount" => {
                 let input: AuthZoneCreateProofByAmountInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let resource_manager = system_api
-                    .borrow_global_resource_manager(input.resource_address)
-                    .map_err(|_| AuthZoneError::CouldNotGetResource)?;
-                let resource_type = resource_manager.resource_type();
+                let resource_type = {
+                    let value = system_api
+                        .borrow_value(&ValueId::Resource(input.resource_address))
+                        .map_err(AuthZoneError::CostingError)?;
+                    let resource_manager = value.resource_manager();
+                    resource_manager.resource_type()
+                };
                 let proof = self.create_proof_by_amount(
                     input.amount,
                     input.resource_address,
                     resource_type,
                 )?;
-                let proof_id = system_api.native_create(proof).unwrap().into();
+                let proof_id = system_api.create_value(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -154,13 +171,16 @@ impl AuthZone {
             "create_proof_by_ids" => {
                 let input: AuthZoneCreateProofByIdsInput =
                     scrypto_decode(&arg.raw).map_err(|e| AuthZoneError::InvalidRequestData(e))?;
-                let resource_manager = system_api
-                    .borrow_global_resource_manager(input.resource_address)
-                    .map_err(|_| AuthZoneError::CouldNotGetResource)?;
-                let resource_type = resource_manager.resource_type();
+                let resource_type = {
+                    let value = system_api
+                        .borrow_value(&ValueId::Resource(input.resource_address))
+                        .map_err(AuthZoneError::CostingError)?;
+                    let resource_manager = value.resource_manager();
+                    resource_manager.resource_type()
+                };
                 let proof =
                     self.create_proof_by_ids(&input.ids, input.resource_address, resource_type)?;
-                let proof_id = system_api.native_create(proof).unwrap().into();
+                let proof_id = system_api.create_value(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))

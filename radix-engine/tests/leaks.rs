@@ -68,7 +68,7 @@ fn dangling_worktop_should_fail() {
     let receipt = test_runner.execute_manifest(manifest, vec![]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Bucket)));
+    receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Worktop)));
 }
 
 #[test]
