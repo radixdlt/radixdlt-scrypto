@@ -113,7 +113,7 @@ fn missing_component_address_should_cause_error() {
     let mut test_runner = TestRunner::new(true);
     let _ = test_runner.extract_and_publish_package("component");
     let component_address =
-        ComponentAddress::from_str("comp_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhss4n9cq")
+        ComponentAddress::from_str("component_sim1qgqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqph4dhmhs42ee03")
             .unwrap();
 
     // Act

@@ -27,20 +27,20 @@ impl HrpSet {
 
 /// The Human Readable Parts used for the Local Simulator.
 pub const LOCAL_SIMULATOR_NETWORK_HRP_SET: HrpSet = HrpSet {
-    component: "comp_sim",
-    account_component: "acct_sim",
-    system_component: "sys_sim",
-    package: "pkg_sim",
-    resource: "asset_sim",
+    component: "component_sim",
+    account_component: "account_sim",
+    system_component: "system_sim",
+    package: "package_sim",
+    resource: "resource_sim",
 };
 
 /// The Human Readable Parts used for the Internal Test Network.
 pub const INTERNAL_TEST_NETWORK_HRP_SET: HrpSet = HrpSet {
-    component: "comp_itn",
-    account_component: "acct_itn",
-    system_component: "sys_itn",
-    package: "pkg_itn",
-    resource: "asset_itn",
+    component: "component_itn",
+    account_component: "account_itn",
+    system_component: "system_itn",
+    package: "package_itn",
+    resource: "resource_itn",
 };
 
 /// Returns the HrpSet associated with the network.

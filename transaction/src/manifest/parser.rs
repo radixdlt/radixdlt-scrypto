@@ -746,11 +746,11 @@ mod tests {
             }
         );
         parse_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk") "deposit_batch";"#,
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
                 component_address: Value::ComponentAddress(
                     Value::String(
-                        "acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk".into()
+                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
                     )
                     .into()
                 ),

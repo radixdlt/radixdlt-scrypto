@@ -232,7 +232,7 @@ enum DepositResult {
 
 external_blueprint! {
     {
-        package: "000000000000000000000000000000000000000000000000000001",
+        package: "package_sim1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsnznk7n",
         blueprint: "CustomAccount"
     },
     CustomAccount {
@@ -247,12 +247,12 @@ fn create_custom_accounts() {
     let new_account_address = CustomAccount::instantiate_global("account_name");
     let mut account = CustomAccount::from(new_account_address);
 
-    let empty_bucket = Bucket::new(ResourceAddress::from_str("000000000000000000000000000000000000000000000000000002").unwrap());
+    let empty_bucket = Bucket::new(ResourceAddress::from_str("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag").unwrap());
     account.deposit(empty_bucket);
 }
 
 fn bridge_to_existing_account() {
-    let existing_account = CustomAccount::from(ComponentAddress::from_str("000000000000000000000000000000000000000000000000000003").unwrap());
+    let existing_account = CustomAccount::from(ComponentAddress::from_str("account_sim1qdencrktc8r4f2ek5qh98uvfn7ugyjlpsw6ayusqyx6syqd3ly").unwrap());
     let balance = existing_account.read_balance();
     // ...
 }
@@ -326,7 +326,7 @@ external_component! {
 }
 
 fn bridge_to_existing_account() {
-    let existing_account = AccountInterface::from(ComponentAddress::from_str("acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk").unwrap());
+    let existing_account = AccountInterface::from(ComponentAddress::from_str("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064").unwrap());
     let balance = existing_account.read_balance();
     // ...
 }

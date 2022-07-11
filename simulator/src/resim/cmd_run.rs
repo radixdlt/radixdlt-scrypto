@@ -58,16 +58,16 @@ mod tests {
             vec![
                 (
                     "system",
-                    Some("sys_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpqwk37ww"),
+                    Some("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx"),
                 ),
                 (
                     "xrd",
-                    Some("asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44"),
+                    Some("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"),
                 ),
             ],
             || {
                 let manifest = r#"CALL_METHOD ComponentAddress("${  system  }") "free_xrd";\nTAKE_FROM_WORKTOP ResourceAddress("${xrd}") Bucket("bucket1");\n"#;
-                let after = r#"CALL_METHOD ComponentAddress("020000000000000000000000000000000000000000000000000002") "free_xrd";\nTAKE_FROM_WORKTOP ResourceAddress("asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44") Bucket("bucket1");\n"#;
+                let after = r#"CALL_METHOD ComponentAddress("system_sim1qsqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqpql4sktx") "free_xrd";\nTAKE_FROM_WORKTOP ResourceAddress("resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag") Bucket("bucket1");\n"#;
                 assert_eq!(Run::pre_process_manifest(manifest), after);
             },
         );

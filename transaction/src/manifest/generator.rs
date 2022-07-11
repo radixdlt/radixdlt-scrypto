@@ -1021,39 +1021,39 @@ mod tests {
     #[test]
     fn test_instructions() {
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("asset_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsma634t")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktopByAmount {
                 amount: Decimal::from(1),
                 resource_address: ResourceAddress::from_str(
-                    "asset_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsma634t"
+                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"TAKE_FROM_WORKTOP  ResourceAddress("asset_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsma634t")  Bucket("xrd_bucket");"#,
+            r#"TAKE_FROM_WORKTOP  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak")  Bucket("xrd_bucket");"#,
             Instruction::TakeFromWorktop {
                 resource_address: ResourceAddress::from_str(
-                    "asset_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsma634t"
+                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("asset_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsma634t");"#,
+            r#"ASSERT_WORKTOP_CONTAINS_BY_AMOUNT  Decimal("1.0")  ResourceAddress("resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak");"#,
             Instruction::AssertWorktopContainsByAmount {
                 amount: Decimal::from(1),
                 resource_address: ResourceAddress::from_str(
-                    "asset_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsma634t"
+                    "resource_sim1qr9alp6h38ggejqvjl3fzkujpqj2d84gmqy72zuluzwsykwvak"
                 )
                 .unwrap(),
             }
         );
         generate_instruction_ok!(
-            r#"CALL_FUNCTION  PackageAddress("pkg_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597q5cfw3q")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
+            r#"CALL_FUNCTION  PackageAddress("package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7")  "Airdrop"  "new"  500u32  HashMap<String, U8>("key", 1u8);"#,
             Instruction::CallFunction {
                 package_address: PackageAddress::from_str(
-                    "pkg_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597q5cfw3q".into()
+                    "package_sim1q8gl2qqsusgzmz92es68wy2fr7zjc523xj57eanm597qrz3dx7".into()
                 )
                 .unwrap(),
                 blueprint_name: "Airdrop".into(),
@@ -1062,10 +1062,10 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD  ComponentAddress("comp_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcszw7tt2")  "refill";"#,
+            r#"CALL_METHOD  ComponentAddress("component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum")  "refill";"#,
             Instruction::CallMethod {
                 component_address: ComponentAddress::from_str(
-                    "comp_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcszw7tt2".into()
+                    "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
                 )
                 .unwrap(),
                 method_name: "refill".to_string(),
@@ -1073,10 +1073,10 @@ mod tests {
             }
         );
         generate_instruction_ok!(
-            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk") "deposit_batch";"#,
+            r#"CALL_METHOD_WITH_ALL_RESOURCES  ComponentAddress("account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064") "deposit_batch";"#,
             Instruction::CallMethodWithAllResources {
                 component_address: ComponentAddress::from_str(
-                    "acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk".into()
+                    "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
                 )
                 .unwrap(),
                 method: "deposit_batch".into(),
@@ -1116,14 +1116,14 @@ mod tests {
             vec![
                 Instruction::CallMethod {
                     component_address: ComponentAddress::from_str(
-                        "acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk".into()
+                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
                     )
                     .unwrap(),
                     method_name: "withdraw_by_amount".to_string(),
                     arg: to_struct!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
-                            "asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44"
+                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                         )
                         .unwrap()
                     )
@@ -1131,13 +1131,13 @@ mod tests {
                 Instruction::TakeFromWorktopByAmount {
                     amount: Decimal::from(2),
                     resource_address: ResourceAddress::from_str(
-                        "asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44"
+                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap(),
                 },
                 Instruction::CallMethod {
                     component_address: ComponentAddress::from_str(
-                        "comp_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcszw7tt2".into()
+                        "component_sim1q2f9vmyrmeladvz0ejfttcztqv3genlsgpu9vue83mcs835hum".into()
                     )
                     .unwrap(),
                     method_name: "buy_gumball".to_string(),
@@ -1146,19 +1146,19 @@ mod tests {
                 Instruction::AssertWorktopContainsByAmount {
                     amount: Decimal::from(3),
                     resource_address: ResourceAddress::from_str(
-                        "asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44"
+                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap(),
                 },
                 Instruction::AssertWorktopContains {
                     resource_address: ResourceAddress::from_str(
-                        "asset_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gsxtlpw8"
+                        "resource_sim1qzhdk7tq68u8msj38r6v6yqa5myc64ejx3ud20zlh9gseqtux6"
                     )
                     .unwrap(),
                 },
                 Instruction::TakeFromWorktop {
                     resource_address: ResourceAddress::from_str(
-                        "asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44"
+                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap(),
                 },
@@ -1168,14 +1168,14 @@ mod tests {
                 Instruction::DropProof { proof_id: 515 },
                 Instruction::CallMethod {
                     component_address: ComponentAddress::from_str(
-                        "acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk".into()
+                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
                     )
                     .unwrap(),
                     method_name: "create_proof_by_amount".to_string(),
                     arg: to_struct!(
                         Decimal::from(5u32),
                         ResourceAddress::from_str(
-                            "asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44"
+                            "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                         )
                         .unwrap()
                     )
@@ -1189,13 +1189,13 @@ mod tests {
                         NonFungibleId::from_str("0907000000").unwrap(),
                     ]),
                     resource_address: ResourceAddress::from_str(
-                        "asset_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqrl2e44"
+                        "resource_sim1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzqu57yag"
                     )
                     .unwrap()
                 },
                 Instruction::CallMethodWithAllResources {
                     component_address: ComponentAddress::from_str(
-                        "acct_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qm4mevk".into()
+                        "account_sim1q02r73u7nv47h80e30pc3q6ylsj7mgvparm3pnsm780qgsy064".into()
                     )
                     .unwrap(),
                     method: "deposit_batch".into(),
