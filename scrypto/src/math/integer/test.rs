@@ -2,8 +2,8 @@ use super::*;
 use num_traits::FromPrimitive;
 use sbor::rust::str::FromStr;
 use sbor::rust::string::ToString;
-use sbor::rust::{vec, format};
 use sbor::rust::vec::Vec;
+use sbor::rust::{format, vec};
 use sbor::String;
 
 macro_rules! test_from_builtin {
@@ -213,7 +213,6 @@ macro_rules! test_otput_type_all {
 
 test_otput_type_all! { add, sub, mul, div, rem }
 
-
 macro_rules! test_ops_output_type_builtin_simple {
     ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
         paste! {
@@ -252,7 +251,6 @@ macro_rules! test_ops_output_type_simple_fn {
         }
     };
 }
-
 
 macro_rules! test_otput_type_simple {
     ($i:literal, $ops:ident, ($($i_bits:literal),*)) => {
@@ -938,17 +936,18 @@ macro_rules! test_math {
             }
 
             #[test]
-            fn [<test_try_from_slice $i:lower>]() {
+            fn [<test_try_from_slice_ $i:lower>]() {
                 let mut a: $i;
                 let mut expect: BigInt;
                 let bits: usize = <$i>::BITS as usize;
                 let mut slice: &[u8];
                 let mut vec: Vec<u8>;
-                for bytes in 0..bits/8 {
+                for bytes in 1..bits/8 {
                     vec = vec![78u8; bytes];
                     slice = &vec[..];
                     expect = BigInt::from_signed_bytes_le(&slice);
-                    a = <$i>::try_from(slice.clone()).unwrap();
+                    println!("bytes: {}\nexpect: {}\nslice: {:?}",bytes, expect, slice);
+                    a = <$i>::try_from(slice).unwrap();
                     assert_eq!(a.to_string(), expect.clone().to_string());
                 }
             }
