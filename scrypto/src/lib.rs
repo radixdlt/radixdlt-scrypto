@@ -11,7 +11,6 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-#![cfg(type_name_of_val_enable)]
 #![feature(type_name_of_val)]
 
 #[cfg(not(any(feature = "std", feature = "alloc")))]

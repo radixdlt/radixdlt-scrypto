@@ -4,6 +4,7 @@ use num_traits::{FromPrimitive, Signed, ToPrimitive};
 use paste::paste;
 use sbor::rust::convert::{From, TryFrom};
 use sbor::rust::str::FromStr;
+use sbor::rust::string::String;
 
 #[derive(Debug)]
 pub enum ParseIntError {
@@ -380,49 +381,49 @@ try_from_vec_and_slice_large! { I256, I384, I512, U256, U384, U512 }
 macro_rules! try_from_vec_and_slice_small {
     ($($t:ident),*) => {
         paste! {
-        $(
-            impl TryFrom<&[u8]> for $t {
-                type Error = ParseSliceError;
-                fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
-                    if bytes.len() > (<$t>::BITS / 8) as usize {
-                        Err(ParseSliceError::InvalidLength)
-                    } else {
-                        let mut buf = [0u8; (<$t>::BITS / 8) as usize];
-                        buf[..bytes.len()].copy_from_slice(bytes);
-                        let wrapped: [<$t:lower>] = [<$t:lower>]::from_le_bytes(buf);
-                        Ok(Self(wrapped))
+            $(
+                impl TryFrom<&[u8]> for $t {
+                    type Error = ParseSliceError;
+                    fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+                        if bytes.len() > (<$t>::BITS / 8) as usize {
+                            Err(ParseSliceError::InvalidLength)
+                        } else {
+                            let mut buf = [0u8; (<$t>::BITS / 8) as usize];
+                            buf[..bytes.len()].copy_from_slice(bytes);
+                            let wrapped: [<$t:lower>] = [<$t:lower>]::from_le_bytes(buf);
+                            Ok(Self(wrapped))
+                        }
                     }
                 }
-            }
 
-           impl TFrom<&[u8]> for $t {
-               type Output = $t;
-               fn tfrom(val: &[u8]) -> Self::Output {
-                   Self::try_from(val).unwrap()
-               }
-           }
-
-            impl TryFrom<Vec<u8>> for $t {
-                type Error = ParseSliceError;
-                fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
-                    if bytes.len() > (<$t>::BITS / 8) as usize {
-                        Err(ParseSliceError::InvalidLength)
-                    } else {
-                        let mut buf = [0u8; (<$t>::BITS / 8) as usize];
-                        buf[..bytes.len()].copy_from_slice(&bytes);
-                        let wrapped: [<$t:lower>] = [<$t:lower>]::from_le_bytes(buf);
-                        Ok(Self(wrapped))
+                impl TFrom<&[u8]> for $t {
+                    type Output = $t;
+                    fn tfrom(val: &[u8]) -> Self::Output {
+                        Self::try_from(val).unwrap()
                     }
                 }
-            }
 
-           impl TFrom<Vec<u8>> for $t {
-               type Output = $t;
-               fn tfrom(val: Vec<u8>) -> Self::Output {
-                   Self::try_from(val).unwrap()
-               }
-           }
-            )*
+                impl TryFrom<Vec<u8>> for $t {
+                    type Error = ParseSliceError;
+                    fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+                        if bytes.len() > (<$t>::BITS / 8) as usize {
+                            Err(ParseSliceError::InvalidLength)
+                        } else {
+                            let mut buf = [0u8; (<$t>::BITS / 8) as usize];
+                            buf[..bytes.len()].copy_from_slice(&bytes);
+                            let wrapped: [<$t:lower>] = [<$t:lower>]::from_le_bytes(buf);
+                            Ok(Self(wrapped))
+                        }
+                    }
+                }
+
+                impl TFrom<Vec<u8>> for $t {
+                    type Output = $t;
+                    fn tfrom(val: Vec<u8>) -> Self::Output {
+                        Self::try_from(val).unwrap()
+                    }
+                }
+                )*
         }
     };
 }

@@ -1,6 +1,10 @@
 use super::*;
 use num_traits::FromPrimitive;
 use sbor::rust::str::FromStr;
+use sbor::rust::string::ToString;
+use sbor::rust::{vec, format};
+use sbor::rust::vec::Vec;
+use sbor::String;
 
 macro_rules! test_from_builtin {
     ($i:ident, ($($t:ident),*)) => {
@@ -23,8 +27,7 @@ macro_rules! test_impl {
                 #[test]
                 #[should_panic]
                 fn [<test_add_overflow_$i:lower>]() {
-                    let a = <$i>::MAX + <$i>::try_from(1u8).unwrap(); // panics on overflow
-                    println!("{}.add({}) == {}", [<$i>]::MAX, 1, a);
+                    let _ = <$i>::MAX + <$i>::try_from(1u8).unwrap(); // panics on overflow
                 }
 
                 #[test]
@@ -78,8 +81,7 @@ macro_rules! test_impl {
                 #[test]
                 #[should_panic]
                 fn  [<test_pow_overflow_$i:lower>]() {
-                    let a = <$i>::MAX.pow(2u8);             // panics because of overflow
-                    println!("{}.pow({}) == {}", [<$i>]::MAX, 2, a);
+                    let _ = <$i>::MAX.pow(2u8);             // panics because of overflow
                 }
 
                 #[test]
@@ -146,8 +148,8 @@ macro_rules! test_ops_output_type_builtin {
     ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
         paste! {
             $(
+                //#[cfg(type_name_of_val_enable)]
                 #[test]
-                #![cfg(type_name_of_val_enable)]
                 fn [<test_ $ops _output_type_ $i:lower $i_bits _ $t:lower $t_bits>]() {
                     test_ops_output_type_fn!($i, $i_bits, $ops, $t, $t_bits);
                 }
@@ -160,8 +162,8 @@ macro_rules! test_ops_output_type {
     ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
         paste! {
             $(
+                //#[cfg(type_name_of_val_enable)]
                 #[test]
-                #![cfg(type_name_of_val_enable)]
                 fn [<test_ $ops _output_type_ $i:lower $i_bits _ $t:lower$t:lower $t_bits>]() {
                     test_ops_output_type_fn!($i, $i_bits, $ops, $t, $t_bits);
                 }
@@ -216,6 +218,7 @@ macro_rules! test_ops_output_type_builtin_simple {
     ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
         paste! {
             $(
+                //#[cfg(type_name_of_val_enable)]
                 #[test]
                 fn [<test_simple_ $ops _output_type_ $i:lower $i_bits _ $t:lower $t_bits>]() {
                     test_ops_output_type_simple_fn!($i, $i_bits, $ops, $t, $t_bits);
@@ -229,6 +232,7 @@ macro_rules! test_ops_output_type_simple {
     ($i:literal, $i_bits:literal, $ops:ident, ($($t:literal, $t_bits:literal),*)) => {
         paste! {
             $(
+                //#[cfg(type_name_of_val_enable)]
                 #[test]
                 fn [<test_simple_ $ops _output_type_ $i:lower $i_bits _ $t:lower$t:lower $t_bits>]() {
                     test_ops_output_type_simple_fn!($i, $i_bits, $ops, $t, $t_bits);
@@ -831,7 +835,6 @@ macro_rules! test_math {
                     expect = a.into();
                     expect <<= i;
                     a <<= i;
-                    println!("i:{}", i);
                     let mut expect_bytes = expect.to_signed_bytes_le();
                     expect_bytes.resize((<$i>::BITS / 8) as usize, 0);
                     assert_eq!(a, <$i>::from_le_bytes(expect_bytes.as_slice().try_into().unwrap()));
@@ -857,7 +860,6 @@ macro_rules! test_math {
                     expect = a.into();
                     expect >>= i;
                     a >>= i;
-                    println!("i:{}", i);
                     assert_eq!(a, expect.try_into().unwrap());
                 }
             }
@@ -893,10 +895,8 @@ macro_rules! test_math {
                 let mut a: $i;
                 const LEN: usize = (<$i>::BITS / 8) as usize;
                 let mut expect: BigInt = BigInt::from_signed_bytes_le(&[78u8; LEN]);
-                println!("LEN:{LEN}\nexpect:{:b}", expect);
                 let bits: u32 = <$i>::BITS as u32;
                 for _ in 0..bits {
-                    println!("expect:{}", expect);
                     a = expect.clone().try_into().unwrap();
                     assert_eq!(a.to_string(), expect.clone().to_string());
                     expect >>= 1;
