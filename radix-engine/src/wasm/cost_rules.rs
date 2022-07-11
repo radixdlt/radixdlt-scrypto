@@ -277,13 +277,13 @@ mod tests {
                 (type (;1;) (func (param i32)))
                 (import "env" "gas" (func (;0;) (type 1)))
                 (func (;1;) (type 0) (param i32) (result i32)
-                  i32.const 12
+                  i32.const 3
                   call 0
                   local.get 0
                   i32.const 5
                   i32.mul)
                 (func (;2;) (type 0) (param i32) (result i32)
-                  i32.const 1010
+                  i32.const 11
                   call 0
                   local.get 0
                   call 1))

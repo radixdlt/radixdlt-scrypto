@@ -155,22 +155,27 @@ fn test_total_cost_units_consumed() {
     /*
     Cost analysis:
     1. Transaction validation cost = TX_VALIDATION_COST_PER_BYTE * 1
-    2. Engine run cost = ENGINE_RUN_COST * 4
-       * TransactionProcessor::main
-          * Scrypto::main
-          * AuthZone::clear * 2
-       * AuthZone::clear
-    3. Wasm run cost = WASM_ENGINE_CALL_COST + 307
+    2. Engine run cost
+       * invoke_function: 4515
+         * TransactionProcessor::main
+            * Scrypto::main
+            * AuthZone::clear * 2
+         * AuthZone::clear
+        * run: 30,000
+        * create: 10,000
+        * emit_log: 1050
+    3. Wasm run cost = 343
     */
     let ft = FeeTable::new();
     assert_eq!(
         ft.tx_decoding_per_byte() * 1
             + ft.tx_verification_per_byte() * 1
-            + ft.tx_signature_validation_per_sig()
-            + 1
-            + 1 * 2
-            + 1
-            + 307,
+            + ft.tx_signature_validation_per_sig() * 0
+            + 4515
+            + 30000
+            + 10000
+            + 1050
+            + 343,
         receipt.cost_units_consumed
     );
 }
