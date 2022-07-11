@@ -4,7 +4,6 @@ use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign};
 use core::ops::{BitXor, BitXorAssign, Div, DivAssign};
 use core::ops::{Mul, MulAssign, Neg, Not, Rem, RemAssign};
 use core::ops::{Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
-use forward_ref::*;
 use num_bigint::{BigInt, BigUint, Sign};
 use num_traits::{One, Pow, Signed, ToPrimitive, Zero};
 use paste::paste;
@@ -217,6 +216,64 @@ types! {
         self.zero(): U512([0u8; 64]),
         U512::default(): U512([0u8; 64]),
     }
+}
+
+#[macro_export]
+macro_rules! forward_ref_unop {
+    (impl $imp:ident, $method:ident for $t:ty) => {
+        impl $imp for &$t {
+            type Output = <$t as $imp>::Output;
+
+            #[inline]
+            fn $method(self) -> <$t as $imp>::Output {
+                $imp::$method(*self)
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! forward_ref_binop {
+    (impl $imp:ident, $method:ident for $t:ty, $u:ty) => {
+        impl<'a> $imp<$u> for &'a $t {
+            type Output = <$t as $imp<$u>>::Output;
+
+            #[inline]
+            fn $method(self, other: $u) -> <$t as $imp<$u>>::Output {
+                $imp::$method(*self, other)
+            }
+        }
+
+        impl $imp<&$u> for $t {
+            type Output = <$t as $imp<$u>>::Output;
+
+            #[inline]
+            fn $method(self, other: &$u) -> <$t as $imp<$u>>::Output {
+                $imp::$method(self, *other)
+            }
+        }
+
+        impl $imp<&$u> for &$t {
+            type Output = <$t as $imp<$u>>::Output;
+
+            #[inline]
+            fn $method(self, other: &$u) -> <$t as $imp<$u>>::Output {
+                $imp::$method(*self, *other)
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! forward_ref_op_assign {
+    (impl $imp:ident, $method:ident for $t:ty, $u:ty) => {
+        impl $imp<&$u> for $t {
+            #[inline]
+            fn $method(&mut self, other: &$u) {
+                $imp::$method(self, *other);
+            }
+        }
+    };
 }
 
 macro_rules! checked_impl {
