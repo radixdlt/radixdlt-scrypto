@@ -4,8 +4,7 @@ use sbor::rust::collections::HashMap;
 use sbor::rust::str::FromStr;
 use sbor::type_id::*;
 use scrypto::abi::*;
-use scrypto::address::Bech32Addressable;
-use scrypto::core::Network;
+use scrypto::address::Bech32Decoder;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 use scrypto::vec_to_struct;
@@ -102,7 +101,7 @@ impl NameResolver {
 
 pub fn generate_manifest(
     instructions: &[ast::Instruction],
-    network: &Network,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<TransactionManifest, GeneratorError> {
     let mut id_validator = IdValidator::new();
     let mut name_resolver = NameResolver::new();
@@ -113,7 +112,7 @@ pub fn generate_manifest(
             instruction,
             &mut id_validator,
             &mut name_resolver,
-            network,
+            bech32_decoder,
         )?);
     }
 
@@ -126,7 +125,7 @@ pub fn generate_instruction(
     instruction: &ast::Instruction,
     id_validator: &mut IdValidator,
     resolver: &mut NameResolver,
-    network: &Network,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Instruction, GeneratorError> {
     Ok(match instruction {
         ast::Instruction::TakeFromWorktop {
@@ -139,7 +138,7 @@ pub fn generate_instruction(
             declare_bucket(new_bucket, resolver, bucket_id)?;
 
             Instruction::TakeFromWorktop {
-                resource_address: generate_resource_address(resource_address, network)?,
+                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::TakeFromWorktopByAmount {
@@ -154,7 +153,7 @@ pub fn generate_instruction(
 
             Instruction::TakeFromWorktopByAmount {
                 amount: generate_decimal(amount)?,
-                resource_address: generate_resource_address(resource_address, network)?,
+                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::TakeFromWorktopByIds {
@@ -169,7 +168,7 @@ pub fn generate_instruction(
 
             Instruction::TakeFromWorktopByIds {
                 ids: generate_non_fungible_ids(ids)?,
-                resource_address: generate_resource_address(resource_address, network)?,
+                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::ReturnToWorktop { bucket } => {
@@ -181,7 +180,7 @@ pub fn generate_instruction(
         }
         ast::Instruction::AssertWorktopContains { resource_address } => {
             Instruction::AssertWorktopContains {
-                resource_address: generate_resource_address(resource_address, network)?,
+                resource_address: generate_resource_address(resource_address, bech32_decoder)?,
             }
         }
         ast::Instruction::AssertWorktopContainsByAmount {
@@ -189,14 +188,14 @@ pub fn generate_instruction(
             resource_address,
         } => Instruction::AssertWorktopContainsByAmount {
             amount: generate_decimal(amount)?,
-            resource_address: generate_resource_address(resource_address, network)?,
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
         ast::Instruction::AssertWorktopContainsByIds {
             ids,
             resource_address,
         } => Instruction::AssertWorktopContainsByIds {
             ids: generate_non_fungible_ids(ids)?,
-            resource_address: generate_resource_address(resource_address, network)?,
+            resource_address: generate_resource_address(resource_address, bech32_decoder)?,
         },
         ast::Instruction::PopFromAuthZone { new_proof } => {
             let proof_id = id_validator
@@ -219,7 +218,7 @@ pub fn generate_instruction(
             resource_address,
             new_proof,
         } => {
-            let resource_address = generate_resource_address(resource_address, network)?;
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -233,7 +232,7 @@ pub fn generate_instruction(
             new_proof,
         } => {
             let amount = generate_decimal(amount)?;
-            let resource_address = generate_resource_address(resource_address, network)?;
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -250,7 +249,7 @@ pub fn generate_instruction(
             new_proof,
         } => {
             let ids = generate_non_fungible_ids(ids)?;
-            let resource_address = generate_resource_address(resource_address, network)?;
+            let resource_address = generate_resource_address(resource_address, bech32_decoder)?;
             let proof_id = id_validator
                 .new_proof(ProofKind::AuthZoneProof)
                 .map_err(GeneratorError::IdValidationError)?;
@@ -292,7 +291,7 @@ pub fn generate_instruction(
             function,
             args,
         } => {
-            let args = generate_args(args, resolver, network)?;
+            let args = generate_args(args, resolver, bech32_decoder)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -303,7 +302,7 @@ pub fn generate_instruction(
             }
 
             Instruction::CallFunction {
-                package_address: generate_package_address(package_address, network)?,
+                package_address: generate_package_address(package_address, bech32_decoder)?,
                 blueprint_name: generate_string(blueprint_name)?,
                 method_name: generate_string(function)?,
                 arg: vec_to_struct!(fields),
@@ -314,7 +313,7 @@ pub fn generate_instruction(
             method,
             args,
         } => {
-            let args = generate_args(args, resolver, network)?;
+            let args = generate_args(args, resolver, bech32_decoder)?;
             let mut fields = Vec::new();
             for arg in &args {
                 let validated_arg = ScryptoValue::from_slice(arg).unwrap();
@@ -325,7 +324,7 @@ pub fn generate_instruction(
             }
 
             Instruction::CallMethod {
-                component_address: generate_component_address(component_address, network)?,
+                component_address: generate_component_address(component_address, bech32_decoder)?,
                 method_name: generate_string(method)?,
                 arg: vec_to_struct!(fields),
             }
@@ -338,7 +337,7 @@ pub fn generate_instruction(
                 .move_all_resources()
                 .map_err(GeneratorError::IdValidationError)?;
             Instruction::CallMethodWithAllResources {
-                component_address: generate_component_address(component_address, network)?,
+                component_address: generate_component_address(component_address, bech32_decoder)?,
                 method: generate_string(method)?,
             }
         }
@@ -361,11 +360,11 @@ macro_rules! invalid_type {
 fn generate_args(
     values: &Vec<ast::Value>,
     resolver: &mut NameResolver,
-    network: &Network,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Vec<Vec<u8>>, GeneratorError> {
     let mut result = Vec::new();
     for v in values {
-        let value = generate_value(v, None, resolver, network)?;
+        let value = generate_value(v, None, resolver, bech32_decoder)?;
 
         result.push(encode_any(&value));
     }
@@ -424,11 +423,12 @@ fn generate_decimal(value: &ast::Value) -> Result<Decimal, GeneratorError> {
 
 fn generate_package_address(
     value: &ast::Value,
-    network: &Network,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<PackageAddress, GeneratorError> {
     match value {
         ast::Value::PackageAddress(inner) => match &**inner {
-            ast::Value::String(s) => PackageAddress::from_bech32_string(s, network)
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_package_address(s)
                 .map_err(|_| GeneratorError::InvalidPackageAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -438,11 +438,12 @@ fn generate_package_address(
 
 fn generate_component_address(
     value: &ast::Value,
-    network: &Network,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<ComponentAddress, GeneratorError> {
     match value {
         ast::Value::ComponentAddress(inner) => match &**inner {
-            ast::Value::String(s) => ComponentAddress::from_bech32_string(s, network)
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_component_address(s)
                 .map_err(|_| GeneratorError::InvalidComponentAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -452,11 +453,12 @@ fn generate_component_address(
 
 fn generate_resource_address(
     value: &ast::Value,
-    network: &Network,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<ResourceAddress, GeneratorError> {
     match value {
         ast::Value::ResourceAddress(inner) => match &**inner {
-            ast::Value::String(s) => ResourceAddress::from_bech32_string(s, network)
+            ast::Value::String(s) => bech32_decoder
+                .validate_and_decode_resource_address(s)
                 .map_err(|_| GeneratorError::InvalidResourceAddress(s.into())),
             v @ _ => invalid_type!(v, ast::Type::String),
         },
@@ -584,7 +586,7 @@ fn generate_value(
     value: &ast::Value,
     expected: Option<ast::Type>,
     resolver: &mut NameResolver,
-    network: &Network,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Value, GeneratorError> {
     if let Some(ty) = expected {
         if ty != value.kind() {
@@ -612,73 +614,73 @@ fn generate_value(
             value: value.clone(),
         }),
         ast::Value::Struct(fields) => Ok(Value::Struct {
-            fields: generate_singletons(fields, None, resolver, network)?,
+            fields: generate_singletons(fields, None, resolver, bech32_decoder)?,
         }),
         ast::Value::Enum(name, fields) => Ok(Value::Enum {
             name: name.clone(),
-            fields: generate_singletons(fields, None, resolver, network)?,
+            fields: generate_singletons(fields, None, resolver, bech32_decoder)?,
         }),
         ast::Value::Option(value) => match &**value {
             Some(inner) => Ok(Value::Option {
-                value: Some(generate_value(inner, None, resolver, network)?).into(),
+                value: Some(generate_value(inner, None, resolver, bech32_decoder)?).into(),
             }),
             None => Ok(Value::Option { value: None.into() }),
         },
         ast::Value::Array(element_type, elements) => Ok(Value::Array {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver, network)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
         ast::Value::Tuple(elements) => Ok(Value::Tuple {
-            elements: generate_singletons(elements, None, resolver, network)?,
+            elements: generate_singletons(elements, None, resolver, bech32_decoder)?,
         }),
         ast::Value::Result(value) => match &**value {
             Ok(inner) => Ok(Value::Result {
-                value: Ok(generate_value(inner, None, resolver, network)?).into(),
+                value: Ok(generate_value(inner, None, resolver, bech32_decoder)?).into(),
             }),
             Err(inner) => Ok(Value::Result {
-                value: Err(generate_value(inner, None, resolver, network)?).into(),
+                value: Err(generate_value(inner, None, resolver, bech32_decoder)?).into(),
             }),
         },
         ast::Value::Vec(element_type, elements) => Ok(Value::Vec {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver, network)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
         ast::Value::TreeSet(element_type, elements) => Ok(Value::TreeSet {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver, network)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
         ast::Value::TreeMap(key_type, value_type, elements) => Ok(Value::TreeMap {
             key_type_id: generate_type_id(key_type),
             value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(elements, *key_type, *value_type, resolver, network)?,
+            elements: generate_pairs(elements, *key_type, *value_type, resolver, bech32_decoder)?,
         }),
         ast::Value::HashSet(element_type, elements) => Ok(Value::HashSet {
             element_type_id: generate_type_id(element_type),
-            elements: generate_singletons(elements, Some(*element_type), resolver, network)?,
+            elements: generate_singletons(elements, Some(*element_type), resolver, bech32_decoder)?,
         }),
         ast::Value::HashMap(key_type, value_type, elements) => Ok(Value::HashMap {
             key_type_id: generate_type_id(key_type),
             value_type_id: generate_type_id(value_type),
-            elements: generate_pairs(elements, *key_type, *value_type, resolver, network)?,
+            elements: generate_pairs(elements, *key_type, *value_type, resolver, bech32_decoder)?,
         }),
         ast::Value::Decimal(_) => generate_decimal(value).map(|v| Value::Custom {
             type_id: ScryptoType::Decimal.id(),
             bytes: v.to_vec(),
         }),
         ast::Value::PackageAddress(_) => {
-            generate_package_address(value, network).map(|v| Value::Custom {
+            generate_package_address(value, bech32_decoder).map(|v| Value::Custom {
                 type_id: ScryptoType::PackageAddress.id(),
                 bytes: v.to_vec(),
             })
         }
         ast::Value::ComponentAddress(_) => {
-            generate_component_address(value, network).map(|v| Value::Custom {
+            generate_component_address(value, bech32_decoder).map(|v| Value::Custom {
                 type_id: ScryptoType::ComponentAddress.id(),
                 bytes: v.to_vec(),
             })
         }
         ast::Value::ResourceAddress(_) => {
-            generate_resource_address(value, network).map(|v| Value::Custom {
+            generate_resource_address(value, bech32_decoder).map(|v| Value::Custom {
                 type_id: ScryptoType::ResourceAddress.id(),
                 bytes: v.to_vec(),
             })
@@ -725,11 +727,11 @@ fn generate_singletons(
     elements: &Vec<ast::Value>,
     ty: Option<ast::Type>,
     resolver: &mut NameResolver,
-    network: &Network,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Vec<Value>, GeneratorError> {
     let mut result = vec![];
     for element in elements {
-        result.push(generate_value(element, ty, resolver, network)?);
+        result.push(generate_value(element, ty, resolver, bech32_decoder)?);
     }
     Ok(result)
 }
@@ -739,7 +741,7 @@ fn generate_pairs(
     key_type: ast::Type,
     value_type: ast::Type,
     resolver: &mut NameResolver,
-    network: &Network,
+    bech32_decoder: &Bech32Decoder,
 ) -> Result<Vec<Value>, GeneratorError> {
     if elements.len() % 2 != 0 {
         return Err(GeneratorError::OddNumberOfElements(elements.len()));
@@ -750,13 +752,13 @@ fn generate_pairs(
             &elements[2 * i],
             Some(key_type),
             resolver,
-            network,
+            bech32_decoder,
         )?);
         result.push(generate_value(
             &elements[2 * i + 1],
             Some(value_type),
             resolver,
-            network,
+            bech32_decoder,
         )?);
     }
     Ok(result)
@@ -806,6 +808,7 @@ mod tests {
     use super::*;
     use crate::manifest::lexer::tokenize;
     use crate::manifest::parser::Parser;
+    use scrypto::address::Bech32Decoder;
     use scrypto::buffer::scrypto_encode;
     use scrypto::core::Network;
     use scrypto::prelude::Package;
@@ -817,7 +820,12 @@ mod tests {
             let value = Parser::new(tokenize($s).unwrap()).parse_value().unwrap();
             let mut resolver = NameResolver::new();
             assert_eq!(
-                generate_value(&value, None, &mut resolver, &Network::LocalSimulator),
+                generate_value(
+                    &value,
+                    None,
+                    &mut resolver,
+                    &Bech32Decoder::new_from_network(&Network::LocalSimulator)
+                ),
                 Ok($expected)
             );
         }};
@@ -836,7 +844,7 @@ mod tests {
                     &instruction,
                     &mut id_validator,
                     &mut resolver,
-                    &Network::LocalSimulator
+                    &Bech32Decoder::new_from_network(&Network::LocalSimulator)
                 ),
                 Ok($expected)
             );
@@ -851,7 +859,7 @@ mod tests {
                 &value,
                 None,
                 &mut NameResolver::new(),
-                &Network::LocalSimulator,
+                &Bech32Decoder::new_from_network(&Network::LocalSimulator),
             ) {
                 Ok(_) => {
                     panic!("Expected {:?} but no error is thrown", $expected);

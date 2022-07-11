@@ -5,7 +5,7 @@ use sbor::rust::format;
 use sbor::rust::string::String;
 use sbor::rust::string::ToString;
 use sbor::rust::vec::Vec;
-use scrypto::address::Bech32Addressable;
+use scrypto::address::Bech32Encoder;
 use scrypto::core::Network;
 use scrypto::engine::types::*;
 use scrypto::values::*;
@@ -62,6 +62,8 @@ macro_rules! prefix {
 
 impl fmt::Debug for Receipt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let bech32_encoder = Bech32Encoder::new_from_network(&self.transaction_network);
+
         write!(
             f,
             "{} {}",
@@ -103,7 +105,7 @@ impl fmt::Debug for Receipt {
                         arg,
                     } => format!(
                         "CallFunction {{ package_address: {}, blueprint_name: {:?}, method_name: {:?}, arg: {:?} }}",
-                        package_address.to_bech32_string(&self.transaction_network).unwrap(),
+                        bech32_encoder.encode_package_address(package_address).unwrap(),
                         blueprint_name,
                         method_name,
                         ScryptoValue::from_slice(&arg).expect("Invalid call data")
@@ -114,7 +116,7 @@ impl fmt::Debug for Receipt {
                         arg,
                     } => format!(
                         "CallMethod {{ component_address: {}, method_name: {:?}, call_data: {:?} }}",
-                        component_address.to_bech32_string(&self.transaction_network).unwrap(),
+                        bech32_encoder.encode_component_address(component_address).unwrap(),
                         method_name,
                         ScryptoValue::from_slice(&arg).expect("Invalid call data")
                     ),
@@ -160,8 +162,8 @@ impl fmt::Debug for Receipt {
                 f,
                 "\n{} Package: {}",
                 prefix!(i, self.new_package_addresses),
-                package_address
-                    .to_bech32_string(&self.transaction_network)
+                bech32_encoder
+                    .encode_package_address(package_address)
                     .unwrap()
             )?;
         }
@@ -170,8 +172,8 @@ impl fmt::Debug for Receipt {
                 f,
                 "\n{} Component: {}",
                 prefix!(i, self.new_component_addresses),
-                component_address
-                    .to_bech32_string(&self.transaction_network)
+                bech32_encoder
+                    .encode_component_address(component_address)
                     .unwrap()
             )?;
         }
@@ -180,8 +182,8 @@ impl fmt::Debug for Receipt {
                 f,
                 "\n{} Resource: {}",
                 prefix!(i, self.new_resource_addresses),
-                resource_address
-                    .to_bech32_string(&self.transaction_network)
+                bech32_encoder
+                    .encode_resource_address(resource_address)
                     .unwrap()
             )?;
         }

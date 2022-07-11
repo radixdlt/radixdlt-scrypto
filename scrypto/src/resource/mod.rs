@@ -20,7 +20,7 @@ pub use auth_zone::*;
 pub use bucket::*;
 pub use mint_params::MintParams;
 pub use non_fungible::NonFungible;
-pub use non_fungible_address::{NonFungibleAddress, ParseNonFungibleParseAddressError};
+pub use non_fungible_address::{NonFungibleAddress, ParseNonFungibleAddressError};
 pub use non_fungible_data::NonFungibleData;
 pub use non_fungible_id::{NonFungibleId, ParseNonFungibleIdError};
 pub use proof::*;

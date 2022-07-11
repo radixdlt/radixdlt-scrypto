@@ -1,7 +1,6 @@
 use sbor::rust::collections::*;
 use sbor::{encode_any, DecodeError, Value};
-use scrypto::address::Bech32Addressable;
-use scrypto::core::Network;
+use scrypto::address::Bech32Encoder;
 use scrypto::engine::types::*;
 use scrypto::values::*;
 
@@ -17,7 +16,7 @@ pub enum DecompileError {
 
 pub fn decompile(
     manifest: &TransactionManifest,
-    network: &Network,
+    bech32_encoder: &Bech32Encoder,
 ) -> Result<String, DecompileError> {
     let mut buf = String::new();
     let mut id_validator = IdValidator::new();
@@ -33,7 +32,9 @@ pub fn decompile(
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
                     "TAKE_FROM_WORKTOP ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    resource_address.to_bech32_string(network).unwrap(),
+                    bech32_encoder
+                        .encode_resource_address(&resource_address)
+                        .unwrap(),
                     name
                 ));
             }
@@ -48,7 +49,7 @@ pub fn decompile(
                 buckets.insert(bucket_id, name.clone());
                 buf.push_str(&format!(
                     "TAKE_FROM_WORKTOP_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Bucket(\"{}\");\n",
-                    amount, resource_address.to_bech32_string(network).unwrap(), name
+                    amount, bech32_encoder.encode_resource_address(&resource_address).unwrap(), name
                 ));
             }
             Instruction::TakeFromWorktopByIds {
@@ -66,7 +67,7 @@ pub fn decompile(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    resource_address.to_bech32_string(network).unwrap(), name
+                    bech32_encoder.encode_resource_address(&resource_address).unwrap(), name
                 ));
             }
             Instruction::ReturnToWorktop { bucket_id } => {
@@ -84,7 +85,9 @@ pub fn decompile(
             Instruction::AssertWorktopContains { resource_address } => {
                 buf.push_str(&format!(
                     "ASSERT_WORKTOP_CONTAINS ResourceAddress(\"{}\");\n",
-                    resource_address.to_bech32_string(network).unwrap()
+                    bech32_encoder
+                        .encode_resource_address(&resource_address)
+                        .unwrap()
                 ));
             }
             Instruction::AssertWorktopContainsByAmount {
@@ -94,7 +97,9 @@ pub fn decompile(
                 buf.push_str(&format!(
                     "ASSERT_WORKTOP_CONTAINS_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\");\n",
                     amount,
-                    resource_address.to_bech32_string(network).unwrap()
+                    bech32_encoder
+                        .encode_resource_address(&resource_address)
+                        .unwrap()
                 ));
             }
             Instruction::AssertWorktopContainsByIds {
@@ -107,7 +112,7 @@ pub fn decompile(
                         .map(|k| format!("NonFungibleId(\"{}\")", k))
                         .collect::<Vec<String>>()
                         .join(", "),
-                    resource_address.to_bech32_string(network).unwrap()
+                    bech32_encoder.encode_resource_address(&resource_address).unwrap()
                 ));
             }
             Instruction::PopFromAuthZone => {
@@ -141,7 +146,9 @@ pub fn decompile(
                 proofs.insert(proof_id, name.clone());
                 buf.push_str(&format!(
                     "CREATE_PROOF_FROM_AUTH_ZONE ResourceAddress(\"{}\") Proof(\"{}\");\n",
-                    resource_address.to_bech32_string(network).unwrap(),
+                    bech32_encoder
+                        .encode_resource_address(&resource_address)
+                        .unwrap(),
                     name
                 ));
             }
@@ -157,7 +164,7 @@ pub fn decompile(
                 buf.push_str(&format!(
                     "CREATE_PROOF_FROM_AUTH_ZONE_BY_AMOUNT Decimal(\"{}\") ResourceAddress(\"{}\") Proof(\"{}\");\n",
                     amount,
-                    resource_address.to_bech32_string(network).unwrap(), name
+                    bech32_encoder.encode_resource_address(&resource_address).unwrap(), name
                 ));
             }
             Instruction::CreateProofFromAuthZoneByIds {
@@ -174,7 +181,7 @@ pub fn decompile(
                     .map(|k| format!("NonFungibleId(\"{}\")", k))
                     .collect::<Vec<String>>()
                     .join(", "),
-                    resource_address.to_bech32_string(network).unwrap(), name
+                    bech32_encoder.encode_resource_address(&resource_address).unwrap(), name
                 ));
             }
             Instruction::CreateProofFromBucket { bucket_id } => {
@@ -227,7 +234,9 @@ pub fn decompile(
             } => {
                 buf.push_str(&format!(
                     "CALL_FUNCTION PackageAddress(\"{}\") \"{}\" \"{}\"",
-                    package_address.to_bech32_string(network).unwrap(),
+                    bech32_encoder
+                        .encode_package_address(&package_address)
+                        .unwrap(),
                     blueprint_name,
                     method_name
                 ));
@@ -257,7 +266,9 @@ pub fn decompile(
             } => {
                 buf.push_str(&format!(
                     "CALL_METHOD ComponentAddress(\"{}\") \"{}\"",
-                    component_address.to_bech32_string(network).unwrap(),
+                    bech32_encoder
+                        .encode_component_address(&component_address)
+                        .unwrap(),
                     method_name
                 ));
 
@@ -290,7 +301,9 @@ pub fn decompile(
                     .map_err(DecompileError::IdValidationError)?;
                 buf.push_str(&format!(
                     "CALL_METHOD_WITH_ALL_RESOURCES ComponentAddress(\"{}\") \"{}\";\n",
-                    component_address.to_bech32_string(network).unwrap(),
+                    bech32_encoder
+                        .encode_component_address(&component_address)
+                        .unwrap(),
                     method
                 ));
             }
@@ -320,7 +333,8 @@ mod tests {
         )
         .unwrap();
 
-        let manifest = &decompile(&tx, &Network::LocalSimulator).unwrap();
+        let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+        let manifest = &decompile(&tx, &bech32_encoder).unwrap();
         println!("{}", manifest);
 
         assert_eq!(compile(manifest, &Network::LocalSimulator).unwrap(), tx);

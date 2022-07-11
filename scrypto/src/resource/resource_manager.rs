@@ -7,12 +7,9 @@ use sbor::rust::vec::Vec;
 use sbor::*;
 
 use crate::abi::*;
-use crate::address::Bech32Addressable;
-use crate::address::EntityType;
-use crate::address::ParseAddressError;
+use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
 use crate::buffer::scrypto_encode;
 use crate::core::SNodeRef;
-use crate::core::CURRENT_NETWORK;
 use crate::engine::{api::*, call_engine};
 use crate::math::*;
 use crate::misc::*;
@@ -343,12 +340,12 @@ impl ResourceManager {
 //========
 
 impl TryFrom<&[u8]> for ResourceAddress {
-    type Error = ParseAddressError;
+    type Error = AddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             27 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseAddressError::InvalidLength(slice.len())),
+            _ => Err(AddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -365,27 +362,21 @@ scrypto_type!(ResourceAddress, ScryptoType::ResourceAddress, Vec::new());
 // text
 //======
 
-impl Bech32Addressable for ResourceAddress {
-    fn data(&self) -> &[u8] {
-        &self.0
-    }
-
-    fn allowed_entity_types() -> &'static [EntityType] {
-        &[EntityType::Resource]
-    }
-}
-
 impl FromStr for ResourceAddress {
-    type Err = ParseAddressError;
+    type Err = AddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_bech32_string(s, &CURRENT_NETWORK)
+        BECH32_DECODER.validate_and_decode_resource_address(s)
     }
 }
 
 impl fmt::Display for ResourceAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_bech32_string(&CURRENT_NETWORK).unwrap())
+        write!(
+            f,
+            "{}",
+            BECH32_ENCODER.encode_resource_address(self).unwrap()
+        )
     }
 }
 

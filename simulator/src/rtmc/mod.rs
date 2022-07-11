@@ -17,7 +17,7 @@ pub struct Args {
     #[clap(required = true)]
     input: PathBuf,
 
-    /// Network to Use [LocalSimulator | InternalTestNetwork]
+    /// Network to Use [LocalSimulator | InternalTestnet]
     #[clap(required = true)]
     network: String,
 }

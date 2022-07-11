@@ -2,7 +2,7 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
-use scrypto::address::Bech32Addressable;
+use scrypto::address::Bech32Encoder;
 use scrypto::core::Network;
 use scrypto::{prelude::*, to_struct};
 use transaction::builder::ManifestBuilder;
@@ -80,8 +80,9 @@ fn fill_in_package_name_template(
     use std::io::{Read, Write};
     use std::path::Path;
 
-    let package_address_string = package_address
-        .to_bech32_string(&Network::LocalSimulator)
+    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+
+    let package_address_string = bech32_encoder.encode_package_address(&package_address)
         .unwrap();
 
     println!(

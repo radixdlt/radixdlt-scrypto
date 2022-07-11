@@ -1,7 +1,7 @@
 use clap::Parser;
 use colored::*;
 use rand::Rng;
-use scrypto::address::Bech32Addressable;
+use scrypto::address::Bech32Encoder;
 use scrypto::core::Network;
 use scrypto::prelude::*;
 use scrypto::to_struct;
@@ -43,14 +43,16 @@ impl NewAccount {
             out,
         )?;
 
+        let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+
         if let Some(receipt) = receipt {
             let account = receipt.new_component_addresses[0];
             writeln!(out, "A new account has been created!").map_err(Error::IOError)?;
             writeln!(
                 out,
                 "Account component address: {}",
-                account
-                    .to_bech32_string(&Network::LocalSimulator)
+                bech32_encoder
+                    .encode_component_address(&account)
                     .unwrap()
                     .to_string()
                     .green()

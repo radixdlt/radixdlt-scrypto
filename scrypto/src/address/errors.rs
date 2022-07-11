@@ -1,9 +1,9 @@
 use bech32::{Error, Variant};
 use sbor::rust::fmt;
 
-/// Represents an error when decoding an address.
+/// Represents an error in addressing.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseAddressError {
+pub enum AddressError {
     EncodingError(Error),
     DecodingError(Error),
     InvalidVariant(Variant),
@@ -15,10 +15,10 @@ pub enum ParseAddressError {
 }
 
 #[cfg(not(feature = "alloc"))]
-impl std::error::Error for ParseAddressError {}
+impl std::error::Error for AddressError {}
 
 #[cfg(not(feature = "alloc"))]
-impl fmt::Display for ParseAddressError {
+impl fmt::Display for AddressError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }

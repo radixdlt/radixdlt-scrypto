@@ -9,7 +9,7 @@ pub use actor::{ScryptoActor, ScryptoActorInfo};
 pub use invocation::{ComponentOffset, DataAddress, SNodeRef};
 pub use level::Level;
 pub use logger::Logger;
-pub use network::{Network, NetworkError, CURRENT_NETWORK};
+pub use network::{Network, NetworkError};
 pub use runtime::{
     Runtime, SystemGetCurrentEpochInput, SystemGetTransactionHashInput,
     SystemGetTransactionNetworkInput,

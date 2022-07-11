@@ -1,3 +1,4 @@
+use scrypto::address::Bech32Decoder;
 use scrypto::core::Network;
 
 use crate::manifest::*;
@@ -12,9 +13,12 @@ pub enum CompileError {
 }
 
 pub fn compile(s: &str, network: &Network) -> Result<TransactionManifest, CompileError> {
+    let bech32_decoder = Bech32Decoder::new_from_network(network);
+
     let tokens = lexer::tokenize(s).map_err(CompileError::LexerError)?;
     let instructions = parser::Parser::new(tokens)
         .parse_manifest()
         .map_err(CompileError::ParserError)?;
-    generator::generate_manifest(&instructions, network).map_err(CompileError::GeneratorError)
+    generator::generate_manifest(&instructions, &bech32_decoder)
+        .map_err(CompileError::GeneratorError)
 }

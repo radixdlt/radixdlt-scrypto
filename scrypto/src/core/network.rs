@@ -1,25 +1,43 @@
 use core::str::FromStr;
-use once_cell::unsync::Lazy;
 use sbor::rust::string::String;
 use sbor::{Decode, Encode, ToString, TypeId};
 
-// TODO: we may be able to squeeze network identifier into the other fields, like the `v` byte in signature.
-#[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
-pub enum Network {
-    LocalSimulator,
-    InternalTestnet,
+/// Generates an Enum and defines its `FromStr` implementation.
+macro_rules! network_enum_with_from_str {
+    (
+        $(#[$meta:meta])*
+        $vis:vis enum $enum_name:ident {
+            $($variant:ident),*
+        }
+    ) => {
+        $(#[$meta])*
+        $vis enum $enum_name{
+            $(
+                $variant,
+            )*
+        }
+
+        impl FromStr for $enum_name {
+            type Err = NetworkError;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                match s {
+                    $(
+                        stringify!($variant) => Ok(Self::$variant),
+                    )*
+                    _ => Err(NetworkError::InvalidNetworkString),
+                }
+            }
+        }
+    };
 }
 
-// TODO: Generate through macro.
-impl FromStr for Network {
-    type Err = NetworkError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "LocalSimulator" => Ok(Self::LocalSimulator),
-            "InternalTestnet" => Ok(Self::InternalTestnet),
-            _ => Err(NetworkError::InvalidNetworkString),
-        }
+network_enum_with_from_str! {
+    // TODO: we may be able to squeeze network identifier into the other fields, like the `v` byte in signature.
+    #[derive(Debug, Clone, TypeId, Encode, Decode, PartialEq, Eq)]
+    pub enum Network {
+        LocalSimulator,
+        InternalTestnet
     }
 }
 
@@ -27,12 +45,3 @@ impl FromStr for Network {
 pub enum NetworkError {
     InvalidNetworkString,
 }
-
-#[cfg(target_arch = "wasm32")]
-pub const CURRENT_NETWORK: Lazy<Network> = Lazy::new(|| {
-    use super::Runtime;
-    Runtime::transaction_network()
-});
-
-#[cfg(not(target_arch = "wasm32"))]
-pub const CURRENT_NETWORK: Lazy<Network> = Lazy::new(|| Network::LocalSimulator);

@@ -6,9 +6,7 @@ use sbor::*;
 use scrypto::engine::types::StoredValueId;
 
 use crate::abi::*;
-use crate::address::Bech32Addressable;
-use crate::address::EntityType;
-use crate::address::ParseAddressError;
+use crate::address::{AddressError, BECH32_DECODER, BECH32_ENCODER};
 use crate::buffer::scrypto_encode;
 use crate::component::*;
 use crate::core::*;
@@ -84,7 +82,7 @@ impl Component {
 //========
 
 impl TryFrom<&[u8]> for Component {
-    type Error = ParseAddressError;
+    type Error = AddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         let component_address = ComponentAddress::try_from(slice)?;
@@ -105,7 +103,7 @@ scrypto_type!(Component, ScryptoType::Component, Vec::new());
 //======
 
 impl FromStr for Component {
-    type Err = ParseAddressError;
+    type Err = AddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         ComponentAddress::from_str(s).map(|a| Component(a))
@@ -135,12 +133,12 @@ impl ComponentAddress {}
 //========
 
 impl TryFrom<&[u8]> for ComponentAddress {
-    type Error = ParseAddressError;
+    type Error = AddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         match slice.len() {
             27 => Ok(Self(copy_u8_array(slice))),
-            _ => Err(ParseAddressError::InvalidLength(slice.len())),
+            _ => Err(AddressError::InvalidLength(slice.len())),
         }
     }
 }
@@ -157,31 +155,21 @@ scrypto_type!(ComponentAddress, ScryptoType::ComponentAddress, Vec::new());
 // text
 //======
 
-impl Bech32Addressable for ComponentAddress {
-    fn data(&self) -> &[u8] {
-        &self.0
-    }
-
-    fn allowed_entity_types() -> &'static [EntityType] {
-        &[
-            EntityType::Component,
-            EntityType::AccountComponent,
-            EntityType::SystemComponent,
-        ]
-    }
-}
-
 impl FromStr for ComponentAddress {
-    type Err = ParseAddressError;
+    type Err = AddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_bech32_string(s, &CURRENT_NETWORK)
+        BECH32_DECODER.validate_and_decode_component_address(s)
     }
 }
 
 impl fmt::Display for ComponentAddress {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{}", self.to_bech32_string(&CURRENT_NETWORK).unwrap())
+        write!(
+            f,
+            "{}",
+            BECH32_ENCODER.encode_component_address(self).unwrap()
+        )
     }
 }
 

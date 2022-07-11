@@ -47,7 +47,7 @@ impl NonFungibleAddress {
 
 /// Represents an error when parsing non-fungible address.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ParseNonFungibleParseAddressError {
+pub enum ParseNonFungibleAddressError {
     InvalidLength(usize),
     InvalidResourceDefId,
     InvalidNonFungibleId,
@@ -56,20 +56,18 @@ pub enum ParseNonFungibleParseAddressError {
 }
 
 impl TryFrom<&[u8]> for NonFungibleAddress {
-    type Error = ParseNonFungibleParseAddressError;
+    type Error = ParseNonFungibleAddressError;
 
     fn try_from(slice: &[u8]) -> Result<Self, Self::Error> {
         if slice.len() < 27 {
-            return Err(ParseNonFungibleParseAddressError::InvalidLength(
-                slice.len(),
-            ));
+            return Err(ParseNonFungibleAddressError::InvalidLength(slice.len()));
         }
 
         let (resource_address_slice, non_fungible_id_slice) = slice.split_at(27);
         let resource_address = ResourceAddress::try_from(resource_address_slice)
-            .map_err(|_| ParseNonFungibleParseAddressError::InvalidResourceDefId)?;
+            .map_err(|_| ParseNonFungibleAddressError::InvalidResourceDefId)?;
         let non_fungible_id = NonFungibleId::try_from(non_fungible_id_slice)
-            .map_err(|_| ParseNonFungibleParseAddressError::InvalidNonFungibleId)?;
+            .map_err(|_| ParseNonFungibleAddressError::InvalidNonFungibleId)?;
         Ok(NonFungibleAddress {
             resource_address,
             non_fungible_id,
@@ -97,13 +95,13 @@ scrypto_type!(
 //======
 
 impl FromStr for NonFungibleAddress {
-    type Err = ParseNonFungibleParseAddressError;
+    type Err = ParseNonFungibleAddressError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let bytes = hex::decode(s)
-            .map_err(|_| ParseNonFungibleParseAddressError::InvalidHex(s.to_owned()))?;
+        let bytes =
+            hex::decode(s).map_err(|_| ParseNonFungibleAddressError::InvalidHex(s.to_owned()))?;
         if bytes.get(0) != Some(&3u8) {
-            return Err(ParseNonFungibleParseAddressError::InvalidPrefix);
+            return Err(ParseNonFungibleAddressError::InvalidPrefix);
         }
         Self::try_from(&bytes[1..])
     }

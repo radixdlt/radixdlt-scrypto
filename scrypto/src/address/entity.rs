@@ -53,3 +53,14 @@ impl TryFrom<u8> for EntityType {
 pub enum EntityTypeError {
     InvalidEntityTypeId(u8),
 }
+
+/// Represents the allowed list of entity types that packages can have.
+pub const ALLOWED_PACKAGE_ENTITY_TYPES: [EntityType; 1] = [EntityType::Package];
+/// Represents the allowed list of entity types that resources can have.
+pub const ALLOWED_RESOURCE_ENTITY_TYPES: [EntityType; 1] = [EntityType::Resource];
+/// Represents the allowed list of entity types that components can have.
+pub const ALLOWED_COMPONENT_ENTITY_TYPES: [EntityType; 3] = [
+    EntityType::Component,
+    EntityType::AccountComponent,
+    EntityType::SystemComponent,
+];

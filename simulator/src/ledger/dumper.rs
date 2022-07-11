@@ -3,7 +3,7 @@ use colored::*;
 use radix_engine::ledger::*;
 use radix_engine::model::*;
 use sbor::rust::collections::HashSet;
-use scrypto::address::Bech32Addressable;
+use scrypto::address::Bech32Encoder;
 use scrypto::buffer::{scrypto_decode, scrypto_encode};
 use scrypto::core::Network;
 use scrypto::engine::types::*;
@@ -26,6 +26,8 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
+    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+
     let package: Option<ValidatedPackage> = substate_store
         .get_decoded_substate(&package_address)
         .map(|(package, _)| package);
@@ -35,8 +37,8 @@ pub fn dump_package<T: ReadableSubstateStore, O: std::io::Write>(
                 output,
                 "{}: {}",
                 "Package".green().bold(),
-                package_address
-                    .to_bech32_string(&Network::LocalSimulator)
+                bech32_encoder
+                    .encode_package_address(&package_address)
                     .unwrap()
             );
             writeln!(
@@ -57,6 +59,8 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
+    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+
     let component: Option<Component> = substate_store
         .get_decoded_substate(&component_address)
         .map(|(component, _)| component);
@@ -66,8 +70,8 @@ pub fn dump_component<T: ReadableSubstateStore + QueryableSubstateStore, O: std:
                 output,
                 "{}: {}",
                 "Component".green().bold(),
-                component_address
-                    .to_bech32_string(&Network::LocalSimulator)
+                bech32_encoder
+                    .encode_component_address(&component_address)
                     .unwrap()
             );
 
@@ -144,6 +148,8 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
     substate_store: &T,
     output: &mut O,
 ) -> Result<(), DisplayError> {
+    let bech32_encoder = Bech32Encoder::new_from_network(&Network::LocalSimulator);
+
     writeln!(output, "{}:", "Resources".green().bold());
     for (last, vault_id) in vaults.iter().identify_last() {
         let mut vault_address = scrypto_encode(&component_address);
@@ -161,7 +167,9 @@ fn dump_resources<T: ReadableSubstateStore, O: std::io::Write>(
             "{} {{ amount: {}, resource address: {}{}{} }}",
             list_item_prefix(last),
             amount,
-            resource_address,
+            bech32_encoder
+                .encode_resource_address(&resource_address)
+                .unwrap(),
             resource_manager
                 .metadata()
                 .get("name")
