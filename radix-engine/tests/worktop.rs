@@ -21,5 +21,5 @@ fn test_worktop_resource_leak() {
     let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
 
     // Assert
-    receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Bucket)));
+    receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Worktop)));
 }

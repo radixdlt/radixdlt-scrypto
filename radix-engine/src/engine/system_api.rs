@@ -5,22 +5,20 @@ use scrypto::engine::types::*;
 use scrypto::resource::AccessRule;
 use scrypto::values::*;
 
-use crate::engine::call_frame::{DataInstruction, SubstateAddress};
+use crate::engine::call_frame::{DataInstruction, REValueRef, SubstateAddress};
 use crate::engine::values::*;
 use crate::engine::*;
 use crate::fee::*;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::*;
 use crate::wasm::*;
 
-pub trait SystemApi<'borrowed, W, I>
+pub trait SystemApi<'p, 's, W, I, S>
 where
     W: WasmEngine<I>,
     I: WasmInstance,
+    S: ReadableSubstateStore,
 {
-    fn wasm_engine(&mut self) -> &mut W;
-
-    fn wasm_instrumenter(&mut self) -> &mut WasmInstrumenter;
-
     fn cost_unit_counter(&mut self) -> &mut CostUnitCounter;
 
     fn fee_table(&self) -> &FeeTable;
@@ -32,21 +30,13 @@ where
         input: ScryptoValue,
     ) -> Result<ScryptoValue, RuntimeError>;
 
-    fn native_globalize(&mut self, value_id: &ValueId);
-
-    fn borrow_global_resource_manager(
-        &mut self,
-        resource_address: ResourceAddress,
-    ) -> Result<&ResourceManager, RuntimeError>;
-
-    fn borrow_native_value(&mut self, value_id: &ValueId) -> RENativeValueRef<'borrowed>;
-    fn return_native_value(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'borrowed>);
-    fn take_native_value(&mut self, value_id: &ValueId) -> REValue;
-
-    fn native_create<V: Into<REValueByComplexity>>(
-        &mut self,
-        v: V,
-    ) -> Result<ValueId, RuntimeError>;
+    fn globalize_value(&mut self, value_id: &ValueId);
+    fn borrow_value(&self, value_id: &ValueId) -> REValueRef<'_, 'p, 's, S>;
+    fn borrow_value_mut(&mut self, value_id: &ValueId) -> RENativeValueRef<'p>;
+    fn return_value_mut(&mut self, value_id: ValueId, val_ref: RENativeValueRef<'p>);
+    fn drop_value(&mut self, value_id: &ValueId) -> REValue;
+    fn create_value<V: Into<REValueByComplexity>>(&mut self, v: V)
+        -> Result<ValueId, RuntimeError>;
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
 
     fn data(

@@ -13,6 +13,7 @@ use scrypto::prelude::{
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::{
     Proof, ProofError, ResourceContainer, ResourceContainerError, ResourceContainerId,
 };
@@ -158,14 +159,21 @@ impl Bucket {
         self.container.borrow_mut()
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: ReadableSubstateStore,
+    >(
         bucket_id: BucketId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
         let value_id = ValueId::Transient(TransientValueId::Bucket(bucket_id));
-        let mut value_ref = system_api.borrow_native_value(&value_id);
+        let mut value_ref = system_api.borrow_value_mut(&value_id);
         let bucket0 = value_ref.bucket();
 
         let rtn = match method_name {
@@ -176,7 +184,7 @@ impl Bucket {
                     .take(input.amount)
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
-                    .native_create(Bucket::new(container))
+                    .create_value(Bucket::new(container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -190,7 +198,7 @@ impl Bucket {
                     .take_non_fungibles(&input.ids)
                     .map_err(BucketError::ResourceContainerError)?;
                 let bucket_id = system_api
-                    .native_create(Bucket::new(container))
+                    .create_value(Bucket::new(container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -209,7 +217,7 @@ impl Bucket {
                 let input: BucketPutInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
                 let other_bucket = system_api
-                    .take_native_value(&ValueId::Transient(TransientValueId::Bucket(
+                    .drop_value(&ValueId::Transient(TransientValueId::Bucket(
                         input.bucket.0,
                     )))
                     .into();
@@ -234,7 +242,7 @@ impl Bucket {
                 let proof = bucket0
                     .create_proof(bucket_id)
                     .map_err(BucketError::ProofError)?;
-                let proof_id = system_api.native_create(proof).unwrap().into();
+                let proof_id = system_api.create_value(proof).unwrap().into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Proof(
                     proof_id,
                 )))
@@ -242,33 +250,35 @@ impl Bucket {
             _ => Err(BucketError::MethodNotFound(method_name.to_string())),
         }?;
 
-        system_api.return_native_value(value_id, value_ref);
+        system_api.return_value_mut(value_id, value_ref);
 
         Ok(rtn)
     }
 
     pub fn consuming_main<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     >(
         value_id: ValueId,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, BucketError> {
         match method_name {
             "burn" => {
                 let _: ConsumingBucketBurnInput =
                     scrypto_decode(&arg.raw).map_err(|e| BucketError::InvalidRequestData(e))?;
 
-                let bucket: Bucket = system_api.take_native_value(&value_id).into();
+                let bucket: Bucket = system_api.drop_value(&value_id).into();
 
                 // Notify resource manager, TODO: Should not need to notify manually
                 let resource_address = bucket.resource_address();
                 let resource_id = ValueId::Resource(resource_address);
-                let mut value = system_api.borrow_native_value(&resource_id);
+                let mut value = system_api.borrow_value_mut(&resource_id);
                 let resource_manager = value.resource_manager();
                 resource_manager.burn(bucket.total_amount());
                 if matches!(resource_manager.resource_type(), ResourceType::NonFungible) {
@@ -277,7 +287,7 @@ impl Bucket {
                         system_api.set_non_fungible(non_fungible_address, Option::None);
                     }
                 }
-                system_api.return_native_value(resource_id, value);
+                system_api.return_value_mut(resource_id, value);
 
                 Ok(ScryptoValue::from_typed(&()))
             }

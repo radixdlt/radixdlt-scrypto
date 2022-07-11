@@ -1,4 +1,4 @@
-use sbor::rust::cell::{RefCell, RefMut};
+use sbor::rust::cell::{Ref, RefCell, RefMut};
 use sbor::rust::collections::hash_map::IntoIter;
 use sbor::rust::collections::*;
 use sbor::rust::vec::Vec;
@@ -13,6 +13,7 @@ pub enum REValue {
     Bucket(Bucket),
     Proof(Proof),
     Vault(Vault),
+    Worktop(Worktop),
     KeyValueStore {
         store: PreCommittedKeyValueStore,
         child_values: InMemoryChildren,
@@ -22,9 +23,24 @@ pub enum REValue {
         child_values: InMemoryChildren,
     },
     Package(ValidatedPackage),
+    Resource(ResourceManager),
 }
 
 impl REValue {
+    pub fn resource_manager(&self) -> &ResourceManager {
+        match self {
+            REValue::Resource(resource_manager) => resource_manager,
+            _ => panic!("Expected to be a resource manager"),
+        }
+    }
+
+    pub fn package(&self) -> &ValidatedPackage {
+        match self {
+            REValue::Package(package) => package,
+            _ => panic!("Expected to be a package"),
+        }
+    }
+
     pub fn component(&self) -> &Component {
         match self {
             REValue::Component { component, .. } => component,
@@ -100,9 +116,11 @@ impl REValue {
             REValue::KeyValueStore { .. } => true,
             REValue::Component { .. } => true,
             REValue::Vault(..) => true,
+            REValue::Resource(..) => false,
             REValue::Package(..) => false,
             REValue::Bucket(..) => false,
             REValue::Proof(..) => false,
+            REValue::Worktop(..) => false,
         }
     }
 
@@ -113,11 +131,29 @@ impl REValue {
             REValue::KeyValueStore { .. } => Err(DropFailure::KeyValueStore),
             REValue::Component { .. } => Err(DropFailure::Component),
             REValue::Bucket(..) => Err(DropFailure::Bucket),
+            REValue::Resource(..) => Err(DropFailure::Resource),
             REValue::Proof(proof) => {
                 proof.drop();
                 Ok(())
             }
+            REValue::Worktop(worktop) => worktop.drop(),
         }
+    }
+
+    pub fn drop_values(values: Vec<REValue>) -> Result<(), DropFailure> {
+        let mut worktops = Vec::new();
+        for value in values {
+            if let REValue::Worktop(worktop) = value {
+                worktops.push(worktop);
+            } else {
+                value.try_drop()?;
+            }
+        }
+        for worktop in worktops {
+            worktop.drop()?;
+        }
+
+        Ok(())
     }
 }
 
@@ -172,6 +208,7 @@ pub enum REPrimitiveValue {
     Proof(Proof),
     KeyValue(PreCommittedKeyValueStore),
     Vault(Vault),
+    Worktop(Worktop),
 }
 
 #[derive(Debug)]
@@ -191,6 +228,7 @@ impl Into<REValue> for REPrimitiveValue {
                 child_values: InMemoryChildren::new(),
             },
             REPrimitiveValue::Vault(vault) => REValue::Vault(vault),
+            REPrimitiveValue::Worktop(worktop) => REValue::Worktop(worktop),
         }
     }
 }
@@ -210,6 +248,12 @@ impl Into<REValueByComplexity> for Proof {
 impl Into<REValueByComplexity> for Vault {
     fn into(self) -> REValueByComplexity {
         REValueByComplexity::Primitive(REPrimitiveValue::Vault(self))
+    }
+}
+
+impl Into<REValueByComplexity> for Worktop {
+    fn into(self) -> REValueByComplexity {
+        REValueByComplexity::Primitive(REPrimitiveValue::Worktop(self))
     }
 }
 
@@ -267,7 +311,26 @@ impl InMemoryChildren {
         descendents
     }
 
-    pub fn get_child(
+    pub unsafe fn get_child(
+        &self,
+        ancestors: &[KeyValueStoreId],
+        id: &StoredValueId,
+    ) -> Ref<REValue> {
+        if ancestors.is_empty() {
+            let value = self.child_values.get(id).expect("Value expected to exist");
+            return value.borrow();
+        }
+
+        let (first, rest) = ancestors.split_first().unwrap();
+        let value = self
+            .child_values
+            .get(&StoredValueId::KeyValueStoreId(*first))
+            .unwrap();
+        let value = value.try_borrow_unguarded().unwrap();
+        value.get_children_store().unwrap().get_child(rest, id)
+    }
+
+    pub fn get_child_mut(
         &mut self,
         ancestors: &[KeyValueStoreId],
         id: &StoredValueId,
@@ -278,28 +341,6 @@ impl InMemoryChildren {
                 .get_mut(id)
                 .expect("Value expected to exist");
             return value.borrow_mut();
-        }
-
-        let (first, rest) = ancestors.split_first().unwrap();
-        let value = self
-            .child_values
-            .get_mut(&StoredValueId::KeyValueStoreId(*first))
-            .unwrap();
-        let children_store = value.get_mut().get_children_store_mut().unwrap();
-        children_store.get_child(rest, id)
-    }
-
-    pub fn get_child_mut(
-        &mut self,
-        ancestors: &[KeyValueStoreId],
-        id: &StoredValueId,
-    ) -> &mut REValue {
-        if ancestors.is_empty() {
-            let value = self
-                .child_values
-                .get_mut(id)
-                .expect("Value expected to exist");
-            return value.get_mut();
         }
 
         let (first, rest) = ancestors.split_first().unwrap();

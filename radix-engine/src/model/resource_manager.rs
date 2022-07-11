@@ -19,6 +19,7 @@ use scrypto::resource::ResourceMethodAuthKey::{self, *};
 use scrypto::values::ScryptoValue;
 
 use crate::engine::SystemApi;
+use crate::ledger::ReadableSubstateStore;
 use crate::model::resource_manager::ResourceMethodRule::{Protected, Public};
 use crate::model::ResourceManagerError::InvalidMethod;
 use crate::model::{convert, MethodAuthorization, ResourceContainer};
@@ -252,11 +253,18 @@ impl ResourceManager {
         self.total_supply
     }
 
-    fn mint<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn mint<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: ReadableSubstateStore,
+    >(
         &mut self,
         mint_params: MintParams,
         self_address: ResourceAddress,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ResourceContainer, ResourceManagerError> {
         match mint_params {
             MintParams::Fungible { amount } => self.mint_fungible(amount, self_address),
@@ -311,16 +319,18 @@ impl ResourceManager {
         Ok(validated)
     }
 
-    fn mint_non_fungibles<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+    pub fn mint_non_fungibles<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     >(
         &mut self,
         entries: HashMap<NonFungibleId, (Vec<u8>, Vec<u8>)>,
         self_address: ResourceAddress,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ResourceContainer, ResourceManagerError> {
         // check resource type
         if !matches!(self.resource_type, ResourceType::NonFungible) {
@@ -384,14 +394,16 @@ impl ResourceManager {
     }
 
     pub fn static_main<
-        'borrowed,
-        S: SystemApi<'borrowed, W, I>,
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
         W: WasmEngine<I>,
         I: WasmInstance,
+        S: ReadableSubstateStore,
     >(
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         match method_name {
             "create" => {
@@ -403,13 +415,13 @@ impl ResourceManager {
                 let resource_address = system_api.create_resource(resource_manager);
                 let bucket_id = if let Some(mint_params) = input.mint_params {
                     let resource_id = ValueId::Resource(resource_address);
-                    let mut value = system_api.borrow_native_value(&resource_id);
+                    let mut value = system_api.borrow_value_mut(&resource_id);
                     let resource_manager = value.resource_manager();
                     let container =
                         resource_manager.mint(mint_params, resource_address, system_api)?;
-                    system_api.return_native_value(resource_id, value);
+                    system_api.return_value_mut(resource_id, value);
                     let bucket_id = system_api
-                        .native_create(Bucket::new(container))
+                        .create_value(Bucket::new(container))
                         .unwrap()
                         .into();
                     Some(scrypto::resource::Bucket(bucket_id))
@@ -423,14 +435,21 @@ impl ResourceManager {
         }
     }
 
-    pub fn main<'borrowed, S: SystemApi<'borrowed, W, I>, W: WasmEngine<I>, I: WasmInstance>(
+    pub fn main<
+        'p,
+        's,
+        Y: SystemApi<'p, 's, W, I, S>,
+        W: WasmEngine<I>,
+        I: WasmInstance,
+        S: ReadableSubstateStore,
+    >(
         resource_address: ResourceAddress,
         method_name: &str,
         arg: ScryptoValue,
-        system_api: &mut S,
+        system_api: &mut Y,
     ) -> Result<ScryptoValue, ResourceManagerError> {
         let value_id = ValueId::Resource(resource_address);
-        let mut ref_mut = system_api.borrow_native_value(&value_id);
+        let mut ref_mut = system_api.borrow_value_mut(&value_id);
         let resource_manager = ref_mut.resource_manager();
 
         let rtn = match method_name {
@@ -460,7 +479,7 @@ impl ResourceManager {
                     resource_manager.resource_type(),
                 );
                 let vault_id = system_api
-                    .native_create(Vault::new(container))
+                    .create_value(Vault::new(container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Vault(
@@ -475,7 +494,7 @@ impl ResourceManager {
                     resource_manager.resource_type(),
                 );
                 let bucket_id = system_api
-                    .native_create(Bucket::new(container))
+                    .create_value(Bucket::new(container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -488,7 +507,7 @@ impl ResourceManager {
                 let container =
                     resource_manager.mint(input.mint_params, resource_address, system_api)?;
                 let bucket_id = system_api
-                    .native_create(Bucket::new(container))
+                    .create_value(Bucket::new(container))
                     .unwrap()
                     .into();
                 Ok(ScryptoValue::from_typed(&scrypto::resource::Bucket(
@@ -554,7 +573,7 @@ impl ResourceManager {
             _ => Err(InvalidMethod),
         }?;
 
-        system_api.return_native_value(value_id, ref_mut);
+        system_api.return_value_mut(value_id, ref_mut);
 
         Ok(rtn)
     }
