@@ -9,12 +9,15 @@ macro_rules! checked_int_impl_large {
                 ///
                 /// # Examples
                 ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = "use scrypto::math::" $t ";"]
+                #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "assert_eq!(<$t>::MIN, $t(" $bytes_len "::MIN));"]
+                #[doc = concat!("assert_eq!(", stringify!($t), "::MIN, ", stringify!(<$t>::MIN), " );")]
                 /// ```
                 pub const MIN: Self = $min;
 
@@ -22,12 +25,15 @@ macro_rules! checked_int_impl_large {
                 ///
                 /// # Examples
                 ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = "use scrypto::math::" $t ";"]
+                #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = "assert_eq!(<$t>::MAX, $t(" $t "::MAX));"]
+                #[doc = concat!("assert_eq!(", stringify!($t), "::MAX, ", stringify!(<$t>::MAX), " );")]
                 /// ```
                 pub const MAX: Self = $max;
 
@@ -38,9 +44,9 @@ macro_rules! checked_int_impl_large {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = "use scrypto::math::" $t ";"]
+                #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = concat!("assert_eq!(", stringify!($t), "::BITS, ", stringify!(<$t>::BITS.toString()), ");")]
+                #[doc = concat!("assert_eq!(", stringify!($t), "::BITS, ", stringify!(<$t>::BITS), ");")]
                 /// ```
                 pub const BITS: u32 = $bytes_len * 8;
 
@@ -103,12 +109,15 @@ macro_rules! checked_int_impl_small {
                 ///
                 /// # Examples
                 ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = "use scrypto::math::" $t ";"]
+                #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = concat!("assert_eq!(", stringify!($t), "::MIN, ", stringify!(<$t:lower>::MIN), ");")]
+                #[doc = concat!("assert_eq!(", stringify!($t), "::MIN, ", stringify!(<$t>::MIN), " );")]
                 /// ```
                 pub const MIN: Self = Self([<$t:lower>]::MIN);
 
@@ -116,12 +125,15 @@ macro_rules! checked_int_impl_small {
                 ///
                 /// # Examples
                 ///
+                /// Please note that this example is shared between large integer types.
+                /// Which explains why `I8` is used here.
+                ///
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = "use scrypto::math::" $t ";"]
+                #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = concat!("assert_eq!(", stringify!($t), "::MAX, ", stringify!(<$t:lower>::MAX), ");")]
+                #[doc = concat!("assert_eq!(", stringify!($t), "::MAX, ", stringify!(<$t>::MAX), " );")]
                 /// ```
                 pub const MAX: Self = Self([<$t:lower>]::MAX);
 
@@ -132,9 +144,9 @@ macro_rules! checked_int_impl_small {
                 /// Basic usage:
                 ///
                 /// ```
-                #[doc = "use scrypto::math::" $t ";"]
+                #[doc = "use scrypto::prelude::*;"]
                 ///
-                #[doc = concat!("assert_eq!(<", stringify!($t), "::BITS, ", stringify!(<$t>::BITS), ");")]
+                #[doc = concat!("assert_eq!(", stringify!($t), "::BITS, ", stringify!(<$t>::BITS), ");")]
                 /// ```
                 pub const BITS: u32 = [<$t:lower>]::BITS;
             }

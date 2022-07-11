@@ -13,8 +13,8 @@ use sbor::rust::fmt;
 use sbor::rust::vec::Vec;
 
 mod basic;
-mod bits;
-mod convert;
+pub mod bits;
+pub mod convert;
 #[cfg(test)]
 mod test;
 
@@ -37,17 +37,16 @@ macro_rules! types {
                 /// which is detected and results in a panic, instead of silently
                 /// wrapping around.
                 ///
-                /// Integer arithmetic can be achieved either through methods like
-                #[doc = "/// `checked_add`, or through the " $t "type, which ensures all" ]
-                /// standard arithmetic operations on the underlying value to have
-                /// checked semantics.
+                /// The bit length of output type will be the greater one in the math operation,
+                /// and if any of the types was signed, then the resulting type will be signed too,
+                /// otherwise the output type is unsigned.
                 ///
                 /// The underlying value can be retrieved through the `.0` index of the
-                #[doc = "/// `" $t "` tuple."]
+                #[doc = "`" $t "` tuple."]
                 ///
                 /// # Layout
                 ///
-                #[doc = "/// `" $t "` will have the same methods and traits as"]
+                #[doc = "`" $t "` will have the same methods and traits as"]
                 /// the built-in counterpart.
                 #[derive(Clone , Copy , Eq , Hash , Ord , PartialEq , PartialOrd)]
                 #[repr(transparent)]
@@ -218,12 +217,6 @@ types! {
         self.zero(): U512([0u8; 64]),
         U512::default(): U512([0u8; 64]),
     }
-}
-
-trait PrimIntExt<T> {
-    type Output;
-    fn rotate_left(self, other: T) -> Self;
-    fn rotate_right(self, other: T) -> Self;
 }
 
 macro_rules! checked_impl {
@@ -535,11 +528,11 @@ macro_rules! checked_int_impl_signed {
                     /// Basic usage:
                     ///
                     /// ```
-                    #[doc = "use scrypto::math::" $t ";"]
+                    #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "assert_eq!(" $t "(10" $t:lower ").signum(), $t(1));"]
-                    #[doc = "assert_eq!(" $t "(0" $t:lower ").signum(), $t(0));"]
-                    #[doc = "assert_eq!(" $t "(-10" $t:lower ").signum(), $t(-1));"]
+                    #[doc = "assert_eq!(" $t "::tfrom(10i8).signum(), " $t "::tfrom(1i8));"]
+                    #[doc = "assert_eq!(" $t "::tfrom(0i8).signum(), " $t "::tfrom(0i8));"]
+                    #[doc = "assert_eq!(" $t "::tfrom(-10i8).signum(), " $t "::tfrom(-1i8));"]
                     /// ```
                     #[inline]
                     #[must_use = "this returns the result of the operation, \
@@ -556,10 +549,10 @@ macro_rules! checked_int_impl_signed {
                     /// Basic usage:
                     ///
                     /// ```
-                    #[doc = "use scrypto::math::" $t ";"]
+                    #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "assert!(" $t "(10" $t:lower ").is_positive());"]
-                    #[doc = "assert!(!" $t "(-10" $t:lower ").is_positive());"]
+                    #[doc = "assert!(" $t "::tfrom(10i8).is_positive());"]
+                    #[doc = "assert!(!" $t "::tfrom(-10i8).is_positive());"]
                     /// ```
                     #[must_use]
                     #[inline]
@@ -576,10 +569,10 @@ macro_rules! checked_int_impl_signed {
                     /// Basic usage:
                     ///
                     /// ```
-                    #[doc = "use scrypto::math::" $t ";"]
+                    #[doc = "use scrypto::prelude::*;"]
                     ///
-                    #[doc = "assert!(" $t "(-10" $t:lower ").is_negative());"]
-                    #[doc = "assert!(!" $t "(10" $t:lower ").is_negative());"]
+                    #[doc = "assert!(" $t "::tfrom(-10i8).is_negative());"]
+                    #[doc = "assert!(!" $t "::tfrom(10i8).is_negative());"]
                     /// ```
                     #[must_use]
                     #[inline]
@@ -686,7 +679,3 @@ macro_rules! checked_int_impl_unsigned_small {
 
 checked_int_impl_unsigned_large! { U256, U384, U512 }
 checked_int_impl_unsigned_small! { U8, U16, U32, U64, U128 }
-
-// TODO: test write
-// TODO: documentationpart update
-// TODO: remove FIXME lines

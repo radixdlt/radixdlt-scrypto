@@ -11,6 +11,13 @@ pub enum ParseIntError {
     Overflow,
 }
 
+/// Trait for short hand notation for try_from().unwrap()
+/// As opposed to `try_from(x).unwrap()` this will panic if the conversion fails.
+pub trait TFrom<T> {
+    type Output;
+    fn tfrom(val: T) -> Self::Output;
+}
+
 macro_rules! impl_from_primitive {
     ($($t:ident),*) => {
         paste! {
@@ -58,6 +65,12 @@ macro_rules! try_from{
                     type Error = ParseIntError;
                     fn try_from(val: $o) -> Result<$t, ParseIntError> {
                         BigInt::from(val).try_into().map_err(|_| ParseIntError::Overflow)
+                    }
+                }
+                impl TFrom<$o> for $t {
+                    type Output = $t;
+                    fn tfrom(val: $o) -> Self::Output {
+                        Self::try_from(val).unwrap()
                     }
                 }
             }
@@ -150,6 +163,13 @@ macro_rules! impl_bigint_to_large_unsigned {
                         Ok($t(buf))
                     }
                 }
+
+                impl TFrom<BigInt> for $t {
+                    type Output = $t;
+                    fn tfrom(val: BigInt) -> Self::Output {
+                        Self::try_from(val).unwrap()
+                    }
+                }
             }
         )*
     }
@@ -178,6 +198,13 @@ macro_rules! impl_bigint_to_large_signed {
                         Ok($t(buf))
                     }
                 }
+
+                impl TFrom<BigInt> for $t {
+                    type Output = $t;
+                    fn tfrom(val: BigInt) -> Self::Output {
+                        Self::try_from(val).unwrap()
+                    }
+                }
             }
         )*
     }
@@ -197,6 +224,13 @@ macro_rules! impl_bigint_to_small_unsigned {
                         Ok($t(val.[<to_$t:lower>]().ok_or_else(|| ParseIntError::Overflow).unwrap()))
                     }
                 }
+
+                impl TFrom<BigInt> for $t {
+                    type Output = $t;
+                    fn tfrom(val: BigInt) -> Self::Output {
+                        Self::try_from(val).unwrap()
+                    }
+                }
             }
         )*
     }
@@ -214,6 +248,13 @@ macro_rules! impl_bigint_to_small_signed {
                         Ok($t(val.[<to_$t:lower>]().ok_or_else(|| ParseIntError::Overflow).unwrap()))
                     }
                 }
+
+                impl TFrom<BigInt> for $t {
+                    type Output = $t;
+                    fn tfrom(val: BigInt) -> Self::Output {
+                        Self::try_from(val).unwrap()
+                    }
+                }
             }
         )*
     }
@@ -228,6 +269,13 @@ macro_rules! from_array_large {
                 impl From<[u8; (<$t>::BITS / 8) as usize]> for $t {
                     fn from(val: [u8; (<$t>::BITS / 8) as usize]) -> Self {
                         Self(val)
+                    }
+                }
+
+                impl TFrom<[u8; (<$t>::BITS / 8) as usize]> for $t {
+                    type Output = $t;
+                    fn tfrom(val: [u8; (<$t>::BITS / 8) as usize]) -> Self::Output {
+                        Self::try_from(val).unwrap()
                     }
                 }
 
@@ -250,6 +298,13 @@ macro_rules! from_array_small {
                     fn from(val: [u8; (<$t>::BITS / 8) as usize]) -> Self {
                         let wrapped: [<$t:lower>] = [<$t:lower>]::from_le_bytes(val);
                         $t(wrapped)
+                    }
+                }
+
+                impl TFrom<[u8; (<$t>::BITS / 8) as usize]> for $t {
+                    type Output = $t;
+                    fn tfrom(val: [u8; (<$t>::BITS / 8) as usize]) -> Self::Output {
+                        Self::try_from(val).unwrap()
                     }
                 }
 
@@ -277,6 +332,7 @@ macro_rules! try_from_vec_and_slice_large {
             impl TryFrom<&[u8]> for $t {
                 type Error = ParseSliceError;
                 fn try_from(bytes: &[u8]) -> Result<Self, Self::Error> {
+                    // FIXME: This will fail for negative numbers
                     if bytes.len() > (<$t>::BITS / 8) as usize {
                         Err(ParseSliceError::InvalidLength)
                     } else {
@@ -287,9 +343,18 @@ macro_rules! try_from_vec_and_slice_large {
                 }
             }
 
+           impl TFrom<&[u8]> for $t {
+               type Output = $t;
+               fn tfrom(val: &[u8]) -> Self::Output {
+                   Self::try_from(val).unwrap()
+               }
+           }
+
+
             impl TryFrom<Vec<u8>> for $t {
                 type Error = ParseSliceError;
                 fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
+                    // FIXME: This will fail for negative numbers
                     if bytes.len() > (<$t>::BITS / 8) as usize {
                         Err(ParseSliceError::InvalidLength)
                     } else {
@@ -299,6 +364,13 @@ macro_rules! try_from_vec_and_slice_large {
                     }
                 }
             }
+
+           impl TFrom<Vec<u8>> for $t {
+               type Output = $t;
+               fn tfrom(val: Vec<u8>) -> Self::Output {
+                   Self::try_from(val).unwrap()
+               }
+           }
             )*
     };
 }
@@ -323,6 +395,13 @@ macro_rules! try_from_vec_and_slice_small {
                 }
             }
 
+           impl TFrom<&[u8]> for $t {
+               type Output = $t;
+               fn tfrom(val: &[u8]) -> Self::Output {
+                   Self::try_from(val).unwrap()
+               }
+           }
+
             impl TryFrom<Vec<u8>> for $t {
                 type Error = ParseSliceError;
                 fn try_from(bytes: Vec<u8>) -> Result<Self, Self::Error> {
@@ -336,6 +415,13 @@ macro_rules! try_from_vec_and_slice_small {
                     }
                 }
             }
+
+           impl TFrom<Vec<u8>> for $t {
+               type Output = $t;
+               fn tfrom(val: Vec<u8>) -> Self::Output {
+                   Self::try_from(val).unwrap()
+               }
+           }
             )*
         }
     };
@@ -350,6 +436,13 @@ macro_rules! from_int {
                 impl From<$o> for $t {
                     fn from(val: $o) -> Self {
                         (BigInt::from(val)).try_into().unwrap()
+                    }
+                }
+
+                impl TFrom<$o> for $t {
+                    type Output = $t;
+                    fn tfrom(val: $o) -> Self::Output {
+                        Self::try_from(val).unwrap()
                     }
                 }
             }
@@ -468,6 +561,13 @@ macro_rules! from_string {
                 }
             }
 
+            impl TFrom<&str> for $t {
+                type Output = $t;
+                fn tfrom(val: &str) -> Self::Output {
+                    Self::from_str(val).unwrap()
+                }
+            }
+
             impl From<&str> for $t {
                 fn from(val: &str) -> Self {
                     Self::from_str(&val).unwrap()
@@ -476,6 +576,13 @@ macro_rules! from_string {
 
             impl From<String> for $t {
                 fn from(val: String) -> Self {
+                    Self::from_str(&val).unwrap()
+                }
+            }
+
+            impl TFrom<String> for $t {
+                type Output = $t;
+                fn tfrom(val: String) -> Self::Output {
                     Self::from_str(&val).unwrap()
                 }
             }
