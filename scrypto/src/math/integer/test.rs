@@ -946,7 +946,6 @@ macro_rules! test_math {
                     vec = vec![78u8; bytes];
                     slice = &vec[..];
                     expect = BigInt::from_signed_bytes_le(&slice);
-                    println!("bytes: {}\nexpect: {}\nslice: {:?}",bytes, expect, slice);
                     a = <$i>::try_from(slice).unwrap();
                     assert_eq!(a.to_string(), expect.clone().to_string());
                 }
