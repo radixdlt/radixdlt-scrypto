@@ -19,8 +19,8 @@ use crate::wasm::*;
 
 /// A glue between system api (call frame and track abstraction) and WASM.
 ///
-/// Execution is free from a cost perspective, as we assume
-/// the system api will charge properly.
+/// Execution is free from a costing perspective, as we assume
+/// the system api will bill properly.
 pub struct RadixEngineWasmRuntime<'y, 'p, 's, Y, W, I, S>
 where
     Y: SystemApi<'p, 's, W, I, S>,

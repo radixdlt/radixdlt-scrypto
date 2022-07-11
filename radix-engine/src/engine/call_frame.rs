@@ -826,7 +826,7 @@ where
         self.cost_unit_counter
             .consume(
                 self.fee_table.function_cost(&snode_ref, fn_ident, &input),
-                "run",
+                "run_function",
             )
             .map_err(RuntimeError::CostingError)?;
 
