@@ -1,4 +1,8 @@
 use clap::Parser;
+use radix_engine::engine::{CallFrame, SystemApi, Track};
+use radix_engine::fee::{CostUnitCounter, FeeTable, MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT};
+use scrypto::core::{SNodeRef, SystemSetEpochInput};
+use scrypto::values::ScryptoValue;
 
 use crate::resim::*;
 
@@ -10,11 +14,36 @@ pub struct SetCurrentEpoch {
 }
 
 impl SetCurrentEpoch {
-    pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        substate_store.set_epoch(self.epoch);
+    pub fn run<O: std::io::Write>(&self, _out: &mut O) -> Result<(), Error> {
+        let hash = Hash([0; Hash::LENGTH]);
 
-        writeln!(out, "Current epoch set!").map_err(Error::IOError)?;
-        Ok(())
+        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
+        let mut wasm_engine = DefaultWasmEngine::new();
+        let mut wasm_instrumenter = WasmInstrumenter::new();
+        let mut track = Track::new(&mut substate_store, hash);
+        let mut cost_unit_counter = CostUnitCounter::new(MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT);
+        let fee_table = FeeTable::new();
+
+        // Create root call frame.
+        let mut root_frame = CallFrame::new_root(
+            false,
+            hash,
+            vec![],
+            true,
+            &mut track,
+            &mut wasm_engine,
+            &mut wasm_instrumenter,
+            &mut cost_unit_counter,
+            &fee_table,
+        );
+
+        root_frame
+            .invoke_snode(
+                SNodeRef::SystemRef,
+                "set_epoch".to_string(),
+                ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
+            )
+            .map(|_| ())
+            .map_err(Error::TransactionExecutionError)
     }
 }

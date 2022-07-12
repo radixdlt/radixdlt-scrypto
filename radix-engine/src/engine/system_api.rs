@@ -47,8 +47,6 @@ where
         -> Result<ScryptoValue, RuntimeError>;
 
     fn create_resource(&mut self, resource_manager: ResourceManager) -> ResourceAddress;
-    fn get_epoch(&mut self) -> u64;
-
     fn get_transaction_hash(&mut self) -> Hash;
 
     fn generate_uuid(&mut self) -> u128;
