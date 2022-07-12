@@ -15,6 +15,7 @@ pub enum Address {
     KeyValueStore(KeyValueStoreId),
     Vault(VaultId),
     LocalComponent(ComponentAddress),
+    System,
 }
 
 // TODO: Replace NonFungible with real re address
@@ -30,6 +31,7 @@ macro_rules! resource_to_non_fungible_space {
 impl Address {
     pub fn encode(&self) -> Vec<u8> {
         match self {
+            Address::System => vec![0u8],
             Address::Resource(resource_address) => scrypto_encode(resource_address),
             Address::GlobalComponent(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
@@ -103,6 +105,7 @@ impl Into<VaultId> for Address {
 
 #[derive(Debug)]
 pub enum SubstateValue {
+    System(System),
     Resource(ResourceManager),
     Component(Component),
     Package(ValidatedPackage),
@@ -114,6 +117,7 @@ pub enum SubstateValue {
 impl SubstateValue {
     pub fn encode(&self) -> Vec<u8> {
         match self {
+            SubstateValue::System(system) => scrypto_encode(system),
             SubstateValue::Resource(resource_manager) => scrypto_encode(resource_manager),
             SubstateValue::Package(package) => scrypto_encode(package),
             SubstateValue::Component(component) => scrypto_encode(component),
@@ -136,6 +140,22 @@ impl SubstateValue {
             vault
         } else {
             panic!("Not a vault");
+        }
+    }
+
+    pub fn system(&self) -> &System {
+        if let SubstateValue::System(system) = self {
+            system
+        } else {
+            panic!("Not a system value");
+        }
+    }
+
+    pub fn system_mut(&mut self) -> &mut System {
+        if let SubstateValue::System(system) = self {
+            system
+        } else {
+            panic!("Not a system value");
         }
     }
 
@@ -193,6 +213,12 @@ impl SubstateValue {
         } else {
             panic!("Not a KVEntry");
         }
+    }
+}
+
+impl Into<SubstateValue> for System {
+    fn into(self) -> SubstateValue {
+        SubstateValue::System(self)
     }
 }
 
@@ -273,9 +299,17 @@ pub enum RENode {
     Package(ValidatedPackage),
     Resource(ResourceManager),
     NonFungibles(HashMap<NonFungibleId, NonFungible>),
+    System(System),
 }
 
 impl RENode {
+    pub fn system(&self) -> &System {
+        match self {
+            RENode::System(system) => system,
+            _ => panic!("Expected to be system"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
             RENode::Resource(resource_manager) => resource_manager,
@@ -376,6 +410,7 @@ impl RENode {
             RENode::NonFungibles(..) => Ok(()),
             RENode::Package(..) => Ok(()),
             RENode::Worktop(..) => Ok(()),
+            RENode::System(..) => Ok(()),
         }
     }
 
@@ -390,6 +425,7 @@ impl RENode {
             RENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::System(..) => Err(RuntimeError::ValueNotAllowed),
         }
     }
 
@@ -402,6 +438,7 @@ impl RENode {
             RENode::Bucket(..) => Err(DropFailure::Bucket),
             RENode::Resource(..) => Err(DropFailure::Resource),
             RENode::NonFungibles(..) => Err(DropFailure::Resource),
+            RENode::System(..) => Err(DropFailure::System),
             RENode::Proof(proof) => {
                 proof.drop();
                 Ok(())

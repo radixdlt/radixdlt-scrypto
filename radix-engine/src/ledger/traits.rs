@@ -53,12 +53,9 @@ pub trait ReadableSubstateStore {
         self.get_substate(&scrypto_encode(address))
             .map(|s| (scrypto_decode(&s.value).unwrap(), s.phys_id))
     }
-
-    fn get_epoch(&self) -> u64;
 }
 
 pub trait WriteableSubstateStore {
     fn put_substate(&mut self, address: &[u8], substate: Substate);
     fn put_space(&mut self, address: &[u8], phys_id: PhysicalSubstateId);
-    fn set_epoch(&mut self, epoch: u64);
 }
