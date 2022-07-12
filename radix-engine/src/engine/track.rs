@@ -3,6 +3,7 @@ use sbor::rust::collections::*;
 use sbor::rust::format;
 use sbor::rust::ops::RangeFull;
 use sbor::rust::string::String;
+use sbor::rust::vec;
 use sbor::rust::vec::Vec;
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
@@ -92,14 +93,15 @@ pub enum Address {
     GlobalComponent(ComponentAddress),
     Package(PackageAddress),
     NonFungibleSet(ResourceAddress),
-
     KeyValueStore(KeyValueStoreId),
     Vault(VaultId),
     LocalComponent(ComponentAddress),
+    System,
 }
 
 #[derive(Debug)]
 pub enum SubstateValue {
+    System(System),
     Resource(ResourceManager),
     Component(Component),
     Package(ValidatedPackage),
@@ -121,6 +123,7 @@ macro_rules! resource_to_non_fungible_space {
 impl Address {
     fn encode(&self) -> Vec<u8> {
         match self {
+            Address::System => vec![0u8],
             Address::Resource(resource_address) => scrypto_encode(resource_address),
             Address::GlobalComponent(component_address) => scrypto_encode(component_address),
             Address::Package(package_address) => scrypto_encode(package_address),
@@ -201,6 +204,7 @@ impl SubstateValue {
             SubstateValue::Vault(vault) => scrypto_encode(vault),
             SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
             SubstateValue::KeyValueStoreEntry(value) => scrypto_encode(value),
+            SubstateValue::System(system) => scrypto_encode(system),
         }
     }
 
@@ -225,6 +229,22 @@ impl SubstateValue {
             resource_manager
         } else {
             panic!("Not a resource manager");
+        }
+    }
+
+    pub fn system(&self) -> &System {
+        if let SubstateValue::System(system) = self {
+            system
+        } else {
+            panic!("Not a system value");
+        }
+    }
+
+    pub fn system_mut(&mut self) -> &mut System {
+        if let SubstateValue::System(system) = self {
+            system
+        } else {
+            panic!("Not a system value");
         }
     }
 
@@ -274,6 +294,12 @@ impl SubstateValue {
         } else {
             panic!("Not a KVEntry");
         }
+    }
+}
+
+impl Into<SubstateValue> for System {
+    fn into(self) -> SubstateValue {
+        SubstateValue::System(self)
     }
 }
 
@@ -366,11 +392,6 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
         self.transaction_hash
     }
 
-    /// Returns the current epoch.
-    pub fn current_epoch(&self) -> u64 {
-        self.substate_store.get_epoch()
-    }
-
     /// Adds a log message.
     pub fn add_log(&mut self, level: Level, message: String) {
         self.logs.push((level, message));
@@ -436,6 +457,10 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 Address::Package(..) => {
                     let package = scrypto_decode(&substate.value).unwrap();
                     SubstateValue::Package(package)
+                }
+                Address::System => {
+                    let system = scrypto_decode(&substate.value).unwrap();
+                    SubstateValue::System(system)
                 }
                 _ => panic!("Attempting to borrow unsupported value {:?}", address),
             };

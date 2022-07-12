@@ -16,9 +16,17 @@ pub enum RENode {
     Package(ValidatedPackage),
     Resource(ResourceManager),
     NonFungibles(HashMap<NonFungibleId, NonFungible>),
+    System(System),
 }
 
 impl RENode {
+    pub fn system(&self) -> &System {
+        match self {
+            RENode::System(system) => system,
+            _ => panic!("Expected to be system"),
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManager {
         match self {
             RENode::Resource(resource_manager) => resource_manager,
@@ -119,6 +127,7 @@ impl RENode {
             RENode::NonFungibles(..) => Ok(()),
             RENode::Package(..) => Ok(()),
             RENode::Worktop(..) => Ok(()),
+            RENode::System(..) => Ok(()),
         }
     }
 
@@ -133,6 +142,7 @@ impl RENode {
             RENode::Bucket(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Proof(..) => Err(RuntimeError::ValueNotAllowed),
             RENode::Worktop(..) => Err(RuntimeError::ValueNotAllowed),
+            RENode::System(..) => Err(RuntimeError::ValueNotAllowed),
         }
     }
 
@@ -145,6 +155,7 @@ impl RENode {
             RENode::Bucket(..) => Err(DropFailure::Bucket),
             RENode::Resource(..) => Err(DropFailure::Resource),
             RENode::NonFungibles(..) => Err(DropFailure::Resource),
+            RENode::System(..) => Err(DropFailure::System),
             RENode::Proof(proof) => {
                 proof.drop();
                 Ok(())
