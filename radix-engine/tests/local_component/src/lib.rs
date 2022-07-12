@@ -1,11 +1,11 @@
 use scrypto::prelude::*;
 
 blueprint! {
-    struct LocalComponent {
+    struct Secret {
         secret: u32,
     }
 
-    impl LocalComponent {
+    impl Secret {
         pub fn get_secret(&self) -> u32 {
             self.secret
         }
@@ -14,7 +14,7 @@ blueprint! {
             self.secret = next;
         }
 
-        pub fn new(secret: u32) -> crate::LocalComponent {
+        pub fn new(secret: u32) -> Secret_Component {
             Self { secret }.instantiate()
         }
 
@@ -63,7 +63,93 @@ blueprint! {
     }
 }
 
-pub mod local_recursion;
-pub mod local_recursion_2;
-pub mod stored_kv_local_component;
-pub mod stored_local_component;
+blueprint! {
+    struct StoredKVLocal {
+        components: KeyValueStore<u32, Secret_Component>,
+    }
+
+    impl StoredKVLocal {
+        pub fn parent_get_secret(&self) -> u32 {
+            self.components.get(&0u32).unwrap().get_secret()
+        }
+
+        pub fn parent_set_secret(&mut self, next: u32) {
+            self.components.get(&0u32).unwrap().set_secret(next)
+        }
+
+        pub fn new(secret: u32) -> StoredKVLocal_Component {
+            let component = Secret_Component::new(secret);
+            let components = KeyValueStore::new();
+            components.insert(0u32, component);
+
+            Self { components }.instantiate()
+        }
+
+        pub fn new_global(secret: u32) -> ComponentAddress {
+            Self::new(secret).globalize()
+        }
+
+        pub fn call_read_on_stored_component_in_owned_component() -> ComponentAddress {
+            let my_component = Self::new(12345);
+
+            let rtn = my_component.parent_get_secret();
+            assert_eq!(12345, rtn);
+
+            my_component.globalize()
+        }
+
+        pub fn call_write_on_stored_component_in_owned_component() -> ComponentAddress {
+            let my_component = Self::new(12345);
+
+            my_component.parent_set_secret(99999);
+            let rtn = my_component.parent_get_secret();
+            assert_eq!(99999, rtn);
+
+            my_component.globalize()
+        }
+    }
+}
+
+blueprint! {
+    struct StoredSecret {
+        component: Secret_Component,
+    }
+
+    impl StoredSecret {
+        pub fn parent_get_secret(&self) -> u32 {
+            self.component.get_secret()
+        }
+
+        pub fn parent_set_secret(&mut self, next: u32) {
+            self.component.set_secret(next)
+        }
+
+        pub fn new(secret: u32) -> StoredSecret_Component {
+            let component = Secret_Component::new(secret);
+
+            Self { component }.instantiate()
+        }
+
+        pub fn new_global(secret: u32) -> ComponentAddress {
+            Self::new(secret).globalize()
+        }
+
+        pub fn call_read_on_stored_component_in_owned_component() -> ComponentAddress {
+            let my_component = Self::new(12345);
+            let rtn = my_component.parent_get_secret();
+            assert_eq!(12345, rtn);
+
+            my_component.globalize()
+        }
+
+        pub fn call_write_on_stored_component_in_owned_component() -> ComponentAddress {
+            let my_component = Self::new(12345);
+
+            my_component.parent_set_secret(99999);
+            let rtn = my_component.parent_get_secret();
+            assert_eq!(99999, rtn);
+
+            my_component.globalize()
+        }
+    }
+}
