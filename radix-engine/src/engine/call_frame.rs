@@ -434,7 +434,7 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
         match self {
             RENativeValueRef::Owned(..) => panic!("Unexpected"),
             RENativeValueRef::OwnedRef(owned) => owned.vault_mut(),
-            RENativeValueRef::Track(_address, value) => value.vault_mut(),
+            RENativeValueRef::Track(_address, value) => value.vault_mut().0,
         }
     }
 
@@ -651,9 +651,11 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
         match self {
             REValueRefMut::Owned(re_value) => re_value.vault().resource_address(),
             REValueRefMut::Borrowed(re_value) => re_value.vault().resource_address(),
-            REValueRefMut::Track(track, address) => {
-                track.read_value(address.clone()).vault().resource_address()
-            }
+            REValueRefMut::Track(track, address) => track
+                .read_value(address.clone())
+                .vault()
+                .0
+                .resource_address(),
         }
     }
 }

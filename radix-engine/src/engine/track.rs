@@ -102,7 +102,7 @@ pub enum SubstateValue {
     Resource(ResourceManager),
     Component(Component),
     Package(ValidatedPackage),
-    Vault(Vault),
+    Vault(Vault, Option<ResourceContainer>),
     NonFungible(Option<NonFungible>),
     KeyValueStoreEntry(Option<Vec<u8>>),
 }
@@ -221,23 +221,26 @@ impl SubstateValue {
             SubstateValue::Resource(resource_manager) => scrypto_encode(resource_manager),
             SubstateValue::Package(package) => scrypto_encode(package),
             SubstateValue::Component(component) => scrypto_encode(component),
-            SubstateValue::Vault(vault) => scrypto_encode(vault),
+            SubstateValue::Vault(liquid, locked) => {
+                assert!(locked.is_none(), "Vault is partially locked");
+                scrypto_encode(liquid)
+            }
             SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),
             SubstateValue::KeyValueStoreEntry(value) => scrypto_encode(value),
         }
     }
 
-    pub fn vault_mut(&mut self) -> &mut Vault {
-        if let SubstateValue::Vault(vault) = self {
-            vault
+    pub fn vault_mut(&mut self) -> (&mut Vault, &mut Option<ResourceContainer>) {
+        if let SubstateValue::Vault(liquid, locked) = self {
+            (liquid, locked)
         } else {
             panic!("Not a vault");
         }
     }
 
-    pub fn vault(&self) -> &Vault {
-        if let SubstateValue::Vault(vault) = self {
-            vault
+    pub fn vault(&self) -> (&Vault, &Option<ResourceContainer>) {
+        if let SubstateValue::Vault(liquid, locked) = self {
+            (liquid, locked)
         } else {
             panic!("Not a vault");
         }
@@ -312,7 +315,7 @@ impl Into<SubstateValue> for ResourceManager {
 
 impl Into<SubstateValue> for Vault {
     fn into(self) -> SubstateValue {
-        SubstateValue::Vault(self)
+        SubstateValue::Vault(self, None)
     }
 }
 
@@ -350,8 +353,12 @@ impl Into<ResourceManager> for SubstateValue {
 
 impl Into<Vault> for SubstateValue {
     fn into(self) -> Vault {
-        if let SubstateValue::Vault(vault) = self {
-            vault
+        if let SubstateValue::Vault(liquid, locked) = self {
+            assert!(
+                locked.is_none(),
+                "Attempted to convert a partially-locked vault into substate value"
+            );
+            liquid
         } else {
             panic!("Not a vault");
         }
@@ -476,7 +483,7 @@ impl<'s, S: ReadableSubstateStore> Track<'s, S> {
                 }
                 Address::Vault(..) => {
                     let vault = scrypto_decode(&substate.value).unwrap();
-                    SubstateValue::Vault(vault)
+                    SubstateValue::Vault(vault, None)
                 }
                 Address::Package(..) => {
                     let package = scrypto_decode(&substate.value).unwrap();
