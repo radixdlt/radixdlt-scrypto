@@ -1,4 +1,6 @@
 use clap::Parser;
+use scrypto::prelude::SYSTEM_PACKAGE;
+use scrypto::to_struct;
 
 use crate::resim::*;
 
@@ -11,10 +13,22 @@ pub struct SetCurrentEpoch {
 
 impl SetCurrentEpoch {
     pub fn run<O: std::io::Write>(&self, out: &mut O) -> Result<(), Error> {
-        let mut substate_store = RadixEngineDB::with_bootstrap(get_data_dir()?);
-        substate_store.set_epoch(self.epoch);
-
-        writeln!(out, "Current epoch set!").map_err(Error::IOError)?;
-        Ok(())
+        let manifest = ManifestBuilder::new()
+            .call_function(
+                SYSTEM_PACKAGE,
+                "System",
+                "set_epoch",
+                to_struct!(self.epoch)
+            )
+            .build();
+        handle_manifest(
+            manifest,
+            &Option::None,
+            &Option::None,
+            false,
+            false,
+            out,
+        )
+        .map(|_| ())
     }
 }
