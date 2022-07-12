@@ -23,7 +23,7 @@ fn test_loop() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -44,7 +44,7 @@ fn test_loop_out_of_cost_unit() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     assert_invoke_error!(receipt.result, InvokeError::CostingError { .. })
@@ -66,7 +66,7 @@ fn test_recursion() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -87,7 +87,7 @@ fn test_recursion_stack_overflow() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     assert_invoke_error!(receipt.result, InvokeError::WasmError { .. })
@@ -108,7 +108,7 @@ fn test_grow_memory() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -129,7 +129,7 @@ fn test_grow_memory_out_of_cost_unit() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     assert_invoke_error!(receipt.result, InvokeError::CostingError { .. })
@@ -150,7 +150,7 @@ fn test_total_cost_units_consumed() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Test", "f", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     /*

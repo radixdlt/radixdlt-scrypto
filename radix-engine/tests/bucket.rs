@@ -19,7 +19,7 @@ fn test_bucket_internal(method_name: &str) {
         .call_function(package_address, "BucketTest", method_name, to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();
@@ -83,7 +83,7 @@ fn test_bucket_of_badges() {
         .call_function(package_address, "BadgeTest", "query", to_struct!())
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
     receipt.expect_success();
 }
 
@@ -107,7 +107,7 @@ fn test_take_with_invalid_granularity() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_err(|e| {
@@ -142,7 +142,7 @@ fn test_take_with_negative_amount() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_err(|e| {
@@ -178,7 +178,7 @@ fn create_empty_bucket() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
     println!("{:?}", receipt);
 
     // Assert

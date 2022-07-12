@@ -39,7 +39,7 @@ fn test_dynamic_auth(
             to_struct!(addresses.get(initial_auth).unwrap().clone()),
         )
         .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![], false);
     receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
 
@@ -52,7 +52,7 @@ fn test_dynamic_auth(
             )
             .build();
         test_runner
-            .execute_manifest(update_manifest, vec![])
+            .execute_manifest(update_manifest, vec![], false)
             .expect_success();
     }
 
@@ -60,7 +60,7 @@ fn test_dynamic_auth(
     let manifest2 = ManifestBuilder::new()
         .call_method(component, "get_secret", to_struct!())
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, public_keys.to_vec());
+    let receipt2 = test_runner.execute_manifest(manifest2, public_keys.to_vec(), false);
 
     // Assert
     if should_succeed {
@@ -102,7 +102,7 @@ fn test_dynamic_authlist(
             to_struct!(2u8, list, authorization),
         )
         .build();
-    let receipt0 = test_runner.execute_manifest(manifest1, vec![]);
+    let receipt0 = test_runner.execute_manifest(manifest1, vec![], false);
     receipt0.expect_success();
     let component = receipt0.new_component_addresses[0];
 
@@ -110,7 +110,7 @@ fn test_dynamic_authlist(
     let manifest2 = ManifestBuilder::new()
         .call_method(component, "get_secret", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest2, public_keys.to_vec());
+    let receipt = test_runner.execute_manifest(manifest2, public_keys.to_vec(), false);
 
     // Assert
     if should_succeed {
@@ -222,7 +222,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let manifest1 = ManifestBuilder::new()
         .call_function(package, "Chess", "create_game", to_struct!(players))
         .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![], false);
     receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
 
@@ -230,7 +230,7 @@ fn chess_should_not_allow_second_player_to_move_if_first_player_didnt_move() {
     let manifest2 = ManifestBuilder::new()
         .call_method(component, "make_move", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key]);
+    let receipt = test_runner.execute_manifest(manifest2, vec![other_public_key], false);
 
     // Assert
     let error = receipt.result.expect_err("Should be an error");
@@ -250,14 +250,14 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let manifest1 = ManifestBuilder::new()
         .call_function(package, "Chess", "create_game", to_struct!(players))
         .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![], false);
     receipt1.expect_success();
     let component = receipt1.new_component_addresses[0];
     let manifest2 = ManifestBuilder::new()
         .call_method(component, "make_move", to_struct!())
         .build();
     test_runner
-        .execute_manifest(manifest2, vec![public_key])
+        .execute_manifest(manifest2, vec![public_key], false)
         .result
         .expect("Should be okay.");
 
@@ -265,7 +265,7 @@ fn chess_should_allow_second_player_to_move_after_first_player() {
     let manifest3 = ManifestBuilder::new()
         .call_method(component, "make_move", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key]);
+    let receipt = test_runner.execute_manifest(manifest3, vec![other_public_key], false);
 
     // Assert
     receipt.result.expect("Should be okay.");

@@ -22,7 +22,7 @@ fn should_not_be_able_to_read_component_state_after_creation() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess(..)))
@@ -43,7 +43,7 @@ fn should_not_be_able_to_write_component_state_after_creation() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess(..)))
@@ -64,7 +64,7 @@ fn should_be_able_to_read_component_info() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -85,7 +85,7 @@ fn should_not_be_able_to_write_component_info() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataWrite));

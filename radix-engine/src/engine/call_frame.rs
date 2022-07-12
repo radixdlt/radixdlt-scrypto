@@ -709,12 +709,15 @@ where
         verbose: bool,
         transaction_hash: Hash,
         signer_public_keys: Vec<EcdsaPublicKey>,
+        is_system: bool,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         cost_unit_counter: &'c mut CostUnitCounter,
         fee_table: &'c FeeTable,
     ) -> Self {
+
+        // TODO: Cleanup initialization of authzone
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
             .into_iter()
@@ -730,6 +733,16 @@ where
             ));
             let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
             initial_auth_zone_proofs.push(ecdsa_proof);
+        }
+
+        if is_system {
+            let id = [NonFungibleId::from_u32(0)].into_iter().collect();
+            let mut system_bucket = Bucket::new(ResourceContainer::new_non_fungible(
+                SYSTEM_TOKEN,
+                id,
+            ));
+            let system_proof = system_bucket.create_proof(track.new_bucket_id()).unwrap();
+            initial_auth_zone_proofs.push(system_proof);
         }
 
         Self::new(

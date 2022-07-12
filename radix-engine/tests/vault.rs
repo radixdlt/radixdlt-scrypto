@@ -23,7 +23,7 @@ fn non_existent_vault_in_component_creation_should_fail() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| {
@@ -42,14 +42,14 @@ fn non_existent_vault_in_committed_component_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "NonExistentVault", "new", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "create_non_existent_vault", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| {
@@ -75,7 +75,7 @@ fn non_existent_vault_in_key_value_store_creation_should_fail() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| {
@@ -94,7 +94,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "NonExistentVault", "new", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
@@ -105,7 +105,7 @@ fn non_existent_vault_in_committed_key_value_store_should_fail() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| {
@@ -131,7 +131,7 @@ fn create_mutable_vault_into_map() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -152,7 +152,7 @@ fn invalid_double_ownership_of_vault() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| {
@@ -178,7 +178,7 @@ fn create_mutable_vault_into_map_and_referencing_before_storing() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -197,14 +197,14 @@ fn cannot_overwrite_vault_in_map() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "overwrite_vault_in_map", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -229,7 +229,7 @@ fn create_mutable_vault_into_vector() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -248,14 +248,14 @@ fn cannot_remove_vaults() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "clear_vector", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     let runtime_error = receipt.result.expect_err("Should be runtime error");
@@ -278,14 +278,14 @@ fn can_push_vault_into_vector() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "push_vault_into_vector", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -306,7 +306,7 @@ fn create_mutable_vault_with_take() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -327,7 +327,7 @@ fn create_mutable_vault_with_take_non_fungible() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -348,7 +348,7 @@ fn create_mutable_vault_with_get_nonfungible_ids() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -369,7 +369,7 @@ fn create_mutable_vault_with_get_amount() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -390,7 +390,7 @@ fn create_mutable_vault_with_get_resource_manager() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();

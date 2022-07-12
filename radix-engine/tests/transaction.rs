@@ -32,7 +32,7 @@ fn test_normal_transaction_flow() {
         &mut wasm_instrumenter,
         true,
     );
-    let receipt = executor.execute(&validated_transaction);
+    let receipt = executor.execute(&validated_transaction, false);
 
     receipt.expect_success();
 }

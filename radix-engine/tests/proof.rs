@@ -28,7 +28,7 @@ fn can_create_clone_and_drop_bucket_proof() {
         .unwrap()
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
     println!("{:?}", receipt);
 
     // Assert
@@ -59,7 +59,7 @@ fn can_create_clone_and_drop_vault_proof() {
             to_struct!(Decimal::one()),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     println!("{:?}", receipt);
 
     // Assert
@@ -94,7 +94,7 @@ fn can_create_clone_and_drop_vault_proof_by_amount() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     println!("{:?}", receipt);
 
     // Assert
@@ -131,7 +131,7 @@ fn can_create_clone_and_drop_vault_proof_by_ids() {
             to_struct!(total_ids, proof_ids),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -162,7 +162,7 @@ fn can_use_bucket_for_authorization() {
         .unwrap()
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();
@@ -196,7 +196,7 @@ fn can_use_vault_for_authorization() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();
@@ -223,7 +223,7 @@ fn can_create_proof_from_account_and_pass_on() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();
@@ -250,7 +250,7 @@ fn cant_move_restricted_proof() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::CantMoveRestrictedProof(_)));
@@ -277,7 +277,7 @@ fn cant_move_locked_bucket() {
         )
         .unwrap()
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::CantMoveLockedBucket));
@@ -311,7 +311,7 @@ fn can_compose_bucket_and_vault_proof() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();
@@ -345,7 +345,7 @@ fn can_compose_bucket_and_vault_proof_by_amount() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();
@@ -389,7 +389,7 @@ fn can_compose_bucket_and_vault_proof_by_ids() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();
@@ -419,7 +419,7 @@ fn can_create_vault_proof_by_amount_from_non_fungibles() {
             to_struct!(Decimal::from(3), Decimal::from(1)),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -462,7 +462,7 @@ fn can_create_auth_zone_proof_by_amount_from_non_fungibles() {
             },
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();

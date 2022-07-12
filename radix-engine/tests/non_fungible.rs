@@ -23,7 +23,7 @@ fn create_non_fungible_mutable() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();
@@ -44,7 +44,7 @@ fn can_burn_non_fungible() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     receipt.expect_success();
     let resource_address = receipt.new_resource_addresses[0];
     let non_fungible_address =
@@ -64,7 +64,7 @@ fn can_burn_non_fungible() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
 
     // Assert
     receipt.expect_success();
@@ -121,7 +121,7 @@ fn test_non_fungible() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
     receipt.expect_success();
 }
 
@@ -140,6 +140,6 @@ fn test_singleton_non_fungible() {
         )
         .call_method_with_all_resources(account, "deposit_batch")
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![public_key]);
+    let receipt = test_runner.execute_manifest(manifest, vec![public_key], false);
     receipt.expect_success();
 }

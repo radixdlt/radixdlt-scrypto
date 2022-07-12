@@ -31,7 +31,7 @@ fn test_external_bridges() {
             to_struct!(),
         )
         .build();
-    let receipt1 = test_runner.execute_manifest(manifest1, vec![]);
+    let receipt1 = test_runner.execute_manifest(manifest1, vec![], false);
     receipt1.expect_success();
 
     let target_component_address = receipt1.new_component_addresses[0];
@@ -45,7 +45,7 @@ fn test_external_bridges() {
             to_struct!(),
         )
         .build();
-    let receipt2 = test_runner.execute_manifest(manifest2, vec![]);
+    let receipt2 = test_runner.execute_manifest(manifest2, vec![], false);
     receipt2.expect_success();
 
     let caller_component_address = receipt2.new_component_addresses[0];
@@ -63,7 +63,7 @@ fn test_external_bridges() {
             to_struct!(target_component_address),
         )
         .build();
-    let receipt3 = test_runner.execute_manifest(manifest3, vec![]);
+    let receipt3 = test_runner.execute_manifest(manifest3, vec![], false);
 
     // ASSERT
     receipt3.expect_success();

@@ -18,7 +18,7 @@ fn can_insert_in_child_nodes() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "SuperKeyValueStore", "new", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -39,7 +39,7 @@ fn create_mutable_key_value_store_into_map_and_referencing_before_storing() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -55,7 +55,7 @@ fn cyclic_map_fails_execution() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "CyclicMap", "new", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess(_)));
@@ -76,7 +76,7 @@ fn self_cyclic_map_fails_execution() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::InvalidDataAccess(..)));
@@ -95,14 +95,14 @@ fn cannot_remove_key_value_stores() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "clear_vector", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::StoredValueRemoved(_)));
@@ -121,14 +121,14 @@ fn cannot_overwrite_key_value_stores() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     let component_address = receipt.new_component_addresses[0];
 
     // Act
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "overwrite_key_value_store", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::StoredValueRemoved(_)));
@@ -149,7 +149,7 @@ fn create_key_value_store_and_get() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -170,7 +170,7 @@ fn create_key_value_store_and_put() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -191,7 +191,7 @@ fn can_reference_in_memory_vault() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -212,7 +212,7 @@ fn can_reference_deep_in_memory_value() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -233,7 +233,7 @@ fn can_reference_deep_in_memory_vault() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -254,7 +254,7 @@ fn cannot_directly_reference_inserted_vault() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| {
@@ -280,7 +280,7 @@ fn cannot_directly_reference_vault_after_container_moved() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| {
@@ -306,7 +306,7 @@ fn cannot_directly_reference_vault_after_container_stored() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| {

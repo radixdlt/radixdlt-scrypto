@@ -17,7 +17,7 @@ fn dangling_component_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Leaks", "dangling_component", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Component)));
@@ -33,7 +33,7 @@ fn dangling_bucket_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Leaks", "dangling_bucket", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Bucket)));
@@ -49,7 +49,7 @@ fn dangling_vault_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Leaks", "dangling_vault", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Vault)));
@@ -65,7 +65,7 @@ fn dangling_worktop_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Leaks", "get_bucket", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Worktop)));
@@ -81,7 +81,7 @@ fn dangling_kv_store_should_fail() {
     let manifest = ManifestBuilder::new()
         .call_function(package_address, "Leaks", "dangling_kv_store", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::KeyValueStore)));
@@ -102,7 +102,7 @@ fn dangling_bucket_with_proof_should_fail() {
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_err(|e| matches!(e, RuntimeError::DropFailure(DropFailure::Bucket)));

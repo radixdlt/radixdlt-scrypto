@@ -26,7 +26,7 @@ fn vector_of_buckets_argument_should_succeed() {
             })
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success()
@@ -51,7 +51,7 @@ fn tuple_of_buckets_argument_should_succeed() {
             })
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success()
@@ -80,7 +80,7 @@ fn treemap_of_strings_and_buckets_argument_should_succeed() {
             })
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success()
@@ -109,7 +109,7 @@ fn hashmap_of_strings_and_buckets_argument_should_succeed() {
             })
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success()
@@ -132,7 +132,7 @@ fn some_optional_bucket_argument_should_succeed() {
             )
         })
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success()
@@ -153,7 +153,7 @@ fn none_optional_bucket_argument_should_succeed() {
             to_struct!(Option::<Bucket>::None),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success()

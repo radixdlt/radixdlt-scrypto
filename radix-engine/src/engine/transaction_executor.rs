@@ -59,7 +59,7 @@ where
         self.substate_store
     }
 
-    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T) -> Receipt {
+    pub fn execute<T: ExecutableTransaction>(&mut self, transaction: &T, is_system: bool) -> Receipt {
         #[cfg(not(feature = "alloc"))]
         let now = std::time::Instant::now();
 
@@ -89,6 +89,7 @@ where
             self.trace,
             transaction_hash,
             signer_public_keys,
+            is_system,
             &mut track,
             self.wasm_engine,
             self.wasm_instrumenter,

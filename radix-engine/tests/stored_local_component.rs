@@ -21,7 +21,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -42,7 +42,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -61,7 +61,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
             to_struct!(34567u32),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     receipt.expect_success();
     let component_address = receipt.new_component_addresses[0];
 
@@ -69,7 +69,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "parent_get_secret", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -90,7 +90,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
             to_struct!(34567u32),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     receipt.expect_success();
     let component_address = receipt.new_component_addresses[0];
 
@@ -99,7 +99,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
         .call_method(component_address, "parent_set_secret", to_struct!(8888u32))
         .call_method(component_address, "parent_get_secret", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -122,7 +122,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -143,7 +143,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
             to_struct!(),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -162,7 +162,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
             to_struct!(34567u32),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     receipt.expect_success();
     let component_address = receipt.new_component_addresses[0];
 
@@ -170,7 +170,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let manifest = ManifestBuilder::new()
         .call_method(component_address, "parent_get_secret", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
@@ -191,7 +191,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
             to_struct!(34567u32),
         )
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
     receipt.expect_success();
     let component_address = receipt.new_component_addresses[0];
 
@@ -200,7 +200,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
         .call_method(component_address, "parent_set_secret", to_struct!(8888u32))
         .call_method(component_address, "parent_get_secret", to_struct!())
         .build();
-    let receipt = test_runner.execute_manifest(manifest, vec![]);
+    let receipt = test_runner.execute_manifest(manifest, vec![], false);
 
     // Assert
     receipt.expect_success();
