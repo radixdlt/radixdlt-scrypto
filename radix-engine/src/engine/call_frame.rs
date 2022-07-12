@@ -716,7 +716,6 @@ where
         cost_unit_counter: &'c mut CostUnitCounter,
         fee_table: &'c FeeTable,
     ) -> Self {
-
         // TODO: Cleanup initialization of authzone
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
@@ -737,10 +736,8 @@ where
 
         if is_system {
             let id = [NonFungibleId::from_u32(0)].into_iter().collect();
-            let mut system_bucket = Bucket::new(ResourceContainer::new_non_fungible(
-                SYSTEM_TOKEN,
-                id,
-            ));
+            let mut system_bucket =
+                Bucket::new(ResourceContainer::new_non_fungible(SYSTEM_TOKEN, id));
             let system_proof = system_bucket.create_proof(track.new_bucket_id()).unwrap();
             initial_auth_zone_proofs.push(system_proof);
         }
@@ -919,8 +916,7 @@ where
                             .map_err(RuntimeError::ResourceManagerError)
                     }
                     ValueId::System => {
-                        System::main(fn_ident, input, self)
-                            .map_err(RuntimeError::SystemError)
+                        System::main(fn_ident, input, self).map_err(RuntimeError::SystemError)
                     }
                     _ => panic!("Unexpected"),
                 },
@@ -1224,9 +1220,13 @@ where
                 let fn_str: &str = &fn_ident;
                 let access_rules = match fn_str {
                     "set_epoch" => {
-                        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN))))]
+                        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                            HardProofRule::Require(HardResourceOrNonFungible::Resource(
+                                SYSTEM_TOKEN,
+                            )),
+                        ))]
                     }
-                    _ => vec![]
+                    _ => vec![],
                 };
                 Ok((SNodeExecution::ValueRef(ValueId::System), access_rules))
             }

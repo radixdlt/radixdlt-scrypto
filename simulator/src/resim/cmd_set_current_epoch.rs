@@ -1,8 +1,8 @@
 use clap::Parser;
-use scrypto::core::{SNodeRef, SystemSetEpochInput};
-use scrypto::values::ScryptoValue;
 use radix_engine::engine::{CallFrame, SystemApi, Track};
 use radix_engine::fee::{CostUnitCounter, FeeTable, MAX_TRANSACTION_COST, SYSTEM_LOAN_AMOUNT};
+use scrypto::core::{SNodeRef, SystemSetEpochInput};
+use scrypto::values::ScryptoValue;
 
 use crate::resim::*;
 
@@ -37,11 +37,12 @@ impl SetCurrentEpoch {
             &fee_table,
         );
 
-        root_frame.invoke_snode(SNodeRef::SystemRef, "set_epoch".to_string(), ScryptoValue::from_typed(
-            &SystemSetEpochInput {
-                epoch: self.epoch
-            }
-        ))
+        root_frame
+            .invoke_snode(
+                SNodeRef::SystemRef,
+                "set_epoch".to_string(),
+                ScryptoValue::from_typed(&SystemSetEpochInput { epoch: self.epoch }),
+            )
             .map(|_| ())
             .map_err(Error::TransactionExecutionError)
     }

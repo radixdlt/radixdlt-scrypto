@@ -21,7 +21,8 @@ pub use auth_zone::{AuthZone, AuthZoneError};
 pub use bucket::{Bucket, BucketError};
 pub use component::{Component, ComponentError};
 pub use method_authorization::{
-    HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization, MethodAuthorizationError,
+    HardAuthRule, HardProofRule, HardResourceOrNonFungible, MethodAuthorization,
+    MethodAuthorizationError,
 };
 pub use non_fungible::NonFungible;
 pub use package_extractor::{extract_package, ExtractAbiError};

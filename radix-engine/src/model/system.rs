@@ -1,6 +1,8 @@
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput};
+use scrypto::core::{
+    SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput,
+};
 use scrypto::engine::types::ValueId;
 use scrypto::values::ScryptoValue;
 

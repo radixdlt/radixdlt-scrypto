@@ -2,10 +2,10 @@
 pub mod test_runner;
 
 use crate::test_runner::TestRunner;
+use radix_engine::engine::RuntimeError;
 use scrypto::prelude::*;
 use scrypto::to_struct;
 use transaction::builder::ManifestBuilder;
-use radix_engine::engine::RuntimeError;
 
 #[test]
 fn test_get_epoch() {
@@ -34,7 +34,12 @@ fn test_set_epoch_without_system_auth_fails() {
     // Act
     let epoch = 9876u64;
     let manifest = ManifestBuilder::new()
-        .call_function(package_address, "SystemTest", "set_epoch", to_struct!(epoch))
+        .call_function(
+            package_address,
+            "SystemTest",
+            "set_epoch",
+            to_struct!(epoch),
+        )
         .call_function(package_address, "SystemTest", "get_epoch", to_struct!())
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);

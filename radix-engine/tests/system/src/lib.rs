@@ -1,5 +1,5 @@
-use scrypto::prelude::*;
 use scrypto::engine::{api::*, call_engine};
+use scrypto::prelude::*;
 
 blueprint! {
     struct SystemTest;
