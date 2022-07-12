@@ -76,6 +76,13 @@ where
     .unwrap();
     track.create_uuid_value_2(ECDSA_TOKEN, ecdsa_token);
 
+    let system_token = ResourceManager::new(
+        ResourceType::NonFungible,
+        HashMap::new(),
+        HashMap::new(),
+    ).unwrap();
+    track.create_uuid_value_2(SYSTEM_TOKEN, system_token);
+
     let system_vault = Vault::new(minted_xrd);
     track.create_uuid_value_2((SYSTEM_COMPONENT, XRD_VAULT_ID), system_vault);
 

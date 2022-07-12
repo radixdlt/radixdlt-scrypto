@@ -1208,7 +1208,14 @@ where
                         visible: true,
                     },
                 );
-                Ok((SNodeExecution::ValueRef(ValueId::System), vec![]))
+                let fn_str: &str = &fn_ident;
+                let access_rules = match fn_str {
+                    "set_epoch" => {
+                        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(HardProofRule::Require(HardResourceOrNonFungible::Resource(SYSTEM_TOKEN))))]
+                    }
+                    _ => vec![]
+                };
+                Ok((SNodeExecution::ValueRef(ValueId::System), access_rules))
             }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
