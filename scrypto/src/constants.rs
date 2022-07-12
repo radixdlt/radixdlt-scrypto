@@ -26,7 +26,7 @@ pub const ECDSA_TOKEN: ResourceAddress = ResourceAddress([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5,
 ]);
 
-/// The system token which only validators have access to
+/// The system token which allows access to system resources (e.g. setting epoch)
 pub const SYSTEM_TOKEN: ResourceAddress = ResourceAddress([
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6,
 ]);

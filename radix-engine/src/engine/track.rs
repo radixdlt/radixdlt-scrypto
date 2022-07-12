@@ -268,7 +268,7 @@ impl SubstateValue {
         if let SubstateValue::System(system) = self {
             system
         } else {
-            panic!("Not a vault");
+            panic!("Not a system value");
         }
     }
 
