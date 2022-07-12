@@ -210,6 +210,7 @@ impl REValueLocation {
                     }
                     ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
                     ValueId::Package(package_address) => Address::Package(*package_address),
+                    ValueId::System => Address::System,
                     _ => panic!("Unexpected"),
                 };
 
@@ -295,6 +296,7 @@ impl REValueLocation {
                     }
                     ValueId::Package(package_address) => Address::Package(*package_address),
                     ValueId::Resource(resource_address) => Address::Resource(*resource_address),
+                    ValueId::System => Address::System,
                     _ => panic!("Unexpected value id"),
                 };
 
@@ -424,6 +426,13 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
         }
     }
 
+    pub fn system(&mut self) -> &mut System {
+        match self {
+            RENativeValueRef::Track(_address, value) => value.system_mut(),
+            _ => panic!("Expecting to be system"),
+        }
+    }
+
     pub fn component(&mut self) -> &mut Component {
         match self {
             RENativeValueRef::OwnedRef(owned) => owned.component_mut(),
@@ -477,6 +486,14 @@ impl<'f, 'p, 's, S: ReadableSubstateStore> REValueRef<'f, 'p, 's, S> {
             REValueRef::Owned(owned) => owned.vault(),
             REValueRef::Track(track, address) => track.read_value(address.clone()).vault(),
             REValueRef::Borrowed(borrowed) => borrowed.vault(),
+        }
+    }
+
+    pub fn system(&self) -> &System {
+        match self {
+            REValueRef::Owned(owned) => owned.system(),
+            REValueRef::Track(track, address) => track.read_value(address.clone()).system(),
+            _ => panic!("Unexpected system ref"),
         }
     }
 
@@ -670,7 +687,6 @@ impl<'a, 'b, 'c, 's, S: ReadableSubstateStore> REValueRefMut<'a, 'b, 'c, 's, S> 
 pub enum StaticSNodeState {
     Package,
     Resource,
-    System,
     TransactionProcessor,
 }
 
@@ -698,12 +714,14 @@ where
         verbose: bool,
         transaction_hash: Hash,
         signer_public_keys: Vec<EcdsaPublicKey>,
+        is_system: bool,
         track: &'t mut Track<'s, S>,
         wasm_engine: &'w mut W,
         wasm_instrumenter: &'w mut WasmInstrumenter,
         cost_unit_counter: &'c mut CostUnitCounter,
         fee_table: &'c FeeTable,
     ) -> Self {
+        // TODO: Cleanup initialization of authzone
         let signer_non_fungible_ids: BTreeSet<NonFungibleId> = signer_public_keys
             .clone()
             .into_iter()
@@ -719,6 +737,14 @@ where
             ));
             let ecdsa_proof = ecdsa_bucket.create_proof(ECDSA_TOKEN_BUCKET_ID).unwrap();
             initial_auth_zone_proofs.push(ecdsa_proof);
+        }
+
+        if is_system {
+            let id = [NonFungibleId::from_u32(0)].into_iter().collect();
+            let mut system_bucket =
+                Bucket::new(ResourceContainer::new_non_fungible(SYSTEM_TOKEN, id));
+            let system_proof = system_bucket.create_proof(track.new_bucket_id()).unwrap();
+            initial_auth_zone_proofs.push(system_proof);
         }
 
         Self::new(
@@ -833,8 +859,6 @@ where
         let output = {
             let rtn = match execution {
                 SNodeExecution::Static(state) => match state {
-                    StaticSNodeState::System => System::static_main(fn_ident, input, self)
-                        .map_err(RuntimeError::SystemError),
                     StaticSNodeState::TransactionProcessor => TransactionProcessor::static_main(
                         fn_ident, input, self,
                     )
@@ -894,6 +918,9 @@ where
                     ValueId::Resource(resource_address) => {
                         ResourceManager::main(resource_address, fn_ident, input, self)
                             .map_err(RuntimeError::ResourceManagerError)
+                    }
+                    ValueId::System => {
+                        System::main(fn_ident, input, self).map_err(RuntimeError::SystemError)
                     }
                     _ => panic!("Unexpected"),
                 },
@@ -1174,9 +1201,6 @@ where
             SNodeRef::PackageStatic => {
                 Ok((SNodeExecution::Static(StaticSNodeState::Package), vec![]))
             }
-            SNodeRef::SystemStatic => {
-                Ok((SNodeExecution::Static(StaticSNodeState::System), vec![]))
-            }
             SNodeRef::ResourceStatic => {
                 Ok((SNodeExecution::Static(StaticSNodeState::Resource), vec![]))
             }
@@ -1235,6 +1259,31 @@ where
                 next_owned_values.insert(*value_id, RefCell::new(value));
 
                 Ok((SNodeExecution::Consumed(*value_id), method_auths))
+            }
+            SNodeRef::SystemRef => {
+                self.track
+                    .take_lock(Address::System, true)
+                    .expect("System access should never fail");
+                locked_values.insert(Address::System);
+                value_refs.insert(
+                    ValueId::System,
+                    REValueInfo {
+                        location: REValueLocation::Track { parent: None },
+                        visible: true,
+                    },
+                );
+                let fn_str: &str = &fn_ident;
+                let access_rules = match fn_str {
+                    "set_epoch" => {
+                        vec![MethodAuthorization::Protected(HardAuthRule::ProofRule(
+                            HardProofRule::Require(HardResourceOrNonFungible::Resource(
+                                SYSTEM_TOKEN,
+                            )),
+                        ))]
+                    }
+                    _ => vec![],
+                };
+                Ok((SNodeExecution::ValueRef(ValueId::System), access_rules))
             }
             SNodeRef::AuthZoneRef => {
                 if let Some(auth_zone) = &self.auth_zone {
@@ -2045,10 +2094,6 @@ where
         }
 
         Ok(())
-    }
-
-    fn get_epoch(&mut self) -> u64 {
-        self.track.current_epoch()
     }
 
     fn get_transaction_hash(&mut self) -> Hash {

@@ -45,8 +45,6 @@ where
     fn remove_value_data(&mut self, address: SubstateAddress)
         -> Result<ScryptoValue, RuntimeError>;
 
-    fn get_epoch(&mut self) -> u64;
-
     fn get_transaction_hash(&mut self) -> Hash;
 
     fn generate_uuid(&mut self) -> u128;

@@ -61,6 +61,7 @@ pub enum ValueId {
     Resource(ResourceAddress),
     NonFungibles(ResourceAddress),
     Package(PackageAddress),
+    System,
 }
 
 impl ValueId {
