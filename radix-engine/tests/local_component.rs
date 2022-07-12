@@ -130,7 +130,7 @@ fn recursion_bomb() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("local_component");
+    let package_address = test_runner.extract_and_publish_package("local_recursion");
 
     // Act
     // Note: currently SEGFAULT occurs if bucket with too much in it is sent. My guess the issue is a native stack overflow.
@@ -157,7 +157,7 @@ fn recursion_bomb_to_failure() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("local_component");
+    let package_address = test_runner.extract_and_publish_package("local_recursion");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -183,7 +183,7 @@ fn recursion_bomb_2() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("local_component");
+    let package_address = test_runner.extract_and_publish_package("local_recursion");
 
     // Act
     let manifest = ManifestBuilder::new()
@@ -209,7 +209,7 @@ fn recursion_bomb_2_to_failure() {
     // Arrange
     let mut test_runner = TestRunner::new(true);
     let (public_key, _, account) = test_runner.new_account();
-    let package_address = test_runner.extract_and_publish_package("local_component");
+    let package_address = test_runner.extract_and_publish_package("local_recursion");
 
     // Act
     let manifest = ManifestBuilder::new()

@@ -153,6 +153,3 @@ blueprint! {
         }
     }
 }
-
-pub mod local_recursion;
-pub mod local_recursion_2;
