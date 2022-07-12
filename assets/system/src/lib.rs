@@ -1,5 +1,4 @@
 use scrypto::prelude::*;
-use scrypto::engine::{api::*, call_engine};
 
 blueprint! {
     // nobody can instantiate a system component except the bootstrap process
@@ -31,16 +30,6 @@ blueprint! {
         /// Gives away XRD tokens for testing. TODO: Remove
         pub fn free_xrd(&mut self) -> Bucket {
             self.xrd.take(1_000_000)
-        }
-
-        // TODO: Remove
-        pub fn set_epoch(epoch: u64) {
-            let input = RadixEngineInput::InvokeSNode(
-                SNodeRef::SystemRef,
-                "set_epoch".to_string(),
-                scrypto_encode(&SystemSetEpochInput { epoch }),
-            );
-            call_engine(input)
         }
     }
 }
