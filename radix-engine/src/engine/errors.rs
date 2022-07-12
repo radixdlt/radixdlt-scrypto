@@ -126,6 +126,8 @@ pub enum RuntimeError {
     CostingError(CostUnitCounterError),
 
     MaxCallDepthLimitReached,
+
+    LockFeeFailure(String),
 }
 
 #[derive(Debug, PartialEq)]

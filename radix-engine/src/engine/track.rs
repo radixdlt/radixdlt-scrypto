@@ -222,7 +222,10 @@ impl SubstateValue {
             SubstateValue::Package(package) => scrypto_encode(package),
             SubstateValue::Component(component) => scrypto_encode(component),
             SubstateValue::Vault(liquid, locked) => {
-                assert!(locked.is_none(), "Vault is partially locked");
+                assert!(
+                    locked.is_none(),
+                    "Attempted to serialize a vault which is partially locked"
+                );
                 scrypto_encode(liquid)
             }
             SubstateValue::NonFungible(non_fungible) => scrypto_encode(non_fungible),

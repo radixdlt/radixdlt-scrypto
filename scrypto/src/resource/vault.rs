@@ -143,6 +143,14 @@ impl Vault {
         self.take_non_fungibles(&BTreeSet::from([non_fungible_id.clone()]))
     }
 
+    /// Locks the specified amount as transaction fee.
+    ///
+    /// Unused fee will be refunded to the vaults from the most recently locked to the least.
+    pub fn lock_fee(&mut self, amount: Decimal) -> () {
+        let input = RadixEngineInput::LockFee(self.0, amount);
+        call_engine(input)
+    }
+
     /// Uses resources in this vault as authorization for an operation.
     pub fn authorize<F: FnOnce() -> O, O>(&self, f: F) -> O {
         ComponentAuthZone::push(self.create_proof());
