@@ -376,7 +376,11 @@ fn generate_abi(bp_ident: &Ident, items: &[ImplItem]) -> Result<Vec<Expr>> {
 }
 
 // Parses function items of an `Impl` and returns ABI of functions.
-fn generate_stubs(value_ident: &Ident, bp_ident: &Ident, items: &[ImplItem]) -> Result<TokenStream> {
+fn generate_stubs(
+    value_ident: &Ident,
+    bp_ident: &Ident,
+    items: &[ImplItem],
+) -> Result<TokenStream> {
     let bp_name = bp_ident.to_string();
     let mut functions = Vec::<ImplItem>::new();
     let mut methods = Vec::<ImplItem>::new();

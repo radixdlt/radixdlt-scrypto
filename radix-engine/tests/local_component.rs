@@ -17,9 +17,9 @@ fn local_component_should_return_correct_info() {
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LocalComponent",
+            "Secret",
             "check_info_of_local_component",
-            to_struct!(package_address, "LocalComponent".to_string()),
+            to_struct!(package_address, "Secret".to_string()),
         )
         .build();
     let receipt = test_runner.execute_manifest(manifest, vec![]);
@@ -38,7 +38,7 @@ fn local_component_should_be_callable_read_only() {
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LocalComponent",
+            "Secret",
             "read_local_component",
             to_struct!(),
         )
@@ -59,7 +59,7 @@ fn local_component_should_be_callable_with_write() {
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LocalComponent",
+            "Secret",
             "write_local_component",
             to_struct!(),
         )
@@ -84,7 +84,7 @@ fn local_component_with_access_rules_should_not_be_callable() {
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "LocalComponent",
+            "Secret",
             "try_to_read_local_component_with_auth",
             to_struct!(auth_address),
         )
@@ -114,7 +114,7 @@ fn local_component_with_access_rules_should_be_callable() {
         )
         .call_function(
             package_address,
-            "LocalComponent",
+            "Secret",
             "try_to_read_local_component_with_auth",
             to_struct!(auth_address),
         )
