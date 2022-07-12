@@ -264,6 +264,14 @@ impl SubstateValue {
         }
     }
 
+    pub fn system_mut(&mut self) -> &mut System {
+        if let SubstateValue::System(system) = self {
+            system
+        } else {
+            panic!("Not a vault");
+        }
+    }
+
     pub fn resource_manager(&self) -> &ResourceManager {
         if let SubstateValue::Resource(resource_manager) = self {
             resource_manager

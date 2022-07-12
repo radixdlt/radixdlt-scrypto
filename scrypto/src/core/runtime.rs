@@ -13,6 +13,11 @@ use crate::engine::{api::*, call_engine};
 pub struct SystemGetCurrentEpochInput {}
 
 #[derive(Debug, TypeId, Encode, Decode)]
+pub struct SystemSetEpochInput {
+    pub epoch: u64,
+}
+
+#[derive(Debug, TypeId, Encode, Decode)]
 pub struct SystemGetTransactionHashInput {}
 
 /// The transaction runtime.
@@ -89,7 +94,7 @@ impl Runtime {
     pub fn current_epoch() -> u64 {
         let input = RadixEngineInput::InvokeSNode(
             SNodeRef::SystemRef,
-            "current_epoch".to_string(),
+            "get_epoch".to_string(),
             scrypto_encode(&SystemGetCurrentEpochInput {}),
         );
         call_engine(input)

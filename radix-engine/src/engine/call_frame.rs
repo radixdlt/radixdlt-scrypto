@@ -212,6 +212,7 @@ impl REValueLocation {
                     }
                     ValueId::Resource(resouce_address) => Address::Resource(*resouce_address),
                     ValueId::Package(package_address) => Address::Package(*package_address),
+                    ValueId::System => Address::System,
                     _ => panic!("Unexpected"),
                 };
 
@@ -436,6 +437,13 @@ impl<'borrowed> RENativeValueRef<'borrowed> {
             RENativeValueRef::Owned(..) => panic!("Unexpected"),
             RENativeValueRef::OwnedRef(owned) => owned.vault_mut(),
             RENativeValueRef::Track(_address, value) => value.vault_mut(),
+        }
+    }
+
+    pub fn system(&mut self) -> &mut System {
+        match self {
+            RENativeValueRef::Track(_address, value) => value.system_mut(),
+            _ => panic!("Expecting to be system"),
         }
     }
 

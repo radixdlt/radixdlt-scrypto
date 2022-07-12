@@ -1,6 +1,6 @@
 use sbor::*;
 use scrypto::buffer::scrypto_decode;
-use scrypto::core::{SystemGetCurrentEpochInput, SystemGetTransactionHashInput};
+use scrypto::core::{SystemGetCurrentEpochInput, SystemGetTransactionHashInput, SystemSetEpochInput};
 use scrypto::engine::types::ValueId;
 use scrypto::values::ScryptoValue;
 
@@ -34,11 +34,19 @@ impl System {
         system_api: &mut Y,
     ) -> Result<ScryptoValue, SystemError> {
         match method_name {
-            "current_epoch" => {
+            "get_epoch" => {
                 let _: SystemGetCurrentEpochInput =
                     scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
                 let value = system_api.borrow_value(&ValueId::System);
                 Ok(ScryptoValue::from_typed(&value.system().epoch))
+            }
+            "set_epoch" => {
+                let SystemSetEpochInput { epoch } =
+                    scrypto_decode(&arg.raw).map_err(|e| SystemError::InvalidRequestData(e))?;
+                let mut system_value = system_api.borrow_value_mut(&ValueId::System);
+                system_value.system().epoch = epoch;
+                system_api.return_value_mut(ValueId::System, system_value);
+                Ok(ScryptoValue::from_typed(&()))
             }
             "transaction_hash" => {
                 let _: SystemGetTransactionHashInput =
