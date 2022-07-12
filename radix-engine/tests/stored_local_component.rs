@@ -16,7 +16,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_owned_component()
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredLocalComponent",
+            "StoredSecret",
             "call_read_on_stored_component_in_owned_component",
             to_struct!(),
         )
@@ -37,7 +37,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_owned_component(
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredLocalComponent",
+            "StoredSecret",
             "call_write_on_stored_component_in_owned_component",
             to_struct!(),
         )
@@ -56,7 +56,7 @@ fn should_be_able_to_call_read_method_on_a_stored_component_in_global_component(
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredLocalComponent",
+            "StoredSecret",
             "new_global",
             to_struct!(34567u32),
         )
@@ -85,7 +85,7 @@ fn should_be_able_to_call_write_method_on_a_stored_component_in_global_component
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredLocalComponent",
+            "StoredSecret",
             "new_global",
             to_struct!(34567u32),
         )
@@ -117,7 +117,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_owned_componen
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredKVLocalComponent",
+            "StoredKVLocal",
             "call_read_on_stored_component_in_owned_component",
             to_struct!(),
         )
@@ -138,7 +138,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_owned_compone
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredKVLocalComponent",
+            "StoredKVLocal",
             "call_write_on_stored_component_in_owned_component",
             to_struct!(),
         )
@@ -157,7 +157,7 @@ fn should_be_able_to_call_read_method_on_a_kv_stored_component_in_global_compone
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredKVLocalComponent",
+            "StoredKVLocal",
             "new_global",
             to_struct!(34567u32),
         )
@@ -186,7 +186,7 @@ fn should_be_able_to_call_write_method_on_a_kv_stored_component_in_global_compon
     let manifest = ManifestBuilder::new()
         .call_function(
             package_address,
-            "StoredKVLocalComponent",
+            "StoredKVLocal",
             "new_global",
             to_struct!(34567u32),
         )
